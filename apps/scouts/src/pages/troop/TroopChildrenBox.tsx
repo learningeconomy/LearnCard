@@ -183,8 +183,6 @@ const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential, 
         /** Small helper to show “…” while loading. */
         const fmt = (value?: number) => value ?? '…';
 
-        console.log('TroopChildrenBox debug:', { role, credentialRole, userRole, troopBadges: counts.troopBadges, troopBoosts: counts.troopBoosts });
-
         switch (role) {
             case ScoutsRoleEnum.global:
                 return [

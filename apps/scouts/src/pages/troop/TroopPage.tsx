@@ -57,18 +57,9 @@ const TroopPage: React.FC<TroopPageProps> = ({ credential, handleShare, boostUri
         const hasParentEdit = 
             parentPermissions?.canEdit === true || 
             (parentPermissions?.canEditChildren && parentPermissions.canEditChildren !== '');
-        
-        console.log('TroopPage permissions debug:', {
-            credentialRole,
-            parentBoostUri,
-            hasParentEdit,
-            parentPermissions,
-            isNationalAdmin: myTroopIds?.isNationalAdmin,
-            isGlobalAdmin: myTroopIds?.isScoutGlobalAdmin,
-        });
 
         return hasParentEdit || myTroopIds?.isScoutGlobalAdmin || myTroopIds?.isNationalAdmin;
-    }, [parentPermissions, myTroopIds, credentialRole, parentBoostUri]);
+    }, [parentPermissions, myTroopIds]);
 
     // For the role, we keep the credential's natural role - this determines what TYPE of content to show
     // But hasParentAdminAccess determines if user CAN SEE that content
@@ -114,8 +105,6 @@ const TroopPage: React.FC<TroopPageProps> = ({ credential, handleShare, boostUri
     // Parent admins should always see content regardless of credential status
     // (The old revocation logic is being deprecated and may incorrectly mark credentials)
     const isRevokedOrPending = !hasParentAdminAccess && (credentialStatus === 'revoked' || credentialStatus === 'pending');
-
-    console.log('TroopPage status debug:', { credentialStatus, isRevokedOrPending, ownsCurrentId, hasParentAdminAccess });
 
     const getScoutIdTypeFromBoost = (vc: VC) => {
         return vc?.credentialSubject?.achievement?.achievementType;
