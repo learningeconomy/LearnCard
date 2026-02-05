@@ -3,6 +3,7 @@ import type { ChatMessage, Thread, LearningPathway } from '../../types/ai-chat';
 import { auth } from './authStore';
 import { showErrorModal } from './ErrorModalStore';
 import { showToast } from './toastStore';
+import { LEARNCARD_AI_URL } from '../../constants/Networks';
 
 export const messages = atom<ChatMessage[]>([]);
 export const threads = atom<Thread[]>([]);
@@ -17,8 +18,16 @@ export const topicCredentials = atom<TopicCredential[]>([]);
 export const sessionEnded = atom(false);
 export const planReady = atom(false);
 export const planReadyThread = atom<string | null>(null);
+export const intro = atom<IntroState>({
+    loading: false,
+    title: undefined,
+    summary: undefined,
+    skills: [],
+    objectives: [],
+    roadmap: [],
+});
 
-export const BACKEND_URL = 'https://api.learncloud.ai';
+export const BACKEND_URL = LEARNCARD_AI_URL;
 
 interface TopicCredential {
     uri: string;
@@ -26,6 +35,15 @@ interface TopicCredential {
     context: string;
     score: number;
     title: string;
+}
+
+export interface IntroState {
+    loading: boolean;
+    title?: string;
+    summary?: string;
+    skills?: any[];
+    objectives?: any[];
+    roadmap?: any[];
 }
 
 let ws: WebSocket | null = null;
@@ -66,6 +84,14 @@ export async function loadThread(threadId: string) {
 
         // Reset active questions when loading a thread
         activeQuestions.set([]);
+        intro.set({
+            loading: false,
+            title: undefined,
+            summary: undefined,
+            skills: [],
+            objectives: [],
+            roadmap: [],
+        });
 
         // Determine lock state based on presence of summaries
         // First check the current threads store, then reload if needed
@@ -116,6 +142,14 @@ export async function createThread() {
         messages.set([]);
         currentThreadId.set(threadId);
         activeQuestions.set([]);
+        intro.set({
+            loading: false,
+            title: undefined,
+            summary: undefined,
+            skills: [],
+            objectives: [],
+            roadmap: [],
+        });
         // New thread is unlocked initially
         sessionEnded.set(false);
         await loadThreads();
@@ -229,9 +263,86 @@ export function connectWebSocket() {
             }
 
             // Handle plan introduction event
-            if (data.event === 'plan_intro') {
+            // if (data.event === 'plan_intro') {
+            //     isTyping.set(false);
+            //     isLoading.set(false);
+            //     return;
+            // }
+
+            // Handle structured intro streaming events
+            // intro start — FULL reset to avoid ghost data
+            if (data.event === 'intro_start') {
+                intro.set({
+                    loading: true,
+                    title: undefined,
+                    summary: undefined,
+                    skills: [],
+                    objectives: [],
+                    roadmap: [],
+                });
+                return;
+            }
+
+            // title
+            if (data.event === 'intro_title') {
+                intro.set(prev => ({
+                    ...prev,
+                    title: data.title,
+                    loading: true,
+                }));
+                return;
+            }
+
+            // summary
+            if (data.event === 'intro_summary') {
+                intro.set(prev => ({
+                    ...prev,
+                    summary: data.summary,
+                    loading: true,
+                }));
+                return;
+            }
+
+            // skills
+            if (data.event === 'intro_skills') {
+                intro.set(prev => ({
+                    ...prev,
+                    skills: Array.isArray(data.skills) ? data.skills : [],
+                    loading: true,
+                }));
+                return;
+            }
+
+            // objectives
+            if (data.event === 'intro_objectives') {
+                intro.set(prev => ({
+                    ...prev,
+                    objectives: Array.isArray(data.objectives) ? data.objectives : [],
+                    loading: true,
+                }));
+                return;
+            }
+
+            // roadmap
+            if (data.event === 'intro_roadmap') {
+                intro.set(prev => ({
+                    ...prev,
+                    roadmap: Array.isArray(data.roadmap) ? data.roadmap : [],
+                    loading: true,
+                }));
+                return;
+            }
+
+            // intro done — stop loaders safely
+            if (data.event === 'intro_done') {
+                intro.set(prev => ({
+                    ...prev,
+                    loading: false,
+                }));
+
                 isTyping.set(false);
                 isLoading.set(false);
+
                 return;
             }
 
@@ -598,6 +709,14 @@ export async function startTopicWithUri(topicUri: string) {
     planReadyThread.set(null);
     messages.set([]);
     activeQuestions.set([]);
+    intro.set({
+        loading: false,
+        title: undefined,
+        summary: undefined,
+        skills: [],
+        objectives: [],
+        roadmap: [],
+    });
     sessionEnded.set(false);
 
     const { did } = auth.get();
@@ -659,6 +778,14 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
     planReadyThread.set(null);
     messages.set([]);
     activeQuestions.set([]);
+    intro.set({
+        loading: false,
+        title: undefined,
+        summary: undefined,
+        skills: [],
+        objectives: [],
+        roadmap: [],
+    });
     sessionEnded.set(false);
 
     const { did } = auth.get();
@@ -721,6 +848,14 @@ export async function startTopic(topic: string) {
     planReadyThread.set(null);
     messages.set([]);
     activeQuestions.set([]);
+    intro.set({
+        loading: false,
+        title: undefined,
+        summary: undefined,
+        skills: [],
+        objectives: [],
+        roadmap: [],
+    });
     sessionEnded.set(false); // New topic implies a new, active session initially
 
     const { did } = auth.get();
@@ -850,6 +985,14 @@ export async function startTopic(topic: string) {
 // Function to continue after plan introduction
 export function continuePlan() {
     const threadId = planReadyThread.get();
+    intro.set({
+        loading: false,
+        title: undefined,
+        summary: undefined,
+        skills: [],
+        objectives: [],
+        roadmap: [],
+    });
     if (!threadId) return;
     // Add placeholder for continuation streaming to a new assistant message
     const currentMsgs = messages.get();
