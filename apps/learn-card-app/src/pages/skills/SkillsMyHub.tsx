@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 
-import Vector from '../../components/svgs/Vector';
 import SkillDisplay from './SkillDisplay';
 import SkillsHubSearch from './SkillsHubSearch';
-import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import LegacySkillDisplay from './LegacySkillDisplay';
 import SkillsPageEmptyPlaceholder from './SkillsEmptyPlaceholder';
-import { AiInsightsIcon } from 'learn-card-base/svgs/wallet/AiInsightsIcon';
+import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
+import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
 import { useAlignments } from '../../hooks/useAlignments';
 import {
@@ -40,18 +38,7 @@ const SkillsMyHub: React.FC<SkillsMyHubProps> = ({}) => {
 
     return (
         <div className="flex flex-col gap-[10px] w-full">
-            <Link
-                to="/ai/insights"
-                className="w-full bg-indigo-600 text-white flex items-center gap-[11px] rounded-full pr-[25px] shadow-bottom-2-3 overflow-hidden relative"
-            >
-                <div className="relative">
-                    <Vector color="lime-300" className="" />
-                    <AiInsightsIcon className="h-[49px] w-[49px] absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]" />
-                </div>
-                <span className="text-[20px] font-poppins font-[600] leading-[130%]">
-                    Explore AI Insights
-                </span>
-            </Link>
+            <ExploreAiInsightsButton />
 
             {showPlaceholder && <SkillsPageEmptyPlaceholder isLoading={isLoading} />}
 
