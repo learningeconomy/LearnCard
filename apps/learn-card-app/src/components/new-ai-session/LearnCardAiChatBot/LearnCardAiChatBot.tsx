@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
-import { useDeviceTypeByWidth } from 'learn-card-base';
+import { useDeviceTypeByWidth, LEARNCARD_AI_URL } from 'learn-card-base';
 
 import ChatInput from './ChatInput';
 import CaretDown from '../../svgs/CaretDown';
@@ -19,6 +19,7 @@ import {
     isEndingSession,
     showEndingSessionLoader,
     disconnectWebSocket,
+    intro,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 import { auth } from 'learn-card-base/stores/nanoStores/authStore';
 
@@ -27,7 +28,7 @@ import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 import { sessionWrapUpText } from '../newAiSession.helpers';
 import { AiPassportAppContractUri } from '../../ai-passport-apps/aiPassport-apps.helpers';
 
-export const BACKEND_URL = 'https://api.learncloud.ai';
+export const BACKEND_URL = LEARNCARD_AI_URL;
 
 type LearnCardAiChatBotProps = {
     initialMessages: ChatMessage[];
@@ -35,6 +36,80 @@ type LearnCardAiChatBotProps = {
     initialTopicUri?: string | undefined;
     contractUri?: string | undefined;
     handleStartOver?: () => void;
+};
+
+type StructuredIntroProps = {
+    intro: {
+        loading: boolean;
+        title?: string;
+        summary?: string;
+        skills?: any[];
+        objectives?: any[];
+        roadmap?: any[];
+    };
+};
+
+const StructuredIntro: React.FC<StructuredIntroProps> = ({ intro }) => {
+    if (
+        !intro.loading &&
+        !intro.title &&
+        !intro.summary &&
+        !intro.skills?.length &&
+        !intro.objectives?.length &&
+        !intro.roadmap?.length
+    ) {
+        return null;
+    }
+
+    return (
+        <div className="mb-6 p-4 rounded-xl border border-grayscale-200 bg-grayscale-50">
+            {intro.title && <h2 className="text-xl font-semibold mb-2">{intro.title}</h2>}
+
+            {intro.summary && <p className="text-grayscale-700 mb-4">{intro.summary}</p>}
+
+            {intro?.objectives && intro.objectives.length > 0 && (
+                <div className="mb-3">
+                    <h3 className="font-medium mb-1">Objectives</h3>
+                    <ul className="list-disc pl-5 space-y-1">
+                        {intro?.objectives?.map((o, i) => (
+                            <li key={i}>{o}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
+            {intro?.skills && intro.skills.length > 0 && (
+                <div className="mb-3">
+                    <h3 className="font-medium mb-1">Skills You’ll Build</h3>
+                    <ul className="flex flex-wrap gap-2">
+                        {intro?.skills?.map((s, i) => (
+                            <span
+                                key={i}
+                                className="px-2 py-1 text-sm rounded-full bg-grayscale-200"
+                            >
+                                {s.title ?? s}
+                            </span>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
+            {intro?.roadmap && intro.roadmap.length > 0 && (
+                <div>
+                    <h3 className="font-medium mb-1">Roadmap</h3>
+                    <ol className="list-decimal pl-5 space-y-1">
+                        {intro?.roadmap?.map((step, i) => (
+                            <li key={i}>{step.title ?? step}</li>
+                        ))}
+                    </ol>
+                </div>
+            )}
+
+            {intro.loading && (
+                <div className="mt-4 text-sm text-grayscale-500">Building your plan…</div>
+            )}
+        </div>
+    );
 };
 
 export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
@@ -65,6 +140,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     const showEndingLoader = useStore(showEndingSessionLoader);
     const loading = useStore(isLoading);
     const authState = useStore(auth);
+    const introState = useStore(intro);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -363,6 +439,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                             className="flex flex-col transition-transform duration-300 ease-out"
                             style={{ paddingBottom: `${scrollOffset}px` }}
                         >
+                            <StructuredIntro intro={introState} />
                             {messagesToShow.map((msg, index) => {
                                 return (
                                     <div
