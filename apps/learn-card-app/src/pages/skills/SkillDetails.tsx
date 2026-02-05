@@ -20,14 +20,13 @@ import BoostEarnedIDCard from '../../components/boost/boost-earned-card/BoostEar
 import SkillBreadcrumbText from '../SkillFrameworks/SkillBreadcrumbText';
 import BrowseFrameworkPage from '../SkillFrameworks/BrowseFrameworkPage';
 import FrameworkSkillsCount from '../SkillFrameworks/FrameworkSkillsCount';
+import SelfAssignedSkillCard from './SelfAssignedSkillCard';
 
 import { VC } from '@learncard/types';
 import {
     SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
-import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
-import SelfAssignedSkillCard from './SelfAssignedSkillCard';
 
 type SkillDetailsProps = {
     frameworkId: string;
