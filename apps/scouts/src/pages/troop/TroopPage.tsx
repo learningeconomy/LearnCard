@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import boostSearchStore from '../../stores/boostSearchStore';
@@ -20,6 +20,9 @@ import {
     useGetCredentialWithEdits,
     useGetCurrentLCNUser,
     useResolveBoost,
+    useGetCurrentUserTroopIds,
+    useGetBoostParents,
+    useGetBoostPermissions,
 } from 'learn-card-base';
 import { VC, VerificationItem, Boost } from '@learncard/types';
 import { useTroopIDStatus } from './TroopIdStatusButton';
@@ -32,7 +35,48 @@ type TroopPageProps = {
 };
 
 const TroopPage: React.FC<TroopPageProps> = ({ credential, handleShare, boostUri, boost }) => {
-    const role = getScoutsRole(credential);
+    const credentialRole = getScoutsRole(credential);
+
+    // Get current user's actual permissions to determine if they have elevated access
+    const { data: myTroopIds } = useGetCurrentUserTroopIds();
+
+    let _credential = boost ? boost : credential.boostCredential ?? credential;
+    let _boostUri = boostUri || _credential?.boostId;
+
+    // Get parent boost (network) to check permissions
+    const { data: parentBoosts } = useGetBoostParents(_boostUri);
+    const parentBoostUri = parentBoosts?.records?.[0]?.uri;
+
+    // Check if user has permissions on the parent network
+    // This indicates they are an admin of the parent and should have elevated access
+    const { data: parentPermissions } = useGetBoostPermissions(parentBoostUri);
+
+    // Calculate if user has parent admin access (can view child troop details)
+    // canEditChildren is a string: "*" means full access, "" means none
+    const hasParentAdminAccess = useMemo(() => {
+        const hasParentEdit = 
+            parentPermissions?.canEdit === true || 
+            (parentPermissions?.canEditChildren && parentPermissions.canEditChildren !== '');
+        
+        console.log('TroopPage permissions debug:', {
+            credentialRole,
+            parentBoostUri,
+            hasParentEdit,
+            parentPermissions,
+            isNationalAdmin: myTroopIds?.isNationalAdmin,
+            isGlobalAdmin: myTroopIds?.isScoutGlobalAdmin,
+        });
+
+        return hasParentEdit || myTroopIds?.isScoutGlobalAdmin || myTroopIds?.isNationalAdmin;
+    }, [parentPermissions, myTroopIds, credentialRole, parentBoostUri]);
+
+    // For the role, we keep the credential's natural role - this determines what TYPE of content to show
+    // But hasParentAdminAccess determines if user CAN SEE that content
+    // When viewing a troop, we want to show troop content (leader view), not national content
+    const effectiveRole = credentialRole;
+
+    // Keep original role for background styling purposes
+    const role = credentialRole;
 
     const [showIdDetails, setShowIdDetails] = useState(false);
 
@@ -40,9 +84,6 @@ const TroopPage: React.FC<TroopPageProps> = ({ credential, handleShare, boostUri
 
     const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
     const { verifyCredential } = useVerifyCredential();
-
-    let _credential = boost ? boost : credential.boostCredential ?? credential;
-    let _boostUri = boostUri || _credential?.boostId;
 
     const currentUser = useGetCurrentLCNUser();
     const { data: recipients } = useGetBoostRecipients(_boostUri);
@@ -70,7 +111,11 @@ const TroopPage: React.FC<TroopPageProps> = ({ credential, handleShare, boostUri
 
     // Check credential status (valid, pending, revoked)
     const credentialStatus = useTroopIDStatus(_credential, undefined, _boostUri);
-    const isRevokedOrPending = credentialStatus === 'revoked' || credentialStatus === 'pending';
+    // Parent admins should always see content regardless of credential status
+    // (The old revocation logic is being deprecated and may incorrectly mark credentials)
+    const isRevokedOrPending = !hasParentAdminAccess && (credentialStatus === 'revoked' || credentialStatus === 'pending');
+
+    console.log('TroopPage status debug:', { credentialStatus, isRevokedOrPending, ownsCurrentId, hasParentAdminAccess });
 
     const getScoutIdTypeFromBoost = (vc: VC) => {
         return vc?.credentialSubject?.achievement?.achievementType;
@@ -123,11 +168,13 @@ const TroopPage: React.FC<TroopPageProps> = ({ credential, handleShare, boostUri
                                     credential={credential}
                                     boostUri={_boostUri}
                                     networkName={credentialWithEdits?.name}
+                                    userRole={effectiveRole}
                                 />
                                 <TroopPageMembersBox
                                     credential={credential}
                                     boostUri={_boostUri}
                                     handleShare={handleShare}
+                                    userRole={effectiveRole}
                                 />
                             </>
                         )}

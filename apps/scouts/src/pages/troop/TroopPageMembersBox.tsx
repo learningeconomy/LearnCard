@@ -29,12 +29,14 @@ type TroopPageMembersBoxProps = {
     handleShare: () => void;
     boostUri?: string;
     credential: VC;
+    userRole?: ScoutsRoleEnum; // Optional: override role for elevated access
 };
 
 const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
     handleShare,
     boostUri,
     credential,
+    userRole,
 }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
     const inputRef = useRef<HTMLIonInputElement>(null);
@@ -43,7 +45,9 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
     const [searchQuery, setSearchQuery] = useState('');
 
     const { data: myTroopIds, isLoading: myTroopIdsLoading } = useGetCurrentUserTroopIds();
-    const role = getScoutsRole(credential);
+    const credentialRole = getScoutsRole(credential);
+    // Use userRole if provided (for parent admin elevated access), otherwise use credential role
+    const role = userRole ?? credentialRole;
     const { scoutBoostUri, troopBoostUri, currentBoostUri } = useTroopIds({ boostUri, credential });
 
     // Permissions data

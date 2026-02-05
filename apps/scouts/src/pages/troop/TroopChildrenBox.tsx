@@ -37,6 +37,7 @@ type Props = {
     networkName?: string;
     boostUri?: string;
     credential: VC;
+    userRole?: ScoutsRoleEnum; // Optional: override role for elevated access
 };
 
 /* -------------------------------------------------------------------------- */
@@ -100,9 +101,11 @@ const useCounts = (uri?: string | undefined) => {
     };
 };
 
-const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential }) => {
+const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential, userRole }) => {
     const uri = boostUri ?? undefined;
-    const role = getScoutsRole(credential);
+    const credentialRole = getScoutsRole(credential);
+    // Use userRole if provided (for parent admin elevated access), otherwise use credential role
+    const role = userRole ?? credentialRole;
     const flags = useFlags();
     const showAnalyticsOption = flags.enableViewScoutAnalytics;
 
@@ -179,6 +182,8 @@ const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential }
     const rows = useMemo(() => {
         /** Small helper to show “…” while loading. */
         const fmt = (value?: number) => value ?? '…';
+
+        console.log('TroopChildrenBox debug:', { role, credentialRole, userRole, troopBadges: counts.troopBadges, troopBoosts: counts.troopBoosts });
 
         switch (role) {
             case ScoutsRoleEnum.global:
