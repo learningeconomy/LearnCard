@@ -248,6 +248,8 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     // Track if recovery prompt has been shown
     const hasShownRecoveryRef = useRef(false);
     const recoveryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Track intentional navigation to bypass the navigation blocker
+    const isIntentionalNavigationRef = useRef(false);
 
     // Show recovery prompt if we have recovered state
     // Delay slightly to avoid race conditions with other mount effects that might call closeModal
@@ -313,6 +315,12 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         if (!hasUnsavedChanges || publishedBoostUri) return;
 
         const unblock = history.block((location, action) => {
+            // Skip blocking if this is an intentional navigation (Save & Quit, Quit Without Saving)
+            if (isIntentionalNavigationRef.current) {
+                isIntentionalNavigationRef.current = false;
+                return;
+            }
+
             newModal(
                 <div className="pt-[36px] pb-[16px]">
                     <div className="flex flex-col items-center justify-center w-full">
@@ -687,6 +695,8 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     category: state?.basicInfo?.type,
                 });
 
+                // Mark as intentional navigation to bypass the blocker
+                isIntentionalNavigationRef.current = true;
                 history.replace(
                     `/${BOOST_CATEGORY_TO_WALLET_ROUTE[state?.basicInfo?.type]}?managed=true`
                 );
@@ -857,6 +867,10 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 currentStep={currentStep}
                 isEditMode={false}
                 isSaveLoading={isSaveLoading}
+                clearLocalSave={clearLocalSave}
+                onIntentionalNavigation={() => {
+                    isIntentionalNavigationRef.current = true;
+                }}
             />,
             { sectionClassName: '!max-w-[400px]', cancelButtonTextOverride: buttonText },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
