@@ -1,7 +1,7 @@
 import ChatGPTAppBG from '../../assets/images/chatGpt-app-bg.png';
 
 import { LaunchPadAppListItem } from 'learn-card-base';
-import { LEARNCARD_NETWORK_URL } from 'learn-card-base/constants/Networks';
+import { LEARNCARD_NETWORK_URL, LEARNCARD_AI_URL } from 'learn-card-base/constants/Networks';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 // this is an internal app ranking
@@ -40,7 +40,9 @@ export const areAiPassportAppsAvailable = (): boolean => {
     const overriddenNetworkUrl = typeof LCN_URL === 'string' ? LCN_URL : undefined;
     const storedNetworkUrl = networkStore.get.networkUrl();
 
-    const effectiveNetworkUrl = overriddenNetworkUrl?.trim() ? overriddenNetworkUrl : storedNetworkUrl;
+    const effectiveNetworkUrl = overriddenNetworkUrl?.trim()
+        ? overriddenNetworkUrl
+        : storedNetworkUrl;
 
     return effectiveNetworkUrl === LEARNCARD_NETWORK_URL;
 };
@@ -59,7 +61,7 @@ export const aiPassportApps: (LaunchPadAppListItem & { url: string })[] = [
         appStoreID: AiPassportAppStoreIDs.learncardapp,
         contractUri: AiPassportAppContractUri.learncardapp,
         privacyPolicyUrl: 'https://openai.com/policies/row-privacy-policy/',
-        url: 'https://api.learncloud.ai',
+        url: LEARNCARD_AI_URL,
     },
     {
         id: 2,
