@@ -12,6 +12,21 @@ const STORAGE_VERSION = 1;
 const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 const DEBOUNCE_MS = 2000; // 2 seconds debounce for local saves
 
+const ALL_BOOST_CATEGORIES = [
+    'Social Badge',
+    'Achievement',
+    'Learning History',
+    'ID',
+    'Work History',
+    'Skill',
+    'Membership',
+    'Accomplishment',
+    'Accommodation',
+    'Family',
+    'Course',
+    'Job',
+];
+
 interface AutosaveStorageWrapper {
     version: number;
     timestamp: number;
@@ -29,11 +44,13 @@ interface UseBoostCMSAutosaveOptions {
 interface UseBoostCMSAutosaveReturn {
     hasRecoveredState: boolean;
     recoveredState: BoostCMSState | null;
+    recoveredBoostCategory: string | null;
     clearRecoveredState: () => void;
     saveToLocal: (state: BoostCMSState) => void;
     clearLocalSave: () => void;
     triggerAutosaveDraft: (state: BoostCMSState) => Promise<string | null>;
     isAutosaving: boolean;
+    hasUnsavedChanges: boolean;
 }
 
 /**
@@ -43,8 +60,6 @@ interface UseBoostCMSAutosaveReturn {
  * - Saves state to localStorage on changes (debounced)
  * - Can save as draft to server on critical events (errors, navigation)
  * - Recovers state from localStorage on component mount
- * - Handles visibility change (tab switching, app background)
- * - Handles beforeunload (browser close/navigation)
  */
 export function useBoostCMSAutosave({
     enabled = true,
@@ -58,7 +73,9 @@ export function useBoostCMSAutosave({
 
     const [hasRecoveredState, setHasRecoveredState] = useState(false);
     const [recoveredState, setRecoveredState] = useState<BoostCMSState | null>(null);
+    const [recoveredBoostCategory, setRecoveredBoostCategory] = useState<string | null>(null);
     const [isAutosaving, setIsAutosaving] = useState(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const currentStateRef = useRef<BoostCMSState | null>(null);
@@ -72,47 +89,93 @@ export function useBoostCMSAutosave({
         return STORAGE_KEY;
     }, [boostCategoryType]);
 
-    // Load recovered state from localStorage on mount
+    // Helper to validate and parse a stored state
+    const parseStoredState = useCallback(
+        (
+            stored: string,
+            storageKey: string
+        ): { data: BoostCMSState; category: string | null } | null => {
+            try {
+                const parsed: AutosaveStorageWrapper = JSON.parse(stored);
+
+                // Check version compatibility
+                if (parsed.version !== STORAGE_VERSION) {
+                    localStorage.removeItem(storageKey);
+                    return null;
+                }
+
+                // Check expiration
+                const age = Date.now() - parsed.timestamp;
+                if (age > MAX_AGE_MS) {
+                    localStorage.removeItem(storageKey);
+                    return null;
+                }
+
+                // Validate the state has meaningful content
+                const hasContent =
+                    parsed.data?.basicInfo?.name ||
+                    parsed.data?.basicInfo?.description ||
+                    parsed.data?.appearance?.badgeThumbnail;
+
+                if (hasContent) {
+                    return {
+                        data: parsed.data,
+                        category: parsed.boostCategoryType || null,
+                    };
+                }
+            } catch {
+                // Invalid JSON, remove it
+                localStorage.removeItem(storageKey);
+            }
+            return null;
+        },
+        []
+    );
+
+    // Load recovered state from localStorage on mount - checks ALL boost categories
     useEffect(() => {
         if (!enabled || typeof window === 'undefined') return;
 
-        try {
-            const storageKey = getStorageKey();
-            const stored = localStorage.getItem(storageKey);
-
-            if (!stored) return;
-
-            const parsed: AutosaveStorageWrapper = JSON.parse(stored);
-
-            // Check version compatibility
-            if (parsed.version !== STORAGE_VERSION) {
-                console.log('[useBoostCMSAutosave] Version mismatch, ignoring saved state');
-                localStorage.removeItem(storageKey);
+        // First check the current category's key
+        const currentKey = getStorageKey();
+        const currentStored = localStorage.getItem(currentKey);
+        if (currentStored) {
+            const result = parseStoredState(currentStored, currentKey);
+            if (result) {
+                setRecoveredState(result.data);
+                setRecoveredBoostCategory(result.category);
+                setHasRecoveredState(true);
                 return;
             }
+        }
 
-            // Check expiration
-            const age = Date.now() - parsed.timestamp;
-            if (age > MAX_AGE_MS) {
-                console.log('[useBoostCMSAutosave] Saved state expired, removing');
-                localStorage.removeItem(storageKey);
-                return;
+        // If no current category match, check all other categories for any saved state
+        for (const category of ALL_BOOST_CATEGORIES) {
+            const key = `${STORAGE_KEY}_${category}`;
+            if (key === currentKey) continue;
+
+            const stored = localStorage.getItem(key);
+            if (stored) {
+                const result = parseStoredState(stored, key);
+                if (result) {
+                    setRecoveredState(result.data);
+                    setRecoveredBoostCategory(result.category);
+                    setHasRecoveredState(true);
+                    return;
+                }
             }
+        }
 
-            // Validate the state has meaningful content
-            const hasContent =
-                parsed.data?.basicInfo?.name ||
-                parsed.data?.basicInfo?.description ||
-                parsed.data?.appearance?.badgeThumbnail;
-
-            if (hasContent) {
-                setRecoveredState(parsed.data);
+        const baseStored = localStorage.getItem(STORAGE_KEY);
+        if (baseStored) {
+            const result = parseStoredState(baseStored, STORAGE_KEY);
+            if (result) {
+                setRecoveredState(result.data);
+                setRecoveredBoostCategory(result.category);
                 setHasRecoveredState(true);
             }
-        } catch (err) {
-            console.warn('[useBoostCMSAutosave] Failed to load saved state:', err);
         }
-    }, [enabled, getStorageKey]);
+    }, [enabled, getStorageKey, parseStoredState]);
 
     // Save state to localStorage (debounced)
     const saveToLocal = useCallback(
@@ -124,6 +187,9 @@ export function useBoostCMSAutosave({
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
             }
+
+            // Mark as having unsaved changes immediately
+            setHasUnsavedChanges(true);
 
             saveTimeoutRef.current = setTimeout(() => {
                 try {
@@ -152,21 +218,33 @@ export function useBoostCMSAutosave({
         try {
             const storageKey = getStorageKey();
             localStorage.removeItem(storageKey);
-            // Also clear the current state ref so visibility/beforeunload handlers don't re-save
             currentStateRef.current = null;
+            setHasUnsavedChanges(false);
         } catch (err) {
             console.warn('[useBoostCMSAutosave] Failed to clear local save:', err);
         }
     }, [getStorageKey]);
 
-    // Clear recovered state (user chose to ignore it)
     const clearRecoveredState = useCallback(() => {
         setRecoveredState(null);
+        setRecoveredBoostCategory(null);
         setHasRecoveredState(false);
-        clearLocalSave();
-    }, [clearLocalSave]);
 
-    // Trigger autosave to server as draft
+        if (typeof window !== 'undefined') {
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+                for (const category of ALL_BOOST_CATEGORIES) {
+                    localStorage.removeItem(`${STORAGE_KEY}_${category}`);
+                }
+            } catch (err) {
+                console.warn('[useBoostCMSAutosave] Failed to clear all saved states:', err);
+            }
+        }
+
+        currentStateRef.current = null;
+        setHasUnsavedChanges(false);
+    }, []);
+
     const triggerAutosaveDraft = useCallback(
         async (state: BoostCMSState): Promise<string | null> => {
             // Prevent duplicate autosaves
@@ -224,13 +302,11 @@ export function useBoostCMSAutosave({
         [createBoost, clearLocalSave, queryClient, presentToast, isAutosaving]
     );
 
-    // Handle visibility change (tab switch, app background)
     useEffect(() => {
         if (!enabled || typeof window === 'undefined' || typeof document === 'undefined') return;
 
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'hidden' && currentStateRef.current) {
-                // Force immediate local save when going to background
                 try {
                     const wrapper: AutosaveStorageWrapper = {
                         version: STORAGE_VERSION,
@@ -255,7 +331,7 @@ export function useBoostCMSAutosave({
         };
     }, [enabled, boostCategoryType, boostSubCategoryType, getStorageKey]);
 
-    // Handle beforeunload (browser close/refresh/navigation)
+    // Handle browser close/refresh/navigation
     useEffect(() => {
         if (!enabled || typeof window === 'undefined') return;
 
@@ -290,7 +366,6 @@ export function useBoostCMSAutosave({
         };
     }, [enabled, boostCategoryType, boostSubCategoryType, getStorageKey]);
 
-    // Cleanup timeout on unmount
     useEffect(() => {
         return () => {
             if (saveTimeoutRef.current) {
@@ -302,11 +377,13 @@ export function useBoostCMSAutosave({
     return {
         hasRecoveredState,
         recoveredState,
+        recoveredBoostCategory,
         clearRecoveredState,
         saveToLocal,
         clearLocalSave,
         triggerAutosaveDraft,
         isAutosaving,
+        hasUnsavedChanges,
     };
 }
 
