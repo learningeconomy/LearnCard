@@ -172,6 +172,8 @@ functions:
             - httpApi: OPTIONS /users/{params+}
             - httpApi: GET /manager/{params+}
             - httpApi: OPTIONS /manager/{params+}
+            - httpApi: GET /app/{params+}
+            - httpApi: OPTIONS /app/{params+}
             - httpApi: GET /.well-known/did.json
             - httpApi: OPTIONS /.well-known/did.json
         url:
