@@ -144,7 +144,7 @@ export const AiSessionPlan: React.FC = () => {
 
             <div className="h-[1px] mt-6 mb-4 bg-grayscale-100" />
 
-            {!isStreaming && (
+            {!isStreaming && !loading && (
                 <h2 className="text-[29px] font-bold text-grayscale-900">Ready to Get Started</h2>
             )}
         </div>
