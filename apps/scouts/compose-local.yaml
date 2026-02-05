@@ -34,6 +34,9 @@ services:
 
     watcher:
         image: learncard-monorepo-local
+        build:
+            context: ../../
+            dockerfile: Dockerfile.monorepo
         container_name: 'lcn-watcher'
         # user: '${UID:-1000}:${GID:-1000}'
         command:
