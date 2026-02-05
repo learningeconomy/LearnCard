@@ -63,12 +63,12 @@ class TestStorageResolve200Response(unittest.TestCase):
                 tag = '',
                 aad = '',
                 recipients = [
-                    openapi_client.models.boost_send_boost_request_credential_any_of_1_recipients_inner.boost_sendBoost_request_credential_anyOf_1_recipients_inner(
-                        header = openapi_client.models.boost_send_boost_request_credential_any_of_1_recipients_inner_header.boost_sendBoost_request_credential_anyOf_1_recipients_inner_header(
+                    openapi_client.models.storage_resolve_200_response_any_of_any_of_any_of_1_recipients_inner.storage_resolve_200_response_anyOf_anyOf_anyOf_1_recipients_inner(
+                        header = openapi_client.models.storage_resolve_200_response_any_of_any_of_any_of_1_recipients_inner_header.storage_resolve_200_response_anyOf_anyOf_anyOf_1_recipients_inner_header(
                             alg = '', 
                             iv = '', 
                             tag = '', 
-                            epk = openapi_client.models.boost_send_boost_request_credential_any_of_1_recipients_inner_header_epk.boost_sendBoost_request_credential_anyOf_1_recipients_inner_header_epk(
+                            epk = openapi_client.models.storage_resolve_200_response_any_of_any_of_any_of_1_recipients_inner_header_epk.storage_resolve_200_response_anyOf_anyOf_anyOf_1_recipients_inner_header_epk(
                                 kty = '', 
                                 crv = '', 
                                 x = '', 

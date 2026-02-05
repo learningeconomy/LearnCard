@@ -21,13 +21,21 @@ const useLogout = () => {
     const { presentToast } = useToast();
     const queryClient = useQueryClient();
     const { newModal, closeModal } = useModal({
-        desktop: ModalTypes.Center,
-        mobile: ModalTypes.Center,
+        desktop: ModalTypes.FullScreen,
+        mobile: ModalTypes.FullScreen,
     });
 
     const handleLogout = async (branding: BrandingEnum) => {
         setIsLoggingOut(true);
-        newModal(<LoggingOutModal />);
+        newModal(
+            <div className="flex flex-col items-center justify-center h-full w-full p-5">
+                <LoggingOutModal />
+            </div>,
+            {
+                hideDimmer: true,
+                className: 'full-screen-modal-transparent-bg',
+            }
+        );
         const typeOfLogin = authStore?.get?.typeOfLogin();
         const nativeSocialLogins = [
             SocialLoginTypes.apple,
@@ -53,7 +61,7 @@ const useLogout = () => {
                 }
 
                 await firebaseAuth.signOut(); // sign out of web layer
-                if (nativeSocialLogins.includes(typeOfLogin) && Capacitor.isNativePlatform()) {
+                if (typeOfLogin && nativeSocialLogins.includes(typeOfLogin) && Capacitor.isNativePlatform()) {
                     try {
                         await FirebaseAuthentication?.signOut?.();
                     } catch (e) {

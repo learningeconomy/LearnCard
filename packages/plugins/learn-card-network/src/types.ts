@@ -161,6 +161,7 @@ export type LearnCardNetworkPluginMethods = {
         }
     ) => Promise<LCNProfile[]>;
     connectWith: (profileId: string) => Promise<boolean>;
+    connectWithExpiredInvite: (profileId: string) => Promise<boolean>;
     connectWithInvite: (profileId: string, challenge: string) => Promise<boolean>;
     cancelConnectionRequest: (profileId: string) => Promise<boolean>;
     disconnectWith: (profileId: string) => Promise<boolean>;
@@ -672,13 +673,22 @@ export type LearnCardNetworkPluginMethods = {
     countIntegrations: (options?: { query?: LCNIntegrationQueryType }) => Promise<number>;
     updateIntegration: (id: string, updates: LCNIntegrationUpdateType) => Promise<boolean>;
     deleteIntegration: (id: string) => Promise<boolean>;
-    associateIntegrationWithSigningAuthority: (
-        integrationId: string,
+    associateListingWithSigningAuthority: (
+        listingId: string,
         endpoint: string,
         name: string,
         did: string,
         isPrimary?: boolean
     ) => Promise<boolean>;
+    getListingSigningAuthority: (listingId: string) => Promise<
+        | {
+              endpoint: string;
+              name: string;
+              did: string;
+              isPrimary: boolean;
+          }
+        | undefined
+    >;
 
     // App Store
     createAppStoreListing: (
@@ -705,6 +715,7 @@ export type LearnCardNetworkPluginMethods = {
         promotionLevel?: PromotionLevel;
     }) => Promise<PaginatedAppStoreListings>;
     getPublicAppStoreListing: (listingId: string) => Promise<AppStoreListing | undefined>;
+    getPublicAppStoreListingBySlug: (slug: string) => Promise<AppStoreListing | undefined>;
     getAppStoreListingInstallCount: (listingId: string) => Promise<number>;
 
     installApp: (listingId: string) => Promise<boolean>;
@@ -728,7 +739,9 @@ export type LearnCardNetworkPluginMethods = {
     // App Store Boost Management
     addBoostToApp: (listingId: string, boostUri: string, templateAlias: string) => Promise<boolean>;
     removeBoostFromApp: (listingId: string, templateAlias: string) => Promise<boolean>;
-    getAppBoosts: (listingId: string) => Promise<Array<{ templateAlias: string; boostUri: string }>>;
+    getAppBoosts: (
+        listingId: string
+    ) => Promise<Array<{ templateAlias: string; boostUri: string }>>;
 
     // App Events (discriminated union)
     sendAppEvent: (listingId: string, event: AppEvent) => Promise<AppEventResponse>;

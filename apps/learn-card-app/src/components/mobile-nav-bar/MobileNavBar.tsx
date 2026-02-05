@@ -122,6 +122,7 @@ const MobileNavBar: React.FC = () => {
                             if (link.id === MobileNavBarLinks.wallet) {
                                 return (
                                     <IonTabButton
+                                        key={link.id}
                                         tab={link.id}
                                         href={link.path}
                                         className="mobile-nav-left-button pl-[5px]"
@@ -159,6 +160,7 @@ const MobileNavBar: React.FC = () => {
                             if (link.id === MobileNavBarLinks.plus) {
                                 return (
                                     <IonTabButton
+                                        key={link.id}
                                         tab={link.id}
                                         onClick={handleBoostButton}
                                         className="mobile-nav-boost-button"
@@ -178,6 +180,7 @@ const MobileNavBar: React.FC = () => {
                             if (link.id === MobileNavBarLinks.launchpad) {
                                 return (
                                     <IonTabButton
+                                        key={link.id}
                                         tab={link.id}
                                         href={link.path}
                                         className="mobile-nav-right-button relative pl-[10px] !rounded-[16px]"
@@ -199,7 +202,7 @@ const MobileNavBar: React.FC = () => {
                                 );
                             }
 
-                            return <></>;
+                            return null;
                         })}
                     </IonTabBar>
                 ) : (

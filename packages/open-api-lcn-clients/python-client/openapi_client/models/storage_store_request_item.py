@@ -19,13 +19,13 @@ import pprint
 import re  # noqa: F401
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
 from typing import Optional
-from openapi_client.models.boost_send_boost_request_credential_any_of1 import BoostSendBoostRequestCredentialAnyOf1
+from openapi_client.models.credential_send_credential_request_credential_any_of1 import CredentialSendCredentialRequestCredentialAnyOf1
 from openapi_client.models.storage_store_request_item_any_of import StorageStoreRequestItemAnyOf
 from typing import Union, Any, List, Set, TYPE_CHECKING, Optional, Dict
 from typing_extensions import Literal, Self
 from pydantic import Field
 
-STORAGESTOREREQUESTITEM_ANY_OF_SCHEMAS = ["BoostSendBoostRequestCredentialAnyOf1", "StorageStoreRequestItemAnyOf"]
+STORAGESTOREREQUESTITEM_ANY_OF_SCHEMAS = ["CredentialSendCredentialRequestCredentialAnyOf1", "StorageStoreRequestItemAnyOf"]
 
 class StorageStoreRequestItem(BaseModel):
     """
@@ -34,13 +34,13 @@ class StorageStoreRequestItem(BaseModel):
 
     # data type: StorageStoreRequestItemAnyOf
     anyof_schema_1_validator: Optional[StorageStoreRequestItemAnyOf] = None
-    # data type: BoostSendBoostRequestCredentialAnyOf1
-    anyof_schema_2_validator: Optional[BoostSendBoostRequestCredentialAnyOf1] = None
+    # data type: CredentialSendCredentialRequestCredentialAnyOf1
+    anyof_schema_2_validator: Optional[CredentialSendCredentialRequestCredentialAnyOf1] = None
     if TYPE_CHECKING:
-        actual_instance: Optional[Union[BoostSendBoostRequestCredentialAnyOf1, StorageStoreRequestItemAnyOf]] = None
+        actual_instance: Optional[Union[CredentialSendCredentialRequestCredentialAnyOf1, StorageStoreRequestItemAnyOf]] = None
     else:
         actual_instance: Any = None
-    any_of_schemas: Set[str] = { "BoostSendBoostRequestCredentialAnyOf1", "StorageStoreRequestItemAnyOf" }
+    any_of_schemas: Set[str] = { "CredentialSendCredentialRequestCredentialAnyOf1", "StorageStoreRequestItemAnyOf" }
 
     model_config = {
         "validate_assignment": True,
@@ -67,15 +67,15 @@ class StorageStoreRequestItem(BaseModel):
         else:
             return v
 
-        # validate data type: BoostSendBoostRequestCredentialAnyOf1
-        if not isinstance(v, BoostSendBoostRequestCredentialAnyOf1):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `BoostSendBoostRequestCredentialAnyOf1`")
+        # validate data type: CredentialSendCredentialRequestCredentialAnyOf1
+        if not isinstance(v, CredentialSendCredentialRequestCredentialAnyOf1):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `CredentialSendCredentialRequestCredentialAnyOf1`")
         else:
             return v
 
         if error_messages:
             # no match
-            raise ValueError("No match found when setting the actual_instance in StorageStoreRequestItem with anyOf schemas: BoostSendBoostRequestCredentialAnyOf1, StorageStoreRequestItemAnyOf. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting the actual_instance in StorageStoreRequestItem with anyOf schemas: CredentialSendCredentialRequestCredentialAnyOf1, StorageStoreRequestItemAnyOf. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -94,16 +94,16 @@ class StorageStoreRequestItem(BaseModel):
             return instance
         except (ValidationError, ValueError) as e:
              error_messages.append(str(e))
-        # anyof_schema_2_validator: Optional[BoostSendBoostRequestCredentialAnyOf1] = None
+        # anyof_schema_2_validator: Optional[CredentialSendCredentialRequestCredentialAnyOf1] = None
         try:
-            instance.actual_instance = BoostSendBoostRequestCredentialAnyOf1.from_json(json_str)
+            instance.actual_instance = CredentialSendCredentialRequestCredentialAnyOf1.from_json(json_str)
             return instance
         except (ValidationError, ValueError) as e:
              error_messages.append(str(e))
 
         if error_messages:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into StorageStoreRequestItem with anyOf schemas: BoostSendBoostRequestCredentialAnyOf1, StorageStoreRequestItemAnyOf. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into StorageStoreRequestItem with anyOf schemas: CredentialSendCredentialRequestCredentialAnyOf1, StorageStoreRequestItemAnyOf. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -117,7 +117,7 @@ class StorageStoreRequestItem(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], BoostSendBoostRequestCredentialAnyOf1, StorageStoreRequestItemAnyOf]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], CredentialSendCredentialRequestCredentialAnyOf1, StorageStoreRequestItemAnyOf]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

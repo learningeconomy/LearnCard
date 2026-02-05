@@ -5,14 +5,21 @@ import { base64url } from 'multiformats/bases/base64';
 import { base58btc } from 'multiformats/bases/base58';
 
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
-import { getDidWeb, getManagedDidWeb } from '@helpers/did.helpers';
+import { getAppDidWeb, getDidWeb, getManagedDidWeb } from '@helpers/did.helpers';
+import { isValidAppSlug } from '@helpers/slug.helpers';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
-import { getSigningAuthoritiesForUser } from '@accesslayer/signing-authority/relationships/read';
+import {
+    getPrimarySigningAuthorityForListing,
+    getSigningAuthoritiesForUser,
+} from '@accesslayer/signing-authority/relationships/read';
+import { readAppStoreListingBySlug } from '@accesslayer/app-store-listing/read';
 import {
     getDidDocForProfile,
     getDidDocForProfileManager,
+    getDidDocForApp,
     setDidDocForProfile,
     setDidDocForProfileManager,
+    setDidDocForApp,
 } from '@cache/did-docs';
 import { DidDocument, JWK } from '@learncard/types';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
@@ -26,6 +33,14 @@ const encodeKey = (key: Uint8Array) => {
     bytes[1] = 0x01;
     bytes.set(key, 2);
     return base58btc.encode(bytes);
+};
+
+// Validate manager ID to prevent injection attacks
+const isValidManagerId = (id: string): boolean => {
+    // Manager IDs should be valid UUIDs
+    const uuidPattern =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return typeof id === 'string' && uuidPattern.test(id);
 };
 
 // Extract Ed25519 public key bytes and a JWK from a verification method that may
@@ -232,6 +247,93 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         return reply.send(finalDoc);
     });
 
+    fastify.options('/app/:slug/did.json', async (_request, reply) => {
+        reply.status(200);
+        reply.header('Access-Control-Allow-Origin', '*');
+        reply.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        reply.header('Access-Control-Allow-Headers', '*');
+        return reply.send();
+    });
+
+    fastify.get('/app/:slug/did.json', async (request, reply) => {
+        const { slug } = request.params as { slug: string };
+
+        // Validate slug to prevent injection attacks
+        if (!isValidAppSlug(slug)) {
+            return reply.status(400).send({ error: 'Invalid app slug format' });
+        }
+
+        const cachedResult = await getDidDocForApp(slug);
+
+        if (cachedResult) return reply.send(cachedResult);
+
+        await _sodium.ready;
+        const sodium = _sodium;
+
+        const learnCard = await getEmptyLearnCard();
+
+        const listing = await readAppStoreListingBySlug(slug);
+        if (!listing) return reply.status(404).send();
+
+        const signingAuthority = await getPrimarySigningAuthorityForListing(listing);
+        if (!signingAuthority) return reply.status(404).send();
+
+        const authorityDid = signingAuthority.relationship.did;
+        const authorityName = signingAuthority.relationship.name;
+
+        const domainName: string = request.hostname || (request as any).requestContext.domainName;
+        const _domain =
+            !domainName || process.env.IS_OFFLINE
+                ? `localhost%3A${process.env.PORT || 3000}`
+                : domainName.replace(/:/g, '%3A');
+
+        const domain = process.env.DOMAIN_NAME || _domain;
+        const did = getAppDidWeb(domain, slug);
+
+        const didDoc = await learnCard.invoke.resolveDid(authorityDid);
+        const key = authorityDid.split(':')[2];
+
+        const replacedDoc = JSON.parse(
+            JSON.stringify(didDoc)
+                .replaceAll(authorityDid, did)
+                .replaceAll(`#${key}`, `#${authorityName}`)
+        );
+
+        if (replacedDoc?.verificationMethod?.[0]) {
+            replacedDoc.verificationMethod[0].controller = `${did}#${authorityName}`;
+        }
+
+        let finalDoc: DidDocument = { ...replacedDoc, controller: authorityDid };
+
+        try {
+            const vm0 = (finalDoc.verificationMethod?.[0] as any) || {};
+            const { bytes: ed25519Bytes } = extractEd25519FromVerificationMethod(vm0);
+            const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
+            const primaryKAId = `${did}#${encodeKey(x25519PublicKeyBytes)}`;
+            const primaryKA = {
+                id: primaryKAId,
+                type: 'X25519KeyAgreementKey2019',
+                controller: did,
+                publicKeyBase58: base58btc.encode(x25519PublicKeyBytes).slice(1),
+            } as const;
+
+            const existingKA = ((finalDoc as any).keyAgreement as any[]) || [];
+            (finalDoc as any).keyAgreement = [
+                primaryKA,
+                ...existingKA.filter(ka => ka?.id !== primaryKAId),
+            ];
+        } catch (e) {
+            request.log?.warn(
+                { err: e },
+                'Failed to set 2019 keyAgreement on app did:web document'
+            );
+        }
+
+        await setDidDocForApp(slug, finalDoc);
+
+        return reply.send(finalDoc);
+    });
+
     fastify.options('/manager/:id/did.json', async (_request, reply) => {
         reply.status(200);
         reply.header('Access-Control-Allow-Origin', '*');
@@ -242,6 +344,11 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
     fastify.get('/manager/:id/did.json', async (request, reply) => {
         const { id } = request.params as { id: string };
+
+        // Validate manager ID to prevent injection attacks
+        if (!isValidManagerId(id)) {
+            return reply.status(400).send({ error: 'Invalid manager ID format' });
+        }
 
         const cachedResult = await getDidDocForProfileManager(id);
 

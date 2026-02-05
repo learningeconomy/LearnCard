@@ -164,12 +164,13 @@ export const getLCAPlugin = async (
                         meta,
                     });
                 },
-                createSigningAuthority: async (_learnCard, name) => {
+                createSigningAuthority: async (_learnCard, name, ownerDid) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
 
                     return client.signingAuthority.createSigningAuthority.mutate({
                         name,
+                        ownerDid,
                     });
                 },
                 getSigningAuthorities: async _learnCard => {

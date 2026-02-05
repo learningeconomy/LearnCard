@@ -10,6 +10,7 @@ export const createAppStoreListing = async (
 ): Promise<AppStoreListingType> => {
     const params = flattenObject({
         listing_id: input.listing_id ?? uuid(),
+        slug: input.slug,
         display_name: input.display_name,
         tagline: input.tagline,
         full_description: input.full_description,

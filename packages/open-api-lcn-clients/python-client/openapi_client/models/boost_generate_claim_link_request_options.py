@@ -69,6 +69,16 @@ class BoostGenerateClaimLinkRequestOptions(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if ttl_seconds (nullable) is None
+        # and model_fields_set contains the field
+        if self.ttl_seconds is None and "ttl_seconds" in self.model_fields_set:
+            _dict['ttlSeconds'] = None
+
+        # set to None if total_uses (nullable) is None
+        # and model_fields_set contains the field
+        if self.total_uses is None and "total_uses" in self.model_fields_set:
+            _dict['totalUses'] = None
+
         return _dict
 
     @classmethod

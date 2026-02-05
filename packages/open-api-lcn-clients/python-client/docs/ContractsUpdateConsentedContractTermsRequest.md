@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **uri** | **str** |  | 
-**terms** | [**ContractsConsentToContractRequestTerms**](ContractsConsentToContractRequestTerms.md) |  | 
+**terms** | [**ContractsUpdateConsentedContractTermsRequestTerms**](ContractsUpdateConsentedContractTermsRequestTerms.md) |  | 
 **expires_at** | **str** |  | [optional] 
 **one_time** | **bool** |  | [optional] 
 

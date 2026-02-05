@@ -14,6 +14,7 @@ import {
     getCategoryLightColor,
     getCategoryDarkColor,
 } from '../../helpers/credential.helpers';
+import { isAppDidWeb } from '@learncard/helpers';
 
 import { VC, Profile } from '@learncard/types';
 import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
@@ -110,6 +111,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
     const issuerDid =
         typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
+    const isAppIssuerDid = isAppDidWeb(issuerDid);
 
     let verifierState: VerifierState;
     if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {
@@ -124,9 +126,13 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
         } else if (knownDIDRegistry?.source === 'untrusted') {
             verifierState = VERIFIER_STATES.untrustedVerifier;
         } else if (knownDIDRegistry?.source === 'unknown') {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuerDid
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         } else {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuerDid
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         }
     }
     const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
@@ -134,7 +140,8 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     const issueeImageExists = issueeImage || subjectImageComponent;
 
     const hideAwardedTo =
-        hideAwardedToProp ?? (issueeName?.includes('did:key') || issueeName?.includes('did:example:123'));
+        hideAwardedToProp ??
+        (issueeName?.includes('did:key') || issueeName?.includes('did:example:123'));
 
     return (
         <section
@@ -222,10 +229,10 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         {issuerName}
                     </span>
 
-                        <VerifierStateBadgeAndText
-                            verifierState={verifierState}
-                            unknownVerifierTitle={unknownVerifierTitle}
-                        />
+                    <VerifierStateBadgeAndText
+                        verifierState={verifierState}
+                        unknownVerifierTitle={unknownVerifierTitle}
+                    />
                 </div>
                 {customBodyContentSlot && customBodyContentSlot}
                 <div className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}>

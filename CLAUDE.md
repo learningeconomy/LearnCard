@@ -968,3 +968,4 @@ LIMIT 20;
 ```
 
 
+Please read AGENTS.md

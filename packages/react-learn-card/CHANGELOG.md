@@ -1,5 +1,22 @@
 # @welibraryos/react-learn-card
 
+## 2.9.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.1
+
+## 2.9.9
+
+### Patch Changes
+
+-   [#969](https://github.com/learningeconomy/LearnCard/pull/969) [`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Resolve app DIDs in credential UI and show app issuer details.
+
+    Credentials issued by App Store listings now map app did:web values to
+    app names/icons (with a link back to the app), and display the "App Issuer"
+    verification state where appropriate.
+
 ## 2.9.8
 
 ### Patch Changes

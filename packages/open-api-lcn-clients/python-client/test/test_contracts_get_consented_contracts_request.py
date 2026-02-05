@@ -45,7 +45,7 @@ class TestContractsGetConsentedContractsRequest(unittest.TestCase):
                             share_all = True, 
                             sharing = True, 
                             categories = {
-                                'key' : openapi_client.models.storage_resolve_200_response_any_of_1_read_credentials_categories_value.storage_resolve_200_response_anyOf_1_read_credentials_categories_value(
+                                'key' : openapi_client.models.contracts_get_consented_contracts_request_query_read_credentials_categories_value.contracts_getConsentedContracts_request_query_read_credentials_categories_value(
                                     sharing = True, 
                                     shared = [
                                         ''

@@ -29,7 +29,8 @@ class StorageResolve200ResponseAnyOf1Read(BaseModel):
     """ # noqa: E501
     anonymize: Optional[StrictBool] = None
     credentials: StorageResolve200ResponseAnyOf1ReadCredentials
-    personal: Dict[str, StrictStr]
+    personal: Dict[str, Optional[StrictStr]]
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["anonymize", "credentials", "personal"]
 
     model_config = ConfigDict(
@@ -62,8 +63,10 @@ class StorageResolve200ResponseAnyOf1Read(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -74,6 +77,11 @@ class StorageResolve200ResponseAnyOf1Read(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of credentials
         if self.credentials:
             _dict['credentials'] = self.credentials.to_dict()
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
         return _dict
 
     @classmethod
@@ -90,6 +98,11 @@ class StorageResolve200ResponseAnyOf1Read(BaseModel):
             "credentials": StorageResolve200ResponseAnyOf1ReadCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
             "personal": obj.get("personal")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

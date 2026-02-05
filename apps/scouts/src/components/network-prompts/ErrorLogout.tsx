@@ -27,7 +27,6 @@ const ErrorLogout: React.FC = () => {
                             Logout
                         </button>
                     </div>
-                    <IonLoading mode="ios" message="Logging out..." isOpen={isLoggingOut} />
                 </div>
             </IonRow>
         </div>
