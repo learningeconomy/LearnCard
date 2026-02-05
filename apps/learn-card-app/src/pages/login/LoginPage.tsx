@@ -61,7 +61,7 @@ export const LoginContent: React.FC = () => {
     const [activeLoginType, setActiveLoginType] = useState<LoginTypesEnum>(LoginTypesEnum.email);
 
     const { mutateAsync: generatePinUpdateToken } = useGeneratePinUpdateToken();
-    const { data: preferences, refetch: refetchPreferences } = useGetPreferencesForDid();
+    const { data: preferences, refetch: refetchPreferences } = useGetPreferencesForDid(isLoggedIn);
 
     const fetchPreferences = useCallback(async () => {
         try {
