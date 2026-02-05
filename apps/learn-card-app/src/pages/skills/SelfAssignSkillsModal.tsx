@@ -8,7 +8,6 @@ import {
     conditionalPluralize,
     useManageSelfAssignedSkillsBoost,
     useGetSelfAssignedSkillsBoost,
-    useGetBoost,
     useGetBoostSkills,
 } from 'learn-card-base';
 
@@ -117,7 +116,6 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
 
     const { mutateAsync: createOrUpdateSkills } = useManageSelfAssignedSkillsBoost();
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
-    const { data: sasBoost } = useGetBoost(sasBoostData?.uri);
     const { data: sasBoostSkills, isLoading: skillsLoading } = useGetBoostSkills(sasBoostData?.uri);
 
     useEffect(() => {
@@ -151,6 +149,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
 
     const isAdd = step === Step.Add;
     const isReview = step === Step.Review;
+    const noResults = !!searchInput && suggestedSkills.length === 0 && !searchLoading;
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden">
@@ -163,7 +162,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                 </div>
             </div>
 
-            <section className="h-full flex flex-col gap-[10px] pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0">
+            <section className="h-full flex flex-col gap-[20px] pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0">
                 <div className="relative">
                     <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                         <Search className="text-grayscale-900 w-[24px] h-[24px]" />
@@ -190,13 +189,22 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                     )}
                 </div>
 
-                {isAdd ? (
-                    <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins border-solid border-t-[1px] border-grayscale-200">
-                        Suggested Skills
-                    </p>
-                ) : (
-                    <p className="py-[10px] text-grayscale-800 text-[17px] font-poppins">
-                        {conditionalPluralize(selectedSkills.length, 'Selected Skill')}
+                {!noResults && (
+                    <>
+                        {isAdd ? (
+                            <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
+                                Suggested Skills
+                            </p>
+                        ) : (
+                            <p className="py-[10px] text-grayscale-800 text-[17px] font-poppins">
+                                {conditionalPluralize(selectedSkills.length, 'Selected Skill')}
+                            </p>
+                        )}
+                    </>
+                )}
+                {noResults && (
+                    <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
+                        No results or suggestions
                     </p>
                 )}
 
@@ -232,6 +240,31 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                             );
                         })}
                     </>
+                )}
+
+                {searchInput && !searchLoading && (
+                    <div className="flex flex-col gap-[20px] w-full pt-[20px] border-t-[1px] border-grayscale-200 border-solid">
+                        <div className="flex flex-col items-start gap-[10px] pb-[10px]">
+                            <p className="text-grayscale-900 text-[17px] font-[600] font-poppins">
+                                Didn't find what you're looking for?
+                            </p>
+                            <p className="font-poppins text-[17px] text-grayscale-700">
+                                We are always adding new skills and your suggestions help!
+                            </p>
+                        </div>
+
+                        <p className="text-grayscale-900 font-poppins text-[17px] font-[600] italic text-center">
+                            {searchInput}
+                        </p>
+
+                        <button
+                            className="px-[20px] py-[7px] rounded-[30px] bg-indigo-500 text-white text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px]"
+                            onClick={() => {
+                            }}
+                        >
+                            Suggest Skill
+                        </button>
+                    </div>
                 )}
             </section>
 

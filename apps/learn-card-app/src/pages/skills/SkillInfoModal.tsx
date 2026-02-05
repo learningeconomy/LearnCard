@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 
 import { useModal } from 'learn-card-base';
 
+import RelatedSkills from './RelatedSkills';
+import SkillIssuances from './SkillIssuances';
+import MainSkillInfoBox from './MainSkillInfoBox';
+import SkillFrameworkInfoBox from './SkillFrameworkInfoBox';
 import { IonFooter } from '@ionic/react';
-import SkillDetails from './SkillDetails';
 
 import { VC } from '@learncard/types';
-import MainSkillInfoBox from './MainSkillInfoBox';
-import SkillIssuances from './SkillIssuances';
-import SkillFrameworkInfoBox from './SkillFrameworkInfoBox';
-import RelatedSkills from './RelatedSkills';
 
 type SkillInfoModalProps = {
     frameworkId: string;
