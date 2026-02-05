@@ -6,7 +6,7 @@ import type { TRPCError } from '@trpc/server';
  * Error codes that are expected/non-critical and should not be sent to Sentry.
  * These typically represent user errors or expected authentication failures.
  */
-const IGNORED_ERROR_CODES = ['BAD_REQUEST', 'NOT_FOUND', 'UNAUTHORIZED', 'FORBIDDEN'];
+const IGNORED_ERROR_CODES = ['BAD_REQUEST', 'NOT_FOUND', 'FORBIDDEN'];
 
 /**
  * Determines if an error should be reported to Sentry based on its code.
@@ -21,7 +21,7 @@ export const shouldReportError = (errorCode: string): boolean => {
  */
 export const handleTrpcError = ({
     error,
-    ctx: _ctx,
+    ctx,
     path,
 }: {
     error: TRPCError;
@@ -31,10 +31,16 @@ export const handleTrpcError = ({
     error.stack = error.stack?.replace('Mr: ', '');
     error.name = error.message;
 
+    // Check if this is an invalid challenge error (expected, should not report)
+    const isInvalidChallenge =
+        error.code === 'UNAUTHORIZED' &&
+        !(ctx as { user?: { isChallengeValid?: boolean } })?.user?.isChallengeValid;
+
     // Only capture unexpected/critical errors
-    if (shouldReportError(error.code)) {
+    // Filter out expected errors (BAD_REQUEST, NOT_FOUND, FORBIDDEN) and invalid challenge attempts
+    if (shouldReportError(error.code) && !isInvalidChallenge) {
         Sentry.captureException(error, {
-            extra: { path },
+            extra: { ctx, path },
             level: error.code === 'INTERNAL_SERVER_ERROR' ? 'error' : 'warning',
         });
     }
