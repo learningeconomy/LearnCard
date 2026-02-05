@@ -615,6 +615,18 @@ MATCH (c:Credential)-[r:CREDENTIAL_RECEIVED]->(p:Profile {profileId: 'some-id'})
 RETURN c.id, r.status, r.revokedAt
 ```
 
+## ScoutPass Permissions & Workarounds
+
+### National Admin Troop View Access
+**Problem**: National admins saw "ID Revoked" or "Pending Acceptance" when viewing troops they managed but didn't own. This was because `useTroopIDStatus` checks if the *current user* is the recipient.
+**Workaround**: `TroopPage.tsx` uses `hasParentAdminAccess` to bypass the `isRevokedOrPending` check. If a user has `canEditChildren` permissions on the parent network boost, they see full troop details regardless of their personal credential status.
+
+### Network Admin Scout ID Issuance
+**Requirement**: Network admins (Directors) must be able to issue Scout IDs for troops under their managed networks.
+**Implementation**:
+- `troops.helpers.ts`: `canIssueChildren` and `canRevokeChildren` for `network` and `global` roles set to `'*'` (previously excluded `scoutId`).
+- `TroopListItemCard.tsx`: `handleSelectInviteModal` allows use of `scoutBoostUri` if `scoutPermissionsData?.canIssue` is true, enabling non-leaders with elevated permissions to invite scouts.
+
 ## Credential Storage Architecture
 
 Understanding where credentials are stored is crucial for debugging and feature development. LearnCard has **three storage layers**, each serving different purposes.
