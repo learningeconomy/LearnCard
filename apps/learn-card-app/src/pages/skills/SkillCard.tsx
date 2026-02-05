@@ -6,12 +6,19 @@ import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import SelfVerifiedCertIcon from 'learn-card-base/svgs/SelfVerifiedCertIcon';
 
-type SelfAssignedSkillCardProps = {
+type SkillCardProps = {
     skillId: string;
     frameworkId: string;
+    skillTextOverride?: string;
+    isSelfAssigned?: boolean;
 };
 
-const SelfAssignedSkillCard: React.FC<SelfAssignedSkillCardProps> = ({ skillId, frameworkId }) => {
+const SkillCard: React.FC<SkillCardProps> = ({
+    skillId,
+    frameworkId,
+    skillTextOverride,
+    isSelfAssigned,
+}) => {
     const { data: skillData } = useGetSkill(frameworkId, skillId);
 
     return (
@@ -27,9 +34,12 @@ const SelfAssignedSkillCard: React.FC<SelfAssignedSkillCardProps> = ({ skillId, 
                     >
                         {skillData?.statement}
                     </p>
-                    <p className="font-[600] text-[12px] text-emerald-500 flex items-center gap-[3px]">
-                        <SelfVerifiedCertIcon className="w-[14px] h-[14px]" /> Self-Assigned
-                    </p>
+
+                    {isSelfAssigned && (
+                        <p className="font-[600] text-[12px] text-emerald-500 flex items-center gap-[3px]">
+                            <SelfVerifiedCertIcon className="w-[14px] h-[14px]" /> Self-Assigned
+                        </p>
+                    )}
 
                     <div
                         className={`px-[10px] py-[2px] flex gap-[3px] items-center rounded-[5px] overflow-hidden bg-violet-100 absolute bottom-[20px]`}
@@ -39,7 +49,7 @@ const SelfAssignedSkillCard: React.FC<SelfAssignedSkillCardProps> = ({ skillId, 
                             version="filled"
                         />
                         <p className="text-[12px] text-grayscale-800 font-poppins font-[600]">
-                            1 Skill
+                            {skillTextOverride || '1 Skill'}
                         </p>
                     </div>
                 </div>
@@ -48,4 +58,4 @@ const SelfAssignedSkillCard: React.FC<SelfAssignedSkillCardProps> = ({ skillId, 
     );
 };
 
-export default SelfAssignedSkillCard;
+export default SkillCard;

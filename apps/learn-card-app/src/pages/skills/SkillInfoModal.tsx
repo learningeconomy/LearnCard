@@ -1,26 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-import {
-    useModal,
-    useGetSkill,
-    useGetSelfAssignedSkillsBoost,
-    useGetBoostSkills,
-} from 'learn-card-base';
+import { useModal } from 'learn-card-base';
 
 import { IonFooter } from '@ionic/react';
-import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SkillDetails from './SkillDetails';
-import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
-import SkillProficiencyBar, {
-    SkillLevel,
-    SkillProficiencyBarModeEnum,
-} from './SkillProficiencyBar';
 
-import {
-    ApiSkillNode,
-    convertApiSkillNodeToSkillTreeNode,
-} from '../../helpers/skillFramework.helpers';
 import { VC } from '@learncard/types';
+import MainSkillInfoBox from './MainSkillInfoBox';
+import SkillIssuances from './SkillIssuances';
+import SkillFrameworkInfoBox from './SkillFrameworkInfoBox';
+import RelatedSkills from './RelatedSkills';
 
 type SkillInfoModalProps = {
     frameworkId: string;
@@ -28,105 +17,59 @@ type SkillInfoModalProps = {
     credentials: VC[];
 };
 
+enum SkillTabEnum {
+    Skill = 'Skill',
+    Details = 'Details',
+}
+
 const SkillInfoModal: React.FC<SkillInfoModalProps> = ({ frameworkId, skillId, credentials }) => {
     const { closeModal } = useModal();
 
-    const { data: alignmentData } = useGetSkill(frameworkId ?? '', skillId ?? '');
-    const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
-    const { data: sasBoostSkills } = useGetBoostSkills(sasBoostData?.uri);
-
-    const alignment = alignmentData
-        ? convertApiSkillNodeToSkillTreeNode(alignmentData as ApiSkillNode)
-        : undefined;
-
-    const sasLevel = sasBoostSkills?.find(s => s.id === skillId)?.proficiencyLevel;
-
-    const isTier = false;
+    const [selectedTab, setSelectedTab] = useState<SkillTabEnum>(SkillTabEnum.Skill);
 
     return (
         <div
             onClick={e => e.stopPropagation()}
             className="flex flex-col gap-[10px] bg-transparent mx-auto cursor-auto min-w-[300px] h-full"
         >
-            <div className="h-full relative overflow-hidden bg-grayscale-200">
-                <div className="h-full overflow-y-auto pb-[150px] pt-[40px] px-[20px] flex flex-col items-center">
-                    <div className="my-auto flex flex-col items-center">
-                        {/* {showDetails ? (
-                        <SkillDetails frameworkId={frameworkId} skillId={skillId} />
-                    ) : ( */}
-                        <section className="bg-white rounded-[24px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 w-full">
-                            <div className="bg-grayscale-50 flex flex-col gap-[10px] items-center p-[20px] border-b-[1px] border-grayscale-200 border-solid">
-                                <div
-                                    className={`${
-                                        isTier
-                                            ? 'p-[5px] rounded-[10px] bg-grayscale-900 text-grayscale-100'
-                                            : ''
+            <div className="h-full relative overflow-hidden bg-grayscale-100">
+                <div className="h-full overflow-y-auto pb-[150px] pt-[40px] px-[20px]">
+                    <div className="w-full max-w-[600px] flex flex-col items-center gap-[25px] mx-auto">
+                        <div className="flex items-start w-full">
+                            {Object.keys(SkillTabEnum).map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setSelectedTab(tab as SkillTabEnum)}
+                                    className={`text-[14px] font-[500] font-poppins px-[14px] py-[7px] rounded-[5px] ${
+                                        tab === selectedTab
+                                            ? 'bg-grayscale-200 text-grayscale-900'
+                                            : 'text-grayscale-700'
                                     }`}
                                 >
-                                    <span className="text-[60px] h-[80px] w-[80px] leading-[80px] font-fluentEmoji cursor-none pointer-events-none select-none">
-                                        {alignment?.icon}
-                                    </span>
-                                </div>
+                                    {tab}
+                                </button>
+                            ))}
+                        </div>
 
-                                <h2 className="text-[20px] text-grayscale-900 font-poppins">
-                                    {alignment?.targetName}
-                                </h2>
-
-                                <div
-                                    className={`px-[10px] py-[2px] flex gap-[3px] items-center rounded-[5px] overflow-hidden ${
-                                        isTier ? '' : 'bg-violet-100'
-                                    }`}
-                                >
-                                    {isTier ? (
-                                        <>
-                                            <SkillsFrameworkIcon
-                                                className="w-[20px] h-[20px] text-grayscale-800"
-                                                color="currentColor"
-                                                version="outlined"
-                                            />
-                                            <p className="text-[12px] text-grayscale-800 font-poppins font-[600] uppercase">
-                                                Framework Tier
-                                            </p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <PuzzlePiece
-                                                className="w-[20px] h-[20px] text-grayscale-800"
-                                                version="filled"
-                                            />
-                                            <p className="text-[12px] text-grayscale-800 font-poppins font-[600] uppercase">
-                                                Skill
-                                            </p>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-
-                            {(alignment?.targetDescription ||
-                                (!isTier && alignment?.targetCode)) && (
-                                <div className="flex flex-col gap-[15px] p-[20px]">
-                                    {alignment?.targetDescription && (
-                                        <p className="text-grayscale-700 font-poppins text-[16px] tracking-[-0.25px]">
-                                            {alignment?.targetDescription}
-                                        </p>
-                                    )}
-                                    {Boolean(sasLevel) && sasLevel !== SkillLevel.Hidden && (
-                                        <div className="border-t-[1px] border-grayscale-200 pt-[20px] flex flex-col gap-[5px] items-start w-full">
-                                            <SkillProficiencyBar
-                                                proficiencyLevel={sasLevel}
-                                                mode={SkillProficiencyBarModeEnum.Display}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </section>
-                        {/* )} */}
-                        <SkillDetails
-                            frameworkId={frameworkId}
-                            skillId={skillId}
-                            credentials={credentials}
-                        />
+                        {selectedTab === SkillTabEnum.Skill && (
+                            <>
+                                <MainSkillInfoBox frameworkId={frameworkId} skillId={skillId} />
+                                <SkillIssuances
+                                    frameworkId={frameworkId}
+                                    skillId={skillId}
+                                    credentials={credentials}
+                                />
+                            </>
+                        )}
+                        {selectedTab === SkillTabEnum.Details && (
+                            <>
+                                <SkillFrameworkInfoBox
+                                    frameworkId={frameworkId}
+                                    skillId={skillId}
+                                />
+                                <RelatedSkills frameworkId={frameworkId} skillId={skillId} />
+                            </>
+                        )}
                     </div>
                 </div>
                 <IonFooter
@@ -140,13 +83,6 @@ const SkillInfoModal: React.FC<SkillInfoModalProps> = ({ frameworkId, skillId, c
                         >
                             Close
                         </button>
-                        {/* <button
-                            // onClick={openDetailsModal}
-                            onClick={() => setShowDetails(!showDetails)}
-                            className="p-[11px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px]"
-                        >
-                            {showDetails ? 'Info' : 'Details'}
-                        </button> */}
                     </div>
                 </IonFooter>
             </div>
