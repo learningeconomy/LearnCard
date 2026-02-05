@@ -148,7 +148,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                         const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
                             sentBoost
                         );
-                        await addCredentialToWallet({ uri: issuedVcUri });
+                        await addCredentialToWallet({ uri: issuedVcUri, boostUri });
                         return issuedVcUri;
                     }
                     // handle boosting someone else
