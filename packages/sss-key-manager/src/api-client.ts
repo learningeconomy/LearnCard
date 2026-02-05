@@ -127,12 +127,13 @@ export class SSSApiClient {
         type: 'password' | 'passkey' | 'backup',
         credentialId?: string
     ): Promise<EncryptedShare | null> {
-        const headers = await this.getAuthHeaders();
+        const token = await this.authProvider.getIdToken();
         const providerType = this.authProvider.getProviderType();
 
         const params = new URLSearchParams({
             type,
             providerType,
+            authToken: token,
         });
 
         if (credentialId) {
@@ -141,7 +142,9 @@ export class SSSApiClient {
 
         const response = await fetch(`${this.serverUrl}/keys/recovery?${params}`, {
             method: 'GET',
-            headers,
+            headers: {
+                'Content-Type': 'application/json',
+            },
         });
 
         if (!response.ok) {

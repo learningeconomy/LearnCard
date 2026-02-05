@@ -25,9 +25,9 @@ const getEnvVar = (key: string): string | undefined => {
 };
 
 export const getKeyDerivationConfig = (): KeyDerivationConfig => {
-    const providerEnv = getEnvVar('REACT_APP_KEY_DERIVATION_PROVIDER');
-    const sssServerUrl = getEnvVar('REACT_APP_SSS_SERVER_URL');
-    const enableMigration = getEnvVar('REACT_APP_ENABLE_SSS_MIGRATION') === 'true';
+    const providerEnv = 'sss' || getEnvVar('REACT_APP_KEY_DERIVATION_PROVIDER');
+    const sssServerUrl = 'http://localhost:5100/api' || getEnvVar('REACT_APP_SSS_SERVER_URL');
+    const enableMigration = true;// getEnvVar('REACT_APP_ENABLE_SSS_MIGRATION') === 'true';
 
     const provider: KeyDerivationProvider = 
         providerEnv === 'sss' ? 'sss' : 'web3auth';

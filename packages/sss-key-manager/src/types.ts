@@ -34,7 +34,7 @@ export type SecurityLevel = 'basic' | 'enhanced' | 'advanced';
 
 export const SecurityLevels: readonly SecurityLevel[] = ['basic', 'enhanced', 'advanced'] as const;
 
-export type RecoveryMethodType = 'password' | 'passkey' | 'backup';
+export type RecoveryMethodType = 'password' | 'passkey' | 'backup' | 'phrase';
 
 export interface RecoveryMethodInfo {
     type: RecoveryMethodType;
@@ -58,7 +58,12 @@ export interface BackupFileRecoveryMethod {
     password: string;
 }
 
-export type RecoveryMethod = PasswordRecoveryMethod | PasskeyRecoveryMethod | BackupFileRecoveryMethod;
+export interface RecoveryPhraseRecoveryMethod {
+    type: 'phrase';
+    phrase: string;
+}
+
+export type RecoveryMethod = PasswordRecoveryMethod | PasskeyRecoveryMethod | BackupFileRecoveryMethod | RecoveryPhraseRecoveryMethod;
 
 export interface EncryptedShare {
     encryptedData: string;

@@ -30,7 +30,9 @@ import { WrenchColorFillIcon } from 'learn-card-base/svgs/WrenchIcon';
 import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';
 import ManageDataSharingModal from '../data-sharing/ManageDataSharingModal';
 import DataSharingIcon from 'learn-card-base/svgs/DataSharingIcon';
+import ShieldCheck from 'learn-card-base/svgs/ShieldCheck';
 import LearnCardIDCMS, { LearnCardIdCMSEditorModeEnum } from '../learncardID-CMS/LearnCardIDCMS';
+import { RecoverySetupModal } from '../recovery';
 
 import {
     useModal,
@@ -42,6 +44,7 @@ import {
     useCurrentUser,
     useWallet,
     useGetCheckListStatus,
+    useSSSKeyManager,
 } from 'learn-card-base';
 import useLogout from '../../hooks/useLogout';
 
@@ -100,6 +103,16 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const notInNetwork = isNetworkUser === false;
 
     const { data: connections } = useGetConnections();
+
+    const {
+        getRecoveryMethods,
+        addPasswordRecovery,
+        addPasskeyRecovery,
+        generateRecoveryPhrase,
+        getAuthProvider,
+    } = useSSSKeyManager({
+        serverUrl: import.meta.env.VITE_SSS_SERVER_URL || 'http://localhost:5100/api',
+    });
 
     const { checklistItemsWithStatus, completedItems, numStepsRemaining } = useGetCheckListStatus();
     const checkListItemText = `${completedItems} of ${checklistItems?.length}`;
@@ -342,6 +355,70 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         <AdminToolsModal />,
                         {},
                         { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                    );
+                },
+            },
+            {
+                title: 'Account Recovery',
+                Icon: ShieldCheck,
+                caretText: '',
+                onClick: async () => {
+                    if (!currentUser?.privateKey) {
+                        console.error('No private key available');
+                        return;
+                    }
+
+                    const authProvider = getAuthProvider();
+
+                    const existingMethods = authProvider
+                        ? await getRecoveryMethods(authProvider)
+                        : [];
+
+                    newModal(
+                        <RecoverySetupModal
+                            existingMethods={existingMethods.map(m => ({
+                                type: m.type,
+                                createdAt: m.createdAt instanceof Date
+                                    ? m.createdAt.toISOString()
+                                    : String(m.createdAt),
+                            }))}
+                            onSetupPassword={
+                                authProvider
+                                    ? async (password: string) => {
+                                          await addPasswordRecovery(
+                                              authProvider,
+                                              password,
+                                              currentUser.privateKey!
+                                          );
+                                      }
+                                    : async () => {
+                                          throw new Error(
+                                              'Password recovery requires authentication. Please log in again.'
+                                          );
+                                      }
+                            }
+                            onSetupPasskey={
+                                authProvider
+                                    ? async () => {
+                                          await addPasskeyRecovery(
+                                              authProvider,
+                                              currentUser.privateKey!
+                                          );
+                                          return 'Passkey created';
+                                      }
+                                    : async () => {
+                                          throw new Error(
+                                              'Passkey recovery requires authentication. Please log in again.'
+                                          );
+                                      }
+                            }
+                            onGeneratePhrase={async () => {
+                                return generateRecoveryPhrase(currentUser.privateKey!, authProvider);
+                            }}
+                            onClose={closeModal}
+                        />,
+                        { sectionClassName: '!max-w-[480px]' },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
                 },
             }

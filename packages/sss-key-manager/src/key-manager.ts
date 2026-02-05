@@ -10,6 +10,7 @@ import type {
     SecurityLevel,
     BackupFile,
     AuthProvider,
+    RecoveryPhraseRecoveryMethod,
 } from './types';
 
 import { SSSApiClient } from './api-client';
@@ -27,6 +28,17 @@ import {
     generateEd25519PrivateKey,
     DEFAULT_KDF_PARAMS,
 } from './crypto';
+
+import {
+    createPasskeyCredential,
+    encryptShareWithPasskey,
+    decryptShareWithPasskey,
+} from './passkey';
+
+import {
+    shareToRecoveryPhrase,
+    recoveryPhraseToShare,
+} from './recovery-phrase';
 
 export class SSSKeyManager implements SSSKeyDerivationProvider {
     readonly name = 'sss';
@@ -142,10 +154,43 @@ export class SSSKeyManager implements SSSKeyDerivationProvider {
                 },
             });
         } else if (method.type === 'passkey') {
-            throw new Error('Passkey recovery not yet implemented');
+            const user = await this.config.authProvider.getCurrentUser();
+            if (!user) {
+                throw new Error('No authenticated user');
+            }
+
+            const credential = await createPasskeyCredential(
+                user.id,
+                user.email || user.phone || user.id
+            );
+
+            const encryptedShare = await encryptShareWithPasskey(
+                recoveryShare,
+                credential.credentialId
+            );
+
+            await this.apiClient.addRecoveryMethod({
+                type: 'passkey',
+                encryptedShare: {
+                    encryptedData: encryptedShare.encryptedData,
+                    iv: encryptedShare.iv,
+                },
+                credentialId: credential.credentialId,
+            });
         } else if (method.type === 'backup') {
             throw new Error('Use exportBackup() instead');
         }
+    }
+
+    async generateRecoveryPhrase(): Promise<string> {
+        if (!this.currentPrivateKey) {
+            throw new Error('No active key. Connect first.');
+        }
+
+        const shares = await splitPrivateKey(this.currentPrivateKey);
+        const phrase = await shareToRecoveryPhrase(shares.recoveryShare);
+
+        return phrase;
     }
 
     async getRecoveryMethods(): Promise<RecoveryMethodInfo[]> {
@@ -221,7 +266,57 @@ export class SSSKeyManager implements SSSKeyDerivationProvider {
 
             return privateKey;
         } else if (method.type === 'passkey') {
-            throw new Error('Passkey recovery not yet implemented');
+            const encryptedShare = await this.apiClient.getRecoveryShare('passkey', method.credentialId);
+
+            if (!encryptedShare) {
+                throw new Error('No passkey recovery share found');
+            }
+
+            const recoveryShare = await decryptShareWithPasskey({
+                encryptedData: encryptedShare.encryptedData,
+                iv: encryptedShare.iv,
+                credentialId: method.credentialId || '',
+            });
+
+            const serverResponse = await this.apiClient.getAuthShare();
+
+            if (!serverResponse || !serverResponse.authShare) {
+                throw new Error('No auth share found on server');
+            }
+
+            const privateKey = await reconstructPrivateKey(
+                recoveryShare,
+                serverResponse.authShare.encryptedData
+            );
+
+            const newShares = await splitPrivateKey(privateKey);
+            await storeDeviceShare(newShares.deviceShare, this.config.deviceStorageKey);
+
+            this.currentPrivateKey = privateKey;
+            this.initialized = true;
+
+            return privateKey;
+        } else if (method.type === 'phrase') {
+            const recoveryShare = await recoveryPhraseToShare(method.phrase);
+
+            const serverResponse = await this.apiClient.getAuthShare();
+
+            if (!serverResponse || !serverResponse.authShare) {
+                throw new Error('No auth share found on server');
+            }
+
+            const privateKey = await reconstructPrivateKey(
+                recoveryShare,
+                serverResponse.authShare.encryptedData
+            );
+
+            const newShares = await splitPrivateKey(privateKey);
+            await storeDeviceShare(newShares.deviceShare, this.config.deviceStorageKey);
+
+            this.currentPrivateKey = privateKey;
+            this.initialized = true;
+
+            return privateKey;
         }
 
         throw new Error('Unknown recovery method');

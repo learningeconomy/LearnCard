@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 
@@ -12,8 +12,21 @@ import {
     clearAllShares,
     generateEd25519PrivateKey,
     bytesToHex,
+    encryptWithPassword,
+    decryptWithPassword,
+    DEFAULT_KDF_PARAMS,
+    shareToRecoveryPhrase,
+    recoveryPhraseToShare,
+    validateRecoveryPhrase,
+    createPasskeyCredential,
+    encryptShareWithPasskey,
+    decryptShareWithPasskey,
+    isWebAuthnSupported,
     type AuthProvider,
     type SSSKeyManager,
+    type RecoveryMethod,
+    type RecoveryMethodInfo,
+    type BackupFile,
 } from '@learncard/sss-key-manager';
 
 import useWallet from 'learn-card-base/hooks/useWallet';
@@ -42,6 +55,9 @@ export interface SSSConfig {
 }
 
 export type AuthProviderAdapter = AuthProvider;
+
+// Module-level variable to share auth provider across hook instances
+let sharedAuthProvider: AuthProvider | null = null;
 
 export const useSSSKeyManager = (config?: SSSConfig) => {
     const [loggingOut, setLoggingOut] = useState(false);
@@ -117,6 +133,9 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
             setConnecting(true);
             setError(null);
             setInitLoading(true);
+
+            // Store the auth provider for later use (shared across all hook instances)
+            sharedAuthProvider = authProvider;
 
             const user = await authProvider.getCurrentUser();
             if (!user) {
@@ -210,6 +229,9 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
             setConnecting(true);
             setError(null);
 
+            // Store the auth provider for later use (shared across all hook instances)
+            sharedAuthProvider = authProvider;
+
             console.log('[sss] splitting private key', privateKey);
             const shares = await splitPrivateKey(privateKey);
 
@@ -268,7 +290,6 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
                 return { exists: false, isSSSMigrated: false };
             }
 
-            // Check if user has already migrated to SSS
             const isSSSMigrated = serverResponse.keyProvider === 'sss';
 
             return { exists: true, isSSSMigrated };
@@ -277,6 +298,510 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
             return { exists: false, isSSSMigrated: false };
         }
     }, [fetchAuthShare]);
+
+    const getRecoveryMethods = useCallback(async (authProvider: AuthProvider): Promise<RecoveryMethodInfo[]> => {
+        try {
+            const serverResponse = await fetchAuthShare(authProvider);
+            return serverResponse?.recoveryMethods || [];
+        } catch (e) {
+            console.error('Error getting recovery methods:', e);
+            return [];
+        }
+    }, [fetchAuthShare]);
+
+    const addPasswordRecovery = useCallback(async (
+        authProvider: AuthProvider,
+        password: string,
+        currentPrivateKey: string
+    ) => {
+        // Generate NEW shares - we must update device and auth shares too
+        // so all shares come from the same split operation
+        const shares = await splitPrivateKey(currentPrivateKey);
+        const encrypted = await encryptWithPassword(shares.recoveryShare, password);
+
+        // Update device share locally
+        await storeDeviceShare(shares.deviceShare);
+
+        const headers = await getAuthHeaders(authProvider);
+        const providerType = authProvider.getProviderType();
+
+        // Get current primaryDid from server
+        const currentData = await fetchAuthShare(authProvider);
+        const primaryDid = currentData?.primaryDid || '';
+
+        // Update auth share on server with new share from same split
+        await fetch(`${serverUrl}/keys/auth-share`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({
+                authToken: await authProvider.getIdToken(),
+                providerType,
+                authShare: {
+                    encryptedData: shares.authShare,
+                    encryptedDek: '',
+                    iv: '',
+                },
+                primaryDid,
+                securityLevel: 'basic',
+            }),
+        });
+
+        // Now add the recovery method with the recovery share from the same split
+        const response = await fetch(`${serverUrl}/keys/recovery`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                authToken: await authProvider.getIdToken(),
+                providerType,
+                type: 'password',
+                encryptedShare: {
+                    encryptedData: encrypted.ciphertext,
+                    iv: encrypted.iv,
+                    salt: encrypted.salt,
+                },
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to add password recovery: ${response.statusText}`);
+        }
+    }, [serverUrl, getAuthHeaders, fetchAuthShare]);
+
+    const addPasskeyRecovery = useCallback(async (
+        authProvider: AuthProvider,
+        currentPrivateKey: string
+    ) => {
+        if (!isWebAuthnSupported()) {
+            throw new Error('WebAuthn is not supported in this browser');
+        }
+
+        const user = await authProvider.getCurrentUser();
+        if (!user) {
+            throw new Error('No authenticated user');
+        }
+
+        const credential = await createPasskeyCredential(
+            user.id,
+            user.email || user.phone || user.id
+        );
+
+        // Generate NEW shares - we must update device and auth shares too
+        // so all shares come from the same split operation
+        const shares = await splitPrivateKey(currentPrivateKey);
+        const encryptedShare = await encryptShareWithPasskey(
+            shares.recoveryShare,
+            credential.credentialId
+        );
+
+        // Update device share locally
+        await storeDeviceShare(shares.deviceShare);
+
+        const headers = await getAuthHeaders(authProvider);
+        const providerType = authProvider.getProviderType();
+
+        // Get current primaryDid from server
+        const currentData = await fetchAuthShare(authProvider);
+        const primaryDid = currentData?.primaryDid || '';
+
+        // Update auth share on server with new share from same split
+        await fetch(`${serverUrl}/keys/auth-share`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({
+                authToken: await authProvider.getIdToken(),
+                providerType,
+                authShare: {
+                    encryptedData: shares.authShare,
+                    encryptedDek: '',
+                    iv: '',
+                },
+                primaryDid,
+                securityLevel: 'basic',
+            }),
+        });
+
+        // Now add the recovery method with the recovery share from the same split
+        const response = await fetch(`${serverUrl}/keys/recovery`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                authToken: await authProvider.getIdToken(),
+                providerType,
+                type: 'passkey',
+                encryptedShare: {
+                    encryptedData: encryptedShare.encryptedData,
+                    iv: encryptedShare.iv,
+                },
+                credentialId: credential.credentialId,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to add passkey recovery: ${response.statusText}`);
+        }
+
+        return credential.credentialId;
+    }, [serverUrl, getAuthHeaders, fetchAuthShare]);
+
+    const generateRecoveryPhrase = useCallback(async (
+        currentPrivateKey: string,
+        authProvider?: AuthProvider | null
+    ): Promise<string> => {
+        // Generate NEW shares - the phrase IS the recovery share encoded as BIP39
+        const shares = await splitPrivateKey(currentPrivateKey);
+        const phrase = await shareToRecoveryPhrase(shares.recoveryShare);
+
+        // If we have an auth provider, update device and auth shares
+        // so they're from the same split as the phrase
+        if (authProvider) {
+            await storeDeviceShare(shares.deviceShare);
+
+            const headers = await getAuthHeaders(authProvider);
+            const providerType = authProvider.getProviderType();
+
+            const currentData = await fetchAuthShare(authProvider);
+            const primaryDid = currentData?.primaryDid || '';
+
+            await fetch(`${serverUrl}/keys/auth-share`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({
+                    authToken: await authProvider.getIdToken(),
+                    providerType,
+                    authShare: {
+                        encryptedData: shares.authShare,
+                        encryptedDek: '',
+                        iv: '',
+                    },
+                    primaryDid,
+                    securityLevel: 'basic',
+                }),
+            });
+        }
+
+        return phrase;
+    }, [serverUrl, getAuthHeaders, fetchAuthShare]);
+
+    const recoverWithPassword = useCallback(async (
+        authProvider: AuthProvider,
+        password: string
+    ): Promise<string> => {
+        setConnecting(true);
+        setError(null);
+
+        try {
+            const token = await authProvider.getIdToken();
+            const providerType = authProvider.getProviderType();
+
+            const params = new URLSearchParams({
+                type: 'password',
+                providerType,
+                authToken: token,
+            });
+
+            const recoveryResponse = await fetch(
+                `${serverUrl}/keys/recovery?${params}`,
+                { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+            );
+
+            if (!recoveryResponse.ok) {
+                throw new Error('No password recovery share found');
+            }
+
+            const encryptedShare = await recoveryResponse.json();
+
+            if (!encryptedShare || !encryptedShare.salt) {
+                throw new Error('Invalid recovery share data');
+            }
+
+            const recoveryShare = await decryptWithPassword(
+                encryptedShare.encryptedData,
+                encryptedShare.iv,
+                encryptedShare.salt,
+                password,
+                DEFAULT_KDF_PARAMS
+            );
+
+            const serverResponse = await fetchAuthShare(authProvider);
+
+            if (!serverResponse || !serverResponse.authShare) {
+                throw new Error('No auth share found on server');
+            }
+
+            const privateKey = await reconstructFromShares([
+                recoveryShare,
+                serverResponse.authShare.encryptedData,
+            ]);
+
+            // Generate new shares and update BOTH device and auth shares
+            // so they're from the same split for future logins
+            const newShares = await splitPrivateKey(privateKey);
+            await storeDeviceShare(newShares.deviceShare);
+
+            // Update auth share on server with new share from same split
+            const primaryDid = serverResponse.primaryDid || '';
+            await fetch(`${serverUrl}/keys/auth-share`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType,
+                    authShare: {
+                        encryptedData: newShares.authShare,
+                        encryptedDek: '',
+                        iv: '',
+                    },
+                    primaryDid,
+                    securityLevel: 'basic',
+                }),
+            });
+
+            await finalizeLogin(privateKey);
+
+            setConnecting(false);
+            return privateKey;
+        } catch (e) {
+            const message = e instanceof Error ? e.message : 'Recovery failed';
+            setError(message);
+            setConnecting(false);
+            throw e;
+        }
+    }, [serverUrl, fetchAuthShare, finalizeLogin]);
+
+    const recoverWithPasskey = useCallback(async (
+        authProvider: AuthProvider,
+        credentialId: string
+    ): Promise<string> => {
+        setConnecting(true);
+        setError(null);
+
+        try {
+            const token = await authProvider.getIdToken();
+            const providerType = authProvider.getProviderType();
+
+            const params = new URLSearchParams({
+                type: 'passkey',
+                providerType,
+                authToken: token,
+                credentialId,
+            });
+
+            const recoveryResponse = await fetch(
+                `${serverUrl}/keys/recovery?${params}`,
+                { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+            );
+
+            if (!recoveryResponse.ok) {
+                throw new Error('No passkey recovery share found');
+            }
+
+            const encryptedShare = await recoveryResponse.json();
+
+            const recoveryShare = await decryptShareWithPasskey({
+                encryptedData: encryptedShare.encryptedData,
+                iv: encryptedShare.iv,
+                credentialId,
+            });
+
+            const serverResponse = await fetchAuthShare(authProvider);
+
+            if (!serverResponse || !serverResponse.authShare) {
+                throw new Error('No auth share found on server');
+            }
+
+            const privateKey = await reconstructFromShares([
+                recoveryShare,
+                serverResponse.authShare.encryptedData,
+            ]);
+
+            // Generate new shares and update BOTH device and auth shares
+            const newShares = await splitPrivateKey(privateKey);
+            await storeDeviceShare(newShares.deviceShare);
+
+            // Update auth share on server with new share from same split
+            const primaryDid = serverResponse.primaryDid || '';
+            await fetch(`${serverUrl}/keys/auth-share`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType,
+                    authShare: {
+                        encryptedData: newShares.authShare,
+                        encryptedDek: '',
+                        iv: '',
+                    },
+                    primaryDid,
+                    securityLevel: 'basic',
+                }),
+            });
+
+            await finalizeLogin(privateKey);
+
+            setConnecting(false);
+            return privateKey;
+        } catch (e) {
+            const message = e instanceof Error ? e.message : 'Recovery failed';
+            setError(message);
+            setConnecting(false);
+            throw e;
+        }
+    }, [serverUrl, fetchAuthShare, finalizeLogin]);
+
+    const recoverWithPhrase = useCallback(async (
+        authProvider: AuthProvider,
+        phrase: string
+    ): Promise<string> => {
+        setConnecting(true);
+        setError(null);
+
+        try {
+            const isValid = await validateRecoveryPhrase(phrase);
+            if (!isValid) {
+                throw new Error('Invalid recovery phrase');
+            }
+
+            const recoveryShare = await recoveryPhraseToShare(phrase);
+
+            const serverResponse = await fetchAuthShare(authProvider);
+
+            if (!serverResponse || !serverResponse.authShare) {
+                throw new Error('No auth share found on server');
+            }
+
+            const privateKey = await reconstructFromShares([
+                recoveryShare,
+                serverResponse.authShare.encryptedData,
+            ]);
+
+            // Generate new shares and update BOTH device and auth shares
+            const newShares = await splitPrivateKey(privateKey);
+            await storeDeviceShare(newShares.deviceShare);
+
+            // Update auth share on server with new share from same split
+            const token = await authProvider.getIdToken();
+            const providerType = authProvider.getProviderType();
+            const primaryDid = serverResponse.primaryDid || '';
+
+            await fetch(`${serverUrl}/keys/auth-share`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType,
+                    authShare: {
+                        encryptedData: newShares.authShare,
+                        encryptedDek: '',
+                        iv: '',
+                    },
+                    primaryDid,
+                    securityLevel: 'basic',
+                }),
+            });
+
+            await finalizeLogin(privateKey);
+
+            setConnecting(false);
+            return privateKey;
+        } catch (e) {
+            const message = e instanceof Error ? e.message : 'Recovery failed';
+            setError(message);
+            setConnecting(false);
+            throw e;
+        }
+    }, [serverUrl, fetchAuthShare, finalizeLogin]);
+
+    const exportBackup = useCallback(async (
+        currentPrivateKey: string,
+        password: string,
+        primaryDid: string
+    ): Promise<BackupFile> => {
+        const shares = await splitPrivateKey(currentPrivateKey);
+        const encrypted = await encryptWithPassword(shares.recoveryShare, password);
+
+        return {
+            version: 1,
+            createdAt: new Date().toISOString(),
+            primaryDid,
+            encryptedShare: {
+                ciphertext: encrypted.ciphertext,
+                iv: encrypted.iv,
+                salt: encrypted.salt,
+                kdfParams: encrypted.kdfParams,
+            },
+        };
+    }, []);
+
+    const recoverWithBackup = useCallback(async (
+        authProvider: AuthProvider,
+        backupFileContents: string,
+        password: string
+    ): Promise<string> => {
+        setConnecting(true);
+        setError(null);
+
+        try {
+            const backup: BackupFile = JSON.parse(backupFileContents);
+
+            if (backup.version !== 1) {
+                throw new Error('Unsupported backup file version');
+            }
+
+            const recoveryShare = await decryptWithPassword(
+                backup.encryptedShare.ciphertext,
+                backup.encryptedShare.iv,
+                backup.encryptedShare.salt,
+                password,
+                backup.encryptedShare.kdfParams
+            );
+
+            const serverResponse = await fetchAuthShare(authProvider);
+
+            if (!serverResponse || !serverResponse.authShare) {
+                throw new Error('No auth share found on server');
+            }
+
+            const privateKey = await reconstructFromShares([
+                recoveryShare,
+                serverResponse.authShare.encryptedData,
+            ]);
+
+            // Generate new shares and update BOTH device and auth shares
+            const newShares = await splitPrivateKey(privateKey);
+            await storeDeviceShare(newShares.deviceShare);
+
+            // Update auth share on server with new share from same split
+            const token = await authProvider.getIdToken();
+            const providerType = authProvider.getProviderType();
+            const primaryDid = serverResponse.primaryDid || '';
+
+            await fetch(`${serverUrl}/keys/auth-share`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType,
+                    authShare: {
+                        encryptedData: newShares.authShare,
+                        encryptedDek: '',
+                        iv: '',
+                    },
+                    primaryDid,
+                    securityLevel: 'basic',
+                }),
+            });
+
+            await finalizeLogin(privateKey);
+
+            setConnecting(false);
+            return privateKey;
+        } catch (e) {
+            const message = e instanceof Error ? e.message : 'Recovery failed';
+            setError(message);
+            setConnecting(false);
+            throw e;
+        }
+    }, [serverUrl, fetchAuthShare, finalizeLogin]);
 
     const clearAllIndexedDB = async () => {
         try {
@@ -368,15 +893,34 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
         }
     }, [queryClient, clearDB, setInitLoading]);
 
+    const setAuthProvider = useCallback((provider: AuthProvider | null) => {
+        sharedAuthProvider = provider;
+    }, []);
+
+    const getAuthProvider = useCallback(() => {
+        return sharedAuthProvider;
+    }, []);
+
     return {
         connect,
         setupWithPrivateKey,
         migrateFromWeb3Auth,
         checkAuthShareExists,
+        getRecoveryMethods,
+        addPasswordRecovery,
+        addPasskeyRecovery,
+        generateRecoveryPhrase,
+        recoverWithPassword,
+        recoverWithPasskey,
+        recoverWithPhrase,
+        exportBackup,
+        recoverWithBackup,
         logout,
         loggingOut,
         connecting,
         error,
+        setAuthProvider,
+        getAuthProvider,
     };
 };
 

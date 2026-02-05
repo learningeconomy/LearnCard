@@ -26,7 +26,7 @@ export interface AuthProvider {
 	signOut(): Promise<void>;
 }
 export type SecurityLevel = "basic" | "enhanced" | "advanced";
-export type RecoveryMethodType = "password" | "passkey" | "backup";
+export type RecoveryMethodType = "password" | "passkey" | "backup" | "phrase";
 export interface RecoveryMethodInfo {
 	type: RecoveryMethodType;
 	createdAt: Date;
@@ -45,7 +45,11 @@ export interface BackupFileRecoveryMethod {
 	fileContents: string;
 	password: string;
 }
-export type RecoveryMethod = PasswordRecoveryMethod | PasskeyRecoveryMethod | BackupFileRecoveryMethod;
+export interface RecoveryPhraseRecoveryMethod {
+	type: "phrase";
+	phrase: string;
+}
+export type RecoveryMethod = PasswordRecoveryMethod | PasskeyRecoveryMethod | BackupFileRecoveryMethod | RecoveryPhraseRecoveryMethod;
 export interface EncryptedShare {
 	encryptedData: string;
 	iv: string;
@@ -123,6 +127,7 @@ export declare class SSSKeyManager implements SSSKeyDerivationProvider {
 	migrate(privateKey: string): Promise<void>;
 	canMigrate(): Promise<boolean>;
 	addRecoveryMethod(method: RecoveryMethod): Promise<void>;
+	generateRecoveryPhrase(): Promise<string>;
 	getRecoveryMethods(): Promise<RecoveryMethodInfo[]>;
 	recover(method: RecoveryMethod): Promise<string>;
 	getSecurityLevel(): Promise<SecurityLevel>;
@@ -210,5 +215,38 @@ export declare function encryptWithPassword(plaintext: string, password: string)
 }>;
 export declare function decryptWithPassword(ciphertext: string, iv: string, salt: string, password: string, params?: KdfParams): Promise<string>;
 export declare function generateEd25519PrivateKey(): Promise<string>;
+/**
+ * WebAuthn Passkey utilities for SSS recovery
+ * Uses the PRF (Pseudo-Random Function) extension to derive encryption keys
+ */
+export interface PasskeyCredential {
+	credentialId: string;
+	publicKey: string;
+	transports?: AuthenticatorTransport[];
+}
+export interface PasskeyEncryptedShare {
+	encryptedData: string;
+	iv: string;
+	credentialId: string;
+}
+export declare function isWebAuthnSupported(): boolean;
+export declare function isPRFSupported(): Promise<boolean>;
+export declare function createPasskeyCredential(userId: string, userName: string): Promise<PasskeyCredential>;
+export declare function deriveKeyFromPasskey(credentialId: string): Promise<CryptoKey>;
+export declare function encryptShareWithPasskey(share: string, credentialId: string): Promise<PasskeyEncryptedShare>;
+export declare function decryptShareWithPasskey(encryptedShare: PasskeyEncryptedShare): Promise<string>;
+/**
+ * BIP39 Recovery Phrase utilities for SSS recovery
+ * The recovery phrase directly encodes a share (not encryption)
+ */
+export interface RecoveryPhraseData {
+	phrase: string;
+	shareHex: string;
+}
+export declare function shareToRecoveryPhrase(shareHex: string): Promise<string>;
+export declare function recoveryPhraseToShare(phrase: string): Promise<string>;
+export declare function generateRecoveryPhrase(shareHex: string): Promise<RecoveryPhraseData>;
+export declare function validateRecoveryPhrase(phrase: string): Promise<boolean>;
+export declare function countWords(phrase: string): number;
 
 export {};

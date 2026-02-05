@@ -35,6 +35,27 @@ export {
     DEFAULT_KDF_PARAMS,
 } from './crypto';
 
+export {
+    createPasskeyCredential,
+    deriveKeyFromPasskey,
+    encryptShareWithPasskey,
+    decryptShareWithPasskey,
+    isWebAuthnSupported,
+    isPRFSupported,
+} from './passkey';
+
+export type { PasskeyCredential, PasskeyEncryptedShare } from './passkey';
+
+export {
+    shareToRecoveryPhrase,
+    recoveryPhraseToShare,
+    generateRecoveryPhrase,
+    validateRecoveryPhrase,
+    countWords,
+} from './recovery-phrase';
+
+export type { RecoveryPhraseData } from './recovery-phrase';
+
 export type {
     SSSKeyManagerConfig,
     SSSKeyDerivationProvider,
@@ -50,6 +71,7 @@ export type {
     PasswordRecoveryMethod,
     PasskeyRecoveryMethod,
     BackupFileRecoveryMethod,
+    RecoveryPhraseRecoveryMethod,
     SecurityLevel,
     BackupFile,
     EncryptedShare,

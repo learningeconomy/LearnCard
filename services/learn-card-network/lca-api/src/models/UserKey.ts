@@ -171,6 +171,20 @@ export const addRecoveryMethodToUserKey = async (
 ): Promise<void> => {
     const collection = getUserKeysCollection();
 
+    // IMPORTANT: Remove ALL existing recovery methods when adding a new one.
+    // Each recovery method setup regenerates all SSS shares (device, auth, recovery).
+    // Old recovery shares are from different splits and won't work with the new auth share.
+    await collection.updateOne(
+        {
+            'contactMethod.type': contactMethod.type,
+            'contactMethod.value': contactMethod.value,
+        },
+        {
+            $set: { recoveryMethods: [] },
+        }
+    );
+
+    // Now add the new recovery method
     await collection.updateOne(
         {
             'contactMethod.type': contactMethod.type,

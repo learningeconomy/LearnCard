@@ -75,18 +75,21 @@ var SSSApiClient = class {
     }
   }
   async getRecoveryShare(type, credentialId) {
-    const headers = await this.getAuthHeaders();
+    const token = await this.authProvider.getIdToken();
     const providerType = this.authProvider.getProviderType();
     const params = new URLSearchParams({
       type,
-      providerType
+      providerType,
+      authToken: token
     });
     if (credentialId) {
       params.append("credentialId", credentialId);
     }
     const response = await fetch(`${this.serverUrl}/keys/recovery?${params}`, {
       method: "GET",
-      headers
+      headers: {
+        "Content-Type": "application/json"
+      }
     });
     if (!response.ok) {
       if (response.status === 404) {
@@ -430,6 +433,251 @@ async function clearAllShares() {
 }
 __name(clearAllShares, "clearAllShares");
 
+// src/passkey.ts
+var RP_NAME = "LearnCard";
+var RP_ID = typeof window !== "undefined" ? window.location.hostname : "localhost";
+var PRF_SALT = new TextEncoder().encode("learncard-sss-recovery-v1");
+function isWebAuthnSupported() {
+  return typeof window !== "undefined" && typeof window.PublicKeyCredential !== "undefined" && typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === "function";
+}
+__name(isWebAuthnSupported, "isWebAuthnSupported");
+async function isPRFSupported() {
+  if (!isWebAuthnSupported()) return false;
+  try {
+    const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    return available;
+  } catch {
+    return false;
+  }
+}
+__name(isPRFSupported, "isPRFSupported");
+async function createPasskeyCredential(userId, userName) {
+  if (!isWebAuthnSupported()) {
+    throw new Error("WebAuthn is not supported in this browser");
+  }
+  const userIdBytes = new TextEncoder().encode(userId);
+  const createOptions = {
+    challenge: crypto.getRandomValues(new Uint8Array(32)),
+    rp: {
+      name: RP_NAME,
+      id: RP_ID
+    },
+    user: {
+      id: userIdBytes,
+      name: userName,
+      displayName: userName
+    },
+    pubKeyCredParams: [
+      { alg: -7, type: "public-key" },
+      // ES256
+      { alg: -257, type: "public-key" }
+      // RS256
+    ],
+    authenticatorSelection: {
+      authenticatorAttachment: "platform",
+      userVerification: "required",
+      residentKey: "required"
+    },
+    timeout: 6e4,
+    attestation: "none",
+    extensions: {
+      prf: {
+        eval: {
+          first: PRF_SALT
+        }
+      }
+    }
+  };
+  const credential = await navigator.credentials.create({
+    publicKey: createOptions
+  });
+  if (!credential) {
+    throw new Error("Failed to create passkey credential");
+  }
+  const response = credential.response;
+  const extensionResults = credential.getClientExtensionResults();
+  if (!extensionResults.prf?.enabled && !extensionResults.prf?.results?.first) {
+    console.warn("PRF extension may not be supported, passkey created but encryption key derivation may fail");
+  }
+  return {
+    credentialId: bufferToBase64(credential.rawId),
+    publicKey: bufferToBase64(response.getPublicKey()),
+    transports: response.getTransports?.()
+  };
+}
+__name(createPasskeyCredential, "createPasskeyCredential");
+async function deriveKeyFromPasskey(credentialId) {
+  if (!isWebAuthnSupported()) {
+    throw new Error("WebAuthn is not supported in this browser");
+  }
+  const getOptions = {
+    challenge: crypto.getRandomValues(new Uint8Array(32)),
+    rpId: RP_ID,
+    allowCredentials: [{
+      id: base64ToBuffer(credentialId),
+      type: "public-key"
+    }],
+    userVerification: "required",
+    timeout: 6e4,
+    extensions: {
+      prf: {
+        eval: {
+          first: PRF_SALT
+        }
+      }
+    }
+  };
+  const assertion = await navigator.credentials.get({
+    publicKey: getOptions
+  });
+  if (!assertion) {
+    throw new Error("Failed to get passkey assertion");
+  }
+  const extensionResults = assertion.getClientExtensionResults();
+  if (!extensionResults.prf?.results?.first) {
+    throw new Error("PRF extension not available or failed. This passkey cannot be used for encryption.");
+  }
+  const prfOutput = new Uint8Array(extensionResults.prf.results.first);
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    prfOutput,
+    { name: "AES-GCM" },
+    false,
+    ["encrypt", "decrypt"]
+  );
+  return cryptoKey;
+}
+__name(deriveKeyFromPasskey, "deriveKeyFromPasskey");
+async function encryptShareWithPasskey(share, credentialId) {
+  const key = await deriveKeyFromPasskey(credentialId);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encoder = new TextEncoder();
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    encoder.encode(share)
+  );
+  return {
+    encryptedData: bufferToBase64(ciphertext),
+    iv: bufferToBase64(iv.buffer),
+    credentialId
+  };
+}
+__name(encryptShareWithPasskey, "encryptShareWithPasskey");
+async function decryptShareWithPasskey(encryptedShare) {
+  const key = await deriveKeyFromPasskey(encryptedShare.credentialId);
+  const iv = base64ToBuffer(encryptedShare.iv);
+  const ciphertext = base64ToBuffer(encryptedShare.encryptedData);
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: iv.buffer },
+    key,
+    ciphertext.buffer
+  );
+  const decoder = new TextDecoder();
+  return decoder.decode(plaintext);
+}
+__name(decryptShareWithPasskey, "decryptShareWithPasskey");
+
+// src/recovery-phrase.ts
+var wordlistPromise = null;
+async function getWordlist() {
+  if (!wordlistPromise) {
+    wordlistPromise = import("@scure/bip39/wordlists/english").then((m) => m.wordlist);
+  }
+  return wordlistPromise;
+}
+__name(getWordlist, "getWordlist");
+function bytesToBits(bytes) {
+  return Array.from(bytes).map((b) => b.toString(2).padStart(8, "0")).join("");
+}
+__name(bytesToBits, "bytesToBits");
+function bitsToBytes(bits) {
+  const bytes = new Uint8Array(Math.ceil(bits.length / 8));
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(bits.slice(i * 8, (i + 1) * 8).padEnd(8, "0"), 2);
+  }
+  return bytes;
+}
+__name(bitsToBytes, "bitsToBytes");
+async function computeChecksum(data) {
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  const hashBits = bytesToBits(new Uint8Array(hash));
+  const checksumLength = Math.floor(data.length / 4);
+  return hashBits.slice(0, checksumLength);
+}
+__name(computeChecksum, "computeChecksum");
+async function shareToRecoveryPhrase(shareHex) {
+  const wordlist = await getWordlist();
+  const shareBytes = hexToBytes(shareHex);
+  const checksum = await computeChecksum(shareBytes);
+  const allBits = bytesToBits(shareBytes) + checksum;
+  const words = [];
+  for (let i = 0; i < allBits.length; i += 11) {
+    const index = parseInt(allBits.slice(i, i + 11).padEnd(11, "0"), 2);
+    words.push(wordlist[index]);
+  }
+  return words.join(" ");
+}
+__name(shareToRecoveryPhrase, "shareToRecoveryPhrase");
+async function recoveryPhraseToShare(phrase) {
+  const wordlist = await getWordlist();
+  const words = phrase.trim().toLowerCase().split(/\s+/);
+  if (words.length < 12 || words.length > 27) {
+    throw new Error("Recovery phrase must be 12-27 words");
+  }
+  let bits = "";
+  for (const word of words) {
+    const index = wordlist.indexOf(word);
+    if (index === -1) {
+      throw new Error(`Invalid word in recovery phrase: ${word}`);
+    }
+    bits += index.toString(2).padStart(11, "0");
+  }
+  let dataByteCount = 0;
+  for (let bytes = 1; bytes <= 64; bytes++) {
+    const checksumBits2 = Math.floor(bytes / 4);
+    const totalBits = bytes * 8 + checksumBits2;
+    const wordsNeeded = Math.ceil(totalBits / 11);
+    if (wordsNeeded === words.length) {
+      dataByteCount = bytes;
+    } else if (wordsNeeded > words.length) {
+      break;
+    }
+  }
+  if (dataByteCount === 0) {
+    throw new Error("Could not determine data size from word count");
+  }
+  const checksumLength = Math.floor(dataByteCount / 4);
+  const dataBitCount = dataByteCount * 8;
+  const dataBits = bits.slice(0, dataBitCount);
+  const checksumBits = bits.slice(dataBitCount, dataBitCount + checksumLength);
+  const dataBytes = bitsToBytes(dataBits);
+  const expectedChecksum = await computeChecksum(dataBytes);
+  if (checksumBits !== expectedChecksum.slice(0, checksumLength)) {
+    throw new Error("Invalid recovery phrase checksum");
+  }
+  return bytesToHex(dataBytes);
+}
+__name(recoveryPhraseToShare, "recoveryPhraseToShare");
+async function generateRecoveryPhrase(shareHex) {
+  const phrase = await shareToRecoveryPhrase(shareHex);
+  return { phrase, shareHex };
+}
+__name(generateRecoveryPhrase, "generateRecoveryPhrase");
+async function validateRecoveryPhrase(phrase) {
+  try {
+    await recoveryPhraseToShare(phrase);
+    return true;
+  } catch {
+    return false;
+  }
+}
+__name(validateRecoveryPhrase, "validateRecoveryPhrase");
+function countWords(phrase) {
+  return phrase.trim().split(/\s+/).filter((w) => w.length > 0).length;
+}
+__name(countWords, "countWords");
+
 // src/key-manager.ts
 var SSSKeyManager = class {
   constructor(config) {
@@ -521,10 +769,37 @@ var SSSKeyManager = class {
         }
       });
     } else if (method.type === "passkey") {
-      throw new Error("Passkey recovery not yet implemented");
+      const user = await this.config.authProvider.getCurrentUser();
+      if (!user) {
+        throw new Error("No authenticated user");
+      }
+      const credential = await createPasskeyCredential(
+        user.id,
+        user.email || user.phone || user.id
+      );
+      const encryptedShare = await encryptShareWithPasskey(
+        recoveryShare,
+        credential.credentialId
+      );
+      await this.apiClient.addRecoveryMethod({
+        type: "passkey",
+        encryptedShare: {
+          encryptedData: encryptedShare.encryptedData,
+          iv: encryptedShare.iv
+        },
+        credentialId: credential.credentialId
+      });
     } else if (method.type === "backup") {
       throw new Error("Use exportBackup() instead");
     }
+  }
+  async generateRecoveryPhrase() {
+    if (!this.currentPrivateKey) {
+      throw new Error("No active key. Connect first.");
+    }
+    const shares = await splitPrivateKey(this.currentPrivateKey);
+    const phrase = await shareToRecoveryPhrase(shares.recoveryShare);
+    return phrase;
   }
   async getRecoveryMethods() {
     const serverResponse = await this.apiClient.getAuthShare();
@@ -582,7 +857,43 @@ var SSSKeyManager = class {
       this.initialized = true;
       return privateKey;
     } else if (method.type === "passkey") {
-      throw new Error("Passkey recovery not yet implemented");
+      const encryptedShare = await this.apiClient.getRecoveryShare("passkey", method.credentialId);
+      if (!encryptedShare) {
+        throw new Error("No passkey recovery share found");
+      }
+      const recoveryShare = await decryptShareWithPasskey({
+        encryptedData: encryptedShare.encryptedData,
+        iv: encryptedShare.iv,
+        credentialId: method.credentialId || ""
+      });
+      const serverResponse = await this.apiClient.getAuthShare();
+      if (!serverResponse || !serverResponse.authShare) {
+        throw new Error("No auth share found on server");
+      }
+      const privateKey = await reconstructPrivateKey(
+        recoveryShare,
+        serverResponse.authShare.encryptedData
+      );
+      const newShares = await splitPrivateKey(privateKey);
+      await storeDeviceShare(newShares.deviceShare, this.config.deviceStorageKey);
+      this.currentPrivateKey = privateKey;
+      this.initialized = true;
+      return privateKey;
+    } else if (method.type === "phrase") {
+      const recoveryShare = await recoveryPhraseToShare(method.phrase);
+      const serverResponse = await this.apiClient.getAuthShare();
+      if (!serverResponse || !serverResponse.authShare) {
+        throw new Error("No auth share found on server");
+      }
+      const privateKey = await reconstructPrivateKey(
+        recoveryShare,
+        serverResponse.authShare.encryptedData
+      );
+      const newShares = await splitPrivateKey(privateKey);
+      await storeDeviceShare(newShares.deviceShare, this.config.deviceStorageKey);
+      this.currentPrivateKey = privateKey;
+      this.initialized = true;
+      return privateKey;
     }
     throw new Error("Unknown recovery method");
   }
@@ -635,17 +946,28 @@ export {
   bufferToBase64,
   bytesToHex,
   clearAllShares,
+  countWords,
+  createPasskeyCredential,
   createSSSKeyManager,
+  decryptShareWithPasskey,
   decryptWithPassword,
   deleteDeviceShare,
+  deriveKeyFromPasskey,
   deriveKeyFromPassword,
+  encryptShareWithPasskey,
   encryptWithPassword,
   generateEd25519PrivateKey,
+  generateRecoveryPhrase,
   getDeviceShare,
   hasDeviceShare,
   hexToBytes,
+  isPRFSupported,
+  isWebAuthnSupported,
   reconstructFromShares,
   reconstructPrivateKey,
+  recoveryPhraseToShare,
+  shareToRecoveryPhrase,
   splitPrivateKey,
-  storeDeviceShare
+  storeDeviceShare,
+  validateRecoveryPhrase
 };

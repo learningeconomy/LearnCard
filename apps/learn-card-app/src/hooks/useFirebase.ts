@@ -50,6 +50,7 @@ import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { auth } from '../firebase/firebase';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import GoogleLoginHelpModal from '../components/auth/GoogleLoginHelpModal';
+import { RecoveryFlowModal } from '../components/recovery';
 
 import { FIREBASE_REDIRECT_URL } from '../constants/web3AuthConfig';
 import { WALLET_ADAPTERS } from '@web3auth/base';
@@ -62,7 +63,17 @@ export const useFirebase = () => {
     const { web3AuthSFAInit } = useWeb3AuthSFA();
     const { web3AuthInit } = useWeb3Auth();
     const keyDerivationConfig = getKeyDerivationConfig();
-    const { connect: sssConnect, setupWithPrivateKey: sssSetup, checkAuthShareExists } = useSSSKeyManager({
+    const {
+        connect: sssConnect,
+        setupWithPrivateKey: sssSetup,
+        checkAuthShareExists,
+        getRecoveryMethods,
+        recoverWithPassword,
+        recoverWithPasskey,
+        recoverWithPhrase,
+        recoverWithBackup,
+        setAuthProvider,
+    } = useSSSKeyManager({
         serverUrl: keyDerivationConfig.sssServerUrl || '',
     });
     const { presentToast } = useToast();
@@ -161,6 +172,9 @@ export const useFirebase = () => {
 
             const authProvider = createFirebaseAuthProvider(getIdToken, userUid, email, phone);
 
+            // Store the auth provider for later use (e.g., recovery setup)
+            setAuthProvider(authProvider);
+
             const privateKey = await sssConnect(authProvider);
 
             if (privateKey) {
@@ -176,8 +190,72 @@ export const useFirebase = () => {
                     // User already migrated to SSS but lost device share - needs recovery
                     emitAuthWarning('sss:needs_recovery', 'User has SSS auth share on server but no device share - recovery needed');
                     console.log('SSS: User already migrated but lost device share - recovery flow needed');
-                    // TODO: Implement recovery flow - for now, throw error
-                    throw new Error('SSS recovery needed: You have an existing SSS key but lost your device share. Please use recovery flow.');
+
+                    // Get available recovery methods
+                    const recoveryMethods = await getRecoveryMethods(authProvider);
+                    emitAuthDebugEvent('sss:recovery_methods', `Found ${recoveryMethods.length} recovery methods`, { data: { methods: recoveryMethods } });
+
+                    // Show recovery modal
+                    return new Promise<void>((resolve, reject) => {
+                        newModal(
+                            React.createElement(RecoveryFlowModal, {
+                                availableMethods: recoveryMethods.map(m => ({
+                                    type: m.type,
+                                    credentialId: m.credentialId,
+                                    createdAt: m.createdAt instanceof Date ? m.createdAt.toISOString() : String(m.createdAt),
+                                })),
+                                onRecoverWithPassword: async (password: string) => {
+                                    try {
+                                        await recoverWithPassword(authProvider, password);
+                                        emitAuthSuccess('sss:recovery_success', 'Account recovered with password');
+                                        closeModal();
+                                        resolve();
+                                    } catch (e) {
+                                        emitAuthError('sss:recovery_failed', e instanceof Error ? e.message : 'Recovery failed');
+                                        throw e;
+                                    }
+                                },
+                                onRecoverWithPasskey: async (credentialId: string) => {
+                                    try {
+                                        await recoverWithPasskey(authProvider, credentialId);
+                                        emitAuthSuccess('sss:recovery_success', 'Account recovered with passkey');
+                                        closeModal();
+                                        resolve();
+                                    } catch (e) {
+                                        emitAuthError('sss:recovery_failed', e instanceof Error ? e.message : 'Recovery failed');
+                                        throw e;
+                                    }
+                                },
+                                onRecoverWithPhrase: async (phrase: string) => {
+                                    try {
+                                        await recoverWithPhrase(authProvider, phrase);
+                                        emitAuthSuccess('sss:recovery_success', 'Account recovered with recovery phrase');
+                                        closeModal();
+                                        resolve();
+                                    } catch (e) {
+                                        emitAuthError('sss:recovery_failed', e instanceof Error ? e.message : 'Recovery failed');
+                                        throw e;
+                                    }
+                                },
+                                onRecoverWithBackup: async (fileContents: string, password: string) => {
+                                    try {
+                                        await recoverWithBackup(authProvider, fileContents, password);
+                                        emitAuthSuccess('sss:recovery_success', 'Account recovered with backup file');
+                                        closeModal();
+                                        resolve();
+                                    } catch (e) {
+                                        emitAuthError('sss:recovery_failed', e instanceof Error ? e.message : 'Recovery failed');
+                                        throw e;
+                                    }
+                                },
+                                onCancel: () => {
+                                    closeModal();
+                                    reject(new Error('Recovery cancelled'));
+                                },
+                            }),
+                            { sectionClassName: '!max-w-[480px]' }
+                        );
+                    });
                 }
 
                 const migrationEnabled = keyDerivationConfig.enableMigration;

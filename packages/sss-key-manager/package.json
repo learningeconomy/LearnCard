@@ -38,6 +38,7 @@
     "dependencies": {
         "@learncard/types": "workspace:*",
         "@noble/ed25519": "^2.0.0",
+        "@scure/bip39": "^1.2.1",
         "shamir-secret-sharing": "^0.0.4",
         "hash-wasm": "^4.11.0"
     },
