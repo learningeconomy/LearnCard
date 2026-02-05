@@ -513,6 +513,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.credential.receivedCredentials.query({ from });
             },
+            getRevokedCredentials: async () => {
+                await ensureUser();
+
+                return client.credential.getRevokedCredentials.query();
+            },
             getSentCredentials: async (_learnCard, to) => {
                 await ensureUser();
 

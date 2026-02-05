@@ -1050,10 +1050,10 @@ export const useSyncRevokedCredentials = (enabled = true) => {
         queryKey: ['useSyncRevokedCredentials', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
-
+                console.log('//useSyncRevokedCrednetials');
             // Get revoked credential URIs from brain-service
             const revokedUris = await wallet.invoke.getRevokedCredentials();
-
+            console.log('//revokedUris', revokedUris);
             return revokedUris ?? [];
         },
         staleTime: 30 * 1000, // Check every 30 seconds
