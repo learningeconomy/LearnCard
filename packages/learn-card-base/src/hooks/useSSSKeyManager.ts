@@ -174,7 +174,26 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
             const authShareData = serverResponse.authShare.encryptedData;
             const privateKey = await reconstructFromShares([deviceShare, authShareData]);
 
-            await finalizeLogin(privateKey);
+            // Verify the reconstructed key produces the expected DID
+            // If DID doesn't match, the device share is stale (from a previous split)
+            const expectedDid = serverResponse.primaryDid;
+            const wallet = await initWallet(privateKey);
+            
+            if (wallet && expectedDid) {
+                const reconstructedDid = wallet.id.did();
+                if (reconstructedDid !== expectedDid) {
+                    console.log('Device share is stale - DID mismatch. Clearing device share.');
+                    console.log('Expected:', expectedDid);
+                    console.log('Got:', reconstructedDid);
+                    await clearAllShares();
+                    walletStore.set.wallet(null);
+                    setConnecting(false);
+                    setInitLoading(false);
+                    return null; // Force recovery flow
+                }
+            }
+
+            await finalizeLogin(privateKey, wallet);
 
             setConnecting(false);
             setInitLoading(false);
@@ -189,7 +208,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
         }
     }, [fetchAuthShare, setInitLoading]);
 
-    const finalizeLogin = useCallback(async (privateKey: string) => {
+    const finalizeLogin = useCallback(async (privateKey: string, existingWallet?: any) => {
         const firebaseCurrentUser = firebaseAuthStore.get.currentUser();
 
         const sqliteUserPayload = {
@@ -212,7 +231,8 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
             }
         }
 
-        const wallet = await initWallet(privateKey);
+        // Use existing wallet if provided, otherwise initialize a new one
+        const wallet = existingWallet ?? await initWallet(privateKey);
         if (wallet) {
             walletStore.set.wallet(wallet);
             currentUserStore.set.currentUser({ ...sqliteUserPayload });
@@ -536,6 +556,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
             // Generate new shares and update BOTH device and auth shares
             // so they're from the same split for future logins
             const newShares = await splitPrivateKey(privateKey);
+
             await storeDeviceShare(newShares.deviceShare);
 
             // Update auth share on server with new share from same split
@@ -616,6 +637,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
 
             // Generate new shares and update BOTH device and auth shares
             const newShares = await splitPrivateKey(privateKey);
+
             await storeDeviceShare(newShares.deviceShare);
 
             // Update auth share on server with new share from same split
@@ -676,6 +698,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
 
             // Generate new shares and update BOTH device and auth shares
             const newShares = await splitPrivateKey(privateKey);
+
             await storeDeviceShare(newShares.deviceShare);
 
             // Update auth share on server with new share from same split
@@ -768,6 +791,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
 
             // Generate new shares and update BOTH device and auth shares
             const newShares = await splitPrivateKey(privateKey);
+
             await storeDeviceShare(newShares.deviceShare);
 
             // Update auth share on server with new share from same split
