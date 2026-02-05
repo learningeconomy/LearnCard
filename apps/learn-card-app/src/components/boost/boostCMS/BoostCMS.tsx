@@ -233,10 +233,12 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     const {
         hasRecoveredState,
         recoveredState,
+        recoveredBoostCategory,
         clearRecoveredState,
         saveToLocal,
         clearLocalSave,
         isAutosaving,
+        hasUnsavedChanges,
     } = useBoostCMSAutosave({
         enabled: !propBoostCMSState, // Disable autosave if editing an existing boost
         boostCategoryType: _boostCategoryType,
@@ -266,6 +268,8 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                         recoveredState.appearance?.displayType ||
                             BoostCMSAppearanceDisplayTypeEnum.Certificate
                     );
+                    // Clear the old recovered state from localStorage so new changes will be saved fresh
+                    clearRecoveredState();
                     closeModal();
                 };
 
@@ -295,7 +299,6 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
     // Save state to localStorage whenever it changes
     useEffect(() => {
-        // Only save if we have meaningful content, not loading from props, and boost hasn't been published yet
         if (
             !propBoostCMSState &&
             !publishedBoostUri &&
@@ -304,6 +307,54 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             saveToLocal(state);
         }
     }, [state, saveToLocal, propBoostCMSState, publishedBoostUri]);
+
+    // Block navigation when there are unsaved changes and show warning modal
+    useEffect(() => {
+        if (!hasUnsavedChanges || publishedBoostUri) return;
+
+        const unblock = history.block((location, action) => {
+            newModal(
+                <div className="pt-[36px] pb-[16px]">
+                    <div className="flex flex-col items-center justify-center w-full">
+                        <div className="w-full flex flex-col items-center justify-center px-4 text-grayscale-900">
+                            <h6 className="font-semibold text-black font-poppins text-xl mb-2">
+                                Leave This Page?
+                            </h6>
+                            <p className="text-center text-grayscale-600 font-poppins text-sm mb-4">
+                                You have unsaved changes. Your progress will be saved locally and
+                                you can continue editing later.
+                            </p>
+                            <button
+                                onClick={() => {
+                                    closeModal();
+                                    unblock();
+                                    history.push(location.pathname);
+                                }}
+                                className="flex items-center justify-center text-white rounded-full px-[64px] py-[10px] bg-rose-600 font-poppins font-medium text-xl w-full shadow-lg"
+                            >
+                                Leave Page
+                            </button>
+                            <button
+                                onClick={() => closeModal()}
+                                className="flex items-center justify-center text-white rounded-full px-[50px] py-[10px] bg-grayscale-900 font-poppins font-medium text-xl w-full shadow-lg mt-4"
+                            >
+                                Stay & Continue Editing
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                { sectionClassName: '!max-w-[400px]' },
+                { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+            );
+
+            // Return false to block navigation
+            return false;
+        });
+
+        return () => {
+            unblock();
+        };
+    }, [hasUnsavedChanges, publishedBoostUri, history, newModal, closeModal]);
 
     useEffect(() => {
         const initializeWallet = async () => {
