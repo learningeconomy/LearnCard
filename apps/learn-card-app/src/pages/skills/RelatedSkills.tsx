@@ -34,25 +34,48 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) =
     const [atEnd, setAtEnd] = useState(false);
 
     const { data: pathData } = useGetSkillPath(frameworkId, skillId);
-    const { data: skillInfo } = useGetSkill(frameworkId, skillId);
-    const { data: skillChildren } = useGetSkillChildren(frameworkId, skillId);
-
     const path = pathData?.path;
     const parent = path?.[1];
+
+    const { data: skillChildren } = useGetSkillChildren(frameworkId, skillId);
+    const { data: skillSiblings } = useGetSkillChildren(frameworkId, parent?.id ?? '');
+
     const parentSkill = parent && parent.type === 'competency' ? parent : null;
+
+    enum SkillType {
+        PARENT = 'parent',
+        SIBLING = 'sibling',
+        CHILD = 'child',
+    }
+
+    const puzzlePieceText = {
+        [SkillType.PARENT]: 'PARENT SKILL',
+        [SkillType.SIBLING]: 'SIBLING SKILL',
+        [SkillType.CHILD]: 'SUBSKILL',
+    };
 
     const relatedSkills = [];
     if (parentSkill) {
         relatedSkills.push({
             id: parentSkill.id,
-            type: 'parent',
+            type: SkillType.PARENT,
         });
+    }
+    if (skillSiblings) {
+        relatedSkills.push(
+            ...skillSiblings.records
+                .filter(record => record.id !== skillId && record.type === 'competency')
+                .map((record: any) => ({
+                    id: record.id,
+                    type: SkillType.SIBLING,
+                }))
+        );
     }
     if (skillChildren?.records) {
         relatedSkills.push(
             ...skillChildren.records.map((record: any) => ({
                 id: record.id,
-                type: 'child',
+                type: SkillType.CHILD,
             }))
         );
     }
@@ -99,9 +122,7 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) =
                                     <SkillCard
                                         skillId={skill?.id}
                                         frameworkId={frameworkId}
-                                        skillTextOverride={
-                                            skill?.type === 'parent' ? 'PARENT SKILL' : 'SUB-SKILL'
-                                        }
+                                        skillTextOverride={puzzlePieceText[skill?.type]}
                                     />
                                 </SwiperSlide>
                             );
