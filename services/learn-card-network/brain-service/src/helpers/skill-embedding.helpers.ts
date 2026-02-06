@@ -26,8 +26,8 @@ const embeddingsResponseValidator = z.array(embeddingResponseValidator);
 const getEmbeddingBatchSize = (): number => {
     const raw = Number(
         process.env.SKILL_EMBEDDING_BATCH_SIZE ??
-            process.env.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE ??
-            25
+        process.env.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE ??
+        25
     );
     return Math.min(Math.max(raw, 1), 100);
 };
@@ -50,7 +50,7 @@ export const generateEmbeddingsForTexts = async (texts: string[]): Promise<numbe
 };
 
 export const buildSkillEmbeddingText = (skill: SkillEmbeddingTarget): string => {
-    const parts = [skill.statement, skill.description, skill.code]
+    const parts = [skill.statement, skill.description]
         .map(part => (typeof part === 'string' ? part.trim() : ''))
         .filter(Boolean);
 
