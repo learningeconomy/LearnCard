@@ -273,8 +273,6 @@ export function connectWebSocket() {
             if (data.event === 'plan_section') {
                 const index = typeof data.index === 'number' ? data.index : undefined;
 
-                console.log('plan', planSections.get());
-
                 const prev = planSections.get();
                 const next = { ...prev };
 

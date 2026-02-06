@@ -17,7 +17,6 @@ export const AiSessionPlan: React.FC = () => {
     const loading = useStore(isLoading);
     const isStreaming = useStore(planStreamActive);
     const plan = useStore(planSections);
-    const meta = useStore(planMetadata);
 
     const hasPlan =
         loading ||
@@ -37,7 +36,10 @@ export const AiSessionPlan: React.FC = () => {
                 {plan.welcome ? (
                     <h2 className="text-[29px] font-bold text-grayscale-900">{plan.welcome}</h2>
                 ) : (
-                    <IonSkeletonText animated style={{ width: '100%' }} />
+                    <div className="flex flex-col gap-2">
+                        <IonSkeletonText animated style={{ width: '85%', height: 28 }} />
+                        <IonSkeletonText animated style={{ width: '60%', height: 28 }} />
+                    </div>
                 )}
             </section>
 
@@ -48,7 +50,11 @@ export const AiSessionPlan: React.FC = () => {
                         {plan.summary}
                     </p>
                 ) : (
-                    <IonSkeletonText animated style={{ width: '100%' }} />
+                    <div className="flex flex-col gap-2">
+                        <IonSkeletonText animated style={{ width: '100%' }} />
+                        <IonSkeletonText animated style={{ width: '92%' }} />
+                        <IonSkeletonText animated style={{ width: '78%' }} />
+                    </div>
                 )}
             </section>
 
@@ -60,18 +66,30 @@ export const AiSessionPlan: React.FC = () => {
                 </h2>
 
                 {plan.skills?.length > 0 ? (
-                    <ul className="flex flex-col gap-2">
+                    <ul className="flex flex-wrap gap-2">
                         {plan.skills.map((skill, i) => (
-                            <li className="text-sm font-semibold text-grayscale-800 bg-grayscale-100 p-2 rounded-[10px] w-fit">
+                            <li
+                                key={i}
+                                className="text-sm font-semibold text-grayscale-800 bg-grayscale-100 p-2 rounded-[10px] w-fit"
+                            >
                                 {skill}
                             </li>
                         ))}
                     </ul>
                 ) : (
-                    <>
-                        <IonSkeletonText animated />
-                        <IonSkeletonText animated />
-                    </>
+                    <div className="flex flex-wrap gap-2">
+                        {[1, 2, 3].map(i => (
+                            <IonSkeletonText
+                                key={i}
+                                animated
+                                style={{
+                                    width: `${60 + i * 10}px`,
+                                    height: 28,
+                                    borderRadius: 10,
+                                }}
+                            />
+                        ))}
+                    </div>
                 )}
             </section>
 
@@ -85,7 +103,7 @@ export const AiSessionPlan: React.FC = () => {
                 </h2>
 
                 {plan.objectives?.length > 0 ? (
-                    <ul className="text-grayscale-600 flex flex-col gap-2 list-disc list-inside">
+                    <ul className="flex flex-col gap-2 list-disc list-inside">
                         {plan.objectives.map((obj, i) => (
                             <li key={i} className="text-[17px] font-normal text-grayscale-900">
                                 {obj}
@@ -93,11 +111,11 @@ export const AiSessionPlan: React.FC = () => {
                         ))}
                     </ul>
                 ) : (
-                    <>
-                        <IonSkeletonText animated />
-                        <IonSkeletonText animated />
-                        <IonSkeletonText animated />
-                    </>
+                    <div className="flex flex-col gap-2">
+                        <IonSkeletonText animated style={{ width: '92%' }} />
+                        <IonSkeletonText animated style={{ width: '80%' }} />
+                        <IonSkeletonText animated style={{ width: '70%' }} />
+                    </div>
                 )}
             </section>
 
@@ -111,41 +129,46 @@ export const AiSessionPlan: React.FC = () => {
                 </h2>
 
                 {plan.roadmap?.length > 0 ? (
-                    <ul className="text-grayscale-600 flex flex-col gap-2 list-decimal list-inside">
-                        {plan.roadmap.map((obj, i) => (
+                    <ul className="flex flex-col gap-3 list-decimal list-inside">
+                        {plan.roadmap.map((module, i) => (
                             <li key={i} className="text-[17px] font-normal text-grayscale-900">
-                                {obj.module}
+                                {module.module}
 
-                                {obj.learningObjectives && obj.learningObjectives.length > 0 && (
-                                    <ul className="list-disc list-inside ml-4">
-                                        {obj.learningObjectives.map(
-                                            (learningObjective: string, j: number) => (
-                                                <li
-                                                    key={j}
-                                                    className="text-[17px] font-normal text-grayscale-800"
-                                                >
-                                                    {learningObjective}
-                                                </li>
-                                            )
-                                        )}
+                                {module.learningObjectives?.length > 0 && (
+                                    <ul className="list-disc list-inside ml-4 mt-1">
+                                        {module.learningObjectives.map((obj, j) => (
+                                            <li
+                                                key={j}
+                                                className="text-[17px] font-normal text-grayscale-800"
+                                            >
+                                                {obj}
+                                            </li>
+                                        ))}
                                     </ul>
                                 )}
                             </li>
                         ))}
                     </ul>
                 ) : (
-                    <>
-                        <IonSkeletonText animated />
-                        <IonSkeletonText animated />
-                        <IonSkeletonText animated />
-                    </>
+                    <div className="flex flex-col gap-4">
+                        {[1, 2].map(i => (
+                            <div key={i} className="flex flex-col gap-2">
+                                <IonSkeletonText animated style={{ width: '60%' }} />
+                                <IonSkeletonText animated style={{ width: '80%' }} />
+                                <IonSkeletonText animated style={{ width: '70%' }} />
+                            </div>
+                        ))}
+                    </div>
                 )}
             </section>
 
             <div className="h-[1px] mt-6 mb-4 bg-grayscale-100" />
 
-            {!isStreaming && !loading && (
+            {/* ================= CTA ================= */}
+            {!isStreaming && !loading ? (
                 <h2 className="text-[29px] font-bold text-grayscale-900">Ready to Get Started</h2>
+            ) : (
+                <IonSkeletonText animated style={{ width: '55%', height: 28 }} />
             )}
         </div>
     );
