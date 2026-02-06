@@ -154,4 +154,6 @@ if (pollUrl) {
 }
 
 // Start Ed.link polling service for automatic credential issuance
-startEdlinkPolling();
+if (process.env.EDLINK_ENABLED === 'true') {
+    startEdlinkPolling();
+}

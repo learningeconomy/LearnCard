@@ -45,7 +45,7 @@ export const appRouter = t.router<{
     integrations: IntegrationsRouter;
     appStore: AppStoreRouter;
     activity: ActivityRouter;
-    edlink: EdlinkRouter;
+    edlink?: EdlinkRouter;
     test?: TestRouter;
 }>({
     boost: boostsRouter,
@@ -67,7 +67,7 @@ export const appRouter = t.router<{
     integrations: integrationsRouter,
     appStore: appStoreRouter,
     activity: activityRouter,
-    edlink: edlinkRouter,
+    edlink: process.env.EDLINK_ENABLED === 'true' ? edlinkRouter : undefined,
     test: !!process.env.IS_E2E_TEST ? testRouter : undefined,
 });
 

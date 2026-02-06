@@ -9,6 +9,7 @@ import {
     ChunkBoundary,
 } from 'learn-card-base';
 import * as Sentry from '@sentry/react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 
@@ -154,6 +155,7 @@ const PrivateRoute = ({ component: Component, ...rest }) => {
 export const Routes: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
+    const flags = useFlags();
 
     // The `backgroundLocation` state is the location that we were at when one of
     // it's what is displayed in the background when we open the modal route
@@ -173,7 +175,9 @@ export const Routes: React.FC = () => {
                         />
                         <SentryRoute exact path="/auth/handoff" component={AuthHandoff} />
                         <SentryRoute exact path="/share-boost" component={ViewSharedBoost} />
+                        {flags.edLinkEnabled && (
                         <SentryRoute exact path="/school-portal" component={SchoolPortalDashboard} />
+                    )}
                         <SentryRoute path="/waitingsofa" children={<LoadingPage2 />} />
                         <PrivateRoute
                             exact
