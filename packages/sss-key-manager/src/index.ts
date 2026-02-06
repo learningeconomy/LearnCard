@@ -56,6 +56,34 @@ export {
 
 export type { RecoveryPhraseData } from './recovery-phrase';
 
+export {
+    splitAndVerify,
+    atomicShareUpdate,
+    verifyStoredShares,
+    atomicRecovery,
+    ShareVerificationError,
+    AtomicUpdateError,
+} from './atomic-operations';
+
+export type {
+    AtomicSplitResult,
+    AtomicUpdateOptions,
+    StorageOperations,
+} from './atomic-operations';
+
+export {
+    AuthCoordinator,
+    createAuthCoordinator,
+} from './auth-coordinator';
+
+export type {
+    UnifiedAuthState,
+    ServerKeyStatus,
+    AuthCoordinatorConfig,
+    AuthCoordinatorApi,
+    StorageFunctions,
+} from './auth-coordinator';
+
 export type {
     SSSKeyManagerConfig,
     SSSKeyDerivationProvider,

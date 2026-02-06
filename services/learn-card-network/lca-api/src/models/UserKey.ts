@@ -47,6 +47,10 @@ export const MongoUserKeyValidator = z.object({
 
     authShare: ServerEncryptedShareValidator.optional(),
 
+    // Share versioning for optimistic locking and audit trail
+    shareVersion: z.number().default(1),
+    shareUpdatedAt: z.date().optional(),
+
     securityLevel: z.enum(['basic', 'enhanced', 'advanced']).default('basic'),
 
     recoveryMethods: z.array(RecoveryMethodValidator).default([]),
@@ -123,28 +127,60 @@ export const upsertUserKey = async (
     const collection = getUserKeysCollection();
     const now = new Date();
 
-    const result = await collection.findOneAndUpdate(
-        {
-            'contactMethod.type': contactMethod.type,
-            'contactMethod.value': contactMethod.value,
-        },
-        {
+    // Check if document exists to handle shareVersion correctly
+    const existing = await collection.findOne({
+        'contactMethod.type': contactMethod.type,
+        'contactMethod.value': contactMethod.value,
+    });
+
+    if (existing) {
+        // Update existing document
+        const updateOps: Record<string, unknown> = {
             $set: {
                 ...data,
                 updatedAt: now,
             },
-            $setOnInsert: {
-                contactMethod,
-                createdAt: now,
-            },
-        },
-        {
-            upsert: true,
-            returnDocument: 'after',
-        }
-    );
+        };
 
-    return result!;
+        // Increment shareVersion when authShare changes
+        if (data.authShare) {
+            updateOps.$inc = { shareVersion: 1 };
+            (updateOps.$set as Record<string, unknown>).shareUpdatedAt = now;
+        }
+
+        const result = await collection.findOneAndUpdate(
+            {
+                'contactMethod.type': contactMethod.type,
+                'contactMethod.value': contactMethod.value,
+            },
+            updateOps,
+            { returnDocument: 'after' }
+        );
+
+        return result!;
+    } else {
+        // Insert new document with shareVersion: 1
+        const newDoc: MongoUserKeyType = {
+            contactMethod,
+            authProviders: data.authProviders ?? [],
+            primaryDid: data.primaryDid ?? '',
+            linkedDids: data.linkedDids ?? [],
+            keyProvider: data.keyProvider ?? 'sss',
+            authShare: data.authShare,
+            shareVersion: 1,
+            shareUpdatedAt: data.authShare ? now : undefined,
+            securityLevel: data.securityLevel ?? 'basic',
+            recoveryMethods: data.recoveryMethods ?? [],
+            migratedFromWeb3Auth: data.migratedFromWeb3Auth ?? false,
+            migratedAt: data.migratedAt,
+            createdAt: now,
+            updatedAt: now,
+        };
+
+        await collection.insertOne(newDoc);
+
+        return newDoc;
+    }
 };
 
 export const addAuthProviderToUserKey = async (

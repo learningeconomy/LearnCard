@@ -68,6 +68,7 @@ export const keysRouter = t.router({
                     })
                 ),
                 keyProvider: z.enum(['web3auth', 'sss']),
+                shareVersion: z.number(),
             }).nullable()
         )
         .mutation(async ({ input }) => {
@@ -98,6 +99,7 @@ export const keysRouter = t.router({
                 securityLevel: userKey.securityLevel ?? 'basic',
                 recoveryMethods,
                 keyProvider: userKey.keyProvider ?? 'sss',
+                shareVersion: userKey.shareVersion ?? 1,
             };
         }),
 

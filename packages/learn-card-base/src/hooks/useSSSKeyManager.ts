@@ -4,7 +4,6 @@ import { Capacitor } from '@capacitor/core';
 
 import {
     createSSSKeyManager,
-    splitPrivateKey,
     reconstructFromShares,
     storeDeviceShare,
     getDeviceShare,
@@ -22,6 +21,7 @@ import {
     encryptShareWithPasskey,
     decryptShareWithPasskey,
     isWebAuthnSupported,
+    splitAndVerify,
     type AuthProvider,
     type SSSKeyManager,
     type RecoveryMethod,
@@ -253,7 +253,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
             sharedAuthProvider = authProvider;
 
             console.log('[sss] splitting private key', privateKey);
-            const shares = await splitPrivateKey(privateKey);
+            const { shares } = await splitAndVerify(privateKey);
 
             console.log('[sss] storing device share', shares.deviceShare);
             await storeDeviceShare(shares.deviceShare);
@@ -336,7 +336,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
     ) => {
         // Generate NEW shares - we must update device and auth shares too
         // so all shares come from the same split operation
-        const shares = await splitPrivateKey(currentPrivateKey);
+        const { shares } = await splitAndVerify(currentPrivateKey);
         const encrypted = await encryptWithPassword(shares.recoveryShare, password);
 
         // Update device share locally
@@ -407,7 +407,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
 
         // Generate NEW shares - we must update device and auth shares too
         // so all shares come from the same split operation
-        const shares = await splitPrivateKey(currentPrivateKey);
+        const { shares } = await splitAndVerify(currentPrivateKey);
         const encryptedShare = await encryptShareWithPasskey(
             shares.recoveryShare,
             credential.credentialId
@@ -468,7 +468,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
         authProvider?: AuthProvider | null
     ): Promise<string> => {
         // Generate NEW shares - the phrase IS the recovery share encoded as BIP39
-        const shares = await splitPrivateKey(currentPrivateKey);
+        const { shares } = await splitAndVerify(currentPrivateKey);
         const phrase = await shareToRecoveryPhrase(shares.recoveryShare);
 
         // If we have an auth provider, update device and auth shares
@@ -555,7 +555,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
 
             // Generate new shares and update BOTH device and auth shares
             // so they're from the same split for future logins
-            const newShares = await splitPrivateKey(privateKey);
+            const { shares: newShares } = await splitAndVerify(privateKey);
 
             await storeDeviceShare(newShares.deviceShare);
 
@@ -636,7 +636,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
             ]);
 
             // Generate new shares and update BOTH device and auth shares
-            const newShares = await splitPrivateKey(privateKey);
+            const { shares: newShares } = await splitAndVerify(privateKey);
 
             await storeDeviceShare(newShares.deviceShare);
 
@@ -697,7 +697,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
             ]);
 
             // Generate new shares and update BOTH device and auth shares
-            const newShares = await splitPrivateKey(privateKey);
+            const { shares: newShares } = await splitAndVerify(privateKey);
 
             await storeDeviceShare(newShares.deviceShare);
 
@@ -739,7 +739,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
         password: string,
         primaryDid: string
     ): Promise<BackupFile> => {
-        const shares = await splitPrivateKey(currentPrivateKey);
+        const { shares } = await splitAndVerify(currentPrivateKey);
         const encrypted = await encryptWithPassword(shares.recoveryShare, password);
 
         return {
@@ -790,7 +790,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
             ]);
 
             // Generate new shares and update BOTH device and auth shares
-            const newShares = await splitPrivateKey(privateKey);
+            const { shares: newShares } = await splitAndVerify(privateKey);
 
             await storeDeviceShare(newShares.deviceShare);
 
