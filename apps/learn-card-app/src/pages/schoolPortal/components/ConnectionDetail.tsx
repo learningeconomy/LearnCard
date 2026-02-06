@@ -10,12 +10,14 @@ interface ConnectionDetailProps {
     connection: LMSConnection;
     onBack: () => void;
     onStatusChange?: (connectionId: string, newStatus: LMSConnection['status']) => void;
+    onDelete?: (connectionId: string) => void;
 }
 
 export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
     connection,
     onBack,
     onStatusChange,
+    onDelete,
 }) => {
     const [isCheckingStatus, setIsCheckingStatus] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -31,6 +33,9 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
     const [issuedCredentials, setIssuedCredentials] = useState<EdlinkIssuedCredential[]>([]);
     const [issuedCount, setIssuedCount] = useState(0);
     const [isLoadingIssued, setIsLoadingIssued] = useState(false);
+
+    // Delete connection state
+    const [isDeletingConnection, setIsDeletingConnection] = useState(false);
 
     // Reset state when connection changes
     useEffect(() => {
@@ -138,6 +143,24 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
             setIssuedCount(0);
         } catch (err) {
             console.error('Failed to delete all issued credentials:', err);
+        }
+    };
+
+    // Delete the entire connection
+    const handleDeleteConnection = async () => {
+        if (!confirm(`Delete connection to ${connection.institutionName}? This cannot be undone.`)) {
+            return;
+        }
+        setIsDeletingConnection(true);
+        try {
+            await edlinkApi.edlink.deleteConnection.mutate({ id: connection.id });
+            onDelete?.(connection.id);
+            onBack();
+        } catch (err) {
+            console.error('Failed to delete connection:', err);
+            alert('Failed to delete connection. Please try again.');
+        } finally {
+            setIsDeletingConnection(false);
         }
     };
 
@@ -431,6 +454,33 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
                         </div>
                     </section>
                 )}
+
+                {/* Danger Zone */}
+                <section>
+                    <h3 className="text-sm font-medium text-red-600 mb-3">Danger Zone</h3>
+                    <div className="bg-white rounded-xl border border-red-200 p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">Delete Connection</p>
+                                <p className="text-xs text-gray-500">
+                                    Permanently remove this LMS connection and all tracking records.
+                                </p>
+                            </div>
+                            <button
+                                onClick={handleDeleteConnection}
+                                disabled={isDeletingConnection}
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+                            >
+                                {isDeletingConnection ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                )}
+                                {isDeletingConnection ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
     );

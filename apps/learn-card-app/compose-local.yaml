@@ -139,6 +139,8 @@ services:
             SMART_RESUME_ACCESS_KEY: ${SMART_RESUME_ACCESS_KEY:-BACF7EF16263}
             SMART_RESUME_CONTRACT_URI: ${SMART_RESUME_CONTRACT_URI:-lc:network:localhost%3A4000/trpc:contract:a1087887-88ac-4eea-9a70-71b88b728719}
             POSTMARK_API_KEY: ${POSTMARK_API_KEY:-}
+            # Ed.link automatic credential issuance
+            EDLINK_POLLING_ENABLED: 'true'
 
     cloud:
         image: learncard-monorepo-local

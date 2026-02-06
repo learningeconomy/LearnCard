@@ -81,6 +81,11 @@ const SchoolPortalDashboard: React.FC = () => {
         }
     };
 
+    const handleDeleteConnection = (connectionId: string) => {
+        setConnections(prev => prev.filter(c => c.id !== connectionId));
+        setSelectedConnection(null);
+    };
+
     return (
         <IonPage>
             <IonContent>
@@ -102,6 +107,7 @@ const SchoolPortalDashboard: React.FC = () => {
                                 connection={selectedConnection}
                                 onBack={() => setSelectedConnection(null)}
                                 onStatusChange={handleStatusChange}
+                                onDelete={handleDeleteConnection}
                             />
                         ) : (
                             <div className="h-full flex items-center justify-center">

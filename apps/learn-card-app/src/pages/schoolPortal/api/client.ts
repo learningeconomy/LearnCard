@@ -3,7 +3,7 @@
  */
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
 import { RegExpTransformer } from '@learncard/helpers';
-import type { EdlinkConnection, EdlinkCompletionsResponse } from '@learncard/types';
+import type { EdlinkConnection, EdlinkCompletionsResponse, EdlinkIssuedCredential } from '@learncard/types';
 
 // Brain service URL - uses Vite-injected LCN_URL, falls back to production
 const BRAIN_URL = (typeof LCN_URL !== 'undefined' ? LCN_URL : 'https://brain.learncard.com/trpc').replace('/trpc', '');
@@ -22,6 +22,15 @@ type EdlinkRouter = {
         };
         getCompletions: {
             query: (input: { connectionId: string }) => Promise<EdlinkCompletionsResponse>;
+        };
+        toggleAutoIssue: {
+            mutate: (input: { connectionId: string; enabled: boolean }) => Promise<boolean>;
+        };
+        getIssuedCredentials: {
+            query: (input: { connectionId: string; limit?: number; offset?: number }) => Promise<{
+                records: EdlinkIssuedCredential[];
+                count: number;
+            }>;
         };
         deleteIssuedCredential: {
             mutate: (input: { id: string }) => Promise<boolean>;
