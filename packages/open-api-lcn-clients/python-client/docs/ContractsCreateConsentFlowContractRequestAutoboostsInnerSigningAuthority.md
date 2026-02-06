@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**endpoint** | **str** |  | 
 **name** | **str** |  | 
+**endpoint** | **str** |  | 
 
 ## Example
 

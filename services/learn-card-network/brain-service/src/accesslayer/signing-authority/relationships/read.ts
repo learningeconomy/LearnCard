@@ -1,6 +1,12 @@
-import { Integration, Profile } from '@models';
-import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
-import { IntegrationType } from 'types/integration';
+import { AppStoreListing, Profile } from '@models';
+import { neogma } from '@instance';
+import type { ProfileType, SigningAuthorityForUserType } from 'types/profile';
+import type { AppStoreListingType } from 'types/app-store-listing';
+
+type SigningAuthorityRelationshipRecord = {
+    target: { dataValues: SigningAuthorityForUserType['signingAuthority'] };
+    relationship: SigningAuthorityForUserType['relationship'];
+};
 
 export const getSigningAuthoritiesForUser = async (
     user: ProfileType
@@ -10,7 +16,7 @@ export const getSigningAuthoritiesForUser = async (
             alias: 'usesSigningAuthority',
             where: { source: { profileId: user.profileId } },
         })
-    ).map((relationship: { target: any; relationship: any }) => {
+    ).map((relationship: SigningAuthorityRelationshipRecord) => {
         return {
             signingAuthority: relationship.target.dataValues,
             relationship: relationship.relationship,
@@ -32,7 +38,7 @@ export const getSigningAuthorityForUserByName = async (
                 target: { endpoint },
             },
         })
-    ).map((relationship: { target: any; relationship: any }) => {
+    ).map((relationship: SigningAuthorityRelationshipRecord) => {
         return {
             signingAuthority: relationship.target.dataValues,
             relationship: relationship.relationship,
@@ -51,7 +57,7 @@ export const getPrimarySigningAuthorityForUser = async (
                 relationship: { isPrimary: true },
             },
         })
-    ).map((relationship: { target: any; relationship: any }) => {
+    ).map((relationship: SigningAuthorityRelationshipRecord) => {
         return {
             signingAuthority: relationship.target.dataValues,
             relationship: relationship.relationship,
@@ -59,54 +65,81 @@ export const getPrimarySigningAuthorityForUser = async (
     })[0];
 };
 
-export const getSigningAuthoritiesForIntegration = async (
-    integration: IntegrationType
+export const getSigningAuthoritiesForListing = async (
+    listing: AppStoreListingType
 ): Promise<SigningAuthorityForUserType[]> => {
     return (
-        await Integration.findRelationships({
+        await AppStoreListing.findRelationships({
             alias: 'usesSigningAuthority',
-            where: { source: { id: integration.id } },
+            where: { source: { listing_id: listing.listing_id } },
         })
-    ).map((relationship: { source: any; relationship: any }) => {
+    ).map((relationship: SigningAuthorityRelationshipRecord) => {
         return {
-            signingAuthority: relationship.source.dataValues,
+            signingAuthority: relationship.target.dataValues,
             relationship: relationship.relationship,
         };
     });
 };
 
-export const getSigningAuthoritiesForIntegrationByName = async (
-    integration: IntegrationType,
+export const getSigningAuthoritiesForListingByName = async (
+    listing: AppStoreListingType,
     name: string
 ): Promise<SigningAuthorityForUserType[]> => {
     return (
-        await Integration.findRelationships({
+        await AppStoreListing.findRelationships({
             alias: 'usesSigningAuthority',
-            where: { source: { id: integration.id }, relationship: { name } },
+            where: {
+                source: { listing_id: listing.listing_id },
+                relationship: { name },
+            },
         })
-    ).map((relationship: { source: any; relationship: any }) => {
+    ).map((relationship: SigningAuthorityRelationshipRecord) => {
         return {
-            signingAuthority: relationship.source.dataValues,
+            signingAuthority: relationship.target.dataValues,
             relationship: relationship.relationship,
         };
     });
 };
 
-export const getPrimarySigningAuthorityForIntegration = async (
-    integration: IntegrationType
+export const getPrimarySigningAuthorityForListing = async (
+    listing: AppStoreListingType
 ): Promise<SigningAuthorityForUserType | undefined> => {
     return (
-        await Integration.findRelationships({
+        await AppStoreListing.findRelationships({
             alias: 'usesSigningAuthority',
             where: {
-                source: { id: integration.id },
+                source: { listing_id: listing.listing_id },
                 relationship: { isPrimary: true },
             },
         })
-    ).map((relationship: { target: any; relationship: any }) => {
+    ).map((relationship: SigningAuthorityRelationshipRecord) => {
         return {
             signingAuthority: relationship.target.dataValues,
             relationship: relationship.relationship,
         };
     })[0];
+};
+
+export const getPrimarySigningAuthorityForIntegration = async (
+    integrationId: string
+): Promise<SigningAuthorityForUserType | undefined> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (integration:Integration {id: $integrationId})-[usesSigningAuthority:USES_SIGNING_AUTHORITY]->(signingAuthority:SigningAuthority)
+         RETURN signingAuthority, usesSigningAuthority
+         ORDER BY coalesce(usesSigningAuthority.isPrimary, false) DESC, usesSigningAuthority.createdAt DESC
+         LIMIT 1`,
+        { integrationId }
+    );
+
+    const record = result.records[0];
+
+    if (!record) return undefined;
+
+    const signingAuthority = record.get('signingAuthority')?.properties ?? {};
+    const relationship = record.get('usesSigningAuthority')?.properties ?? {};
+
+    return {
+        signingAuthority,
+        relationship,
+    } as SigningAuthorityForUserType;
 };

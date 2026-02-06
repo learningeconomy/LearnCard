@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials import ContractsCreateConsentFlowContractRequestContractReadCredentials
-from openapi_client.models.storage_resolve200_response_any_of_any_of_read_credentials_categories_value import StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue
+from openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials_categories_value import ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -30,7 +30,7 @@ class ContractsCreateConsentFlowContractRequestContractRead(BaseModel):
     """ # noqa: E501
     anonymize: Optional[StrictBool] = None
     credentials: Optional[ContractsCreateConsentFlowContractRequestContractReadCredentials] = None
-    personal: Optional[Dict[str, StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue]] = None
+    personal: Optional[Dict[str, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue]] = None
     __properties: ClassVar[List[str]] = ["anonymize", "credentials", "personal"]
 
     model_config = ConfigDict(
@@ -97,7 +97,7 @@ class ContractsCreateConsentFlowContractRequestContractRead(BaseModel):
             "anonymize": obj.get("anonymize"),
             "credentials": ContractsCreateConsentFlowContractRequestContractReadCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
             "personal": dict(
-                (_k, StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue.from_dict(_v))
+                (_k, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue.from_dict(_v))
                 for _k, _v in obj["personal"].items()
             )
             if obj.get("personal") is not None

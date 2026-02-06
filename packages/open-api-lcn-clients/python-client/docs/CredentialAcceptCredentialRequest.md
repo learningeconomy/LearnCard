@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **uri** | **str** |  | 
-**options** | [**BoostSendBoostRequestOptions**](BoostSendBoostRequestOptions.md) |  | [optional] 
+**options** | [**CredentialAcceptCredentialRequestOptions**](CredentialAcceptCredentialRequestOptions.md) |  | [optional] 
 
 ## Example
 

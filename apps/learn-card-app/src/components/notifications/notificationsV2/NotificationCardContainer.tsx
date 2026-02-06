@@ -6,6 +6,7 @@ import {
     useMarkNotificationRead,
     useGetProfile,
     useGetCurrentLCNUser,
+    switchedProfileStore,
 } from 'learn-card-base';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import NotificationBoostCard from './NotificationBoostCard';
@@ -24,6 +25,7 @@ type NotificationCardProps = {
 
 export const NOTIFICATION_TYPES = {
     CONNECTION_REQUEST: 'CONNECTION_REQUEST',
+    CONNECTION_REQUEST_EXPIRED_INVITE: 'CONNECTION_REQUEST_EXPIRED_INVITE',
     CONNECTION_ACCEPTED: 'CONNECTION_ACCEPTED',
     BOOST_RECEIVED: 'BOOST_RECEIVED',
     BOOST_ACCEPTED: 'BOOST_ACCEPTED',
@@ -41,6 +43,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     queryOptions,
 }) => {
     const { data, isLoading } = useGetProfile(_notification.from.profileId);
+    const switchedDid = switchedProfileStore.use.switchedDid();
 
     const notification = data ? { ..._notification, from: data, message: {} } : _notification;
 
@@ -72,11 +75,18 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     const { mutate: markNotificationAsRead } = useMarkNotificationRead();
     const { refetch: refetchCurrentLCNUser } = useGetCurrentLCNUser();
 
-    const handleArchiveNotification = async () => {
-        await updateNotification({
-            notificationId: notification?._id,
-            payload: { archived: !notification?.archived, read: true },
-        });
+    const handleArchiveNotification = () => {
+        updateNotification(
+            {
+                notificationId: notification?._id,
+                payload: { archived: !notification?.archived, read: true },
+            },
+            {
+                onError: error => {
+                    console.error('Error archiving notification:', error);
+                },
+            }
+        );
     };
 
     const handleMarkAsRead = async () => {
@@ -98,6 +108,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                     //update query cache
                     const currentQuery = queryClient.getQueryData([
                         'useGetUserNotifications',
+                        switchedDid ?? '',
                         queryOptions?.options,
                         queryOptions?.filter,
                     ]);
@@ -137,6 +148,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                         queryClient.setQueryData(
                             [
                                 'useGetUserNotifications',
+                                switchedDid ?? '',
                                 queryOptions?.options,
                                 queryOptions?.filter,
                             ],
@@ -156,6 +168,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                         });
                         const currentQuery = queryClient.getQueryData([
                             'useGetUserNotifications',
+                            switchedDid ?? '',
                             queryOptions?.options,
                             queryOptions?.filter,
                         ]);
@@ -203,6 +216,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                                             queryClient.setQueryData(
                                                 [
                                                     'useGetUserNotifications',
+                                                    switchedDid ?? '',
                                                     queryOptions?.options,
                                                     queryOptions?.filter,
                                                 ],
@@ -229,8 +243,24 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
         const actionStatus = notification?.actionStatus === 'COMPLETED' ? true : false;
         return (
             <ConnectionRequestCard
-                title={message?.body}
-                from={from}
+                title={message?.body ?? ''}
+                acceptStatus={actionStatus}
+                notification={notification}
+                handleRead={handleMarkAsRead}
+                handleCancelClick={handleArchiveNotification}
+                isLoading={acceptConnectionLoading}
+                handleButtonClick={handleConnectionRequest}
+                issueDate={displayDate}
+                cardLoading={isLoading}
+            />
+        );
+    }
+    /* Someone has sent you a connection request from an expired invite */
+    if (type === NOTIFICATION_TYPES.CONNECTION_REQUEST_EXPIRED_INVITE) {
+        const actionStatus = notification?.actionStatus === 'COMPLETED' ? true : false;
+        return (
+            <ConnectionRequestCard
+                title={message?.body ?? ''}
                 acceptStatus={actionStatus}
                 notification={notification}
                 handleRead={handleMarkAsRead}
@@ -246,7 +276,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     if (type === NOTIFICATION_TYPES.CONNECTION_ACCEPTED) {
         return (
             <ConnectionRequestCard
-                title={message?.body}
+                title={message?.body ?? ''}
                 handleRead={handleMarkAsRead}
                 acceptStatus={true}
                 notification={notification}

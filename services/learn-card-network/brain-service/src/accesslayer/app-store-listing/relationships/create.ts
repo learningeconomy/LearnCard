@@ -57,3 +57,20 @@ export const associateBoostWithListing = async (
 
     return true;
 };
+
+export const associateListingWithSigningAuthority = async (
+    listingId: string,
+    signingAuthorityEndpoint: string,
+    props: { name: string; did: string; isPrimary?: boolean }
+): Promise<boolean> => {
+    await AppStoreListing.relateTo({
+        alias: 'usesSigningAuthority',
+        where: {
+            source: { listing_id: listingId },
+            target: { endpoint: signingAuthorityEndpoint },
+        },
+        properties: props,
+    });
+
+    return true;
+};

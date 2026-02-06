@@ -36,7 +36,6 @@ services:
     watcher:
         image: learncard-monorepo-local
         container_name: 'lcn-watcher'
-        user: '${UID:-1000}:${GID:-1000}'
         command:
             [
                 'pnpm',
@@ -58,6 +57,7 @@ services:
             CHOKIDAR_INTERVAL: '1000'
         volumes:
             - ../../packages:/app/packages
+            - nx-cache:/app/node_modules/.cache
 
     delete-service:
         build: ../../services/playwright-delete-service
@@ -316,3 +316,6 @@ services:
 networks:
     learn-card:
         driver: bridge
+
+volumes:
+    nx-cache:

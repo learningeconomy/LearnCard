@@ -1,11 +1,12 @@
-import { useQuery, useQueries, useInfiniteQuery } from '@tanstack/react-query';
-import { switchedProfileStore, useWallet, VCClaimModalController } from 'learn-card-base';
+import { useQuery, useInfiniteQuery, InfiniteData } from '@tanstack/react-query';
+import { switchedProfileStore, useWallet } from 'learn-card-base';
 import {
     PaginatedNotificationsType,
     PaginatedNotificationsOptionsType,
     NotificationQueryFiltersType,
     NotificationsSortEnum,
 } from '../../../../plugins/lca-api-plugin/src/types';
+import { PageType } from '../mutations/notifications';
 
 /* Some default options/filters for getNotificationForUser query */
 
@@ -39,20 +40,32 @@ export const useGetUserNotifications = (
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
-    return useInfiniteQuery<PaginatedNotificationsType>({
+    return useInfiniteQuery<
+        PageType,
+        Error,
+        InfiniteData<PageType>,
+        readonly unknown[],
+        string | undefined
+    >({
         queryKey: ['useGetUserNotifications', switchedDid ?? '', options, filter],
-        queryFn: async () => {
+        initialPageParam: undefined,
+        queryFn: async ({ pageParam }) => {
             try {
                 const wallet = await initWallet();
-                const data = await wallet?.invoke.getNotifications(options, filter);
+                const data = await wallet?.invoke.getNotifications(
+                    {
+                        ...options,
+                        cursor: pageParam ?? undefined,
+                    },
+                    filter
+                );
                 return data;
             } catch (error) {
+                console.error('Error fetching notifications:', error);
                 return Promise.reject(new Error(error));
             }
         },
-        getNextPageParam: async (lastPage, pages) => {
-            // console.log('///getNextPageParam', lastPage, 'pages', pages);
-        },
+        getNextPageParam: lastPage => (lastPage.hasMore ? lastPage.cursor : undefined),
     });
 };
 

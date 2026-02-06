@@ -36,14 +36,14 @@ class TestClaimHookCreateClaimHookRequestHook(unittest.TestCase):
         if include_optional:
             return ClaimHookCreateClaimHookRequestHook(
                 type = 'GRANT_PERMISSIONS',
-                data = openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of_1_data.claimHook_createClaimHook_request_hook_oneOf_1_data(
+                data = openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of_2_data.claimHook_createClaimHook_request_hook_oneOf_2_data(
                     claim_uri = '', 
                     target_uri = '', )
             )
         else:
             return ClaimHookCreateClaimHookRequestHook(
                 type = 'GRANT_PERMISSIONS',
-                data = openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of_1_data.claimHook_createClaimHook_request_hook_oneOf_1_data(
+                data = openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of_2_data.claimHook_createClaimHook_request_hook_oneOf_2_data(
                     claim_uri = '', 
                     target_uri = '', ),
         )

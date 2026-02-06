@@ -8,7 +8,7 @@ import Lottie from 'react-lottie-player';
 import HourGlass from '../../assets/lotties/hourglass.json';
 import ScoutNewsDefaultData from './scoutnewsdefault.json';
 
-const SCOUTS_NEWS_API_ENDPOINT = 'https://corsproxy.io/?url=https://www.scout.org/api/news';
+const SCOUTS_NEWS_API_ENDPOINT = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.scout.org/api/news');
 const BASE_URL = 'https://scout.org';
 
 const formatDate = (dateString: string) => {
@@ -55,10 +55,12 @@ export const useFetchScoutNews = () => {
         queryFn: async () => {
             try {
                 const res = await fetch(SCOUTS_NEWS_API_ENDPOINT);
-                const _res = await res?.json();
-                return _res;
+                const json = await res?.json();
+
+                // allorigins returns the response in a 'contents' field as a string
+                return JSON.parse(json.contents);
             } catch (error) {
-                return Promise.reject(new Error(error));
+                return Promise.reject(new Error(String(error)));
             }
         },
         initialData: () => {

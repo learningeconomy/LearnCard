@@ -224,7 +224,7 @@ export type LCAPluginMethods = {
     ) => Promise<PaginatedNotificationsType | false>;
     updateNotificationMeta: (_id: string, meta: NotificationMetaType) => Promise<boolean>;
     markAllNotificationsRead: () => Promise<boolean>;
-    createSigningAuthority: (name: string) => Promise<SigningAuthorityType | false>;
+    createSigningAuthority: (name: string, ownerDid?: string) => Promise<SigningAuthorityType | false>;
     getSigningAuthorities: () => Promise<SigningAuthorityType[] | false>;
     authorizeSigningAuthority: (
         name: string,

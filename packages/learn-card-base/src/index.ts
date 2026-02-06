@@ -199,3 +199,5 @@ export * from './svgs/DeepPurpleWand';
 export * from './svgs/SkyBlueGlobeStand';
 export * from './svgs/navbar/navbarIcons';
 export * from './svgs/navbar/formal/navbarFormalIcons';
+export * from './svgs/ScoutsLogo';
+export * from './svgs/ScoutLogoAndText';

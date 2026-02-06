@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **contract_uri** | **str** |  | 
-**autoboosts** | [**List[ContractsCreateConsentFlowContractRequestAutoboostsInner]**](ContractsCreateConsentFlowContractRequestAutoboostsInner.md) |  | 
+**autoboosts** | [**List[ContractsAddAutoBoostsToContractRequestAutoboostsInner]**](ContractsAddAutoBoostsToContractRequestAutoboostsInner.md) |  | 
 
 ## Example
 
