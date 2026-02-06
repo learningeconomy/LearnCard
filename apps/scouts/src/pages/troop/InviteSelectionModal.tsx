@@ -18,7 +18,7 @@ const InviteSelectionModal: React.FC<InviteSelectionModalProps> = ({
     scoutNoun,
 }) => {
     return (
-        <div className="w-full flex flex-col items-center justify-center p-6 bg-white rounded-2xl">
+        <div className="w-full flex flex-col items-center justify-center px-3 py-7 bg-white rounded-2xl">
             <h2 className="text-xl font-poppins font-semibold text-grayscale-900 mb-6 text-center">Who would you like to invite?</h2>
             
             <div className="flex flex-col gap-4 w-full">

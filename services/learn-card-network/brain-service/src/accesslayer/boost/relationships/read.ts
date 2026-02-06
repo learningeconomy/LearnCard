@@ -362,7 +362,17 @@ export const getBoostRecipients = async (
 
     const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));
 
-    return resultsWithIds
+    // Deduplicate by recipient profileId - keep the most recent send
+    const seenProfileIds = new Set<string>();
+    const deduplicated = resultsWithIds.filter(result => {
+        if (seenProfileIds.has(result.to)) {
+            return false;
+        }
+        seenProfileIds.add(result.to);
+        return true;
+    });
+
+    return deduplicated
         .map(result => ({
             ...result,
             to: recipients.find(recipient => recipient.profileId === result.to),
