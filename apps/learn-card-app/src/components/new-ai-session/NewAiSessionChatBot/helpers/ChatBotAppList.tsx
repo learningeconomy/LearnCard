@@ -14,6 +14,7 @@ import {
 import {
     AiPassportAppsEnum,
     aiPassportApps,
+    areAiPassportAppsAvailable,
 } from '../../../ai-passport-apps/aiPassport-apps.helpers';
 import { ChatBotQuestionsEnum } from '../newAiSessionChatbot.helpers';
 import { getMinimumTermsForContract } from 'apps/learn-card-app/src/helpers/contract.helpers';
@@ -29,8 +30,11 @@ export const ChatBotAppListItem: React.FC<{
 }> = ({ app, index, handleChatBotAnswer }) => {
     const currentUser = useCurrentUser()!!!!!!!!!;
     const { presentToast } = useToast();
-    const { data: contract } = useContract(app.contractUri);
-    const { hasConsented } = useConsentFlowByUri(app.contractUri);
+    const aiAppsAvailable = areAiPassportAppsAvailable();
+    const contractUri = aiAppsAvailable ? app.contractUri : undefined;
+
+    const { data: contract } = useContract(contractUri);
+    const { hasConsented } = useConsentFlowByUri(contractUri);
     const { mutateAsync: consentToContract } = useConsentToContract(
         app.contractUri ?? '',
         contract?.owner?.did ?? ''
@@ -38,8 +42,10 @@ export const ChatBotAppListItem: React.FC<{
 
     const isLearnCardAI = app.type === AiPassportAppsEnum.learncardapp;
 
+    if (!aiAppsAvailable) return null;
+
     // Always show LearnCard AI
-    if (!hasConsented && !isLearnCardAI) return <></>;
+    if (!hasConsented && !isLearnCardAI) return null;
 
     return (
         <button
@@ -56,8 +62,12 @@ export const ChatBotAppListItem: React.FC<{
                         });
                     } catch (error) {
                         console.error('Failed to consent to LearnCard AI contract:', error);
+
+                        const message =
+                            error instanceof Error ? error.message : String(error);
+
                         presentToast(
-                            `Failed to consent to LearnCard AI contract: ${error.message}`,
+                            `Failed to consent to LearnCard AI contract: ${message}`,
                             {
                                 type: ToastTypeEnum.Error,
                                 hasDismissButton: true,
@@ -66,7 +76,7 @@ export const ChatBotAppListItem: React.FC<{
                     }
                 }
 
-                handleChatBotAnswer(ChatBotQuestionsEnum.AppSelection, app?.id, index);
+                handleChatBotAnswer(ChatBotQuestionsEnum.AppSelection, String(app.id), index);
             }}
             className="flex flex-col items-center justify-center"
         >
@@ -92,9 +102,12 @@ export const ChatBotAppList: React.FC<{
         currentIndex: number
     ) => void;
 }> = ({ handleChatBotAnswer }) => {
+    const aiAppsAvailable = areAiPassportAppsAvailable();
+    const apps = aiAppsAvailable ? aiPassportApps : [];
+
     return (
         <div className="w-full flex items-center justify-around bg-white py-[24px] px-[20px] gap-[20px] overflow-x-auto">
-            {aiPassportApps.map((app, index) => (
+            {apps.map((app, index) => (
                 <ChatBotAppListItem
                     key={index}
                     app={app}
