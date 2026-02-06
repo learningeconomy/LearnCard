@@ -16,6 +16,7 @@
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/init": "workspace:*",
+        "@learncard/lca-api-plugin": "workspace:*",
         "@learncard/simple-signing-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
         "@xapi/xapi": "^3.0.0",
