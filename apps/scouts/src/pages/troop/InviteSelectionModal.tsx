@@ -28,12 +28,12 @@ const InviteSelectionModal: React.FC<InviteSelectionModalProps> = ({
                     }}
                     className="flex items-center gap-4 w-full p-4 rounded-xl border-2 border-grayscale-100 hover:border-sp-green-forest transition-colors text-left"
                 >
-                    <div className="flex items-center justify-center h-12 w-12 rounded-full overflow-hidden bg-grayscale-100">
+                    <div className="flex shrink-0 items-center justify-center h-12 w-12 rounded-full overflow-hidden bg-grayscale-100">
                         <LeaderIdThumbPlaceholder className="h-full w-full object-cover" />
                     </div>
                     <div>
                         <p className="font-semibold text-grayscale-900 line-clamp-1">Invite Troop Leader</p>
-                        <p className="text-sm text-grayscale-500 line-clamp-2">Add another leader or administrator to this troop</p>
+                        <p className="text-sm text-grayscale-500 line-clamp-2">Add a scout leader to this troop</p>
                     </div>
                 </button>
 
@@ -43,7 +43,7 @@ const InviteSelectionModal: React.FC<InviteSelectionModalProps> = ({
                     }}
                     className="flex items-center gap-4 w-full p-4 rounded-xl border-2 border-grayscale-100 hover:border-sp-green-forest transition-colors text-left"
                 >
-                    <div className="flex items-center justify-center h-12 w-12 rounded-full overflow-hidden bg-grayscale-100">
+                    <div className="flex shrink-0 items-center justify-center h-12 w-12 rounded-full overflow-hidden bg-grayscale-100">
                         <ScoutIdThumbPlaceholder className="h-full w-full object-cover" />
                     </div>
                     <div>
