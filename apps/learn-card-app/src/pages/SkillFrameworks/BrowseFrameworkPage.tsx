@@ -102,7 +102,8 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                 { code: { $regex: `/${search}/i` } }, // Case-insensitive regex match on code
                 { statement: { $regex: `/${search}/i` } }, // Case-insensitive regex match on statement
             ],
-        }
+        },
+        { enabled: !isFullSkillFramework }
     );
 
     // Recursively search through all levels of the skill tree

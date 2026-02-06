@@ -43,14 +43,18 @@ const FrameworkSearchResultItem: React.FC<FrameworkSearchResultItemProps> = ({
     const isTier = node.role === FrameworkNodeRole.tier;
     const isNodeSelected = selectedSkills?.some(skill => skill.id === node.id);
 
-    const { data, isLoading: _pathLoading } = useGetSkillPath(frameworkInfo.id, node.id);
+    const alreadyHavePath = 'path' in node;
+
+    const { data, isLoading: _pathLoading } = useGetSkillPath(frameworkInfo.id, node.id, {
+        enabled: !alreadyHavePath,
+    });
     let path = data?.path
         ? [...data.path.map(node => convertApiSkillNodeToSkillTreeNode(node))].reverse()
         : [];
 
     let pathLoading = _pathLoading;
 
-    if ('path' in node) {
+    if (alreadyHavePath) {
         // Used in Review Framework flow when the full skill tree is given in a JSON
         path = node.path;
         pathLoading = false;
