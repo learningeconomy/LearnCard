@@ -2,6 +2,8 @@ import { useStore } from '@nanostores/react';
 import { useGetCredentialList, useSyncConsentFlow } from 'learn-card-base';
 
 import TickSquareIcon from 'learn-card-base/svgs/TickSquareIcon';
+import X from '../../svgs/X';
+import { AiSessionsIconMonochrome } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
 
 import {
     currentThreadId,
@@ -9,6 +11,7 @@ import {
     sessionEnded,
     finishSession,
     isEndingSession,
+    isTyping,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 
 const FinishSessionButton: React.FC = () => {
@@ -16,6 +19,7 @@ const FinishSessionButton: React.FC = () => {
     const $currentThreadId = useStore(currentThreadId);
     const $threads = useStore(threads);
     const $isEndingSession = useStore(isEndingSession);
+    const $isTyping = useStore(isTyping);
 
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
     const { refetch: fetchTopics } = useGetCredentialList('AI Topic');
@@ -33,6 +37,26 @@ const FinishSessionButton: React.FC = () => {
             await fetchTopics();
         });
     };
+
+    return (
+        <div className="min-h-[75px] flex justify-between items-center gap-[15px] p-[15px] absolute top-[0px] left-[0px] w-full bg-white shadow-box-bottom z-[100000] safe-area-inset-top">
+            <div className="flex items-center justify-center gap-1 text-grayscale-900 font-semibold">
+                <AiSessionsIconMonochrome className="w-[24px] h-[24px] mr-2" />
+                AI Session
+                {/* <p className="text-sm flex items-center justify-center font-[600] leading-[24px] tracking-[0.25px] text-grayscale-600">
+                        {promptTitle}
+                    </p> */}
+            </div>
+            {!$isTyping && (
+                <button
+                    onClick={handleFinish}
+                    className="w-[24px] h-[24px] flex items-center justify-center text-grayscale-600"
+                >
+                    <X />
+                </button>
+            )}
+        </div>
+    );
 
     return (
         <div className="flex justify-center items-center p-[15px] absolute top-[0px] left-[0px] w-full bg-white shadow-box-bottom z-[100000] safe-area-inset-top">
