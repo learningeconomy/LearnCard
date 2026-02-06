@@ -288,88 +288,27 @@ export function connectWebSocket() {
             /* PLAN STREAMING (STRUCTURED)                       */
             /* -------------------------------------------------- */
 
-            if (data.event === 'plan_stream_start') {
-                planStreamActive.set(true);
-                planMetadata.set(null);
-                planSections.set({
-                    welcome: '',
-                    summary: '',
-                    objectives: [],
-                    skills: [],
-                    roadmap: [],
+            if (data.event === 'plan_structured') {
+                planStreamActive.set(true); // Or false if you don't need loading state
+
+                planMetadata.set({
+                    sections: {
+                        title: data.title,
+                        objectives: data.planData.objectives.length,
+                        skills: data.planData.skills.length,
+                        roadmap: data.planData.roadmap.length,
+                    },
                 });
-                return;
-            }
 
-            if (data.event === 'plan_metadata') {
-                planMetadata.set(data.sections ?? null);
-                return;
-            }
+                planSections.set({
+                    welcome: data.planData.welcome,
+                    summary: data.planData.summary,
+                    objectives: data.planData.objectives,
+                    skills: data.planData.skills,
+                    roadmap: data.planData.roadmap,
+                });
 
-            if (data.event === 'plan_section') {
-                const index = typeof data.index === 'number' ? data.index : undefined;
-
-                const prev = planSections.get();
-                const next = { ...prev };
-
-                switch (data.section) {
-                    case 'welcome':
-                        next.welcome += data.delta;
-                        break;
-
-                    case 'summary':
-                        next.summary += data.delta;
-                        break;
-
-                    case 'objectives': {
-                        const arr = [...next.objectives];
-                        arr[index ?? arr.length] = data.delta;
-                        next.objectives = arr;
-                        break;
-                    }
-
-                    case 'skills': {
-                        const arr = [...next.skills];
-                        arr[index ?? arr.length] = data.delta;
-                        next.skills = arr;
-                        break;
-                    }
-
-                    case 'roadmap': {
-                        const arr = [...next.roadmap];
-                        arr[index ?? arr.length] = data.delta;
-                        next.roadmap = arr;
-                        break;
-                    }
-                }
-
-                planSections.set(next);
-
-                return;
-            }
-
-            if (data.event === 'plan_stream_end') {
                 planStreamActive.set(false);
-                return;
-            }
-
-            /* -------------------------------------------------- */
-            /* FORMATTED STREAMING (MARKDOWN MODE)               */
-            /* -------------------------------------------------- */
-
-            if (data.event === 'plan_stream') {
-                const current = messages.get();
-                const last = current[current.length - 1];
-
-                if (last?.role === 'assistant') {
-                    messages.set([
-                        ...current.slice(0, -1),
-                        { ...last, content: last.content + data.delta },
-                    ]);
-                } else {
-                    messages.set([...current, { role: 'assistant', content: data.delta }]);
-                }
-
                 return;
             }
 
