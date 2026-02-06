@@ -705,6 +705,7 @@ export async function startTopicWithUri(topicUri: string) {
     const messageToSend = {
         action: 'start_topic_uri',
         topicUri,
+        introStreamMode: 'structured',
         did,
     };
 
@@ -767,6 +768,7 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
         action: 'start_learning_pathway',
         topicUri,
         pathwayUri,
+        introStreamMode: 'structured',
         did,
     };
 
