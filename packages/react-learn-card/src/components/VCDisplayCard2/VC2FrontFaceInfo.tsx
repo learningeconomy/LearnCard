@@ -125,7 +125,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                     />
                 )}
 
-                {customThumbComponent}
+                {customThumbComponent && customThumbComponent}
                 <div className="vc-issue-info-box bg-white flex flex-col items-center gap-[5px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
                     {customBodyCardComponent && customBodyCardComponent}
 
