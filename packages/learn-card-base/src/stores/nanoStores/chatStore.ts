@@ -46,6 +46,42 @@ export const planSections = atom({
 
 export const BACKEND_URL = LEARNCARD_AI_URL;
 
+/**
+ * Reset all chat-related stores to their initial values.
+ * Useful when starting a new session or logging out.
+ */
+export function resetChatStores() {
+    messages.set([]);
+    threads.set([]);
+    currentThreadId.set(null);
+    isTyping.set(false);
+    isLoading.set(false);
+    isEndingSession.set(false);
+    showEndingSessionLoader.set(false);
+    activeQuestions.set([]);
+    suggestedTopics.set([]);
+    topicCredentials.set([]);
+    sessionEnded.set(false);
+    planReady.set(false);
+    planReadyThread.set(null);
+    planStreamActive.set(false);
+    planMetadata.set({
+        sections: {
+            title: '',
+            objectives: 0,
+            skills: 0,
+            roadmap: 0,
+        },
+    });
+    planSections.set({
+        welcome: '',
+        summary: '',
+        objectives: [],
+        skills: [],
+        roadmap: [],
+    });
+}
+
 interface TopicCredential {
     uri: string;
     type: string;

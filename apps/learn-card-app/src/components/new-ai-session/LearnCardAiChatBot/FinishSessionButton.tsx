@@ -12,14 +12,20 @@ import {
     finishSession,
     isEndingSession,
     isTyping,
+    isLoading,
+    resetChatStores,
 } from 'learn-card-base/stores/nanoStores/chatStore';
+import { chatBotStore } from '../../../stores/chatBotStore';
+import { useModal } from 'learn-card-base';
 
 const FinishSessionButton: React.FC = () => {
+    const { closeAllModals } = useModal();
     const $sessionEnded = useStore(sessionEnded);
     const $currentThreadId = useStore(currentThreadId);
     const $threads = useStore(threads);
     const $isEndingSession = useStore(isEndingSession);
     const $isTyping = useStore(isTyping);
+    const $isLoading = useStore(isLoading);
 
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
     const { refetch: fetchTopics } = useGetCredentialList('AI Topic');
@@ -32,6 +38,14 @@ const FinishSessionButton: React.FC = () => {
 
     const handleFinish = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
+
+        if ($isLoading) {
+            resetChatStores();
+            chatBotStore.set.resetStore();
+            closeAllModals();
+            return;
+        }
+
         finishSession(async () => {
             await fetchNewContractCredentials();
             await fetchTopics();
@@ -47,14 +61,13 @@ const FinishSessionButton: React.FC = () => {
                         {promptTitle}
                     </p> */}
             </div>
-            {!$isTyping && (
-                <button
-                    onClick={handleFinish}
-                    className="w-[24px] h-[24px] flex items-center justify-center text-grayscale-600"
-                >
-                    <X />
-                </button>
-            )}
+
+            <button
+                onClick={handleFinish}
+                className="w-[24px] h-[24px] flex items-center justify-center text-grayscale-600"
+            >
+                <X />
+            </button>
         </div>
     );
 

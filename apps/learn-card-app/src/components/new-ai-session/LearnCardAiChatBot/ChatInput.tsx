@@ -246,7 +246,7 @@ const ChatInput: React.FC = () => {
 
     return (
         <>
-            <FinishSessionButton />
+            {/* <FinishSessionButton /> */}
             <div className="flex flex-col gap-[10px] p-[15px] sm:p-0">
                 <div className="flex rounded-[15px] overflow-hidden w-full sm:shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)] items-center">
                     <form
