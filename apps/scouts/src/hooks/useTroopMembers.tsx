@@ -52,7 +52,7 @@ export const useTroopMembers = (credential: VC, tab?: MemberTabsEnum, boostUri?:
     const { data: scoutRecipients } = useGetBoostRecipients(scoutBoostUri, !skipMembers);
     const { data: leaderRecipients } = useGetBoostRecipients(troopBoostUri, !skipMembers);
     const { data: currentBoostRecipients } = useGetBoostRecipients(uri, !skipMembers);
-console.log('///current BoostRecipeients', currentBoostRecipients)
+
     const getBoostPermissionsAsync = async (profileId: string) => {
         const wallet = await initWallet();
         return wallet.invoke.getBoostPermissions(uri, profileId);
@@ -141,15 +141,25 @@ console.log('///current BoostRecipeients', currentBoostRecipients)
                 }
             }
 
+            // Deduplicate by profileId (safety measure in case backend returns duplicates or cache is stale)
+            const seenProfileIds = new Set<string>();
+            const deduplicated = tempRows.filter(row => {
+                if (seenProfileIds.has(row.profileId)) {
+                    return false;
+                }
+                seenProfileIds.add(row.profileId);
+                return true;
+            });
+
             // Sort the rows
-            tempRows.sort((a, b) => {
+            deduplicated.sort((a, b) => {
                 // Sort by name alphabetically, current user on top
                 if (a.profileId === myProfileId) return -10; // Current user on top
                 if (a.name === b.name) return a.type === 'Leader' ? -1 : 1; // Name ties go to troop leaders
                 return a.name.localeCompare(b.name);
             });
 
-            setMemberRows(tempRows);
+            setMemberRows(deduplicated);
             setIsLoading(false);
         };
 
