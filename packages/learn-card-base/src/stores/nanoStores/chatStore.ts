@@ -288,9 +288,23 @@ export function connectWebSocket() {
             /* PLAN STREAMING (STRUCTURED)                       */
             /* -------------------------------------------------- */
 
-            if (data.event === 'plan_structured') {
-                planStreamActive.set(true); // Or false if you don't need loading state
+            if (data.event === 'plan_structured_delta') {
+                planStreamActive.set(true);
 
+                const p = data.planData;
+
+                planSections.set({
+                    welcome: p.welcome ?? '',
+                    summary: p.summary ?? '',
+                    objectives: p.objectives ?? [],
+                    skills: p.skills ?? [],
+                    roadmap: p.roadmap ?? [],
+                });
+
+                return;
+            }
+
+            if (data.event === 'plan_structured') {
                 planMetadata.set({
                     sections: {
                         title: data.title,
@@ -308,7 +322,7 @@ export function connectWebSocket() {
                     roadmap: data.planData.roadmap,
                 });
 
-                planStreamActive.set(false);
+                planStreamActive.set(false); // Stream complete
                 return;
             }
 
