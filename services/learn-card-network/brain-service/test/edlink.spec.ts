@@ -14,6 +14,7 @@ import { getUser } from './helpers/getClient';
 
 import { EdlinkConnection, EdlinkIssuedCredential, Profile } from '@models';
 import { createEdlinkConnection } from '@accesslayer/edlink-connection/create';
+import { getEdlinkConnectionById } from '@accesslayer/edlink-connection/read';
 import {
     updateEdlinkConnectionAutoIssue,
     updateEdlinkConnectionOwner,
@@ -606,24 +607,62 @@ describe('Ed.link Auto-Issuance', () => {
     // ==========================================================================
     describe('Polling Service: Credential issuance for completions', () => {
         let testConnectionId: string;
-        let createInboxCredentialMock: ReturnType<typeof vi.fn>;
-        let issueCredentialMock: ReturnType<typeof vi.fn>;
+
+        /**
+         * Sets up passive stubs that prevent real external calls and control inputs.
+         * Returns the action function (processEdlinkCompletions) — no mock refs are leaked.
+         */
+        const setupPollingStubs = async (options: {
+            completions: EdlinkAssignmentCompletion[];
+            issueCredentialImpl?: (...args: any[]) => any;
+        }) => {
+            vi.resetModules();
+
+            const edlinkHelpers = await import('@helpers/edlink.helpers');
+            const inboxHelpers = await import('@helpers/inbox.helpers');
+            const learnCardHelpers = await import('@helpers/learnCard.helpers');
+
+            vi.spyOn(edlinkHelpers, 'getEdlinkCompletions').mockResolvedValue({
+                summary: {
+                    classes: 1,
+                    assignmentCompletions: options.completions.length,
+                    courseCompletions: 0,
+                },
+                courseCompletions: [],
+                assignmentCompletions: options.completions,
+            });
+
+            vi.spyOn(inboxHelpers, 'issueToInbox').mockResolvedValue({
+                status: 'ISSUED',
+                inboxCredential: { id: 'inbox-cred-123' },
+                claimUrl: 'https://test.example.com/claim/123',
+            } as any);
+
+            vi.spyOn(learnCardHelpers, 'getLearnCard').mockResolvedValue({
+                id: { did: () => 'did:key:test123' },
+                invoke: {
+                    issueCredential:
+                        options.issueCredentialImpl ??
+                        vi.fn().mockResolvedValue({ proof: { type: 'test' } }),
+                },
+            } as any);
+
+            const { processEdlinkCompletions, resetIssuerLearnCard } = await import(
+                '@services/edlink-polling.service'
+            );
+            resetIssuerLearnCard();
+
+            return { processEdlinkCompletions };
+        };
 
         beforeEach(async () => {
             await EdlinkIssuedCredential.delete({ detach: true, where: {} });
             await EdlinkConnection.delete({ detach: true, where: {} });
             await Profile.delete({ detach: true, where: {} });
 
-            // Create a connection with auto-issue enabled (no owner needed for POC)
-            const connData = makeTestConnection({
-                autoIssueCredentials: true,
-            });
+            const connData = makeTestConnection({ autoIssueCredentials: true });
             testConnectionId = connData.id;
             await createEdlinkConnection(connData);
-
-            // Reset mocks
-            createInboxCredentialMock = vi.fn().mockResolvedValue({ id: 'inbox-cred-123' });
-            issueCredentialMock = vi.fn().mockResolvedValue({ proof: { type: 'test' } });
         });
 
         afterAll(async () => {
@@ -633,64 +672,44 @@ describe('Ed.link Auto-Issuance', () => {
             vi.restoreAllMocks();
         });
 
-        it('issues credentials for new completions', async () => {
+        it('records an ISSUED credential with correct student data when a new completion arrives', async () => {
+            // Given: a single new completion
             const testCompletion = makeTestCompletion({
                 personEmail: 'student@university.edu',
+                personName: 'Alice Johnson',
                 assignmentTitle: 'Midterm Exam',
                 className: 'Computer Science 101',
                 grade: 92,
             });
 
-            // Reset modules to ensure fresh import with mocks
-            vi.resetModules();
-
-            // Mock dependencies
-            const edlinkHelpers = await import('@helpers/edlink.helpers');
-            const inboxCreate = await import('@accesslayer/inbox-credential/create');
-            const learnCardHelpers = await import('@helpers/learnCard.helpers');
-
-            vi.spyOn(edlinkHelpers, 'getEdlinkCompletions').mockResolvedValue({
-                summary: { classes: 1, assignmentCompletions: 1, courseCompletions: 0 },
-                courseCompletions: [],
-                assignmentCompletions: [testCompletion],
+            // When: polling runs
+            const { processEdlinkCompletions } = await setupPollingStubs({
+                completions: [testCompletion],
             });
-
-            vi.spyOn(inboxCreate, 'createInboxCredential').mockImplementation(createInboxCredentialMock as any);
-
-            // Mock getLearnCard to return a mock learnCard with issueCredential
-            vi.spyOn(learnCardHelpers, 'getLearnCard').mockResolvedValue({
-                id: { did: () => 'did:key:test123' },
-                invoke: { issueCredential: issueCredentialMock },
-            } as any);
-
-            // Run polling - import AFTER setting up mocks
-            const { processEdlinkCompletions, resetIssuerLearnCard } = await import('@services/edlink-polling.service');
-            resetIssuerLearnCard();
             await processEdlinkCompletions();
 
-            // Verify credential was signed
-            expect(issueCredentialMock).toHaveBeenCalledTimes(1);
+            // Then: one ISSUED record with all fields populated
+            const records = await getIssuedCredentialsForConnection(testConnectionId);
+            expect(records).toHaveLength(1);
+            expect(records[0]?.dataValues).toMatchObject({
+                submissionId: testCompletion.submissionId,
+                assignmentId: testCompletion.assignmentId,
+                studentEmail: 'student@university.edu',
+                studentName: 'Alice Johnson',
+                className: 'Computer Science 101',
+                assignmentTitle: 'Midterm Exam',
+                grade: 92,
+                status: 'ISSUED',
+            });
 
-            // Verify inbox credential was created with signed credential
-            expect(createInboxCredentialMock).toHaveBeenCalledTimes(1);
-            expect(createInboxCredentialMock).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    isSigned: true,
-                    recipient: { type: 'email', value: 'student@university.edu' },
-                })
-            );
-
-            // Verify the credential was recorded in the database
-            const issuedCredentials = await getIssuedCredentialsForConnection(testConnectionId);
-            expect(issuedCredentials.length).toBe(1);
-            expect(issuedCredentials[0]?.dataValues.status).toBe('ISSUED');
-            expect(issuedCredentials[0]?.dataValues.studentEmail).toBe('student@university.edu');
+            // Then: connection's lastPolledAt is updated
+            const connection = await getEdlinkConnectionById(testConnectionId);
+            expect(connection?.dataValues.lastPolledAt).toBeDefined();
         });
 
-        it('skips already-issued submissions', async () => {
+        it('does not create a new record when the submission was already issued', async () => {
+            // Given: a completion that was already issued
             const testCompletion = makeTestCompletion();
-
-            // Pre-create an issued credential for this submission
             await createEdlinkIssuedCredential({
                 connectionId: testConnectionId,
                 submissionId: testCompletion.submissionId,
@@ -703,110 +722,136 @@ describe('Ed.link Auto-Issuance', () => {
                 status: 'ISSUED',
             });
 
-            // Reset modules to ensure fresh import with mocks
-            vi.resetModules();
-
-            const edlinkHelpers = await import('@helpers/edlink.helpers');
-            const inboxCreate = await import('@accesslayer/inbox-credential/create');
-            const learnCardHelpers = await import('@helpers/learnCard.helpers');
-
-            vi.spyOn(edlinkHelpers, 'getEdlinkCompletions').mockResolvedValue({
-                summary: { classes: 1, assignmentCompletions: 1, courseCompletions: 0 },
-                courseCompletions: [],
-                assignmentCompletions: [testCompletion],
+            // When: polling encounters the same submission again
+            const { processEdlinkCompletions } = await setupPollingStubs({
+                completions: [testCompletion],
             });
-
-            vi.spyOn(inboxCreate, 'createInboxCredential').mockImplementation(createInboxCredentialMock as any);
-            vi.spyOn(learnCardHelpers, 'getLearnCard').mockResolvedValue({
-                id: { did: () => 'did:key:test123' },
-                invoke: { issueCredential: issueCredentialMock },
-            } as any);
-
-            const { processEdlinkCompletions, resetIssuerLearnCard } = await import('@services/edlink-polling.service');
-            resetIssuerLearnCard();
             await processEdlinkCompletions();
 
-            // Should NOT have issued (already exists)
-            expect(issueCredentialMock).not.toHaveBeenCalled();
-            expect(createInboxCredentialMock).not.toHaveBeenCalled();
+            // Then: still only one record (no duplicate)
+            const records = await getIssuedCredentialsForConnection(testConnectionId);
+            expect(records).toHaveLength(1);
+
+            // Then: connection's lastPolledAt is updated
+            const connection = await getEdlinkConnectionById(testConnectionId);
+            expect(connection?.dataValues.lastPolledAt).toBeDefined();
         });
 
-        it('records SKIPPED status when student has no email', async () => {
-            const testCompletion = makeTestCompletion({
-                personEmail: null,
+        it('records a SKIPPED credential with error when the student has no email', async () => {
+            // Given: a completion with no student email
+            const testCompletion = makeTestCompletion({ personEmail: null });
+
+            // When: polling runs
+            const { processEdlinkCompletions } = await setupPollingStubs({
+                completions: [testCompletion],
             });
-
-            // Reset modules to ensure fresh import with mocks
-            vi.resetModules();
-
-            const edlinkHelpers = await import('@helpers/edlink.helpers');
-            const inboxCreate = await import('@accesslayer/inbox-credential/create');
-            const learnCardHelpers = await import('@helpers/learnCard.helpers');
-
-            vi.spyOn(edlinkHelpers, 'getEdlinkCompletions').mockResolvedValue({
-                summary: { classes: 1, assignmentCompletions: 1, courseCompletions: 0 },
-                courseCompletions: [],
-                assignmentCompletions: [testCompletion],
-            });
-
-            vi.spyOn(inboxCreate, 'createInboxCredential').mockImplementation(createInboxCredentialMock as any);
-            vi.spyOn(learnCardHelpers, 'getLearnCard').mockResolvedValue({
-                id: { did: () => 'did:key:test123' },
-                invoke: { issueCredential: issueCredentialMock },
-            } as any);
-
-            const { processEdlinkCompletions, resetIssuerLearnCard } = await import('@services/edlink-polling.service');
-            resetIssuerLearnCard();
             await processEdlinkCompletions();
 
-            // Should NOT have issued
-            expect(issueCredentialMock).not.toHaveBeenCalled();
-            expect(createInboxCredentialMock).not.toHaveBeenCalled();
+            // Then: one SKIPPED record with error message
+            const records = await getIssuedCredentialsForConnection(testConnectionId);
+            expect(records).toHaveLength(1);
+            expect(records[0]?.dataValues).toMatchObject({
+                submissionId: testCompletion.submissionId,
+                assignmentId: testCompletion.assignmentId,
+                studentName: testCompletion.personName,
+                className: testCompletion.className,
+                assignmentTitle: testCompletion.assignmentTitle,
+                grade: testCompletion.grade,
+                status: 'SKIPPED',
+            });
+            expect(records[0]?.dataValues.errorMessage).toContain('No email');
 
-            // Should record as SKIPPED
-            const issuedCredentials = await getIssuedCredentialsForConnection(testConnectionId);
-            expect(issuedCredentials.length).toBe(1);
-            expect(issuedCredentials[0]?.dataValues.status).toBe('SKIPPED');
-            expect(issuedCredentials[0]?.dataValues.errorMessage).toContain('No email');
+            // Then: connection's lastPolledAt is updated
+            const connection = await getEdlinkConnectionById(testConnectionId);
+            expect(connection?.dataValues.lastPolledAt).toBeDefined();
         });
 
-        it('records FAILED status when signing throws', async () => {
+        it('records a FAILED credential with error message when signing throws', async () => {
+            // Given: a completion where signing will fail
             const testCompletion = makeTestCompletion();
 
-            // Reset modules to ensure fresh import with mocks
-            vi.resetModules();
-
-            const edlinkHelpers = await import('@helpers/edlink.helpers');
-            const inboxCreate = await import('@accesslayer/inbox-credential/create');
-            const learnCardHelpers = await import('@helpers/learnCard.helpers');
-
-            vi.spyOn(edlinkHelpers, 'getEdlinkCompletions').mockResolvedValue({
-                summary: { classes: 1, assignmentCompletions: 1, courseCompletions: 0 },
-                courseCompletions: [],
-                assignmentCompletions: [testCompletion],
+            // When: polling runs with a broken signer
+            const { processEdlinkCompletions } = await setupPollingStubs({
+                completions: [testCompletion],
+                issueCredentialImpl: vi.fn().mockRejectedValue(new Error('Signing failed')),
             });
-
-            vi.spyOn(inboxCreate, 'createInboxCredential').mockImplementation(createInboxCredentialMock as any);
-
-            // Mock signing to fail
-            vi.spyOn(learnCardHelpers, 'getLearnCard').mockResolvedValue({
-                id: { did: () => 'did:key:test123' },
-                invoke: {
-                    issueCredential: vi.fn().mockRejectedValue(new Error('Signing failed'))
-                },
-            } as any);
-
-            // Import polling service AFTER setting up mocks (and after resetModules)
-            const { processEdlinkCompletions, resetIssuerLearnCard } = await import('@services/edlink-polling.service');
-            // Reset the cached LearnCard so it will use the mocked getLearnCard
-            resetIssuerLearnCard();
             await processEdlinkCompletions();
 
-            // Should record as FAILED
-            const issuedCredentials = await getIssuedCredentialsForConnection(testConnectionId);
-            expect(issuedCredentials.length).toBe(1);
-            expect(issuedCredentials[0]?.dataValues.status).toBe('FAILED');
-            expect(issuedCredentials[0]?.dataValues.errorMessage).toBe('Signing failed');
+            // Then: one FAILED record with the error message
+            const records = await getIssuedCredentialsForConnection(testConnectionId);
+            expect(records).toHaveLength(1);
+            expect(records[0]?.dataValues).toMatchObject({
+                submissionId: testCompletion.submissionId,
+                assignmentId: testCompletion.assignmentId,
+                studentEmail: testCompletion.personEmail,
+                studentName: testCompletion.personName,
+                className: testCompletion.className,
+                assignmentTitle: testCompletion.assignmentTitle,
+                grade: testCompletion.grade,
+                status: 'FAILED',
+                errorMessage: 'Signing failed',
+            });
+
+            // Then: connection's lastPolledAt is updated
+            const connection = await getEdlinkConnectionById(testConnectionId);
+            expect(connection?.dataValues.lastPolledAt).toBeDefined();
+        });
+
+        it('issues separate credential records for each completion in a single poll', async () => {
+            // Given: two completions from different students/assignments
+            const completionA = makeTestCompletion({
+                personEmail: 'alice@university.edu',
+                personName: 'Alice',
+                assignmentTitle: 'Essay 1',
+                className: 'English 101',
+                grade: 88,
+            });
+            const completionB = makeTestCompletion({
+                personEmail: 'bob@university.edu',
+                personName: 'Bob',
+                assignmentTitle: 'Lab Report',
+                className: 'Chemistry 201',
+                grade: 75,
+            });
+
+            // When: polling runs with both completions
+            const { processEdlinkCompletions } = await setupPollingStubs({
+                completions: [completionA, completionB],
+            });
+            await processEdlinkCompletions();
+
+            // Then: two separate ISSUED records
+            const records = await getIssuedCredentialsForConnection(testConnectionId);
+            expect(records).toHaveLength(2);
+
+            const alice = records.find(
+                r => r.dataValues.studentEmail === 'alice@university.edu'
+            );
+            const bob = records.find(
+                r => r.dataValues.studentEmail === 'bob@university.edu'
+            );
+
+            expect(alice?.dataValues).toMatchObject({
+                submissionId: completionA.submissionId,
+                studentName: 'Alice',
+                assignmentTitle: 'Essay 1',
+                className: 'English 101',
+                grade: 88,
+                status: 'ISSUED',
+            });
+
+            expect(bob?.dataValues).toMatchObject({
+                submissionId: completionB.submissionId,
+                studentName: 'Bob',
+                assignmentTitle: 'Lab Report',
+                className: 'Chemistry 201',
+                grade: 75,
+                status: 'ISSUED',
+            });
+
+            // Then: connection's lastPolledAt is updated
+            const connection = await getEdlinkConnectionById(testConnectionId);
+            expect(connection?.dataValues.lastPolledAt).toBeDefined();
         });
     });
 });
