@@ -14,6 +14,8 @@ import {
     isTyping,
     isLoading,
     resetChatStores,
+    messages,
+    planReadyThread,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 import { chatBotStore } from '../../../stores/chatBotStore';
 import { useModal } from 'learn-card-base';
@@ -26,6 +28,8 @@ const FinishSessionButton: React.FC = () => {
     const $isEndingSession = useStore(isEndingSession);
     const $isTyping = useStore(isTyping);
     const $isLoading = useStore(isLoading);
+    const $planReadyThread = useStore(planReadyThread);
+    const $messages = useStore(messages);
 
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
     const { refetch: fetchTopics } = useGetCredentialList('AI Topic');
@@ -39,7 +43,8 @@ const FinishSessionButton: React.FC = () => {
     const handleFinish = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
 
-        if ($isLoading) {
+        // if the plan is ready and we are no longer loading, reset the chat stores
+        if ($planReadyThread && !$isLoading && $messages.length === 0) {
             resetChatStores();
             chatBotStore.set.resetStore();
             closeAllModals();
