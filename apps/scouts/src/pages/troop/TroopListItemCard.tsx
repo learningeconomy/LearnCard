@@ -23,7 +23,7 @@ import InviteSelectionModal from './InviteSelectionModal';
 import { Boost, VC } from '@learncard/types';
 import { pluralize } from 'learn-card-base';
 import { useCanInviteTroop } from './useCanInviteTroop';
-import { getDefaultBadgeThumbForCredential } from '../../helpers/troop.helpers';
+import { getDefaultBadgeThumbForCredential, getScoutsRole, getScoutsNounForRole } from '../../helpers/troop.helpers';
 import { insertParamsToFilestackUrl, useGetCurrentUserTroopIds } from 'learn-card-base';
 
 type TroopListItemProps = {
@@ -159,10 +159,14 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
         const canInviteScout = myTroopIds?.isTroopLeader || scoutPermissionsData?.canIssue;
         const canInviteLeader = boostPermissionsData?.canIssue;
 
+        // Determine the correct label for the current credential type
+        const credentialRole = getScoutsRole(_resolvedBoost);
+        const credentialLabel = getScoutsNounForRole(credentialRole);
+
         if (canInviteScout && canInviteLeader) {
             newModal(
                 <InviteSelectionModal
-                    onInviteLeader={() => openScoutConnectModal(currentBoostUri, 'Troop Leader')}
+                    onInviteLeader={() => openScoutConnectModal(currentBoostUri, credentialLabel)}
                     onInviteScout={() => openScoutConnectModal(scoutBoostUri, 'Scout')}
                     handleCloseModal={closeModal}
                     scoutNoun={scoutNoun}
@@ -173,7 +177,7 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
         } else if (canInviteScout) {
             openScoutConnectModal(scoutBoostUri, 'Scout');
         } else if (canInviteLeader) {
-            openScoutConnectModal(currentBoostUri, 'Troop Leader');
+            openScoutConnectModal(currentBoostUri, credentialLabel);
         }
     };
 
