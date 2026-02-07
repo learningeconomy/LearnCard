@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 2.9.11
+
+### Patch Changes
+
+-   [#987](https://github.com/learningeconomy/LearnCard/pull/987) [`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1578] Optimize skill framework uploads (aka fix timeout error)
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.2
+
 ## 2.9.10
 
 ### Patch Changes
