@@ -31,7 +31,7 @@ Sentry.AWSLambda.init({
     ],
 });
 
-void startSkillEmbeddingBackfill();
+startSkillEmbeddingBackfill().catch(err => console.error('Skill embedding backfill startup error:', err));
 
 export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
 
