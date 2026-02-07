@@ -140,8 +140,6 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                             boostUri
                         );
 
-                        console.log('sentBoost', sentBoost);
-
                         // Auto-accept the credential on LCN so it's not stuck in "pending" state
                         await wallet.invoke.acceptCredential(sentBoostUri, { skipNotification: true });
 
