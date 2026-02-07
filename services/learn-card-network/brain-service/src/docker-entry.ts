@@ -153,7 +153,7 @@ if (pollUrl) {
     })();
 }
 
-// Start Ed.link polling service for automatic credential issuance
+// Start Ed.link polling service after a delay to avoid competing with SQS consumer at boot
 if (process.env.EDLINK_ENABLED === 'true') {
-    startEdlinkPolling();
+    setTimeout(() => startEdlinkPolling(), 30_000);
 }
