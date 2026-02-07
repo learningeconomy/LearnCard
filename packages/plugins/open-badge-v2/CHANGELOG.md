@@ -1,5 +1,15 @@
 # @learncard/open-badge-v2-plugin
 
+## 1.1.7
+
+### Patch Changes
+
+-   Updated dependencies [[`32e5cfacf499e9a68700170298040f3d313b38da`](https://github.com/learningeconomy/LearnCard/commit/32e5cfacf499e9a68700170298040f3d313b38da)]:
+    -   @learncard/types@5.12.0
+    -   @learncard/core@9.4.6
+    -   @learncard/vc-plugin@1.4.2
+    -   @learncard/crypto-plugin@1.1.6
+
 ## 1.1.6
 
 ### Patch Changes
