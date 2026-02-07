@@ -40,6 +40,13 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_associate_listing_with_signing_authority(self) -> None:
+        """Test case for app_store_associate_listing_with_signing_authority
+
+        Associate Listing with Signing Authority
+        """
+        pass
+
     def test_app_store_browse_listed_apps(self) -> None:
         """Test case for app_store_browse_listed_apps
 
@@ -103,6 +110,13 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_get_listing_signing_authority(self) -> None:
+        """Test case for app_store_get_listing_signing_authority
+
+        Get Listing Signing Authority
+        """
+        pass
+
     def test_app_store_get_listings_for_integration(self) -> None:
         """Test case for app_store_get_listings_for_integration
 
@@ -114,6 +128,13 @@ class TestAppStoreApi(unittest.TestCase):
         """Test case for app_store_get_public_listing
 
         Get Public App Listing
+        """
+        pass
+
+    def test_app_store_get_public_listing_by_slug(self) -> None:
+        """Test case for app_store_get_public_listing_by_slug
+
+        Get Public App Listing by Slug
         """
         pass
 
