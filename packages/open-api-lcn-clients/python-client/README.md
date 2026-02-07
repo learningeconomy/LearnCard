@@ -100,6 +100,7 @@ Class | Method | HTTP request | Description
 *ActivityApi* | [**activity_get_my_activities**](docs/ActivityApi.md#activity_get_my_activities) | **GET** /activity/credentials | Get Credential Activities
 *AppStoreApi* | [**app_store_add_boost_to_listing**](docs/AppStoreApi.md#app_store_add_boost_to_listing) | **POST** /app-store/listing/{listingId}/boost/add | Add Boost to Listing
 *AppStoreApi* | [**app_store_app_event**](docs/AppStoreApi.md#app_store_app_event) | **POST** /app-store/event | Process App Event
+*AppStoreApi* | [**app_store_associate_listing_with_signing_authority**](docs/AppStoreApi.md#app_store_associate_listing_with_signing_authority) | **POST** /app-store/listing/{listingId}/associate-with-signing-authority | Associate Listing with Signing Authority
 *AppStoreApi* | [**app_store_browse_listed_apps**](docs/AppStoreApi.md#app_store_browse_listed_apps) | **POST** /app-store/browse | Browse App Store
 *AppStoreApi* | [**app_store_count_installed_apps**](docs/AppStoreApi.md#app_store_count_installed_apps) | **GET** /app-store/installed/count | Count Installed Apps
 *AppStoreApi* | [**app_store_count_listings_for_integration**](docs/AppStoreApi.md#app_store_count_listings_for_integration) | **GET** /app-store/integration/{integrationId}/listings/count | Count Listings for Integration
@@ -109,8 +110,10 @@ Class | Method | HTTP request | Description
 *AppStoreApi* | [**app_store_get_installed_apps**](docs/AppStoreApi.md#app_store_get_installed_apps) | **POST** /app-store/installed | Get Installed Apps
 *AppStoreApi* | [**app_store_get_listing**](docs/AppStoreApi.md#app_store_get_listing) | **GET** /app-store/listing/{listingId} | Get App Store Listing (Owner)
 *AppStoreApi* | [**app_store_get_listing_install_count**](docs/AppStoreApi.md#app_store_get_listing_install_count) | **GET** /app-store/listing/{listingId}/install-count | Get App Install Count
+*AppStoreApi* | [**app_store_get_listing_signing_authority**](docs/AppStoreApi.md#app_store_get_listing_signing_authority) | **GET** /app-store/listing/{listingId}/signing-authority | Get Listing Signing Authority
 *AppStoreApi* | [**app_store_get_listings_for_integration**](docs/AppStoreApi.md#app_store_get_listings_for_integration) | **POST** /app-store/integration/{integrationId}/listings | Get Listings for Integration
 *AppStoreApi* | [**app_store_get_public_listing**](docs/AppStoreApi.md#app_store_get_public_listing) | **GET** /app-store/public/listing/{listingId} | Get Public App Listing
+*AppStoreApi* | [**app_store_get_public_listing_by_slug**](docs/AppStoreApi.md#app_store_get_public_listing_by_slug) | **GET** /app-store/public/listing/slug/{slug} | Get Public App Listing by Slug
 *AppStoreApi* | [**app_store_install_app**](docs/AppStoreApi.md#app_store_install_app) | **POST** /app-store/listing/{listingId}/install | Install App
 *AppStoreApi* | [**app_store_is_app_installed**](docs/AppStoreApi.md#app_store_is_app_installed) | **GET** /app-store/listing/{listingId}/is-installed | Check if App is Installed
 *AppStoreApi* | [**app_store_remove_boost_from_listing**](docs/AppStoreApi.md#app_store_remove_boost_from_listing) | **POST** /app-store/listing/{listingId}/boost/remove | Remove Boost from Listing
@@ -222,7 +225,6 @@ Class | Method | HTTP request | Description
 *DIDMetadataApi* | [**did_metadata_get_my_did_metadata**](docs/DIDMetadataApi.md#did_metadata_get_my_did_metadata) | **POST** /profile/did-metadata | Get My DID Metadata
 *DIDMetadataApi* | [**did_metadata_update_did_metadata**](docs/DIDMetadataApi.md#did_metadata_update_did_metadata) | **POST** /did-metadata/update/{id} | Update DID Metadata
 *IntegrationsApi* | [**integrations_add_integration**](docs/IntegrationsApi.md#integrations_add_integration) | **POST** /integration/create | Create Integration
-*IntegrationsApi* | [**integrations_associate_integration_with_signing_authority**](docs/IntegrationsApi.md#integrations_associate_integration_with_signing_authority) | **POST** /integration/{integrationId}/associate-with-signing-authority | Associate Integration with Signing Authority
 *IntegrationsApi* | [**integrations_count_integrations**](docs/IntegrationsApi.md#integrations_count_integrations) | **POST** /profile/integrations/count | Count My Integrations
 *IntegrationsApi* | [**integrations_delete_integration**](docs/IntegrationsApi.md#integrations_delete_integration) | **DELETE** /integration/{id} | Delete Integration
 *IntegrationsApi* | [**integrations_get_integration**](docs/IntegrationsApi.md#integrations_get_integration) | **GET** /integration/{id} | Get Integration
@@ -250,6 +252,7 @@ Class | Method | HTTP request | Description
 *ProfilesApi* | [**profile_blocked**](docs/ProfilesApi.md#profile_blocked) | **GET** /profile/blocked | View blocked profiles
 *ProfilesApi* | [**profile_cancel_connection_request**](docs/ProfilesApi.md#profile_cancel_connection_request) | **POST** /profile/{profileId}/cancel-connection-request | Cancel Connection Request
 *ProfilesApi* | [**profile_connect_with**](docs/ProfilesApi.md#profile_connect_with) | **POST** /profile/{profileId}/connect | Connect with another profile
+*ProfilesApi* | [**profile_connect_with_expired_invite**](docs/ProfilesApi.md#profile_connect_with_expired_invite) | **POST** /profile/{profileId}/connect-expired-invite | Connect with another profile (expired invite)
 *ProfilesApi* | [**profile_connect_with_invite**](docs/ProfilesApi.md#profile_connect_with_invite) | **POST** /profile/{profileId}/connect/{challenge} | Connect using an invitation
 *ProfilesApi* | [**profile_connection_requests**](docs/ProfilesApi.md#profile_connection_requests) | **GET** /profile/connection-requests | View connection requests
 *ProfilesApi* | [**profile_connections**](docs/ProfilesApi.md#profile_connections) | **GET** /profile/connections | View connections
@@ -341,6 +344,7 @@ Class | Method | HTTP request | Description
  - [AppStoreAdminUpdateListingStatusRequest](docs/AppStoreAdminUpdateListingStatusRequest.md)
  - [AppStoreAdminUpdatePromotionLevelRequest](docs/AppStoreAdminUpdatePromotionLevelRequest.md)
  - [AppStoreAppEventRequest](docs/AppStoreAppEventRequest.md)
+ - [AppStoreAssociateListingWithSigningAuthorityRequest](docs/AppStoreAssociateListingWithSigningAuthorityRequest.md)
  - [AppStoreBrowseListedAppsRequest](docs/AppStoreBrowseListedAppsRequest.md)
  - [AppStoreCreateListingRequest](docs/AppStoreCreateListingRequest.md)
  - [AppStoreCreateListingRequestListing](docs/AppStoreCreateListingRequestListing.md)
@@ -348,6 +352,7 @@ Class | Method | HTTP request | Description
  - [AppStoreGetInstalledApps200Response](docs/AppStoreGetInstalledApps200Response.md)
  - [AppStoreGetInstalledApps200ResponseRecordsInner](docs/AppStoreGetInstalledApps200ResponseRecordsInner.md)
  - [AppStoreGetListing200Response](docs/AppStoreGetListing200Response.md)
+ - [AppStoreGetListingSigningAuthority200Response](docs/AppStoreGetListingSigningAuthority200Response.md)
  - [AppStoreGetListingsForIntegration200Response](docs/AppStoreGetListingsForIntegration200Response.md)
  - [AppStoreGetListingsForIntegration200ResponseRecordsInner](docs/AppStoreGetListingsForIntegration200ResponseRecordsInner.md)
  - [AppStoreGetListingsForIntegrationRequest](docs/AppStoreGetListingsForIntegrationRequest.md)
@@ -743,7 +748,6 @@ Class | Method | HTTP request | Description
  - [InboxSendGuardianApprovalEmailRequestTemplate](docs/InboxSendGuardianApprovalEmailRequestTemplate.md)
  - [IntegrationsAddIntegrationRequest](docs/IntegrationsAddIntegrationRequest.md)
  - [IntegrationsAddIntegrationRequestWhitelistedDomainsInner](docs/IntegrationsAddIntegrationRequestWhitelistedDomainsInner.md)
- - [IntegrationsAssociateIntegrationWithSigningAuthorityRequest](docs/IntegrationsAssociateIntegrationWithSigningAuthorityRequest.md)
  - [IntegrationsCountIntegrationsRequest](docs/IntegrationsCountIntegrationsRequest.md)
  - [IntegrationsGetIntegration200Response](docs/IntegrationsGetIntegration200Response.md)
  - [IntegrationsGetIntegrations200Response](docs/IntegrationsGetIntegrations200Response.md)

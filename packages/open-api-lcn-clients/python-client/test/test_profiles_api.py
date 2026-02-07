@@ -82,6 +82,13 @@ class TestProfilesApi(unittest.TestCase):
         """
         pass
 
+    def test_profile_connect_with_expired_invite(self) -> None:
+        """Test case for profile_connect_with_expired_invite
+
+        Connect with another profile (expired invite)
+        """
+        pass
+
     def test_profile_connect_with_invite(self) -> None:
         """Test case for profile_connect_with_invite
 

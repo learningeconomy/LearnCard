@@ -36,7 +36,9 @@ class TestInboxClaimRequestConfiguration(unittest.TestCase):
         if include_optional:
             return InboxClaimRequestConfiguration(
                 publishable_key = '',
-                signing_authority_name = ''
+                signing_authority_name = '',
+                listing_id = '',
+                listing_slug = ''
             )
         else:
             return InboxClaimRequestConfiguration(
