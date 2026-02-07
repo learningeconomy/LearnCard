@@ -23,27 +23,25 @@ const messagesSource = [
 export const LoginOverlay: React.FC<{ isOpen: boolean }> = ({ isOpen }) => {
     const [shouldRender, setShouldRender] = useState(isOpen);
     const [isTransitioning, setIsTransitioning] = useState(false);
-    const isOpenRef = useRef(isOpen);
-    const messages = useMemo(() => _.shuffle(messagesSource), []);
-
-    useEffect(() => {
-        isOpenRef.current = isOpen;
-    }, [isOpen]);
+    const [typewriterKey, setTypewriterKey] = useState(0);
+    const messages = useMemo(() => _.shuffle(messagesSource), [typewriterKey]);
 
     useEffect(() => {
         if (isOpen) {
             setShouldRender(true);
             setIsTransitioning(false);
+            // Reset typewriter when opening
+            setTypewriterKey(prev => prev + 1);
+        } else if (shouldRender) {
+            // Start exit transition
+            setIsTransitioning(true);
+            const timer = setTimeout(() => {
+                setShouldRender(false);
+                setIsTransitioning(false);
+            }, 1000);
+            return () => clearTimeout(timer);
         }
     }, [isOpen]);
-
-    const handleExit = () => {
-        setIsTransitioning(true);
-        setTimeout(() => {
-            setShouldRender(false);
-            setIsTransitioning(false);
-        }, 1000);
-    };
 
     if (!shouldRender) return null;
 
@@ -61,50 +59,18 @@ export const LoginOverlay: React.FC<{ isOpen: boolean }> = ({ isOpen }) => {
                     <img src={ScoutPassLogo} alt="ScoutPass logo" className="w-[55px]" />
                     <img src={ScoutPassTextLogo} alt="ScoutPass text logo" className="mt-4" />
                     <div className="w-full flex items-center justify-center text-center text-[18px] px-6 mt-[20px]">
-                        <Typewriter
-                            onInit={typewriter => {
-                                const runCycle = async () => {
-                                    for (const message of messages) {
-                                        if (!isOpenRef.current) {
-                                            handleExit();
-                                            return;
-                                        }
-
-                                        await new Promise<void>(resolve => {
-                                            typewriter
-                                                .typeString(message)
-                                                .callFunction(() => {
-                                                    if (!isOpenRef.current) {
-                                                        handleExit();
-                                                    } else {
-                                                        typewriter
-                                                            .pauseFor(1500)
-                                                            .deleteAll()
-                                                            .callFunction(() => resolve())
-                                                            .start();
-                                                    }
-                                                })
-                                                .start();
-                                        });
-
-                                        // If we exited early, stop the loop
-                                        if (isTransitioning) return;
-                                    }
-                                    // Loop back if we still haven't closed
-                                    if (isOpenRef.current) {
-                                        runCycle();
-                                    } else {
-                                        handleExit();
-                                    }
-                                };
-
-                                runCycle();
-                            }}
-                            options={{
-                                delay: 70,
-                                deleteSpeed: 50,
-                            }}
-                        />
+                        {!isTransitioning && (
+                            <Typewriter
+                                key={typewriterKey}
+                                options={{
+                                    strings: messages,
+                                    autoStart: true,
+                                    loop: true,
+                                    delay: 70,
+                                    deleteSpeed: 50,
+                                }}
+                            />
+                        )}
                     </div>
                 </div>
             </IonRow>

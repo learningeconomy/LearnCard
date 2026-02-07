@@ -163,6 +163,7 @@ export type LearnCardNetworkPluginMethods = {
         }
     ) => Promise<LCNProfile[]>;
     connectWith: (profileId: string) => Promise<boolean>;
+    connectWithExpiredInvite: (profileId: string) => Promise<boolean>;
     connectWithInvite: (profileId: string, challenge: string) => Promise<boolean>;
     cancelConnectionRequest: (profileId: string) => Promise<boolean>;
     disconnectWith: (profileId: string) => Promise<boolean>;
