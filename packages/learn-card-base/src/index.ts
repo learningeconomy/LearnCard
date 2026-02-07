@@ -93,6 +93,7 @@ export * from './hooks/useSwitchAccount';
 export * from './hooks/useToast';
 export * from './hooks/useSigningAuthority';
 export * from './hooks/useXApiStatements';
+export * from './hooks/useXApiStatementsForContract';
 export * from './hooks/useGetKeyboardHeight';
 export * from './stores/aiBoostStore';
 export * from './hooks/useGetCheckListStatus';

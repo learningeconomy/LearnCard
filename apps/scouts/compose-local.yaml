@@ -23,6 +23,7 @@ services:
             LCN_URL: http://localhost:4000/trpc
             LCN_API_URL: http://localhost:4000/api
             CLOUD_URL: http://localhost:4100/trpc
+            LEARN_CLOUD_XAPI_URL: http://localhost:4100/xapi
             API_URL: http://localhost:5100/trpc
             SKIP_DIDKIT_NAPI: '1'
             CHOKIDAR_USEPOLLING: 'true'

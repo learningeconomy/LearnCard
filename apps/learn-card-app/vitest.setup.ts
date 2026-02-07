@@ -10,6 +10,7 @@ global.TextDecoder = NodeTextDecoder as unknown as typeof TextDecoder;
 (global as any).LCN_API_URL = 'http://localhost:4000/api';
 (global as any).LCN_URL = 'http://localhost:4000/trpc';
 (global as any).CLOUD_URL = 'http://localhost:4100/trpc';
+(global as any).LEARN_CLOUD_XAPI_URL = 'http://localhost:4100/xapi';
 (global as any).API_URL = 'http://localhost:5100/trpc';
 (global as any).IS_PRODUCTION = false;
 
