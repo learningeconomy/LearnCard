@@ -116,6 +116,7 @@ sequenceDiagram
 
 ## Related Documentation
 
+- [Credential Revocation](credential-revocation.md) — How credentials are revoked and wallets sync
 - [Boost Credentials](../../core-concepts/credentials-and-data/boost-credentials.md) — Understanding hierarchies and permissions
 - [Getting Started with Boosts](../../core-concepts/credentials-and-data/getting-started-with-boosts.md) — Creating and issuing boosts
 - [Network Profiles](../../core-concepts/identities-and-keys/network-profiles.md) — Managing organizational profiles

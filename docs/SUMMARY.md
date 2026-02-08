@@ -141,6 +141,7 @@
 * [Apps Overview](apps/README.md)
 * [LearnCard App](apps/learn-card-app/README.md)
 * [ScoutPass](apps/scouts/README.md)
+  * [Credential Revocation](apps/scouts/credential-revocation.md)
 
 ## 🔗 Development
 

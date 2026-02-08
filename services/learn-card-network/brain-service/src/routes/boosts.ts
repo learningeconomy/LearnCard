@@ -1415,6 +1415,88 @@ export const boostsRouter = t.router({
             });
         }),
 
+    revokeBoostRecipient: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/recipients/revoke',
+                tags: ['Boosts'],
+                summary: 'Revoke a boost recipient',
+                description:
+                    'Revokes a credential for a specified recipient. This marks the credential as revoked instead of deleting it, and removes any permissions granted via claim hooks.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(
+            z.object({
+                boostUri: z.string(),
+                recipientProfileId: z.string(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { boostUri, recipientProfileId } = input;
+
+            const decodedUri = decodeURIComponent(boostUri);
+            const boost = await getBoostByUri(decodedUri);
+
+            if (!boost) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            }
+
+            // Check if the profile has permission to revoke
+            const permissions = await getBoostPermissions(boost, profile);
+            if (!permissions.canRevoke) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permission to revoke credentials for this boost',
+                });
+            }
+
+            // Get the recipient profile
+            const recipientProfile = await getProfileByProfileId(recipientProfileId);
+            if (!recipientProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Recipient profile not found',
+                });
+            }
+
+            // Get the credential instance for this boost + recipient
+            const { getCredentialInstanceForBoostAndProfile } = await import(
+                '@accesslayer/credential/read'
+            );
+            const credential = await getCredentialInstanceForBoostAndProfile(boost.id, recipientProfileId);
+
+            if (!credential) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'No credential found for this recipient and boost',
+                });
+            }
+
+            // Revoke the credential
+            const { revokeCredentialReceived } = await import(
+                '@accesslayer/credential/relationships/update'
+            );
+            const revoked = await revokeCredentialReceived(credential.id, recipientProfileId);
+
+            if (!revoked) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to revoke credential',
+                });
+            }
+
+            // Process revoke hooks to remove permissions
+            const { processRevokeHooks } = await import('@helpers/revoke-hooks.helpers');
+            await processRevokeHooks(recipientProfile, credential);
+
+            return true;
+        }),
+
     getChildrenProfileManagers: profileRoute
         .meta({
             openapi: {
@@ -1550,6 +1632,10 @@ export const boostsRouter = t.router({
             } = input;
 
             const decodedUri = decodeURIComponent(uri);
+            console.log('[BrainService] getPaginatedBoostRecipientsWithChildren called');
+            console.log('[BrainService] URI:', decodedUri);
+            console.log('[BrainService] boostQuery:', JSON.stringify(boostQuery, null, 2));
+
             const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });

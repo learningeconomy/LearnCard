@@ -345,3 +345,55 @@ export const useDeleteCredentialRecord = () => {
         },
     });
 };
+
+// ** BOOST MUTATIONS **
+
+type RevokeBoostRecipientParams = {
+    boostUri: string;
+    recipientProfileId: string;
+};
+
+/**
+ * Revoke a boost recipient, marking their credential as revoked.
+ * This will filter the recipient from boost recipients lists and
+ * remove any permissions that were granted via claim hooks.
+ */
+export const useRevokeBoostRecipient = () => {
+    const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+
+    return useMutation<boolean, Error, RevokeBoostRecipientParams>({
+        mutationFn: async ({ boostUri, recipientProfileId }) => {
+            try {
+                const wallet = await initWallet();
+                const result = await (wallet?.invoke as any)?.revokeBoostRecipient(
+                    boostUri,
+                    recipientProfileId
+                );
+
+                return result;
+            } catch (error) {
+                return Promise.reject(new Error(String(error)));
+            }
+        },
+        onSuccess: (_, { boostUri }) => {
+            // Invalidate boost recipients queries to refresh the data
+            queryClient.invalidateQueries({
+                queryKey: ['boostRecipients', boostUri],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['getPaginatedBoostRecipients'],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['getBoostRecipientCount'],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['boosts'],
+            });
+            // Invalidate Scouts app member list query
+            queryClient.invalidateQueries({
+                queryKey: ['useNetworkMembers'],
+            });
+        },
+    });
+};

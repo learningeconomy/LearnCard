@@ -14,6 +14,7 @@ import {
     getIncomingCredentialsForProfile,
     getReceivedCredentialsForProfile,
     getSentCredentialsForProfile,
+    getRevokedCredentialUrisForProfile,
 } from '@accesslayer/credential/read';
 
 import { deleteStorageForUri } from '@cache/storage';
@@ -223,6 +224,28 @@ export const credentialsRouter = t.router({
             await Promise.all([deleteCredential(credential), deleteStorageForUri(uri)]);
 
             return true;
+        }),
+
+    /**
+     * Get credentials that have been revoked for the current user.
+     * This allows the frontend to sync and remove revoked credentials from their index.
+     */
+    getRevokedCredentials: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/credentials/revoked',
+                tags: ['Credentials'],
+                summary: 'Get revoked credentials',
+                description: "This endpoint returns credential URIs that have been revoked for the current user",
+            },
+            requiredScope: 'credentials:read',
+        })
+        .input(z.object({}).default({}))
+        .output(z.array(z.string()))
+        .query(async ({ ctx }) => {
+            return getRevokedCredentialUrisForProfile(ctx.domain, ctx.user.profile);
         }),
 });
 export type CredentialsRouter = typeof credentialsRouter;

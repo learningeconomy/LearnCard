@@ -59,7 +59,8 @@ export const getCredentialOwner = async (
 
 export const getCredentialReceivedByProfile = async (
     credentialId: string,
-    profile: ProfileType
+    profile: ProfileType,
+    includeRevoked = false
 ): Promise<boolean> => {
     const relationships = await Credential.findRelationships({
         alias: 'credentialReceived',
@@ -69,7 +70,15 @@ export const getCredentialReceivedByProfile = async (
         },
     });
 
-    return relationships.length > 0;
+    if (includeRevoked) {
+        return relationships.length > 0;
+    }
+
+    // Filter out revoked credentials
+    return relationships.some(rel => {
+        const status = (rel.relationship as any)?.status;
+        return !status || status !== 'revoked';
+    });
 };
 
 /**

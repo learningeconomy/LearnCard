@@ -14,6 +14,9 @@ import {
     useGetCurrentUserTroopIds,
     useModal,
     useResolveBoost,
+    useRevokeBoostRecipient,
+    useToast,
+    ToastTypeEnum,
     useWallet,
 } from 'learn-card-base';
 import { getScoutsRole } from '../../helpers/troop.helpers';
@@ -45,6 +48,7 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
 }) => {
     const { initWallet } = useWallet();
     const confirm = useConfirmation();
+    const { presentToast } = useToast();
     const { newModal, closeModal, closeAllModals } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -52,10 +56,14 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
 
     const { data: troopIds, isLoading: troopIdsLoading } = useGetCurrentUserTroopIds();
     const hasGlobalAdminID = troopIds?.isScoutGlobalAdmin;
+    const isTroopLeader = troopIds?.isTroopLeader;
+
+    const { mutateAsync: revokeBoostRecipient, isPending: isRevoking } = useRevokeBoostRecipient();
 
     const role = getScoutsRole(credential);
     const troopOrNetwork =
         role === ScoutsRoleEnum.scout || role === ScoutsRoleEnum.leader ? 'Troop' : 'Network';
+    const isScoutMember = type === 'Scout' || type === 'Member';
 
     const { data: resolvedCredential } = useResolveBoost(boostUri);
     const _credential = resolvedCredential ?? credential;
@@ -79,6 +87,33 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
         closeModal();
         newModal(<ViewJsonModal boost={_credential} />, {
             sectionClassName: '!max-h-[90%] !mx-[20px]',
+        });
+    };
+
+    const handleRevokeScout = async () => {
+        await confirm({
+            text: `Are you sure you want to remove ${ownerName} from ${credential?.name}?`,
+            onConfirm: async () => {
+                try {
+                    await revokeBoostRecipient({
+                        boostUri,
+                        recipientProfileId: ownerProfileId,
+                    });
+                    presentToast(`${ownerName} has been removed from ${credential?.name}`, {
+                        type: ToastTypeEnum.Success,
+                    });
+                    closeAllModals();
+                } catch (error) {
+                    console.error('Failed to revoke scout:', error);
+                    presentToast(`Failed to remove ${ownerName}. Please try again.`, {
+                        type: ToastTypeEnum.Error,
+                    });
+                }
+            },
+            cancelButtonClassName:
+                'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
+            confirmButtonClassName:
+                'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
         });
     };
 
@@ -167,6 +202,14 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
                     text={`Remove from ${troopOrNetwork}`}
                     icon={<PeaceIcon />}
                     onClick={handleRevoke}
+                />
+            )}
+            {/* Remove Scout option - for troop leaders/admins removing non-admin members */}
+            {!isPersonalId && (isTroopLeader || canManageId || hasGlobalAdminID) && isScoutMember && (
+                <IdOptionRow
+                    text={`Remove from ${troopOrNetwork}`}
+                    icon={<PeaceIcon />}
+                    onClick={handleRevokeScout}
                 />
             )}
         </div>
