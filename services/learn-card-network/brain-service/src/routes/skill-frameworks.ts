@@ -43,7 +43,6 @@ import { isProfileBoostAdmin } from '@accesslayer/boost/relationships/read';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { neogma } from '@instance';
 import { getSkillsByFramework } from '@accesslayer/skill/read';
-import { updateSkill, deleteSkill } from '@accesslayer/skill/update';
 import {
     listFrameworkManagers,
     addFrameworkManager,
@@ -562,118 +561,143 @@ export const skillFrameworksRouter = t.router({
             let deleted = 0;
             let unchanged = 0;
 
-            // Delete skills that are no longer in the new input
             const skillsToDelete = existingSkills.filter(
                 existing => !newSkillsMap.has(existing.id)
             );
-            for (const skill of skillsToDelete) {
-                await deleteSkill(frameworkId, skill.id);
-                await provider.deleteSkill?.(frameworkId, skill.id);
-                deleted++;
-            }
 
-            // Process skills in order (parents before children)
-            // This ensures parent relationships can be established correctly
             for (const { skill, parentId } of flattenedNew) {
-                const input = toCreateSkillInput(skill);
-                const skillId = input.id!;
-
+                const normalized = toCreateSkillInput(skill);
+                const skillId = normalized.id!;
                 const existing = existingSkillsMap.get(skillId);
 
-                if (existing) {
-                    // Check if the skill properties changed
-                    const hasPropertyChanges =
-                        existing.statement !== input.statement ||
-                        existing.description !== input.description ||
-                        existing.code !== input.code ||
-                        existing.icon !== input.icon ||
-                        existing.type !== input.type ||
-                        existing.status !== input.status;
+                if (!existing) {
+                    created++;
+                    continue;
+                }
 
-                    // Check if parent relationship changed
-                    const hasParentChange = existing.parentId !== parentId;
+                const hasPropertyChanges =
+                    existing.statement !== normalized.statement ||
+                    existing.description !== normalized.description ||
+                    existing.code !== normalized.code ||
+                    existing.icon !== normalized.icon ||
+                    existing.type !== normalized.type ||
+                    existing.status !== normalized.status;
 
-                    if (hasPropertyChanges) {
-                        await updateSkill(frameworkId, skillId, {
-                            statement: input.statement,
-                            description: input.description,
-                            code: input.code,
-                            icon: input.icon,
-                            type: input.type,
-                            status: input.status,
+                const hasParentChange = existing.parentId !== parentId;
+
+                if (hasPropertyChanges) {
+                    updated++;
+                } else {
+                    unchanged++;
+                }
+
+                if (hasParentChange && parentId && !newSkillsMap.has(parentId)) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: `Parent skill ${parentId} not found in framework`,
+                    });
+                }
+            }
+
+            if (skillsToDelete.length > 0) {
+                const idsToDelete = skillsToDelete.map(s => s.id);
+
+                await neogma.queryRunner.run(
+                    `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
+                     WHERE s.id IN $skillIds
+                     WITH collect(s) AS nodes
+                     FOREACH (n IN nodes | DETACH DELETE n)
+                     RETURN size(nodes) AS deletedCount`,
+                    { frameworkId, skillIds: idsToDelete }
+                );
+
+                await Promise.all(idsToDelete.map(id => provider.deleteSkill?.(frameworkId, id)));
+
+                deleted = idsToDelete.length;
+            }
+
+            const upsertPayload = flattenedNew.map(({ skill }) => {
+                const normalized = toCreateSkillInput(skill);
+                return {
+                    id: normalized.id!,
+                    statement: normalized.statement,
+                    description: normalized.description ?? null,
+                    code: normalized.code ?? null,
+                    icon: normalized.icon ?? null,
+                    type: normalized.type ?? 'skill',
+                    status: normalized.status ?? 'active',
+                };
+            });
+
+            await neogma.queryRunner.run(
+                `UNWIND $skills AS skill
+                 MERGE (s:Skill {id: skill.id, frameworkId: $frameworkId})
+                 SET s.statement = skill.statement,
+                     s.description = skill.description,
+                     s.code = skill.code,
+                     s.icon = skill.icon,
+                     s.type = skill.type,
+                     s.status = skill.status
+                 WITH s
+                 MATCH (f:SkillFramework {id: $frameworkId})
+                 MERGE (f)-[:CONTAINS]->(s)`,
+                { frameworkId, skills: upsertPayload }
+            );
+
+            await neogma.queryRunner.run(
+                `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
+                 OPTIONAL MATCH (s)-[r:IS_CHILD_OF]->(:Skill)
+                 DELETE r`,
+                { frameworkId }
+            );
+
+            const parentRels = flattenedNew
+                .filter(({ parentId }) => Boolean(parentId))
+                .map(({ skill, parentId }) => {
+                    const normalized = toCreateSkillInput(skill);
+                    return { skillId: normalized.id!, parentId: parentId! };
+                });
+
+            if (parentRels.length > 0) {
+                await neogma.queryRunner.run(
+                    `UNWIND $rels AS rel
+                     MATCH (f:SkillFramework {id: $frameworkId})
+                     MATCH (f)-[:CONTAINS]->(s:Skill {id: rel.skillId})
+                     MATCH (f)-[:CONTAINS]->(p:Skill {id: rel.parentId})
+                     MERGE (s)-[:IS_CHILD_OF]->(p)`,
+                    { frameworkId, rels: parentRels }
+                );
+            }
+
+            await Promise.all(
+                flattenedNew.map(async ({ skill, parentId }) => {
+                    const normalized = toCreateSkillInput(skill);
+                    const existing = existingSkillsMap.get(normalized.id!);
+
+                    if (existing) {
+                        await provider.updateSkill?.(frameworkId, normalized.id!, {
+                            statement: normalized.statement,
+                            description: normalized.description,
+                            code: normalized.code,
+                            icon: normalized.icon,
+                            type: normalized.type,
+                            status: normalized.status,
+                            parentId: parentId ?? null,
                         });
-
-                        await provider.updateSkill?.(frameworkId, skillId, {
-                            statement: input.statement,
-                            description: input.description,
-                            code: input.code,
-                            icon: input.icon,
-                            type: input.type,
-                            status: input.status,
-                        });
-                    }
-
-                    // Update parent relationship if it changed
-                    if (hasParentChange) {
-                        // Remove old parent relationship
-                        await neogma.queryRunner.run(
-                            `MATCH (s:Skill {id: $skillId})-[r:IS_CHILD_OF]->(:Skill)
-                             DELETE r`,
-                            { skillId }
-                        );
-
-                        // Add new parent relationship if parentId is provided
-                        if (parentId) {
-                            const parentCheck = await neogma.queryRunner.run(
-                                `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(p:Skill {id: $parentId})
-                                 RETURN p.id AS id`,
-                                { frameworkId, parentId }
-                            );
-
-                            if (parentCheck.records.length === 0) {
-                                throw new TRPCError({
-                                    code: 'BAD_REQUEST',
-                                    message: `Parent skill ${parentId} not found in framework`,
-                                });
-                            }
-
-                            await neogma.queryRunner.run(
-                                `MATCH (s:Skill {id: $skillId}), (p:Skill {id: $parentId})
-                                 MERGE (s)-[:IS_CHILD_OF]->(p)`,
-                                { skillId, parentId }
-                            );
-                        }
-
-                        // Update provider if parent changed
-                        await provider.updateSkill?.(frameworkId, skillId, {
+                    } else {
+                        await provider.createSkill?.(frameworkId, {
+                            id: normalized.id!,
+                            statement: normalized.statement,
+                            description: normalized.description ?? undefined,
+                            code: normalized.code ?? undefined,
+                            icon: normalized.icon ?? undefined,
+                            type: normalized.type ?? 'skill',
+                            status: normalized.status ?? 'active',
                             parentId: parentId ?? null,
                         });
                     }
-
-                    // Count as updated only if properties changed (not parent relationship)
-                    if (hasPropertyChanges) {
-                        updated++;
-                    } else {
-                        unchanged++;
-                    }
-                } else {
-                    // Create new skill
-                    const createdSkill = await createSkill(frameworkId, input, parentId);
-
-                    await provider.createSkill?.(frameworkId, {
-                        id: createdSkill.id,
-                        statement: createdSkill.statement,
-                        description: createdSkill.description ?? undefined,
-                        code: createdSkill.code ?? undefined,
-                        icon: createdSkill.icon ?? undefined,
-                        type: createdSkill.type ?? 'skill',
-                        status: createdSkill.status ?? 'active',
-                        parentId: parentId ?? null,
-                    });
-
-                    created++;
-                }
-            }
+                })
+            );
 
             const total = created + updated + deleted + unchanged;
 

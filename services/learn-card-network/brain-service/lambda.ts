@@ -16,6 +16,7 @@ import app from './src/openapi';
 import skillsViewerApp from './src/skills-viewer';
 import { appRouter, createContext } from './src/app';
 import { sendNotification } from './src/helpers/notifications.helpers';
+import { startSkillEmbeddingBackfill } from './src/helpers/skill-embedding.helpers';
 import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
 
 Sentry.AWSLambda.init({
@@ -29,6 +30,8 @@ Sentry.AWSLambda.init({
         new Sentry.Integrations.ContextLines(),
     ],
 });
+
+startSkillEmbeddingBackfill().catch(err => console.error('Skill embedding backfill startup error:', err));
 
 export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
 

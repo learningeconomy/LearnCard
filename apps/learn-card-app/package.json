@@ -114,6 +114,7 @@
     },
     "scripts": {
         "dev": "docker compose -f compose-local.yaml up --build",
+        "dev:services": "docker compose -f compose-local.yaml up --build --scale app=0",
         "dev-no-build": "docker compose -f compose-local.yaml up",
         "dev-build-brain": "docker compose -f compose-local.yaml up --build brain",
         "start": "vite --host",
