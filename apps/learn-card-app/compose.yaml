@@ -247,5 +247,3 @@ services:
 networks:
     learn-card:
         driver: bridge
-
-volumes:
