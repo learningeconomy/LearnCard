@@ -11,6 +11,7 @@ import { upsertSkillsIntoFramework } from '@accesslayer/skill/sync';
 import {
     getChildrenForSkillInFrameworkPaged,
     getSkillById,
+    searchSkillsByEmbedding,
     searchSkillsInFramework,
     countSkillsInFramework,
     getFullSkillTree,
@@ -18,6 +19,7 @@ import {
 } from '@accesslayer/skill/read';
 import { createSkill } from '@accesslayer/skill/create';
 import { updateSkill, deleteSkill } from '@accesslayer/skill/update';
+import { generateEmbeddingForText, upsertSkillEmbeddings } from '@helpers/skill-embedding.helpers';
 import { listTagsForSkill, addTagToSkill, removeTagFromSkill } from '@accesslayer/skill/tags';
 import {
     TagValidator,
@@ -38,6 +40,8 @@ import {
     GetFullSkillTreeResultValidator,
     GetSkillPathInputValidator,
     GetSkillPathResultValidator,
+    SkillSemanticSearchInputValidator,
+    SkillSemanticSearchResultValidator,
     type SkillDeletionStrategy,
 } from '@learncard/types';
 import {
@@ -202,81 +206,49 @@ export const skillsRouter = t.router({
                 cursor: result.cursor,
             };
         }),
-
-    semanticSearchFrameworkSkills: profileRoute
+    semanticSearchSkills: profileRoute
         .meta({
             openapi: {
                 protect: true,
-                method: 'GET',
-                path: '/skills/frameworks/{frameworkId}/semantic-search',
+                method: 'POST',
+                path: '/skills/semantic-search',
                 tags: ['Skills'],
-                summary: 'Semantic search skills in a framework',
+                summary: 'Semantic search skills',
                 description:
-                    'Returns a list of skills related to the query using embeddings/vector search when configured. Falls back to basic text search when embeddings are unavailable.',
+                    'Returns skills ranked by semantic similarity to the provided text. Optionally filter by framework.',
             },
             requiredScope: 'skills:read',
         })
-        .input(
-            z.object({
-                frameworkId: z.string(),
-                query: z.string(),
-                limit: z.number().int().min(1).max(200).default(25),
-            })
-        )
-        .output(z.array(SkillValidator.omit({ createdAt: true, updatedAt: true })))
+        .input(SkillSemanticSearchInputValidator)
+        .output(SkillSemanticSearchResultValidator)
         .query(async ({ input }) => {
-            const { frameworkId, query, limit } = input;
-
-            const normalizedQuery = query.trim();
-            if (!normalizedQuery) return [];
-
-            const escapedQuery = normalizedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const textRegex = new RegExp(escapedQuery, 'i');
-            const fallbackQuery = {
-                $or: [
-                    { id: { $regex: textRegex } },
-                    { statement: { $regex: textRegex } },
-                    { description: { $regex: textRegex } },
-                    { code: { $regex: textRegex } },
-                ],
-            };
-
-            const provider = getSkillsProvider();
-            let results: any[] = [];
+            const { text, frameworkId, limit } = input;
+            let embedding: number[];
             try {
-                results = provider.searchSkills
-                    ? await provider.searchSkills(frameworkId, normalizedQuery)
-                    : [];
-            } catch {
-                const fallback = await searchSkillsInFramework(
-                    frameworkId,
-                    fallbackQuery,
-                    limit,
-                    null
-                );
-                results = fallback.records;
+                embedding = await generateEmbeddingForText(text);
+            } catch (error) {
+                console.error('Failed to generate embedding for skill search:', error);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to generate embedding for skill search',
+                });
             }
 
-            if (!results || results.length === 0) {
-                const fallback = await searchSkillsInFramework(
-                    frameworkId,
-                    fallbackQuery,
-                    limit,
-                    null
-                );
-                results = fallback.records;
-            }
+            const results = await searchSkillsByEmbedding(embedding, limit, frameworkId);
 
-            return results.slice(0, limit).map(skill => ({
-                id: skill.id,
-                statement: skill.statement,
-                description: skill.description ?? undefined,
-                code: skill.code ?? undefined,
-                icon: skill.icon ?? undefined,
-                type: skill.type ?? 'competency',
-                status: (skill.status as any) ?? 'active',
-                frameworkId,
-            }));
+            return {
+                records: results.map(({ skill, score }) => ({
+                    id: skill.id,
+                    statement: skill.statement,
+                    description: skill.description ?? undefined,
+                    code: skill.code ?? undefined,
+                    icon: skill.icon ?? undefined,
+                    type: skill.type ?? 'skill',
+                    status: (skill.status as any) ?? 'active',
+                    frameworkId: skill.frameworkId,
+                    score,
+                })),
+            };
         }),
     syncFrameworkSkills: profileRoute
         .meta({
@@ -310,6 +282,20 @@ export const skillsRouter = t.router({
                 const providerSkills = await provider.getSkillsForFramework(input.id);
 
                 await upsertSkillsIntoFramework(input.id, providerSkills);
+
+                try {
+                    await upsertSkillEmbeddings(
+                        providerSkills.map(skill => ({
+                            id: skill.id,
+                            frameworkId: input.id,
+                            statement: skill.statement,
+                            description: skill.description ?? undefined,
+                            code: skill.code ?? undefined,
+                        }))
+                    );
+                } catch (error) {
+                    console.error('Failed to update skill embeddings after sync:', error);
+                }
             }
 
             const localFramework = await getSkillFrameworkById(input.id);
@@ -417,6 +403,20 @@ export const skillsRouter = t.router({
 
                 const apiSkill = stripParent(created);
 
+                try {
+                    await upsertSkillEmbeddings([
+                        {
+                            id: created.id,
+                            frameworkId,
+                            statement: created.statement,
+                            description: created.description ?? undefined,
+                            code: created.code ?? undefined,
+                        },
+                    ]);
+                } catch (error) {
+                    console.error('Failed to update skill embedding:', error);
+                }
+
                 return {
                     ...apiSkill,
                     description: created.description ?? undefined,
@@ -485,6 +485,20 @@ export const skillsRouter = t.router({
                 normalizedParentId
             );
 
+            try {
+                await upsertSkillEmbeddings(
+                    created.map(skill => ({
+                        id: skill.id,
+                        frameworkId,
+                        statement: skill.statement,
+                        description: skill.description ?? undefined,
+                        code: skill.code ?? undefined,
+                    }))
+                );
+            } catch (error) {
+                console.error('Failed to update skill embeddings:', error);
+            }
+
             return created.map(skill => {
                 const apiSkill = stripParent(skill);
                 return {
@@ -537,6 +551,27 @@ export const skillsRouter = t.router({
             }
 
             const apiSkill = stripParent(updated);
+
+            const shouldEnqueueEmbedding =
+                updates.statement !== undefined ||
+                updates.description !== undefined ||
+                updates.code !== undefined;
+
+            if (shouldEnqueueEmbedding) {
+                try {
+                    await upsertSkillEmbeddings([
+                        {
+                            id: updated.id,
+                            frameworkId,
+                            statement: updated.statement,
+                            description: updated.description ?? undefined,
+                            code: updated.code ?? undefined,
+                        },
+                    ]);
+                } catch (error) {
+                    console.error('Failed to update skill embedding:', error);
+                }
+            }
 
             return {
                 ...apiSkill,

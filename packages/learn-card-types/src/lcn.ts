@@ -1336,6 +1336,26 @@ export const SkillQueryValidator = z.union([
 
 export type SkillQuery = z.infer<typeof SkillQueryValidator>;
 
+export const SkillSemanticSearchInputValidator = z.object({
+    text: z.string().min(1),
+    frameworkId: z.string().optional(),
+    limit: z.number().int().min(1).max(200).default(50),
+});
+
+export type SkillSemanticSearchInput = z.infer<typeof SkillSemanticSearchInputValidator>;
+
+export const SkillSemanticSearchResultItemValidator = SkillValidator.extend({
+    score: z.number(),
+});
+
+export type SkillSemanticSearchResultItem = z.infer<typeof SkillSemanticSearchResultItemValidator>;
+
+export const SkillSemanticSearchResultValidator = z.object({
+    records: SkillSemanticSearchResultItemValidator.array(),
+});
+
+export type SkillSemanticSearchResult = z.infer<typeof SkillSemanticSearchResultValidator>;
+
 export const SkillFrameworkStatusEnum = z.enum(['active', 'archived']);
 export type SkillFrameworkStatus = z.infer<typeof SkillFrameworkStatusEnum>;
 
