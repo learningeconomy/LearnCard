@@ -67,7 +67,7 @@ import BoostCMSMediaDisplayWarning from './boostCMSForms/boostCMSMedia/BoostCMSM
 import BoostLoader from '../boostLoader/BoostLoader';
 import BoostCMSConfirmationPrompt from './BoostCMSConfirmationPrompts/BoostCMSConfirmationPrompt';
 import BoostSuccessConfirmation from './BoostSuccessConfirmation/BoostSuccessConfirmation';
-import BoostCMSRecoveryPrompt from './BoostCMSRecoveryPrompt';
+import RecoveryPrompt from '../../common/RecoveryPrompt';
 import useBoostCMSAutosave from '../../../hooks/useBoostCMSAutosave';
 
 import BoostCMSAchievementTypeSelectorButton from './boostCMSForms/boostCMSAppearance/BoostCMSAchievementTypeSelectorButton';
@@ -276,13 +276,14 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 };
 
                 const handleDiscard = () => {
-                    clearRecoveredState();
+                    clearRecoveredState(true); // Clear localStorage on discard
                     closeModal();
                 };
 
                 newModal(
-                    <BoostCMSRecoveryPrompt
-                        recoveredState={recoveredState}
+                    <RecoveryPrompt
+                        itemName={recoveredState?.basicInfo?.name || ''}
+                        itemType="boost"
                         onRecover={handleRecover}
                         onDiscard={handleDiscard}
                     />,
