@@ -92,7 +92,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
             )}
 
             <div className={innerClickContainerClass} onClick={handleInnerClick}>
-                {customThumbComponent && customThumbComponent}
+                {customThumbComponent}
                 {!customThumbComponent && (
                     <section className={defaultThumbClass}>
                         {thumbImgSrc && thumbImgSrc?.trim() !== '' && (

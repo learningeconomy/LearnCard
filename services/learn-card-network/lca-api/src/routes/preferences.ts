@@ -87,14 +87,7 @@ export const preferencesRouter = t.router({
         .query(async ({ ctx }) => {
             const preferences = await getPreferencesForDid(ctx.user.did);
 
-            if (!preferences) {
-                throw new TRPCError({
-                    code: 'INTERNAL_SERVER_ERROR',
-                    message: 'An unexpected error occured, unable to get preferences',
-                });
-            }
-
-            return { theme: preferences.theme };
+            return { theme: preferences?.theme ?? ThemeEnum.Colorful };
         }),
 });
 export type preferencesRouter = typeof preferencesRouter;
