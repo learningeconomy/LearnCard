@@ -2,30 +2,31 @@
 
 This page provides common usage examples for the **LearnCloud Network API**, so you can quickly see how to&#x20;
 
-* Send and receive credentials, boosts, and presentations
-* Create and claim credentials through peer-to-peer or QR flows
-* Register and manage Signing Authorities
-* Trigger and validate ConsentFlows
-* Monitor health and fetch metadata (like DIDs or challenge keys)
+-   Send and receive credentials, boosts, and presentations
+-   Create and claim credentials through peer-to-peer or QR flows
+-   Register and manage Signing Authorities
+-   Trigger and validate ConsentFlows
+-   Monitor health and fetch metadata (like DIDs or challenge keys)
+-   Run semantic search across skill frameworks
 
 Each example is standalone and self-explanatory. Scroll, copy, and paste what you need.
 
 > ✅ All examples assume:
 >
-> * You have a **valid LearnCloud JWT** (via auth or delegation)
-> * You’re storing data on behalf of a user identified by a **DID**
-> * You’re using the endpoint: `https://network.learncard.com/api`
+> -   You have a **valid LearnCloud JWT** (via auth or delegation)
+> -   You’re storing data on behalf of a user identified by a **DID**
+> -   You’re using the endpoint: `https://network.learncard.com/api`
 
-***
+---
 
 ### 🔐 Authentication
 
 All requests require:
 
-* `Authorization: Bearer <your-JWT>`
-* The JWT must resolve to a DID matching the stored object owner, unless delegated.
+-   `Authorization: Bearer <your-JWT>`
+-   The JWT must resolve to a DID matching the stored object owner, unless delegated.
 
-***
+---
 
 ## 📤 Sending Credentials
 
@@ -74,6 +75,32 @@ const result = await learnCard.invoke.send({
 **Signing Behavior**: The `send` method uses client-side signing when key material is available. Otherwise, it falls back to your registered signing authority.
 {% endhint %}
 
-***
+---
 
 ##
+
+## 🔎 Semantic Skill Search
+
+Use semantic search when keyword matching is too strict and you want meaning-based results.
+
+```typescript
+const results = await learnCard.invoke.semanticSearchSkills({
+    text: 'hands-on robotics troubleshooting',
+    frameworkId: 'framework-123', // optional
+    limit: 50, // optional (default 50)
+});
+
+console.log(results.records[0]);
+// {
+//   id: 'skill-id',
+//   statement: 'Diagnose wiring faults',
+//   description: '...',
+//   frameworkId: 'framework-123',
+//   score: 0.88,
+//   ...
+// }
+```
+
+{% hint style="info" %}
+Semantic search requires skill embeddings to be present. In LearnCard Network, embeddings are generated for skill create/update/sync flows and can be backfilled when enabled by environment configuration.
+{% endhint %}

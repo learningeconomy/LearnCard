@@ -23,7 +23,10 @@ import LaunchPadSearch from './LaunchPadSearch/LaunchPadSearch';
 import LaunchPadAppTabs, { LaunchPadTabEnum } from './LaunchPadHeader/LaunchPadAppTabs';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 
-import { aiPassportApps } from '../../components/ai-passport-apps/aiPassport-apps.helpers';
+import {
+    aiPassportApps,
+    areAiPassportAppsAvailable,
+} from '../../components/ai-passport-apps/aiPassport-apps.helpers';
 import {
     LaunchPadFilterOptionsEnum,
     LaunchPadSortOptionsEnum,
@@ -140,9 +143,12 @@ const LaunchPad: React.FC = () => {
         }
     }, [contractDetails, suppressContractModal, consentedContractLoading]);
 
-    let aiApps: LaunchPadItem[] = flags?.enableLaunchPadUpdates
-        ? (aiPassportApps as unknown as LaunchPadItem[])
-        : [];
+    const aiAppsAvailable = areAiPassportAppsAvailable();
+
+    let aiApps: LaunchPadItem[] =
+        flags?.enableLaunchPadUpdates && aiAppsAvailable
+            ? (aiPassportApps as unknown as LaunchPadItem[])
+            : [];
     let apps: LaunchPadItem[] = useLaunchPadApps() as unknown as LaunchPadItem[];
     let contracts: LaunchPadItem[] = useLaunchPadContracts() as any;
 
