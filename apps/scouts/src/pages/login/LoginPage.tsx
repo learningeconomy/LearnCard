@@ -167,18 +167,19 @@ const LoginPage: React.FC = () => {
                     </IonRow>
                     {showQrLogin ? (
                         <IonRow className="w-full flex items-center justify-center p-4">
-                            <QrLoginRequester
-                                serverUrl={authConfig.serverUrl}
-                                onApproved={(deviceShare) => {
-                                    window.sessionStorage.setItem('qr_login_device_share', deviceShare);
-                                    setShowQrLogin(false);
-                                }}
-                                onCancel={() => setShowQrLogin(false)}
-                                renderQrCode={(data) => (
-                                    <QRCodeSVG value={data} size={192} level="M" />
-                                )}
-                                accentColor="text-sp-purple-base"
-                            />
+                            <div className="w-full max-w-[500px] bg-white rounded-[20px] shadow-2xl">
+                                <QrLoginRequester
+                                    serverUrl={authConfig.serverUrl}
+                                    onApproved={(deviceShare) => {
+                                        window.sessionStorage.setItem('qr_login_device_share', deviceShare);
+                                        setShowQrLogin(false);
+                                    }}
+                                    onCancel={() => setShowQrLogin(false)}
+                                    renderQrCode={(data) => (
+                                        <QRCodeSVG value={data} size={192} level="M" />
+                                    )}
+                                />
+                            </div>
                         </IonRow>
                     ) : (
                     <>
@@ -247,7 +248,7 @@ const LoginPage: React.FC = () => {
                     <IonRow className="w-full flex items-center justify-center mt-2 mb-2">
                         <button
                             onClick={() => setShowQrLogin(true)}
-                            className="text-sm text-gray-500 hover:text-gray-700 underline transition-colors"
+                            className="text-sm text-grayscale-500 hover:text-grayscale-700 underline transition-colors"
                         >
                             Sign in from another device
                         </button>

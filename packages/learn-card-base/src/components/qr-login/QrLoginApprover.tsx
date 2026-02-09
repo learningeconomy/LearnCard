@@ -104,48 +104,48 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
 
     if (mode === 'choose' && status === 'idle') {
         return (
-            <div className="p-6 max-w-md mx-auto">
-                <h2 className="text-xl font-bold mb-1 text-center">Link New Device</h2>
+            <div className="p-6 max-w-md mx-auto font-poppins">
+                <h2 className="text-xl font-semibold text-grayscale-900 mb-1 text-center">Link New Device</h2>
 
-                <p className="text-sm text-gray-500 mb-6 text-center">
+                <p className="text-sm text-grayscale-600 mb-6 text-center leading-relaxed">
                     Authorize another device to sign in to your account.
                 </p>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                     {onScanQr && (
                         <button
                             onClick={handleScan}
-                            className="w-full p-4 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 flex items-center gap-4 transition-colors"
+                            className="w-full p-4 rounded-2xl bg-grayscale-10 hover:bg-grayscale-100 text-grayscale-900 flex items-center gap-4 transition-colors"
                         >
-                            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-lg">
-                                &#x1F4F7;
+                            <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-700 text-base shrink-0">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                             </div>
 
                             <div className="flex-1 text-left">
-                                <p className="font-medium">Scan QR Code</p>
-                                <p className="text-xs text-gray-500">Scan the code shown on the new device</p>
+                                <p className="font-medium text-sm">Scan QR Code</p>
+                                <p className="text-xs text-grayscale-500 mt-0.5">Scan the code shown on the new device</p>
                             </div>
                         </button>
                     )}
 
                     <button
                         onClick={() => setMode('code')}
-                        className="w-full p-4 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 flex items-center gap-4 transition-colors"
+                        className="w-full p-4 rounded-2xl bg-grayscale-10 hover:bg-grayscale-100 text-grayscale-900 flex items-center gap-4 transition-colors"
                     >
-                        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-lg font-mono font-bold">
+                        <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 text-lg font-mono font-bold shrink-0">
                             #
                         </div>
 
                         <div className="flex-1 text-left">
-                            <p className="font-medium">Enter Code</p>
-                            <p className="text-xs text-gray-500">Type the 8-digit code from the new device</p>
+                            <p className="font-medium text-sm">Enter Code</p>
+                            <p className="text-xs text-grayscale-500 mt-0.5">Type the 8-digit code from the new device</p>
                         </div>
                     </button>
                 </div>
 
                 <button
                     onClick={onCancel}
-                    className="w-full mt-6 py-2.5 px-4 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors"
+                    className="w-full mt-6 py-2.5 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                 >
                     Cancel
                 </button>
@@ -157,19 +157,19 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
 
     if (mode === 'code' && (status === 'idle' || status === 'loading' || status === 'error')) {
         return (
-            <div className="p-6 max-w-md mx-auto">
-                <button onClick={handleBack} className="text-sm text-purple-600 mb-4">
-                    &larr; Back
+            <div className="p-6 max-w-md mx-auto font-poppins">
+                <button onClick={handleBack} className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5">
+                    <span className="text-xs">&larr;</span> Back
                 </button>
 
-                <h3 className="text-lg font-semibold mb-1">Enter Pairing Code</h3>
+                <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Enter Pairing Code</h3>
 
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-grayscale-600 mb-5 leading-relaxed">
                     Enter the 8-digit code shown on the device you want to sign in.
                 </p>
 
                 {error && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                    <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-700">
                         {error}
                     </div>
                 )}
@@ -181,14 +181,14 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
                     value={codeInput}
                     onChange={e => setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 8))}
                     placeholder="00000000"
-                    className="w-full text-center font-mono text-3xl tracking-[0.3em] py-3 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent mb-4"
+                    className="w-full text-center font-mono text-3xl tracking-[0.3em] py-3 px-4 border border-grayscale-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent mb-5 text-grayscale-900 placeholder:text-grayscale-300 bg-white"
                     autoFocus
                 />
 
                 <button
                     onClick={handleCodeSubmit}
                     disabled={codeInput.length < 8 || status === 'loading'}
-                    className="w-full py-2.5 px-4 rounded-lg bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-2.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     {status === 'loading' ? 'Looking up...' : 'Continue'}
                 </button>
@@ -200,42 +200,35 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
 
     if (status === 'confirming' && sessionInfo) {
         return (
-            <div className="p-6 max-w-md mx-auto">
-                <button onClick={handleBack} className="text-sm text-purple-600 mb-4">
-                    &larr; Back
+            <div className="p-6 max-w-md mx-auto font-poppins">
+                <button onClick={handleBack} className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5">
+                    <span className="text-xs">&larr;</span> Back
                 </button>
 
                 <div className="text-center mb-6">
-                    <div className="w-16 h-16 mx-auto mb-3 bg-amber-100 rounded-full flex items-center justify-center text-3xl">
-                        &#x1F50F;
+                    <div className="w-16 h-16 mx-auto mb-4 bg-amber-50 rounded-full flex items-center justify-center">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-amber-500" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     </div>
 
-                    <h3 className="text-lg font-semibold mb-1">Authorize Login?</h3>
+                    <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Authorize this device?</h3>
 
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-grayscale-600 leading-relaxed">
                         A new device is requesting access to your account.
-                        This will share your device key securely.
+                        This will securely connect it.
                     </p>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-500">Session</span>
-                        <span className="font-mono text-gray-700">{sessionInfo.sessionId.slice(0, 8)}...</span>
-                    </div>
                 </div>
 
                 <div className="flex gap-3">
                     <button
                         onClick={handleBack}
-                        className="flex-1 py-2.5 px-4 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors"
+                        className="flex-1 py-2.5 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                     >
                         Deny
                     </button>
 
                     <button
                         onClick={handleApprove}
-                        className="flex-1 py-2.5 px-4 rounded-lg bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
+                        className="flex-1 py-2.5 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
                     >
                         Approve
                     </button>
@@ -248,10 +241,10 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
 
     if (status === 'approving') {
         return (
-            <div className="p-6 max-w-md mx-auto flex flex-col items-center">
-                <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
+            <div className="p-6 max-w-md mx-auto flex flex-col items-center font-poppins">
+                <div className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
 
-                <p className="text-sm text-gray-500">Securely transferring key...</p>
+                <p className="text-sm text-grayscale-500">Securely connecting...</p>
             </div>
         );
     }
@@ -260,20 +253,20 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
 
     if (status === 'done') {
         return (
-            <div className="p-6 max-w-md mx-auto text-center">
-                <div className="w-16 h-16 mx-auto mb-3 bg-green-100 rounded-full flex items-center justify-center text-3xl">
-                    &#x2705;
+            <div className="p-6 max-w-md mx-auto text-center font-poppins">
+                <div className="w-16 h-16 mx-auto mb-4 bg-emerald-50 rounded-full flex items-center justify-center">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-emerald-600" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
 
-                <h3 className="text-lg font-semibold mb-1">Device Linked!</h3>
+                <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Device Linked!</h3>
 
-                <p className="text-sm text-gray-500 mb-5">
+                <p className="text-sm text-grayscale-600 mb-5 leading-relaxed">
                     The new device can now sign in to your account.
                 </p>
 
                 <button
                     onClick={onDone}
-                    className="w-full py-2.5 px-4 rounded-lg bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
+                    className="w-full py-2.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                 >
                     Done
                 </button>
@@ -284,9 +277,9 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
     // ── Error fallback ───────────────────────────────────────────
 
     return (
-        <div className="p-6 max-w-md mx-auto text-center">
+        <div className="p-6 max-w-md mx-auto text-center font-poppins">
             {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-700">
                     {error}
                 </div>
             )}
@@ -294,14 +287,14 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
             <div className="flex gap-3">
                 <button
                     onClick={handleBack}
-                    className="flex-1 py-2.5 px-4 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors"
+                    className="flex-1 py-2.5 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                 >
                     Back
                 </button>
 
                 <button
                     onClick={onCancel}
-                    className="flex-1 py-2.5 px-4 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors"
+                    className="flex-1 py-2.5 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                 >
                     Cancel
                 </button>

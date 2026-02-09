@@ -31,8 +31,6 @@ export interface QrLoginRequesterProps {
     /** Render the QR code from a JSON string payload. Apps provide their own QR renderer. */
     renderQrCode?: (qrData: string) => React.ReactNode;
 
-    /** Optional accent color class for the timer ring (default: 'text-emerald-600') */
-    accentColor?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -53,9 +51,9 @@ const formatTime = (seconds: number): string => {
 const StatusBadge: React.FC<{ status: QrRequesterStatus }> = ({ status }) => {
     const config: Record<QrRequesterStatus, { label: string; bg: string; dot: string } | null> = {
         idle: null,
-        creating: { label: 'Creating session...', bg: 'bg-blue-50 text-blue-700', dot: 'bg-blue-400' },
+        creating: { label: 'Creating session...', bg: 'bg-grayscale-100 text-grayscale-700', dot: 'bg-grayscale-400' },
         waiting: { label: 'Waiting for approval', bg: 'bg-amber-50 text-amber-700', dot: 'bg-amber-400 animate-pulse' },
-        approved: { label: 'Approved!', bg: 'bg-green-50 text-green-700', dot: 'bg-green-500' },
+        approved: { label: 'Approved!', bg: 'bg-emerald-50 text-emerald-700', dot: 'bg-emerald-500' },
         expired: { label: 'Session expired', bg: 'bg-red-50 text-red-700', dot: 'bg-red-400' },
         error: { label: 'Connection error', bg: 'bg-red-50 text-red-700', dot: 'bg-red-400' },
     };
@@ -81,7 +79,6 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
     onApproved,
     onCancel,
     renderQrCode,
-    accentColor = 'text-emerald-600',
 }) => {
     const {
         status,
@@ -114,20 +111,20 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
     };
 
     return (
-        <div className="p-6 max-w-md mx-auto flex flex-col items-center">
-            <h2 className="text-xl font-bold mb-1 text-center">Sign In from Another Device</h2>
+        <div className="p-6 max-w-md mx-auto flex flex-col items-center font-poppins">
+            <h2 className="text-xl font-semibold text-grayscale-900 mb-1 text-center">Sign In from Another Device</h2>
 
-            <p className="text-sm text-gray-500 mb-5 text-center">
+            <p className="text-sm text-grayscale-600 mb-5 text-center leading-relaxed">
                 Scan this QR code with a device that&apos;s already signed in, or enter the code manually.
             </p>
 
             {/* QR Code */}
             {status === 'waiting' && qrPayload && (
-                <div className="mb-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                <div className="mb-4 p-4 bg-white rounded-2xl border border-grayscale-200 shadow-sm">
                     {renderQrCode ? (
                         renderQrCode(JSON.stringify(qrPayload))
                     ) : (
-                        <div className="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xs text-center p-4">
+                        <div className="w-48 h-48 bg-grayscale-100 rounded-xl flex items-center justify-center text-grayscale-400 text-xs text-center p-4">
                             QR renderer not provided
                         </div>
                     )}
@@ -137,9 +134,9 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
             {/* Short code */}
             {status === 'waiting' && shortCode && (
                 <div className="mb-4 text-center">
-                    <p className="text-xs text-gray-500 mb-1">Or enter this code on your other device</p>
+                    <p className="text-xs text-grayscale-500 mb-1">Or enter this code on your other device</p>
 
-                    <div className="font-mono text-3xl font-bold tracking-[0.3em] text-gray-900">
+                    <div className="font-mono text-3xl font-bold tracking-[0.3em] text-grayscale-900">
                         {shortCode}
                     </div>
                 </div>
@@ -147,7 +144,7 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
 
             {/* Countdown */}
             {status === 'waiting' && (
-                <div className={`mb-4 text-sm font-medium ${accentColor}`}>
+                <div className="mb-4 text-sm font-medium text-emerald-600">
                     Expires in {formatTime(secondsRemaining)}
                 </div>
             )}
@@ -155,9 +152,9 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
             {/* Creating spinner */}
             {status === 'creating' && (
                 <div className="mb-4 flex flex-col items-center gap-2">
-                    <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin" />
+                    <div className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin" />
 
-                    <span className="text-sm text-gray-500">Setting up secure session...</span>
+                    <span className="text-sm text-grayscale-500">Setting up secure session...</span>
                 </div>
             )}
 
@@ -168,7 +165,7 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
 
             {/* Error message */}
             {error && status === 'error' && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 w-full text-center">
+                <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-700 w-full text-center">
                     {error}
                 </div>
             )}
@@ -178,7 +175,7 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
                 {(status === 'expired' || status === 'error') && (
                     <button
                         onClick={restart}
-                        className="flex-1 py-2.5 px-4 rounded-lg bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
+                        className="flex-1 py-2.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                     >
                         Try Again
                     </button>
@@ -188,7 +185,7 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
                     onClick={handleCancel}
                     className={`${
                         status === 'expired' || status === 'error' ? 'flex-1' : 'w-full'
-                    } py-2.5 px-4 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors`}
+                    } py-2.5 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors`}
                 >
                     Cancel
                 </button>

@@ -223,21 +223,22 @@ export const LoginContent: React.FC = () => {
                 </div>
             </IonRow>
             {showQrLogin ? (
-                <IonRow className="w-full max-w-[500px] flex items-center justify-center">
-                    <QrLoginRequester
-                        serverUrl={authConfig.serverUrl}
-                        onApproved={(deviceShare) => {
-                            // Store the device share locally so the coordinator
-                            // can reconstruct the key after Firebase auth completes.
-                            window.sessionStorage.setItem('qr_login_device_share', deviceShare);
-                            setShowQrLogin(false);
-                        }}
-                        onCancel={() => setShowQrLogin(false)}
-                        renderQrCode={(data) => (
-                            <QRCodeSVG value={data} size={192} level="M" />
-                        )}
-                        accentColor="text-emerald-600"
-                    />
+                <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4">
+                    <div className="w-full bg-white rounded-[20px] shadow-2xl">
+                        <QrLoginRequester
+                            serverUrl={authConfig.serverUrl}
+                            onApproved={(deviceShare) => {
+                                // Store the device share locally so the coordinator
+                                // can reconstruct the key after Firebase auth completes.
+                                window.sessionStorage.setItem('qr_login_device_share', deviceShare);
+                                setShowQrLogin(false);
+                            }}
+                            onCancel={() => setShowQrLogin(false)}
+                            renderQrCode={(data) => (
+                                <QRCodeSVG value={data} size={192} level="M" />
+                            )}
+                        />
+                    </div>
                 </IonRow>
             ) : (
                 <>

@@ -23,6 +23,185 @@
 -   **Modules**: Keep files focused on single responsibility
 -   **Documentation**: Add JSDoc comments for public APIs and complex logic
 
+## UI/UX Design Guidelines
+
+All user-facing UI in `apps/learn-card-app`, `apps/scouts`, and shared components in `packages/learn-card-base` must follow these guidelines. The goal is **world-class, buttery UX** inspired by Airbnb, Headspace, Slack, and Google Maps — clean, clear, never flashy, never in the way.
+
+### Design Tokens (Tailwind)
+
+The apps define a custom color palette in their `tailwind.config.js`. **Never use generic Tailwind colors** (`gray-*`, `purple-*`, `blue-*`) — always use the app tokens:
+
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `grayscale-900` | `#18224E` | Headings, primary button fills, dark text |
+| `grayscale-800` | `#353E64` | Strong secondary text |
+| `grayscale-700` | `#52597A` | Secondary text, cancel button text |
+| `grayscale-600` | `#6F7590` | Body text, descriptions |
+| `grayscale-500` | `#8B91A7` | Hint text, subtitles |
+| `grayscale-400` | `#A8ACBD` | Placeholder text, disabled icons |
+| `grayscale-300` | `#C5C8D3` | Borders, dividers |
+| `grayscale-200` | `#E2E3E9` | Light borders, separator lines |
+| `grayscale-100` | `#EFF0F5` | Inactive tab fills, subtle backgrounds |
+| `grayscale-10` | `#FBFBFC` | Hover background on light surfaces |
+| `emerald-50`–`emerald-900` | — | Success states, positive actions, focus rings |
+| `amber-50`–`amber-900` | — | Warnings, caution callouts |
+| `red-50`–`red-700` | — | Errors, destructive states |
+
+### Typography
+
+- **Font family**: `font-poppins` (maps to Poppins in LCA, Noto Sans in Scouts)
+- **Headings**: `text-xl font-semibold text-grayscale-900`
+- **Body text**: `text-sm text-grayscale-600 leading-relaxed`
+- **Labels**: `text-xs font-medium text-grayscale-700`
+- **Hints / placeholders**: `text-xs text-grayscale-400` or `placeholder:text-grayscale-400`
+
+### Buttons
+
+| Type | Classes |
+|------|---------|
+| **Primary** | `py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed` |
+| **Secondary / Cancel** | `py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors` |
+| **Positive action** | `py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors` |
+| **Tab (active)** | `py-2.5 px-3 rounded-full bg-grayscale-900 text-white font-medium text-sm` |
+| **Tab (inactive)** | `py-2.5 px-3 rounded-full bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200 font-medium text-sm` |
+| **Text link / back** | `text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors` |
+
+All buttons use `rounded-[20px]` (pill shape), **never** `rounded-lg`.
+
+### Form Inputs
+
+**Never use `IonItem` / `IonInput` / `IonTextarea` for modal or overlay forms.** Ionic's theme layer can override text color, causing white-on-white text that is invisible. Use styled native HTML inputs instead:
+
+```tsx
+<input
+    type="password"
+    value={value}
+    onChange={e => setValue(e.target.value)}
+    placeholder="Placeholder text"
+    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900
+               placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500
+               focus:border-transparent bg-white"
+/>
+```
+
+Key rules:
+- Always set explicit `text-grayscale-900` and `bg-white` — never rely on defaults
+- Always set `placeholder:text-grayscale-400`
+- Use `rounded-xl` for inputs (slightly less rounded than buttons)
+- Focus state: `focus:ring-2 focus:ring-emerald-500 focus:border-transparent`
+- Add a `<label>` above: `text-xs font-medium text-grayscale-700 mb-1.5`
+
+### Overlays & Modals
+
+Use the shared `Overlay` component from `packages/learn-card-base/src/auth-coordinator/components/Overlay.tsx`:
+
+```tsx
+<Overlay>
+    <div className="p-8 text-center space-y-5">
+        {/* content */}
+    </div>
+</Overlay>
+```
+
+Overlay renders a fixed fullscreen backdrop with a white `rounded-[20px]` card, max-width 480px, with `font-poppins` and `animate-fade-in-up` entrance animation.
+
+### Loading States
+
+Never leave the user without feedback. Every async action must show a loading state:
+
+```tsx
+{loading ? (
+    <span className="flex items-center justify-center gap-2">
+        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        Recovering...
+    </span>
+) : 'Recover Account'}
+```
+
+Use contextual loading text: "Setting up...", "Recovering...", "Verifying...", "Generating...".
+
+### Error States
+
+Use the standard error banner pattern:
+
+```tsx
+{error && (
+    <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
+        <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+        <span className="text-sm text-red-700 leading-relaxed">{error}</span>
+    </div>
+)}
+```
+
+Map raw error messages to friendly language:
+- Decrypt errors → "Incorrect password or corrupted data. Please try again."
+- Network errors → "Connection issue. Please check your internet and try again."
+- Generic fallback → "Something went wrong. Please try again."
+
+### Success States
+
+```tsx
+{success && (
+    <div className="mb-5 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
+        <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
+        <span className="text-sm text-emerald-700 leading-relaxed">{success}</span>
+    </div>
+)}
+```
+
+### Copy & Language Rules
+
+- **No jargon.** Never use: "wallet", "migration", "device key", "key derivation", "SSS", "share", "DID". These are internal implementation details.
+- **User-friendly alternatives**: "account" (not "wallet"), "account upgrade" (not "migration"), "sign in" (not "authenticate")
+- **Be concise.** One short sentence for descriptions. No paragraphs.
+- **Be direct.** "Choose how you'd like to restore access." not "Please select one of the available recovery options below to proceed with restoring access to your wallet."
+- **Error titles**: "Something went wrong" — never expose stack traces or error codes.
+- **Button labels**: Use action verbs. "Recover Account", "Try Again", "Set Up Password". Not "Submit", "OK", "Proceed".
+- **Dismiss buttons**: "Skip for Now" (if optional), "Cancel" (if abandoning), "Done" (after success).
+
+### Icons
+
+- Use **Ionicons** (`ionicons/icons`) for inline icons: `alertCircleOutline`, `keyOutline`, `fingerPrint`, `checkmarkCircleOutline`, etc.
+- For larger decorative icons (e.g., modal hero images), use **inline SVGs** with `stroke="currentColor"` so they inherit text color.
+- **Never use raw emoji** (`&#x1F4F7;`, `&#x2705;`) — they render inconsistently across platforms.
+
+### Background Context Awareness
+
+Shared components from `learn-card-base` may render on different backgrounds:
+- **Inside an Overlay**: White card background → `grayscale-*` text is fine
+- **On a login page**: Colored background (green, purple) → **wrap in a white card**
+
+When placing a shared component on a colored page background, always wrap it:
+
+```tsx
+<div className="w-full max-w-[500px] bg-white rounded-[20px] shadow-2xl">
+    <QrLoginRequester ... />
+</div>
+```
+
+### Spacing & Layout
+
+- Modal padding: `p-6` (inner content) or `p-8` (simple overlays with fewer elements)
+- Section spacing: `space-y-5` for major sections, `space-y-4` for form fields
+- Between heading + description: `mb-1`
+- Between description + content: `mb-5` or `mb-6`
+- Card content max-width: `max-w-md mx-auto` (inside overlays already constrained to 480px)
+
+### Checklist for New UI Components
+
+Before shipping any new modal, overlay, or form:
+
+1. **Colors**: Only `grayscale-*`, `emerald-*`, `amber-*`, `red-*` from the app palette — no generic Tailwind
+2. **Typography**: `font-poppins` set on container, `text-grayscale-900` for headings
+3. **Inputs**: Native `<input>` / `<textarea>` with explicit `text-grayscale-900 bg-white` — not IonItem
+4. **Buttons**: `rounded-[20px]` pill shape, `bg-grayscale-900` primary, `border-grayscale-300` secondary
+5. **Loading**: Every button with an async handler shows a spinner + contextual text
+6. **Errors**: Friendly error messages, never raw `error.message`
+7. **Copy**: No jargon, concise, action-oriented
+8. **Icons**: Ionicons or inline SVGs, never raw emoji
+9. **Contrast**: Text readable on its background (test on white AND colored backgrounds)
+10. **Animation**: Use `animate-fade-in-up` for overlay entrance, `transition-colors` / `transition-opacity` for interactions
+
 ## Monorepo Structure
 
 The project uses pnpm workspaces and NX for monorepo management with packages organized in `packages/` directory, services in the `services/` directory, and end-to-end tests in the `tests/` directory
