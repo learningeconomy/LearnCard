@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { EmojiClickData } from 'emoji-picker-react';
 
 import { IonInput, IonTextarea, IonToggle, useIonModal } from '@ionic/react';
@@ -36,6 +36,19 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
     const [emoji, setEmoji] = useState<EmojiClickData | null | undefined>(
         state?.appearance?.emoji ?? null
     );
+
+    // Sync local state when parent state changes (e.g., after recovery)
+    useEffect(() => {
+        setFamilyName(state?.basicInfo?.name ?? '');
+        setDescription(state?.basicInfo?.description ?? '');
+        setToggleFamilyEmoji(state?.appearance?.toggleFamilyEmoji ?? false);
+        setEmoji(state?.appearance?.emoji ?? null);
+    }, [
+        state?.basicInfo?.name,
+        state?.basicInfo?.description,
+        state?.appearance?.toggleFamilyEmoji,
+        state?.appearance?.emoji,
+    ]);
 
     const handleSetState = (topLevelKey: string, key: string, value: string) => {
         setState(prevState => {
@@ -86,8 +99,9 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
                             handleSetState('basicInfo', 'name', _familyName);
                             setErrors?.({});
                         }}
-                        className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !pr-4 flex ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${errors?.name ? 'border-red-300 border-2' : ''
-                            }`}
+                        className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !pr-4 flex ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
+                            errors?.name ? 'border-red-300 border-2' : ''
+                        }`}
                         placeholder="Family Name"
                         // clearInput
                         type="text"
@@ -155,8 +169,9 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
                             setErrors?.({});
                         }}
                         placeholder="About my family..."
-                        className={`bg-grayscale-100 text-grayscale-900 rounded-[15px] font-normal text-[17px] font-poppins p-4 troops-cms-placeholder ${errors?.description ? 'border-red-300 border-2' : ''
-                            }`}
+                        className={`bg-grayscale-100 text-grayscale-900 rounded-[15px] font-normal text-[17px] font-poppins p-4 troops-cms-placeholder ${
+                            errors?.description ? 'border-red-300 border-2' : ''
+                        }`}
                         rows={5}
                         maxlength={620}
                     />
