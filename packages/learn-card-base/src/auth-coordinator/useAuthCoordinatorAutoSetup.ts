@@ -80,10 +80,12 @@ export const useAuthCoordinatorAutoSetup = (
     }, [state.status, enabled]);
 
     // Auto-handle needs_migration (when migrationData contains a key to migrate)
+    const migrationKey = state.status === 'needs_migration'
+        ? (state.migrationData?.web3AuthKey as string | undefined)
+        : undefined;
+
     useEffect(() => {
         if (!enabled || state.status !== 'needs_migration' || handlingRef.current) return;
-
-        const migrationKey = state.migrationData?.web3AuthKey as string | undefined;
 
         if (!migrationKey) return;
 
@@ -91,15 +93,13 @@ export const useAuthCoordinatorAutoSetup = (
 
         const handleMigration = async () => {
             try {
-                const web3AuthKey = migrationKey;
-
-                const did = await configRef.current.didFromPrivateKey(web3AuthKey);
+                const did = await configRef.current.didFromPrivateKey(migrationKey);
 
                 if (!did) {
                     throw new Error('Failed to derive DID from Web3Auth key');
                 }
 
-                await actionsRef.current.migrate(web3AuthKey, did);
+                await actionsRef.current.migrate(migrationKey, did);
             } catch (e) {
                 const msg = e instanceof Error ? e.message : 'Auto-migration failed';
                 console.error('useAuthCoordinatorAutoSetup: migration failed', msg);
@@ -110,7 +110,7 @@ export const useAuthCoordinatorAutoSetup = (
         };
 
         handleMigration();
-    }, [state.status, enabled]);
+    }, [state.status, enabled, migrationKey]);
 
     // Notify when ready
     useEffect(() => {

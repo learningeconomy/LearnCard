@@ -246,11 +246,17 @@ graph TD
         SPLIT_RS --> UPDATE_AUTH["PUT /keys/auth-share(authShare)"]
     end
 
-    subgraph "Logout"
+    subgraph "Logout (trusted device)"
         SIGNOUT["authProvider.signOut()"]
-        CLEAR_LOCAL["clearLocalKeys()<br/><i>Clears device share from IDB</i>"]
         CLEAR_IDB["clearAllIndexedDB()<br/><i>Preserves lcb-sss-keys</i>"]
         CLEAR_STORES["Clear app stores, localStorage,<br/>sessionStorage, secure storage"]
+        NOTE_SHARE["Device share persists in IDB<br/><i>Enables fast re-login</i>"]
+    end
+
+    subgraph "Forget Device (public computer)"
+        FORGET["forgetDevice()"]
+        CLEAR_LOCAL["clearLocalKeys()<br/><i>Clears device share from IDB</i>"]
+        FORGET --> CLEAR_LOCAL
     end
 
     style READY fill:#16a34a,color:#fff

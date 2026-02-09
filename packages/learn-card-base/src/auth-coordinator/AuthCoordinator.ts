@@ -432,11 +432,15 @@ export class AuthCoordinator {
     }
 
     /**
-     * Logout and clear local state.
+     * Logout and clear session state.
+     *
+     * The device share is intentionally preserved so that returning users
+     * on a trusted device can reconstruct their key without recovery.
+     * To explicitly wipe the device share (e.g. on a public computer),
+     * call `forgetDevice()` before or after logout.
      */
     async logout(): Promise<void> {
         await this.config.authProvider.signOut();
-        await this.keyDerivation.clearLocalKeys();
 
         if (this.keyDerivation.cleanup) {
             await this.keyDerivation.cleanup();
@@ -447,6 +451,18 @@ export class AuthCoordinator {
         }
 
         this.setState({ status: 'idle' });
+    }
+
+    /**
+     * Clear the local device share so this device is no longer "trusted".
+     *
+     * After calling this, the user will need to recover their key via a
+     * recovery method (password, passkey, phrase, or backup) on next login.
+     *
+     * Use case: logging out on a shared / public computer.
+     */
+    async forgetDevice(): Promise<void> {
+        await this.keyDerivation.clearLocalKeys();
     }
 
     /**

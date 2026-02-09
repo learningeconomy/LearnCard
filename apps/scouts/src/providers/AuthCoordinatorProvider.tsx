@@ -265,6 +265,21 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const walletInitRef = useRef(false);
 
+    // Delay showing the stalled-migration overlay so the async Web3Auth
+    // extraction has time to complete before we flash the "stalled" UI.
+    const [migrationStallVisible, setMigrationStallVisible] = useState(false);
+
+    useEffect(() => {
+        if (coordinator.state.status !== 'needs_migration') {
+            setMigrationStallVisible(false);
+            return;
+        }
+
+        const timer = setTimeout(() => setMigrationStallVisible(true), 8000);
+
+        return () => clearTimeout(timer);
+    }, [coordinator.state.status]);
+
     // --- Device link modal ---
     const [deviceLinkVisible, setDeviceLinkVisible] = useState(false);
 
@@ -514,6 +529,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
     const { status } = coordinator.state;
 
     const showStalledMigration =
+        migrationStallVisible &&
         status === 'needs_migration' &&
         !(coordinator.state.status === 'needs_migration' && coordinator.state.migrationData?.web3AuthKey);
 

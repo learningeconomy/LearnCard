@@ -46,6 +46,7 @@ export interface AuthCoordinatorContextValue {
     setMigrationData: (data: Record<string, unknown>) => void;
     recover: (input: unknown) => Promise<void>;
     logout: () => Promise<void>;
+    forgetDevice: () => Promise<void>;
     retry: () => Promise<void>;
     verifyKeyIntegrity: () => Promise<boolean>;
 }
@@ -264,6 +265,12 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         }
     }, []);
 
+    const forgetDevice = useCallback(async () => {
+        if (coordinatorRef.current) {
+            await coordinatorRef.current.forgetDevice();
+        }
+    }, []);
+
     const retry = useCallback(async () => {
         if (coordinatorRef.current) {
             await coordinatorRef.current.retry();
@@ -309,6 +316,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         setMigrationData,
         recover,
         logout,
+        forgetDevice,
         retry,
         verifyKeyIntegrity,
     }), [
@@ -330,6 +338,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         setMigrationData,
         recover,
         logout,
+        forgetDevice,
         retry,
         verifyKeyIntegrity,
     ]);

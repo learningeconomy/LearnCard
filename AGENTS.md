@@ -299,8 +299,12 @@ Private-key-first shortcut: `idle` → `deriving_key` → `ready` (from cached k
 
 -   `AuthProvider` — Auth session abstraction (`getIdToken`, `getCurrentUser`, `signOut`)
 -   `KeyDerivationStrategy` — Key split/reconstruct abstraction (`splitKey`, `reconstructKey`, `hasLocalKey`)
--   `AuthCoordinatorApi` — Server API (`fetchServerKeyStatus`, `storeAuthShare`, `markMigrated`)
--   `AuthCoordinatorConfig` — Full configuration passed to `createAuthCoordinator()`
+-   `AuthCoordinatorConfig` — Full configuration passed to `new AuthCoordinator()`
+
+### Logout vs Forget Device
+
+-   **`logout()`** — Signs out the auth provider, runs cleanup/onLogout callbacks, resets state to `idle`. **Preserves the device share** in IndexedDB so the user can reconstruct their key on re-login without recovery.
+-   **`forgetDevice()`** — Calls `clearLocalKeys()` to wipe the device share from IndexedDB. Use this for "public computer" scenarios where the device should not remain trusted. Can be called before or after `logout()`.
 
 ### File Map
 
@@ -317,7 +321,7 @@ packages/learn-card-base/src/
 │   ├── INTEGRATION.md                — App integration guide
 │   ├── RECOVERY.md                   — Recovery system guide
 │   └── __tests__/
-│       └── AuthCoordinator.test.ts   — 35+ unit tests
+│       └── AuthCoordinator.test.ts   — 46+ unit tests
 ├── auth-providers/
 │   ├── createFirebaseAuthProvider.ts — Firebase AuthProvider factory
 │   └── index.ts
@@ -325,10 +329,11 @@ packages/learn-card-base/src/
 │   └── authConfig.ts                 — Environment-driven config (getAuthConfig)
 ├── helpers/
 │   └── indexedDBHelpers.ts           — clearAllIndexedDB (preserves lcb-sss-keys)
+├── key-derivation/
+│   └── createWeb3AuthStrategy.ts    — Web3Auth KeyDerivationStrategy (migration only)
 └── hooks/
     ├── useRecoveryMethods.ts         — Recovery execution (password, passkey, phrase, backup)
-    ├── useRecoverySetup.ts           — Recovery setup (add methods, export backup)
-    └── useSSSKeyManager.ts           — Legacy monolithic hook (being decomposed)
+    └── useRecoverySetup.ts           — Recovery setup (add methods, export backup)
 
 packages/sss-key-manager/src/
 ├── types.ts              — Canonical shared types (AuthProvider, KeyDerivationStrategy, etc.)
@@ -349,10 +354,16 @@ apps/scouts/src/providers/
 
 ### Environment Variables
 
--   `REACT_APP_AUTH_PROVIDER`: `'firebase' | 'supertokens' | 'keycloak' | 'oidc'` (default: `'firebase'`)
--   `REACT_APP_KEY_DERIVATION_PROVIDER`: `'sss' | 'web3auth'` (default: `'sss'`)
--   `REACT_APP_SSS_SERVER_URL`: Server URL for key share operations (default: `'http://localhost:5100/api'`)
--   `REACT_APP_ENABLE_MIGRATION`: `'true' | 'false'` (default: `'true'`)
+All auth-related env vars use the `VITE_` prefix for Vite compatibility and are read via `getAuthConfig()` in `config/authConfig.ts`.
+
+-   `VITE_AUTH_PROVIDER`: `'firebase' | 'supertokens' | 'keycloak' | 'oidc'` (default: `'firebase'`)
+-   `VITE_KEY_DERIVATION`: `'sss' | 'web3auth'` (default: `'sss'`)
+-   `VITE_SSS_SERVER_URL`: Server URL for key share operations (default: `'http://localhost:5100/api'`)
+-   `VITE_ENABLE_MIGRATION`: `'true' | 'false'` (default: `'true'`)
+-   `VITE_WEB3AUTH_CLIENT_ID`: Web3Auth client ID (per app, from dashboard)
+-   `VITE_WEB3AUTH_NETWORK`: Web3Auth network (e.g. `'testnet'`, `'sapphire_mainnet'`)
+-   `VITE_WEB3AUTH_VERIFIER_ID`: Web3Auth verifier name (e.g. `'learncardapp-firebase'`)
+-   `VITE_WEB3AUTH_RPC_TARGET`: Ethereum RPC URL for Web3Auth private key provider (e.g. Infura endpoint)
 
 ### Detailed Documentation
 

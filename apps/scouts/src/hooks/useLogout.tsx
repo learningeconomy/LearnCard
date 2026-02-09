@@ -71,6 +71,11 @@ const useLogout = () => {
                 // Coordinator handles: authProvider.signOut, clearLocalKeys, onLogout callback
                 // (onLogout clears stores, queryClient, SQLite, localStorage, IndexedDB, etc.)
                 await coordinatorLogout();
+
+                // Hard redirect — localStorage.clear() in the logout callback wipes
+                // Ionic's internal router state, so client-side navigation would
+                // land on a white screen. A full page reload reinitializes cleanly.
+                window.location.href = '/login';
             } catch (e) {
                 console.error('There was an issue logging out', e);
                 setIsLoggingOut(false);

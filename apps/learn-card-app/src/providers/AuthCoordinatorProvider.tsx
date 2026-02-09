@@ -283,6 +283,21 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const walletInitRef = useRef(false);
 
+    // Delay showing the stalled-migration overlay so the async Web3Auth
+    // extraction has time to complete before we flash the "stalled" UI.
+    const [migrationStallVisible, setMigrationStallVisible] = useState(false);
+
+    useEffect(() => {
+        if (coordinator.state.status !== 'needs_migration') {
+            setMigrationStallVisible(false);
+            return;
+        }
+
+        const timer = setTimeout(() => setMigrationStallVisible(true), 8000);
+
+        return () => clearTimeout(timer);
+    }, [coordinator.state.status]);
+
     // --- Recovery setup prompt (shown after first-time setup with no recovery methods) ---
     const [showRecoverySetup, setShowRecoverySetup] = useState(false);
     const wasNewUserRef = useRef(false);
@@ -630,6 +645,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
     const showRecovery = status === 'needs_recovery' && !!recoveryAuthProvider;
 
     const showStalledMigration =
+        migrationStallVisible &&
         status === 'needs_migration' &&
         !(coordinator.state.status === 'needs_migration' && coordinator.state.migrationData?.web3AuthKey);
 

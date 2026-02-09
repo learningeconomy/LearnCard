@@ -865,7 +865,7 @@ describe('AuthCoordinator', () => {
     // -----------------------------------------------------------------------
 
     describe('logout()', () => {
-        it('signs out, clears local keys, calls cleanup + onLogout, and returns to idle', async () => {
+        it('signs out, calls cleanup + onLogout, preserves device share, and returns to idle', async () => {
             const onLogout = vi.fn().mockResolvedValue(undefined);
 
             const { coordinator, authProvider, keyDerivation } = setup({
@@ -878,7 +878,7 @@ describe('AuthCoordinator', () => {
             await coordinator.logout();
 
             expect(authProvider.signOut).toHaveBeenCalled();
-            expect(keyDerivation.clearLocalKeys).toHaveBeenCalled();
+            expect(keyDerivation.clearLocalKeys).not.toHaveBeenCalled();
             expect(keyDerivation.cleanup).toHaveBeenCalled();
             expect(onLogout).toHaveBeenCalled();
             expect(coordinator.getState().status).toBe('idle');
@@ -891,6 +891,23 @@ describe('AuthCoordinator', () => {
             await coordinator.logout();
 
             expect(coordinator.getState().status).toBe('idle');
+        });
+    });
+
+    // -----------------------------------------------------------------------
+    // forgetDevice()
+    // -----------------------------------------------------------------------
+
+    describe('forgetDevice()', () => {
+        it('clears local keys (device share)', async () => {
+            const { coordinator, keyDerivation } = setup();
+
+            await coordinator.initialize();
+            expect(coordinator.getState().status).toBe('ready');
+
+            await coordinator.forgetDevice();
+
+            expect(keyDerivation.clearLocalKeys).toHaveBeenCalled();
         });
     });
 
