@@ -135,8 +135,10 @@ jobs:
           SENTRY_DSN: ${{ vars.SENTRY_DSN }}
           SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-          WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
-          WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
+          VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
+          VITE_WEB3AUTH_NETWORK: ${{ vars.VITE_WEB3AUTH_NETWORK }}
+          VITE_WEB3AUTH_VERIFIER_ID: ${{ vars.VITE_WEB3AUTH_VERIFIER_ID }}
+          VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
 
       - name: Sync Capacitor Files to iOS
         working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
@@ -244,8 +246,10 @@ jobs:
           SENTRY_DSN: ${{ vars.SENTRY_DSN }}
           SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-          WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
-          WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
+          VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
+          VITE_WEB3AUTH_NETWORK: ${{ vars.VITE_WEB3AUTH_NETWORK }}
+          VITE_WEB3AUTH_VERIFIER_ID: ${{ vars.VITE_WEB3AUTH_VERIFIER_ID }}
+          VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
 
       - name: Sync Capacitor Files to Android
         working-directory: ${{ vars.APP_WORKING_DIRECTORY }}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { IonButton, IonIcon, IonInput, IonItem, IonLabel, IonSpinner, IonText } from '@ionic/react';
 import { keyOutline, fingerPrint, documentTextOutline, checkmarkCircle, alertCircle, copyOutline, checkmark } from 'ionicons/icons';
 
+import { Capacitor } from '@capacitor/core';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 
 export type RecoverySetupType = 'password' | 'passkey' | 'phrase';
@@ -103,11 +104,16 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         setSuccess('Recovery phrase saved! Store it securely and never share it.');
     };
 
-    const tabs = [
+    const allTabs = [
         { id: 'password' as const, label: 'Password', icon: keyOutline },
         { id: 'passkey' as const, label: 'Passkey', icon: fingerPrint },
         { id: 'phrase' as const, label: 'Phrase', icon: documentTextOutline },
     ];
+
+    // Hide passkey tab entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
+    const tabs = Capacitor.isNativePlatform()
+        ? allTabs.filter(t => t.id !== 'passkey')
+        : allTabs;
 
     return (
         <div className="p-4 max-w-md mx-auto">

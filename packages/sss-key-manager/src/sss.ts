@@ -5,13 +5,14 @@
 import { split, combine } from 'shamir-secret-sharing';
 import { hexToBytes, bytesToHex } from './crypto';
 
-export const SSS_TOTAL_SHARES = 3;
+export const SSS_TOTAL_SHARES = 4;
 export const SSS_THRESHOLD = 2;
 
 export interface SSSShares {
     deviceShare: string;
     authShare: string;
     recoveryShare: string;
+    emailShare: string;
 }
 
 export async function splitPrivateKey(privateKeyHex: string): Promise<SSSShares> {
@@ -23,6 +24,7 @@ export async function splitPrivateKey(privateKeyHex: string): Promise<SSSShares>
         deviceShare: bytesToHex(shares[0]),
         authShare: bytesToHex(shares[1]),
         recoveryShare: bytesToHex(shares[2]),
+        emailShare: bytesToHex(shares[3]),
     };
 }
 

@@ -111,7 +111,7 @@ vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: mockFns.initWallet }),
     ProfilePicture: () => <div data-testid="profile-picture" />,
     pushUtilities: { revokePushToken: vi.fn() },
-    useWeb3Auth: () => ({ logout: vi.fn() }),
+    useAuthCoordinator: () => ({ logout: vi.fn(), state: { status: 'idle' } }),
     useSQLiteStorage: () => ({ clearDB: vi.fn(), setCurrentUser: vi.fn() }),
     useContract: (...args: any[]) => mockFns.useContract(...args),
     redirectStore: { set: { authRedirect: vi.fn() } },
@@ -126,6 +126,10 @@ vi.mock('learn-card-base/stores/authStore', () => ({
 
 vi.mock('../../firebase/firebase', () => ({
     auth: () => ({ signOut: vi.fn() }),
+}));
+
+vi.mock('../../providers/AuthCoordinatorProvider', () => ({
+    useAuthCoordinator: () => ({ logout: vi.fn().mockResolvedValue(undefined), state: { status: 'idle' } }),
 }));
 
 vi.mock('../../helpers/externalLinkHelpers', () => ({

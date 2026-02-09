@@ -71,23 +71,49 @@ export type {
     StorageOperations,
 } from './atomic-operations';
 
+export { createSSSStrategy } from './sss-strategy';
+
+export type { SSSStorageFunctions, SSSStrategyConfig } from './sss-strategy';
+
 export {
-    AuthCoordinator,
-    createAuthCoordinator,
-} from './auth-coordinator';
+    generateEphemeralKeypair,
+    encryptShareForTransfer,
+    decryptShareFromTransfer,
+} from './qr-crypto';
+
+export type { EphemeralKeypair, EncryptedSharePayload } from './qr-crypto';
+
+export {
+    createQrLoginSession,
+    pollQrLoginSession,
+    pollUntilApproved,
+    getQrLoginSessionInfo,
+    approveQrLoginSession,
+    notifyDevicesForQrSession,
+} from './qr-login';
 
 export type {
-    UnifiedAuthState,
-    ServerKeyStatus,
-    AuthCoordinatorConfig,
-    AuthCoordinatorApi,
-    StorageFunctions,
-} from './auth-coordinator';
+    QrLoginSession,
+    QrLoginSessionInfo,
+    QrLoginClientConfig,
+    QrPayload,
+    PollResult,
+    NotifyDevicesResult,
+} from './qr-login';
+
+// Provider-agnostic interfaces are re-exported from @learncard/auth-types.
+// Import from '@learncard/auth-types' or 'learn-card-base' for generic types.
+// Import from this package for SSS-specific types.
+
+export { AuthSessionError } from './types';
 
 export type {
     SSSKeyManagerConfig,
     SSSKeyDerivationProvider,
     KeyDerivationProvider,
+    KeyDerivationStrategy,
+    SSSKeyDerivationStrategy,
+    ServerKeyStatus,
     AuthProvider,
     AuthUser,
     AuthProviderType,
@@ -96,6 +122,10 @@ export type {
     RecoveryMethod,
     RecoveryMethodType,
     RecoveryMethodInfo,
+    RecoveryInput,
+    RecoveryResult,
+    RecoverySetupInput,
+    RecoverySetupResult,
     PasswordRecoveryMethod,
     PasskeyRecoveryMethod,
     BackupFileRecoveryMethod,

@@ -1,6 +1,30 @@
 /**
  * SSS Key Manager Types
+ *
+ * Re-exports provider-agnostic interfaces from @learncard/auth-types
+ * and defines SSS-specific types (recovery shapes, backup files, etc.).
  */
+
+// ---------------------------------------------------------------------------
+// Re-export provider-agnostic interfaces from @learncard/auth-types
+// ---------------------------------------------------------------------------
+
+export {
+    AuthSessionError,
+    type AuthProviderType,
+    type AuthUser,
+    type AuthProvider,
+    type RecoveryMethodInfo,
+    type RecoveryResult,
+    type ServerKeyStatus,
+    type KeyDerivationStrategy,
+} from '@learncard/auth-types';
+
+import type { AuthProvider, AuthProviderType, KeyDerivationStrategy, RecoveryMethodInfo } from '@learncard/auth-types';
+
+// ---------------------------------------------------------------------------
+// SSS-specific: Contact & auth provider mapping
+// ---------------------------------------------------------------------------
 
 export type ContactMethodType = 'email' | 'phone';
 
@@ -9,38 +33,28 @@ export interface ContactMethod {
     value: string;
 }
 
-export type AuthProviderType = 'firebase' | 'supertokens' | 'keycloak' | 'oidc';
-
 export interface AuthProviderMapping {
     type: AuthProviderType;
     id: string;
 }
 
-export interface AuthUser {
-    id: string;
-    email?: string;
-    phone?: string;
-    providerType: AuthProviderType;
-}
-
-export interface AuthProvider {
-    getIdToken(): Promise<string>;
-    getCurrentUser(): Promise<AuthUser | null>;
-    getProviderType(): AuthProviderType;
-    signOut(): Promise<void>;
-}
+// ---------------------------------------------------------------------------
+// SSS-specific: Security levels
+// ---------------------------------------------------------------------------
 
 export type SecurityLevel = 'basic' | 'enhanced' | 'advanced';
 
 export const SecurityLevels: readonly SecurityLevel[] = ['basic', 'enhanced', 'advanced'] as const;
 
-export type RecoveryMethodType = 'password' | 'passkey' | 'backup' | 'phrase';
+// ---------------------------------------------------------------------------
+// SSS-specific: Recovery method types
+// ---------------------------------------------------------------------------
 
-export interface RecoveryMethodInfo {
-    type: RecoveryMethodType;
-    createdAt: Date;
-    credentialId?: string;
-}
+/**
+ * SSS recovery method type identifiers.
+ * These are the specific recovery methods supported by the SSS strategy.
+ */
+export type RecoveryMethodType = 'password' | 'passkey' | 'backup' | 'phrase';
 
 export interface PasswordRecoveryMethod {
     type: 'password';
@@ -63,7 +77,39 @@ export interface RecoveryPhraseRecoveryMethod {
     phrase: string;
 }
 
+/** @deprecated Use RecoveryInput instead. Kept for legacy SSSKeyManager class. */
 export type RecoveryMethod = PasswordRecoveryMethod | PasskeyRecoveryMethod | BackupFileRecoveryMethod | RecoveryPhraseRecoveryMethod;
+
+/**
+ * SSS-specific recovery input — what the user provides to recover their key.
+ */
+export type RecoveryInput =
+    | { method: 'password'; password: string }
+    | { method: 'passkey'; credentialId: string }
+    | { method: 'phrase'; phrase: string }
+    | { method: 'backup'; fileContents: string; password: string };
+
+/**
+ * SSS-specific recovery setup input — what the user provides to set up a method.
+ */
+export type RecoverySetupInput =
+    | { method: 'password'; password: string }
+    | { method: 'passkey' }
+    | { method: 'phrase' }
+    | { method: 'backup'; password: string; did: string };
+
+/**
+ * SSS-specific recovery setup result.
+ */
+export type RecoverySetupResult =
+    | { method: 'password' }
+    | { method: 'passkey'; credentialId: string }
+    | { method: 'phrase'; phrase: string }
+    | { method: 'backup'; backupFile: BackupFile };
+
+// ---------------------------------------------------------------------------
+// SSS-specific: Share & encryption types
+// ---------------------------------------------------------------------------
 
 export interface EncryptedShare {
     encryptedData: string;
@@ -76,6 +122,10 @@ export interface ServerEncryptedShare {
     encryptedDek: string;
     iv: string;
 }
+
+// ---------------------------------------------------------------------------
+// SSS-specific: User key record & backup
+// ---------------------------------------------------------------------------
 
 export interface UserKeyRecord {
     contactMethod: ContactMethod;
@@ -109,12 +159,31 @@ export interface BackupFile {
     };
 }
 
+// ---------------------------------------------------------------------------
+// SSS-specific: Key manager config
+// ---------------------------------------------------------------------------
+
 export interface SSSKeyManagerConfig {
     serverUrl: string;
     authProvider: AuthProvider;
     deviceStorageKey?: string;
 }
 
+// ---------------------------------------------------------------------------
+// SSS-specific: Narrowed strategy type
+// ---------------------------------------------------------------------------
+
+/**
+ * The SSS key derivation strategy — a KeyDerivationStrategy narrowed
+ * with SSS-specific recovery input/output types.
+ */
+export type SSSKeyDerivationStrategy = KeyDerivationStrategy<RecoveryInput, RecoverySetupInput, RecoverySetupResult>;
+
+// ---------------------------------------------------------------------------
+// Legacy types (deprecated)
+// ---------------------------------------------------------------------------
+
+/** @deprecated Use KeyDerivationStrategy instead. Kept for legacy SSSKeyManager class. */
 export interface KeyDerivationProvider {
     readonly name: string;
     connect(): Promise<string>;
@@ -125,6 +194,7 @@ export interface KeyDerivationProvider {
     migrate?(privateKey: string): Promise<void>;
 }
 
+/** @deprecated Use KeyDerivationStrategy instead. Kept for legacy SSSKeyManager class. */
 export interface SSSKeyDerivationProvider extends KeyDerivationProvider {
     addRecoveryMethod(method: RecoveryMethod): Promise<void>;
     getRecoveryMethods(): Promise<RecoveryMethodInfo[]>;

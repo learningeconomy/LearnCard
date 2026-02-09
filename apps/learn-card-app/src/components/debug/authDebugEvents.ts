@@ -11,6 +11,7 @@ export type AuthDebugEventType =
     | 'auth:login_success'
     | 'auth:login_error'
     | 'auth:logout'
+    | 'auth:state_transition'
     | 'firebase:auth_state_change'
     | 'firebase:token_refresh'
     | 'sss:connect_start'
@@ -23,6 +24,8 @@ export type AuthDebugEventType =
     | 'sss:auth_share_fetched'
     | 'sss:auth_share_stored'
     | 'sss:key_reconstructed'
+    | 'sss:share_verified'
+    | 'sss:share_version_update'
     | 'sss:recovery_start'
     | 'sss:recovery_success'
     | 'sss:recovery_error'
@@ -38,6 +41,9 @@ export type AuthDebugEventType =
     | 'web3auth:init'
     | 'web3auth:login'
     | 'web3auth:error'
+    | 'web3auth:migration_key'
+    | 'auth:coordinator_ready'
+    | 'auth:coordinator_error'
     | 'custom';
 
 export interface AuthDebugEvent {

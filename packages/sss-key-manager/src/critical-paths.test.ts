@@ -19,12 +19,12 @@ describe('Critical: Key must NEVER be lost', () => {
 
     describe('Share split verification (fuzz test)', () => {
 
-        it('should verify all 3 share combinations reconstruct the key (100 iterations)', async () => {
+        it('should verify all 6 share combinations reconstruct the key (100 iterations)', async () => {
             for (let i = 0; i < 100; i++) {
                 const privateKey = await generateEd25519PrivateKey();
                 const shares = await splitPrivateKey(privateKey);
 
-                // All 3 combinations must reconstruct the exact same key
+                // All 6 combinations (C(4,2)) must reconstruct the exact same key
                 const fromDeviceAuth = await reconstructFromShares([
                     shares.deviceShare,
                     shares.authShare,
@@ -37,11 +37,29 @@ describe('Critical: Key must NEVER be lost', () => {
                 ]);
                 expect(fromDeviceRecovery).toBe(privateKey);
 
+                const fromDeviceEmail = await reconstructFromShares([
+                    shares.deviceShare,
+                    shares.emailShare,
+                ]);
+                expect(fromDeviceEmail).toBe(privateKey);
+
                 const fromAuthRecovery = await reconstructFromShares([
                     shares.authShare,
                     shares.recoveryShare,
                 ]);
                 expect(fromAuthRecovery).toBe(privateKey);
+
+                const fromAuthEmail = await reconstructFromShares([
+                    shares.authShare,
+                    shares.emailShare,
+                ]);
+                expect(fromAuthEmail).toBe(privateKey);
+
+                const fromRecoveryEmail = await reconstructFromShares([
+                    shares.recoveryShare,
+                    shares.emailShare,
+                ]);
+                expect(fromRecoveryEmail).toBe(privateKey);
             }
         });
 
@@ -55,6 +73,7 @@ describe('Critical: Key must NEVER be lost', () => {
             expect(shares1.deviceShare).not.toBe(shares2.deviceShare);
             expect(shares1.authShare).not.toBe(shares2.authShare);
             expect(shares1.recoveryShare).not.toBe(shares2.recoveryShare);
+            expect(shares1.emailShare).not.toBe(shares2.emailShare);
 
             // But both should still reconstruct to the same key
             const reconstructed1 = await reconstructFromShares([
@@ -346,6 +365,7 @@ describe('Critical: Share integrity', () => {
         expect(hexRegex.test(shares.deviceShare)).toBe(true);
         expect(hexRegex.test(shares.authShare)).toBe(true);
         expect(hexRegex.test(shares.recoveryShare)).toBe(true);
+        expect(hexRegex.test(shares.emailShare)).toBe(true);
     });
 
     it('shares should be consistent length', async () => {
@@ -355,6 +375,7 @@ describe('Critical: Share integrity', () => {
         // All shares should be the same length
         expect(shares.deviceShare.length).toBe(shares.authShare.length);
         expect(shares.authShare.length).toBe(shares.recoveryShare.length);
+        expect(shares.recoveryShare.length).toBe(shares.emailShare.length);
 
         // SSS adds an index byte, so shares are 33 bytes (66 hex chars)
         expect(shares.deviceShare.length).toBe(66);
@@ -367,5 +388,8 @@ describe('Critical: Share integrity', () => {
         expect(shares.deviceShare).not.toBe(shares.authShare);
         expect(shares.authShare).not.toBe(shares.recoveryShare);
         expect(shares.deviceShare).not.toBe(shares.recoveryShare);
+        expect(shares.deviceShare).not.toBe(shares.emailShare);
+        expect(shares.authShare).not.toBe(shares.emailShare);
+        expect(shares.recoveryShare).not.toBe(shares.emailShare);
     });
 });

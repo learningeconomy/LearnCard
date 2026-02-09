@@ -24,8 +24,6 @@ import {
     authStore,
     SocialLoginTypes,
     firebaseAuthStore,
-    useWeb3AuthSFA,
-    useWeb3Auth,
     LOGIN_REDIRECTS,
     useModal,
     ModalTypes,
@@ -40,91 +38,18 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import GoogleLoginHelpModal from '../components/auth/GoogleLoginHelpModal';
 
 import { FIREBASE_REDIRECT_URL } from '../constants/web3AuthConfig';
-import { WALLET_ADAPTERS } from '@web3auth/base';
 
 export const useFirebase = () => {
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
-    const { web3AuthSFAInit } = useWeb3AuthSFA();
-    const { web3AuthInit } = useWeb3Auth();
     const { presentToast } = useToast();
     const [presentAlert] = useIonAlert();
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
-    const setInitLoading = authStore.set.initLoading;
 
     const presentGoogleHelpModal = (message?: string) => {
         newModal(React.createElement(GoogleLoginHelpModal, { message }), {
             sectionClassName: '!max-w-[420px]',
         });
-    };
-
-    const web3AuthMfaFallbackLogin = async (token: string) => {
-        try {
-            const web3Auth = await web3AuthInit({
-                redirectUrl:
-                    IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                        ? LOGIN_REDIRECTS?.[BrandingEnum.scoutPass]?.redirectUrl
-                        : LOGIN_REDIRECTS?.[BrandingEnum.scoutPass]?.devRedirectUrl,
-                showLoading: false,
-                branding: BrandingEnum.scoutPass,
-            });
-            await web3Auth?.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
-                loginProvider: 'scoutPassFirebaseMainnet',
-                enableMfa: true,
-                mfaLevel: 'mandatory',
-                extraLoginOptions: {
-                    id_token: token,
-                    verifierIdField: 'sub', // same as your JWT Verifier ID
-                    domain:
-                        IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                            ? `https://${FIREBASE_REDIRECT_URL}`
-                            : 'https://localhost:3000',
-                },
-            });
-        } catch (err) {
-            const errorMessage = (err as any)?.message;
-            console.log('web3AuthMfa::error', errorMessage);
-
-            if (errorMessage) presentAlert(errorMessage as any);
-        }
-    };
-
-    const web3AuthSfaFirebaseLogin = async (
-        token: string,
-        userUid: string,
-        getIdToken: (forceRefresh?: boolean) => Promise<string>
-    ) => {
-        const web3Auth = await web3AuthSFAInit(BrandingEnum.scoutPass);
-
-        if (!web3Auth) {
-            setInitLoading(false);
-            return;
-        }
-
-        try {
-            await web3Auth.connect({
-                verifier: 'scoutPass-firebase-cyan-mainnet',
-                verifierId: userUid,
-                idToken: token,
-            });
-        } catch (error) {
-            setInitLoading(false);
-
-            const errorMessage = (error as any)?.message;
-            console.log('web3AuthSfa::error', errorMessage);
-
-            if ((errorMessage as string)?.includes('User has already enabled mfa')) {
-                // !! if the user has enabled mfa
-                // !! fallback to using the web3auth no-modal sdk
-                const refreshedToken = await getIdToken(true); // * need fresh token to initialize web3AuthMfaFallbackLogin flow
-                await web3AuthMfaFallbackLogin(refreshedToken);
-
-                // !! if the user has enabled mfa
-                // !! fallback to using the web3auth no-modal sdk
-            } else {
-                if (errorMessage) presentAlert(errorMessage as any);
-            }
-        }
     };
 
     const deleteFirebaseUser = async () => {
@@ -156,9 +81,6 @@ export const useFirebase = () => {
             const { user } = await FirebaseAuthentication.getCurrentUser();
 
             if (signInWithGoogleRes.user && user) {
-                // Show loading AFTER the popup closes and we have credentials
-                setInitLoading(true);
-                
                 const { token } = await FirebaseAuthentication.getIdToken();
 
                 authStore.set.typeOfLogin(SocialLoginTypes.google);
@@ -179,19 +101,9 @@ export const useFirebase = () => {
                     }
                 }
 
-                await web3AuthSfaFirebaseLogin(token, user?.uid, async (forceRefresh?: boolean) => {
-                    const { token: refreshedToken } = await FirebaseAuthentication.getIdToken({
-                        forceRefresh: !!forceRefresh,
-                    });
-                    return refreshedToken;
-                });
-                // Loading state is cleared by web3Auth CONNECTED event
-            } else {
-                setInitLoading(false);
+                // AuthCoordinator auto-handles key derivation when firebaseUser changes
             }
         } catch (error) {
-            setInitLoading(false);
-
             const errorCode = error?.code;
             const errorMessage = error?.message;
 
@@ -321,7 +233,6 @@ export const useFirebase = () => {
                     const { user } = await signInWithCredential(firebaseAuth, credential);
 
                     if (user) {
-                        setInitLoading(true);
                         const token = await user.getIdToken();
 
                         if (token) {
@@ -332,19 +243,11 @@ export const useFirebase = () => {
                             firebaseAuthStore.set.setFirebaseCurrentUser(user);
                             firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
 
-                            await web3AuthSfaFirebaseLogin(
-                                token,
-                                user?.uid,
-                                async (forceRefresh?: boolean) => {
-                                    const refreshedToken = await user.getIdToken(!!forceRefresh);
-                                    return refreshedToken;
-                                }
-                            );
+                            // AuthCoordinator auto-handles key derivation when firebaseUser changes
                         }
                     }
                 }
             } catch (error) {
-                setInitLoading(false);
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
 
@@ -370,23 +273,13 @@ export const useFirebase = () => {
                     firebaseAuthStore.set.setFirebaseCurrentUser({ ...user });
 
                     if (token) {
-                        setInitLoading(true);
-                        await web3AuthSfaFirebaseLogin(
-                            token,
-                            user?.uid,
-                            async (forceRefresh?: boolean) => {
-                                const refreshedToken = await result.user.getIdToken(!!forceRefresh);
-                                return refreshedToken;
-                            }
-                        );
+                        // AuthCoordinator auto-handles key derivation when firebaseUser changes
                         localStorage.removeItem('emailForSignIn');
                     }
                 }
             } catch (error) {
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
-
-                setInitLoading(false);
 
                 if (errorCode) console.error('errorCode', errorCode);
                 if (errorMessage) {
@@ -469,27 +362,14 @@ export const useFirebase = () => {
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
 
                 if (token) {
-                    setInitLoading(true);
                     successCallback();
                     authStore.set.typeOfLogin(SocialLoginTypes.sms);
                     logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
                     firebaseAuthStore.set.setFirebaseCurrentUser(user);
-
-                    if (token) {
-                        // log user into web3Auth via idToken
-                        await web3AuthSfaFirebaseLogin(
-                            token,
-                            user?.uid,
-                            async (forceRefresh?: boolean) => {
-                                const refreshedToken = await user.getIdToken(!!forceRefresh);
-                                return refreshedToken;
-                            }
-                        );
-                    }
+                    // AuthCoordinator auto-handles key derivation when firebaseUser changes
                 }
             }
         } catch (error) {
-            setInitLoading(false);
             console.log('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
             errorCallback(error?.message);
         }
@@ -509,16 +389,10 @@ export const useFirebase = () => {
             firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
             if (token) {
-                setInitLoading(true);
                 successCallback();
-                await web3AuthSfaFirebaseLogin(token, user?.uid, async (forceRefresh?: boolean) => {
-                    const refreshedToken = await user.getIdToken(!!forceRefresh);
-                    return refreshedToken;
-                });
+                // AuthCoordinator auto-handles key derivation when firebaseUser changes
             }
         } catch (error) {
-            setInitLoading(false);
-
             const errorCode = error?.code;
             const errorMessage = error?.message;
 
@@ -563,22 +437,12 @@ export const useFirebase = () => {
                 firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                 if (token) {
-                    setInitLoading(true);
                     successCallback();
                     authStore.set.typeOfLogin(SocialLoginTypes.sms);
-                    // log user into web3Auth via idToken
-                    await web3AuthSfaFirebaseLogin(
-                        token,
-                        user?.uid,
-                        async (forceRefresh?: boolean) => {
-                            const refreshedToken = await user.getIdToken(!!forceRefresh);
-                            return refreshedToken;
-                        }
-                    );
+                    // AuthCoordinator auto-handles key derivation when firebaseUser changes
                 }
             }
         } catch (error) {
-            setInitLoading(false);
             console.log('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
             errorCallback(error?.message);
         }
@@ -603,8 +467,6 @@ export const useFirebase = () => {
                 });
                 await signInWithCredential(firebaseAuth, credential);
             } catch (error) {
-                setInitLoading(false);
-
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
 
@@ -625,9 +487,6 @@ export const useFirebase = () => {
             const user = firebaseAuth.currentUser;
 
             if (user) {
-                // Show loading AFTER the popup closes and we have credentials
-                setInitLoading(true);
-                
                 // get current firebase user idToken
                 authStore.set.typeOfLogin(SocialLoginTypes.apple);
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
@@ -636,19 +495,8 @@ export const useFirebase = () => {
                 const token = await user.getIdToken();
 
                 if (token) {
-                    await web3AuthSfaFirebaseLogin(
-                        token,
-                        user?.uid,
-                        async (forceRefresh: boolean) => {
-                            const refreshedToken = await user.getIdToken(forceRefresh);
-                            return refreshedToken;
-                        }
-                    );
-                } else {
-                    setInitLoading(false);
+                    // AuthCoordinator auto-handles key derivation when firebaseUser changes
                 }
-            } else {
-                setInitLoading(false);
             }
         } else {
             try {
@@ -658,9 +506,7 @@ export const useFirebase = () => {
                 if (!result) {
                     return;
                 }
-                
-                // Show loading AFTER the popup closes
-                setInitLoading(true);
+
                 const credential = OAuthProvider.credentialFromResult(result);
                 const user = result?.user;
 
@@ -671,22 +517,10 @@ export const useFirebase = () => {
                     firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                     if (token) {
-                        await web3AuthSfaFirebaseLogin(
-                            token,
-                            user?.uid,
-                            async (forceRefresh: boolean) => {
-                                const refreshedToken = await user.getIdToken(forceRefresh);
-                                return refreshedToken;
-                            }
-                        );
-                    } else {
-                        setInitLoading(false);
+                        // AuthCoordinator auto-handles key derivation when firebaseUser changes
                     }
-                } else {
-                    setInitLoading(false);
                 }
             } catch (error) {
-                setInitLoading(false);
                 // Handle Errors here.
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
@@ -726,7 +560,6 @@ export const useFirebase = () => {
             try {
                 const result = await getRedirectResult(firebaseAuth);
                 if (!result) {
-                    setInitLoading(false);
                     return;
                 }
                 const credential = OAuthProvider.credentialFromResult(result);
@@ -738,19 +571,10 @@ export const useFirebase = () => {
                     firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                     if (token) {
-                        setInitLoading(true);
-                        await web3AuthSfaFirebaseLogin(
-                            token,
-                            user?.uid,
-                            async (forceRefresh: boolean) => {
-                                const refreshedToken = await user.getIdToken(forceRefresh);
-                                return refreshedToken;
-                            }
-                        );
+                        // AuthCoordinator auto-handles key derivation when firebaseUser changes
                     }
                 }
             } catch (error) {
-                setInitLoading(false);
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
 
@@ -776,20 +600,15 @@ export const useFirebase = () => {
             const user = result?.user;
 
             if (token) {
-                setInitLoading(true);
                 authStore.set.typeOfLogin(SocialLoginTypes.scoutsSSO);
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
                 firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                 logAnalyticsEvent('login', { method: SocialLoginTypes.scoutsSSO });
 
-                await web3AuthSfaFirebaseLogin(token, user?.uid, async (forceRefresh?: boolean) => {
-                    const refreshedToken = await user.getIdToken(!!forceRefresh);
-                    return refreshedToken;
-                });
+                // AuthCoordinator auto-handles key derivation when firebaseUser changes
             }
         } catch (error) {
-            setInitLoading(false);
             const errorCode = (error as any)?.code;
             const errorMessage = (error as any)?.message;
             console.error('errorCode', errorCode);
@@ -814,24 +633,15 @@ export const useFirebase = () => {
             const idToken = await user?.getIdToken();
 
             if (idToken) {
-                setInitLoading(true);
                 authStore.set.typeOfLogin(SocialLoginTypes.scoutsSSO);
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
                 firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                 logAnalyticsEvent('login', { method: SocialLoginTypes.scoutsSSO });
 
-                await web3AuthSfaFirebaseLogin(
-                    idToken,
-                    user?.uid,
-                    async (forceRefresh?: boolean) => {
-                        const refreshedToken = await user.getIdToken(!!forceRefresh);
-                        return refreshedToken;
-                    }
-                );
+                // AuthCoordinator auto-handles key derivation when firebaseUser changes
             }
         } catch (error) {
-            setInitLoading(false);
             const errorCode = (error as any)?.code;
             const errorMessage = (error as any)?.message;
             console.error('errorCode', errorCode);

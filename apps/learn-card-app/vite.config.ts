@@ -61,13 +61,6 @@ export default defineConfig(({ mode }) => {
                 : '"https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704"',
             GOOGLE_MAPS_API_KEY:
                 process.env.GOOGLE_MAPS_API_KEY && `"${process.env.GOOGLE_MAPS_API_KEY}"`,
-            // Use values from .env via loadEnv so they're available at build time
-            WEB3AUTH_MAINNET_CLIENT_ID: env.WEB3AUTH_MAINNET_CLIENT_ID
-                ? JSON.stringify(env.WEB3AUTH_MAINNET_CLIENT_ID)
-                : 'undefined',
-            WEB3AUTH_TESTNET_CLIENT_ID: env.WEB3AUTH_TESTNET_CLIENT_ID
-                ? JSON.stringify(env.WEB3AUTH_TESTNET_CLIENT_ID)
-                : 'undefined',
         },
         resolve: {
             alias: {

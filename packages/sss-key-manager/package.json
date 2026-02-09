@@ -36,6 +36,7 @@
         "vitest": "^1.0.0"
     },
     "dependencies": {
+        "@learncard/auth-types": "workspace:*",
         "@learncard/types": "workspace:*",
         "@noble/ed25519": "^2.0.0",
         "@scure/bip39": "^1.2.1",

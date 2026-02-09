@@ -172,6 +172,34 @@ export class SSSApiClient {
         }
     }
 
+    async sendEmailBackupShare(emailShare: string): Promise<void> {
+        const headers = await this.getAuthHeaders();
+        const providerType = this.authProvider.getProviderType();
+
+        const user = await this.authProvider.getCurrentUser();
+        const email = user?.email;
+
+        if (!email) {
+            console.warn('Cannot send email backup share: no email address on auth user');
+            return;
+        }
+
+        const response = await fetch(`${this.serverUrl}/keys/email-backup`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                providerType,
+                emailShare,
+                email,
+            }),
+        });
+
+        if (!response.ok) {
+            // Non-fatal: log but don't throw — the user can still use the app
+            console.warn(`Failed to send email backup share: ${response.statusText}`);
+        }
+    }
+
     async deleteUserKey(): Promise<void> {
         const headers = await this.getAuthHeaders();
         const providerType = this.authProvider.getProviderType();

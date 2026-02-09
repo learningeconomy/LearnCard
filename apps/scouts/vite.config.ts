@@ -44,13 +44,6 @@ export default defineConfig(async ({ mode }) => {
             GOOGLE_MAPS_API_KEY: env.GOOGLE_MAPS_API_KEY
                 ? JSON.stringify(env.GOOGLE_MAPS_API_KEY)
                 : 'undefined',
-
-            WEB3AUTH_MAINNET_CLIENT_ID: env.WEB3AUTH_MAINNET_CLIENT_ID
-                ? JSON.stringify(env.WEB3AUTH_MAINNET_CLIENT_ID)
-                : 'undefined',
-            WEB3AUTH_TESTNET_CLIENT_ID: env.WEB3AUTH_TESTNET_CLIENT_ID
-                ? JSON.stringify(env.WEB3AUTH_TESTNET_CLIENT_ID)
-                : 'undefined',
         },
         resolve: {
             alias: [

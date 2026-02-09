@@ -269,6 +269,95 @@ Plugins are merged into the LearnCard via `addPlugin`, which rebuilds the wallet
 
 These steps ensure types flow consistently from definition to testing and help avoid stale builds by relying on Nx-managed scripts.
 
+## AuthCoordinator Architecture
+
+The AuthCoordinator is a unified state machine that coordinates authentication and key derivation across LearnCard applications. It replaces the previous ad-hoc Web3Auth flow with a composable, provider-agnostic system.
+
+### 3-Layer Auth Model
+
+| Layer | Components | Required | Purpose |
+| ----- | ---------- | -------- | ------- |
+| **0 — Core** | Private Key → DID → Wallet | **yes** | Everything depends on this |
+| **1 — Auth Session** | Auth Provider (Firebase) | no | Needed for SSS server ops |
+| **2 — Network Identity** | LCN Profile | no | Needed for network interactions |
+
+A user with a cached private key can use the wallet even without an active Firebase session.
+
+### State Machine (10 states)
+
+`idle` → `authenticating` → `authenticated` → `checking_key_status` → one of:
+-   `needs_setup` (new user, no server record)
+-   `needs_migration` (server has web3auth key)
+-   `needs_recovery` (no local key / stale key)
+-   `deriving_key` → `ready`
+
+Also: `error` (with `canRetry` + `previousState`)
+
+Private-key-first shortcut: `idle` → `deriving_key` → `ready` (from cached key)
+
+### Key Interfaces
+
+-   `AuthProvider` — Auth session abstraction (`getIdToken`, `getCurrentUser`, `signOut`)
+-   `KeyDerivationStrategy` — Key split/reconstruct abstraction (`splitKey`, `reconstructKey`, `hasLocalKey`)
+-   `AuthCoordinatorApi` — Server API (`fetchServerKeyStatus`, `storeAuthShare`, `markMigrated`)
+-   `AuthCoordinatorConfig` — Full configuration passed to `createAuthCoordinator()`
+
+### File Map
+
+```
+packages/learn-card-base/src/
+├── auth-coordinator/
+│   ├── AuthCoordinator.ts           — Core state machine class
+│   ├── AuthCoordinatorProvider.tsx   — Base React provider + context
+│   ├── createAuthCoordinatorApi.ts   — Default server API factory
+│   ├── useAuthCoordinatorAutoSetup.ts — Auto handles needs_setup & needs_migration
+│   ├── types.ts                      — Type definitions (re-exports from sss-key-manager)
+│   ├── index.ts                      — Public exports
+│   ├── README.md                     — Core reference with Mermaid diagrams
+│   ├── INTEGRATION.md                — App integration guide
+│   ├── RECOVERY.md                   — Recovery system guide
+│   └── __tests__/
+│       └── AuthCoordinator.test.ts   — 35+ unit tests
+├── auth-providers/
+│   ├── createFirebaseAuthProvider.ts — Firebase AuthProvider factory
+│   └── index.ts
+├── config/
+│   └── authConfig.ts                 — Environment-driven config (getAuthConfig)
+├── helpers/
+│   └── indexedDBHelpers.ts           — clearAllIndexedDB (preserves lcb-sss-keys)
+└── hooks/
+    ├── useRecoveryMethods.ts         — Recovery execution (password, passkey, phrase, backup)
+    ├── useRecoverySetup.ts           — Recovery setup (add methods, export backup)
+    └── useSSSKeyManager.ts           — Legacy monolithic hook (being decomposed)
+
+packages/sss-key-manager/src/
+├── types.ts              — Canonical shared types (AuthProvider, KeyDerivationStrategy, etc.)
+├── sss-strategy.ts       — createSSSStrategy() factory
+├── sss.ts                — Shamir split/reconstruct
+├── storage.ts            — IndexedDB device share storage (lcb-sss-keys)
+├── crypto.ts             — Argon2id KDF + AES-GCM encryption
+├── passkey.ts            — WebAuthn passkey operations
+├── recovery-phrase.ts    — Mnemonic phrase encode/decode (25 words)
+└── atomic-operations.ts  — splitAndVerify, atomicShareUpdate
+
+apps/learn-card-app/src/providers/
+└── AuthCoordinatorProvider.tsx — LCA app wrapper (wallet, LCN profile, recovery UI)
+
+apps/scouts/src/providers/
+└── AuthCoordinatorProvider.tsx — Scouts app wrapper (wallet, LCN profile)
+```
+
+### Environment Variables
+
+-   `REACT_APP_AUTH_PROVIDER`: `'firebase' | 'supertokens' | 'keycloak' | 'oidc'` (default: `'firebase'`)
+-   `REACT_APP_KEY_DERIVATION_PROVIDER`: `'sss' | 'web3auth'` (default: `'sss'`)
+-   `REACT_APP_SSS_SERVER_URL`: Server URL for key share operations (default: `'http://localhost:5100/api'`)
+-   `REACT_APP_ENABLE_MIGRATION`: `'true' | 'false'` (default: `'true'`)
+
+### Detailed Documentation
+
+See `packages/learn-card-base/src/auth-coordinator/README.md` for full state machine diagrams, sequence diagrams for every method, configuration reference, and server API contract. See `INTEGRATION.md` and `RECOVERY.md` in the same directory for app integration and recovery system guides.
+
 ## Partner Connect SDK Architecture
 
 The `@learncard/partner-connect` SDK enables secure cross-origin communication between partner applications and the LearnCard host application via a clean Promise-based API.

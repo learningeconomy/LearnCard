@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import {
     useWallet,
     LoginTypesEnum,
@@ -13,6 +14,8 @@ import {
     authStore,
     SocialLoginTypes,
     currentUserStore,
+    QrLoginRequester,
+    getAuthConfig,
 } from 'learn-card-base';
 
 import { useFirebase } from '../../hooks/useFirebase';
@@ -50,6 +53,8 @@ const LoginPage: React.FC = () => {
 
     const showConfirmation = confirmationStore.use.showConfirmation();
     const [activeLoginType, setActiveLoginType] = useState<LoginTypesEnum>(LoginTypesEnum.email);
+    const [showQrLogin, setShowQrLogin] = useState(false);
+    const authConfig = getAuthConfig();
 
     useEffect(() => {
         // handles redirecting a user to an LC network specific action / page
@@ -160,6 +165,23 @@ const LoginPage: React.FC = () => {
                         </IonCol>
                         <div className="absolute bottom-[-150px] h-[75%] w-[106%] rounded-[100%] bg-white login-page-curve" />
                     </IonRow>
+                    {showQrLogin ? (
+                        <IonRow className="w-full flex items-center justify-center p-4">
+                            <QrLoginRequester
+                                serverUrl={authConfig.serverUrl}
+                                onApproved={(deviceShare) => {
+                                    window.sessionStorage.setItem('qr_login_device_share', deviceShare);
+                                    setShowQrLogin(false);
+                                }}
+                                onCancel={() => setShowQrLogin(false)}
+                                renderQrCode={(data) => (
+                                    <QRCodeSVG value={data} size={192} level="M" />
+                                )}
+                                accentColor="text-sp-purple-base"
+                            />
+                        </IonRow>
+                    ) : (
+                    <>
                     <IonRow className="social-logins-container">
                         <div className="w-full flex items-center justify-center">
                             {enableWorldScoutsLogin && (
@@ -221,6 +243,17 @@ const LoginPage: React.FC = () => {
                             extraSocialLogins={extraSocialLogins}
                         />
                     </IonRow>
+
+                    <IonRow className="w-full flex items-center justify-center mt-2 mb-2">
+                        <button
+                            onClick={() => setShowQrLogin(true)}
+                            className="text-sm text-gray-500 hover:text-gray-700 underline transition-colors"
+                        >
+                            Sign in from another device
+                        </button>
+                    </IonRow>
+                    </>)
+                    }
                 </IonGrid>
                 <LoginFooter />
             </IonContent>

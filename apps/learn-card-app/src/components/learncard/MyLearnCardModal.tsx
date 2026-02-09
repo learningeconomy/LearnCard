@@ -44,9 +44,11 @@ import {
     useCurrentUser,
     useWallet,
     useGetCheckListStatus,
-    useSSSKeyManager,
 } from 'learn-card-base';
+import { createFirebaseAuthProvider, firebaseAuthStore } from 'learn-card-base';
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import useLogout from '../../hooks/useLogout';
+import { auth } from '../../firebase/firebase';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 
@@ -104,15 +106,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
     const { data: connections } = useGetConnections();
 
-    const {
-        getRecoveryMethods,
-        addPasswordRecovery,
-        addPasskeyRecovery,
-        generateRecoveryPhrase,
-        getAuthProvider,
-    } = useSSSKeyManager({
-        serverUrl: import.meta.env.VITE_SSS_SERVER_URL || 'http://localhost:5100/api',
-    });
+    const { keyDerivation, showDeviceLinkModal } = useAppAuth();
 
     const { checklistItemsWithStatus, completedItems, numStepsRemaining } = useGetCheckListStatus();
     const checkListItemText = `${completedItems} of ${checklistItems?.length}`;
@@ -368,11 +362,43 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         return;
                     }
 
-                    const authProvider = getAuthProvider();
+                    const firebaseUser = firebaseAuthStore.get.currentUser();
 
-                    const existingMethods = authProvider
-                        ? await getRecoveryMethods(authProvider)
-                        : [];
+                    const authProvider = firebaseUser
+                        ? createFirebaseAuthProvider({
+                              getAuth: () => auth(),
+                              user: firebaseUser,
+                          })
+                        : null;
+
+                    let existingMethods: Array<{ type: string; createdAt: Date }> = [];
+
+                    if (authProvider && keyDerivation.getAvailableRecoveryMethods) {
+                        const token = await authProvider.getIdToken();
+                        const providerType = authProvider.getProviderType();
+                        existingMethods = await keyDerivation.getAvailableRecoveryMethods(token, providerType);
+                    }
+
+                    const canSetup = !!authProvider && !!keyDerivation.setupRecoveryMethod;
+
+                    const setupMethod = canSetup
+                        ? async (input: { method: string; password?: string }, authUser?: unknown) => {
+                              const token = await authProvider!.getIdToken();
+                              const providerType = authProvider!.getProviderType();
+
+                              return keyDerivation.setupRecoveryMethod!({
+                                  token,
+                                  providerType,
+                                  privateKey: currentUser.privateKey!,
+                                  input: input as import('@learncard/sss-key-manager').RecoverySetupInput,
+                                  authUser: (authUser as import('@learncard/sss-key-manager').AuthUser) ?? undefined,
+                              });
+                          }
+                        : null;
+
+                    const requireAuth = async () => {
+                        throw new Error('Recovery setup requires authentication. Please log in again.');
+                    };
 
                     newModal(
                         <RecoverySetupModal
@@ -383,43 +409,41 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                     : String(m.createdAt),
                             }))}
                             onSetupPassword={
-                                authProvider
-                                    ? async (password: string) => {
-                                          await addPasswordRecovery(
-                                              authProvider,
-                                              password,
-                                              currentUser.privateKey!
-                                          );
-                                      }
-                                    : async () => {
-                                          throw new Error(
-                                              'Password recovery requires authentication. Please log in again.'
-                                          );
-                                      }
+                                setupMethod
+                                    ? async (password: string) => { await setupMethod({ method: 'password', password }); }
+                                    : requireAuth
                             }
                             onSetupPasskey={
-                                authProvider
+                                setupMethod
                                     ? async () => {
-                                          await addPasskeyRecovery(
-                                              authProvider,
-                                              currentUser.privateKey!
-                                          );
-                                          return 'Passkey created';
+                                          const authUser = await authProvider!.getCurrentUser();
+                                          const result = await setupMethod({ method: 'passkey' }, authUser);
+                                          return result?.method === 'passkey' ? result.credentialId : 'Passkey created';
                                       }
-                                    : async () => {
-                                          throw new Error(
-                                              'Passkey recovery requires authentication. Please log in again.'
-                                          );
-                                      }
+                                    : requireAuth
                             }
-                            onGeneratePhrase={async () => {
-                                return generateRecoveryPhrase(currentUser.privateKey!, authProvider);
-                            }}
+                            onGeneratePhrase={
+                                setupMethod
+                                    ? async () => {
+                                          const result = await setupMethod({ method: 'phrase' });
+                                          return result?.method === 'phrase' ? result.phrase : '';
+                                      }
+                                    : requireAuth
+                            }
                             onClose={closeModal}
                         />,
                         { sectionClassName: '!max-w-[480px]' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
+                },
+            },
+            {
+                title: 'Link a Device',
+                Icon: QRCodeScanner,
+                caretText: '',
+                onClick: () => {
+                    closeModal();
+                    showDeviceLinkModal();
                 },
             }
         );

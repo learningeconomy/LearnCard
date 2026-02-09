@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 
 import { t, openRoute } from '@routes';
+import { getDeliveryService } from '../services/delivery';
 import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
 import {
     findUserKeyByContactMethod,
@@ -121,7 +122,6 @@ export const keysRouter = t.router({
         )
         .output(z.object({ success: z.boolean() }))
         .mutation(async ({ input }) => {
-            console.log('storeAuthShare input', input);
             const { user, contactMethod } = await verifyAndGetContactMethod(input);
 
             await upsertUserKey(contactMethod, {
@@ -223,6 +223,57 @@ export const keysRouter = t.router({
             const { contactMethod } = await verifyAndGetContactMethod(input);
 
             await markUserKeyMigrated(contactMethod);
+
+            return { success: true };
+        }),
+
+    sendEmailBackup: openRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/keys/email-backup',
+                tags: ['Keys'],
+                summary: 'Send email backup share to the authenticated user (fire-and-forget relay, share is NEVER persisted)',
+            },
+        })
+        .input(
+            AuthInputValidator.extend({
+                emailShare: z.string().min(1),
+                email: z.string().email(),
+            })
+        )
+        .output(z.object({ success: z.boolean() }))
+        .mutation(async ({ input }) => {
+            // Verify the caller is authenticated
+            await verifyAndGetContactMethod(input);
+
+            // IMPORTANT: The emailShare is NEVER written to the database.
+            // It is only held in memory for the duration of this request.
+            try {
+                await getDeliveryService().send({
+                    to: input.email,
+                    subject: 'Your LearnCard Recovery Key',
+                    textBody: [
+                        'Your LearnCard Recovery Key',
+                        '',
+                        'Keep this email safe. You can use the recovery key below to regain',
+                        'access to your LearnCard account if you lose your device or forget',
+                        'your recovery password.',
+                        '',
+                        '--- RECOVERY KEY (do NOT share this with anyone) ---',
+                        input.emailShare,
+                        '--- END RECOVERY KEY ---',
+                        '',
+                        'To recover your account, choose "Recover via Email" in the app and',
+                        'paste the recovery key above when prompted.',
+                        '',
+                        'If you did not request this, you can safely ignore this email.',
+                    ].join('\n'),
+                });
+            } catch (emailError) {
+                // Non-fatal: log but still return success so the client doesn't retry
+                console.error('[email-backup] Failed to send backup share email:', emailError);
+            }
 
             return { success: true };
         }),

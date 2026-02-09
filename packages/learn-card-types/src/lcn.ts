@@ -768,6 +768,7 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'APP_LISTING_SUBMITTED',
     'APP_LISTING_APPROVED',
     'APP_LISTING_REJECTED',
+    'DEVICE_LINK_REQUEST',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;

@@ -6,8 +6,10 @@ import { useVerifyNetworkHandoffToken } from 'learn-card-base/react-query/mutati
 
 import { LoadingPageDumb } from '../loadingPage/LoadingPage';
 import { useFirebase } from '../../hooks/useFirebase';
-import { firebaseAuthStore, useWeb3AuthSFA, useSSSKeyManager, shouldUseSSSKeyManager } from 'learn-card-base';
+import { firebaseAuthStore } from 'learn-card-base';
 import jwtDecode from 'jwt-decode';
+
+import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 
 const shouldSkipLogout = (verifiedToken?: string, currentFirebaseUser?: any) => {
     // Decode token JWT to get nonce which will look like this, e.g. contact_method_session:fc026367-a056-45ac-8135-ee2cdee1b75c:email:custard7@gmail.com
@@ -55,11 +57,7 @@ const shouldSkipLogout = (verifiedToken?: string, currentFirebaseUser?: any) => 
 const AuthHandoff: React.FC = () => {
     const query = usePathQuery();
     const history = useHistory();
-    const { logout: web3AuthLogout } = useWeb3AuthSFA();
-    const { logout: sssLogout } = useSSSKeyManager();
-    const useSSS = shouldUseSSSKeyManager();
-
-    const logout = useSSS ? sssLogout : web3AuthLogout;
+    const { logout: coordinatorLogout } = useAuthCoordinator();
     const currentFirebaseUser = firebaseAuthStore.get.currentUser();
 
     const { mutateAsync: verifyNetworkHandoffToken } = useVerifyNetworkHandoffToken();
@@ -79,7 +77,7 @@ const AuthHandoff: React.FC = () => {
 
                 if (response?.token) {
                     if (!shouldSkipLogout(response.validatedNetworkHandoffToken, currentFirebaseUser)) {
-                        await logout('');
+                        await coordinatorLogout();
                     }
 
                     await signInWithCustomFirebaseToken(response.token);

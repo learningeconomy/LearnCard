@@ -63,11 +63,14 @@ export class AtomicUpdateError extends Error {
 export async function splitAndVerify(privateKey: string): Promise<AtomicSplitResult> {
     const shares = await splitPrivateKey(privateKey);
 
-    // Verify ALL three combinations
+    // Verify ALL six combinations (4 shares, threshold 2 → C(4,2) = 6)
     const combinations: [string, string, string][] = [
         ['device+auth', shares.deviceShare, shares.authShare],
         ['device+recovery', shares.deviceShare, shares.recoveryShare],
+        ['device+email', shares.deviceShare, shares.emailShare],
         ['auth+recovery', shares.authShare, shares.recoveryShare],
+        ['auth+email', shares.authShare, shares.emailShare],
+        ['recovery+email', shares.recoveryShare, shares.emailShare],
     ];
 
     for (const [name, share1, share2] of combinations) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import {
     LoginTypesEnum,
     usePathQuery,
@@ -17,6 +18,8 @@ import {
     SocialLoginTypes,
     useDeviceTypeByWidth,
     useGetPreferencesForDid,
+    QrLoginRequester,
+    getAuthConfig,
 } from 'learn-card-base';
 
 import { useFirebase } from '../../hooks/useFirebase';
@@ -59,6 +62,8 @@ export const LoginContent: React.FC = () => {
 
     const showConfirmation = confirmationStore.use.showConfirmation();
     const [activeLoginType, setActiveLoginType] = useState<LoginTypesEnum>(LoginTypesEnum.email);
+    const [showQrLogin, setShowQrLogin] = useState(false);
+    const authConfig = getAuthConfig();
 
     const { mutateAsync: generatePinUpdateToken } = useGeneratePinUpdateToken();
     const { data: preferences, refetch: refetchPreferences } = useGetPreferencesForDid();
@@ -217,39 +222,69 @@ export const LoginContent: React.FC = () => {
                     <img src={LearnCardTextLogo} alt="Learn Card text logo" />
                 </div>
             </IonRow>
-            <IonRow className="w-full flex flex-col items-center justify-center">
-                <GenericErrorBoundary hideGoHome>
-                    {showSocialLogins && (
-                        <SocialLoginsButtons
-                            branding={BrandingEnum.learncard}
-                            activeLoginType={activeLoginType}
-                            setActiveLoginType={setActiveLoginType}
-                            extraSocialLogins={extraSocialLogins}
-                            showSocialLogins={showSocialLogins}
-                        />
-                    )}
-                </GenericErrorBoundary>
+            {showQrLogin ? (
                 <IonRow className="w-full max-w-[500px] flex items-center justify-center">
-                    <GenericErrorBoundary hideGoHome>
-                        {activeLoginType === LoginTypesEnum.email && (
-                            <EmailForm
-                                setShowSocialLogins={setShowSocialLogins}
-                                showSocialLogins={showSocialLogins}
-                            />
+                    <QrLoginRequester
+                        serverUrl={authConfig.serverUrl}
+                        onApproved={(deviceShare) => {
+                            // Store the device share locally so the coordinator
+                            // can reconstruct the key after Firebase auth completes.
+                            window.sessionStorage.setItem('qr_login_device_share', deviceShare);
+                            setShowQrLogin(false);
+                        }}
+                        onCancel={() => setShowQrLogin(false)}
+                        renderQrCode={(data) => (
+                            <QRCodeSVG value={data} size={192} level="M" />
                         )}
-                        {activeLoginType === LoginTypesEnum.phone && (
-                            <PhoneForm
-                                setShowSocialLogins={setShowSocialLogins}
-                                showSocialLogins={showSocialLogins}
-                            />
-                        )}
-                    </GenericErrorBoundary>
+                        accentColor="text-emerald-600"
+                    />
                 </IonRow>
-            </IonRow>
+            ) : (
+                <>
+                    <IonRow className="w-full flex flex-col items-center justify-center">
+                        <GenericErrorBoundary hideGoHome>
+                            {showSocialLogins && (
+                                <SocialLoginsButtons
+                                    branding={BrandingEnum.learncard}
+                                    activeLoginType={activeLoginType}
+                                    setActiveLoginType={setActiveLoginType}
+                                    extraSocialLogins={extraSocialLogins}
+                                    showSocialLogins={showSocialLogins}
+                                />
+                            )}
+                        </GenericErrorBoundary>
+                        <IonRow className="w-full max-w-[500px] flex items-center justify-center">
+                            <GenericErrorBoundary hideGoHome>
+                                {activeLoginType === LoginTypesEnum.email && (
+                                    <EmailForm
+                                        setShowSocialLogins={setShowSocialLogins}
+                                        showSocialLogins={showSocialLogins}
+                                    />
+                                )}
+                                {activeLoginType === LoginTypesEnum.phone && (
+                                    <PhoneForm
+                                        setShowSocialLogins={setShowSocialLogins}
+                                        showSocialLogins={showSocialLogins}
+                                    />
+                                )}
+                            </GenericErrorBoundary>
+                        </IonRow>
+                    </IonRow>
 
-            <GenericErrorBoundary hideGoHome>
-                <LoginFooter />
-            </GenericErrorBoundary>
+                    <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-4">
+                        <button
+                            onClick={() => setShowQrLogin(true)}
+                            className="text-sm text-white/80 hover:text-white underline transition-colors"
+                        >
+                            Sign in from another device
+                        </button>
+                    </IonRow>
+
+                    <GenericErrorBoundary hideGoHome>
+                        <LoginFooter />
+                    </GenericErrorBoundary>
+                </>
+            )}
         </div>
     );
 };

@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { IonButton, IonIcon, IonInput, IonItem, IonLabel, IonSpinner, IonTextarea } from '@ionic/react';
-import { keyOutline, fingerPrint, documentTextOutline, alertCircle, cloudUploadOutline } from 'ionicons/icons';
+import { keyOutline, fingerPrint, documentTextOutline, alertCircle, cloudUploadOutline, phonePortraitOutline } from 'ionicons/icons';
+import { QRCodeSVG } from 'qrcode.react';
 
+import { Capacitor } from '@capacitor/core';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
+import { QrLoginRequester, getAuthConfig } from 'learn-card-base';
 
-export type RecoveryFlowType = 'password' | 'passkey' | 'phrase' | 'backup';
+export type RecoveryFlowType = 'password' | 'passkey' | 'phrase' | 'backup' | 'device';
 
 interface RecoveryFlowModalProps {
     availableMethods: { type: string; credentialId?: string; createdAt: string }[];
@@ -12,6 +15,7 @@ interface RecoveryFlowModalProps {
     onRecoverWithPasskey: (credentialId: string) => Promise<void>;
     onRecoverWithPhrase: (phrase: string) => Promise<void>;
     onRecoverWithBackup: (fileContents: string, password: string) => Promise<void>;
+    onRecoverWithDevice?: (deviceShare: string) => Promise<void>;
     onCancel: () => void;
 }
 
@@ -21,6 +25,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     onRecoverWithPasskey,
     onRecoverWithPhrase,
     onRecoverWithBackup,
+    onRecoverWithDevice,
     onCancel,
 }) => {
     const [activeMethod, setActiveMethod] = useState<RecoveryFlowType | null>(null);
@@ -121,12 +126,18 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         }
     };
 
-    const methods = [
+    const allMethods = [
         { id: 'password' as const, label: 'Password', icon: keyOutline, available: hasMethod('password') },
         { id: 'passkey' as const, label: 'Passkey', icon: fingerPrint, available: hasMethod('passkey') && webAuthnSupported },
-        { id: 'phrase' as const, label: 'Recovery Phrase', icon: documentTextOutline, available: true },
-        { id: 'backup' as const, label: 'Backup File', icon: cloudUploadOutline, available: true },
+        { id: 'phrase' as const, label: 'Recovery Phrase', icon: documentTextOutline, available: hasMethod('phrase') },
+        { id: 'backup' as const, label: 'Backup File', icon: cloudUploadOutline, available: hasMethod('backup') },
+        { id: 'device' as const, label: 'Another Device', icon: phonePortraitOutline, available: !!onRecoverWithDevice },
     ];
+
+    // Hide passkey entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
+    const methods = Capacitor.isNativePlatform()
+        ? allMethods.filter(m => m.id !== 'passkey')
+        : allMethods;
 
     if (!activeMethod) {
         return (
@@ -275,6 +286,38 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     >
                         {loading ? <IonSpinner name="crescent" /> : 'Recover Account'}
                     </IonButton>
+                </div>
+            )}
+
+            {activeMethod === 'device' && onRecoverWithDevice && (
+                <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Recover from Another Device</h3>
+
+                    <p className="text-sm text-gray-600">
+                        Scan the QR code below with a device that's already signed in to your account.
+                    </p>
+
+                    <QrLoginRequester
+                        serverUrl={getAuthConfig().serverUrl}
+                        onApproved={async (deviceShare) => {
+                            setLoading(true);
+                            setError(null);
+
+                            try {
+                                await onRecoverWithDevice(deviceShare);
+                            } catch (e) {
+                                setError(e instanceof Error ? e.message : 'Recovery failed');
+                                setLoading(false);
+                            }
+                        }}
+                        onCancel={() => {
+                            setActiveMethod(null);
+                            setError(null);
+                        }}
+                        renderQrCode={(data) => (
+                            <QRCodeSVG value={data} size={192} level="M" />
+                        )}
+                    />
                 </div>
             )}
 

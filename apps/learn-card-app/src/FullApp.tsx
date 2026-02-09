@@ -10,7 +10,6 @@ import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 import AppRouter from './AppRouter';
 import {
-    useInitLoading,
     sqliteInit,
     PushNotificationListener,
     QRCodeScannerOverlay,
@@ -30,6 +29,7 @@ import Toast from 'learn-card-base/components/toast/Toast';
 import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator';
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
 import AuthKeyDebugWidget from './components/debug/AuthKeyDebugWidget';
+import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import localforage from 'localforage';
 
 const history = createBrowserHistory();
@@ -145,7 +145,6 @@ const persister = createAsyncStoragePersister({
 const FullApp: React.FC = () => {
     useSQLiteInitWeb(); // initializes SQLite on web
     sqliteInit(); // initializes SQLite on native
-    const initLoading = useInitLoading();
     const showScannerOverlay = QRCodeScannerStore?.use?.showScanner();
     const buttonRef = useRef(null);
     const isSentryEnabled = SENTRY_ENV && SENTRY_ENV !== 'development';
@@ -161,9 +160,10 @@ const FullApp: React.FC = () => {
             {/* <ReactQueryDevtools /> */}
             <IonReactRouter history={history}>
                 <Suspense fallback={<LoadingPageDumb />}>
-                    <ExternalAuthServiceProvider>
-                        <ModalsProvider>
-                            <IonApp>
+                    <AuthCoordinatorProvider>
+                        <ExternalAuthServiceProvider>
+                            <ModalsProvider>
+                                <IonApp>
                                 <div id="modal-mid-root"></div>
                                 <Toast />
                                 <SdkActivityIndicator />
@@ -171,8 +171,7 @@ const FullApp: React.FC = () => {
                                 <AppUrlListener />
                                 <PushNotificationListener />
                                 <PresentVcModalListener />
-                                {/* <UserProfileSetupListener loading={initLoading} /> */}
-                                <AppRouter initLoading={initLoading} />
+                                <AppRouter />
                                 <QRCodeScannerListener />
 
                                 {showScannerOverlay && <QRCodeScannerOverlay />}
@@ -186,8 +185,9 @@ const FullApp: React.FC = () => {
                                 )}
                                 <AuthKeyDebugWidget />
                             </IonApp>
-                        </ModalsProvider>
-                    </ExternalAuthServiceProvider>
+                            </ModalsProvider>
+                        </ExternalAuthServiceProvider>
+                    </AuthCoordinatorProvider>
                 </Suspense>
             </IonReactRouter>
         </PersistQueryClientProvider>

@@ -108,7 +108,7 @@ describe('SSS operations', () => {
 
     it('should have correct threshold constants', async () => {
         const sss = await import('./sss');
-        expect(sss.SSS_TOTAL_SHARES).toBe(3);
+        expect(sss.SSS_TOTAL_SHARES).toBe(4);
         expect(sss.SSS_THRESHOLD).toBe(2);
     });
 
@@ -121,10 +121,13 @@ describe('SSS operations', () => {
         expect(shares.deviceShare).toBeDefined();
         expect(shares.authShare).toBeDefined();
         expect(shares.recoveryShare).toBeDefined();
+        expect(shares.emailShare).toBeDefined();
 
         expect(shares.deviceShare).not.toBe(shares.authShare);
         expect(shares.authShare).not.toBe(shares.recoveryShare);
+        expect(shares.recoveryShare).not.toBe(shares.emailShare);
 
+        // All 6 combinations of 4 shares (threshold 2) should reconstruct
         const reconstructed = await reconstructFromShares([
             shares.deviceShare,
             shares.authShare,
@@ -142,6 +145,24 @@ describe('SSS operations', () => {
             shares.recoveryShare,
         ]);
         expect(reconstructed3).toBe(privateKeyHex);
+
+        const reconstructed4 = await reconstructFromShares([
+            shares.deviceShare,
+            shares.emailShare,
+        ]);
+        expect(reconstructed4).toBe(privateKeyHex);
+
+        const reconstructed5 = await reconstructFromShares([
+            shares.authShare,
+            shares.emailShare,
+        ]);
+        expect(reconstructed5).toBe(privateKeyHex);
+
+        const reconstructed6 = await reconstructFromShares([
+            shares.recoveryShare,
+            shares.emailShare,
+        ]);
+        expect(reconstructed6).toBe(privateKeyHex);
     });
 });
 

@@ -701,4 +701,154 @@ describe('SSS Key Management API', () => {
             expect(data.salt).toBe('random-salt-value-abc123');
         });
     });
+
+    describe('Full Migration Lifecycle', () => {
+        const userId = `full-migration-${Date.now()}`;
+        const email = `full-migration-${Date.now()}@example.com`;
+        const legacyDid = `did:key:z6MkLegacy${Date.now()}`;
+        const newDid = `did:key:z6MkNewSSS${Date.now()}`;
+
+        let token: string;
+
+        beforeAll(() => {
+            token = createMockAuthToken(userId, email);
+        });
+
+        test('step 1: new user has no server record', async () => {
+            const response = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ authToken: token, providerType: 'firebase' }),
+            });
+
+            expect(response.status).toEqual(200);
+
+            const data = await response.json();
+            expect(data).toBeNull();
+        });
+
+        test('step 2: store auth share with legacy DID (simulates pre-migration state)', async () => {
+            const response = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                    authShare: {
+                        encryptedData: 'legacy-auth-share',
+                        encryptedDek: 'legacy-dek',
+                        iv: 'legacy-iv',
+                    },
+                    primaryDid: legacyDid,
+                    keyProvider: 'web3auth',
+                }),
+            });
+
+            expect(response.status).toEqual(200);
+        });
+
+        test('step 3: server reports needsMigration for web3auth user', async () => {
+            const response = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ authToken: token, providerType: 'firebase' }),
+            });
+
+            expect(response.status).toEqual(200);
+
+            const data = await response.json();
+            expect(data).toBeDefined();
+            expect(data.primaryDid).toBe(legacyDid);
+
+            // Server should indicate this user needs migration (keyProvider is web3auth)
+            expect(data.keyProvider).toBe('web3auth');
+        });
+
+        test('step 4: store new SSS auth share (migration — re-split with new strategy)', async () => {
+            const response = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                    authShare: {
+                        encryptedData: 'new-sss-auth-share',
+                        encryptedDek: 'new-sss-dek',
+                        iv: 'new-sss-iv',
+                    },
+                    primaryDid: newDid,
+                    keyProvider: 'sss',
+                }),
+            });
+
+            expect(response.status).toEqual(200);
+        });
+
+        test('step 5: mark user as migrated', async () => {
+            const response = await fetch(`${LCA_API_URL}/api/keys/migrate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ authToken: token, providerType: 'firebase' }),
+            });
+
+            expect(response.status).toEqual(200);
+
+            const data = await response.json();
+            expect(data.success).toBe(true);
+        });
+
+        test('step 6: post-migration — server returns SSS share, no longer needs migration', async () => {
+            const response = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ authToken: token, providerType: 'firebase' }),
+            });
+
+            expect(response.status).toEqual(200);
+
+            const data = await response.json();
+            expect(data).toBeDefined();
+            expect(data.primaryDid).toBe(newDid);
+            expect(data.keyProvider).toBe('sss');
+            expect(data.authShare?.encryptedData).toBe('new-sss-auth-share');
+        });
+
+        test('step 7: add recovery method after migration', async () => {
+            const response = await fetch(`${LCA_API_URL}/api/keys/recovery`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                    type: 'password',
+                    encryptedShare: {
+                        encryptedData: 'post-migration-recovery-share',
+                        iv: 'post-migration-iv',
+                    },
+                }),
+            });
+
+            expect(response.status).toEqual(200);
+
+            const data = await response.json();
+            expect(data.success).toBe(true);
+        });
+
+        test('step 8: verify recovery method is accessible post-migration', async () => {
+            const params = new URLSearchParams({
+                authToken: token,
+                providerType: 'firebase',
+                type: 'password',
+            });
+
+            const response = await fetch(`${LCA_API_URL}/api/keys/recovery?${params}`, {
+                method: 'GET',
+            });
+
+            expect(response.status).toEqual(200);
+
+            const data = await response.json();
+            expect(data.encryptedData).toBe('post-migration-recovery-share');
+        });
+    });
 });
