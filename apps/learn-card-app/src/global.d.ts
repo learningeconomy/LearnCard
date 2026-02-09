@@ -9,6 +9,8 @@ declare var LEARN_CLOUD_XAPI_URL: string | undefined;
 declare var API_URL: string | undefined;
 declare var GOOGLE_MAPS_API_KEY: string | undefined;
 declare var __PACKAGE_VERSION__: string;
+declare var APP_THEME: string | undefined;
+
 declare module '*.png' {
     const src: string;
     export default src;

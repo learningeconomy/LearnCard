@@ -19,6 +19,9 @@ services:
             - learn-card
         extra_hosts:
             - 'localhost:host-gateway'
+        env_file:
+            - path: ./.env
+              required: false
         environment:
             LCN_URL: http://localhost:4000/trpc
             LCN_API_URL: http://localhost:4000/api
@@ -113,6 +116,9 @@ services:
             - learn-card
         extra_hosts:
             - 'localhost:host-gateway'
+        env_file:
+            - path: ../../services/learn-card-network/brain-service/.env
+              required: false
         volumes:
             - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
             - ../../services/learn-card-network/brain-service/nodemon.docker.json:/app/services/learn-card-network/brain-service/nodemon.docker.json
@@ -160,6 +166,9 @@ services:
             - learn-card
         extra_hosts:
             - 'localhost:host-gateway'
+        env_file:
+            - path: ../../services/learn-card-network/learn-cloud-service/.env
+              required: false
         volumes:
             - ../../services/learn-card-network/learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
             - ../../services/learn-card-network/learn-cloud-service/nodemon.docker.json:/app/services/learn-card-network/learn-cloud-service/nodemon.docker.json
@@ -201,6 +210,9 @@ services:
             - learn-card
         extra_hosts:
             - 'localhost:host-gateway'
+        env_file:
+            - path: ../../services/learn-card-network/lca-api/.env
+              required: false
         volumes:
             - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
             - ../../services/learn-card-network/lca-api/nodemon.docker.json:/app/services/learn-card-network/lca-api/nodemon.docker.json
