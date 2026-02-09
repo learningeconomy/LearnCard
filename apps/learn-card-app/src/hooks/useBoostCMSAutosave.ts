@@ -45,7 +45,7 @@ interface UseBoostCMSAutosaveReturn {
     hasRecoveredState: boolean;
     recoveredState: BoostCMSState | null;
     recoveredBoostCategory: string | null;
-    clearRecoveredState: () => void;
+    clearRecoveredState: (alsoCleanLocalStorage?: boolean) => void;
     saveToLocal: (state: BoostCMSState) => void;
     clearLocalSave: () => void;
     triggerAutosaveDraft: (state: BoostCMSState) => Promise<string | null>;
@@ -225,24 +225,27 @@ export function useBoostCMSAutosave({
         }
     }, [getStorageKey]);
 
-    const clearRecoveredState = useCallback(() => {
+    const clearRecoveredState = useCallback((alsoCleanLocalStorage: boolean = false) => {
         setRecoveredState(null);
         setRecoveredBoostCategory(null);
         setHasRecoveredState(false);
 
-        if (typeof window !== 'undefined') {
-            try {
-                localStorage.removeItem(STORAGE_KEY);
-                for (const category of ALL_BOOST_CATEGORIES) {
-                    localStorage.removeItem(`${STORAGE_KEY}_${category}`);
+        // Only clear localStorage if explicitly requested (e.g., on discard)
+        // On recovery, we want to keep saving new changes
+        if (alsoCleanLocalStorage) {
+            if (typeof window !== 'undefined') {
+                try {
+                    localStorage.removeItem(STORAGE_KEY);
+                    for (const category of ALL_BOOST_CATEGORIES) {
+                        localStorage.removeItem(`${STORAGE_KEY}_${category}`);
+                    }
+                } catch (err) {
+                    console.warn('[useBoostCMSAutosave] Failed to clear all saved states:', err);
                 }
-            } catch (err) {
-                console.warn('[useBoostCMSAutosave] Failed to clear all saved states:', err);
             }
+            currentStateRef.current = null;
+            setHasUnsavedChanges(false);
         }
-
-        currentStateRef.current = null;
-        setHasUnsavedChanges(false);
     }, []);
 
     const triggerAutosaveDraft = useCallback(
@@ -366,13 +369,32 @@ export function useBoostCMSAutosave({
         };
     }, [enabled, boostCategoryType, boostSubCategoryType, getStorageKey]);
 
+    // Save immediately and cleanup on unmount
     useEffect(() => {
         return () => {
+            // Clear any pending debounced save
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
             }
+
+            // Save immediately on unmount if there's pending state
+            if (currentStateRef.current) {
+                try {
+                    const storageKey = getStorageKey();
+                    const wrapper = {
+                        version: STORAGE_VERSION,
+                        timestamp: Date.now(),
+                        data: currentStateRef.current,
+                        boostCategoryType,
+                    };
+
+                    localStorage.setItem(storageKey, JSON.stringify(wrapper));
+                } catch (err) {
+                    console.warn('[useBoostCMSAutosave] Failed to save on unmount:', err);
+                }
+            }
         };
-    }, []);
+    }, [getStorageKey, boostCategoryType]);
 
     return {
         hasRecoveredState,
