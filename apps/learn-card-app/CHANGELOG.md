@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.94.22
+
+### Patch Changes
+
+-   [#977](https://github.com/learningeconomy/LearnCard/pull/977) [`8c61d51a91fa84390d51d933ef1232a635d8f23f`](https://github.com/learningeconomy/LearnCard/commit/8c61d51a91fa84390d51d933ef1232a635d8f23f) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-1548 - fix: App Store "App View" When opening from direct link
+
+-   [#987](https://github.com/learningeconomy/LearnCard/pull/987) [`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1578] Optimize skill framework uploads (aka fix timeout error)
+
+-   [#982](https://github.com/learningeconomy/LearnCard/pull/982) [`c05714270e006d2ffc422c34c6d24497096465a3`](https://github.com/learningeconomy/LearnCard/commit/c05714270e006d2ffc422c34c6d24497096465a3) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1330 - ENV driven THEME
+
+-   Updated dependencies [[`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c)]:
+    -   @learncard/react@2.9.11
+    -   @learncard/helpers@1.2.6
+    -   @learncard/lca-api-plugin@1.1.12
+    -   @learncard/open-badge-v2-plugin@1.1.7
+
 ## 1.94.21
 
 ### Patch Changes
