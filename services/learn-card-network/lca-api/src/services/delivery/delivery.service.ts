@@ -16,7 +16,7 @@ export interface EmailNotification {
 
 export interface TemplateNotification {
     to: string;
-    templateId: string;
+    templateAlias: string;
     templateModel: Record<string, unknown>;
     from?: string;
     messageStream?: string;
@@ -25,7 +25,7 @@ export interface TemplateNotification {
 export type Notification = EmailNotification | TemplateNotification;
 
 export const isTemplateNotification = (n: Notification): n is TemplateNotification =>
-    'templateId' in n;
+    'templateAlias' in n;
 
 export interface DeliveryService {
     send(notification: Notification): Promise<void>;

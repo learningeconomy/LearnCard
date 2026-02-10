@@ -12,7 +12,7 @@ export class LogAdapter implements DeliveryService {
         if (isTemplateNotification(notification)) {
             console.log('[LogAdapter] Template notification:');
             console.log(`  To: ${notification.to}`);
-            console.log(`  Template: ${notification.templateId}`);
+            console.log(`  Template: ${notification.templateAlias}`);
             console.log(`  Model: ${JSON.stringify(notification.templateModel, null, 2)}`);
         } else {
             console.log('[LogAdapter] Email notification:');

@@ -28,7 +28,7 @@ export class PostmarkAdapter implements DeliveryService {
             await this.client.sendEmailWithTemplate({
                 From: from,
                 To: notification.to,
-                TemplateAlias: notification.templateId,
+                TemplateAlias: notification.templateAlias,
                 TemplateModel: notification.templateModel,
                 MessageStream: notification.messageStream,
             });
