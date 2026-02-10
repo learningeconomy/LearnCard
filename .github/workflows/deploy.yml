@@ -347,6 +347,13 @@ jobs:
             SMART_RESUME_ACCESS_KEY: ${{ secrets.SMART_RESUME_ACCESS_KEY }}
             SMART_RESUME_CONTRACT_URI: ${{ secrets.SMART_RESUME_CONTRACT_URI }}
             LOGIN_PROVIDER_DID: ${{ secrets.LOGIN_PROVIDER_DID }}
+            SKILL_EMBEDDING_GOOGLE_API_KEY: ${{ secrets.SKILL_EMBEDDING_GOOGLE_API_KEY }}
+            SKILL_EMBEDDING_GOOGLE_MODEL: ${{ secrets.SKILL_EMBEDDING_GOOGLE_MODEL }}
+            SKILL_EMBEDDING_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BATCH_SIZE }}
+            SKILL_EMBEDDING_BACKFILL_ON_STARTUP: ${{ secrets.SKILL_EMBEDDING_BACKFILL_ON_STARTUP }}
+            SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS: ${{ secrets.SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS }}
+            SKILL_EMBEDDING_BACKFILL_PAGE_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_PAGE_SIZE }}
+            SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE }}
 
     deploy-learn-cloud:
         name: Deploy LearnCloud (Storage API)
@@ -668,6 +675,8 @@ jobs:
         permissions:
             id-token: write
             contents: read
+        env:
+            SKIP_DIDKIT_NAPI: '1'
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v4

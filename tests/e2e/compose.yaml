@@ -55,6 +55,8 @@ services:
 
             NOTIFICATIONS_QUEUE_POLL_URL: ${NOTIFICATIONS_QUEUE_POLL_URL:-http://elasticmq:9324/notifications}
             NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-http://elasticmq:9324/notifications}
+            SKILL_EMBEDDING_GOOGLE_API_KEY: ${SKILL_EMBEDDING_GOOGLE_API_KEY:-}
+            SKILL_EMBEDDING_GOOGLE_MODEL: ${SKILL_EMBEDDING_GOOGLE_MODEL:-gemini-embedding-001}
 
             SKILLS_PROVIDER_BASE_URL: ${SKILLS_PROVIDER_BASE_URL:-http://localhost:4000}
             SKILLS_PROVIDER_API_KEY: ${SKILLS_PROVIDER_API_KEY:-notARealKey}
@@ -199,6 +201,7 @@ services:
             start_period: 30s
         environment:
             NEO4J_AUTH: none
+            NEO4J_server_jvm_additional: --add-modules=jdk.incubator.vector
         networks:
             - learn-card
 

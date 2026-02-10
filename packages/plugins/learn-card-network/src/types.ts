@@ -80,6 +80,8 @@ import {
     GetFullSkillTreeResult,
     GetSkillPathInput,
     GetSkillPathResult,
+    SkillSemanticSearchInput,
+    SkillSemanticSearchResult,
     // Integrations
     LCNIntegration,
     LCNIntegrationCreateType,
@@ -638,6 +640,7 @@ export type LearnCardNetworkPluginMethods = {
         query: SkillQuery,
         options?: { limit?: number; cursor?: string | null }
     ) => Promise<{ records: SkillType[]; hasMore: boolean; cursor: string | null }>;
+    semanticSearchSkills: (input: SkillSemanticSearchInput) => Promise<SkillSemanticSearchResult>;
     updateSkillFramework: (input: UpdateSkillFrameworkInput) => Promise<SkillFrameworkType>;
     deleteSkillFramework: (id: string) => Promise<{ success: boolean }>;
     replaceSkillFrameworkSkills: (

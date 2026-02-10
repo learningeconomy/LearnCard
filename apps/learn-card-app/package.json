@@ -1,6 +1,6 @@
 {
     "name": "learn-card-app",
-    "version": "1.94.21",
+    "version": "1.94.22",
     "private": true,
     "dependencies": {
         "@capacitor-community/media": "^9.0.0",
@@ -115,6 +115,7 @@
     },
     "scripts": {
         "dev": "docker compose -f compose-local.yaml up --build",
+        "dev:services": "docker compose -f compose-local.yaml up --build --scale app=0",
         "dev-no-build": "docker compose -f compose-local.yaml up",
         "dev-build-brain": "docker compose -f compose-local.yaml up --build brain",
         "start": "vite --host",
