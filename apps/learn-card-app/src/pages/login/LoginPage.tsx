@@ -63,6 +63,9 @@ export const LoginContent: React.FC = () => {
     const showConfirmation = confirmationStore.use.showConfirmation();
     const [activeLoginType, setActiveLoginType] = useState<LoginTypesEnum>(LoginTypesEnum.email);
     const [showQrLogin, setShowQrLogin] = useState(false);
+    const [qrApproved, setQrApproved] = useState(false);
+    const [showLinkedBanner, setShowLinkedBanner] = useState(false);
+    const [accountHint, setAccountHint] = useState<string | null>(null);
     const authConfig = getAuthConfig();
 
     const { mutateAsync: generatePinUpdateToken } = useGeneratePinUpdateToken();
@@ -222,16 +225,17 @@ export const LoginContent: React.FC = () => {
                     <img src={LearnCardTextLogo} alt="Learn Card text logo" />
                 </div>
             </IonRow>
-            {showQrLogin ? (
+            {showQrLogin && !qrApproved ? (
                 <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4">
                     <div className="w-full bg-white rounded-[20px] shadow-2xl">
                         <QrLoginRequester
                             serverUrl={authConfig.serverUrl}
-                            onApproved={(deviceShare) => {
+                            onApproved={(deviceShare, _approverDid, hint) => {
                                 // Store the device share locally so the coordinator
                                 // can reconstruct the key after Firebase auth completes.
                                 window.sessionStorage.setItem('qr_login_device_share', deviceShare);
-                                setShowQrLogin(false);
+                                setAccountHint(hint ?? null);
+                                setQrApproved(true);
                             }}
                             onCancel={() => setShowQrLogin(false)}
                             renderQrCode={(data) => (
@@ -240,8 +244,51 @@ export const LoginContent: React.FC = () => {
                         />
                     </div>
                 </IonRow>
+            ) : showQrLogin && qrApproved ? (
+                <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4">
+                    <div className="w-full bg-white rounded-[20px] shadow-2xl p-8 text-center font-poppins animate-fade-in-up">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-emerald-50 rounded-full flex items-center justify-center">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-emerald-600" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+
+                        <h2 className="text-xl font-semibold text-grayscale-900 mb-2">You're all set!</h2>
+
+                        <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
+                            {accountHint
+                                ? <>Sign in with <span className="font-medium text-grayscale-900">{accountHint}</span> to access your account.</>
+                                : 'Now just sign in below to access your account.'
+                            }
+                        </p>
+
+                        <button
+                            onClick={() => {
+                                setShowQrLogin(false);
+                                setQrApproved(false);
+                                setShowLinkedBanner(true);
+                            }}
+                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                        >
+                            Continue to Sign In
+                        </button>
+                    </div>
+                </IonRow>
             ) : (
                 <>
+                    {showLinkedBanner && (
+                        <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white shrink-0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+
+                                <span className="text-sm text-white font-medium">
+                                    {accountHint
+                                        ? <>Sign in with <span className="font-semibold">{accountHint}</span> to finish</>
+                                        : 'Device linked — sign in to finish'
+                                    }
+                                </span>
+                            </div>
+                        </IonRow>
+                    )}
+
                     <IonRow className="w-full flex flex-col items-center justify-center">
                         <GenericErrorBoundary hideGoHome>
                             {showSocialLogins && (

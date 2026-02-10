@@ -91,8 +91,9 @@ import { DeviceLinkModal } from '../components/device-link/DeviceLinkModal';
 const DeviceLinkOverlay: React.FC<{
     did: string;
     keyDerivation: KeyDerivationStrategy;
+    accountHint?: string;
     onClose: () => void;
-}> = ({ did, keyDerivation, onClose }) => {
+}> = ({ did, keyDerivation, accountHint, onClose }) => {
     const [deviceShare, setDeviceShare] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -160,6 +161,7 @@ const DeviceLinkOverlay: React.FC<{
             <DeviceLinkModal
                 deviceShare={deviceShare}
                 approverDid={did}
+                accountHint={accountHint}
                 onClose={onClose}
             />
         </Overlay>
@@ -746,6 +748,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                 <DeviceLinkOverlay
                     did={coordinator.state.did}
                     keyDerivation={keyDerivation}
+                    accountHint={coordinator.state.authUser?.email || coordinator.state.authUser?.phone}
                     onClose={() => setDeviceLinkVisible(false)}
                 />
             )}

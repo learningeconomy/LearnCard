@@ -55,7 +55,7 @@ export interface QrPayload {
 /** Result of polling — either still waiting or the device share is ready */
 export type PollResult =
     | { status: 'pending' }
-    | { status: 'approved'; deviceShare: string; approverDid: string };
+    | { status: 'approved'; deviceShare: string; approverDid: string; accountHint?: string };
 
 // ---------------------------------------------------------------------------
 // API helpers
@@ -147,12 +147,15 @@ export const pollQrLoginSession = async (
     // Parse the encrypted payload and decrypt
     const payload: EncryptedSharePayload = JSON.parse(info.encryptedPayload);
 
-    const deviceShare = await decryptShareFromTransfer(payload, ephemeralPrivateKey);
+    const plaintext = await decryptShareFromTransfer(payload, ephemeralPrivateKey);
+
+    const parsed = JSON.parse(plaintext) as { d: string; h?: string };
 
     return {
         status: 'approved',
-        deviceShare,
+        deviceShare: parsed.d,
         approverDid: info.approverDid,
+        accountHint: parsed.h,
     };
 };
 
@@ -176,7 +179,7 @@ export const pollUntilApproved = async (
         onPoll?: (attempt: number) => void;
         signal?: AbortSignal;
     }
-): Promise<{ deviceShare: string; approverDid: string }> => {
+): Promise<{ deviceShare: string; approverDid: string; accountHint?: string }> => {
     const intervalMs = options?.intervalMs ?? 2000;
     const timeoutMs = options?.timeoutMs ?? 120_000;
 
@@ -197,6 +200,7 @@ export const pollUntilApproved = async (
             return {
                 deviceShare: result.deviceShare,
                 approverDid: result.approverDid,
+                accountHint: result.accountHint,
             };
         }
 
@@ -252,16 +256,21 @@ export const getQrLoginSessionInfo = async (
  * @param deviceShare - Plaintext device share from Device A's local storage
  * @param approverDid - DID of the approving device
  * @param recipientPublicKey - Base64 X25519 public key from the session
+ * @param accountHint - Optional email or phone of the approver's account (sent to Device B as a login hint)
  */
 export const approveQrLoginSession = async (
     config: QrLoginClientConfig,
     sessionId: string,
     deviceShare: string,
     approverDid: string,
-    recipientPublicKey: string
+    recipientPublicKey: string,
+    accountHint?: string
 ): Promise<void> => {
-    // Encrypt the device share with ECDH
-    const encryptedPayload = await encryptShareForTransfer(deviceShare, recipientPublicKey);
+    // Wrap the device share + account hint in a JSON envelope
+    const plaintext = JSON.stringify({ d: deviceShare, h: accountHint });
+
+    // Encrypt with ECDH
+    const encryptedPayload = await encryptShareForTransfer(plaintext, recipientPublicKey);
 
     const response = await fetch(`${config.serverUrl}/qr-login/session/${sessionId}/approve`, {
         method: 'POST',

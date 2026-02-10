@@ -45,6 +45,7 @@ export interface QrRequesterState {
     secondsRemaining: number;
     deviceShare: string | null;
     approverDid: string | null;
+    accountHint: string | null;
     error: string | null;
 }
 
@@ -81,6 +82,7 @@ export const useQrLoginRequester = (
         secondsRemaining: 0,
         deviceShare: null,
         approverDid: null,
+        accountHint: null,
         error: null,
     });
 
@@ -118,6 +120,7 @@ export const useQrLoginRequester = (
             secondsRemaining: 0,
             deviceShare: null,
             approverDid: null,
+            accountHint: null,
             error: null,
         });
     }, [cleanup]);
@@ -148,6 +151,7 @@ export const useQrLoginRequester = (
                 secondsRemaining: remaining,
                 deviceShare: null,
                 approverDid: null,
+                accountHint: null,
                 error: null,
             });
 
@@ -202,6 +206,7 @@ export const useQrLoginRequester = (
                 status: 'approved',
                 deviceShare: result.deviceShare,
                 approverDid: result.approverDid,
+                accountHint: result.accountHint ?? null,
             }));
         } catch (e) {
             if (timerRef.current) clearInterval(timerRef.current);
@@ -255,7 +260,7 @@ export interface UseQrLoginApproverReturn extends QrApproverState {
     lookupSession: (lookup: string) => Promise<void>;
 
     /** Approve the current session — encrypts and pushes the device share */
-    approve: (deviceShare: string, approverDid: string) => Promise<void>;
+    approve: (deviceShare: string, approverDid: string, accountHint?: string) => Promise<void>;
 
     /** Reset the approver state */
     reset: () => void;
@@ -288,7 +293,7 @@ export const useQrLoginApprover = (serverUrl: string): UseQrLoginApproverReturn 
         }
     }, [serverUrl]);
 
-    const approve = useCallback(async (deviceShare: string, approverDid: string) => {
+    const approve = useCallback(async (deviceShare: string, approverDid: string, accountHint?: string) => {
         if (!state.sessionInfo) {
             setState(prev => ({ ...prev, status: 'error', error: 'No session loaded' }));
             return;
@@ -302,7 +307,8 @@ export const useQrLoginApprover = (serverUrl: string): UseQrLoginApproverReturn 
                 state.sessionInfo.sessionId,
                 deviceShare,
                 approverDid,
-                state.sessionInfo.publicKey
+                state.sessionInfo.publicKey,
+                accountHint
             );
 
             setState(prev => ({ ...prev, status: 'done' }));

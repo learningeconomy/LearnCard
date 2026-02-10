@@ -165,6 +165,28 @@ describe('QR Login Approver Flow (function-level)', () => {
         );
     });
 
+    it('approveQrLoginSession passes accountHint when provided', async () => {
+        mockApproveSession.mockResolvedValueOnce(undefined);
+
+        await approveQrLoginSession(
+            { serverUrl: 'https://api.test' },
+            'sid-1',
+            'device-share-hex',
+            'did:key:zApprover',
+            'recipient-public-key',
+            'user@example.com'
+        );
+
+        expect(mockApproveSession).toHaveBeenCalledWith(
+            { serverUrl: 'https://api.test' },
+            'sid-1',
+            'device-share-hex',
+            'did:key:zApprover',
+            'recipient-public-key',
+            'user@example.com'
+        );
+    });
+
     it('approveQrLoginSession propagates errors', async () => {
         mockApproveSession.mockRejectedValueOnce(new Error('Session already approved'));
 

@@ -357,6 +357,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
 
                     <QrLoginRequester
                         serverUrl={getAuthConfig().serverUrl}
+                        hideHeader
                         onApproved={async (deviceShare) => {
                             setLoading(true);
                             setError(null);

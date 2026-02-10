@@ -70,8 +70,9 @@ import { auth } from '../firebase/firebase';
 const ScoutsDeviceLinkOverlay: React.FC<{
     did: string;
     keyDerivation: KeyDerivationStrategy;
+    accountHint?: string;
     onClose: () => void;
-}> = ({ did, keyDerivation, onClose }) => {
+}> = ({ did, keyDerivation, accountHint, onClose }) => {
     const [deviceShare, setDeviceShare] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -175,6 +176,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
                 serverUrl={authConfig.serverUrl}
                 deviceShare={deviceShare}
                 approverDid={did}
+                accountHint={accountHint}
                 onDone={onClose}
                 onCancel={onClose}
                 onScanQr={Capacitor.isNativePlatform() ? handleScanQr : undefined}
@@ -595,6 +597,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                 <ScoutsDeviceLinkOverlay
                     did={coordinator.state.did}
                     keyDerivation={keyDerivation}
+                    accountHint={coordinator.state.authUser?.email || coordinator.state.authUser?.phone}
                     onClose={() => setDeviceLinkVisible(false)}
                 />
             )}

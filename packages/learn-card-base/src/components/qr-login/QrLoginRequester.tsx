@@ -23,7 +23,7 @@ export interface QrLoginRequesterProps {
     serverUrl: string;
 
     /** Called when Device A approves and the device share is decrypted */
-    onApproved: (deviceShare: string, approverDid: string) => void;
+    onApproved: (deviceShare: string, approverDid: string, accountHint?: string) => void;
 
     /** Called when the user cancels */
     onCancel: () => void;
@@ -31,6 +31,8 @@ export interface QrLoginRequesterProps {
     /** Render the QR code from a JSON string payload. Apps provide their own QR renderer. */
     renderQrCode?: (qrData: string) => React.ReactNode;
 
+    /** Hide the built-in title + description (useful when a parent wrapper already provides them) */
+    hideHeader?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -79,6 +81,7 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
     onApproved,
     onCancel,
     renderQrCode,
+    hideHeader,
 }) => {
     const {
         status,
@@ -87,6 +90,7 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
         secondsRemaining,
         deviceShare,
         approverDid,
+        accountHint,
         error,
         start,
         cancel,
@@ -101,9 +105,9 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
     // Notify parent when approved
     useEffect(() => {
         if (status === 'approved' && deviceShare && approverDid) {
-            onApproved(deviceShare, approverDid);
+            onApproved(deviceShare, approverDid, accountHint ?? undefined);
         }
-    }, [status, deviceShare, approverDid, onApproved]);
+    }, [status, deviceShare, approverDid, accountHint, onApproved]);
 
     const handleCancel = () => {
         cancel();
@@ -112,11 +116,15 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
 
     return (
         <div className="p-6 max-w-md mx-auto flex flex-col items-center font-poppins">
-            <h2 className="text-xl font-semibold text-grayscale-900 mb-1 text-center">Sign In from Another Device</h2>
+            {!hideHeader && (
+                <>
+                    <h2 className="text-xl font-semibold text-grayscale-900 mb-1 text-center">Sign In from Another Device</h2>
 
-            <p className="text-sm text-grayscale-600 mb-5 text-center leading-relaxed">
-                Scan this QR code with a device that&apos;s already signed in, or enter the code manually.
-            </p>
+                    <p className="text-sm text-grayscale-600 mb-5 text-center leading-relaxed">
+                        Scan this QR code with a device that&apos;s already signed in, or enter the code manually.
+                    </p>
+                </>
+            )}
 
             {/* QR Code */}
             {status === 'waiting' && qrPayload && (

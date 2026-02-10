@@ -301,6 +301,49 @@ describe('QR Login Client', async () => {
     });
 
     // -----------------------------------------------------------------------
+    // Account hint in encrypted payload
+    // -----------------------------------------------------------------------
+
+    it.skipIf(!supported)('full flow with accountHint: hint is encrypted and returned to Device B', async () => {
+        const deviceShare = 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab';
+        const approverDid = 'did:key:zHintTest';
+        const accountHint = 'user@example.com';
+
+        const { session, ephemeralKeypair, qrPayload } = await createQrLoginSession({
+            serverUrl: SERVER_URL,
+        });
+
+        const sessionInfo = await getQrLoginSessionInfo(
+            { serverUrl: SERVER_URL },
+            qrPayload.sessionId
+        );
+
+        // Device A approves WITH accountHint
+        await approveQrLoginSession(
+            { serverUrl: SERVER_URL },
+            session.sessionId,
+            deviceShare,
+            approverDid,
+            sessionInfo.publicKey,
+            accountHint
+        );
+
+        const result = await pollQrLoginSession(
+            { serverUrl: SERVER_URL },
+            session.sessionId,
+            ephemeralKeypair.privateKey
+        );
+
+        expect(result.status).toBe('approved');
+
+        if (result.status === 'approved') {
+            expect(result.deviceShare).toBe(deviceShare);
+            expect(result.approverDid).toBe(approverDid);
+            expect(result.accountHint).toBe(accountHint);
+        }
+    });
+
+    // -----------------------------------------------------------------------
     // Short code flow (typed code instead of QR scan)
     // -----------------------------------------------------------------------
 
