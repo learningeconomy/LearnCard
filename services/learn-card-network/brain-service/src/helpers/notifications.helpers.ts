@@ -77,13 +77,6 @@ export async function sendNotification(notification: LCNNotification) {
         }
 
         if (typeof notificationsWebhook === 'string' && notificationsWebhook?.startsWith('http')) {
-            if (process.env.NODE_ENV !== 'test') {
-                console.log(
-                    'Sending notification!',
-                    notificationsWebhook,
-                    JSON.stringify(notification)
-                );
-            }
 
             const learnCard = await getDidWebLearnCard();
 

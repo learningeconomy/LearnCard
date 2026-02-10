@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { describe, test, expect, beforeEach } from 'vitest';
 
 import { getLearnCardForUser, getLearnCard, LearnCard } from './helpers/learncard.helpers';
@@ -266,6 +266,50 @@ describe('Skills & Frameworks E2E', () => {
         // User B should not list A's frameworks
         const bMine = await b.invoke.listMySkillFrameworks();
         expect(bMine.find(f => f.id === fwId)).toBeUndefined();
+    });
+
+    test('can semantic search skills by description', async ({ skip }) => {
+        if (!process.env.SKILL_EMBEDDING_GOOGLE_API_KEY) {
+            skip();
+            return;
+        }
+
+        const fwId = `fw-${crypto.randomUUID()}`;
+        const skills: SkillInputNode[] = [];
+
+        for (let i = 0; i < 12; i += 1) {
+            skills.push({
+                id: `${fwId}-S${i}`,
+                statement: `Skill ${i}`,
+                description: `E2E semantic search skill ${i}`,
+                code: `S${i}`,
+                type: 'skill',
+                status: 'active',
+            });
+        }
+
+        const targetId = `${fwId}-STARGET`;
+        skills.push({
+            id: targetId,
+            statement: 'Advanced Parsing',
+            description: 'Specialized semantic search target skill for embeddings',
+            code: 'SEARCH_TARGET',
+            type: 'skill',
+            status: 'active',
+        });
+
+        await createFrameworkWithSkills(a, fwId, skills);
+        await linkFrameworkForUser(a, fwId);
+        await a.invoke.syncFrameworkSkills({ id: fwId });
+
+        const results = await a.invoke.semanticSearchSkills({
+            text: 'semantic search target embeddings',
+            limit: 3,
+        });
+
+        const resultIds = results.records.map(record => record.id);
+        console.log('resultIds', resultIds);
+        expect(resultIds).toContain(targetId);
     });
 
     test('can search skills in a framework with regex patterns', async () => {

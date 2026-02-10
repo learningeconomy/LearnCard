@@ -1,5 +1,23 @@
 # learn-card-core
 
+## 1.1.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.6
+    -   @learncard/didkit-plugin@1.7.2
+
+## 1.1.5
+
+### Patch Changes
+
+-   [#968](https://github.com/learningeconomy/LearnCard/pull/968) [`01572c1731b01c60926e1e1ff4db95ddf08e6e9e`](https://github.com/learningeconomy/LearnCard/commit/01572c1731b01c60926e1e1ff4db95ddf08e6e9e) Thanks [@Custard7](https://github.com/Custard7)! - chore: Silence and Fix Warnings/Errors
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.5
+    -   @learncard/didkit-plugin@1.7.1
+
 ## 1.1.4
 
 ### Patch Changes
