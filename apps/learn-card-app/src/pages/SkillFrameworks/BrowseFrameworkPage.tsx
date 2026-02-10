@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { cloneDeep } from 'lodash';
 import {
@@ -21,6 +21,8 @@ import FrameworkUpdatedSucessModal from './FrameworkUpdatedSucessModal';
 import ManageSkillsCancelUpdateModal from './ManageSkillsCancelUpdateModal';
 import ManageSkillsConfirmationModal from './ManageSkillsConfirmationModal';
 import BrowseFrameworkMultiColumnHeader from './BrowseFrameworkMultiColumnHeader';
+import useAutosave from '../../hooks/useAutosave';
+import RecoveryPrompt from '../../components/common/RecoveryPrompt';
 
 import {
     ApiFrameworkInfo,
@@ -83,6 +85,107 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
     // Track adjustments to skill counts for each node
     // Positive numbers mean skills were added, negative means skills were removed
     const [countAdjustments, setCountAdjustments] = useState<Record<string, number>>({});
+
+    // Autosave state type
+    type FrameworkEditState = {
+        addedNodes: Record<string, (SkillFrameworkNode & { path: SkillFrameworkNode[] })[]>;
+        editedNodes: Record<string, SkillFrameworkNode>;
+        deletedNodes: SkillFrameworkNode[];
+        selectedPath: SkillFrameworkNode[];
+        countAdjustments: Record<string, number>;
+    };
+
+    // Autosave hook - only enabled when in edit mode and not in approve/select flows
+    const { hasRecoveredState, recoveredState, clearRecoveredState, saveToLocal, clearLocalSave } =
+        useAutosave<FrameworkEditState, { frameworkId: string; frameworkName: string }>({
+            storageKey: `lc_framework_edit_${frameworkInfo.id}`,
+            enabled: isEdit && !isApproveFlow && !isSelectSkillsFlow && !isViewOnly,
+            hasContent: state =>
+                Object.keys(state?.addedNodes || {}).length > 0 ||
+                Object.keys(state?.editedNodes || {}).length > 0 ||
+                (state?.deletedNodes || []).length > 0,
+        });
+
+    const hasShownRecoveryRef = useRef(false);
+
+    // Show recovery prompt if we have recovered state
+    useEffect(() => {
+        if (hasRecoveredState && recoveredState && !hasShownRecoveryRef.current) {
+            hasShownRecoveryRef.current = true;
+
+            setTimeout(() => {
+                const handleRecover = () => {
+                    setAddedNodes(recoveredState.addedNodes || {});
+                    setEditedNodes(recoveredState.editedNodes || {});
+                    setDeletedNodes(recoveredState.deletedNodes || []);
+                    setSelectedPath(recoveredState.selectedPath || []);
+                    setCountAdjustments(recoveredState.countAdjustments || {});
+                    setIsEdit(true);
+                    clearRecoveredState();
+                    closeModal();
+                };
+
+                const handleDiscard = () => {
+                    clearRecoveredState(true);
+                    closeModal();
+                };
+
+                newModal(
+                    <RecoveryPrompt
+                        itemName={frameworkInfo.name || 'Framework'}
+                        itemType="framework edits"
+                        onRecover={handleRecover}
+                        onDiscard={handleDiscard}
+                    />,
+                    { sectionClassName: '!max-w-[400px]' },
+                    { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                );
+            }, 300);
+        }
+    }, [
+        hasRecoveredState,
+        recoveredState,
+        clearRecoveredState,
+        newModal,
+        closeModal,
+        frameworkInfo.name,
+    ]);
+
+    // Save to localStorage whenever edit state changes
+    useEffect(() => {
+        if (isEdit && !isApproveFlow && !isSelectSkillsFlow && !isViewOnly) {
+            const hasChanges =
+                Object.keys(addedNodes).length > 0 ||
+                Object.keys(editedNodes).length > 0 ||
+                deletedNodes.length > 0;
+
+            if (hasChanges) {
+                saveToLocal(
+                    {
+                        addedNodes,
+                        editedNodes,
+                        deletedNodes,
+                        selectedPath,
+                        countAdjustments,
+                    },
+                    { frameworkId: frameworkInfo.id, frameworkName: frameworkInfo.name }
+                );
+            }
+        }
+    }, [
+        addedNodes,
+        editedNodes,
+        deletedNodes,
+        selectedPath,
+        countAdjustments,
+        isEdit,
+        isApproveFlow,
+        isSelectSkillsFlow,
+        isViewOnly,
+        saveToLocal,
+        frameworkInfo.id,
+        frameworkInfo.name,
+    ]);
 
     const isFullSkillFramework = fullSkillTree !== undefined;
     const disableSave = initialSkills?.length === 0 && selectedSkills?.length === 0;
@@ -649,8 +752,9 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                                 ...deletePromises,
                             ]);
 
-                            // Clear the edit state
+                            // Clear the edit state and local autosave
                             handleResetEdits();
+                            clearLocalSave();
 
                             // Invalidate queries to refresh data
                             await queryClient.invalidateQueries({
@@ -732,6 +836,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                         closeModal();
                         setTimeout(() => {
                             handleResetEdits();
+                            clearLocalSave();
                             setIsEdit(false);
                         }, 301);
                     }}
@@ -741,6 +846,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
             );
         } else {
             handleResetEdits();
+            clearLocalSave();
             setIsEdit(false);
         }
     };
@@ -795,6 +901,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                     onCancel={() => {
                         closeModal();
                         setTimeout(() => {
+                            clearLocalSave();
                             _handleClose();
                         }, 301);
                     }}
@@ -803,6 +910,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
             );
         } else {
+            clearLocalSave();
             _handleClose();
         }
     };
