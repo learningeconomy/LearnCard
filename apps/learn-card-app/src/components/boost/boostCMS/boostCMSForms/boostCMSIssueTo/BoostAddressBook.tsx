@@ -67,6 +67,8 @@ type BoostAddressBookProps = {
     hideBoostShareableCode?: boolean;
 };
 
+type BoostAddressBookCollectionPropName = 'issueTo' | 'admins';
+
 export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     state,
     setState,
@@ -104,13 +106,18 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     const [connections, setConnections] = useState<BoostCMSIssueTo[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [issueMode, setIssueMode] = useState<BoostUserTypeEnum>(BoostUserTypeEnum.someone);
+    const collectionKey = collectionPropName as BoostAddressBookCollectionPropName;
+
     const [localIssueTo, setLocalIssueTo] = useState<BoostCMSIssueTo[]>(
-        state?.[collectionPropName]
+        state?.[collectionKey] ?? []
     );
 
+    const issueTo = _issueTo ?? localIssueTo;
+    const setIssueTo = _setIssueTo ?? setLocalIssueTo;
+
     useEffect(() => {
-        if (state?.[collectionPropName]?.length > 0) {
-            setLocalIssueTo(state?.[collectionPropName]);
+        if (state?.[collectionKey]?.length > 0) {
+            setLocalIssueTo(state?.[collectionKey] ?? []);
         } else {
             return;
         }
@@ -179,11 +186,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
 
         setLoading(true);
         try {
-            const connections = await wallet.invoke.getConnections();
-            setConnections(connections);
+            const paginated = await wallet.invoke.getPaginatedConnections({ limit: 100 });
+            setConnections(paginated?.records ?? []);
             setLoading(false);
         } catch (e) {
-            console.log('getConnections::error', e);
             setLoading(false);
         }
     };
@@ -192,7 +198,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         setState(prevState => {
             return {
                 ...prevState,
-                [collectionPropName]: [..._issueTo],
+                [collectionKey]: [...issueTo],
             };
         });
         handleCloseModal?.(true);
@@ -206,7 +212,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     const handleSearch = async (profileId: string) => setSearch?.(profileId);
 
     const contactCount =
-        (search?.length > 0 && searchResults?.length) > 0
+        (search?.length ?? 0) > 0 && (searchResults?.length ?? 0) > 0
             ? searchResults?.length
             : connections?.length;
 
@@ -223,7 +229,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                             className="text-grayscale-50 p-0 mr-[10px]"
                                             onClick={() => {
                                                 handleCloseModal?.(false);
-                                                _setIssueTo([...state?.[collectionPropName]]);
+                                                setIssueTo([...(state?.[collectionKey] ?? [])]);
                                                 setSearch?.('');
                                             }}
                                         >
@@ -240,7 +246,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                             placeholder="Search LearnCard Network..."
                                             value={search}
                                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                                            onIonInput={e => handleSearch(e?.detail?.value)}
+                                            onIonInput={e => handleSearch(e?.detail?.value ?? '')}
                                             debounce={500}
                                             type="text"
                                         />
@@ -263,9 +269,9 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             setState={setState}
                             contacts={connections}
                             mode={mode}
-                            _issueTo={_issueTo}
-                            _setIssueTo={_setIssueTo}
-                            collectionPropName={collectionPropName}
+                            _issueTo={issueTo}
+                            _setIssueTo={setIssueTo}
+                            collectionPropName={collectionKey}
                         />
                     )}
                     {!loading && connections.length === 0 && search?.length === 0 && (
@@ -296,12 +302,12 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             setState={setState}
                             contacts={searchResults}
                             mode={mode}
-                            _issueTo={_issueTo}
-                            _setIssueTo={_setIssueTo}
-                            collectionPropName={collectionPropName}
+                            _issueTo={issueTo}
+                            _setIssueTo={setIssueTo}
+                            collectionPropName={collectionKey}
                         />
                     )}
-                    {!isLoading && search?.length > 0 && searchResults.length === 0 && (
+                    {!isLoading && (search?.length ?? 0) > 0 && (searchResults?.length ?? 0) === 0 && (
                         <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
                             <strong>No search results</strong>
                         </section>
@@ -327,121 +333,6 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                     </IonToolbar>
                 </IonFooter>
             </IonPage>
-        );
-
-        // for the new useModal version. Broken right now though, so using the old version for now (above)
-        return (
-            <section className="bg-white h-full flex flex-col">
-                <div className="learn-card-header ion-no-border bg-white w-full">
-                    <div className="ion-no-border bg-white w-full">
-                        <IonGrid className="bg-white">
-                            <IonRow className="w-full flex items-center justify-center bg-white">
-                                <IonRow className="flex flex-col w-full max-w-[600px]">
-                                    <IonCol className="flex flex-1 justify-start items-center">
-                                        <button
-                                            className="text-grayscale-50 p-0 mr-[10px]"
-                                            onClick={() => {
-                                                handleCloseModal?.(false);
-                                                _setIssueTo([...state?.[collectionPropName]]);
-                                                setSearch?.('');
-                                            }}
-                                        >
-                                            <CaretLeft className="h-auto w-3 text-grayscale-900" />
-                                        </button>
-                                        <h3 className="text-grayscale-900 flex items-center justify-start font-poppins font-medium text-xl">
-                                            {contactCount ?? 0} Contacts
-                                        </h3>
-                                    </IonCol>
-
-                                    <div className="flex items-center justify-start w-full">
-                                        <IonInput
-                                            autocapitalize="on"
-                                            placeholder="Search LearnCard Network..."
-                                            value={search}
-                                            className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                                            onIonInput={e => handleSearch(e?.detail?.value)}
-                                            debounce={500}
-                                            type="text"
-                                        />
-                                    </div>
-                                </IonRow>
-                            </IonRow>
-                        </IonGrid>
-                    </div>
-                </div>
-                <div className="text-black h-full overflow-y-auto grow">
-                    {loading && (
-                        <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full">
-                            <IonSpinner color="black" />
-                            <p className="mt-2 font-bold text-lg">Loading...</p>
-                        </section>
-                    )}
-                    {!loading && connections.length > 0 && search?.length === 0 && (
-                        <BoostAddressBookContactList
-                            state={state}
-                            setState={setState}
-                            contacts={connections}
-                            mode={mode}
-                            _issueTo={_issueTo}
-                            _setIssueTo={_setIssueTo}
-                            collectionPropName={collectionPropName}
-                        />
-                    )}
-                    {!loading && connections.length === 0 && search?.length === 0 && (
-                        <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                            <div className="max-w-[280px] m-auto">
-                                <Lottie
-                                    loop
-                                    animationData={PurpGhost}
-                                    play
-                                    style={{ width: '100%', height: '100%' }}
-                                />
-                            </div>
-                            <p className="font-bold text-grayscale-800 mt-[20px]">
-                                No connections yet
-                            </p>
-                        </section>
-                    )}
-
-                    {isLoading && search?.length > 0 && (
-                        <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
-                            <IonSpinner color="black" />
-                            <p className="mt-2 font-bold text-lg">Loading...</p>
-                        </section>
-                    )}
-                    {search?.length > 0 && searchResults?.length > 0 && !isLoading && (
-                        <BoostAddressBookContactList
-                            state={state}
-                            setState={setState}
-                            contacts={searchResults}
-                            mode={mode}
-                            _issueTo={_issueTo}
-                            _setIssueTo={_setIssueTo}
-                            collectionPropName={collectionPropName}
-                        />
-                    )}
-                    {!isLoading && search?.length > 0 && searchResults.length === 0 && (
-                        <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                            <img src={MiniGhost} alt="ghost" className="max-w-[250px] m-auto" />
-                            <strong>No search results</strong>
-                        </section>
-                    )}
-                </div>
-                <footer className="bg-white shadow-footer z-[1]">
-                    <IonRow className="w-full flex items-center justify-center bg-white pt-5">
-                        <div className="w-full max-w-[600px] flex items-center justify-center">
-                            <IonCol size="12" className="w-full flex items-center justify-between">
-                                <button
-                                    onClick={handleSaveContacts}
-                                    className="relative flex flex-1 items-center justify-center bg-emerald-700 rounded-full px-[18px] py-[8px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide text-center"
-                                >
-                                    Save
-                                </button>
-                            </IonCol>
-                        </div>
-                    </IonRow>
-                </footer>
-            </section>
         );
     }
 
@@ -546,11 +437,11 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             state={state}
                             setIssueMode={setIssueMode}
                             setState={setState}
-                            contacts={state?.[collectionPropName]}
+                            contacts={state?.[collectionKey] ?? []}
                             mode={mode}
-                            _issueTo={_issueTo}
-                            _setIssueTo={_setIssueTo}
-                            collectionPropName={collectionPropName}
+                            _issueTo={issueTo}
+                            _setIssueTo={setIssueTo}
+                            collectionPropName={collectionKey}
                         />
                     </IonCol>
                 </IonRow>

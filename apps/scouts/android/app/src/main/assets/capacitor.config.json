@@ -41,8 +41,8 @@
 		},
 		"CapacitorUpdater": {
 			"appId": "org.scoutpass.app",
-			"autoUpdate": false,
-			"defaultChannel": "migration"
+			"autoUpdate": true,
+			"defaultChannel": "1.0.3"
 		}
 	}
 }

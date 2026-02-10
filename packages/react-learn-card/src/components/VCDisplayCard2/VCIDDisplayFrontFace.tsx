@@ -10,6 +10,7 @@ import PersonBadge from '../svgs/PersonBadge';
 import RedFlag from '../svgs/RedFlag';
 
 import { getInfoFromCredential } from '../../helpers/credential.helpers';
+import { isAppDidWeb } from '@learncard/helpers';
 
 import { VC } from '@learncard/types';
 import { BoostAchievementCredential } from '../../types';
@@ -33,6 +34,7 @@ const VERIFIER_STATES = {
     selfVerified: 'Self Issued',
     trustedVerifier: 'Trusted Issuer',
     unknownVerifier: 'Unknown Issuer',
+    appIssuer: 'Trusted App',
     untrustedVerifier: 'Untrusted Issuer',
 } as const;
 type VerifierState = (typeof VERIFIER_STATES)[keyof typeof VERIFIER_STATES];
@@ -55,6 +57,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
 
     const issuerDid =
         typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
+    const isAppIssuerDid = isAppDidWeb(issuerDid);
 
     let verifierState: VerifierState;
     if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {
@@ -69,9 +72,13 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
         } else if (knownDIDRegistry?.source === 'untrusted') {
             verifierState = VERIFIER_STATES.untrustedVerifier;
         } else if (knownDIDRegistry?.source === 'unknown') {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuerDid
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         } else {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuerDid
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         }
     }
     const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
@@ -88,9 +95,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                 <section className="vc-front-face w-full flex flex-col items-center gap-[15px]">
                     {/* <div className="w-[380px] h-[211px] bg-red-300" /> */}
 
-                    <Flipped inverseFlipId="face">
-                        {customThumbComponent && customThumbComponent}
-                    </Flipped>
+                    <Flipped inverseFlipId="face">{customThumbComponent}</Flipped>
 
                     <Flipped inverseFlipId="face">
                         <div className="text-white w-full flex items-center justify-center font-poppins">
@@ -162,6 +167,12 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                     <span className="uppercase font-poppins text-base font-[500] text-orange-500 flex gap-[3px] items-center">
                                         <UnknownVerifierBadge className="w-[20px] h-[20px]" />
                                         Unknown Issuer
+                                    </span>
+                                )}
+                                {verifierState === VERIFIER_STATES.appIssuer && (
+                                    <span className="uppercase font-poppins text-base font-[500] text-cyan-600 flex gap-[3px] items-center">
+                                        <UnknownVerifierBadge className="w-[20px] h-[20px]" />
+                                        Trusted App
                                     </span>
                                 )}
                                 {verifierState === VERIFIER_STATES.untrustedVerifier && (

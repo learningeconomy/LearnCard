@@ -367,6 +367,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.profile.connectWith.mutate({ profileId });
             },
+            connectWithExpiredInvite: async (_learnCard, profileId) => {
+                await ensureUser();
+
+                return client.profile.connectWithExpiredInvite.mutate({ profileId });
+            },
             cancelConnectionRequest: async (_learnCard, profileId) => {
                 await ensureUser();
 
@@ -1595,6 +1600,11 @@ export async function getLearnCardNetworkPlugin(
                     ...options,
                 });
             },
+            semanticSearchSkills: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.skills.semanticSearchSkills.query(input);
+            },
             updateSkillFramework: async (_learnCard, input) => {
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skillFrameworks.update.mutate(input);
@@ -1686,9 +1696,16 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.integrations.deleteIntegration.mutate({ id });
             },
-            associateIntegrationWithSigningAuthority: async (
+
+            // App Store
+            createAppStoreListing: async (_learnCard, integrationId, listing) => {
+                await ensureUser();
+
+                return client.appStore.createListing.mutate({ integrationId, listing });
+            },
+            associateListingWithSigningAuthority: async (
                 _learnCard,
-                integrationId,
+                listingId,
                 endpoint,
                 name,
                 did,
@@ -1696,20 +1713,18 @@ export async function getLearnCardNetworkPlugin(
             ) => {
                 await ensureUser();
 
-                return client.integrations.associateIntegrationWithSigningAuthority.mutate({
-                    integrationId,
+                return client.appStore.associateListingWithSigningAuthority.mutate({
+                    listingId,
                     endpoint,
                     name,
                     did,
                     isPrimary,
                 });
             },
-
-            // App Store
-            createAppStoreListing: async (_learnCard, integrationId, listing) => {
+            getListingSigningAuthority: async (_learnCard, listingId) => {
                 await ensureUser();
 
-                return client.appStore.createListing.mutate({ integrationId, listing });
+                return client.appStore.getListingSigningAuthority.query({ listingId });
             },
 
             getAppStoreListing: async (_learnCard, listingId) => {
@@ -1757,6 +1772,10 @@ export async function getLearnCardNetworkPlugin(
 
             getPublicAppStoreListing: async (_learnCard, listingId) => {
                 return client.appStore.getPublicListing.query({ listingId });
+            },
+
+            getPublicAppStoreListingBySlug: async (_learnCard, slug) => {
+                return client.appStore.getPublicListingBySlug.query({ slug });
             },
 
             getAppStoreListingInstallCount: async (_learnCard, listingId) => {
@@ -1824,7 +1843,11 @@ export async function getLearnCardNetworkPlugin(
             addBoostToApp: async (_learnCard, listingId, boostUri, templateAlias) => {
                 await ensureUser();
 
-                return client.appStore.addBoostToListing.mutate({ listingId, boostUri, templateAlias });
+                return client.appStore.addBoostToListing.mutate({
+                    listingId,
+                    boostUri,
+                    templateAlias,
+                });
             },
 
             removeBoostFromApp: async (_learnCard, listingId, templateAlias) => {

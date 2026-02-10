@@ -14,10 +14,12 @@ import {
     switchedProfileStore,
     LEARNCARD_NETWORK_API_URL,
 } from 'learn-card-base';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import {
     Boost,
     BoostRecipientInfo,
     LCNProfile,
+    AppStoreListing,
     SentCredentialInfo,
     VC,
     PaginationOptionsType,
@@ -44,27 +46,35 @@ export const getBoosts = async (
     wallet: BespokeLearnCard,
     category?: CredentialCategoryEnum
 ): Promise<Boost[]> => {
-    const data = await wallet.invoke.getBoosts();
-    if (!Array.isArray(data) || data.length === 0) return [];
-    if (!category) return data;
+    const baseQuery = category ? { category } : undefined;
 
-    // Filter boosts by exact match or combine similar categories.
-    return data.filter(boost => {
-        if (boost?.category === category) return true;
-        if (
-            boost?.category === CredentialCategoryEnum.course &&
-            category === CredentialCategoryEnum.learningHistory
-        ) {
-            return true;
+    const normalizedQuery = (() => {
+        if (!baseQuery) return undefined;
+
+        if (category === CredentialCategoryEnum.learningHistory) {
+            return {
+                $or: [
+                    { category: CredentialCategoryEnum.learningHistory },
+                    { category: CredentialCategoryEnum.course },
+                ],
+            };
         }
-        if (
-            boost?.category === CredentialCategoryEnum.job &&
-            category === CredentialCategoryEnum.workHistory
-        ) {
-            return true;
+
+        if (category === CredentialCategoryEnum.workHistory) {
+            return {
+                $or: [
+                    { category: CredentialCategoryEnum.workHistory },
+                    { category: CredentialCategoryEnum.job },
+                ],
+            };
         }
-        return false;
-    });
+
+        return baseQuery;
+    })();
+
+    const paginated = await wallet.invoke.getPaginatedBoosts({ limit: 1000, query: normalizedQuery });
+
+    return paginated?.records ?? [];
 };
 
 /**
@@ -479,8 +489,8 @@ export const useGetConnections = () => {
         queryKey: ['connections', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
-            const data = await wallet.invoke.getConnections();
-            return Array.isArray(data) ? data : [];
+            const paginated = await wallet.invoke.getPaginatedConnections({ limit: 1000 });
+            return paginated?.records ?? [];
         },
     });
 };
@@ -516,10 +526,10 @@ export const useGetConnection = (profileId: string) => {
         queryKey: ['connection', switchedDid ?? '', profileId],
         queryFn: async () => {
             const wallet = await initWallet();
-            const connections = await wallet.invoke.getConnections();
-            return Array.isArray(connections)
-                ? connections.find(connection => connection?.profileId?.toLowerCase() === profileId)
-                : undefined;
+            const connections = await wallet.invoke.getPaginatedConnections({ limit: 1000 });
+            return connections?.records.find(
+                connection => connection?.profileId?.toLowerCase() === profileId
+            );
         },
     });
 };
@@ -737,6 +747,44 @@ export const useGetProfile = (
     });
 };
 
+export const useGetAppStoreListingBySlug = (
+    slug?: string,
+    enabled = true
+): UseQueryResult<AppStoreListing | undefined> => {
+    const { initWallet } = useWallet();
+
+    return useQuery<AppStoreListing | undefined>({
+        enabled: enabled && Boolean(slug),
+        queryKey: ['getPublicAppStoreListingBySlug', slug],
+        queryFn: async () => {
+            if (!slug) return undefined;
+
+            const wallet = await initWallet();
+
+            if (wallet?.invoke?.getPublicAppStoreListingBySlug) {
+                try {
+                    return await wallet.invoke.getPublicAppStoreListingBySlug(slug);
+                } catch (error) {
+                    console.warn('Failed to load app listing by slug', error);
+                }
+            }
+
+            const networkUrl = networkStore.get.networkUrl() || LEARNCARD_NETWORK_API_URL;
+
+            try {
+                const response = await fetch(`${networkUrl}/app-store/public/listing/slug/${slug}`);
+
+                if (!response.ok) return undefined;
+
+                return (await response.json()) as AppStoreListing;
+            } catch (error) {
+                console.warn('Failed to load app listing by slug', error);
+                return undefined;
+            }
+        },
+    });
+};
+
 /** ===============================
  *      CREDENTIAL QUERIES
  *  =============================== */
@@ -896,9 +944,10 @@ export const useGetSkillFrameworkById = (
 export const useSearchFrameworkSkills = (
     frameworkId: string,
     query: any,
-    options?: { limit?: number }
+    options?: { limit?: number; enabled?: boolean }
 ) => {
     const { initWallet } = useWallet();
+    const enabled = options?.enabled ?? true;
 
     return useQuery({
         queryKey: ['searchFrameworkSkills', frameworkId, query, options],
@@ -906,7 +955,7 @@ export const useSearchFrameworkSkills = (
             const wallet = await initWallet();
             return wallet.invoke.searchFrameworkSkills(frameworkId, query, options);
         },
-        enabled: !!frameworkId && !!query,
+        enabled: !!frameworkId && !!query && enabled,
     });
 };
 
@@ -966,8 +1015,13 @@ export const useGetSkillChildren = (frameworkId: string, skillId: string) => {
     });
 };
 
-export const useGetSkillPath = (frameworkId: string, skillId: string) => {
+export const useGetSkillPath = (
+    frameworkId: string,
+    skillId: string,
+    options?: { enabled?: boolean }
+) => {
     const { initWallet } = useWallet();
+    const enabled = options?.enabled ?? true;
 
     return useQuery({
         queryKey: ['getSkillPath', frameworkId, skillId],
@@ -975,7 +1029,7 @@ export const useGetSkillPath = (frameworkId: string, skillId: string) => {
             const wallet = await initWallet();
             return wallet.invoke.getSkillPath({ frameworkId, skillId });
         },
-        enabled: !!frameworkId && !!skillId,
+        enabled: !!frameworkId && !!skillId && enabled,
     });
 };
 

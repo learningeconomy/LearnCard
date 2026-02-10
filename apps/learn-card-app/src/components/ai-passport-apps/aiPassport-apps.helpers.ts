@@ -2,6 +2,9 @@ import ChatGPTAppBG from '../../assets/images/chatGpt-app-bg.png';
 
 import { LaunchPadAppListItem, LEARNCARD_AI_URL } from 'learn-card-base';
 
+import { LEARNCARD_NETWORK_URL } from 'learn-card-base/constants/Networks';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
+
 // this is an internal app ranking
 // ex:
 // category AI Tutor
@@ -33,6 +36,17 @@ export enum AiPassportAppContractUri {
     gemini = 'lc:network:network.learncard.com/trpc:contract:fa97a6ae-4020-446d-ae63-298bd7c65d85',
     learncardapp = 'lc:network:network.learncard.com/trpc:contract:2ed7b889-c06e-47c4-835b-d924c17e9891',
 }
+
+export const areAiPassportAppsAvailable = (): boolean => {
+    const overriddenNetworkUrl = typeof LCN_URL === 'string' ? LCN_URL : undefined;
+    const storedNetworkUrl = networkStore.get.networkUrl();
+
+    const effectiveNetworkUrl = overriddenNetworkUrl?.trim()
+        ? overriddenNetworkUrl
+        : storedNetworkUrl;
+
+    return effectiveNetworkUrl === LEARNCARD_NETWORK_URL;
+};
 
 export const aiPassportApps: (LaunchPadAppListItem & { url: string })[] = [
     {

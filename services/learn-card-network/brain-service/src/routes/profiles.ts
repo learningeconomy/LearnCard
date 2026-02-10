@@ -7,6 +7,7 @@ import {
     PaginatedLCNProfilesValidator,
     PaginatedLCNProfilesAndManagersValidator,
     PaginationOptionsValidator,
+    LCNNotificationTypeEnumValidator,
 } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
@@ -550,6 +551,41 @@ export const profilesRouter = t.router({
             }
 
             return requestConnection(profile, targetProfile);
+        }),
+
+    connectWithExpiredInvite: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/{profileId}/connect-expired-invite',
+                tags: ['Profiles'],
+                summary: 'Connect with another profile (expired invite)',
+                description: 'Send a connection request triggered from an expired invite link',
+            },
+            requiredScope: 'profiles:write',
+        })
+        .input(z.object({ profileId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { profileId } = input;
+
+            const targetProfile = await getProfileByProfileId(profileId);
+
+            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
+            if (!targetProfile || isBlocked) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            return requestConnection(
+                profile,
+                targetProfile,
+                LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST_EXPIRED_INVITE
+            );
         }),
 
     cancelConnectionRequest: profileRoute

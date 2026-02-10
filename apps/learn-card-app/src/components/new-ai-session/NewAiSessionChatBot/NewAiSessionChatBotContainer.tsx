@@ -74,7 +74,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
         qa => qa.type === ChatBotQuestionsEnum.TopicSelection
     )?.answer;
     const appAnswer = chatBotQA.find(qa => qa.type === ChatBotQuestionsEnum.AppSelection)?.answer;
-    const app = aiPassportApps.find(app => app.id === appAnswer);
+    const app = aiPassportApps.find(app => Number(app.id) === Number(appAnswer)); // ! hot fix for type mismatch
 
     useEffect(() => {
         const timeouts: NodeJS.Timeout[] = [];

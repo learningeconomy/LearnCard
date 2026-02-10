@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -26,7 +26,7 @@ class ContractsSyncCredentialsToContractRequest(BaseModel):
     """
     ContractsSyncCredentialsToContractRequest
     """ # noqa: E501
-    terms_uri: StrictStr = Field(alias="termsUri")
+    terms_uri: Optional[StrictStr] = Field(alias="termsUri")
     categories: Dict[str, List[StrictStr]]
     __properties: ClassVar[List[str]] = ["termsUri", "categories"]
 
@@ -69,6 +69,11 @@ class ContractsSyncCredentialsToContractRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if terms_uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.terms_uri is None and "terms_uri" in self.model_fields_set:
+            _dict['termsUri'] = None
+
         return _dict
 
     @classmethod

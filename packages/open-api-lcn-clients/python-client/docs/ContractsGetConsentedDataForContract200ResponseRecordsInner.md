@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **credentials** | [**ContractsGetConsentedDataForContract200ResponseRecordsInnerCredentials**](ContractsGetConsentedDataForContract200ResponseRecordsInnerCredentials.md) |  | 
-**personal** | **Dict[str, str]** |  | 
+**personal** | **Dict[str, Optional[str]]** |  | 
 **var_date** | **str** |  | 
 
 ## Example

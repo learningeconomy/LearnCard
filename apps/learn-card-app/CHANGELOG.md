@@ -1,5 +1,59 @@
 # Changelog
 
+## 1.94.22
+
+### Patch Changes
+
+-   [#977](https://github.com/learningeconomy/LearnCard/pull/977) [`8c61d51a91fa84390d51d933ef1232a635d8f23f`](https://github.com/learningeconomy/LearnCard/commit/8c61d51a91fa84390d51d933ef1232a635d8f23f) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-1548 - fix: App Store "App View" When opening from direct link
+
+-   [#987](https://github.com/learningeconomy/LearnCard/pull/987) [`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1578] Optimize skill framework uploads (aka fix timeout error)
+
+-   [#982](https://github.com/learningeconomy/LearnCard/pull/982) [`c05714270e006d2ffc422c34c6d24497096465a3`](https://github.com/learningeconomy/LearnCard/commit/c05714270e006d2ffc422c34c6d24497096465a3) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1330 - ENV driven THEME
+
+-   Updated dependencies [[`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c)]:
+    -   @learncard/react@2.9.11
+    -   @learncard/helpers@1.2.6
+    -   @learncard/lca-api-plugin@1.1.12
+    -   @learncard/open-badge-v2-plugin@1.1.7
+
+## 1.94.21
+
+### Patch Changes
+
+-   [#976](https://github.com/learningeconomy/LearnCard/pull/976) [`d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9`](https://github.com/learningeconomy/LearnCard/commit/d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1325] Notification Change for Expired Invite Link
+
+-   [#972](https://github.com/learningeconomy/LearnCard/pull/972) [`5a318d7f0b4a134509fe26f302a61f190670f051`](https://github.com/learningeconomy/LearnCard/commit/5a318d7f0b4a134509fe26f302a61f190670f051) Thanks [@Custard7](https://github.com/Custard7)! - perf: Mock DIDKit WASM in Playwright tests to avoid slow CDN fetch
+
+    This speeds up our internal tests. It is not user-facing
+
+-   [#968](https://github.com/learningeconomy/LearnCard/pull/968) [`01572c1731b01c60926e1e1ff4db95ddf08e6e9e`](https://github.com/learningeconomy/LearnCard/commit/01572c1731b01c60926e1e1ff4db95ddf08e6e9e) Thanks [@Custard7](https://github.com/Custard7)! - chore: Silence and Fix Warnings/Errors
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.5
+    -   @learncard/lca-api-plugin@1.1.11
+    -   @learncard/open-badge-v2-plugin@1.1.6
+    -   @learncard/react@2.9.10
+
+## 1.94.20
+
+### Patch Changes
+
+-   [#965](https://github.com/learningeconomy/LearnCard/pull/965) [`4e87c9cee7fdab315f95f367b66752883cb4575d`](https://github.com/learningeconomy/LearnCard/commit/4e87c9cee7fdab315f95f367b66752883cb4575d) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1478] Archive All button does not archive for my account
+
+-   [#969](https://github.com/learningeconomy/LearnCard/pull/969) [`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Resolve app DIDs in credential UI and show app issuer details.
+
+    Credentials issued by App Store listings now map app did:web values to
+    app names/icons (with a link back to the app), and display the "App Issuer"
+    verification state where appropriate.
+
+-   [#966](https://github.com/learningeconomy/LearnCard/pull/966) [`b694f1a6373938a831f9187317c1d5bbcd5049cd`](https://github.com/learningeconomy/LearnCard/commit/b694f1a6373938a831f9187317c1d5bbcd5049cd) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1538] Fix age 13 gating validation logic and add LaunchDarkly school code bypass
+
+-   [#963](https://github.com/learningeconomy/LearnCard/pull/963) [`73fde2a26a5b2a9cf35578db72d1e8347a704028`](https://github.com/learningeconomy/LearnCard/commit/73fde2a26a5b2a9cf35578db72d1e8347a704028) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: fix app listing cutoff on ios
+
+-   Updated dependencies [[`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6), [`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6)]:
+    -   @learncard/lca-api-plugin@1.1.10
+    -   @learncard/react@2.9.9
+
 ## 1.94.19
 
 ### Patch Changes

@@ -1,5 +1,71 @@
 # @learncard/network-brain-service
 
+## 3.11.0
+
+### Minor Changes
+
+-   [#991](https://github.com/learningeconomy/LearnCard/pull/991) [`32e5cfacf499e9a68700170298040f3d313b38da`](https://github.com/learningeconomy/LearnCard/commit/32e5cfacf499e9a68700170298040f3d313b38da) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add semantic skill search backed by embeddings.
+
+    The brain service now generates and stores vector embeddings for skills and exposes semantic search over skills using Neo4j vector queries. Embeddings are generated via Google Gemini embeddings (`gemini-embedding-001`) with configurable batching for efficient backfills, and backfill execution can be safely toggled via environment variables.
+
+    This also adds the typed semantic search route and plugin method so SDK consumers can call semantic skill search directly through the network plugin.
+
+### Patch Changes
+
+-   [#987](https://github.com/learningeconomy/LearnCard/pull/987) [`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1578] Optimize skill framework uploads (aka fix timeout error)
+
+-   [#980](https://github.com/learningeconomy/LearnCard/pull/980) [`efdfced27681ae5e68818a8a595eb76da59bd842`](https://github.com/learningeconomy/LearnCard/commit/efdfced27681ae5e68818a8a595eb76da59bd842) Thanks [@Custard7](https://github.com/Custard7)! - feat: Upgrade Instrumentation Tracing for Performance Monitoring
+
+-   [#994](https://github.com/learningeconomy/LearnCard/pull/994) [`a08f9afb3789268424a5e027a0e77998052b2d7f`](https://github.com/learningeconomy/LearnCard/commit/a08f9afb3789268424a5e027a0e77998052b2d7f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Surface all Signing Authorities when resolving app dids
+
+-   Updated dependencies [[`32e5cfacf499e9a68700170298040f3d313b38da`](https://github.com/learningeconomy/LearnCard/commit/32e5cfacf499e9a68700170298040f3d313b38da)]:
+    -   @learncard/types@5.12.0
+    -   @learncard/core@9.4.6
+    -   @learncard/helpers@1.2.6
+    -   @learncard/did-web-plugin@1.1.6
+    -   @learncard/didkey-plugin@1.1.6
+    -   @learncard/didkit-plugin@1.7.2
+    -   @learncard/didkit-plugin-node@0.2.2
+    -   @learncard/encryption-plugin@1.1.6
+    -   @learncard/learn-card-plugin@1.2.6
+    -   @learncard/vc-plugin@1.4.2
+    -   @learncard/vc-templates-plugin@1.1.6
+    -   @learncard/crypto-plugin@1.1.6
+    -   @learncard/expiration-plugin@1.2.6
+
+## 3.10.2
+
+### Patch Changes
+
+-   [#976](https://github.com/learningeconomy/LearnCard/pull/976) [`d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9`](https://github.com/learningeconomy/LearnCard/commit/d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1325] Notification Change for Expired Invite Link
+
+-   [`fc6d1a25e0b7dbf6f08ee7bd2845a4691344221c`](https://github.com/learningeconomy/LearnCard/commit/fc6d1a25e0b7dbf6f08ee7bd2845a4691344221c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add app did routes to serverless.yml
+
+-   Updated dependencies [[`d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9`](https://github.com/learningeconomy/LearnCard/commit/d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9)]:
+    -   @learncard/types@5.11.4
+    -   @learncard/core@9.4.5
+    -   @learncard/helpers@1.2.5
+    -   @learncard/did-web-plugin@1.1.5
+    -   @learncard/didkey-plugin@1.1.5
+    -   @learncard/didkit-plugin@1.7.1
+    -   @learncard/didkit-plugin-node@0.2.1
+    -   @learncard/encryption-plugin@1.1.5
+    -   @learncard/learn-card-plugin@1.2.5
+    -   @learncard/vc-plugin@1.4.1
+    -   @learncard/vc-templates-plugin@1.1.5
+    -   @learncard/crypto-plugin@1.1.5
+    -   @learncard/expiration-plugin@1.2.5
+
+## 3.10.1
+
+### Patch Changes
+
+-   [#969](https://github.com/learningeconomy/LearnCard/pull/969) [`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Serve app did:web documents and app issuer relationships.
+
+    The brain service now resolves did:web:<host>:app:<slug> documents and
+    tracks listing-issued credentials so app issuers can be recognized in
+    the UI and activity graph.
+
 ## 3.10.0
 
 ### Minor Changes

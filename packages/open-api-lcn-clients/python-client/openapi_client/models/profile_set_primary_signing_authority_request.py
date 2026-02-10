@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
@@ -27,7 +27,7 @@ class ProfileSetPrimarySigningAuthorityRequest(BaseModel):
     """
     ProfileSetPrimarySigningAuthorityRequest
     """ # noqa: E501
-    endpoint: StrictStr
+    endpoint: Optional[StrictStr]
     name: Annotated[str, Field(strict=True, max_length=15)]
     __properties: ClassVar[List[str]] = ["endpoint", "name"]
 
@@ -77,6 +77,11 @@ class ProfileSetPrimarySigningAuthorityRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if endpoint (nullable) is None
+        # and model_fields_set contains the field
+        if self.endpoint is None and "endpoint" in self.model_fields_set:
+            _dict['endpoint'] = None
+
         return _dict
 
     @classmethod

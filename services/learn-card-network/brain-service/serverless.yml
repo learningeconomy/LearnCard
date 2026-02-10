@@ -82,14 +82,14 @@ custom:
         apiType: http
 
 package:
-  individually: true
-  patterns: 
-    - '!node_modules/**'
-    - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
-    - 'node_modules/@learncard/didkit-plugin-node/*.node'
-    - 'node_modules/@learncard/didkit-plugin-node/package.json'
-    - 'node_modules/@learncard/didkit-plugin-node/dist/**'
-    - 'src/swagger-ui'
+    individually: true
+    patterns:
+        - '!node_modules/**'
+        - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+        - 'node_modules/@learncard/didkit-plugin-node/*.node'
+        - 'node_modules/@learncard/didkit-plugin-node/package.json'
+        - 'node_modules/@learncard/didkit-plugin-node/dist/**'
+        - 'src/swagger-ui'
 
 provider:
     name: aws
@@ -124,11 +124,19 @@ provider:
         REDIS_PORT:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Port]
         NOTIFICATIONS_QUEUE_URL: ${construct:notifications-queue.queueUrl}
+        SKILL_EMBEDDING_GOOGLE_API_KEY: ${env:SKILL_EMBEDDING_GOOGLE_API_KEY, ""}
+        SKILL_EMBEDDING_GOOGLE_MODEL: ${env:SKILL_EMBEDDING_GOOGLE_MODEL, "gemini-embedding-001"}
+        SKILL_EMBEDDING_BATCH_SIZE: ${env:SKILL_EMBEDDING_BATCH_SIZE, "25"}
+        SKILL_EMBEDDING_BACKFILL_ON_STARTUP: ${env:SKILL_EMBEDDING_BACKFILL_ON_STARTUP, "false"}
+        SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS: ${env:SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS, "900"}
+        SKILL_EMBEDDING_BACKFILL_PAGE_SIZE: ${env:SKILL_EMBEDDING_BACKFILL_PAGE_SIZE, "100"}
+        SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${env:SKILL_EMBEDDING_BACKFILL_BATCH_SIZE, "50"}
         SMART_RESUME_CLIENT_ID: ${env:SMART_RESUME_CLIENT_ID, ""}
         SMART_RESUME_ACCESS_KEY: ${env:SMART_RESUME_ACCESS_KEY, ""}
         SMART_RESUME_CONTRACT_URI: ${env:SMART_RESUME_CONTRACT_URI, ""}
         LOGIN_PROVIDER_DID: ${env:LOGIN_PROVIDER_DID, ""}
         APP_STORE_ADMIN_PROFILE_IDS: ${env:APP_STORE_ADMIN_PROFILE_IDS, ""}
+        APP_BRAND: ${env:APP_BRAND, 'scouts'}
     tracing:
         apiGateway: true
         lambda: true
@@ -171,6 +179,8 @@ functions:
             - httpApi: OPTIONS /users/{params+}
             - httpApi: GET /manager/{params+}
             - httpApi: OPTIONS /manager/{params+}
+            - httpApi: GET /app/{params+}
+            - httpApi: OPTIONS /app/{params+}
             - httpApi: GET /.well-known/did.json
             - httpApi: OPTIONS /.well-known/did.json
         url:

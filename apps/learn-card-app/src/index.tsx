@@ -3,7 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
-import { asyncWithLDProvider } from 'launchdarkly-react-client-sdk';
+import { Capacitor } from '@capacitor/core';
+import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
 import { LAUNCH_DARKLY_CONFIG } from './constants/launchDarkly';
 import App from './App';
 
@@ -15,18 +16,31 @@ import * as Sentry from '@sentry/browser';
 (window as any).Buffer = Buffer;
 
 (async () => {
-    // notifyAppReady
-    const capGoApp = await CapacitorUpdater.notifyAppReady();
-    const capGoBundle = capGoApp.bundle;
-    if (capGoBundle.version !== 'builtin' && capGoBundle?.version?.trim?.() !== '') {
-        firstStartupStore.set.version(capGoBundle.version);
-        Sentry.setTag('packageVersion', capGoBundle.version);
+    if (Capacitor.isNativePlatform()) {
+        try {
+            // notifyAppReady
+            const capGoApp = await CapacitorUpdater.notifyAppReady();
+            const capGoBundle = capGoApp.bundle;
+            if (capGoBundle.version !== 'builtin' && capGoBundle?.version?.trim?.() !== '') {
+                firstStartupStore.set.version(capGoBundle.version);
+                Sentry.setTag('packageVersion', capGoBundle.version);
+            }
+        } catch {
+            // non-blocking
+        }
     }
+    
+    // Disable LaunchDarkly logging
+    const ldOptions = {
+        options: {
+            logger: basicLogger({ level: 'none' }),
+        },
+    };
 
     // initialize & hide splash screen
     SplashScreen.hide();
 
-    const LDProvider = await asyncWithLDProvider(LAUNCH_DARKLY_CONFIG);
+    const LDProvider = await asyncWithLDProvider({ ...LAUNCH_DARKLY_CONFIG, ...ldOptions });
 
     const container = document.getElementById('root');
     if (container) {

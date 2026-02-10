@@ -438,3 +438,79 @@ export const getSkillPath = async (frameworkId: string, skillId: string): Promis
         } as SkillType;
     });
 };
+
+export type SkillEmbeddingSearchResult = {
+    skill: FlatSkillType;
+    score: number;
+};
+
+export const searchSkillsByEmbedding = async (
+    embedding: number[],
+    limit: number,
+    frameworkId?: string
+): Promise<SkillEmbeddingSearchResult[]> => {
+    const normalizedLimit = Math.min(Math.max(limit, 1), 200);
+    const queryLimit = frameworkId ? Math.min(normalizedLimit * 3, 200) : normalizedLimit;
+
+    const result = await neogma.queryRunner.run(
+        `CALL db.index.vector.queryNodes('skill_embedding_vector_idx', $limit, $embedding)
+         YIELD node, score
+         WHERE $frameworkId IS NULL OR node.frameworkId = $frameworkId
+         RETURN node AS s, score AS score
+         ORDER BY score DESC`,
+        {
+            limit: int(queryLimit),
+            embedding,
+            frameworkId: frameworkId ?? null,
+        }
+    );
+
+    const rows = result.records.map(record => {
+        const node = record.get('s') as { properties?: Record<string, unknown> } | undefined;
+        const props = (node?.properties ?? {}) as Record<string, unknown>;
+        const skill = {
+            ...props,
+            type: (props.type as string | undefined) ?? 'skill',
+        } as FlatSkillType;
+
+        const score = Number(record.get('score'));
+        return { skill, score };
+    });
+
+    if (!frameworkId) return rows.slice(0, normalizedLimit);
+
+    return rows.filter(row => row.skill.frameworkId === frameworkId).slice(0, normalizedLimit);
+};
+
+export const getSkillsMissingEmbedding = async (
+    limit: number,
+    cursorId?: string | null
+): Promise<Paginated<FlatSkillType>> => {
+    const normalizedLimit = Math.min(Math.max(limit, 1), 500);
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (s:Skill)
+         WHERE s.embedding IS NULL
+         AND ($cursorId IS NULL OR s.id > $cursorId)
+         RETURN s AS s
+         ORDER BY s.id
+         LIMIT $limitPlusOne`,
+        { cursorId: cursorId ?? null, limitPlusOne: int(normalizedLimit + 1) }
+    );
+
+    const all = result.records.map(record => {
+        const node = record.get('s') as { properties?: Record<string, unknown> } | undefined;
+        const props = (node?.properties ?? {}) as Record<string, unknown>;
+        return {
+            ...props,
+            type: (props.type as string | undefined) ?? 'skill',
+        } as FlatSkillType;
+    });
+
+    const hasMore = all.length > normalizedLimit;
+    const page = all.slice(0, normalizedLimit);
+    const last = page[page.length - 1];
+    const nextCursor = hasMore && last ? last.id : null;
+
+    return { records: page, hasMore, cursor: nextCursor };
+};
