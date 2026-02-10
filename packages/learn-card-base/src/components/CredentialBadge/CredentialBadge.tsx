@@ -35,6 +35,7 @@ type CredentialBadgeProps = {
     branding?: BrandingEnum;
     credential: VC;
     borderStyle?: string;
+    hideMediaBadge?: boolean;
 };
 
 export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
@@ -57,6 +58,7 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
     branding,
     credential,
     borderStyle,
+    hideMediaBadge,
 }) => {
     const defaultBoostType = BoostCategoryOptionsEnum.socialBadge;
     const { color, subColor, IconComponent } = boostCategoryMetadata[boostType ?? defaultBoostType];
@@ -195,7 +197,7 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
         );
     }
 
-    if (isMediaDisplayType) {
+    if (isMediaDisplayType && !hideMediaBadge) {
         return (
             <CredentialMediaBadge
                 credential={credential}
