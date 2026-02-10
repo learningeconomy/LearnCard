@@ -61,10 +61,11 @@ export const BoostMediaPreview: React.FC<{
 
     const [videoMetaData, setVideoMetaData] = useState<VideoMetadata | null>(null);
     const [documentUrl, setDocumentUrl] = useState<string | null>(null);
-    const [isMediaLoading, setIsMediaLoading] = useState(true);
-    const [isMediaError, setIsMediaError] = useState(false);
+    const [isMediaLoading, setIsMediaLoading] = useState<boolean>(false);
+    const [isMediaError, setIsMediaError] = useState<boolean>(false);
 
-    const [isFullScreen, setIsFullScreen] = useState(false);
+    const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
+    const [isVideoActivated, setIsVideoActivated] = useState<boolean>(false);
 
     const attachments = getExistingAttachmentsOrEvidence(
         credential?.attachments || [],
@@ -111,7 +112,7 @@ export const BoostMediaPreview: React.FC<{
         } else if (attachment?.type === 'document') {
             handleGetDocumentUrl();
         }
-    }, [attachment]);
+    }, [attachment?.url]);
 
     let mediaContent = null;
 
@@ -143,31 +144,82 @@ export const BoostMediaPreview: React.FC<{
 
     if (attachment?.type === 'video') {
         const embedUrl = videoMetaData?.embedUrl;
+        const thumbnailUrl = videoMetaData?.thumbnailUrl;
+        const isYouTube = videoMetaData?.type === 'youtube';
 
         if (isMediaLoading) {
             mediaContent = <MediaLoader text="Video" />;
         } else if (embedUrl && !isMediaLoading) {
-            mediaContent = (
-                <>
-                    <iframe
-                        src={embedUrl}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        title="YouTube video player"
-                        onError={() => {
-                            setIsMediaError(true);
-                        }}
+            if (isYouTube && !isVideoActivated && thumbnailUrl) {
+                mediaContent = (
+                    <button
+                        type="button"
+                        onClick={() => setIsVideoActivated(true)}
+                        aria-label="Play video"
                         style={{
                             width: '100%',
                             height: '100vh',
                             border: 'none',
-                            backgroundColor: '#353E64',
-                            zIndex: isMobile ? -1 : 0, // ! work around for mobile
+                            backgroundColor: '#000',
+                            cursor: 'pointer',
                             position: 'relative',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: 0,
                         }}
-                    />
-                </>
-            );
+                    >
+                        <img
+                            src={thumbnailUrl}
+                            alt="Video thumbnail"
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'contain',
+                            }}
+                        />
+                        <svg
+                            viewBox="0 0 68 48"
+                            style={{
+                                position: 'absolute',
+                                width: 68,
+                                height: 48,
+                            }}
+                        >
+                            <path
+                                d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z"
+                                fill="#f00"
+                            />
+                            <path d="M45 24 27 14v20" fill="#fff" />
+                        </svg>
+                    </button>
+                );
+            } else {
+                const iframeSrc =
+                    isYouTube && isVideoActivated ? `${embedUrl}?autoplay=1` : embedUrl;
+                mediaContent = (
+                    <>
+                        <iframe
+                            loading="lazy"
+                            src={iframeSrc}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            title="YouTube video player"
+                            onError={() => {
+                                setIsMediaError(true);
+                            }}
+                            style={{
+                                width: '100%',
+                                height: '100vh',
+                                border: 'none',
+                                backgroundColor: '#353E64',
+                                zIndex: isMobile ? -1 : 0, // ! work around for mobile
+                                position: 'relative',
+                            }}
+                        />
+                    </>
+                );
+            }
         }
     }
 
