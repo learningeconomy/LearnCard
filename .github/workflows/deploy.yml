@@ -347,6 +347,13 @@ jobs:
             SMART_RESUME_ACCESS_KEY: ${{ secrets.SMART_RESUME_ACCESS_KEY }}
             SMART_RESUME_CONTRACT_URI: ${{ secrets.SMART_RESUME_CONTRACT_URI }}
             LOGIN_PROVIDER_DID: ${{ secrets.LOGIN_PROVIDER_DID }}
+            SKILL_EMBEDDING_GOOGLE_API_KEY: ${{ secrets.SKILL_EMBEDDING_GOOGLE_API_KEY }}
+            SKILL_EMBEDDING_GOOGLE_MODEL: ${{ secrets.SKILL_EMBEDDING_GOOGLE_MODEL }}
+            SKILL_EMBEDDING_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BATCH_SIZE }}
+            SKILL_EMBEDDING_BACKFILL_ON_STARTUP: ${{ secrets.SKILL_EMBEDDING_BACKFILL_ON_STARTUP }}
+            SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS: ${{ secrets.SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS }}
+            SKILL_EMBEDDING_BACKFILL_PAGE_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_PAGE_SIZE }}
+            SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE }}
 
     deploy-learn-cloud:
         name: Deploy LearnCloud (Storage API)
@@ -687,23 +694,24 @@ jobs:
     manage-releases:
         name: Manage Release PR
         needs: determine-affected
+        continue-on-error: true
         if: |
             needs.determine-affected.outputs.is_release != 'true' &&
             needs.determine-affected.outputs.is_manual != 'true'
         runs-on: ubuntu-latest
         steps:
-            # - name: Generate GitHub App Token
-            #   id: app-token
-            #   uses: actions/create-github-app-token@v2
-            #   with:
-            #       app-id: ${{ secrets.E2E_RUNNER_APP_ID }}
-            #       private-key: ${{ secrets.E2E_RUNNER_PRIVATE_KEY }}
+            - name: Generate GitHub App Token
+              id: app-token
+              uses: actions/create-github-app-token@v2
+              with:
+                  app-id: ${{ secrets.E2E_RUNNER_APP_ID }}
+                  private-key: ${{ secrets.E2E_RUNNER_PRIVATE_KEY }}
 
             - name: Checkout Repo
               uses: actions/checkout@v4
               with:
                   fetch-depth: 0
-                  # token: ${{ steps.app-token.outputs.token }}
+                  token: ${{ steps.app-token.outputs.token }}
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
@@ -714,5 +722,4 @@ jobs:
                   commit: 'chore(release): version packages'
                   title: 'chore(release): version packages'
               env:
-                  # GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}

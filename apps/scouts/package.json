@@ -1,6 +1,6 @@
 {
     "name": "scoutpass-app",
-    "version": "1.89.17",
+    "version": "1.89.19",
     "private": true,
     "dependencies": {
         "@capacitor-community/sqlite": "^7.0.1",
@@ -96,6 +96,7 @@
     },
     "scripts": {
         "dev": "docker compose -f compose-local.yaml up --build",
+        "dev:services": "docker compose -f compose-local.yaml up --build --scale app=0",
         "dev-no-build": "docker compose -f compose-local.yaml up",
         "dev-build-brain": "docker compose -f compose-local.yaml up --build brain",
         "start": "vite",

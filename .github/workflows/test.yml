@@ -37,6 +37,7 @@ jobs:
         env:
           SEED: ${{ secrets.SEED }}
           LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+          SKIP_DIDKIT_NAPI: "1"
 
   # Run E2E tests on changeset release PRs or manual trigger
   # SSHs into EC2 to run Playwright tests against the branch
@@ -92,7 +93,7 @@ jobs:
             cd ~/learncard-e2e-runner
             git pull origin main
             ./scripts/sync-repo.sh ${{ github.head_ref || github.event.inputs.branch }}
-            ./scripts/run-tests.sh
+            SKIP_DIDKIT_NAPI=1 ./scripts/run-tests.sh
 
       - name: Download Playwright report from EC2
         if: always()
