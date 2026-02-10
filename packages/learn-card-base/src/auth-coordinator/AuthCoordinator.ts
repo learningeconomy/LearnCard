@@ -22,6 +22,7 @@ import type {
     AuthCoordinatorConfig,
     KeyDerivationStrategy,
     RecoveryMethodInfo,
+    RecoveryReason,
     UnifiedAuthState,
 } from './types';
 
@@ -80,6 +81,11 @@ export class AuthCoordinator {
                                 authUser = await this.config.authProvider.getCurrentUser();
                             } catch {
                                 // Auth session unavailable — that's fine, we have the key
+                            }
+
+                            // Scope storage even on pk-first path so getLocalKey works later
+                            if (authUser && this.keyDerivation.setActiveUser) {
+                                this.keyDerivation.setActiveUser(authUser.id);
                             }
 
                             this.setState({
@@ -153,6 +159,7 @@ export class AuthCoordinator {
                     status: 'needs_recovery',
                     authUser,
                     recoveryMethods: serverStatus.recoveryMethods,
+                    recoveryReason: 'new_device',
                 });
                 return this.state;
             }
@@ -167,6 +174,7 @@ export class AuthCoordinator {
                     status: 'needs_recovery',
                     authUser,
                     recoveryMethods: serverStatus.recoveryMethods,
+                    recoveryReason: 'missing_server_data',
                 });
                 return this.state;
             }
@@ -185,6 +193,7 @@ export class AuthCoordinator {
                         status: 'needs_recovery',
                         authUser,
                         recoveryMethods: serverStatus.recoveryMethods,
+                        recoveryReason: 'stale_local_key',
                     });
                     return this.state;
                 }
@@ -359,6 +368,7 @@ export class AuthCoordinator {
 
         const authUser = this.state.authUser;
         const recoveryMethods = this.state.recoveryMethods;
+        const recoveryReason = this.state.recoveryReason;
 
         try {
             this.setState({ status: 'deriving_key' });
@@ -387,7 +397,7 @@ export class AuthCoordinator {
                 status: 'error',
                 error: errorMessage,
                 canRetry: true,
-                previousState: { status: 'needs_recovery', authUser, recoveryMethods },
+                previousState: { status: 'needs_recovery', authUser, recoveryMethods, recoveryReason },
             });
 
             return this.state;

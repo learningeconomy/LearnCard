@@ -6,11 +6,13 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Capacitor } from '@capacitor/core';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 import { QrLoginRequester, getAuthConfig } from 'learn-card-base';
+import type { RecoveryReason } from 'learn-card-base';
 
 export type RecoveryFlowType = 'password' | 'passkey' | 'phrase' | 'backup' | 'device';
 
 interface RecoveryFlowModalProps {
     availableMethods: { type: string; credentialId?: string; createdAt: string }[];
+    recoveryReason?: RecoveryReason;
     onRecoverWithPassword: (password: string) => Promise<void>;
     onRecoverWithPasskey: (credentialId: string) => Promise<void>;
     onRecoverWithPhrase: (phrase: string) => Promise<void>;
@@ -30,8 +32,29 @@ const friendlyError = (e: unknown): string => {
     return 'Something went wrong. Please try again.';
 };
 
+const RECOVERY_COPY: Record<RecoveryReason, { title: string; description: string }> = {
+    new_device: {
+        title: 'Verify Your Identity',
+        description: 'This device hasn\u2019t been set up for your account yet. Choose a method to sign in.',
+    },
+    stale_local_key: {
+        title: 'Verify Your Identity',
+        description: 'Your account security was recently updated on another device. Please verify to continue.',
+    },
+    missing_server_data: {
+        title: 'Restore Access',
+        description: 'Choose how you\u2019d like to restore access to your account.',
+    },
+};
+
+const DEFAULT_COPY = {
+    title: 'Restore Access',
+    description: 'Choose how you\u2019d like to restore access.',
+};
+
 export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     availableMethods,
+    recoveryReason,
     onRecoverWithPassword,
     onRecoverWithPasskey,
     onRecoverWithPhrase,
@@ -163,10 +186,12 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         return (
             <div className="p-6 max-w-md mx-auto">
                 <div className="text-center mb-6">
-                    <h2 className="text-xl font-semibold text-grayscale-900 mb-1">Recover Your Account</h2>
+                    <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
+                        {recoveryReason ? RECOVERY_COPY[recoveryReason].title : DEFAULT_COPY.title}
+                    </h2>
 
                     <p className="text-sm text-grayscale-600 leading-relaxed">
-                        Choose how you'd like to restore access.
+                        {recoveryReason ? RECOVERY_COPY[recoveryReason].description : DEFAULT_COPY.description}
                     </p>
                 </div>
 

@@ -199,6 +199,29 @@ describe('createSSSStrategy', () => {
             expect(await strategy.getLocalKey()).toBe('share-b');
         });
 
+        it('falls back to legacy unscoped key when scoped key is missing', async () => {
+            // Store share under the default (legacy) key — no active user
+            await strategy.storeLocalKey('legacy-share');
+
+            // Now scope to a user — scoped key doesn't exist yet
+            strategy.setActiveUser!('user-x');
+
+            // hasLocalKey should find the legacy share via fallback
+            expect(await strategy.hasLocalKey()).toBe(true);
+
+            // getLocalKey should return the legacy share and auto-migrate it
+            expect(await strategy.getLocalKey()).toBe('legacy-share');
+
+            // After migration, the scoped key should be populated
+            expect(storage.storeDeviceShare).toHaveBeenCalledWith(
+                'legacy-share',
+                'sss-device-share:user-x'
+            );
+
+            // Subsequent call should find the scoped key directly
+            expect(await strategy.getLocalKey()).toBe('legacy-share');
+        });
+
         it('clearLocalKeys only removes the active user share', async () => {
             strategy.setActiveUser!('user-a');
             await strategy.storeLocalKey('share-a');

@@ -257,11 +257,34 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // --- Key lifecycle ---
 
         async hasLocalKey(): Promise<boolean> {
-            return storage.hasDeviceShare(activeStorageId);
+            if (await storage.hasDeviceShare(activeStorageId)) return true;
+
+            // Fallback: check legacy unscoped key for shares stored before per-user scoping
+            if (activeStorageId) {
+                return storage.hasDeviceShare();
+            }
+
+            return false;
         },
 
         async getLocalKey(): Promise<string | null> {
-            return storage.getDeviceShare(activeStorageId);
+            const scoped = await storage.getDeviceShare(activeStorageId);
+
+            if (scoped) return scoped;
+
+            // Fallback: try legacy unscoped key and auto-migrate if found
+            if (activeStorageId) {
+                const legacy = await storage.getDeviceShare();
+
+                if (legacy) {
+                    // Migrate: copy to scoped key (legacy entry left in place — harmless)
+                    await storage.storeDeviceShare(legacy, activeStorageId);
+
+                    return legacy;
+                }
+            }
+
+            return null;
         },
 
         async storeLocalKey(key: string): Promise<void> {

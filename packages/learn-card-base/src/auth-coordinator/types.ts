@@ -35,6 +35,16 @@ export type {
 
 import type { AuthProvider, AuthUser, KeyDerivationStrategy, RecoveryMethodInfo } from '@learncard/auth-types';
 
+/**
+ * Why the coordinator entered `needs_recovery`.
+ *
+ * - `new_device`          — No local key found (first login on this device/browser).
+ * - `stale_local_key`     — Local key exists but doesn't match the server
+ *                           (shares were rotated on another device).
+ * - `missing_server_data` — Local key exists but the server auth share is missing or unreadable.
+ */
+export type RecoveryReason = 'new_device' | 'stale_local_key' | 'missing_server_data';
+
 export type UnifiedAuthState =
     | { status: 'idle' }
     | { status: 'authenticating' }
@@ -42,7 +52,7 @@ export type UnifiedAuthState =
     | { status: 'checking_key_status' }
     | { status: 'needs_setup'; authUser: AuthUser }
     | { status: 'needs_migration'; authUser: AuthUser; migrationData?: Record<string, unknown> }
-    | { status: 'needs_recovery'; authUser: AuthUser; recoveryMethods: RecoveryMethodInfo[] }
+    | { status: 'needs_recovery'; authUser: AuthUser; recoveryMethods: RecoveryMethodInfo[]; recoveryReason: RecoveryReason }
     | { status: 'deriving_key' }
     | { status: 'ready'; authUser?: AuthUser; did: string; privateKey: string; authSessionValid: boolean }
     | { status: 'error'; error: string; canRetry: boolean; previousState?: UnifiedAuthState };

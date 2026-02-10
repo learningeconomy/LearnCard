@@ -702,6 +702,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                 <Overlay>
                     <RecoveryFlowModal
                         availableMethods={availableMethods}
+                        recoveryReason={coordinator.state.status === 'needs_recovery' ? coordinator.state.recoveryReason : undefined}
                         onRecoverWithPassword={async (password: string) => {
                             await coordinator.recover({ method: 'password', password });
                         }}

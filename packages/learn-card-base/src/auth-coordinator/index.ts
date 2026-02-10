@@ -46,6 +46,7 @@ export type {
     RecoveryMethodInfo,
     RecoveryInput,
     RecoveryResult,
+    RecoveryReason,
     RecoverySetupInput,
     RecoverySetupResult,
     SSSKeyDerivationStrategy,

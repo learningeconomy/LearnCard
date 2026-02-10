@@ -375,7 +375,7 @@ describe('AuthCoordinator', () => {
             }
         });
 
-        it('goes to needs_recovery when no local key exists', async () => {
+        it('goes to needs_recovery (new_device) when no local key exists', async () => {
             const recoveryMethods = [{ type: 'password' as const, createdAt: new Date() }];
 
             const { coordinator } = setup({
@@ -397,10 +397,11 @@ describe('AuthCoordinator', () => {
 
             if (result.status === 'needs_recovery') {
                 expect(result.recoveryMethods).toEqual(recoveryMethods);
+                expect(result.recoveryReason).toBe('new_device');
             }
         });
 
-        it('goes to needs_recovery when local key exists but no auth share', async () => {
+        it('goes to needs_recovery (missing_server_data) when local key exists but no auth share', async () => {
             const { coordinator } = setup({
                 keyDerivation: {
                     fetchServerKeyStatus: vi.fn().mockResolvedValue({
@@ -416,6 +417,10 @@ describe('AuthCoordinator', () => {
             const result = await coordinator.initialize();
 
             expect(result.status).toBe('needs_recovery');
+
+            if (result.status === 'needs_recovery') {
+                expect(result.recoveryReason).toBe('missing_server_data');
+            }
         });
 
         it('reaches ready when both local and server keys are present', async () => {
@@ -488,7 +493,7 @@ describe('AuthCoordinator', () => {
             }
         });
 
-        it('goes to needs_recovery on DID mismatch (stale local key)', async () => {
+        it('goes to needs_recovery (stale_local_key) on DID mismatch', async () => {
             const { coordinator } = setup({
                 config: {
                     didFromPrivateKey: vi.fn().mockResolvedValue('did:key:zWrong'),
@@ -507,6 +512,10 @@ describe('AuthCoordinator', () => {
             const result = await coordinator.initialize();
 
             expect(result.status).toBe('needs_recovery');
+
+            if (result.status === 'needs_recovery') {
+                expect(result.recoveryReason).toBe('stale_local_key');
+            }
         });
 
         it('goes to idle (not error) when AuthSessionError is thrown', async () => {
