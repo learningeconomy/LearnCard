@@ -111,6 +111,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     }, [listing.screenshots, iosMetadata?.screenshotUrls]);
 
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     // Parse launch config
     const launchConfig = useMemo(() => {
@@ -500,13 +501,32 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 }
             >
                 <div className="w-full flex flex-col pb-[120px]">
+                    {/* Screenshots Section */}
+                    {screenshots.length > 0 && (
+                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">Preview</h3>
+
+                            <AppScreenshotsSlider appScreenshots={screenshots} />
+                        </div>
+                    )}
+
                     {/* About Section */}
                     <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
                         <h3 className="text-xl text-gray-900 font-notoSans">About</h3>
 
-                        <p className="text-grayscale-700 text-sm font-notoSans mt-2 font-normal whitespace-pre-wrap">
+                        <p
+                            className={`text-grayscale-700 text-sm font-notoSans mt-2 font-normal whitespace-pre-wrap ${
+                                isExpanded ? '' : 'line-clamp-4'
+                            }`}
+                        >
                             {listing.full_description}
                         </p>
+                        <button
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            className="underline text-grayscale-700 text-sm font-notoSans mt-2 font-normal whitespace-pre-wrap"
+                        >
+                            {isExpanded ? 'Read Less' : 'Read More'}
+                        </button>
                     </div>
 
                     {/* Highlights Section */}
@@ -542,15 +562,6 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                     allowFullScreen
                                 />
                             </div>
-                        </div>
-                    )}
-
-                    {/* Screenshots Section */}
-                    {screenshots.length > 0 && (
-                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
-                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">Preview</h3>
-
-                            <AppScreenshotsSlider appScreenshots={screenshots} />
                         </div>
                     )}
 
