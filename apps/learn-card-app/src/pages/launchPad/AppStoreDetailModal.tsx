@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import numeral from 'numeral';
 
@@ -112,6 +112,19 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [canExpand, setCanExpand] = useState(false);
+    const textRef = useRef<HTMLParagraphElement>(null);
+
+    useEffect(() => {
+        const el = textRef.current;
+        if (!el) return;
+
+        const raf = requestAnimationFrame(() => {
+            setCanExpand(el.scrollHeight > el.clientHeight);
+        });
+
+        return () => cancelAnimationFrame(raf);
+    }, [listing.full_description]);
 
     // Parse launch config
     const launchConfig = useMemo(() => {
@@ -515,18 +528,21 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                         <h3 className="text-xl text-gray-900 font-notoSans">About</h3>
 
                         <p
+                            ref={textRef}
                             className={`text-grayscale-700 text-sm font-notoSans mt-2 font-normal whitespace-pre-wrap ${
                                 isExpanded ? '' : 'line-clamp-4'
                             }`}
                         >
                             {listing.full_description}
                         </p>
-                        <button
-                            onClick={() => setIsExpanded(!isExpanded)}
-                            className="underline text-grayscale-700 text-sm font-notoSans mt-2 font-normal whitespace-pre-wrap"
-                        >
-                            {isExpanded ? 'Read Less' : 'Read More'}
-                        </button>
+                        {canExpand && (
+                            <button
+                                onClick={() => setIsExpanded(!isExpanded)}
+                                className="underline text-grayscale-700 text-sm font-notoSans mt-2 font-normal whitespace-pre-wrap"
+                            >
+                                {isExpanded ? 'Read Less' : 'Read More'}
+                            </button>
+                        )}
                     </div>
 
                     {/* Highlights Section */}
