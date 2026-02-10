@@ -1,11 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 import { IonSpinner } from '@ionic/react';
-import { ChevronLeft, Activity, FlaskConical } from 'lucide-react';
+import { ChevronLeft, Activity } from 'lucide-react';
 import { useXApiStatementsForContract } from 'learn-card-base/hooks/useXApiStatementsForContract';
-import { useWallet } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
-import { useGetDid } from 'learn-card-base/react-query/queries/queries';
 import StatementCard from './StatementCard';
 
 type XApiDataFeedModalProps = {
@@ -53,8 +51,6 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
 }) => {
     const { data, fetchNextPage, hasNextPage, isFetching, isLoading, refetch } =
         useXApiStatementsForContract(contractUri);
-    const { initWallet } = useWallet();
-    const [isWritingTestData, setIsWritingTestData] = useState(false);
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
     const onScreen = useOnScreen(infiniteScrollRef as any, '300px', [
         data?.pages?.[0]?.statements?.length,
@@ -65,142 +61,6 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
     }, [fetchNextPage, hasNextPage, onScreen, isFetching]);
 
     const allStatements = data?.pages.flatMap(page => page?.statements ?? []) ?? [];
-
-    const { data: currentUserDidKey } = useGetDid('key');
-
-    const attemptStatement: XAPIStatement[] | null = currentUserDidKey
-        ? [
-              {
-                  actor: {
-                      objectType: 'Agent',
-                      name: currentUserDidKey,
-                      account: {
-                          homePage: 'https://www.w3.org/TR/did-core/',
-                          name: currentUserDidKey,
-                      },
-                  },
-                  verb: {
-                      id: 'http://adlnet.gov/expapi/verbs/attempted',
-                      display: {
-                          'en-US': 'attempted',
-                      },
-                  },
-                  object: {
-                      id: 'http://yourgame.com/activities/level-1-challenge',
-                      definition: {
-                          name: { 'en-US': 'Level 1 Challenge' },
-                          description: { 'en-US': 'First challenge of the game' },
-                          type: 'http://adlnet.gov/expapi/activities/simulation',
-                      },
-                  },
-                  context: {
-                      extensions: {
-                          'https://learncard.com/xapi/extensions/contractUri': contractUri,
-                      },
-                  },
-              },
-              {
-                  actor: {
-                      objectType: 'Agent',
-                      name: currentUserDidKey,
-                      account: {
-                          homePage: 'https://www.w3.org/TR/did-core/',
-                          name: currentUserDidKey,
-                      },
-                  },
-                  verb: {
-                      id: 'http://adlnet.gov/expapi/verbs/mastered',
-                      display: {
-                          'en-US': 'mastered',
-                      },
-                  },
-                  object: {
-                      id: 'http://yourgame.com/achievements/speed-runner',
-                      definition: {
-                          name: { 'en-US': 'Speed Runner' },
-                          description: { 'en-US': 'Completed level with exceptional speed' },
-                          type: 'http://adlnet.gov/expapi/activities/performance',
-                      },
-                  },
-                  result: {
-                      success: true,
-                      completion: true,
-                      extensions: {
-                          'http://yourgame.com/xapi/extensions/completion-time': '120_seconds',
-                          'http://yourgame.com/xapi/extensions/score': '95',
-                      },
-                  },
-                  context: {
-                      extensions: {
-                          'https://learncard.com/xapi/extensions/contractUri': contractUri,
-                      },
-                  },
-              },
-              {
-                  actor: {
-                      objectType: 'Agent',
-                      name: currentUserDidKey,
-                      account: {
-                          homePage: 'https://www.w3.org/TR/did-core/',
-                          name: currentUserDidKey,
-                      },
-                  },
-                  verb: {
-                      id: 'http://adlnet.gov/expapi/verbs/mastered',
-                      display: {
-                          'en-US': 'mastered',
-                      },
-                  },
-                  object: {
-                      id: 'http://yourgame.com/achievements/speed-runner',
-                      definition: {
-                          name: { 'en-US': 'Speed Runner' },
-                          description: { 'en-US': 'Completed level with exceptional speed' },
-                          type: 'http://adlnet.gov/expapi/activities/performance',
-                      },
-                  },
-                  context: {
-                      extensions: {
-                          'https://learncard.com/xapi/extensions/contractUri': contractUri,
-                      },
-                  },
-              },
-          ]
-        : null;
-
-    const sendXAPIStatement = async (statement: XAPIStatement) => {
-        const wallet = await initWallet();
-        const vpToken = await wallet?.invoke.getDidAuthVp({ proofFormat: 'jwt' });
-
-        const endpoint =
-            typeof LEARN_CLOUD_XAPI_URL === 'string'
-                ? LEARN_CLOUD_XAPI_URL
-                : typeof CLOUD_URL === 'string'
-                ? CLOUD_URL.replace(/\/trpc\/?$/, '/xapi')
-                : undefined;
-
-        if (!endpoint) {
-            throw new Error('LEARN_CLOUD_XAPI_URL is not configured');
-        }
-
-        const response = await fetch(`${endpoint}/statements`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Experience-API-Version': '1.0.3',
-                'X-VP': vpToken,
-            },
-            body: JSON.stringify(statement),
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-        } else {
-            const errorText = await response.text();
-            console.error('❌ Failed:', response.status, errorText);
-        }
-        return response;
-    };
 
     return (
         <div className="bg-white rounded-l-[20px] h-full w-full max-w-[450px] flex flex-col shadow-xl">
@@ -267,18 +127,6 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
                     Showing {allStatements.length} activit{allStatements.length === 1 ? 'y' : 'ies'}{' '}
                     from this app
                 </p>
-
-                {/* DEV ONLY: Test buttons - Remove after testing */}
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => attemptStatement?.forEach(s => sendXAPIStatement(s))}
-                        disabled={isWritingTestData}
-                        className="flex-1 py-2 px-3 bg-amber-100 text-amber-700 rounded-lg text-xs font-medium flex items-center justify-center gap-2 hover:bg-amber-200 transition-colors disabled:opacity-50"
-                    >
-                        <FlaskConical className="w-3.5 h-3.5" />
-                        {isWritingTestData ? 'Writing...' : 'Write to API'}
-                    </button>
-                </div>
             </div>
         </div>
     );
