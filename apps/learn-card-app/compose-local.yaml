@@ -146,6 +146,10 @@ services:
             SMART_RESUME_CLIENT_ID: ${SMART_RESUME_CLIENT_ID:-5B5AE2CE}
             SMART_RESUME_ACCESS_KEY: ${SMART_RESUME_ACCESS_KEY:-BACF7EF16263}
             SMART_RESUME_CONTRACT_URI: ${SMART_RESUME_CONTRACT_URI:-lc:network:localhost%3A4000/trpc:contract:a1087887-88ac-4eea-9a70-71b88b728719}
+            POSTMARK_API_KEY: ${POSTMARK_API_KEY:-}
+            # Ed.link feature flag and automatic credential issuance
+            EDLINK_ENABLED: 'true'
+            EDLINK_POLLING_ENABLED: 'true'
 
     cloud:
         image: learncard-monorepo-local
@@ -222,6 +226,10 @@ services:
             REDIS_HOST: redis3
             REDIS_PORT: 6379
             METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-notARealSecretKey}
+            POSTMARK_SERVER_TOKEN: ${POSTMARK_API_KEY:-}
+            POSTMARK_FROM_EMAIL: ${POSTMARK_FROM_EMAIL:-learncard.com}
+            POSTMARK_BRAND_NAME: ${POSTMARK_BRAND_NAME:-LearnCard}
+            POSTMARK_LOGIN_CODE_TEMPLATE_ID: ${POSTMARK_LOGIN_CODE_TEMPLATE_ID:-}
 
     neo4j:
         image: neo4j:latest

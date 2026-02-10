@@ -145,6 +145,8 @@ const indexQueries = [
     'CREATE INDEX credential_activity_eventtype_idx IF NOT EXISTS FOR (a:CredentialActivity) ON (a.eventType)',
     'CREATE INDEX credential_activity_integration_idx IF NOT EXISTS FOR (a:CredentialActivity) ON (a.integrationId)',
     'CREATE CONSTRAINT contact_method_type_value_unique IF NOT EXISTS FOR (c:ContactMethod) REQUIRE (c.type, c.value) IS UNIQUE',
+    'CREATE INDEX edlink_issued_credential_submission_idx IF NOT EXISTS FOR (e:EdlinkIssuedCredential) ON (e.submissionId)',
+    'CREATE INDEX edlink_issued_credential_status_idx IF NOT EXISTS FOR (e:EdlinkIssuedCredential) ON (e.status)',
 ];
 
 const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -208,3 +210,5 @@ export * from './Tag';
 export * from './Integration';
 export * from './AppStoreListing';
 export * from './CredentialActivity';
+export * from './EdlinkConnection';
+export * from './EdlinkIssuedCredential';
