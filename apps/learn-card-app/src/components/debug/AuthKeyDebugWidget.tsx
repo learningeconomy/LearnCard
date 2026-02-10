@@ -25,7 +25,14 @@ import {
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 
-import { hasDeviceShare, getDeviceShare, clearAllShares } from '@learncard/sss-key-manager';
+import {
+    hasDeviceShare,
+    getDeviceShare,
+    clearAllShares,
+    listAllDeviceShares,
+    deleteDeviceShare,
+} from '@learncard/sss-key-manager';
+import type { DeviceShareEntry } from '@learncard/sss-key-manager';
 
 import {
     type AuthDebugEvent,
@@ -194,6 +201,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
     const [refreshKey, setRefreshKey] = useState(0);
     const [deviceShareExists, setDeviceShareExists] = useState<boolean | null>(null);
     const [deviceSharePreview, setDeviceSharePreview] = useState<string | null>(null);
+    const [allShares, setAllShares] = useState<DeviceShareEntry[]>([]);
     const [events, setEvents] = useState<AuthDebugEvent[]>([]);
     const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
     const [keyIntegrityResult, setKeyIntegrityResult] = useState<boolean | null>(null);
@@ -264,6 +272,11 @@ export const AuthKeyDebugWidget: React.FC = () => {
         return rows;
     }, [state, did, authSessionValid]);
 
+    // Derive the expected active storage key from the Firebase UID
+    const activeStorageId = firebaseUser?.uid
+        ? `sss-device-share:${firebaseUser.uid}`
+        : undefined;
+
     // --- Device share check ---
     const checkDeviceShare = useCallback(async () => {
         try {
@@ -279,9 +292,13 @@ export const AuthKeyDebugWidget: React.FC = () => {
             } else {
                 setDeviceSharePreview(null);
             }
+
+            const shares = await listAllDeviceShares();
+            setAllShares(shares);
         } catch {
             setDeviceShareExists(false);
             setDeviceSharePreview(null);
+            setAllShares([]);
         }
     }, []);
 
@@ -317,12 +334,23 @@ export const AuthKeyDebugWidget: React.FC = () => {
     }, []);
 
     const handleClearDeviceShare = useCallback(async () => {
-        if (confirm('Clear device share? You will need to recover your key to login again.')) {
+        if (confirm('Clear ALL device shares? You will need to recover your key to login again.')) {
             try {
                 await clearAllShares();
                 await checkDeviceShare();
             } catch (e) {
                 console.error('Failed to clear device share:', e);
+            }
+        }
+    }, [checkDeviceShare]);
+
+    const handleDeleteSingleShare = useCallback(async (id: string) => {
+        if (confirm(`Delete device share "${id}"?`)) {
+            try {
+                await deleteDeviceShare(id);
+                await checkDeviceShare();
+            } catch (e) {
+                console.error('Failed to delete device share:', e);
             }
         }
     }, [checkDeviceShare]);
@@ -524,29 +552,103 @@ export const AuthKeyDebugWidget: React.FC = () => {
                             <KVRow label="Has Private Key" value={!!currentUser?.privateKey} copied={copied} onCopy={copyToClipboard} />
                         </Section>
 
-                        {/* ── Device Share (SSS) ── */}
+                        {/* ── Device Shares (SSS) ── */}
                         <Section
-                            title="Device Share"
+                            title="Device Shares"
                             icon={<Key className="w-3 h-3 text-gray-500" />}
                             badge={
                                 <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
-                                    deviceShareExists ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-700 text-gray-500'
+                                    allShares.length > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-700 text-gray-500'
                                 }`}>
-                                    {deviceShareExists === null ? '...' : deviceShareExists ? 'present' : 'missing'}
+                                    {allShares.length === 0 ? 'none' : `${allShares.length} share${allShares.length > 1 ? 's' : ''}`}
                                 </span>
                             }
                             actions={
-                                <button
-                                    onClick={handleClearDeviceShare}
-                                    className="p-1 rounded hover:bg-red-900/50 transition-colors"
-                                    title="Clear device share"
-                                >
-                                    <Trash2 className="w-3 h-3 text-gray-500 hover:text-red-400" />
-                                </button>
+                                allShares.length > 0 ? (
+                                    <button
+                                        onClick={handleClearDeviceShare}
+                                        className="p-1 rounded hover:bg-red-900/50 transition-colors"
+                                        title="Clear ALL device shares"
+                                    >
+                                        <Trash2 className="w-3 h-3 text-gray-500 hover:text-red-400" />
+                                    </button>
+                                ) : undefined
                             }
                         >
-                            <KVRow label="Exists" value={deviceShareExists} copied={copied} onCopy={copyToClipboard} />
-                            <KVRow label="Preview" value={deviceSharePreview ?? '—'} copied={copied} onCopy={copyToClipboard} />
+                            <KVRow label="Active Storage ID" value={activeStorageId ?? '(none — no user)'} copied={copied} onCopy={copyToClipboard} />
+                            <KVRow label="Legacy Default Exists" value={deviceShareExists} copied={copied} onCopy={copyToClipboard} />
+
+                            {allShares.length === 0 ? (
+                                <p className="text-[10px] text-gray-600 text-center py-2">No device shares in IndexedDB</p>
+                            ) : (
+                                <div className="mt-1.5 space-y-1">
+                                    {allShares.map((entry) => {
+                                        const isActive = activeStorageId === entry.id;
+                                        const isLegacy = entry.id === 'sss-device-share';
+                                        const userSuffix = entry.id.startsWith('sss-device-share:')
+                                            ? entry.id.replace('sss-device-share:', '')
+                                            : null;
+
+                                        return (
+                                            <div
+                                                key={entry.id}
+                                                className={`rounded-md p-1.5 border ${
+                                                    isActive
+                                                        ? 'border-emerald-700/60 bg-emerald-950/30'
+                                                        : 'border-gray-700/40 bg-gray-900/40'
+                                                }`}
+                                            >
+                                                <div className="flex items-center justify-between mb-0.5">
+                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                                            isActive ? 'bg-emerald-400' : 'bg-gray-600'
+                                                        }`} />
+
+                                                        <span className="text-[9px] font-mono text-gray-300 truncate">
+                                                            {isLegacy ? '(legacy default)' : userSuffix ? `user: ${truncate(userSuffix, 16)}` : entry.id}
+                                                        </span>
+
+                                                        {isActive && (
+                                                            <span className="text-[8px] px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-medium shrink-0">
+                                                                active
+                                                            </span>
+                                                        )}
+
+                                                        {isLegacy && (
+                                                            <span className="text-[8px] px-1 py-0.5 rounded bg-yellow-500/20 text-yellow-400 font-medium shrink-0">
+                                                                legacy
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() => handleDeleteSingleShare(entry.id)}
+                                                        className="p-0.5 rounded hover:bg-red-900/50 transition-colors shrink-0"
+                                                        title={`Delete share: ${entry.id}`}
+                                                    >
+                                                        <Trash2 className="w-2.5 h-2.5 text-gray-600 hover:text-red-400" />
+                                                    </button>
+                                                </div>
+
+                                                <div className="flex items-center gap-1 ml-3">
+                                                    <span className="text-[8px] text-gray-500">key:</span>
+                                                    <span className="text-[8px] font-mono text-cyan-400/70 truncate">{entry.preview}</span>
+
+                                                    <button
+                                                        onClick={() => copyToClipboard(entry.id, entry.id)}
+                                                        className="opacity-0 hover:opacity-100 p-0.5 rounded hover:bg-gray-600 transition-all shrink-0"
+                                                        title="Copy storage ID"
+                                                    >
+                                                        {copied === entry.id
+                                                            ? <Check className="w-2 h-2 text-emerald-400" />
+                                                            : <Copy className="w-2 h-2 text-gray-600" />}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </Section>
 
                         {/* ── Event Timeline ── */}

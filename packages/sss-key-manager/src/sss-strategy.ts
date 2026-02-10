@@ -41,10 +41,10 @@ import { shareToRecoveryPhrase, recoveryPhraseToShare, validateRecoveryPhrase } 
 const SSS_DB_NAME = 'lcb-sss-keys';
 
 export interface SSSStorageFunctions {
-    storeDeviceShare: (share: string) => Promise<void>;
-    getDeviceShare: () => Promise<string | null>;
-    hasDeviceShare: () => Promise<boolean>;
-    clearAllShares: () => Promise<void>;
+    storeDeviceShare: (share: string, id?: string) => Promise<void>;
+    getDeviceShare: (id?: string) => Promise<string | null>;
+    hasDeviceShare: (id?: string) => Promise<boolean>;
+    clearAllShares: (id?: string) => Promise<void>;
 }
 
 export interface SSSStrategyConfig {
@@ -201,11 +201,12 @@ const rotateShares = async (
     token: string,
     providerType: AuthProviderType,
     primaryDid: string,
-    storage: SSSStorageFunctions
+    storage: SSSStorageFunctions,
+    storageId?: string
 ) => {
     const { shares } = await splitAndVerify(privateKey);
 
-    await storage.storeDeviceShare(shares.deviceShare);
+    await storage.storeDeviceShare(shares.deviceShare, storageId);
 
     await putAuthShare(serverUrl, token, providerType, shares.authShare, primaryDid);
 };
@@ -234,25 +235,41 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
     const { serverUrl, enableEmailBackupShare = false } = config;
     const storage = config.storage || defaultStorage;
 
+    /**
+     * Per-user storage ID. When set, device shares are keyed as
+     * `sss-device-share:<userId>` so multiple accounts can coexist
+     * on the same device without overwriting each other.
+     *
+     * Set by `setActiveUser()` — called by the coordinator after auth.
+     * When undefined, falls back to the global default key (backward compat).
+     */
+    let activeStorageId: string | undefined;
+
     return {
         name: 'sss',
+
+        // --- User scoping ---
+
+        setActiveUser(userId: string): void {
+            activeStorageId = `sss-device-share:${userId}`;
+        },
 
         // --- Key lifecycle ---
 
         async hasLocalKey(): Promise<boolean> {
-            return storage.hasDeviceShare();
+            return storage.hasDeviceShare(activeStorageId);
         },
 
         async getLocalKey(): Promise<string | null> {
-            return storage.getDeviceShare();
+            return storage.getDeviceShare(activeStorageId);
         },
 
         async storeLocalKey(key: string): Promise<void> {
-            return storage.storeDeviceShare(key);
+            return storage.storeDeviceShare(key, activeStorageId);
         },
 
         async clearLocalKeys(): Promise<void> {
-            return storage.clearAllShares();
+            return storage.clearAllShares(activeStorageId);
         },
 
         async splitKey(privateKey: string): Promise<{ localKey: string; remoteKey: string }> {
@@ -427,7 +444,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             const primaryDid = serverData.primaryDid || '';
 
             // Step 3: Rotate shares (re-split and store fresh device + auth shares)
-            await rotateShares(privateKey, serverUrl, token, providerType, primaryDid, storage);
+            await rotateShares(privateKey, serverUrl, token, providerType, primaryDid, storage, activeStorageId);
 
             return { privateKey, did: primaryDid };
         },
@@ -447,7 +464,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             const { shares } = await splitAndVerify(privateKey);
 
             // Store new device + auth shares
-            await storage.storeDeviceShare(shares.deviceShare);
+            await storage.storeDeviceShare(shares.deviceShare, activeStorageId);
 
             const serverData = await fetchAuthShareRaw(serverUrl, token, providerType);
             const primaryDid = serverData?.primaryDid || '';

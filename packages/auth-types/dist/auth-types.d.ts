@@ -152,6 +152,17 @@ export interface KeyDerivationStrategy<TRecoveryInput = unknown, TRecoverySetupI
 	 * @param email - Destination email address
 	 */
 	sendEmailBackupShare?(token: string, providerType: AuthProviderType, privateKey: string, email: string): Promise<void>;
+	/**
+	 * Inform the strategy which user is active so it can scope local storage
+	 * (e.g., device shares) per-user. Called by the coordinator after
+	 * authentication, before any local-key operations.
+	 *
+	 * Strategies that don't need per-user scoping can omit this method.
+	 *
+	 * @param userId - Stable, unique identifier for the authenticated user
+	 *                 (e.g., Firebase UID). Must NOT change across sessions.
+	 */
+	setActiveUser?(userId: string): void;
 	/** Return storage keys (e.g., IndexedDB database names) that should be preserved during logout */
 	getPreservedStorageKeys(): string[];
 	/** Strategy-specific cleanup beyond clearLocalKeys (optional) */

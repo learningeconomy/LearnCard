@@ -57,10 +57,10 @@ const ensureTableOnce = async () => {
 };
 
 export interface NativeSSSStorageFunctions {
-    storeDeviceShare: (share: string) => Promise<void>;
-    getDeviceShare: () => Promise<string | null>;
-    hasDeviceShare: () => Promise<boolean>;
-    clearAllShares: () => Promise<void>;
+    storeDeviceShare: (share: string, id?: string) => Promise<void>;
+    getDeviceShare: (id?: string) => Promise<string | null>;
+    hasDeviceShare: (id?: string) => Promise<boolean>;
+    clearAllShares: (id?: string) => Promise<void>;
 }
 
 /**
@@ -68,9 +68,10 @@ export interface NativeSSSStorageFunctions {
  * Falls back gracefully if the DB is not available (returns null / no-ops).
  */
 export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
-    const storeDeviceShare = async (share: string): Promise<void> => {
+    const storeDeviceShare = async (share: string, id?: string): Promise<void> => {
         await ensureTableOnce();
 
+        const shareId = id ?? DEFAULT_SHARE_ID;
         const db = sqliteStore.get.db();
 
         if (!db) {
@@ -83,7 +84,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
 
             await db.run(
                 `INSERT OR REPLACE INTO ${TABLE} (id, share) VALUES (?, ?)`,
-                [DEFAULT_SHARE_ID, share]
+                [shareId, share]
             );
         } catch (e) {
             console.error('[NativeSSSStorage] storeDeviceShare failed', e);
@@ -94,9 +95,10 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         }
     };
 
-    const getDeviceShare = async (): Promise<string | null> => {
+    const getDeviceShare = async (id?: string): Promise<string | null> => {
         await ensureTableOnce();
 
+        const shareId = id ?? DEFAULT_SHARE_ID;
         const db = sqliteStore.get.db();
 
         if (!db) return null;
@@ -105,7 +107,8 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
             await db.open();
 
             const res = await db.query(
-                `SELECT share FROM ${TABLE} WHERE id = '${DEFAULT_SHARE_ID}' LIMIT 1`
+                `SELECT share FROM ${TABLE} WHERE id = ? LIMIT 1`,
+                [shareId]
             );
 
             const share = res?.values?.[0]?.share ?? null;
@@ -121,20 +124,25 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         }
     };
 
-    const hasDeviceShare = async (): Promise<boolean> => {
-        const share = await getDeviceShare();
+    const hasDeviceShare = async (id?: string): Promise<boolean> => {
+        const share = await getDeviceShare(id);
         return share !== null;
     };
 
-    const clearAllShares = async (): Promise<void> => {
+    const clearAllShares = async (id?: string): Promise<void> => {
         const db = sqliteStore.get.db();
 
         if (!db) return;
 
         try {
             await db.open();
-            await db.execute(`DELETE FROM ${TABLE}`);
-            tableEnsured = false;
+
+            if (id) {
+                await db.run(`DELETE FROM ${TABLE} WHERE id = ?`, [id]);
+            } else {
+                await db.execute(`DELETE FROM ${TABLE}`);
+                tableEnsured = false;
+            }
         } catch (e) {
             console.warn('[NativeSSSStorage] clearAllShares failed', e);
         } finally {

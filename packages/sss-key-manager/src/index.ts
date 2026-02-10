@@ -21,7 +21,10 @@ export {
     hasDeviceShare,
     deleteDeviceShare,
     clearAllShares,
+    listAllDeviceShares,
 } from './storage';
+
+export type { DeviceShareEntry } from './storage';
 
 export {
     encryptWithPassword,

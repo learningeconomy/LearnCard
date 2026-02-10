@@ -109,6 +109,12 @@ export class AuthCoordinator {
             }
 
             this.setState({ status: 'authenticated', authUser });
+
+            // Scope local storage to this user so device shares don't collide
+            if (this.keyDerivation.setActiveUser) {
+                this.keyDerivation.setActiveUser(authUser.id);
+            }
+
             this.setState({ status: 'checking_key_status' });
 
             const { token, providerType } = await this.getAuthCredentials();

@@ -218,6 +218,20 @@ export interface KeyDerivationStrategy<
         email: string
     ): Promise<void>;
 
+    // --- User scoping ---
+
+    /**
+     * Inform the strategy which user is active so it can scope local storage
+     * (e.g., device shares) per-user. Called by the coordinator after
+     * authentication, before any local-key operations.
+     *
+     * Strategies that don't need per-user scoping can omit this method.
+     *
+     * @param userId - Stable, unique identifier for the authenticated user
+     *                 (e.g., Firebase UID). Must NOT change across sessions.
+     */
+    setActiveUser?(userId: string): void;
+
     // --- Cleanup ---
 
     /** Return storage keys (e.g., IndexedDB database names) that should be preserved during logout */

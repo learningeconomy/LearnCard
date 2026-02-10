@@ -177,7 +177,69 @@ export async function deleteDeviceShare(id: string = DEFAULT_DEVICE_SHARE_ID): P
     }
 }
 
-export async function clearAllShares(): Promise<void> {
+export interface DeviceShareEntry {
+    id: string;
+    preview: string;
+}
+
+/**
+ * List all device shares stored in IndexedDB.
+ * Returns the storage key and a truncated preview for each share.
+ * Useful for debugging multi-account storage.
+ */
+export async function listAllDeviceShares(): Promise<DeviceShareEntry[]> {
+    let db: IDBDatabase;
+
+    try {
+        db = await openDB();
+    } catch {
+        return [];
+    }
+
+    try {
+        const allKeys = await new Promise<IDBValidKey[]>((resolve, reject) => {
+            const t = db.transaction(SHARES_STORE, 'readonly');
+            const s = t.objectStore(SHARES_STORE);
+            const req = s.getAllKeys();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+
+        const entries: DeviceShareEntry[] = [];
+
+        for (const rawKey of allKeys) {
+            const id = String(rawKey);
+
+            try {
+                const share = await getDeviceShare(id);
+                const preview = share
+                    ? share.substring(0, 8) + '...' + share.substring(share.length - 8)
+                    : '(decrypt failed)';
+
+                entries.push({ id, preview });
+            } catch {
+                entries.push({ id, preview: '(error)' });
+            }
+        }
+
+        return entries;
+    } finally {
+        db.close();
+    }
+}
+
+/**
+ * Clear shares from local storage.
+ *
+ * When `id` is provided, only that single share is removed (per-user clear).
+ * When omitted, the entire IndexedDB database is deleted (legacy full-wipe).
+ */
+export async function clearAllShares(id?: string): Promise<void> {
+    if (id) {
+        await deleteDeviceShare(id);
+        return;
+    }
+
     await new Promise<void>((resolve, reject) => {
         const req = indexedDB.deleteDatabase(DB_NAME);
         req.onsuccess = () => resolve();

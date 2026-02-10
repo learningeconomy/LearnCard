@@ -26,26 +26,32 @@ import type { SSSKeyDerivationStrategy } from './types';
 // In-memory storage mock
 // ---------------------------------------------------------------------------
 
+const DEFAULT_KEY = 'device';
+
 const createMemoryStorage = (): SSSStorageFunctions & { _store: Map<string, string> } => {
     const store = new Map<string, string>();
 
     return {
         _store: store,
 
-        storeDeviceShare: vi.fn(async (share: string) => {
-            store.set('device', share);
+        storeDeviceShare: vi.fn(async (share: string, id?: string) => {
+            store.set(id ?? DEFAULT_KEY, share);
         }),
 
-        getDeviceShare: vi.fn(async () => {
-            return store.get('device') ?? null;
+        getDeviceShare: vi.fn(async (id?: string) => {
+            return store.get(id ?? DEFAULT_KEY) ?? null;
         }),
 
-        hasDeviceShare: vi.fn(async () => {
-            return store.has('device');
+        hasDeviceShare: vi.fn(async (id?: string) => {
+            return store.has(id ?? DEFAULT_KEY);
         }),
 
-        clearAllShares: vi.fn(async () => {
-            store.clear();
+        clearAllShares: vi.fn(async (id?: string) => {
+            if (id) {
+                store.delete(id);
+            } else {
+                store.clear();
+            }
         }),
     };
 };
@@ -100,6 +106,7 @@ describe('createSSSStrategy', () => {
             expect(typeof strategy.verifyKeys).toBe('function');
             expect(typeof strategy.setupRecoveryMethod).toBe('function');
             expect(typeof strategy.getAvailableRecoveryMethods).toBe('function');
+            expect(typeof strategy.setActiveUser).toBe('function');
         });
     });
 
@@ -135,22 +142,79 @@ describe('createSSSStrategy', () => {
             expect(await strategy.getLocalKey()).toBeNull();
         });
 
-        it('delegates to the injected storage', async () => {
+        it('delegates to the injected storage with undefined id when no active user', async () => {
             await strategy.storeLocalKey('delegated-share');
 
-            expect(storage.storeDeviceShare).toHaveBeenCalledWith('delegated-share');
+            expect(storage.storeDeviceShare).toHaveBeenCalledWith('delegated-share', undefined);
 
             await strategy.getLocalKey();
 
-            expect(storage.getDeviceShare).toHaveBeenCalled();
+            expect(storage.getDeviceShare).toHaveBeenCalledWith(undefined);
 
             await strategy.hasLocalKey();
 
-            expect(storage.hasDeviceShare).toHaveBeenCalled();
+            expect(storage.hasDeviceShare).toHaveBeenCalledWith(undefined);
 
             await strategy.clearLocalKeys();
 
-            expect(storage.clearAllShares).toHaveBeenCalled();
+            expect(storage.clearAllShares).toHaveBeenCalledWith(undefined);
+        });
+    });
+
+    // -----------------------------------------------------------------------
+    // Per-user storage scoping
+    // -----------------------------------------------------------------------
+
+    describe('setActiveUser', () => {
+        it('scopes storage calls to the given user ID', async () => {
+            strategy.setActiveUser!('user-abc');
+
+            await strategy.storeLocalKey('share-for-abc');
+
+            expect(storage.storeDeviceShare).toHaveBeenCalledWith(
+                'share-for-abc',
+                'sss-device-share:user-abc'
+            );
+
+            await strategy.getLocalKey();
+
+            expect(storage.getDeviceShare).toHaveBeenCalledWith('sss-device-share:user-abc');
+        });
+
+        it('allows multiple users to coexist without overwriting', async () => {
+            // Store share for user A
+            strategy.setActiveUser!('user-a');
+            await strategy.storeLocalKey('share-a');
+
+            // Store share for user B
+            strategy.setActiveUser!('user-b');
+            await strategy.storeLocalKey('share-b');
+
+            // Switch back to user A — share should still be there
+            strategy.setActiveUser!('user-a');
+            expect(await strategy.getLocalKey()).toBe('share-a');
+
+            // User B's share is also intact
+            strategy.setActiveUser!('user-b');
+            expect(await strategy.getLocalKey()).toBe('share-b');
+        });
+
+        it('clearLocalKeys only removes the active user share', async () => {
+            strategy.setActiveUser!('user-a');
+            await strategy.storeLocalKey('share-a');
+
+            strategy.setActiveUser!('user-b');
+            await strategy.storeLocalKey('share-b');
+
+            // Clear user B
+            await strategy.clearLocalKeys();
+
+            expect(await strategy.hasLocalKey()).toBe(false);
+
+            // User A is untouched
+            strategy.setActiveUser!('user-a');
+            expect(await strategy.hasLocalKey()).toBe(true);
+            expect(await strategy.getLocalKey()).toBe('share-a');
         });
     });
 
