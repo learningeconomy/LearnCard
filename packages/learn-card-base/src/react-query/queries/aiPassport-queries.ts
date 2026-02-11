@@ -93,10 +93,13 @@ export const useGetAppMetadata = (appID: string) => {
                 : `https://corsproxy.io/?key=${CORS_PROXY_API_KEY}&url=${itunesUrl}`;
 
             const response = await CapacitorHttp.get({ url });
+
             if (response.status < 200 || response.status >= 300) {
                 throw new Error('Network response was not ok');
             }
-            const data: AppStoreMetadataResponse = response.data;
+            const data: AppStoreMetadataResponse =
+                typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+
             if (data.resultCount > 0) {
                 return data.results[0];
             }
@@ -115,10 +118,13 @@ export const useGetAppReviews = (appID: string) => {
                 : `https://corsproxy.io/?key=${CORS_PROXY_API_KEY}&url=${itunesUrl}`;
 
             const response = await CapacitorHttp.get({ url });
+
             if (response.status < 200 || response.status >= 300) {
                 throw new Error('Network response was not ok');
             }
-            const data: ReviewFeed = response.data;
+            const data: ReviewFeed =
+                typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+
             const entries = data.feed.entry;
 
             // If there are no entries or just one (the metadata), throw an error
