@@ -90,7 +90,9 @@ export const useGetAppMetadata = (appID: string) => {
             const itunesUrl = `https://itunes.apple.com/lookup?id=${appID}`;
             const url = Capacitor.isNativePlatform()
                 ? itunesUrl
-                : `https://corsproxy.io/?key=${CORS_PROXY_API_KEY}&url=${itunesUrl}`;
+                : `https://corsproxy.io/?key=${CORS_PROXY_API_KEY}&url=${encodeURIComponent(
+                      itunesUrl
+                  )}`;
 
             const response = await CapacitorHttp.get({ url });
 
@@ -115,7 +117,9 @@ export const useGetAppReviews = (appID: string) => {
             const itunesUrl = `https://itunes.apple.com/rss/customerreviews/page=1/id=${appID}/sortBy=mostRecent/json`;
             const url = Capacitor.isNativePlatform()
                 ? itunesUrl
-                : `https://corsproxy.io/?key=${CORS_PROXY_API_KEY}&url=${itunesUrl}`;
+                : `https://corsproxy.io/?key=${CORS_PROXY_API_KEY}&url=${encodeURIComponent(
+                      itunesUrl
+                  )}`;
 
             const response = await CapacitorHttp.get({ url });
 
