@@ -26,7 +26,7 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
 
         newModal(<LaunchPadActionModal />, {
             className: 'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
-            sectionClassName: '!max-w-[380px] disable-scrollbars',
+            sectionClassName: '!max-w-[500px] disable-scrollbars',
         });
     };
 
