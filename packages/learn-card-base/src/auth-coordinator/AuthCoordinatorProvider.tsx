@@ -82,6 +82,9 @@ export interface AuthCoordinatorProviderProps {
     /** Function to derive DID from private key */
     didFromPrivateKey?: (privateKey: string) => Promise<string>;
 
+    /** Function to sign a DID-Auth VP JWT proving private key ownership for server write ops */
+    signDidAuthVp?: (privateKey: string) => Promise<string>;
+
     /** Optional: retrieve a cached private key for private-key-first init */
     getCachedPrivateKey?: () => Promise<string | null>;
 
@@ -133,6 +136,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     keyDerivation,
     authProvider,
     didFromPrivateKey,
+    signDidAuthVp,
     getCachedPrivateKey,
     onLogout,
     onDebugEvent,
@@ -210,6 +214,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             keyDerivation,
             onStateChange: handleStateChange,
             didFromPrivateKey,
+            signDidAuthVp,
             getCachedPrivateKey,
             onLogout,
             legacyAccountThresholdMs,
@@ -223,7 +228,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             stale = true;
             coordinatorRef.current = null;
         };
-    }, [enabled, effectiveAuthProvider, keyDerivation, didFromPrivateKey, getCachedPrivateKey, onLogout, onDebugEvent, getStateEventLevel, extractStateDetails]);
+    }, [enabled, effectiveAuthProvider, keyDerivation, didFromPrivateKey, signDidAuthVp, getCachedPrivateKey, onLogout, onDebugEvent, getStateEventLevel, extractStateDetails]);
 
     const initialize = useCallback(async () => {
         if (coordinatorRef.current) {

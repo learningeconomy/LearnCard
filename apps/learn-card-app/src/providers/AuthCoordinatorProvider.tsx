@@ -63,7 +63,7 @@ import type { RecoveryInput, RecoverySetupInput } from '@learncard/sss-key-manag
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorage';
 
-import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
 import { auth } from '../firebase/firebase';
 
@@ -380,6 +380,27 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
     const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
         const lc = await getBespokeLearnCard(privateKey);
         return lc?.id.did() || '';
+    }, []);
+
+    // --- DID-Auth VP signing (for recovery setup write ops) ---
+    // Uses getSigningLearnCard (no network) so lc.id.did() returns did:key,
+    // which is deterministic and directly tied to the private key.
+    const signDidAuthVp = useCallback(async (privateKey: string): Promise<string> => {
+        try {
+            const lc = await getSigningLearnCard(privateKey);
+
+            const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+
+            if (!vpJwt || typeof vpJwt !== 'string') {
+                console.error('[signDidAuthVp] getDidAuthVp returned non-string:', typeof vpJwt, vpJwt);
+                throw new Error('Failed to sign DID-Auth VP JWT');
+            }
+
+            return vpJwt;
+        } catch (e) {
+            console.error('[signDidAuthVp] error:', e);
+            throw e instanceof Error ? e : new Error(String(e));
+        }
     }, []);
 
     // --- Web3Auth key extraction for migration ---
@@ -715,6 +736,9 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                         onRecoverWithBackup={async (fileContents: string, password: string) => {
                             await coordinator.recover({ method: 'backup', fileContents, password });
                         }}
+                        onRecoverWithEmail={async (emailShare: string) => {
+                            await coordinator.recover({ method: 'email', emailShare });
+                        }}
                         onRecoverWithDevice={async (deviceShare: string) => {
                             // Store the received device share locally, then
                             // re-initialize the coordinator so it finds both shares.
@@ -759,8 +783,12 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                 const currentPrivateKey = coordinator.state.status === 'ready' ? coordinator.state.privateKey : '';
 
                 const setupMethod = async (input: RecoverySetupInput, authUser?: { id: string; email?: string; phone?: string; providerType: string } | null) => {
+                    console.debug('[setupMethod] starting, privateKey length:', currentPrivateKey?.length, 'method:', input.method);
+
                     const token = await recoveryAuthProvider.getIdToken();
                     const providerType = recoveryAuthProvider.getProviderType();
+
+                    console.debug('[setupMethod] got token, providerType:', providerType, 'calling setupRecoveryMethod');
 
                     return keyDerivation.setupRecoveryMethod!({
                         token,
@@ -768,6 +796,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                         privateKey: currentPrivateKey,
                         input,
                         authUser: authUser ?? undefined,
+                        signDidAuthVp,
                     });
                 };
 
@@ -776,7 +805,8 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                         <RecoverySetupModal
                             existingMethods={[]}
                             onSetupPassword={async (password: string) => {
-                                await setupMethod({ method: 'password', password });
+                                const authUser = await recoveryAuthProvider.getCurrentUser();
+                                await setupMethod({ method: 'password', password }, authUser);
                                 setShowRecoverySetup(false);
                             }}
                             onSetupPasskey={async () => {
@@ -787,7 +817,8 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                                 return result.method === 'passkey' ? result.credentialId : '';
                             }}
                             onGeneratePhrase={async () => {
-                                const result = await setupMethod({ method: 'phrase' });
+                                const authUser = await recoveryAuthProvider.getCurrentUser();
+                                const result = await setupMethod({ method: 'phrase' }, authUser);
                                 return result.method === 'phrase' ? result.phrase : '';
                             }}
                             onClose={() => setShowRecoverySetup(false)}
@@ -847,6 +878,20 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         return lc?.id.did() || '';
     }, []);
 
+    // DID-Auth VP signing — proves private key ownership to the server on write ops.
+    // Uses getSigningLearnCard (no network) so did:key is used deterministically.
+    const signDidAuthVp = useCallback(async (privateKey: string): Promise<string> => {
+        const lc = await getSigningLearnCard(privateKey);
+
+        const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+
+        if (!vpJwt || typeof vpJwt !== 'string') {
+            throw new Error('Failed to sign DID-Auth VP JWT');
+        }
+
+        return vpJwt;
+    }, []);
+
     // Resolve key derivation strategy from the provider registry (env-var driven)
     const keyDerivation = useMemo(
         () => resolveKeyDerivation(authConfig),
@@ -903,6 +948,7 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
             keyDerivation={keyDerivation}
             authProvider={authProvider}
             didFromPrivateKey={didFromPrivateKey}
+            signDidAuthVp={signDidAuthVp}
             getCachedPrivateKey={getCachedPrivateKey}
             onLogout={handleAppLogout}
             onDebugEvent={handleDebugEvent}

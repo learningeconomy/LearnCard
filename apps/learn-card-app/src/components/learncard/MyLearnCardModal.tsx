@@ -59,7 +59,7 @@ import {
 } from '../learncardID-CMS/learncard-cms.helpers';
 import { FamilyCMSAppearance } from '../familyCMS/familyCMSState';
 import { LCNProfile } from '@learncard/types';
-import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { checklistItems } from 'learn-card-base';
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
@@ -386,12 +386,23 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                               const token = await authProvider!.getIdToken();
                               const providerType = authProvider!.getProviderType();
 
+                              const signVp = async (pk: string): Promise<string> => {
+                                  const lc = await getSigningLearnCard(pk);
+
+                                  const jwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+
+                                  if (!jwt || typeof jwt !== 'string') throw new Error('Failed to sign DID-Auth VP');
+
+                                  return jwt;
+                              };
+
                               return keyDerivation.setupRecoveryMethod!({
                                   token,
                                   providerType,
                                   privateKey: currentUser.privateKey!,
                                   input: input as import('@learncard/sss-key-manager').RecoverySetupInput,
                                   authUser: (authUser as import('@learncard/sss-key-manager').AuthUser) ?? undefined,
+                                  signDidAuthVp: signVp,
                               });
                           }
                         : null;
@@ -410,7 +421,10 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             }))}
                             onSetupPassword={
                                 setupMethod
-                                    ? async (password: string) => { await setupMethod({ method: 'password', password }); }
+                                    ? async (password: string) => {
+                                          const authUser = await authProvider!.getCurrentUser();
+                                          await setupMethod({ method: 'password', password }, authUser);
+                                      }
                                     : requireAuth
                             }
                             onSetupPasskey={
@@ -425,7 +439,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             onGeneratePhrase={
                                 setupMethod
                                     ? async () => {
-                                          const result = await setupMethod({ method: 'phrase' });
+                                          const authUser = await authProvider!.getCurrentUser();
+                                          const result = await setupMethod({ method: 'phrase' }, authUser);
                                           return result?.method === 'phrase' ? result.phrase : '';
                                       }
                                     : requireAuth

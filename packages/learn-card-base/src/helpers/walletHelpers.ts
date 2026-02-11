@@ -20,8 +20,26 @@ import { QueryClient } from '@tanstack/react-query';
 
 let LEARN_CARDS: Record<string, BespokeLearnCard> = {};
 
+let SIGNING_LEARN_CARDS: Record<string, Awaited<ReturnType<typeof initLearnCard>>> = {};
+
 export const clearLearnCardCache = () => {
     LEARN_CARDS = {};
+    SIGNING_LEARN_CARDS = {};
+};
+
+/**
+ * Returns a lightweight LearnCard instance (no network) for DID-Auth VP signing.
+ * Because network is omitted, lc.id.did() deterministically returns did:key,
+ * which is directly tied to the private key — exactly what we want for key-share auth.
+ */
+export const getSigningLearnCard = async (seed: string) => {
+    if (SIGNING_LEARN_CARDS[seed]) return SIGNING_LEARN_CARDS[seed];
+
+    const lc = await initLearnCard({ seed, allowRemoteContexts: true });
+
+    SIGNING_LEARN_CARDS[seed] = lc;
+
+    return lc;
 };
 
 export const getBespokeLearnCard = async (

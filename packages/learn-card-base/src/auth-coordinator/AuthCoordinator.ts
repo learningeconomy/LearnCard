@@ -128,6 +128,13 @@ export class AuthCoordinator {
             const hasLocalKey = await this.keyDerivation.hasLocalKey();
             const serverStatus = await this.keyDerivation.fetchServerKeyStatus(token, providerType);
 
+            // Resolve recovery methods through the strategy (which may inject
+            // client-side-only methods like email backup) when available,
+            // falling back to the raw server list.
+            const recoveryMethods = this.keyDerivation.getAvailableRecoveryMethods
+                ? await this.keyDerivation.getAvailableRecoveryMethods(token, providerType)
+                : serverStatus.recoveryMethods;
+
             // Case 1: No server record
             if (!serverStatus.exists) {
                 // If the auth account is old enough, this is likely a legacy user
@@ -158,7 +165,7 @@ export class AuthCoordinator {
                 this.setState({
                     status: 'needs_recovery',
                     authUser,
-                    recoveryMethods: serverStatus.recoveryMethods,
+                    recoveryMethods,
                     recoveryReason: 'new_device',
                 });
                 return this.state;
@@ -173,7 +180,7 @@ export class AuthCoordinator {
                 this.setState({
                     status: 'needs_recovery',
                     authUser,
-                    recoveryMethods: serverStatus.recoveryMethods,
+                    recoveryMethods,
                     recoveryReason: 'missing_server_data',
                 });
                 return this.state;
@@ -192,7 +199,7 @@ export class AuthCoordinator {
                     this.setState({
                         status: 'needs_recovery',
                         authUser,
-                        recoveryMethods: serverStatus.recoveryMethods,
+                        recoveryMethods,
                         recoveryReason: 'stale_local_key',
                     });
                     return this.state;
@@ -250,10 +257,14 @@ export class AuthCoordinator {
             this.setState({ status: 'deriving_key' });
 
             const { token, providerType } = await this.getAuthCredentials();
+            const didAuthVp = this.config.signDidAuthVp
+                ? await this.config.signDidAuthVp(privateKey)
+                : undefined;
+
             const { localKey, remoteKey } = await this.keyDerivation.splitKey(privateKey);
 
             await this.keyDerivation.storeLocalKey(localKey);
-            await this.keyDerivation.storeAuthShare(token, providerType, remoteKey, did);
+            await this.keyDerivation.storeAuthShare(token, providerType, remoteKey, did, didAuthVp);
 
             // Fire-and-forget: send email backup share if the strategy supports it
             if (this.keyDerivation.sendEmailBackupShare && authUser?.email) {
@@ -317,13 +328,17 @@ export class AuthCoordinator {
             this.setState({ status: 'deriving_key' });
 
             const { token, providerType } = await this.getAuthCredentials();
+            const didAuthVp = this.config.signDidAuthVp
+                ? await this.config.signDidAuthVp(privateKey)
+                : undefined;
+
             const { localKey, remoteKey } = await this.keyDerivation.splitKey(privateKey);
 
             await this.keyDerivation.storeLocalKey(localKey);
-            await this.keyDerivation.storeAuthShare(token, providerType, remoteKey, did);
+            await this.keyDerivation.storeAuthShare(token, providerType, remoteKey, did, didAuthVp);
 
             if (this.keyDerivation.markMigrated) {
-                await this.keyDerivation.markMigrated(token, providerType);
+                await this.keyDerivation.markMigrated(token, providerType, didAuthVp);
             }
 
             // Fire-and-forget: send email backup share if the strategy supports it
@@ -379,6 +394,8 @@ export class AuthCoordinator {
                 token,
                 providerType,
                 input,
+                didFromPrivateKey: this.config.didFromPrivateKey,
+                signDidAuthVp: this.config.signDidAuthVp,
             });
 
             this.setState({

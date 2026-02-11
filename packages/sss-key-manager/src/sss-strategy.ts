@@ -75,9 +75,9 @@ const defaultStorage: SSSStorageFunctions = {
 // Server helpers (internal)
 // ---------------------------------------------------------------------------
 
-const buildHeaders = (token: string) => ({
+const buildHeaders = (token: string, didAuthVp?: string) => ({
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
+    ...(didAuthVp ? { Authorization: `Bearer ${didAuthVp}` } : {}),
 });
 
 const fetchAuthShareRaw = async (
@@ -105,11 +105,12 @@ const putAuthShare = async (
     token: string,
     providerType: AuthProviderType,
     authShare: string,
-    primaryDid: string
+    primaryDid: string,
+    didAuthVp?: string
 ) => {
     const response = await fetch(`${serverUrl}/keys/auth-share`, {
         method: 'PUT',
-        headers: buildHeaders(token),
+        headers: buildHeaders(token, didAuthVp),
         body: JSON.stringify({
             authToken: token,
             providerType,
@@ -153,11 +154,12 @@ const postRecoveryMethod = async (
     serverUrl: string,
     token: string,
     providerType: AuthProviderType,
-    body: Record<string, unknown>
+    body: Record<string, unknown>,
+    didAuthVp?: string
 ) => {
     const response = await fetch(`${serverUrl}/keys/recovery`, {
         method: 'POST',
-        headers: buildHeaders(token),
+        headers: buildHeaders(token, didAuthVp),
         body: JSON.stringify({ authToken: token, providerType, ...body }),
     });
 
@@ -194,6 +196,10 @@ const sendEmailBackupShare = async (
 
 /**
  * After recovery, re-split the private key and store fresh shares.
+ *
+ * SAFETY: When `didFromPrivateKey` is provided, the key is validated against
+ * `primaryDid` BEFORE any writes. This prevents a wrong key from overwriting
+ * the server's auth share and permanently corrupting recovery state.
  */
 const rotateShares = async (
     privateKey: string,
@@ -202,13 +208,26 @@ const rotateShares = async (
     providerType: AuthProviderType,
     primaryDid: string,
     storage: SSSStorageFunctions,
-    storageId?: string
+    storageId?: string,
+    didFromPrivateKey?: (pk: string) => Promise<string>,
+    didAuthVp?: string
 ) => {
+    // Defensive DID check — refuse to rotate if the key is wrong
+    if (primaryDid && didFromPrivateKey) {
+        const derivedDid = await didFromPrivateKey(privateKey);
+
+        if (derivedDid && derivedDid !== primaryDid) {
+            throw new Error(
+                'rotateShares: key does not match expected DID — refusing to overwrite server shares'
+            );
+        }
+    }
+
     const { shares } = await splitAndVerify(privateKey);
 
     await storage.storeDeviceShare(shares.deviceShare, storageId);
 
-    await putAuthShare(serverUrl, token, providerType, shares.authShare, primaryDid);
+    await putAuthShare(serverUrl, token, providerType, shares.authShare, primaryDid, didAuthVp);
 };
 
 // ---------------------------------------------------------------------------
@@ -244,6 +263,14 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
      * When undefined, falls back to the global default key (backward compat).
      */
     let activeStorageId: string | undefined;
+
+    /**
+     * Cached email share from the most recent `splitKey()` call.
+     * Used by `sendEmailBackupShare()` so the emailed share comes from
+     * the same split as the device + auth shares — required for SSS
+     * reconstruction to work.
+     */
+    let lastEmailShare: string | undefined;
 
     return {
         name: 'sss',
@@ -297,6 +324,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
         async splitKey(privateKey: string): Promise<{ localKey: string; remoteKey: string }> {
             const { shares } = await splitAndVerify(privateKey);
+
+            // Cache the email share for sendEmailBackupShare to reuse
+            lastEmailShare = shares.emailShare;
 
             return {
                 localKey: shares.deviceShare,
@@ -362,15 +392,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             token: string,
             providerType: AuthProviderType,
             authShare: string,
-            primaryDid: string
+            primaryDid: string,
+            didAuthVp?: string
         ): Promise<void> {
-            await putAuthShare(serverUrl, token, providerType, authShare, primaryDid);
+            await putAuthShare(serverUrl, token, providerType, authShare, primaryDid, didAuthVp);
         },
 
-        async markMigrated(token: string, providerType: AuthProviderType): Promise<void> {
+        async markMigrated(token: string, providerType: AuthProviderType, didAuthVp?: string): Promise<void> {
             const response = await fetch(`${serverUrl}/keys/migrate`, {
                 method: 'POST',
-                headers: buildHeaders(token),
+                headers: buildHeaders(token, didAuthVp),
                 body: JSON.stringify({ authToken: token, providerType }),
             });
 
@@ -385,8 +416,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             token: string;
             providerType: AuthProviderType;
             input: RecoveryInput;
+            didFromPrivateKey?: (privateKey: string) => Promise<string>;
+            signDidAuthVp?: (privateKey: string) => Promise<string>;
         }): Promise<RecoveryResult> {
-            const { token, providerType, input } = params;
+            const { token, providerType, input, didFromPrivateKey, signDidAuthVp } = params;
 
             let recoveryShare: string;
 
@@ -449,6 +482,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     );
                     break;
                 }
+
+                case 'email': {
+                    // The email share is a raw SSS share — no decryption needed
+                    recoveryShare = input.emailShare.trim();
+                    break;
+                }
             }
 
             // Step 2: Fetch auth share and reconstruct private key
@@ -466,8 +505,26 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
             const primaryDid = serverData.primaryDid || '';
 
-            // Step 3: Rotate shares (re-split and store fresh device + auth shares)
-            await rotateShares(privateKey, serverUrl, token, providerType, primaryDid, storage, activeStorageId);
+            // Step 2b: Validate the reconstructed key BEFORE rotating.
+            // A stale or wrong recovery share will reconstruct garbage.
+            // Rotating garbage would overwrite the server's auth share, permanently
+            // corrupting the user's recovery state.
+            if (primaryDid && didFromPrivateKey) {
+                const derivedDid = await didFromPrivateKey(privateKey);
+
+                if (derivedDid && derivedDid !== primaryDid) {
+                    throw new Error(
+                        'Recovery produced an incorrect key. ' +
+                        'The recovery key may be outdated. Please try a different recovery method.'
+                    );
+                }
+            }
+
+            // Step 3: Sign DID-Auth VP for the write operation (if available)
+            const vpJwt = signDidAuthVp ? await signDidAuthVp(privateKey) : undefined;
+
+            // Step 4: Rotate shares (re-split and store fresh device + auth shares)
+            await rotateShares(privateKey, serverUrl, token, providerType, primaryDid, storage, activeStorageId, didFromPrivateKey, vpJwt);
 
             return { privateKey, did: primaryDid };
         },
@@ -480,19 +537,44 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             privateKey: string;
             input: RecoverySetupInput;
             authUser?: AuthUser;
+            signDidAuthVp?: (privateKey: string) => Promise<string>;
         }): Promise<RecoverySetupResult> {
-            const { token, providerType, privateKey, input, authUser } = params;
+            const { token, providerType, privateKey, input, authUser, signDidAuthVp } = params;
+
+            // Sign DID-Auth VP once for all write operations in this method
+            console.debug('[setupRecoveryMethod] step 1: signing VP, signDidAuthVp available:', !!signDidAuthVp);
+            const vpJwt = signDidAuthVp ? await signDidAuthVp(privateKey) : undefined;
+            console.debug('[setupRecoveryMethod] step 1 done, vpJwt:', vpJwt ? `${vpJwt.slice(0, 20)}...` : 'undefined');
 
             // All setup methods start by re-splitting the key to get a fresh recovery share
+            console.debug('[setupRecoveryMethod] step 2: splitAndVerify');
             const { shares } = await splitAndVerify(privateKey);
+            console.debug('[setupRecoveryMethod] step 2 done');
+
+            // Cache the email share so sendEmailBackupShare can use it
+            lastEmailShare = shares.emailShare;
 
             // Store new device + auth shares
+            console.debug('[setupRecoveryMethod] step 3: storeDeviceShare');
             await storage.storeDeviceShare(shares.deviceShare, activeStorageId);
+            console.debug('[setupRecoveryMethod] step 3 done');
 
+            console.debug('[setupRecoveryMethod] step 4: fetchAuthShareRaw');
             const serverData = await fetchAuthShareRaw(serverUrl, token, providerType);
             const primaryDid = serverData?.primaryDid || '';
+            console.debug('[setupRecoveryMethod] step 4 done, primaryDid:', primaryDid ? `${primaryDid.slice(0, 30)}...` : '(empty)');
 
-            await putAuthShare(serverUrl, token, providerType, shares.authShare, primaryDid);
+            console.debug('[setupRecoveryMethod] step 5: putAuthShare');
+            await putAuthShare(serverUrl, token, providerType, shares.authShare, primaryDid, vpJwt);
+            console.debug('[setupRecoveryMethod] step 5 done');
+
+            // Fire-and-forget: re-send email backup share so it stays in sync with the new auth share
+            if (enableEmailBackupShare && authUser?.email && lastEmailShare) {
+                sendEmailBackupShare(serverUrl, token, providerType, lastEmailShare, authUser.email)
+                    .catch(e => console.warn('Email backup share re-send failed (non-fatal):', e));
+
+                lastEmailShare = undefined;
+            }
 
             switch (input.method) {
                 case 'password': {
@@ -505,7 +587,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                             iv: encrypted.iv,
                             salt: encrypted.salt,
                         },
-                    });
+                    }, vpJwt);
 
                     return { method: 'password' };
                 }
@@ -532,7 +614,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                             iv: encryptedShare.iv,
                         },
                         credentialId: credential.credentialId,
-                    });
+                    }, vpJwt);
 
                     return { method: 'passkey', credentialId: credential.credentialId };
                 }
@@ -569,7 +651,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         ): Promise<RecoveryMethodInfo[]> {
             try {
                 const serverData = await fetchAuthShareRaw(serverUrl, token, providerType);
-                return serverData?.recoveryMethods || [];
+                const methods = serverData?.recoveryMethods || [];
+
+                // Inject email recovery option when email backup share is enabled.
+                // The email share is sent fire-and-forget during setup and isn't
+                // registered as a server-side recovery method, so we add it here.
+                if (enableEmailBackupShare) {
+                    methods.push({ type: 'email', createdAt: new Date() });
+                }
+
+                return methods;
             } catch (e) {
                 console.error('Error getting recovery methods:', e);
                 return [];
@@ -581,7 +672,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         async sendEmailBackupShare(
             token: string,
             providerType: AuthProviderType,
-            privateKey: string,
+            _privateKey: string,
             email: string
         ): Promise<void> {
             if (!enableEmailBackupShare) return;
@@ -591,9 +682,15 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 return;
             }
 
-            const { shares } = await splitAndVerify(privateKey);
+            if (!lastEmailShare) {
+                console.warn('Cannot send email backup share: no cached email share from splitKey()');
+                return;
+            }
 
-            await sendEmailBackupShare(serverUrl, token, providerType, shares.emailShare, email);
+            await sendEmailBackupShare(serverUrl, token, providerType, lastEmailShare, email);
+
+            // Clear after use — one-shot to avoid stale data
+            lastEmailShare = undefined;
         },
 
         // --- Cleanup ---

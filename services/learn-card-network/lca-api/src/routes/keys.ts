@@ -6,7 +6,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 
-import { t, openRoute } from '@routes';
+import { t, openRoute, didRoute } from '@routes';
 import { getDeliveryService } from '../services/delivery';
 import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
 import {
@@ -104,7 +104,7 @@ export const keysRouter = t.router({
             };
         }),
 
-    storeAuthShare: openRoute
+    storeAuthShare: didRoute
         .meta({
             openapi: {
                 method: 'PUT',
@@ -121,12 +121,24 @@ export const keysRouter = t.router({
             })
         )
         .output(z.object({ success: z.boolean() }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ ctx, input }) => {
+            // DID-Auth: use the VP-authenticated DID as the authoritative primaryDid.
+            // The VP is already cryptographically verified by didRoute, so ctx.user.did
+            // is the proven owner of the signing key. We prefer it over input.primaryDid
+            // to avoid DID-method format mismatches (e.g. did:key vs did:web).
+            const authenticatedDid = ctx.user.did;
+
+            if (input.primaryDid && input.primaryDid !== authenticatedDid) {
+                console.warn(
+                    `[storeAuthShare] DID format mismatch — VP DID: ${authenticatedDid}, body primaryDid: ${input.primaryDid}. Using VP DID.`
+                );
+            }
+
             const { user, contactMethod } = await verifyAndGetContactMethod(input);
 
             await upsertUserKey(contactMethod, {
                 authShare: input.authShare,
-                primaryDid: input.primaryDid,
+                primaryDid: authenticatedDid,
                 securityLevel: input.securityLevel ?? 'basic',
                 keyProvider: 'sss',
                 authProviders: [{ type: input.providerType, id: user.id }],
@@ -135,7 +147,7 @@ export const keysRouter = t.router({
             return { success: true };
         }),
 
-    addRecoveryMethod: openRoute
+    addRecoveryMethod: didRoute
         .meta({
             openapi: {
                 method: 'POST',
@@ -152,7 +164,7 @@ export const keysRouter = t.router({
             })
         )
         .output(z.object({ success: z.boolean() }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ ctx, input }) => {
             const { contactMethod } = await verifyAndGetContactMethod(input);
 
             const userKey = await findUserKeyByContactMethod(contactMethod);
@@ -161,6 +173,15 @@ export const keysRouter = t.router({
                     code: 'NOT_FOUND',
                     message: 'User key not found. Set up SSS first.',
                 });
+            }
+
+            // DID-Auth: warn on DID format mismatch but proceed — the VP is
+            // already cryptographically verified, and format differences (did:key
+            // vs did:web for the same underlying key) are expected.
+            if (userKey.primaryDid && ctx.user.did !== userKey.primaryDid) {
+                console.warn(
+                    `[addRecoveryMethod] DID format mismatch — VP DID: ${ctx.user.did}, stored primaryDid: ${userKey.primaryDid}. Proceeding (VP is verified).`
+                );
             }
 
             await addRecoveryMethodToUserKey(contactMethod, {
@@ -208,7 +229,7 @@ export const keysRouter = t.router({
             return recoveryMethod?.encryptedShare ?? null;
         }),
 
-    markMigrated: openRoute
+    markMigrated: didRoute
         .meta({
             openapi: {
                 method: 'POST',
@@ -219,8 +240,16 @@ export const keysRouter = t.router({
         })
         .input(AuthInputValidator)
         .output(z.object({ success: z.boolean() }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ ctx, input }) => {
             const { contactMethod } = await verifyAndGetContactMethod(input);
+
+            const userKey = await findUserKeyByContactMethod(contactMethod);
+
+            if (userKey?.primaryDid && ctx.user.did !== userKey.primaryDid) {
+                console.warn(
+                    `[markMigrated] DID format mismatch — VP DID: ${ctx.user.did}, stored primaryDid: ${userKey.primaryDid}. Proceeding (VP is verified).`
+                );
+            }
 
             await markUserKeyMigrated(contactMethod);
 
@@ -278,7 +307,7 @@ export const keysRouter = t.router({
             return { success: true };
         }),
 
-    deleteUserKey: openRoute
+    deleteUserKey: didRoute
         .meta({
             openapi: {
                 method: 'POST',
@@ -289,8 +318,16 @@ export const keysRouter = t.router({
         })
         .input(AuthInputValidator)
         .output(z.object({ success: z.boolean() }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ ctx, input }) => {
             const { contactMethod } = await verifyAndGetContactMethod(input);
+
+            const userKey = await findUserKeyByContactMethod(contactMethod);
+
+            if (userKey?.primaryDid && ctx.user.did !== userKey.primaryDid) {
+                console.warn(
+                    `[deleteUserKey] DID format mismatch — VP DID: ${ctx.user.did}, stored primaryDid: ${userKey.primaryDid}. Proceeding (VP is verified).`
+                );
+            }
 
             await deleteUserKey(contactMethod);
 

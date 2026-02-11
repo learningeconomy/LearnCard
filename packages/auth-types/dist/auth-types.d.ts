@@ -122,14 +122,18 @@ export interface KeyDerivationStrategy<TRecoveryInput = unknown, TRecoverySetupI
 	/** Fetch the server-side key status for the authenticated user */
 	fetchServerKeyStatus(token: string, providerType: AuthProviderType): Promise<ServerKeyStatus>;
 	/** Store the remote key component on the server */
-	storeAuthShare(token: string, providerType: AuthProviderType, remoteKey: string, did: string): Promise<void>;
+	storeAuthShare(token: string, providerType: AuthProviderType, remoteKey: string, did: string, didAuthVp?: string): Promise<void>;
 	/** Mark migration complete on the server (optional — only needed for migration-capable strategies) */
-	markMigrated?(token: string, providerType: AuthProviderType): Promise<void>;
+	markMigrated?(token: string, providerType: AuthProviderType, didAuthVp?: string): Promise<void>;
 	/** Execute a recovery flow and return the recovered private key + DID */
 	executeRecovery(params: {
 		token: string;
 		providerType: AuthProviderType;
 		input: TRecoveryInput;
+		/** Optional: validate the reconstructed key's DID before rotating shares */
+		didFromPrivateKey?: (privateKey: string) => Promise<string>;
+		/** Optional: sign a DID-Auth VP JWT for server write operations */
+		signDidAuthVp?: (privateKey: string) => Promise<string>;
 	}): Promise<RecoveryResult>;
 	/** Set up a new recovery method */
 	setupRecoveryMethod?(params: {
@@ -138,6 +142,8 @@ export interface KeyDerivationStrategy<TRecoveryInput = unknown, TRecoverySetupI
 		privateKey: string;
 		input: TRecoverySetupInput;
 		authUser?: AuthUser;
+		/** Optional: sign a DID-Auth VP JWT for server write operations */
+		signDidAuthVp?: (privateKey: string) => Promise<string>;
 	}): Promise<TRecoverySetupResult>;
 	/** Get configured recovery methods for the authenticated user */
 	getAvailableRecoveryMethods?(token: string, providerType: AuthProviderType): Promise<RecoveryMethodInfo[]>;

@@ -71,6 +71,14 @@ export interface AuthCoordinatorConfig {
     didFromPrivateKey?: (privateKey: string) => Promise<string>;
 
     /**
+     * Optional: sign a DID-Auth VP JWT proving ownership of the private key.
+     * Used by the coordinator to authenticate write operations (storeAuthShare,
+     * addRecoveryMethod, etc.) with the server. The server verifies the VP JWT
+     * to confirm the caller controls the private key for the claimed DID.
+     */
+    signDidAuthVp?: (privateKey: string) => Promise<string>;
+
+    /**
      * Optional: retrieve a cached private key from secure storage.
      * Enables "private-key-first" initialization — if a cached key exists,
      * the coordinator can reach 'ready' without requiring an active auth session.

@@ -18,6 +18,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { createSSSStrategy } from './sss-strategy';
+import { reconstructFromShares } from './sss';
 
 import type { SSSStorageFunctions } from './sss-strategy';
 import type { SSSKeyDerivationStrategy } from './types';
@@ -427,6 +428,320 @@ describe('createSSSStrategy', () => {
     describe('cleanup', () => {
         it('resolves without error', async () => {
             await expect(strategy.cleanup!()).resolves.toBeUndefined();
+        });
+    });
+
+    // -----------------------------------------------------------------------
+    // executeRecovery — DID validation before rotation
+    // -----------------------------------------------------------------------
+
+    describe('executeRecovery DID validation', () => {
+        const setupRecoveryTest = async (originalKey: string) => {
+            const { localKey, remoteKey } = await strategy.splitKey(originalKey);
+
+            await strategy.storeLocalKey(localKey);
+
+            const fetchCalls: { url: string; method: string; body: string }[] = [];
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const urlStr = typeof url === 'string' ? url : url.toString();
+                const method = (init?.method ?? 'GET').toUpperCase();
+
+                fetchCalls.push({
+                    url: urlStr,
+                    method,
+                    body: init?.body as string ?? '',
+                });
+
+                if (urlStr.includes('/keys/auth-share') && method === 'POST') {
+                    return new Response(JSON.stringify({
+                        authShare: { encryptedData: remoteKey, encryptedDek: '', iv: '' },
+                        primaryDid: 'did:key:zCorrect',
+                        recoveryMethods: [],
+                        keyProvider: 'sss',
+                        shareVersion: 1,
+                    }), { status: 200 });
+                }
+
+                return new Response(null, { status: 200 });
+            });
+
+            return { localKey, remoteKey, fetchCalls };
+        };
+
+        it('rejects stale share without corrupting server auth share', async () => {
+            const originalKey = 'e1f2a3b4c5d6'.padEnd(64, '0');
+            const { remoteKey, fetchCalls } = await setupRecoveryTest(originalKey);
+
+            // Create a stale share from a DIFFERENT split (valid hex, correct length, wrong split)
+            const differentKey = 'f0f0f0f0f0f0'.padEnd(64, '0');
+            const { localKey: staleShare } = await strategy.splitKey(differentKey);
+
+            await expect(
+                strategy.executeRecovery({
+                    token: 'tok',
+                    providerType: 'firebase',
+                    input: { method: 'email', emailShare: staleShare },
+                    didFromPrivateKey: async () => 'did:key:zWrong',
+                })
+            ).rejects.toThrow('Recovery produced an incorrect key');
+
+            // CRITICAL: no PUT to /keys/auth-share — server state is intact
+            const putCalls = fetchCalls.filter(
+                c => c.url.includes('/keys/auth-share') && c.method === 'PUT'
+            );
+
+            expect(putCalls).toHaveLength(0);
+        });
+
+        it('correct share + matching DID succeeds and rotates', async () => {
+            const originalKey = 'e1f2a3b4c5d6'.padEnd(64, '0');
+            const { localKey, fetchCalls } = await setupRecoveryTest(originalKey);
+
+            const result = await strategy.executeRecovery({
+                token: 'tok',
+                providerType: 'firebase',
+                input: { method: 'email', emailShare: localKey },
+                didFromPrivateKey: async () => 'did:key:zCorrect',
+            });
+
+            expect(result.privateKey).toBe(originalKey);
+            expect(result.did).toBe('did:key:zCorrect');
+
+            // rotateShares DID run — a PUT to /keys/auth-share was made
+            const putCalls = fetchCalls.filter(
+                c => c.url.includes('/keys/auth-share') && c.method === 'PUT'
+            );
+
+            expect(putCalls).toHaveLength(1);
+        });
+
+        it('retry after stale share still works (server not corrupted)', async () => {
+            const originalKey = 'e1f2a3b4c5d6'.padEnd(64, '0');
+            const { localKey, fetchCalls } = await setupRecoveryTest(originalKey);
+
+            // First attempt: stale share — should fail WITHOUT corrupting
+            const differentKey = 'f0f0f0f0f0f0'.padEnd(64, '0');
+            const { localKey: staleShare } = await strategy.splitKey(differentKey);
+
+            await expect(
+                strategy.executeRecovery({
+                    token: 'tok',
+                    providerType: 'firebase',
+                    input: { method: 'email', emailShare: staleShare },
+                    didFromPrivateKey: async () => 'did:key:zWrong',
+                })
+            ).rejects.toThrow('Recovery produced an incorrect key');
+
+            // Second attempt: correct share — should succeed because server was NOT corrupted
+            const result = await strategy.executeRecovery({
+                token: 'tok',
+                providerType: 'firebase',
+                input: { method: 'email', emailShare: localKey },
+                didFromPrivateKey: async () => 'did:key:zCorrect',
+            });
+
+            expect(result.privateKey).toBe(originalKey);
+            expect(result.did).toBe('did:key:zCorrect');
+
+            // Only ONE put (from the successful retry), NOT two
+            const putCalls = fetchCalls.filter(
+                c => c.url.includes('/keys/auth-share') && c.method === 'PUT'
+            );
+
+            expect(putCalls).toHaveLength(1);
+        });
+    });
+
+    // -----------------------------------------------------------------------
+    // Email backup share
+    // -----------------------------------------------------------------------
+
+    describe('email backup share', () => {
+        let emailStrategy: SSSKeyDerivationStrategy;
+        let emailStorage: ReturnType<typeof createMemoryStorage>;
+
+        beforeEach(() => {
+            emailStorage = createMemoryStorage();
+
+            emailStrategy = createSSSStrategy({
+                serverUrl: 'http://test-server:5100/api',
+                storage: emailStorage,
+                enableEmailBackupShare: true,
+            });
+        });
+
+        it('emailed share + auth share reconstruct the original private key', async () => {
+            const originalKey = 'a1b2c3d4e5f6'.padEnd(64, '0');
+
+            // Step 1: Split the key (caches email share internally)
+            const { remoteKey } = await emailStrategy.splitKey(originalKey);
+
+            // Step 2: Send email backup — capture the emailShare from the fetch body
+            let capturedEmailShare: string | undefined;
+
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async (_url, init) => {
+                const body = JSON.parse(init?.body as string);
+                capturedEmailShare = body.emailShare;
+
+                return new Response(null, { status: 200 });
+            });
+
+            await emailStrategy.sendEmailBackupShare!(
+                'token', 'firebase', originalKey, 'user@test.com'
+            );
+
+            expect(capturedEmailShare).toBeDefined();
+            expect(capturedEmailShare!.length).toBeGreaterThan(0);
+
+            // Step 3: Reconstruct from email share + auth share
+            const reconstructed = await reconstructFromShares([capturedEmailShare!, remoteKey]);
+
+            expect(reconstructed).toBe(originalKey);
+        });
+
+        it('does not re-split when sending email backup (uses cached share)', async () => {
+            const originalKey = 'b2c3d4e5f6a1'.padEnd(64, '0');
+
+            // Split once
+            const { localKey, remoteKey } = await emailStrategy.splitKey(originalKey);
+
+            // Capture the email share
+            let capturedEmailShare: string | undefined;
+
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async (_url, init) => {
+                const body = JSON.parse(init?.body as string);
+                capturedEmailShare = body.emailShare;
+
+                return new Response(null, { status: 200 });
+            });
+
+            await emailStrategy.sendEmailBackupShare!(
+                'token', 'firebase', originalKey, 'user@test.com'
+            );
+
+            // The email share must NOT equal the device or auth shares
+            // (it's a distinct share from the same split)
+            expect(capturedEmailShare).not.toBe(localKey);
+            expect(capturedEmailShare).not.toBe(remoteKey);
+
+            // But it must reconstruct the same key when combined with either
+            const fromEmailAndAuth = await reconstructFromShares([capturedEmailShare!, remoteKey]);
+
+            expect(fromEmailAndAuth).toBe(originalKey);
+        });
+
+        it('warns and skips if sendEmailBackupShare called without prior splitKey', async () => {
+            const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+            // Call sendEmailBackupShare without calling splitKey first
+            await emailStrategy.sendEmailBackupShare!(
+                'token', 'firebase', 'some-key', 'user@test.com'
+            );
+
+            expect(warnSpy).toHaveBeenCalledWith(
+                'Cannot send email backup share: no cached email share from splitKey()'
+            );
+
+            warnSpy.mockRestore();
+        });
+
+        it('email share is sent to email endpoint only, never stored on the server', async () => {
+            const originalKey = 'd4e5f6a1b2c3'.padEnd(64, '0');
+
+            const { remoteKey } = await emailStrategy.splitKey(originalKey);
+
+            const fetchCalls: { url: string; body: string }[] = [];
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                fetchCalls.push({
+                    url: typeof url === 'string' ? url : url.toString(),
+                    body: init?.body as string ?? '',
+                });
+
+                return new Response(null, { status: 200 });
+            });
+
+            await emailStrategy.sendEmailBackupShare!(
+                'token', 'firebase', originalKey, 'user@test.com'
+            );
+
+            // Only one fetch call should have been made — to the email relay
+            expect(fetchCalls).toHaveLength(1);
+            expect(fetchCalls[0]!.url).toBe('http://test-server:5100/api/keys/email-backup');
+
+            // The email share must NOT appear in any auth-share or recovery endpoint calls
+            const emailBody = JSON.parse(fetchCalls[0]!.body);
+            const emailShare = emailBody.emailShare;
+
+            expect(emailShare).toBeDefined();
+            expect(emailShare).not.toBe(remoteKey); // different from the auth share
+
+            // No calls to storage endpoints
+            const storageCalls = fetchCalls.filter(
+                c => c.url.includes('/keys/auth-share') || c.url.includes('/keys/recovery')
+            );
+
+            expect(storageCalls).toHaveLength(0);
+        });
+
+        it('setupRecoveryMethod re-sends email backup share', async () => {
+            const originalKey = 'c3d4e5f6a1b2'.padEnd(64, '0');
+
+            // Split the key first (initial setup)
+            await emailStrategy.splitKey(originalKey);
+
+            // Mock all fetch calls during setupRecoveryMethod:
+            //   1. fetchAuthShareRaw (GET /keys/auth-share)
+            //   2. putAuthShare (PUT /keys/auth-share)
+            //   3. postRecoveryMethod (POST /keys/recovery)
+            //   4. sendEmailBackupShare (POST /keys/email-backup)
+            const fetchCalls: { url: string; body: string }[] = [];
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const urlStr = typeof url === 'string' ? url : url.toString();
+
+                fetchCalls.push({
+                    url: urlStr,
+                    body: init?.body as string ?? '',
+                });
+
+                // fetchAuthShareRaw needs to return server data
+                if (urlStr.includes('/keys/auth-share') && init?.method !== 'PUT') {
+                    return new Response(JSON.stringify({
+                        authShare: 'existing-auth-share',
+                        primaryDid: 'did:key:z123',
+                        recoveryMethods: [],
+                    }), { status: 200 });
+                }
+
+                return new Response(null, { status: 200 });
+            });
+
+            await emailStrategy.setupRecoveryMethod!({
+                token: 'token',
+                providerType: 'firebase',
+                privateKey: originalKey,
+                input: { method: 'password', password: 'test-password' },
+                authUser: { id: 'user-1', providerType: 'firebase', email: 'user@test.com' },
+            });
+
+            // Verify email backup share was re-sent
+            const emailBackupCall = fetchCalls.find(c => c.url.includes('/keys/email-backup'));
+
+            expect(emailBackupCall).toBeDefined();
+
+            // Verify the re-sent email share + new auth share can reconstruct the key
+            const emailBody = JSON.parse(emailBackupCall!.body);
+            const putAuthCall = fetchCalls.find(
+                c => c.url.includes('/keys/auth-share') && c.body && JSON.parse(c.body).authShare
+            );
+            // putAuthShare wraps as { encryptedData: share, encryptedDek: '', iv: '' }
+            const newAuthShare = JSON.parse(putAuthCall!.body).authShare.encryptedData;
+
+            const reconstructed = await reconstructFromShares([emailBody.emailShare, newAuthShare]);
+
+            expect(reconstructed).toBe(originalKey);
         });
     });
 });

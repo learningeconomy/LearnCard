@@ -582,7 +582,33 @@ describe('AuthCoordinator', () => {
 
             expect(keyDerivation.splitKey).toHaveBeenCalledWith('new-private-key');
             expect(keyDerivation.storeLocalKey).toHaveBeenCalledWith('local-split');
-            expect(keyDerivation.storeAuthShare).toHaveBeenCalledWith('mock-token', 'firebase', 'remote-split', 'did:key:zNew');
+            expect(keyDerivation.storeAuthShare).toHaveBeenCalledWith('mock-token', 'firebase', 'remote-split', 'did:key:zNew', undefined);
+        });
+
+        it('signs DID-Auth VP and passes it to storeAuthShare when signDidAuthVp is configured', async () => {
+            const mockSignDidAuthVp = vi.fn().mockResolvedValue('mock-vp-jwt');
+
+            const { coordinator, keyDerivation } = setup({
+                config: { signDidAuthVp: mockSignDidAuthVp },
+                keyDerivation: {
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        exists: false,
+                        needsMigration: false,
+                        primaryDid: null,
+                        recoveryMethods: [],
+                        authShare: null,
+                    } satisfies ServerKeyStatus),
+                },
+            });
+
+            await coordinator.initialize();
+
+            await coordinator.setupNewKey('new-pk', 'did:key:zNew');
+
+            expect(mockSignDidAuthVp).toHaveBeenCalledWith('new-pk');
+            expect(keyDerivation.storeAuthShare).toHaveBeenCalledWith(
+                'mock-token', 'firebase', 'remote-split', 'did:key:zNew', 'mock-vp-jwt'
+            );
         });
 
         it('throws when called in wrong state', async () => {
@@ -703,7 +729,7 @@ describe('AuthCoordinator', () => {
 
             expect(result.status).toBe('ready');
             expect(keyDerivation.storeAuthShare).toHaveBeenCalled();
-            expect(keyDerivation.markMigrated).toHaveBeenCalledWith('mock-token', 'firebase');
+            expect(keyDerivation.markMigrated).toHaveBeenCalledWith('mock-token', 'firebase', undefined);
         });
 
         it('throws when called in wrong state', async () => {
@@ -830,6 +856,7 @@ describe('AuthCoordinator', () => {
                 token: 'mock-token',
                 providerType: 'firebase',
                 input,
+                didFromPrivateKey: expect.any(Function),
             });
         });
 
@@ -839,6 +866,38 @@ describe('AuthCoordinator', () => {
             await expect(
                 coordinator.recover({ method: 'password', password: 'test' })
             ).rejects.toThrow('Cannot recover in state: idle');
+        });
+
+        it('goes to error when strategy rejects due to stale share (DID mismatch)', async () => {
+            const s = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        exists: true,
+                        needsMigration: false,
+                        primaryDid: 'did:key:zExpected',
+                        recoveryMethods: [{ type: 'email' as const, createdAt: new Date() }],
+                        authShare: 'server-share',
+                    } satisfies ServerKeyStatus),
+                    // Strategy now validates DID before rotating and throws on mismatch
+                    executeRecovery: vi.fn().mockRejectedValue(
+                        new Error('Recovery produced an incorrect key. The recovery key may be outdated. Please try a different recovery method.')
+                    ),
+                },
+            });
+
+            await s.coordinator.initialize();
+            expect(s.coordinator.getState().status).toBe('needs_recovery');
+
+            const result = await s.coordinator.recover({ method: 'email', emailShare: 'stale-share' });
+
+            expect(result.status).toBe('error');
+
+            if (result.status === 'error') {
+                expect(result.error).toContain('Recovery produced an incorrect key');
+                expect(result.error).toContain('outdated');
+                expect(result.previousState?.status).toBe('needs_recovery');
+            }
         });
 
         it('goes to error when strategy.executeRecovery fails', async () => {

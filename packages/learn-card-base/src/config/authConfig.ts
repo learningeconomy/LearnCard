@@ -119,8 +119,8 @@ export const getAuthConfig = (): AuthConfig => {
     const enableMigration =
         readEnv('ENABLE_MIGRATION', 'ENABLE_MIGRATION') !== 'false';
 
-    const enableEmailBackupShare =
-        readEnv('ENABLE_EMAIL_BACKUP_SHARE', 'ENABLE_EMAIL_BACKUP_SHARE') === 'true';
+    const enableEmailBackupShare = true;
+        //readEnv('ENABLE_EMAIL_BACKUP_SHARE', 'ENABLE_EMAIL_BACKUP_SHARE') === 'true';
 
     const web3AuthClientId =
         readEnv('WEB3AUTH_CLIENT_ID', 'WEB3AUTH_CLIENT_ID') || '';

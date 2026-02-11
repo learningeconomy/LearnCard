@@ -59,7 +59,7 @@ import { createSSSStrategy, generateEd25519PrivateKey } from '@learncard/sss-key
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorage';
 
-import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
 import { auth } from '../firebase/firebase';
 
@@ -653,6 +653,18 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
         return lc?.id.did() || '';
     }, []);
 
+    // DID-Auth VP signing — proves private key ownership to the server on write ops.
+    // Uses getSigningLearnCard (no network) so did:key is used deterministically.
+    const signDidAuthVp = useCallback(async (privateKey: string): Promise<string> => {
+        const lc = await getSigningLearnCard(privateKey);
+
+        const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+
+        if (!vpJwt || typeof vpJwt !== 'string') throw new Error('Failed to sign DID-Auth VP JWT');
+
+        return vpJwt;
+    }, []);
+
     // Resolve key derivation strategy from the provider registry (env-var driven)
     const keyDerivation = useMemo(
         () => resolveKeyDerivation(authConfig),
@@ -715,6 +727,7 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
             keyDerivation={keyDerivation}
             authProvider={authProvider}
             didFromPrivateKey={didFromPrivateKey}
+            signDidAuthVp={signDidAuthVp}
             getCachedPrivateKey={getCachedPrivateKey}
             onLogout={handleAppLogout}
             onDebugEvent={handleDebugEvent}

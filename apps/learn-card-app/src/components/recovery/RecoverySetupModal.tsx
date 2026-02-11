@@ -57,6 +57,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setPassword('');
             setConfirmPassword('');
         } catch (e) {
+            console.error('[RecoverySetupModal] handlePasswordSetup error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
@@ -71,6 +72,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             await onSetupPasskey();
             setSuccess('Passkey recovery is set up!');
         } catch (e) {
+            console.error('[RecoverySetupModal] handlePasskeySetup error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
@@ -85,6 +87,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             const phrase = await onGeneratePhrase();
             setRecoveryPhrase(phrase);
         } catch (e) {
+            console.error('[RecoverySetupModal] handleGeneratePhrase error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);

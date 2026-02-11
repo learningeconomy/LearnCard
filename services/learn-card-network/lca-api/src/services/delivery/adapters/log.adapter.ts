@@ -18,7 +18,7 @@ export class LogAdapter implements DeliveryService {
             console.log('[LogAdapter] Email notification:');
             console.log(`  To: ${notification.to}`);
             console.log(`  Subject: ${notification.subject}`);
-            console.log(`  Body: ${notification.textBody.slice(0, 200)}...`);
+            console.log(`  Body: ${notification.textBody.slice(0, 20000)}...`);
         }
     }
 }

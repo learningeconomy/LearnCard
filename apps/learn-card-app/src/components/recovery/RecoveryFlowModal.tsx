@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
-import { keyOutline, fingerPrint, documentTextOutline, alertCircleOutline, cloudUploadOutline, phonePortraitOutline, chevronBackOutline } from 'ionicons/icons';
+import { keyOutline, fingerPrint, documentTextOutline, alertCircleOutline, cloudUploadOutline, phonePortraitOutline, chevronBackOutline, mailOutline } from 'ionicons/icons';
 import { QRCodeSVG } from 'qrcode.react';
 
 import { Capacitor } from '@capacitor/core';
@@ -8,7 +8,7 @@ import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 import { QrLoginRequester, getAuthConfig } from 'learn-card-base';
 import type { RecoveryReason } from 'learn-card-base';
 
-export type RecoveryFlowType = 'password' | 'passkey' | 'phrase' | 'backup' | 'device';
+export type RecoveryFlowType = 'password' | 'passkey' | 'phrase' | 'backup' | 'device' | 'email';
 
 interface RecoveryFlowModalProps {
     availableMethods: { type: string; credentialId?: string; createdAt: string }[];
@@ -18,6 +18,7 @@ interface RecoveryFlowModalProps {
     onRecoverWithPhrase: (phrase: string) => Promise<void>;
     onRecoverWithBackup: (fileContents: string, password: string) => Promise<void>;
     onRecoverWithDevice?: (deviceShare: string) => Promise<void>;
+    onRecoverWithEmail?: (emailShare: string) => Promise<void>;
     onCancel: () => void;
 }
 
@@ -60,6 +61,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     onRecoverWithPhrase,
     onRecoverWithBackup,
     onRecoverWithDevice,
+    onRecoverWithEmail,
     onCancel,
 }) => {
     const [activeMethod, setActiveMethod] = useState<RecoveryFlowType | null>(null);
@@ -70,6 +72,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     const [phrase, setPhrase] = useState('');
     const [backupFile, setBackupFile] = useState<string | null>(null);
     const [backupPassword, setBackupPassword] = useState('');
+    const [emailShare, setEmailShare] = useState('');
 
     const hasMethod = (type: string) => availableMethods.some(m => m.type === type);
     const webAuthnSupported = isWebAuthnSupported();
@@ -165,11 +168,29 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         }
     };
 
+    const handleEmailRecovery = async () => {
+        if (!emailShare.trim()) {
+            setError('Please paste the recovery key from your email.');
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            await onRecoverWithEmail!(emailShare.trim());
+        } catch (e) {
+            setError(friendlyError(e));
+            setLoading(false);
+        }
+    };
+
     const allMethods = [
         { id: 'password' as const, label: 'Password', desc: 'Use your recovery password', icon: keyOutline, available: hasMethod('password') },
         { id: 'passkey' as const, label: 'Passkey', desc: 'Use Face ID, Touch ID, or similar', icon: fingerPrint, available: hasMethod('passkey') && webAuthnSupported },
         { id: 'phrase' as const, label: 'Recovery Phrase', desc: 'Enter your 25-word phrase', icon: documentTextOutline, available: hasMethod('phrase') },
         { id: 'backup' as const, label: 'Backup File', desc: 'Upload your backup file', icon: cloudUploadOutline, available: hasMethod('backup') },
+        { id: 'email' as const, label: 'Email Recovery Key', desc: 'Paste the key sent to your email', icon: mailOutline, available: hasMethod('email') && !!onRecoverWithEmail },
         { id: 'device' as const, label: 'Another Device', desc: 'Scan a code from a signed-in device', icon: phonePortraitOutline, available: !!onRecoverWithDevice },
     ];
 
@@ -402,6 +423,43 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             <QRCodeSVG value={data} size={192} level="M" />
                         )}
                     />
+                </div>
+            )}
+
+            {activeMethod === 'email' && onRecoverWithEmail && (
+                <div className="space-y-5">
+                    <div>
+                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Email Recovery Key</h3>
+
+                        <p className="text-sm text-grayscale-600 leading-relaxed">
+                            Paste the recovery key from the email we sent when your account was created.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Recovery Key</label>
+
+                        <textarea
+                            value={emailShare}
+                            onChange={e => setEmailShare(e.target.value)}
+                            placeholder="Paste your recovery key here"
+                            rows={3}
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white font-mono resize-none"
+                        />
+                    </div>
+
+                    <button
+                        onClick={handleEmailRecovery}
+                        disabled={loading || !emailShare.trim()}
+                        className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Recovering...
+                            </span>
+                        ) : 'Recover Account'}
+                    </button>
                 </div>
             )}
 
