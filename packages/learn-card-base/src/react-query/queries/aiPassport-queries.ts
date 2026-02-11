@@ -86,9 +86,7 @@ export const useGetAppMetadata = (appID: string) => {
     return useQuery<AppStoreAppMetadata, Error, AppStoreAppMetadata>({
         queryKey: ['appMetadata', appID],
         queryFn: async () => {
-            const response = await fetch(
-                `https://corsproxy.io/?https://itunes.apple.com/lookup?id=${appID}`
-            );
+            const response = await fetch(`https://itunes.apple.com/lookup?id=${appID}`);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
@@ -106,7 +104,7 @@ export const useGetAppReviews = (appID: string) => {
         queryKey: ['appReviews', appID],
         queryFn: async () => {
             const response = await fetch(
-                `https://corsproxy.io/?https://itunes.apple.com/rss/customerreviews/page=1/id=${appID}/sortBy=mostRecent/json`
+                `https://itunes.apple.com/rss/customerreviews/page=1/id=${appID}/sortBy=mostRecent/json`
             );
             if (!response.ok) {
                 throw new Error('Network response was not ok');
