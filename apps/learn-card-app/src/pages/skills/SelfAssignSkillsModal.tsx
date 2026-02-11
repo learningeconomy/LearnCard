@@ -11,6 +11,7 @@ import {
     useGetBoostSkills,
     useToast,
     ToastTypeEnum,
+    useGetProfile,
 } from 'learn-card-base';
 
 import X from 'learn-card-base/svgs/X';
@@ -37,6 +38,7 @@ type SelfAssignSkillsModalProps = {};
 const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     const { presentToast } = useToast();
     const { closeModal, newModal } = useModal();
+    const { data: lcNetworkProfile } = useGetProfile();
 
     const [isUpdating, setIsUpdating] = useState(false);
     const [isSubmittingSkillSuggestion, setIsSubmittingSkillSuggestion] = useState(false);
@@ -145,7 +147,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                 body: JSON.stringify({
                     suggestion: searchInput,
                     timestamp: new Date().toISOString(),
-                    role: 'test',
+                    role: lcNetworkProfile?.role,
                 }),
                 mode: 'no-cors',
             });
