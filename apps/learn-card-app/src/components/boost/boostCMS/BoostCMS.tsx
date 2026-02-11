@@ -337,7 +337,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                                 onClick={() => {
                                     closeModal();
                                     unblock();
-                                    history.push(location.pathname);
+                                    history.push(location);
                                 }}
                                 className="flex items-center justify-center text-white rounded-full px-[64px] py-[10px] bg-rose-600 font-poppins font-medium text-xl w-full shadow-lg"
                             >
