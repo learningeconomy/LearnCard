@@ -377,8 +377,11 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
     }, [firebaseUser]);
 
     // --- DID derivation (shared between auto-setup and recovery) ---
+    // Uses getSigningLearnCard (no network) so lc.id.did() returns did:key,
+    // which is deterministic and directly tied to the private key.
+    // Must match the server's stored primaryDid (also did:key, from VP auth).
     const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
-        const lc = await getBespokeLearnCard(privateKey);
+        const lc = await getSigningLearnCard(privateKey);
         return lc?.id.did() || '';
     }, []);
 
@@ -872,9 +875,9 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         });
     }, [firebaseUser]);
 
-    // DID derivation helper
+    // DID derivation helper — uses getSigningLearnCard (no network) for deterministic did:key
     const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
-        const lc = await getBespokeLearnCard(privateKey);
+        const lc = await getSigningLearnCard(privateKey);
         return lc?.id.did() || '';
     }, []);
 

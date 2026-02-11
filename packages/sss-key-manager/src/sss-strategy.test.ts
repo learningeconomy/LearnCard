@@ -494,7 +494,7 @@ describe('createSSSStrategy', () => {
             expect(putCalls).toHaveLength(0);
         });
 
-        it('correct share + matching DID succeeds and rotates', async () => {
+        it('correct share + matching DID succeeds and stores recovery share as device share', async () => {
             const originalKey = 'e1f2a3b4c5d6'.padEnd(64, '0');
             const { localKey, fetchCalls } = await setupRecoveryTest(originalKey);
 
@@ -508,12 +508,17 @@ describe('createSSSStrategy', () => {
             expect(result.privateKey).toBe(originalKey);
             expect(result.did).toBe('did:key:zCorrect');
 
-            // rotateShares DID run — a PUT to /keys/auth-share was made
+            // No rotateShares — recovery share is stored as device share directly,
+            // so no PUT to /keys/auth-share (preserves existing recovery methods).
             const putCalls = fetchCalls.filter(
                 c => c.url.includes('/keys/auth-share') && c.method === 'PUT'
             );
 
-            expect(putCalls).toHaveLength(1);
+            expect(putCalls).toHaveLength(0);
+
+            // Verify the recovery share is now the device share and can reconstruct
+            const storedDevice = await strategy.getLocalKey();
+            expect(storedDevice).toBe(localKey);
         });
 
         it('retry after stale share still works (server not corrupted)', async () => {
@@ -544,12 +549,12 @@ describe('createSSSStrategy', () => {
             expect(result.privateKey).toBe(originalKey);
             expect(result.did).toBe('did:key:zCorrect');
 
-            // Only ONE put (from the successful retry), NOT two
+            // No PUT calls at all — recovery no longer rotates shares
             const putCalls = fetchCalls.filter(
                 c => c.url.includes('/keys/auth-share') && c.method === 'PUT'
             );
 
-            expect(putCalls).toHaveLength(1);
+            expect(putCalls).toHaveLength(0);
         });
     });
 

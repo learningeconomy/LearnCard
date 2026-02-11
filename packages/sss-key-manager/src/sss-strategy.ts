@@ -520,11 +520,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 }
             }
 
-            // Step 3: Sign DID-Auth VP for the write operation (if available)
-            const vpJwt = signDidAuthVp ? await signDidAuthVp(privateKey) : undefined;
-
-            // Step 4: Rotate shares (re-split and store fresh device + auth shares)
-            await rotateShares(privateKey, serverUrl, token, providerType, primaryDid, storage, activeStorageId, didFromPrivateKey, vpJwt);
+            // Step 3: Store the recovery share as the new device share.
+            // Since recoveryShare + authShare = privateKey (just proven above),
+            // we can reuse the recovery share as a valid device share.
+            // This avoids re-splitting, which would overwrite the server's auth
+            // share and invalidate ALL other recovery methods.
+            await storage.storeDeviceShare(recoveryShare, activeStorageId);
 
             return { privateKey, did: primaryDid };
         },

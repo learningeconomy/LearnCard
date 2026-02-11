@@ -332,7 +332,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
     }, [coordinator.state.status]);
 
     const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
-        const lc = await getBespokeLearnCard(privateKey);
+        const lc = await getSigningLearnCard(privateKey);
         return lc?.id.did() || '';
     }, []);
 
@@ -647,9 +647,9 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
         });
     }, [firebaseUser]);
 
-    // DID derivation helper
+    // DID derivation helper — uses getSigningLearnCard (no network) for deterministic did:key
     const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
-        const lc = await getBespokeLearnCard(privateKey);
+        const lc = await getSigningLearnCard(privateKey);
         return lc?.id.did() || '';
     }, []);
 

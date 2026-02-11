@@ -14,6 +14,10 @@ import {
     Settings,
     Layers,
     Key,
+    Server,
+    Download,
+    Fingerprint,
+    AlertTriangle,
 } from 'lucide-react';
 
 import {
@@ -24,6 +28,7 @@ import {
 } from 'learn-card-base';
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
+import { getSigningLearnCard, getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
 import {
     hasDeviceShare,
@@ -109,6 +114,21 @@ const levelText: Record<string, string> = {
     warning: 'text-yellow-400',
     info: 'text-sky-400',
 };
+
+/** Short fingerprint for a share/key: first4…last4 */
+const fingerprint = (s: string | null | undefined): string => {
+    if (!s || s.length < 12) return s ?? '—';
+    return `${s.slice(0, 4)}…${s.slice(-4)}`;
+};
+
+interface ServerState {
+    exists: boolean;
+    needsMigration: boolean;
+    primaryDid: string | null;
+    recoveryMethods: Array<{ type: string; createdAt?: string }>;
+    authShareFingerprint: string | null;
+    rawAuthShare: string | null;
+}
 
 // ---------------------------------------------------------------------------
 // Reusable sub-components
@@ -205,6 +225,10 @@ export const AuthKeyDebugWidget: React.FC = () => {
     const [events, setEvents] = useState<AuthDebugEvent[]>([]);
     const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
     const [keyIntegrityResult, setKeyIntegrityResult] = useState<boolean | null>(null);
+    const [serverState, setServerState] = useState<ServerState | null>(null);
+    const [serverLoading, setServerLoading] = useState(false);
+    const [didKeyDid, setDidKeyDid] = useState<string | null>(null);
+    const [didWebDid, setDidWebDid] = useState<string | null>(null);
 
     // --- Coordinator (source of truth) ---
     const {
@@ -386,6 +410,98 @@ export const AuthKeyDebugWidget: React.FC = () => {
         });
     }, []);
 
+    // --- Fetch server state ---
+    const fetchServerState = useCallback(async () => {
+        if (!firebaseUser || !authConfig.serverUrl) return;
+
+        setServerLoading(true);
+
+        try {
+            const token = await firebaseUser.getIdToken();
+
+            const response = await fetch(`${authConfig.serverUrl}/keys/auth-share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ authToken: token, providerType: 'firebase' }),
+            });
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    setServerState({ exists: false, needsMigration: false, primaryDid: null, recoveryMethods: [], authShareFingerprint: null, rawAuthShare: null });
+                    return;
+                }
+
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            const rawAuth = typeof data.authShare === 'object' ? data.authShare?.encryptedData : data.authShare;
+
+            setServerState({
+                exists: !!data.authShare || !!data.keyProvider || !!data.primaryDid,
+                needsMigration: data.keyProvider === 'web3auth',
+                primaryDid: data.primaryDid || null,
+                recoveryMethods: data.recoveryMethods || [],
+                authShareFingerprint: rawAuth ? fingerprint(rawAuth) : null,
+                rawAuthShare: rawAuth || null,
+            });
+        } catch (e) {
+            console.error('[DebugWidget] fetchServerState error:', e);
+            setServerState(null);
+        } finally {
+            setServerLoading(false);
+        }
+    }, [firebaseUser, authConfig.serverUrl]);
+
+    // --- Derive both DID formats for comparison ---
+    useEffect(() => {
+        if (state.status !== 'ready' || !('privateKey' in state) || !state.privateKey) {
+            setDidKeyDid(null);
+            setDidWebDid(null);
+            return;
+        }
+
+        const pk = state.privateKey;
+
+        (async () => {
+            try {
+                const signingLc = await getSigningLearnCard(pk);
+                setDidKeyDid(signingLc.id.did());
+            } catch { setDidKeyDid(null); }
+
+            try {
+                const bespokeLc = await getBespokeLearnCard(pk);
+                setDidWebDid(bespokeLc?.id.did() || null);
+            } catch { setDidWebDid(null); }
+        })();
+    }, [state]);
+
+    // --- Export events as JSON ---
+    const handleExportEvents = useCallback(async () => {
+        const exportData = {
+            exportedAt: new Date().toISOString(),
+            coordinatorStatus: state.status,
+            did,
+            didKeyDid,
+            didWebDid,
+            serverState,
+            deviceShares: allShares.map(s => ({ id: s.id, preview: s.preview })),
+            events: events.map(e => ({
+                time: e.timestamp.toISOString(),
+                type: e.type,
+                level: e.level,
+                message: e.message,
+                data: e.data,
+            })),
+        };
+
+        try {
+            await navigator.clipboard.writeText(JSON.stringify(exportData, null, 2));
+            setCopied('export');
+            setTimeout(() => setCopied(null), 2000);
+        } catch { /* ignore */ }
+    }, [state, did, didKeyDid, didWebDid, serverState, allShares, events]);
+
     if (!WIDGET_ENABLED) return null;
 
     // --- Fab button color follows coordinator status ---
@@ -550,6 +666,108 @@ export const AuthKeyDebugWidget: React.FC = () => {
                             <KVRow label="UID" value={currentUser?.uid ?? '—'} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="Email" value={currentUser?.email ?? '—'} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="Has Private Key" value={!!currentUser?.privateKey} copied={copied} onCopy={copyToClipboard} />
+
+                            {/* DID comparison */}
+                            {(didKeyDid || didWebDid) && (
+                                <>
+                                    <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2.5 mb-0.5">DID Comparison</p>
+
+                                    <KVRow label="did:key" value={didKeyDid ? truncate(didKeyDid, 30) : '—'} copied={copied} onCopy={copyToClipboard} />
+                                    <KVRow label="did:web" value={didWebDid ? truncate(didWebDid, 30) : '—'} copied={copied} onCopy={copyToClipboard} />
+
+                                    {didKeyDid && didWebDid && didKeyDid !== didWebDid && (
+                                        <div className="flex items-center gap-1 mt-1 text-[9px]">
+                                            <AlertTriangle className="w-2.5 h-2.5 text-yellow-400" />
+                                            <span className="text-yellow-400">Different DID methods — ensure server uses did:key</span>
+                                        </div>
+                                    )}
+
+                                    {serverState?.primaryDid && didKeyDid && serverState.primaryDid !== didKeyDid && (
+                                        <div className="flex items-center gap-1 mt-1 text-[9px]">
+                                            <AlertTriangle className="w-2.5 h-2.5 text-red-400" />
+                                            <span className="text-red-400">Server primaryDid ≠ did:key — will trigger false recovery!</span>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </Section>
+
+                        {/* ── Server & Share Health ── */}
+                        <Section
+                            title="Server & Share Health"
+                            icon={<Server className="w-3 h-3 text-gray-500" />}
+                            badge={serverState ? (
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                                    serverState.exists ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-700 text-gray-500'
+                                }`}>
+                                    {serverState.exists ? 'record found' : 'no record'}
+                                </span>
+                            ) : undefined}
+                            actions={
+                                <button
+                                    onClick={fetchServerState}
+                                    className="p-1 rounded hover:bg-gray-600 transition-colors"
+                                    title="Fetch server state"
+                                    disabled={serverLoading}
+                                >
+                                    <RefreshCw className={`w-3 h-3 text-gray-500 ${serverLoading ? 'animate-spin' : ''}`} />
+                                </button>
+                            }
+                        >
+                            {!serverState ? (
+                                <div className="text-center py-2">
+                                    <button
+                                        onClick={fetchServerState}
+                                        disabled={serverLoading || !firebaseUser}
+                                        className="text-[10px] text-sky-400 hover:text-sky-300 disabled:text-gray-600"
+                                    >
+                                        {serverLoading ? 'Fetching...' : 'Click to fetch server state'}
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    <KVRow label="Record Exists" value={serverState.exists} copied={copied} onCopy={copyToClipboard} />
+                                    <KVRow label="Needs Migration" value={serverState.needsMigration} copied={copied} onCopy={copyToClipboard} />
+                                    <KVRow label="Server primaryDid" value={serverState.primaryDid ? truncate(serverState.primaryDid, 28) : '—'} copied={copied} onCopy={copyToClipboard} />
+                                    <KVRow label="Auth Share 🔑" value={serverState.authShareFingerprint ?? '—'} copied={copied} onCopy={copyToClipboard} />
+
+                                    <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2 mb-0.5">
+                                        Recovery Methods ({serverState.recoveryMethods.length})
+                                    </p>
+
+                                    {serverState.recoveryMethods.length === 0 ? (
+                                        <p className="text-[10px] text-gray-600">None configured</p>
+                                    ) : (
+                                        serverState.recoveryMethods.map((rm, i) => (
+                                            <div key={i} className="flex items-center gap-1.5 text-[10px] py-0.5 border-t border-gray-700/40">
+                                                <span className={`px-1 py-0.5 rounded text-[8px] font-medium ${
+                                                    rm.type === 'password' ? 'bg-sky-500/20 text-sky-400' :
+                                                    rm.type === 'passkey' ? 'bg-purple-500/20 text-purple-400' :
+                                                    rm.type === 'phrase' ? 'bg-amber-500/20 text-amber-400' :
+                                                    'bg-gray-700 text-gray-400'
+                                                }`}>{rm.type}</span>
+
+                                                {rm.createdAt && (
+                                                    <span className="text-gray-600 text-[8px]">{new Date(rm.createdAt).toLocaleDateString()}</span>
+                                                )}
+                                            </div>
+                                        ))
+                                    )}
+
+                                    {/* Share generation match check */}
+                                    {serverState.rawAuthShare && allShares.length > 0 && (
+                                        <>
+                                            <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2 mb-0.5">Share Fingerprints</p>
+
+                                            <KVRow label="Server Auth" value={fingerprint(serverState.rawAuthShare)} copied={copied} onCopy={copyToClipboard} />
+
+                                            {allShares.filter(s => activeStorageId === s.id).map(s => (
+                                                <KVRow key={s.id} label="Local Device" value={s.preview} copied={copied} onCopy={copyToClipboard} />
+                                            ))}
+                                        </>
+                                    )}
+                                </>
+                            )}
                         </Section>
 
                         {/* ── Device Shares (SSS) ── */}
@@ -662,9 +880,15 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                 </span>
                             ) : undefined}
                             actions={events.length > 0 ? (
-                                <button onClick={handleClearEvents} className="p-1 rounded hover:bg-gray-600 transition-colors" title="Clear events">
-                                    <Trash2 className="w-3 h-3 text-gray-500" />
-                                </button>
+                                <div className="flex items-center gap-0.5">
+                                    <button onClick={handleExportEvents} className="p-1 rounded hover:bg-gray-600 transition-colors" title={copied === 'export' ? 'Copied!' : 'Export full debug snapshot'}>
+                                        {copied === 'export' ? <Check className="w-3 h-3 text-emerald-400" /> : <Download className="w-3 h-3 text-gray-500" />}
+                                    </button>
+
+                                    <button onClick={handleClearEvents} className="p-1 rounded hover:bg-gray-600 transition-colors" title="Clear events">
+                                        <Trash2 className="w-3 h-3 text-gray-500" />
+                                    </button>
+                                </div>
                             ) : undefined}
                         >
                             <div className="max-h-48 overflow-y-auto -mx-1">
