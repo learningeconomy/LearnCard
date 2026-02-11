@@ -9,6 +9,8 @@ import {
     useManageSelfAssignedSkillsBoost,
     useGetSelfAssignedSkillsBoost,
     useGetBoostSkills,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import X from 'learn-card-base/svgs/X';
@@ -33,6 +35,7 @@ enum Step {
 type SelfAssignSkillsModalProps = {};
 
 const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
+    const { presentToast } = useToast();
     const { closeModal, newModal } = useModal();
 
     const [isUpdating, setIsUpdating] = useState(false);
@@ -111,6 +114,41 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
             );
         } else {
             closeModal();
+        }
+    };
+
+    const handleSubmitSkillSuggestion = async () => {
+        // const webhookUrl = process.env.REACT_APP_SKILL_SUGGESTION_WEBHOOK;
+        // Results can be viewed here: https://docs.google.com/spreadsheets/d/1FjAL8Napvf0U0fB4Lh4tzzmQvBZntIZJpDRCHyYFvdc/edit?usp=sharing
+        //   restricted to LEF members
+        const webhookUrl =
+            'https://script.google.com/macros/s/AKfycbxLWcLBp1u7CfIzjPJT0ZTf4TkdgCMsVxNz3YifmUjmHlLTr7xvsoXGJXJKMxjofg3k1A/exec';
+        if (!webhookUrl) {
+            console.warn('REACT_APP_SKILL_SUGGESTION_WEBHOOK not configured');
+            presentToast('Thank you for your suggestion!', {
+                type: ToastTypeEnum.Success,
+            });
+            return;
+        }
+        try {
+            await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    suggestion: searchInput,
+                    timestamp: new Date().toISOString(),
+                    role: 'test',
+                }),
+                mode: 'no-cors',
+            });
+            presentToast('Thank you for your suggestion!', {
+                type: ToastTypeEnum.Success,
+            });
+        } catch (error) {
+            console.error('Failed to submit skill suggestion:', error);
+            presentToast('Thank you for your suggestion!', {
+                type: ToastTypeEnum.Success,
+            });
         }
     };
 
@@ -259,8 +297,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
 
                         <button
                             className="px-[20px] py-[7px] rounded-[30px] bg-indigo-500 text-white text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px]"
-                            onClick={() => {
-                            }}
+                            onClick={handleSubmitSkillSuggestion}
                         >
                             Suggest Skill
                         </button>
