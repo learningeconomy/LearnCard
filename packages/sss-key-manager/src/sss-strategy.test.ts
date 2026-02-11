@@ -838,6 +838,180 @@ describe('createSSSStrategy', () => {
     });
 
     // -----------------------------------------------------------------------
+    // Cross-device recovery with older shareVersion (regression tests)
+    //
+    // Scenario: Device A is at v3, Device B has v2. Device A loses its share
+    // and recovers via Device B. Device B sends its v2 device share + version.
+    // Device A must request the v2 auth share from the server (stored in
+    // previousAuthShares) and reconstruct successfully.
+    // -----------------------------------------------------------------------
+
+    describe('recovery via another device with older shareVersion', () => {
+        it('fetchServerKeyStatus sends local shareVersion in the request body', async () => {
+            strategy.setActiveUser!('user-x');
+            await strategy.storeLocalShareVersion!(2);
+
+            const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({
+                    authShare: 'v2-auth-share',
+                    keyProvider: 'sss',
+                    primaryDid: 'did:key:z123',
+                    recoveryMethods: [],
+                    shareVersion: 3,
+                }), { status: 200 })
+            );
+
+            await strategy.fetchServerKeyStatus('token', 'firebase');
+
+            const requestBody = JSON.parse(fetchSpy.mock.calls[0]![1]?.body as string);
+
+            expect(requestBody.shareVersion).toBe(2);
+        });
+
+        it('fetchServerKeyStatus omits shareVersion from request when local is null', async () => {
+            strategy.setActiveUser!('new-device');
+
+            const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({
+                    authShare: 'current-share',
+                    keyProvider: 'sss',
+                    primaryDid: 'did:key:z123',
+                    recoveryMethods: [],
+                    shareVersion: 3,
+                }), { status: 200 })
+            );
+
+            await strategy.fetchServerKeyStatus('token', 'firebase');
+
+            const requestBody = JSON.parse(fetchSpy.mock.calls[0]![1]?.body as string);
+
+            expect(requestBody).not.toHaveProperty('shareVersion');
+        });
+
+        it('full flow: v2 device share from another device reconstructs with v2 auth share from server', async () => {
+            // --- Setup: split a key to get a real v2 device/auth pair ---
+            const originalKey = 'deadbeef1234'.padEnd(64, '0');
+            const { localKey: v2DeviceShare, remoteKey: v2AuthShare } = await strategy.splitKey(originalKey);
+
+            // --- Simulate: Device A receives v2 share via QR recovery ---
+            strategy.setActiveUser!('recovering-user');
+            await strategy.storeLocalKey(v2DeviceShare);
+            await strategy.storeLocalShareVersion!(2);
+
+            // --- Mock server: returns the v2 auth share when version 2 is requested ---
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({
+                    authShare: { encryptedData: v2AuthShare, encryptedDek: '', iv: '' },
+                    keyProvider: 'sss',
+                    primaryDid: 'did:key:zRecoveredUser',
+                    recoveryMethods: [{ type: 'password', createdAt: '2024-01-01' }],
+                    shareVersion: 3, // server is at v3 but returns v2 auth share
+                }), { status: 200 })
+            );
+
+            const status = await strategy.fetchServerKeyStatus('token', 'firebase');
+
+            // Server returned the v2 auth share content
+            expect(status.authShare).toBe(v2AuthShare);
+            expect(status.shareVersion).toBe(3);
+
+            // Reconstruct with v2 device share + v2 auth share
+            const reconstructed = await strategy.reconstructKey(v2DeviceShare, status.authShare!);
+
+            expect(reconstructed).toBe(originalKey);
+        });
+
+        it('version overwrite: backfilled v3 is overwritten by QR-delivered v2, fetch uses v2', async () => {
+            strategy.setActiveUser!('overwrite-user');
+
+            // Step 1: First initialize — no local key, server backfills v3
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({
+                    authShare: 'v3-auth-share',
+                    keyProvider: 'sss',
+                    primaryDid: 'did:key:z123',
+                    recoveryMethods: [],
+                    shareVersion: 3,
+                }), { status: 200 })
+            );
+
+            await strategy.fetchServerKeyStatus('token', 'firebase');
+
+            // Wait for fire-and-forget backfill
+            await new Promise(r => setTimeout(r, 10));
+
+            expect(await strategy.getLocalShareVersion!()).toBe(3);
+
+            // Step 2: QR recovery delivers v2 — overwrite the backfilled v3
+            await strategy.storeLocalShareVersion!(2);
+
+            expect(await strategy.getLocalShareVersion!()).toBe(2);
+
+            // Step 3: Second fetchServerKeyStatus — should send version 2
+            const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({
+                    authShare: 'v2-auth-share-from-previous',
+                    keyProvider: 'sss',
+                    primaryDid: 'did:key:z123',
+                    recoveryMethods: [],
+                    shareVersion: 3,
+                }), { status: 200 })
+            );
+
+            const status = await strategy.fetchServerKeyStatus('token', 'firebase');
+
+            const requestBody = JSON.parse(fetchSpy.mock.calls[0]![1]?.body as string);
+
+            expect(requestBody.shareVersion).toBe(2);
+            expect(status.authShare).toBe('v2-auth-share-from-previous');
+        });
+
+        it('storeLocalShareVersion before re-initialize ensures correct version is sent', async () => {
+            // Simulates the full onRecoverWithDevice handler:
+            // 1. storeLocalKey(v2DeviceShare)
+            // 2. storeLocalShareVersion(2)
+            // 3. coordinator.initialize() → fetchServerKeyStatus sends v2
+
+            const originalKey = 'cafe0123babe'.padEnd(64, '0');
+            const { localKey: v2DeviceShare, remoteKey: v2AuthShare } = await strategy.splitKey(originalKey);
+
+            strategy.setActiveUser!('device-recovery-user');
+            await strategy.storeLocalKey(v2DeviceShare);
+            await strategy.storeLocalShareVersion!(2);
+
+            const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({
+                    authShare: { encryptedData: v2AuthShare, encryptedDek: '', iv: '' },
+                    keyProvider: 'sss',
+                    primaryDid: 'did:key:zUser',
+                    recoveryMethods: [],
+                    shareVersion: 3,
+                }), { status: 200 })
+            );
+
+            const status = await strategy.fetchServerKeyStatus('token', 'firebase');
+
+            // Verify v2 was sent
+            const requestBody = JSON.parse(fetchSpy.mock.calls[0]![1]?.body as string);
+
+            expect(requestBody.shareVersion).toBe(2);
+
+            // Verify reconstruction works
+            const reconstructed = await strategy.reconstructKey(v2DeviceShare, status.authShare!);
+
+            expect(reconstructed).toBe(originalKey);
+
+            // Verify the backfill did NOT fire (localVersion was 2, not null)
+            // Only the initial storeLocalShareVersion(2) call should exist
+            const versionCalls = storage.storeShareVersion.mock.calls.filter(
+                (c: [number, string | undefined]) => c[0] !== 2
+            );
+
+            expect(versionCalls).toHaveLength(0);
+        });
+    });
+
+    // -----------------------------------------------------------------------
     // Email backup share
     // -----------------------------------------------------------------------
 

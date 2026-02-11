@@ -85,7 +85,7 @@ export const LaunchPadPopOverButton: React.FC<LaunchPadPopOverButtonProps> = ({
                     }`}
                 />
             </button>
-            <IonPopover
+            {!isMobile && <IonPopover
                 onDidDismiss={() => setShowSortPopover(false)}
                 reference="trigger"
                 trigger="trigger-button"
@@ -144,7 +144,7 @@ export const LaunchPadPopOverButton: React.FC<LaunchPadPopOverButtonProps> = ({
                         );
                     })}
                 </IonList>
-            </IonPopover>
+            </IonPopover>}
         </>
     );
 };
