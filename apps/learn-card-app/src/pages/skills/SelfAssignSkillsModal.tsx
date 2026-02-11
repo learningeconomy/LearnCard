@@ -3,7 +3,7 @@ import {
     useModal,
     useListMySkillFrameworks,
     useSearchFrameworkSkills,
-    useSemanticSearchFrameworkSkills,
+    useSemanticSearchSkills,
     ModalTypes,
     conditionalPluralize,
     useManageSelfAssignedSkillsBoost,
@@ -74,8 +74,11 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
         }
     );
 
-    const { data: semanticResultsApiData, isLoading: semanticLoading } =
-        useSemanticSearchFrameworkSkills(frameworkId, searchInput, { limit: 25 });
+    const { data: semanticResultsApiData, isLoading: semanticLoading } = useSemanticSearchSkills(
+        searchInput,
+        frameworkId,
+        { limit: 25 }
+    );
 
     const searchLoading = Boolean(searchInput?.trim()) ? semanticLoading : suggestedLoading;
 
