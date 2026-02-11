@@ -22,6 +22,8 @@ import MainHeader from '../../components/main-header/MainHeader';
 import LaunchPadSearch from './LaunchPadSearch/LaunchPadSearch';
 import LaunchPadAppTabs, { LaunchPadTabEnum } from './LaunchPadHeader/LaunchPadAppTabs';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
+import { RecoveryBanner } from '../../components/recovery/RecoveryBanner';
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
 import {
     aiPassportApps,
@@ -46,6 +48,7 @@ type LaunchPadItem = Partial<LaunchPadAppListItemType> &
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
+    const { recoveryMethodCount, openRecoverySetup } = useAppAuth();
     const history = useHistory();
     const { search } = useLocation();
     const { connectTo, challenge, uri, suppressContractModal, embedUrl, appName, appImage } =
@@ -466,6 +469,11 @@ const LaunchPad: React.FC = () => {
                             </div>
                         </LaunchPadHeader>
                         <div className="flex-grow flex flex-col items-center justify-start w-full pb-8 px-4 bg-grayscale-100">
+                            <RecoveryBanner
+                                recoveryMethodCount={recoveryMethodCount}
+                                onSetup={openRecoverySetup}
+                            />
+
                             {searchInput.length > 0 ? (
                                 <>
                                     <IonList

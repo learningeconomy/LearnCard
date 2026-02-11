@@ -249,6 +249,12 @@ export interface AppAuthContextValue extends AuthCoordinatorContextValue {
 
     /** Whether the device link modal is currently visible */
     deviceLinkModalVisible: boolean;
+
+    /** Number of recovery methods configured (null = not yet checked) */
+    recoveryMethodCount: number | null;
+
+    /** Open the recovery setup modal */
+    openRecoverySetup: () => void;
 }
 
 const AppAuthContext = createContext<AppAuthContextValue | null>(null);
@@ -318,6 +324,9 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
     // --- Recovery setup prompt (shown after first-time setup with no recovery methods) ---
     const [showRecoverySetup, setShowRecoverySetup] = useState(false);
     const wasNewUserRef = useRef(false);
+
+    // --- Recovery method count (null = not yet checked) ---
+    const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
 
     // --- Device link modal ---
     const [deviceLinkVisible, setDeviceLinkVisible] = useState(false);
@@ -613,8 +622,9 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 
                 emitAuthSuccess('auth:wallet_ready', `Wallet initialized — DID: ${did.slice(0, 30)}...`);
 
-                // Prompt new users to set up recovery methods
-                if (wasNewUserRef.current && recoveryAuthProvider && keyDerivation.getAvailableRecoveryMethods) {
+                // Check recovery methods for all users; prompt new users to set up
+                if (recoveryAuthProvider && keyDerivation.getAvailableRecoveryMethods) {
+                    const isNewUser = wasNewUserRef.current;
                     wasNewUserRef.current = false;
 
                     try {
@@ -622,7 +632,14 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                         const providerType = recoveryAuthProvider.getProviderType();
                         const methods = await keyDerivation.getAvailableRecoveryMethods(token, providerType);
 
-                        if (methods.length === 0) {
+                        // Only count user-configured methods (password, passkey, phrase, backup).
+                        // The silently-sent email share is injected by the strategy and isn't
+                        // something the user explicitly set up, so exclude it from the count.
+                        const userConfiguredCount = methods.filter(m => m.type !== 'email').length;
+
+                        setRecoveryMethodCount(userConfiguredCount);
+
+                        if (isNewUser && userConfiguredCount === 0) {
                             setShowRecoverySetup(true);
                         }
                     } catch {
@@ -643,6 +660,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
         if (coordinator.state.status !== 'ready' && wallet) {
             setWallet(null);
             setLcnProfile(null);
+            setRecoveryMethodCount(null);
             walletInitRef.current = false;
         }
     }, [coordinator.state.status, wallet]);
@@ -743,6 +761,10 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
         // Device link
         showDeviceLinkModal,
         deviceLinkModalVisible: deviceLinkVisible,
+
+        // Recovery
+        recoveryMethodCount,
+        openRecoverySetup: () => setShowRecoverySetup(true),
     }), [
         coordinator,
         wallet,
@@ -754,6 +776,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
         fetchLCNProfile,
         showDeviceLinkModal,
         deviceLinkVisible,
+        recoveryMethodCount,
     ]);
 
     return (
@@ -857,12 +880,14 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                             onSetupPassword={async (password: string) => {
                                 const authUser = await recoveryAuthProvider.getCurrentUser();
                                 await setupMethod({ method: 'password', password }, authUser);
+                                setRecoveryMethodCount(prev => (prev ?? 0) + 1);
                                 setShowRecoverySetup(false);
                             }}
                             onSetupPasskey={async () => {
                                 const authUser = await recoveryAuthProvider.getCurrentUser();
                                 const result = await setupMethod({ method: 'passkey' }, authUser);
 
+                                setRecoveryMethodCount(prev => (prev ?? 0) + 1);
                                 setShowRecoverySetup(false);
                                 return result.method === 'passkey' ? result.credentialId : '';
                             }}
