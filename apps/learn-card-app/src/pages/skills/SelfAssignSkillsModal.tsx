@@ -25,7 +25,9 @@ import { IonFooter, IonInput, IonSpinner } from '@ionic/react';
 import {
     ApiSkillNode,
     convertApiSkillNodeToSkillTreeNode,
+    convertSkillTypeToSkillFrameworkNode,
 } from '../../helpers/skillFramework.helpers';
+import { SkillFrameworkNode } from '../../components/boost/boost';
 import { SkillLevel } from './SkillProficiencyBar';
 
 enum Step {
@@ -187,9 +189,14 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                 })),
             });
 
-            // TODO maybe a toast?
-        } catch (error) {
+            presentToast('Skills saved successfully!', {
+                type: ToastTypeEnum.Success,
+            });
+        } catch (error: any) {
             console.error('Error creating or updating skills:', error);
+            presentToast(`Error saving skills!${error?.message ? ` ${error?.message}` : ''}`, {
+                type: ToastTypeEnum.Error,
+            });
         } finally {
             setIsUpdating(false);
         }
@@ -262,22 +269,61 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                     <div className="flex-1 flex justify-center pt-[30px]">
                         <IonSpinner color="dark" name="crescent" />
                     </div>
+                ) : isReview ? (
+                    // In review mode, show all selected skills from combined sources
+                    <>
+                        {selectedSkills.map(selected => {
+                            // Try to find full skill data from sasBoostSkills first (saved skills)
+                            const savedSkill = sasBoostSkills?.find(
+                                (s: { id: string }) => s.id === selected.id
+                            );
+                            // Fall back to suggestedSkills for newly added skills
+                            const suggestedSkill = suggestedSkills.find(
+                                (s: SkillFrameworkNode) => s.id === selected.id
+                            );
+
+                            // Convert to SkillFrameworkNode format
+                            const skill = savedSkill
+                                ? convertApiSkillNodeToSkillTreeNode(savedSkill)
+                                : suggestedSkill;
+
+                            if (!skill) return null;
+
+                            return (
+                                <SelfAssignedSkillRow
+                                    key={selected.id}
+                                    skill={skill}
+                                    framework={selfAssignedSkillFramework}
+                                    handleToggleSelect={() => handleToggleSelect(selected.id)}
+                                    isNodeSelected={true}
+                                    shouldCollapseOptions={isReview}
+                                    proficiencyLevel={selected.proficiency}
+                                    onChangeProficiency={level =>
+                                        setSelectedSkills(prev =>
+                                            prev.map(s =>
+                                                s.id === selected.id
+                                                    ? { ...s, proficiency: level }
+                                                    : s
+                                            )
+                                        )
+                                    }
+                                />
+                            );
+                        })}
+                    </>
                 ) : (
                     <>
                         {suggestedSkills.map((skill, index) => {
                             const selected = selectedSkills.find(s => s.id === skill.id);
-                            if (isReview && !selected) {
-                                // TODO logic will eventually have to be more sophisticated
-                                return null;
-                            }
 
                             return (
                                 <SelfAssignedSkillRow
+                                    key={skill.id}
                                     skill={skill}
                                     framework={selfAssignedSkillFramework}
                                     handleToggleSelect={() => handleToggleSelect(skill.id)}
                                     isNodeSelected={!!selected}
-                                    shouldCollapseOptions={isReview}
+                                    shouldCollapseOptions={false}
                                     proficiencyLevel={selected?.proficiency ?? SkillLevel.Hidden}
                                     onChangeProficiency={level =>
                                         setSelectedSkills(prev =>
