@@ -1,11 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { BoostCMSState, LCNBoostStatusEnum, initialBoostCMSState } from '../components/boost/boost';
-import { addFallbackNameToCMSState } from '../components/boost/boostHelpers';
-import { extractSkillIdsFromAlignments } from '../components/boost/alignmentHelpers';
-import { useCreateBoost, useToast, ToastTypeEnum, BoostCategoryOptionsEnum } from 'learn-card-base';
-import { useQueryClient } from '@tanstack/react-query';
-import { useHistory } from 'react-router-dom';
-import { BOOST_CATEGORY_TO_WALLET_ROUTE } from '../components/boost/boost-options/boostOptions';
+import { BoostCMSState } from '../components/boost/boost';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 const STORAGE_KEY = 'lc_boost_cms_autosave';
 const STORAGE_VERSION = 1;
@@ -48,17 +43,14 @@ interface UseBoostCMSAutosaveReturn {
     clearRecoveredState: (alsoCleanLocalStorage?: boolean) => void;
     saveToLocal: (state: BoostCMSState) => void;
     clearLocalSave: () => void;
-    triggerAutosaveDraft: (state: BoostCMSState) => Promise<string | null>;
     isAutosaving: boolean;
     hasUnsavedChanges: boolean;
 }
 
 /**
  * Hook for auto-saving BoostCMS state to prevent data loss.
- *
  * Features:
  * - Saves state to localStorage on changes (debounced)
- * - Can save as draft to server on critical events (errors, navigation)
  * - Recovers state from localStorage on component mount
  */
 export function useBoostCMSAutosave({
@@ -66,20 +58,14 @@ export function useBoostCMSAutosave({
     boostCategoryType,
     boostSubCategoryType,
 }: UseBoostCMSAutosaveOptions = {}): UseBoostCMSAutosaveReturn {
-    const { mutateAsync: createBoost } = useCreateBoost();
-    const { presentToast } = useToast();
-    const queryClient = useQueryClient();
-    const history = useHistory();
-
     const [hasRecoveredState, setHasRecoveredState] = useState(false);
     const [recoveredState, setRecoveredState] = useState<BoostCMSState | null>(null);
     const [recoveredBoostCategory, setRecoveredBoostCategory] = useState<string | null>(null);
-    const [isAutosaving, setIsAutosaving] = useState(false);
+    const [isAutosaving] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const currentStateRef = useRef<BoostCMSState | null>(null);
-    const hasTriggeredAutosaveRef = useRef(false);
 
     // Build storage key that includes category context
     const getStorageKey = useCallback(() => {
@@ -248,63 +234,6 @@ export function useBoostCMSAutosave({
         }
     }, []);
 
-    const triggerAutosaveDraft = useCallback(
-        async (state: BoostCMSState): Promise<string | null> => {
-            // Prevent duplicate autosaves
-            if (hasTriggeredAutosaveRef.current || isAutosaving) {
-                return null;
-            }
-
-            // Validate state has minimum required content
-            const hasMinimumContent = state?.basicInfo?.name || state?.basicInfo?.description;
-
-            if (!hasMinimumContent) {
-                return null;
-            }
-
-            hasTriggeredAutosaveRef.current = true;
-            setIsAutosaving(true);
-
-            try {
-                const skillIds = extractSkillIdsFromAlignments(state?.alignments ?? []);
-
-                const { boostUri } = await createBoost({
-                    state: addFallbackNameToCMSState(state as any),
-                    status: LCNBoostStatusEnum.draft,
-                    skillIds,
-                });
-
-                if (boostUri) {
-                    // Clear local storage since we saved to server
-                    clearLocalSave();
-
-                    // Invalidate queries to refresh the list
-                    queryClient.invalidateQueries({ queryKey: ['boosts', state.basicInfo.type] });
-
-                    presentToast('Your progress has been auto-saved as a draft', {
-                        duration: 4000,
-                        type: ToastTypeEnum.Success,
-                    });
-
-                    return boostUri;
-                }
-
-                return null;
-            } catch (err) {
-                console.error('[useBoostCMSAutosave] Failed to autosave draft:', err);
-                // Keep local save as fallback
-                presentToast('Unable to auto-save. Your progress is saved locally.', {
-                    duration: 4000,
-                    type: ToastTypeEnum.Error,
-                });
-                return null;
-            } finally {
-                setIsAutosaving(false);
-            }
-        },
-        [createBoost, clearLocalSave, queryClient, presentToast, isAutosaving]
-    );
-
     useEffect(() => {
         if (!enabled || typeof window === 'undefined' || typeof document === 'undefined') return;
 
@@ -403,7 +332,6 @@ export function useBoostCMSAutosave({
         clearRecoveredState,
         saveToLocal,
         clearLocalSave,
-        triggerAutosaveDraft,
         isAutosaving,
         hasUnsavedChanges,
     };
