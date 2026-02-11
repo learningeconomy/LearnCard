@@ -42,6 +42,7 @@ const defaultServerStatus: ServerKeyStatus = {
     primaryDid: 'did:key:z123',
     recoveryMethods: [],
     authShare: 'server-auth-share',
+    shareVersion: 1,
 };
 
 const createMockAuthProvider = (overrides?: Partial<AuthProvider>): AuthProvider => ({
@@ -229,6 +230,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: null,
                         recoveryMethods: [],
                         authShare: null,
+                        shareVersion: null,
                     } satisfies ServerKeyStatus),
                 },
             });
@@ -259,6 +261,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: null,
                         recoveryMethods: [],
                         authShare: null,
+                        shareVersion: null,
                     } satisfies ServerKeyStatus),
                 },
                 config: {
@@ -292,6 +295,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: null,
                         recoveryMethods: [],
                         authShare: null,
+                        shareVersion: null,
                     } satisfies ServerKeyStatus),
                 },
                 config: {
@@ -321,6 +325,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: null,
                         recoveryMethods: [],
                         authShare: null,
+                        shareVersion: null,
                     } satisfies ServerKeyStatus),
                 },
                 // No legacyAccountThresholdMs → defaults to 0 (disabled)
@@ -341,6 +346,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: null,
                         recoveryMethods: [],
                         authShare: null,
+                        shareVersion: null,
                     } satisfies ServerKeyStatus),
                 },
                 config: {
@@ -362,6 +368,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: 'did:key:zOld',
                         recoveryMethods: [],
                         authShare: 'old-share',
+                        shareVersion: 1,
                     } satisfies ServerKeyStatus),
                 },
             });
@@ -387,6 +394,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: 'did:key:z123',
                         recoveryMethods,
                         authShare: 'server-share',
+                        shareVersion: 1,
                     } satisfies ServerKeyStatus),
                 },
             });
@@ -410,6 +418,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: 'did:key:z123',
                         recoveryMethods: [],
                         authShare: null,
+                        shareVersion: null,
                     } satisfies ServerKeyStatus),
                 },
             });
@@ -456,6 +465,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: null,
                         recoveryMethods: [],
                         authShare: 'placeholder',
+                        shareVersion: 1,
                     } satisfies ServerKeyStatus),
                 },
             });
@@ -480,6 +490,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: null,
                         recoveryMethods: [],
                         authShare: 'placeholder',
+                        shareVersion: 1,
                     } satisfies ServerKeyStatus),
                 },
             });
@@ -505,6 +516,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: 'did:key:zExpected',
                         recoveryMethods: [],
                         authShare: 'server-share',
+                        shareVersion: 1,
                     } satisfies ServerKeyStatus),
                 },
             });
@@ -564,6 +576,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: null,
                         recoveryMethods: [],
                         authShare: null,
+                        shareVersion: null,
                     } satisfies ServerKeyStatus),
                 },
             });
@@ -597,6 +610,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: null,
                         recoveryMethods: [],
                         authShare: null,
+                        shareVersion: null,
                     } satisfies ServerKeyStatus),
                 },
             });
@@ -629,6 +643,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: null,
                         recoveryMethods: [],
                         authShare: null,
+                        shareVersion: null,
                     } satisfies ServerKeyStatus),
                 },
             });
@@ -657,6 +672,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: null,
                         recoveryMethods: [],
                         authShare: null,
+                        shareVersion: null,
                     } satisfies ServerKeyStatus),
                 },
             });
@@ -692,6 +708,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: null,
                         recoveryMethods: [],
                         authShare: null,
+                        shareVersion: null,
                     } satisfies ServerKeyStatus),
                 },
             });
@@ -718,6 +735,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: 'did:key:zOld',
                         recoveryMethods: [],
                         authShare: 'old-share',
+                        shareVersion: 1,
                     } satisfies ServerKeyStatus),
                 },
             });
@@ -754,6 +772,7 @@ describe('AuthCoordinator', () => {
                     primaryDid: 'did:key:zOld',
                     recoveryMethods: [],
                     authShare: 'old-share',
+                    shareVersion: 1,
                 } satisfies ServerKeyStatus),
             },
         });
@@ -827,6 +846,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: 'did:key:z123',
                         recoveryMethods,
                         authShare: 'server-share',
+                        shareVersion: 1,
                     } satisfies ServerKeyStatus),
                     executeRecovery: vi.fn().mockResolvedValue({ privateKey: 'recovered-pk', did: 'did:key:z123' }),
                 },
@@ -878,6 +898,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: 'did:key:zExpected',
                         recoveryMethods: [{ type: 'email' as const, createdAt: new Date() }],
                         authShare: 'server-share',
+                        shareVersion: 1,
                     } satisfies ServerKeyStatus),
                     // Strategy now validates DID before rotating and throws on mismatch
                     executeRecovery: vi.fn().mockRejectedValue(
@@ -910,6 +931,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: 'did:key:z123',
                         recoveryMethods: [{ type: 'password' as const, createdAt: new Date() }],
                         authShare: 'server-share',
+                        shareVersion: 1,
                     } satisfies ServerKeyStatus),
                     executeRecovery: vi.fn().mockRejectedValue(new Error('No auth share found on server')),
                 },
@@ -1097,6 +1119,7 @@ describe('AuthCoordinator', () => {
                         primaryDid: null,
                         recoveryMethods: [],
                         authShare: null,
+                        shareVersion: null,
                     } satisfies ServerKeyStatus),
                 },
             });

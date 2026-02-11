@@ -11,6 +11,7 @@ import { getDeliveryService } from '../services/delivery';
 import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
 import {
     findUserKeyByContactMethod,
+    findAuthShareByVersion,
     upsertUserKey,
     addAuthProviderToUserKey,
     addRecoveryMethodToUserKey,
@@ -55,7 +56,9 @@ export const keysRouter = t.router({
                 summary: 'Get auth share for authenticated user',
             },
         })
-        .input(AuthInputValidator)
+        .input(AuthInputValidator.extend({
+            shareVersion: z.number().optional(),
+        }))
         .output(
             z.object({
                 authShare: ServerEncryptedShareValidator.nullable(),
@@ -66,6 +69,7 @@ export const keysRouter = t.router({
                         type: z.enum(['password', 'passkey', 'backup']),
                         createdAt: z.string(),
                         credentialId: z.string().optional(),
+                        shareVersion: z.number().optional(),
                     })
                 ),
                 keyProvider: z.enum(['web3auth', 'sss']),
@@ -86,16 +90,23 @@ export const keysRouter = t.router({
                 id: user.id,
             });
 
+            // If a specific shareVersion is requested, look it up from history
+            const requestedVersion = input.shareVersion;
+            const authShare = requestedVersion != null
+                ? findAuthShareByVersion(userKey, requestedVersion)
+                : userKey.authShare ?? null;
+
             const recoveryMethods = (userKey.recoveryMethods ?? [])
                 .filter(rm => rm && rm.type && rm.createdAt)
                 .map(rm => ({
                     type: rm.type,
                     createdAt: rm.createdAt instanceof Date ? rm.createdAt.toISOString() : String(rm.createdAt),
                     ...(rm.credentialId ? { credentialId: rm.credentialId } : {}),
+                    ...(rm.shareVersion != null ? { shareVersion: rm.shareVersion } : {}),
                 }));
 
             return {
-                authShare: userKey.authShare ?? null,
+                authShare,
                 primaryDid: userKey.primaryDid ?? null,
                 securityLevel: userKey.securityLevel ?? 'basic',
                 recoveryMethods,
@@ -120,7 +131,7 @@ export const keysRouter = t.router({
                 securityLevel: z.enum(['basic', 'enhanced', 'advanced']).optional(),
             })
         )
-        .output(z.object({ success: z.boolean() }))
+        .output(z.object({ success: z.boolean(), shareVersion: z.number() }))
         .mutation(async ({ ctx, input }) => {
             // DID-Auth: use the VP-authenticated DID as the authoritative primaryDid.
             // The VP is already cryptographically verified by didRoute, so ctx.user.did
@@ -136,7 +147,7 @@ export const keysRouter = t.router({
 
             const { user, contactMethod } = await verifyAndGetContactMethod(input);
 
-            await upsertUserKey(contactMethod, {
+            const updatedDoc = await upsertUserKey(contactMethod, {
                 authShare: input.authShare,
                 primaryDid: authenticatedDid,
                 securityLevel: input.securityLevel ?? 'basic',
@@ -144,7 +155,7 @@ export const keysRouter = t.router({
                 authProviders: [{ type: input.providerType, id: user.id }],
             });
 
-            return { success: true };
+            return { success: true, shareVersion: updatedDoc.shareVersion ?? 1 };
         }),
 
     addRecoveryMethod: didRoute
@@ -161,6 +172,7 @@ export const keysRouter = t.router({
                 type: z.enum(['password', 'passkey', 'backup']),
                 encryptedShare: EncryptedShareValidator,
                 credentialId: z.string().optional(),
+                shareVersion: z.number().optional(),
             })
         )
         .output(z.object({ success: z.boolean() }))
@@ -189,6 +201,7 @@ export const keysRouter = t.router({
                 createdAt: new Date(),
                 credentialId: input.credentialId,
                 encryptedShare: input.encryptedShare,
+                shareVersion: input.shareVersion,
             });
 
             return { success: true };
@@ -209,7 +222,12 @@ export const keysRouter = t.router({
                 credentialId: z.string().optional(),
             })
         )
-        .output(EncryptedShareValidator.nullable())
+        .output(
+            z.object({
+                encryptedShare: EncryptedShareValidator,
+                shareVersion: z.number().optional(),
+            }).nullable()
+        )
         .query(async ({ input }) => {
             const { contactMethod } = await verifyAndGetContactMethod(input);
 
@@ -226,7 +244,12 @@ export const keysRouter = t.router({
                 return true;
             });
 
-            return recoveryMethod?.encryptedShare ?? null;
+            if (!recoveryMethod?.encryptedShare) return null;
+
+            return {
+                encryptedShare: recoveryMethod.encryptedShare,
+                shareVersion: recoveryMethod.shareVersion,
+            };
         }),
 
     markMigrated: didRoute

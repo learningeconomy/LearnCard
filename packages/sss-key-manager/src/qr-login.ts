@@ -55,7 +55,7 @@ export interface QrPayload {
 /** Result of polling — either still waiting or the device share is ready */
 export type PollResult =
     | { status: 'pending' }
-    | { status: 'approved'; deviceShare: string; approverDid: string; accountHint?: string };
+    | { status: 'approved'; deviceShare: string; approverDid: string; accountHint?: string; shareVersion?: number };
 
 // ---------------------------------------------------------------------------
 // API helpers
@@ -149,13 +149,14 @@ export const pollQrLoginSession = async (
 
     const plaintext = await decryptShareFromTransfer(payload, ephemeralPrivateKey);
 
-    const parsed = JSON.parse(plaintext) as { d: string; h?: string };
+    const parsed = JSON.parse(plaintext) as { d: string; h?: string; v?: number };
 
     return {
         status: 'approved',
         deviceShare: parsed.d,
         approverDid: info.approverDid,
         accountHint: parsed.h,
+        shareVersion: parsed.v,
     };
 };
 
@@ -179,7 +180,7 @@ export const pollUntilApproved = async (
         onPoll?: (attempt: number) => void;
         signal?: AbortSignal;
     }
-): Promise<{ deviceShare: string; approverDid: string; accountHint?: string }> => {
+): Promise<{ deviceShare: string; approverDid: string; accountHint?: string; shareVersion?: number }> => {
     const intervalMs = options?.intervalMs ?? 2000;
     const timeoutMs = options?.timeoutMs ?? 120_000;
 
@@ -201,6 +202,7 @@ export const pollUntilApproved = async (
                 deviceShare: result.deviceShare,
                 approverDid: result.approverDid,
                 accountHint: result.accountHint,
+                shareVersion: result.shareVersion,
             };
         }
 
@@ -257,6 +259,7 @@ export const getQrLoginSessionInfo = async (
  * @param approverDid - DID of the approving device
  * @param recipientPublicKey - Base64 X25519 public key from the session
  * @param accountHint - Optional email or phone of the approver's account (sent to Device B as a login hint)
+ * @param shareVersion - Optional share version so Device B can fetch the matching auth share
  */
 export const approveQrLoginSession = async (
     config: QrLoginClientConfig,
@@ -264,10 +267,11 @@ export const approveQrLoginSession = async (
     deviceShare: string,
     approverDid: string,
     recipientPublicKey: string,
-    accountHint?: string
+    accountHint?: string,
+    shareVersion?: number
 ): Promise<void> => {
-    // Wrap the device share + account hint in a JSON envelope
-    const plaintext = JSON.stringify({ d: deviceShare, h: accountHint });
+    // Wrap the device share + account hint + version in a JSON envelope
+    const plaintext = JSON.stringify({ d: deviceShare, h: accountHint, v: shareVersion });
 
     // Encrypt with ECDH
     const encryptedPayload = await encryptShareForTransfer(plaintext, recipientPublicKey);

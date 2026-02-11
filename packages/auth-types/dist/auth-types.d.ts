@@ -74,6 +74,7 @@ export interface ServerKeyStatus {
 	primaryDid: string | null;
 	recoveryMethods: RecoveryMethodInfo[];
 	authShare: string | null;
+	shareVersion: number | null;
 }
 /**
  * Key Derivation Strategy
@@ -132,8 +133,6 @@ export interface KeyDerivationStrategy<TRecoveryInput = unknown, TRecoverySetupI
 		input: TRecoveryInput;
 		/** Optional: validate the reconstructed key's DID before rotating shares */
 		didFromPrivateKey?: (privateKey: string) => Promise<string>;
-		/** Optional: sign a DID-Auth VP JWT for server write operations */
-		signDidAuthVp?: (privateKey: string) => Promise<string>;
 	}): Promise<RecoveryResult>;
 	/** Set up a new recovery method */
 	setupRecoveryMethod?(params: {
@@ -158,6 +157,19 @@ export interface KeyDerivationStrategy<TRecoveryInput = unknown, TRecoverySetupI
 	 * @param email - Destination email address
 	 */
 	sendEmailBackupShare?(token: string, providerType: AuthProviderType, privateKey: string, email: string): Promise<void>;
+	/**
+	 * Get the share version associated with the local device share.
+	 * Used to request the matching auth share from the server and to
+	 * include in QR cross-device transfers.
+	 *
+	 * Returns null for legacy shares with no stored version.
+	 */
+	getLocalShareVersion?(): Promise<number | null>;
+	/**
+	 * Store the share version for the local device share.
+	 * Called after receiving a device share + version via QR transfer.
+	 */
+	storeLocalShareVersion?(version: number): Promise<void>;
 	/**
 	 * Inform the strategy which user is active so it can scope local storage
 	 * (e.g., device shares) per-user. Called by the coordinator after

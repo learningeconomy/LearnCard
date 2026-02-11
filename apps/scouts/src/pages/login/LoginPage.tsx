@@ -173,8 +173,13 @@ const LoginPage: React.FC = () => {
                             <div className="w-full max-w-[500px] bg-white rounded-[20px] shadow-2xl">
                                 <QrLoginRequester
                                     serverUrl={authConfig.serverUrl}
-                                    onApproved={(deviceShare, _approverDid, hint) => {
+                                    onApproved={(deviceShare, _approverDid, hint, version) => {
                                         window.sessionStorage.setItem('qr_login_device_share', deviceShare);
+
+                                        if (version != null) {
+                                            window.sessionStorage.setItem('qr_login_share_version', String(version));
+                                        }
+
                                         setAccountHint(hint ?? null);
                                         setQrApproved(true);
                                     }}

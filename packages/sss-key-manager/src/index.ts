@@ -22,6 +22,8 @@ export {
     deleteDeviceShare,
     clearAllShares,
     listAllDeviceShares,
+    storeShareVersion,
+    getShareVersion,
 } from './storage';
 
 export type { DeviceShareEntry } from './storage';

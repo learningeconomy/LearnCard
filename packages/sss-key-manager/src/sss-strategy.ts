@@ -33,6 +33,8 @@ import {
     getDeviceShare as defaultGetDeviceShare,
     hasDeviceShare as defaultHasDeviceShare,
     clearAllShares as defaultClearAllShares,
+    storeShareVersion as defaultStoreShareVersion,
+    getShareVersion as defaultGetShareVersion,
 } from './storage';
 import { encryptWithPassword, decryptWithPassword, DEFAULT_KDF_PARAMS } from './crypto';
 import { createPasskeyCredential, encryptShareWithPasskey, decryptShareWithPasskey, isWebAuthnSupported } from './passkey';
@@ -45,6 +47,8 @@ export interface SSSStorageFunctions {
     getDeviceShare: (id?: string) => Promise<string | null>;
     hasDeviceShare: (id?: string) => Promise<boolean>;
     clearAllShares: (id?: string) => Promise<void>;
+    storeShareVersion: (version: number, id?: string) => Promise<void>;
+    getShareVersion: (id?: string) => Promise<number | null>;
 }
 
 export interface SSSStrategyConfig {
@@ -69,6 +73,8 @@ const defaultStorage: SSSStorageFunctions = {
     getDeviceShare: defaultGetDeviceShare,
     hasDeviceShare: defaultHasDeviceShare,
     clearAllShares: defaultClearAllShares,
+    storeShareVersion: defaultStoreShareVersion,
+    getShareVersion: defaultGetShareVersion,
 };
 
 // ---------------------------------------------------------------------------
@@ -83,12 +89,17 @@ const buildHeaders = (token: string, didAuthVp?: string) => ({
 const fetchAuthShareRaw = async (
     serverUrl: string,
     token: string,
-    providerType: AuthProviderType
+    providerType: AuthProviderType,
+    shareVersion?: number
 ) => {
     const response = await fetch(`${serverUrl}/keys/auth-share`, {
         method: 'POST',
         headers: buildHeaders(token),
-        body: JSON.stringify({ authToken: token, providerType }),
+        body: JSON.stringify({
+            authToken: token,
+            providerType,
+            ...(shareVersion != null ? { shareVersion } : {}),
+        }),
     });
 
     if (!response.ok) {
@@ -107,7 +118,7 @@ const putAuthShare = async (
     authShare: string,
     primaryDid: string,
     didAuthVp?: string
-) => {
+): Promise<{ shareVersion: number }> => {
     const response = await fetch(`${serverUrl}/keys/auth-share`, {
         method: 'PUT',
         headers: buildHeaders(token, didAuthVp),
@@ -123,7 +134,16 @@ const putAuthShare = async (
     if (!response.ok) {
         throw new Error(`Failed to store auth share: ${response.statusText}`);
     }
+
+    const data = await response.json();
+
+    return { shareVersion: data.shareVersion ?? 1 };
 };
+
+interface RecoveryShareResponse {
+    encryptedShare: { encryptedData: string; iv: string; salt?: string };
+    shareVersion?: number;
+}
 
 const fetchRecoveryShare = async (
     serverUrl: string,
@@ -131,7 +151,7 @@ const fetchRecoveryShare = async (
     providerType: AuthProviderType,
     type: string,
     credentialId?: string
-) => {
+): Promise<RecoveryShareResponse> => {
     const params = new URLSearchParams({ type, providerType, authToken: token });
 
     if (credentialId) {
@@ -359,7 +379,13 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // --- Server communication ---
 
         async fetchServerKeyStatus(token: string, providerType: AuthProviderType): Promise<ServerKeyStatus> {
-            const data = await fetchAuthShareRaw(serverUrl, token, providerType);
+            // Pass the local device share's version so the server returns the matching auth share
+            const localVersion = await storage.getShareVersion(activeStorageId);
+
+            const data = await fetchAuthShareRaw(
+                serverUrl, token, providerType,
+                localVersion ?? undefined
+            );
 
             if (!data) {
                 return {
@@ -368,6 +394,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     primaryDid: null,
                     recoveryMethods: [],
                     authShare: null,
+                    shareVersion: null,
                 };
             }
 
@@ -385,6 +412,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 primaryDid: data.primaryDid || null,
                 recoveryMethods: data.recoveryMethods || [],
                 authShare: authShareString,
+                shareVersion: data.shareVersion ?? null,
             };
         },
 
@@ -395,7 +423,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             primaryDid: string,
             didAuthVp?: string
         ): Promise<void> {
-            await putAuthShare(serverUrl, token, providerType, authShare, primaryDid, didAuthVp);
+            const { shareVersion } = await putAuthShare(serverUrl, token, providerType, authShare, primaryDid, didAuthVp);
+
+            // Persist the version alongside the device share so we can request
+            // the matching auth share on next login.
+            await storage.storeShareVersion(shareVersion, activeStorageId);
         },
 
         async markMigrated(token: string, providerType: AuthProviderType, didAuthVp?: string): Promise<void> {
@@ -421,36 +453,41 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             const { token, providerType, input, didFromPrivateKey } = params;
 
             let recoveryShare: string;
+            let recoveryShareVersion: number | undefined;
 
             // Step 1: Decrypt the recovery share based on method
             switch (input.method) {
                 case 'password': {
-                    const encryptedShare = await fetchRecoveryShare(serverUrl, token, providerType, 'password');
+                    const result = await fetchRecoveryShare(serverUrl, token, providerType, 'password');
 
-                    if (!encryptedShare?.salt) {
+                    if (!result?.encryptedShare?.salt) {
                         throw new Error('Invalid recovery share data');
                     }
 
                     recoveryShare = await decryptWithPassword(
-                        encryptedShare.encryptedData,
-                        encryptedShare.iv,
-                        encryptedShare.salt,
+                        result.encryptedShare.encryptedData,
+                        result.encryptedShare.iv,
+                        result.encryptedShare.salt,
                         input.password,
                         DEFAULT_KDF_PARAMS
                     );
+
+                    recoveryShareVersion = result.shareVersion;
                     break;
                 }
 
                 case 'passkey': {
-                    const encryptedShare = await fetchRecoveryShare(
+                    const result = await fetchRecoveryShare(
                         serverUrl, token, providerType, 'passkey', input.credentialId
                     );
 
                     recoveryShare = await decryptShareWithPasskey({
-                        encryptedData: encryptedShare.encryptedData,
-                        iv: encryptedShare.iv,
+                        encryptedData: result.encryptedShare.encryptedData,
+                        iv: result.encryptedShare.iv,
                         credentialId: input.credentialId,
                     });
+
+                    recoveryShareVersion = result.shareVersion;
                     break;
                 }
 
@@ -462,6 +499,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     }
 
                     recoveryShare = await recoveryPhraseToShare(input.phrase);
+                    // Phrase recovery has no version — uses latest auth share
                     break;
                 }
 
@@ -479,18 +517,26 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         input.password,
                         backup.encryptedShare.kdfParams
                     );
+
+                    recoveryShareVersion = backup.shareVersion;
                     break;
                 }
 
                 case 'email': {
                     // The email share is a raw SSS share — no decryption needed
                     recoveryShare = input.emailShare.trim();
+                    // Email recovery has no version — uses latest auth share
                     break;
                 }
             }
 
-            // Step 2: Fetch auth share and reconstruct private key
-            const serverData = await fetchAuthShareRaw(serverUrl, token, providerType);
+            // Step 2: Fetch auth share and reconstruct private key.
+            // If the recovery method has a shareVersion, fetch that specific
+            // auth share version from the server (it may be in previousAuthShares).
+            const serverData = await fetchAuthShareRaw(
+                serverUrl, token, providerType,
+                recoveryShareVersion
+            );
 
             if (!serverData?.authShare) {
                 throw new Error('No auth share found on server');
@@ -525,6 +571,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             // This avoids re-splitting, which would overwrite the server's auth
             // share and invalidate ALL other recovery methods.
             await storage.storeDeviceShare(recoveryShare, activeStorageId);
+
+            // Persist the share version so future logins fetch the matching auth share.
+            // Use the recovery method's version if available, otherwise the server's current version.
+            const versionToStore = recoveryShareVersion ?? serverData.shareVersion ?? 1;
+            await storage.storeShareVersion(versionToStore, activeStorageId);
 
             return { privateKey, did: primaryDid };
         },
@@ -565,8 +616,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             console.debug('[setupRecoveryMethod] step 4 done, primaryDid:', primaryDid ? `${primaryDid.slice(0, 30)}...` : '(empty)');
 
             console.debug('[setupRecoveryMethod] step 5: putAuthShare');
-            await putAuthShare(serverUrl, token, providerType, shares.authShare, primaryDid, vpJwt);
-            console.debug('[setupRecoveryMethod] step 5 done');
+            const { shareVersion } = await putAuthShare(serverUrl, token, providerType, shares.authShare, primaryDid, vpJwt);
+            console.debug('[setupRecoveryMethod] step 5 done, shareVersion:', shareVersion);
+
+            // Persist the new version alongside the device share
+            await storage.storeShareVersion(shareVersion, activeStorageId);
 
             // Fire-and-forget: re-send email backup share so it stays in sync with the new auth share
             if (enableEmailBackupShare && authUser?.email && lastEmailShare) {
@@ -587,6 +641,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                             iv: encrypted.iv,
                             salt: encrypted.salt,
                         },
+                        shareVersion,
                     }, vpJwt);
 
                     return { method: 'password' };
@@ -614,6 +669,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                             iv: encryptedShare.iv,
                         },
                         credentialId: credential.credentialId,
+                        shareVersion,
                     }, vpJwt);
 
                     return { method: 'passkey', credentialId: credential.credentialId };
@@ -632,6 +688,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         version: 1,
                         createdAt: new Date().toISOString(),
                         primaryDid: input.did,
+                        shareVersion,
                         encryptedShare: {
                             ciphertext: encrypted.ciphertext,
                             iv: encrypted.iv,
@@ -691,6 +748,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
             // Clear after use — one-shot to avoid stale data
             lastEmailShare = undefined;
+        },
+
+        // --- Share versioning ---
+
+        async getLocalShareVersion(): Promise<number | null> {
+            return storage.getShareVersion(activeStorageId);
+        },
+
+        async storeLocalShareVersion(version: number): Promise<void> {
+            await storage.storeShareVersion(version, activeStorageId);
         },
 
         // --- Cleanup ---

@@ -25,6 +25,9 @@ interface DeviceLinkModalProps {
     /** Optional email or phone to send as a login hint to Device B */
     accountHint?: string;
 
+    /** Share version so Device B can fetch the matching auth share */
+    shareVersion?: number;
+
     /** Called when the link flow completes or is cancelled */
     onClose: () => void;
 }
@@ -33,6 +36,7 @@ export const DeviceLinkModal: React.FC<DeviceLinkModalProps> = ({
     deviceShare,
     approverDid,
     accountHint,
+    shareVersion,
     onClose,
 }) => {
     const authConfig = getAuthConfig();
@@ -77,6 +81,7 @@ export const DeviceLinkModal: React.FC<DeviceLinkModalProps> = ({
             deviceShare={deviceShare}
             approverDid={approverDid}
             accountHint={accountHint}
+            shareVersion={shareVersion}
             onDone={onClose}
             onCancel={onClose}
             onScanQr={Capacitor.isNativePlatform() ? handleScanQr : undefined}

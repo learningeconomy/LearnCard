@@ -101,6 +101,7 @@ export interface ServerKeyStatus {
     primaryDid: string | null;
     recoveryMethods: RecoveryMethodInfo[];
     authShare: string | null;
+    shareVersion: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -221,6 +222,23 @@ export interface KeyDerivationStrategy<
         privateKey: string,
         email: string
     ): Promise<void>;
+
+    // --- Share versioning ---
+
+    /**
+     * Get the share version associated with the local device share.
+     * Used to request the matching auth share from the server and to
+     * include in QR cross-device transfers.
+     *
+     * Returns null for legacy shares with no stored version.
+     */
+    getLocalShareVersion?(): Promise<number | null>;
+
+    /**
+     * Store the share version for the local device share.
+     * Called after receiving a device share + version via QR transfer.
+     */
+    storeLocalShareVersion?(version: number): Promise<void>;
 
     // --- User scoping ---
 

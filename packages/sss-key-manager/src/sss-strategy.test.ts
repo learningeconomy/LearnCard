@@ -29,11 +29,13 @@ import type { SSSKeyDerivationStrategy } from './types';
 
 const DEFAULT_KEY = 'device';
 
-const createMemoryStorage = (): SSSStorageFunctions & { _store: Map<string, string> } => {
+const createMemoryStorage = (): SSSStorageFunctions & { _store: Map<string, string>; _versions: Map<string, number> } => {
     const store = new Map<string, string>();
+    const versions = new Map<string, number>();
 
     return {
         _store: store,
+        _versions: versions,
 
         storeDeviceShare: vi.fn(async (share: string, id?: string) => {
             store.set(id ?? DEFAULT_KEY, share);
@@ -50,9 +52,19 @@ const createMemoryStorage = (): SSSStorageFunctions & { _store: Map<string, stri
         clearAllShares: vi.fn(async (id?: string) => {
             if (id) {
                 store.delete(id);
+                versions.delete(id);
             } else {
                 store.clear();
+                versions.clear();
             }
+        }),
+
+        storeShareVersion: vi.fn(async (version: number, id?: string) => {
+            versions.set(id ?? DEFAULT_KEY, version);
+        }),
+
+        getShareVersion: vi.fn(async (id?: string) => {
+            return versions.get(id ?? DEFAULT_KEY) ?? null;
         }),
     };
 };
@@ -306,6 +318,7 @@ describe('createSSSStrategy', () => {
             expect(status.primaryDid).toBe('did:key:z123');
             expect(status.authShare).toBe('raw-auth-share-string');
             expect(status.recoveryMethods).toHaveLength(1);
+            expect(status.shareVersion).toBeNull(); // no shareVersion in response
         });
 
         it('parses server response with object authShare (encrypted envelope)', async () => {
@@ -321,6 +334,7 @@ describe('createSSSStrategy', () => {
             const status = await strategy.fetchServerKeyStatus('token', 'firebase');
 
             expect(status.authShare).toBe('encrypted-share');
+            expect(status.shareVersion).toBeNull();
         });
 
         it('detects web3auth migration', async () => {
@@ -353,9 +367,9 @@ describe('createSSSStrategy', () => {
     // -----------------------------------------------------------------------
 
     describe('storeAuthShare', () => {
-        it('sends PUT request to the server', async () => {
+        it('sends PUT request to the server and stores returned shareVersion', async () => {
             const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(null, { status: 200 })
+                new Response(JSON.stringify({ success: true, shareVersion: 3 }), { status: 200 })
             );
 
             await strategy.storeAuthShare('token', 'firebase', 'share-data', 'did:key:z1');
@@ -367,6 +381,9 @@ describe('createSSSStrategy', () => {
                     body: expect.stringContaining('share-data'),
                 })
             );
+
+            // shareVersion should be persisted locally
+            expect(storage.storeShareVersion).toHaveBeenCalledWith(3, undefined);
         });
 
         it('throws on server error', async () => {
@@ -519,6 +536,9 @@ describe('createSSSStrategy', () => {
             // Verify the recovery share is now the device share and can reconstruct
             const storedDevice = await strategy.getLocalKey();
             expect(storedDevice).toBe(localKey);
+
+            // Verify shareVersion was stored (server returned shareVersion: 1)
+            expect(storage.storeShareVersion).toHaveBeenCalledWith(1, undefined);
         });
 
         it('retry after stale share still works (server not corrupted)', async () => {
@@ -705,6 +725,7 @@ describe('createSSSStrategy', () => {
 
             vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
                 const urlStr = typeof url === 'string' ? url : url.toString();
+                const method = (init?.method ?? 'GET').toUpperCase();
 
                 fetchCalls.push({
                     url: urlStr,
@@ -712,15 +733,21 @@ describe('createSSSStrategy', () => {
                 });
 
                 // fetchAuthShareRaw needs to return server data
-                if (urlStr.includes('/keys/auth-share') && init?.method !== 'PUT') {
+                if (urlStr.includes('/keys/auth-share') && method === 'POST') {
                     return new Response(JSON.stringify({
                         authShare: 'existing-auth-share',
                         primaryDid: 'did:key:z123',
                         recoveryMethods: [],
+                        shareVersion: 2,
                     }), { status: 200 });
                 }
 
-                return new Response(null, { status: 200 });
+                // putAuthShare returns shareVersion
+                if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
+                    return new Response(JSON.stringify({ success: true, shareVersion: 3 }), { status: 200 });
+                }
+
+                return new Response(JSON.stringify({ success: true }), { status: 200 });
             });
 
             await emailStrategy.setupRecoveryMethod!({

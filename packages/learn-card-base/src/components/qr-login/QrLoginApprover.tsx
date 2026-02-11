@@ -32,6 +32,9 @@ export interface QrLoginApproverProps {
     /** Optional email or phone to send as a login hint to Device B */
     accountHint?: string;
 
+    /** Share version so Device B can fetch the matching auth share */
+    shareVersion?: number;
+
     /** Called when approval is complete */
     onDone: () => void;
 
@@ -54,6 +57,7 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
     onDone,
     onCancel,
     onScanQr,
+    shareVersion,
 }) => {
     const { status, sessionInfo, error, lookupSession, approve, reset } = useQrLoginApprover(serverUrl);
 
@@ -94,9 +98,9 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
     }, [codeInput, lookupSession]);
 
     const handleApprove = useCallback(async () => {
-        await approve(deviceShare, approverDid, accountHint);
+        await approve(deviceShare, approverDid, accountHint, shareVersion);
         onDone();
-    }, [approve, deviceShare, approverDid, accountHint, onDone]);
+    }, [approve, deviceShare, approverDid, accountHint, shareVersion, onDone]);
 
     const handleBack = useCallback(() => {
         reset();

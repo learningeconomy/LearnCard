@@ -147,6 +147,7 @@ export interface BackupFile {
     version: 1;
     createdAt: string;
     primaryDid: string;
+    shareVersion?: number;
     encryptedShare: {
         ciphertext: string;
         iv: string;

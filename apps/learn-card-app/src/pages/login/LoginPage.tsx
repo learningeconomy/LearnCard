@@ -230,10 +230,15 @@ export const LoginContent: React.FC = () => {
                     <div className="w-full bg-white rounded-[20px] shadow-2xl">
                         <QrLoginRequester
                             serverUrl={authConfig.serverUrl}
-                            onApproved={(deviceShare, _approverDid, hint) => {
+                            onApproved={(deviceShare, _approverDid, hint, version) => {
                                 // Store the device share locally so the coordinator
                                 // can reconstruct the key after Firebase auth completes.
                                 window.sessionStorage.setItem('qr_login_device_share', deviceShare);
+
+                                if (version != null) {
+                                    window.sessionStorage.setItem('qr_login_share_version', String(version));
+                                }
+
                                 setAccountHint(hint ?? null);
                                 setQrApproved(true);
                             }}

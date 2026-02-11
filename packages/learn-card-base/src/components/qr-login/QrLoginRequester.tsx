@@ -23,7 +23,7 @@ export interface QrLoginRequesterProps {
     serverUrl: string;
 
     /** Called when Device A approves and the device share is decrypted */
-    onApproved: (deviceShare: string, approverDid: string, accountHint?: string) => void;
+    onApproved: (deviceShare: string, approverDid: string, accountHint?: string, shareVersion?: number) => void;
 
     /** Called when the user cancels */
     onCancel: () => void;
@@ -91,6 +91,7 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
         deviceShare,
         approverDid,
         accountHint,
+        shareVersion,
         error,
         start,
         cancel,
@@ -105,9 +106,9 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
     // Notify parent when approved
     useEffect(() => {
         if (status === 'approved' && deviceShare && approverDid) {
-            onApproved(deviceShare, approverDid, accountHint ?? undefined);
+            onApproved(deviceShare, approverDid, accountHint ?? undefined, shareVersion ?? undefined);
         }
-    }, [status, deviceShare, approverDid, accountHint, onApproved]);
+    }, [status, deviceShare, approverDid, accountHint, shareVersion, onApproved]);
 
     const handleCancel = () => {
         cancel();

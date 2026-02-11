@@ -31,6 +31,13 @@ export const RecoveryMethodValidator = z.object({
     createdAt: z.date(),
     credentialId: z.string().optional(),
     encryptedShare: EncryptedShareValidator.optional(),
+    shareVersion: z.number().optional(),
+});
+
+export const PreviousAuthShareValidator = z.object({
+    authShare: ServerEncryptedShareValidator,
+    shareVersion: z.number(),
+    createdAt: z.date(),
 });
 
 export const MongoUserKeyValidator = z.object({
@@ -51,6 +58,12 @@ export const MongoUserKeyValidator = z.object({
     shareVersion: z.number().default(1),
     shareUpdatedAt: z.date().optional(),
 
+    // Previous auth shares kept for cross-device and recovery compatibility.
+    // Each entry preserves the auth share + its version so that device shares
+    // and recovery methods from older splits can still reconstruct.
+    // Capped at MAX_PREVIOUS_AUTH_SHARES entries.
+    previousAuthShares: z.array(PreviousAuthShareValidator).default([]),
+
     securityLevel: z.enum(['basic', 'enhanced', 'advanced']).default('basic'),
 
     recoveryMethods: z.array(RecoveryMethodValidator).default([]),
@@ -68,6 +81,9 @@ export type AuthProviderMapping = z.infer<typeof AuthProviderMappingValidator>;
 export type ServerEncryptedShare = z.infer<typeof ServerEncryptedShareValidator>;
 export type EncryptedShare = z.infer<typeof EncryptedShareValidator>;
 export type RecoveryMethod = z.infer<typeof RecoveryMethodValidator>;
+export type PreviousAuthShare = z.infer<typeof PreviousAuthShareValidator>;
+
+const MAX_PREVIOUS_AUTH_SHARES = 5;
 
 export const getUserKeysCollection = () => {
     return mongodb.collection<MongoUserKeyType>(USER_KEYS_COLLECTION);
@@ -120,6 +136,25 @@ export const findUserKeyByDid = async (did: string): Promise<MongoUserKeyType | 
     });
 };
 
+/**
+ * Look up a specific auth share version from the current or previous shares.
+ * Returns the matching auth share, or null if the version is not found.
+ */
+export const findAuthShareByVersion = (
+    userKey: MongoUserKeyType,
+    version: number
+): ServerEncryptedShare | null => {
+    // Check current share first
+    if (userKey.shareVersion === version) {
+        return userKey.authShare ?? null;
+    }
+
+    // Search previous shares
+    const prev = (userKey.previousAuthShares ?? []).find(p => p.shareVersion === version);
+
+    return prev?.authShare ?? null;
+};
+
 export const upsertUserKey = async (
     contactMethod: ContactMethod,
     data: Partial<Omit<MongoUserKeyType, '_id' | 'contactMethod' | 'createdAt'>>
@@ -142,8 +177,25 @@ export const upsertUserKey = async (
             },
         };
 
-        // Increment shareVersion when authShare changes
-        if (data.authShare) {
+        // When authShare changes: push the old share into history, increment version
+        if (data.authShare && existing.authShare) {
+            updateOps.$inc = { shareVersion: 1 };
+            (updateOps.$set as Record<string, unknown>).shareUpdatedAt = now;
+
+            // Push old auth share into previousAuthShares (capped)
+            const oldEntry: PreviousAuthShare = {
+                authShare: existing.authShare,
+                shareVersion: existing.shareVersion ?? 1,
+                createdAt: existing.shareUpdatedAt ?? existing.updatedAt ?? now,
+            };
+
+            const history = [...(existing.previousAuthShares ?? []), oldEntry];
+
+            // Keep only the most recent MAX_PREVIOUS_AUTH_SHARES entries
+            (updateOps.$set as Record<string, unknown>).previousAuthShares =
+                history.slice(-MAX_PREVIOUS_AUTH_SHARES);
+        } else if (data.authShare) {
+            // First auth share — no history to push
             updateOps.$inc = { shareVersion: 1 };
             (updateOps.$set as Record<string, unknown>).shareUpdatedAt = now;
         }
@@ -207,16 +259,16 @@ export const addRecoveryMethodToUserKey = async (
 ): Promise<void> => {
     const collection = getUserKeysCollection();
 
-    // IMPORTANT: Remove ALL existing recovery methods when adding a new one.
-    // Each recovery method setup regenerates all SSS shares (device, auth, recovery).
-    // Old recovery shares are from different splits and won't work with the new auth share.
+    // Replace any existing recovery method of the same type (e.g., updating
+    // a password). Other types are preserved — with versioned auth shares,
+    // old recovery shares still pair with their matching auth share version.
     await collection.updateOne(
         {
             'contactMethod.type': contactMethod.type,
             'contactMethod.value': contactMethod.value,
         },
         {
-            $set: { recoveryMethods: [] },
+            $pull: { recoveryMethods: { type: recoveryMethod.type } as Record<string, unknown> },
         }
     );
 

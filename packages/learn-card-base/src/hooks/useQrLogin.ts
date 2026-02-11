@@ -46,6 +46,7 @@ export interface QrRequesterState {
     deviceShare: string | null;
     approverDid: string | null;
     accountHint: string | null;
+    shareVersion: number | null;
     error: string | null;
 }
 
@@ -83,6 +84,7 @@ export const useQrLoginRequester = (
         deviceShare: null,
         approverDid: null,
         accountHint: null,
+        shareVersion: null,
         error: null,
     });
 
@@ -121,6 +123,7 @@ export const useQrLoginRequester = (
             deviceShare: null,
             approverDid: null,
             accountHint: null,
+            shareVersion: null,
             error: null,
         });
     }, [cleanup]);
@@ -152,6 +155,7 @@ export const useQrLoginRequester = (
                 deviceShare: null,
                 approverDid: null,
                 accountHint: null,
+                shareVersion: null,
                 error: null,
             });
 
@@ -207,6 +211,7 @@ export const useQrLoginRequester = (
                 deviceShare: result.deviceShare,
                 approverDid: result.approverDid,
                 accountHint: result.accountHint ?? null,
+                shareVersion: result.shareVersion ?? null,
             }));
         } catch (e) {
             if (timerRef.current) clearInterval(timerRef.current);
@@ -260,7 +265,7 @@ export interface UseQrLoginApproverReturn extends QrApproverState {
     lookupSession: (lookup: string) => Promise<void>;
 
     /** Approve the current session — encrypts and pushes the device share */
-    approve: (deviceShare: string, approverDid: string, accountHint?: string) => Promise<void>;
+    approve: (deviceShare: string, approverDid: string, accountHint?: string, shareVersion?: number) => Promise<void>;
 
     /** Reset the approver state */
     reset: () => void;
@@ -293,7 +298,7 @@ export const useQrLoginApprover = (serverUrl: string): UseQrLoginApproverReturn 
         }
     }, [serverUrl]);
 
-    const approve = useCallback(async (deviceShare: string, approverDid: string, accountHint?: string) => {
+    const approve = useCallback(async (deviceShare: string, approverDid: string, accountHint?: string, shareVersion?: number) => {
         if (!state.sessionInfo) {
             setState(prev => ({ ...prev, status: 'error', error: 'No session loaded' }));
             return;
@@ -308,7 +313,8 @@ export const useQrLoginApprover = (serverUrl: string): UseQrLoginApproverReturn 
                 deviceShare,
                 approverDid,
                 state.sessionInfo.publicKey,
-                accountHint
+                accountHint,
+                shareVersion
             );
 
             setState(prev => ({ ...prev, status: 'done' }));

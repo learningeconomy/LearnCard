@@ -36,6 +36,7 @@ import {
     clearAllShares,
     listAllDeviceShares,
     deleteDeviceShare,
+    getShareVersion,
 } from '@learncard/sss-key-manager';
 import type { DeviceShareEntry } from '@learncard/sss-key-manager';
 
@@ -125,9 +126,10 @@ interface ServerState {
     exists: boolean;
     needsMigration: boolean;
     primaryDid: string | null;
-    recoveryMethods: Array<{ type: string; createdAt?: string }>;
+    recoveryMethods: Array<{ type: string; createdAt?: string; shareVersion?: number }>;
     authShareFingerprint: string | null;
     rawAuthShare: string | null;
+    shareVersion: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -229,6 +231,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
     const [serverLoading, setServerLoading] = useState(false);
     const [didKeyDid, setDidKeyDid] = useState<string | null>(null);
     const [didWebDid, setDidWebDid] = useState<string | null>(null);
+    const [localShareVersion, setLocalShareVersion] = useState<number | null>(null);
 
     // --- Coordinator (source of truth) ---
     const {
@@ -319,12 +322,21 @@ export const AuthKeyDebugWidget: React.FC = () => {
 
             const shares = await listAllDeviceShares();
             setAllShares(shares);
+
+            // Fetch the share version for the active storage ID
+            try {
+                const version = await getShareVersion(activeStorageId);
+                setLocalShareVersion(version);
+            } catch {
+                setLocalShareVersion(null);
+            }
         } catch {
             setDeviceShareExists(false);
             setDeviceSharePreview(null);
             setAllShares([]);
+            setLocalShareVersion(null);
         }
-    }, []);
+    }, [activeStorageId]);
 
     useEffect(() => {
         if (isOpen) {
@@ -444,6 +456,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
                 recoveryMethods: data.recoveryMethods || [],
                 authShareFingerprint: rawAuth ? fingerprint(rawAuth) : null,
                 rawAuthShare: rawAuth || null,
+                shareVersion: data.shareVersion ?? null,
             });
         } catch (e) {
             console.error('[DebugWidget] fetchServerState error:', e);
@@ -485,7 +498,8 @@ export const AuthKeyDebugWidget: React.FC = () => {
             didKeyDid,
             didWebDid,
             serverState,
-            deviceShares: allShares.map(s => ({ id: s.id, preview: s.preview })),
+            localShareVersion,
+            deviceShares: allShares.map(s => ({ id: s.id, preview: s.preview, shareVersion: s.shareVersion })),
             events: events.map(e => ({
                 time: e.timestamp.toISOString(),
                 type: e.type,
@@ -500,7 +514,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
             setCopied('export');
             setTimeout(() => setCopied(null), 2000);
         } catch { /* ignore */ }
-    }, [state, did, didKeyDid, didWebDid, serverState, allShares, events]);
+    }, [state, did, didKeyDid, didWebDid, serverState, localShareVersion, allShares, events]);
 
     if (!WIDGET_ENABLED) return null;
 
@@ -730,6 +744,33 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                     <KVRow label="Needs Migration" value={serverState.needsMigration} copied={copied} onCopy={copyToClipboard} />
                                     <KVRow label="Server primaryDid" value={serverState.primaryDid ? truncate(serverState.primaryDid, 28) : '—'} copied={copied} onCopy={copyToClipboard} />
                                     <KVRow label="Auth Share 🔑" value={serverState.authShareFingerprint ?? '—'} copied={copied} onCopy={copyToClipboard} />
+                                    <KVRow label="Server Share Version" value={serverState.shareVersion ?? '—'} copied={copied} onCopy={copyToClipboard} />
+                                    <KVRow label="Local Share Version" value={localShareVersion ?? '—'} copied={copied} onCopy={copyToClipboard} />
+
+                                    {/* Version match indicator */}
+                                    {serverState.shareVersion != null && localShareVersion != null && (
+                                        <div className={`flex items-center gap-1 mt-1 text-[9px] ${
+                                            serverState.shareVersion === localShareVersion
+                                                ? 'text-emerald-400'
+                                                : 'text-red-400'
+                                        }`}>
+                                            {serverState.shareVersion === localShareVersion
+                                                ? <Check className="w-2.5 h-2.5" />
+                                                : <AlertTriangle className="w-2.5 h-2.5" />}
+                                            <span>
+                                                {serverState.shareVersion === localShareVersion
+                                                    ? `Versions match (v${localShareVersion})`
+                                                    : `Version mismatch! Server v${serverState.shareVersion} ≠ Local v${localShareVersion}`}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {serverState.shareVersion != null && localShareVersion == null && (
+                                        <div className="flex items-center gap-1 mt-1 text-[9px] text-yellow-400">
+                                            <AlertTriangle className="w-2.5 h-2.5" />
+                                            <span>No local version stored (legacy share?)</span>
+                                        </div>
+                                    )}
 
                                     <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2 mb-0.5">
                                         Recovery Methods ({serverState.recoveryMethods.length})
@@ -749,6 +790,16 @@ export const AuthKeyDebugWidget: React.FC = () => {
 
                                                 {rm.createdAt && (
                                                     <span className="text-gray-600 text-[8px]">{new Date(rm.createdAt).toLocaleDateString()}</span>
+                                                )}
+
+                                                {rm.shareVersion != null && (
+                                                    <span className={`text-[8px] font-mono px-1 py-0.5 rounded ${
+                                                        serverState.shareVersion != null && rm.shareVersion !== serverState.shareVersion
+                                                            ? 'bg-yellow-500/20 text-yellow-400'
+                                                            : 'bg-gray-700 text-gray-400'
+                                                    }`}>
+                                                        v{rm.shareVersion}
+                                                    </span>
                                                 )}
                                             </div>
                                         ))
@@ -851,6 +902,12 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                                 <div className="flex items-center gap-1 ml-3">
                                                     <span className="text-[8px] text-gray-500">key:</span>
                                                     <span className="text-[8px] font-mono text-cyan-400/70 truncate">{entry.preview}</span>
+
+                                                    {entry.shareVersion != null && (
+                                                        <span className="text-[8px] font-mono px-1 py-0.5 rounded bg-gray-700 text-gray-400 shrink-0">
+                                                            v{entry.shareVersion}
+                                                        </span>
+                                                    )}
 
                                                     <button
                                                         onClick={() => copyToClipboard(entry.id, entry.id)}

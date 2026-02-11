@@ -74,6 +74,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
     onClose: () => void;
 }> = ({ did, keyDerivation, accountHint, onClose }) => {
     const [deviceShare, setDeviceShare] = useState<string | null>(null);
+    const [shareVersion, setShareVersion] = useState<number | undefined>(undefined);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const authConfig = getAuthConfig();
@@ -94,6 +95,14 @@ const ScoutsDeviceLinkOverlay: React.FC<{
                 }
 
                 setDeviceShare(share);
+
+                // Fetch the share version if the strategy supports it
+                const version = await keyDerivation.getLocalShareVersion?.();
+
+                if (!cancelled && version != null) {
+                    setShareVersion(version);
+                }
+
                 setLoading(false);
             } catch (e) {
                 if (cancelled) return;
@@ -177,6 +186,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
                 deviceShare={deviceShare}
                 approverDid={did}
                 accountHint={accountHint}
+                shareVersion={shareVersion}
                 onDone={onClose}
                 onCancel={onClose}
                 onScanQr={Capacitor.isNativePlatform() ? handleScanQr : undefined}
@@ -313,9 +323,22 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
         qrPickupAttemptedRef.current = true;
         window.sessionStorage.removeItem('qr_login_device_share');
 
+        const qrVersionStr = window.sessionStorage.getItem('qr_login_share_version');
+        window.sessionStorage.removeItem('qr_login_share_version');
+
         const applyQrShare = async () => {
             try {
                 await keyDerivation.storeLocalKey(qrShare);
+
+                // Store the share version if it was included in the QR transfer
+                if (qrVersionStr != null) {
+                    const version = parseInt(qrVersionStr, 10);
+
+                    if (!isNaN(version)) {
+                        await keyDerivation.storeLocalShareVersion?.(version);
+                    }
+                }
+
                 await coordinator.initialize();
             } catch (e) {
                 console.warn('[ScoutPass] QR login device share pickup failed', e);

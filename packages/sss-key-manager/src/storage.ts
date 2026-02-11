@@ -139,6 +139,38 @@ export async function storeDeviceShare(share: string, id: string = DEFAULT_DEVIC
     }
 }
 
+/**
+ * Store the share version alongside a device share.
+ * Stored as a separate key `{id}:version` to avoid changing the encryption format.
+ */
+export async function storeShareVersion(version: number, id: string = DEFAULT_DEVICE_SHARE_ID): Promise<void> {
+    const db = await openDB();
+
+    try {
+        await tx(db, SHARES_STORE, 'readwrite', s => s.put(version, `${id}:version`));
+    } finally {
+        db.close();
+    }
+}
+
+/**
+ * Retrieve the share version for a device share.
+ * Returns null if no version is stored (legacy shares).
+ */
+export async function getShareVersion(id: string = DEFAULT_DEVICE_SHARE_ID): Promise<number | null> {
+    const db = await openDB();
+
+    try {
+        const version = await tx<number | undefined>(db, SHARES_STORE, 'readonly', s =>
+            s.get(`${id}:version`)
+        );
+
+        return version ?? null;
+    } finally {
+        db.close();
+    }
+}
+
 export async function getDeviceShare(id: string = DEFAULT_DEVICE_SHARE_ID): Promise<string | null> {
     const db = await openDB();
 
@@ -180,6 +212,7 @@ export async function deleteDeviceShare(id: string = DEFAULT_DEVICE_SHARE_ID): P
 export interface DeviceShareEntry {
     id: string;
     preview: string;
+    shareVersion?: number;
 }
 
 /**
@@ -216,7 +249,9 @@ export async function listAllDeviceShares(): Promise<DeviceShareEntry[]> {
                     ? share.substring(0, 8) + '...' + share.substring(share.length - 8)
                     : '(decrypt failed)';
 
-                entries.push({ id, preview });
+                const version = await getShareVersion(id);
+
+                entries.push({ id, preview, shareVersion: version ?? undefined });
             } catch {
                 entries.push({ id, preview: '(error)' });
             }
