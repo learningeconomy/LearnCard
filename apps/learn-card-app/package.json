@@ -119,7 +119,7 @@
         "dev-build-brain": "docker compose -f compose-local.yaml up --build brain",
         "start": "vite --host",
         "start-p-4000": "vite --port=4000",
-        "docker-start": "LCN_URL=http://localhost:4000/trpc LCN_API_URL=http://localhost:4000/api CLOUD_URL=http://localhost:4100/trpc API_URL=http://localhost:5100/trpc vite --host",
+        "docker-start": "LCN_URL=http://localhost:4000/trpc LCN_API_URL=http://localhost:4000/api CLOUD_URL=http://localhost:4100/trpc LEARN_CLOUD_XAPI_URL=http://localhost:4100/xapi API_URL=http://localhost:5100/trpc vite --host",
         "serve": "vite",
         "build": "NODE_OPTIONS=\"--max-old-space-size=16608\"  vite build",
         "docker-build": "LCN_URL=http://localhost:4000/trpc CLOUD_URL=http://localhost:4100/trpc API_URL=http://localhost:5100/trpc NODE_OPTIONS=\"--max-old-space-size=4608\" vite build -d",
