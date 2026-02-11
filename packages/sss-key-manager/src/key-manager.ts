@@ -200,16 +200,16 @@ export class SSSKeyManager implements SSSKeyDerivationProvider {
 
     async recover(method: RecoveryMethod): Promise<string> {
         if (method.type === 'password') {
-            const encryptedShare = await this.apiClient.getRecoveryShare('password');
+            const result = await this.apiClient.getRecoveryShare('password');
 
-            if (!encryptedShare || !encryptedShare.salt) {
+            if (!result?.encryptedShare?.salt) {
                 throw new Error('No password recovery share found');
             }
 
             const recoveryShare = await decryptWithPassword(
-                encryptedShare.encryptedData,
-                encryptedShare.iv,
-                encryptedShare.salt,
+                result.encryptedShare.encryptedData,
+                result.encryptedShare.iv,
+                result.encryptedShare.salt,
                 method.password,
                 DEFAULT_KDF_PARAMS
             );
@@ -266,15 +266,15 @@ export class SSSKeyManager implements SSSKeyDerivationProvider {
 
             return privateKey;
         } else if (method.type === 'passkey') {
-            const encryptedShare = await this.apiClient.getRecoveryShare('passkey', method.credentialId);
+            const result = await this.apiClient.getRecoveryShare('passkey', method.credentialId);
 
-            if (!encryptedShare) {
+            if (!result?.encryptedShare) {
                 throw new Error('No passkey recovery share found');
             }
 
             const recoveryShare = await decryptShareWithPasskey({
-                encryptedData: encryptedShare.encryptedData,
-                iv: encryptedShare.iv,
+                encryptedData: result.encryptedShare.encryptedData,
+                iv: result.encryptedShare.iv,
                 credentialId: method.credentialId || '',
             });
 

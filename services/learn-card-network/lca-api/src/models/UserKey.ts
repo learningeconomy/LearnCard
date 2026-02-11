@@ -223,6 +223,7 @@ export const upsertUserKey = async (
             shareUpdatedAt: data.authShare ? now : undefined,
             securityLevel: data.securityLevel ?? 'basic',
             recoveryMethods: data.recoveryMethods ?? [],
+            previousAuthShares: [],
             migratedFromWeb3Auth: data.migratedFromWeb3Auth ?? false,
             migratedAt: data.migratedAt,
             createdAt: now,

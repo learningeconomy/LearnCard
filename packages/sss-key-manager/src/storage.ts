@@ -48,29 +48,46 @@ function tx<T = unknown>(
     });
 }
 
+/**
+ * Serialisation lock for master key creation.
+ * Prevents two concurrent callers from both seeing "no key" and each
+ * generating a different AES key (TOCTOU race).
+ */
+let masterKeyPromise: Promise<CryptoKey> | null = null;
+
 async function getOrCreateMasterKey(): Promise<CryptoKey> {
-    const db = await openDB();
+    if (masterKeyPromise) return masterKeyPromise;
+
+    // The singleton promise serialises concurrent callers so only the first
+    // one creates the key; all others await the same result.
+    masterKeyPromise = (async () => {
+        const db = await openDB();
+
+        try {
+            const existing = await tx<CryptoKey | undefined>(db, KEYS_STORE, 'readonly', s =>
+                s.get('master-key')
+            );
+
+            if (existing) return existing;
+
+            const key = await crypto.subtle.generateKey(
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt']
+            );
+
+            await tx(db, KEYS_STORE, 'readwrite', s => s.put(key, 'master-key'));
+
+            return key;
+        } finally {
+            db.close();
+        }
+    })();
 
     try {
-        const existing = await tx<CryptoKey | undefined>(db, KEYS_STORE, 'readonly', s =>
-            s.get('master-key')
-        );
-
-        if (existing) {
-            return existing;
-        }
-
-        const key = await crypto.subtle.generateKey(
-            { name: 'AES-GCM', length: 256 },
-            false,
-            ['encrypt', 'decrypt']
-        );
-
-        await tx(db, KEYS_STORE, 'readwrite', s => s.put(key, 'master-key'));
-
-        return key;
+        return await masterKeyPromise;
     } finally {
-        db.close();
+        masterKeyPromise = null;
     }
 }
 
@@ -175,18 +192,34 @@ export async function getDeviceShare(id: string = DEFAULT_DEVICE_SHARE_ID): Prom
     const db = await openDB();
 
     try {
-        const payload = await tx<EncryptedPayload | undefined>(db, SHARES_STORE, 'readonly', s =>
+        const raw = await tx<unknown>(db, SHARES_STORE, 'readonly', s =>
             s.get(id)
         );
 
-        if (!payload) {
+        if (raw == null) {
             return null;
         }
+
+        // Validate that the stored value looks like an EncryptedPayload before
+        // attempting decryption. Phantom entries from stale code paths or
+        // corrupt data would crash in base64ToBuffer / AES-GCM otherwise.
+        if (
+            typeof raw !== 'object' ||
+            !('cipher' in (raw as Record<string, unknown>)) ||
+            !('iv' in (raw as Record<string, unknown>))
+        ) {
+            console.warn(
+                `SSS Storage: entry "${id}" is not a valid EncryptedPayload (type=${typeof raw}, keys=${typeof raw === 'object' ? Object.keys(raw as object).join(',') : 'n/a'}). Skipping.`
+            );
+            return null;
+        }
+
+        const payload = raw as EncryptedPayload;
 
         try {
             return await decryptShare(payload, id);
         } catch (e) {
-            console.warn('SSS Storage: decryption failed', e);
+            console.warn('SSS Storage: decryption failed for key', id, e);
             return null;
         }
     } finally {
@@ -204,6 +237,8 @@ export async function deleteDeviceShare(id: string = DEFAULT_DEVICE_SHARE_ID): P
 
     try {
         await tx(db, SHARES_STORE, 'readwrite', s => s.delete(id));
+        // Also remove the companion version metadata key
+        await tx(db, SHARES_STORE, 'readwrite', s => s.delete(`${id}:version`));
     } finally {
         db.close();
     }
@@ -243,11 +278,22 @@ export async function listAllDeviceShares(): Promise<DeviceShareEntry[]> {
         for (const rawKey of allKeys) {
             const id = String(rawKey);
 
+            // Skip metadata keys (e.g. "sss-device-share:uid:version")
+            if (id.endsWith(':version')) continue;
+
             try {
                 const share = await getDeviceShare(id);
-                const preview = share
-                    ? share.substring(0, 8) + '...' + share.substring(share.length - 8)
-                    : '(decrypt failed)';
+
+                if (!share) {
+                    // Orphaned entry — value exists but can't be decrypted.
+                    // Auto-clean it (and its companion :version key) to prevent
+                    // phantom "(decrypt failed)" entries from accumulating.
+                    console.warn(`SSS Storage: removing orphaned entry that failed to decrypt: ${id}`);
+                    await deleteDeviceShare(id);
+                    continue;
+                }
+
+                const preview = share.substring(0, 8) + '...' + share.substring(share.length - 8);
 
                 const version = await getShareVersion(id);
 
@@ -275,10 +321,36 @@ export async function clearAllShares(id?: string): Promise<void> {
         return;
     }
 
-    await new Promise<void>((resolve, reject) => {
-        const req = indexedDB.deleteDatabase(DB_NAME);
-        req.onsuccess = () => resolve();
-        req.onerror = () => reject(req.error);
-        req.onblocked = () => resolve();
-    });
+    // Reset the cached master-key promise so the next operation generates a fresh key.
+    masterKeyPromise = null;
+
+    // Retry deletion up to 3 times — the first attempt may be blocked by
+    // connections that haven't closed yet (e.g. the debug widget).
+    for (let attempt = 0; attempt < 3; attempt++) {
+        const deleted = await new Promise<boolean>((resolve, reject) => {
+            const req = indexedDB.deleteDatabase(DB_NAME);
+            req.onsuccess = () => resolve(true);
+            req.onerror = () => reject(req.error);
+            req.onblocked = () => resolve(false);
+        });
+
+        if (deleted) return;
+
+        // Brief pause to let blocked connections close
+        await new Promise(r => setTimeout(r, 50));
+    }
+
+    // Final fallback: clear all object stores manually instead of deleting the DB
+    try {
+        const db = await openDB();
+
+        try {
+            await tx(db, SHARES_STORE, 'readwrite', s => s.clear());
+            await tx(db, KEYS_STORE, 'readwrite', s => s.clear());
+        } finally {
+            db.close();
+        }
+    } catch {
+        // Best-effort — if even this fails, the next open will re-create the DB
+    }
 }

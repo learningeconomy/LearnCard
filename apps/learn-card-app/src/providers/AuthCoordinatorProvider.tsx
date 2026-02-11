@@ -119,6 +119,11 @@ const DeviceLinkOverlay: React.FC<{
                 // Fetch the share version if the strategy supports it
                 const version = await keyDerivation.getLocalShareVersion?.();
 
+                console.debug(
+                    '[Device Link] approver local shareVersion:',
+                    version ?? '(none — will not be sent to Device B)'
+                );
+
                 if (!cancelled && version != null) {
                     setShareVersion(version);
                 }
@@ -362,6 +367,12 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 
         const applyQrShare = async () => {
             try {
+                console.debug(
+                    '[QR Login Pickup] received share:',
+                    qrShare.substring(0, 8) + '...',
+                    '| shareVersion raw:', qrVersionStr
+                );
+
                 await keyDerivation.storeLocalKey(qrShare);
 
                 // Store the share version if it was included in the QR transfer
@@ -369,13 +380,18 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                     const version = parseInt(qrVersionStr, 10);
 
                     if (!isNaN(version)) {
+                        console.debug('[QR Login Pickup] storing shareVersion:', version);
                         await keyDerivation.storeLocalShareVersion?.(version);
+                    } else {
+                        console.warn('[QR Login Pickup] shareVersion is not a valid number:', qrVersionStr);
                     }
+                } else {
+                    console.warn('[QR Login Pickup] no shareVersion received from approver device');
                 }
 
                 await coordinator.initialize();
             } catch (e) {
-                console.warn('QR login device share pickup failed', e);
+                console.warn('[QR Login Pickup] failed', e);
             }
         };
 
@@ -765,10 +781,18 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                         onRecoverWithEmail={async (emailShare: string) => {
                             await coordinator.recover({ method: 'email', emailShare });
                         }}
-                        onRecoverWithDevice={async (deviceShare: string) => {
+                        onRecoverWithDevice={async (deviceShare: string, shareVersion?: number) => {
                             // Store the received device share locally, then
                             // re-initialize the coordinator so it finds both shares.
                             await keyDerivation.storeLocalKey(deviceShare);
+
+                            if (shareVersion != null) {
+                                console.debug('[Recovery via Device] storing shareVersion:', shareVersion);
+                                await keyDerivation.storeLocalShareVersion?.(shareVersion);
+                            } else {
+                                console.warn('[Recovery via Device] no shareVersion received from approver device');
+                            }
+
                             await coordinator.initialize();
                         }}
                         onCancel={handleLogout}

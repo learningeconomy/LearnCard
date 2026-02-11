@@ -406,13 +406,23 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     ? rawAuthShare
                     : null;
 
+            const serverVersion = data.shareVersion ?? null;
+
+            // Version repair: if the server knows the version but local storage
+            // doesn't (e.g. account created before versioning was added), backfill
+            // it so QR device-link transfers always include the version.
+            if (serverVersion != null && localVersion == null) {
+                storage.storeShareVersion(serverVersion, activeStorageId)
+                    .catch(e => console.warn('SSS: failed to backfill local shareVersion', e));
+            }
+
             return {
                 exists: !!rawAuthShare || !!data.keyProvider || !!data.primaryDid,
                 needsMigration: data.keyProvider === 'web3auth',
                 primaryDid: data.primaryDid || null,
                 recoveryMethods: data.recoveryMethods || [],
                 authShare: authShareString,
-                shareVersion: data.shareVersion ?? null,
+                shareVersion: serverVersion,
             };
         },
 

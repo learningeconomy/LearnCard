@@ -344,6 +344,167 @@ describe('QR Login Client', async () => {
     });
 
     // -----------------------------------------------------------------------
+    // shareVersion in encrypted envelope
+    // -----------------------------------------------------------------------
+
+    it.skipIf(!supported)('full flow with shareVersion: version is encrypted and returned to Device B', async () => {
+        const deviceShare = 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab';
+        const approverDid = 'did:key:zVersionTest';
+        const shareVersion = 5;
+
+        const { session, ephemeralKeypair, qrPayload } = await createQrLoginSession({
+            serverUrl: SERVER_URL,
+        });
+
+        const sessionInfo = await getQrLoginSessionInfo(
+            { serverUrl: SERVER_URL },
+            qrPayload.sessionId
+        );
+
+        // Device A approves WITH shareVersion
+        await approveQrLoginSession(
+            { serverUrl: SERVER_URL },
+            session.sessionId,
+            deviceShare,
+            approverDid,
+            sessionInfo.publicKey,
+            undefined, // no accountHint
+            shareVersion
+        );
+
+        const result = await pollQrLoginSession(
+            { serverUrl: SERVER_URL },
+            session.sessionId,
+            ephemeralKeypair.privateKey
+        );
+
+        expect(result.status).toBe('approved');
+
+        if (result.status === 'approved') {
+            expect(result.deviceShare).toBe(deviceShare);
+            expect(result.approverDid).toBe(approverDid);
+            expect(result.shareVersion).toBe(shareVersion);
+        }
+    });
+
+    it.skipIf(!supported)('shareVersion is undefined when not provided by Device A', async () => {
+        const deviceShare = 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab';
+        const approverDid = 'did:key:zNoVersion';
+
+        const { session, ephemeralKeypair, qrPayload } = await createQrLoginSession({
+            serverUrl: SERVER_URL,
+        });
+
+        const sessionInfo = await getQrLoginSessionInfo(
+            { serverUrl: SERVER_URL },
+            qrPayload.sessionId
+        );
+
+        // Device A approves WITHOUT shareVersion
+        await approveQrLoginSession(
+            { serverUrl: SERVER_URL },
+            session.sessionId,
+            deviceShare,
+            approverDid,
+            sessionInfo.publicKey
+            // no accountHint, no shareVersion
+        );
+
+        const result = await pollQrLoginSession(
+            { serverUrl: SERVER_URL },
+            session.sessionId,
+            ephemeralKeypair.privateKey
+        );
+
+        expect(result.status).toBe('approved');
+
+        if (result.status === 'approved') {
+            expect(result.deviceShare).toBe(deviceShare);
+            expect(result.shareVersion).toBeUndefined();
+        }
+    });
+
+    it.skipIf(!supported)('full flow with both accountHint and shareVersion', async () => {
+        const deviceShare = 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab';
+        const approverDid = 'did:key:zBothFields';
+        const accountHint = 'user@example.com';
+        const shareVersion = 3;
+
+        const { session, ephemeralKeypair, qrPayload } = await createQrLoginSession({
+            serverUrl: SERVER_URL,
+        });
+
+        const sessionInfo = await getQrLoginSessionInfo(
+            { serverUrl: SERVER_URL },
+            qrPayload.sessionId
+        );
+
+        await approveQrLoginSession(
+            { serverUrl: SERVER_URL },
+            session.sessionId,
+            deviceShare,
+            approverDid,
+            sessionInfo.publicKey,
+            accountHint,
+            shareVersion
+        );
+
+        const result = await pollQrLoginSession(
+            { serverUrl: SERVER_URL },
+            session.sessionId,
+            ephemeralKeypair.privateKey
+        );
+
+        expect(result.status).toBe('approved');
+
+        if (result.status === 'approved') {
+            expect(result.deviceShare).toBe(deviceShare);
+            expect(result.approverDid).toBe(approverDid);
+            expect(result.accountHint).toBe(accountHint);
+            expect(result.shareVersion).toBe(shareVersion);
+        }
+    });
+
+    it.skipIf(!supported)('pollUntilApproved returns shareVersion', async () => {
+        const deviceShare = 'share-for-poll-version';
+        const approverDid = 'did:key:zPollVersion';
+        const shareVersion = 7;
+
+        const { session, ephemeralKeypair, qrPayload } = await createQrLoginSession({
+            serverUrl: SERVER_URL,
+        });
+
+        // Simulate Device A approving after a short delay
+        setTimeout(async () => {
+            const info = await getQrLoginSessionInfo(
+                { serverUrl: SERVER_URL },
+                qrPayload.sessionId
+            );
+
+            await approveQrLoginSession(
+                { serverUrl: SERVER_URL },
+                session.sessionId,
+                deviceShare,
+                approverDid,
+                info.publicKey,
+                undefined,
+                shareVersion
+            );
+        }, 50);
+
+        const result = await pollUntilApproved(
+            { serverUrl: SERVER_URL },
+            session.sessionId,
+            ephemeralKeypair.privateKey,
+            { intervalMs: 30, timeoutMs: 5000 }
+        );
+
+        expect(result.deviceShare).toBe(deviceShare);
+        expect(result.approverDid).toBe(approverDid);
+        expect(result.shareVersion).toBe(shareVersion);
+    });
+
+    // -----------------------------------------------------------------------
     // Short code flow (typed code instead of QR scan)
     // -----------------------------------------------------------------------
 

@@ -17,7 +17,7 @@ interface RecoveryFlowModalProps {
     onRecoverWithPasskey: (credentialId: string) => Promise<void>;
     onRecoverWithPhrase: (phrase: string) => Promise<void>;
     onRecoverWithBackup: (fileContents: string, password: string) => Promise<void>;
-    onRecoverWithDevice?: (deviceShare: string) => Promise<void>;
+    onRecoverWithDevice?: (deviceShare: string, shareVersion?: number) => Promise<void>;
     onRecoverWithEmail?: (emailShare: string) => Promise<void>;
     onCancel: () => void;
 }
@@ -404,12 +404,12 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     <QrLoginRequester
                         serverUrl={getAuthConfig().serverUrl}
                         hideHeader
-                        onApproved={async (deviceShare) => {
+                        onApproved={async (deviceShare, _approverDid, _hint, version) => {
                             setLoading(true);
                             setError(null);
 
                             try {
-                                await onRecoverWithDevice(deviceShare);
+                                await onRecoverWithDevice(deviceShare, version);
                             } catch (e) {
                                 setError(friendlyError(e));
                                 setLoading(false);

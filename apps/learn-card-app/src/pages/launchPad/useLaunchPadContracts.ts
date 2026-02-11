@@ -2,6 +2,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useQueries } from '@tanstack/react-query';
 import { useWallet } from 'learn-card-base';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
+import { isProductionNetwork } from 'learn-card-base/helpers/networkHelpers';
 
 export const useLaunchPadContracts = () => {
     const { initWallet } = useWallet();
@@ -15,7 +16,7 @@ export const useLaunchPadContracts = () => {
     //const consentedContractUris = consentedContracts?.map(c => c.contract.uri) ?? [];
 
     const launchPadContractUris: string[] = [
-        ...(flags.contracts ?? []),
+        ...(isProductionNetwork() ? (flags.contracts ?? []) : []),
         // ...consentedContractUris.filter(
         //     uri => !flags.contracts?.includes(uri) && uri !== smartResumeContract
         // ),

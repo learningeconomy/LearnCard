@@ -101,7 +101,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
             );
 
             expect(result).not.toBeNull();
-            expect(result?.encryptedData).toBe(passwordShare.encryptedData);
+            expect(result?.encryptedShare?.encryptedData).toBe(passwordShare.encryptedData);
         });
 
         test('should retrieve passkey recovery share by credentialId', async () => {
@@ -113,7 +113,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
             );
 
             expect(result).not.toBeNull();
-            expect(result?.encryptedData).toBe(passkeyShare.encryptedData);
+            expect(result?.encryptedShare?.encryptedData).toBe(passkeyShare.encryptedData);
         });
 
         test('should list all recovery methods via getAuthShare', async () => {
@@ -315,8 +315,8 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                 'password'
             );
 
-            expect(result?.encryptedData).toBe('salted-share-lc');
-            expect(result?.salt).toBe('random-salt-abc123');
+            expect(result?.encryptedShare?.encryptedData).toBe('salted-share-lc');
+            expect(result?.encryptedShare?.salt).toBe('random-salt-abc123');
         });
     });
 
@@ -429,8 +429,8 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                 'credential-id-2'
             );
 
-            expect(result1?.encryptedData).toBe('passkey-1-data');
-            expect(result2?.encryptedData).toBe('passkey-2-data');
+            expect(result1?.encryptedShare?.encryptedData).toBe('passkey-1-data');
+            expect(result2?.encryptedShare?.encryptedData).toBe('passkey-2-data');
         });
 
         test('should list all passkeys in recovery methods', async () => {
@@ -482,7 +482,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                 'backup'
             );
 
-            expect(result?.encryptedData).toBe('backup-recovery-share');
+            expect(result?.encryptedShare?.encryptedData).toBe('backup-recovery-share');
         });
     });
 
@@ -632,7 +632,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                 'password'
             );
 
-            expect(passwordRecovery?.encryptedData).toBe('password-share');
+            expect(passwordRecovery?.encryptedShare?.encryptedData).toBe('password-share');
         });
     });
 });

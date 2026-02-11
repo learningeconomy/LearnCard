@@ -354,7 +354,7 @@ export type LCAPluginMethods = {
         providerType: AuthProviderType,
         type: RecoveryMethodType,
         credentialId?: string
-    ) => Promise<EncryptedShare | null>;
+    ) => Promise<{ encryptedShare: EncryptedShare; shareVersion?: number } | null>;
 
     markMigrated: (
         authToken: string,

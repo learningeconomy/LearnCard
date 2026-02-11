@@ -126,7 +126,7 @@ export class SSSApiClient {
     async getRecoveryShare(
         type: 'password' | 'passkey' | 'backup',
         credentialId?: string
-    ): Promise<EncryptedShare | null> {
+    ): Promise<{ encryptedShare: EncryptedShare; shareVersion?: number } | null> {
         const token = await this.authProvider.getIdToken();
         const providerType = this.authProvider.getProviderType();
 

@@ -120,6 +120,8 @@ describe('createSSSStrategy', () => {
             expect(typeof strategy.setupRecoveryMethod).toBe('function');
             expect(typeof strategy.getAvailableRecoveryMethods).toBe('function');
             expect(typeof strategy.setActiveUser).toBe('function');
+            expect(typeof strategy.getLocalShareVersion).toBe('function');
+            expect(typeof strategy.storeLocalShareVersion).toBe('function');
         });
     });
 
@@ -251,6 +253,263 @@ describe('createSSSStrategy', () => {
             strategy.setActiveUser!('user-a');
             expect(await strategy.hasLocalKey()).toBe(true);
             expect(await strategy.getLocalKey()).toBe('share-a');
+        });
+    });
+
+    // -----------------------------------------------------------------------
+    // Share version lifecycle (getLocalShareVersion / storeLocalShareVersion)
+    // -----------------------------------------------------------------------
+
+    describe('share version lifecycle', () => {
+        it('getLocalShareVersion returns null when no version stored', async () => {
+            expect(await strategy.getLocalShareVersion!()).toBeNull();
+        });
+
+        it('storeLocalShareVersion → getLocalShareVersion round-trip', async () => {
+            await strategy.storeLocalShareVersion!(3);
+
+            expect(await strategy.getLocalShareVersion!()).toBe(3);
+        });
+
+        it('overwriting version replaces the previous value', async () => {
+            await strategy.storeLocalShareVersion!(1);
+            await strategy.storeLocalShareVersion!(7);
+
+            expect(await strategy.getLocalShareVersion!()).toBe(7);
+        });
+
+        it('version is scoped to the active user', async () => {
+            strategy.setActiveUser!('user-a');
+            await strategy.storeLocalShareVersion!(2);
+
+            strategy.setActiveUser!('user-b');
+            await strategy.storeLocalShareVersion!(5);
+
+            // Verify isolation
+            strategy.setActiveUser!('user-a');
+            expect(await strategy.getLocalShareVersion!()).toBe(2);
+
+            strategy.setActiveUser!('user-b');
+            expect(await strategy.getLocalShareVersion!()).toBe(5);
+        });
+
+        it('version persists across storeLocalKey calls (rotation)', async () => {
+            await strategy.storeLocalShareVersion!(4);
+            await strategy.storeLocalKey('share-v1');
+            await strategy.storeLocalKey('share-v2');
+
+            expect(await strategy.getLocalShareVersion!()).toBe(4);
+        });
+
+        it('clearLocalKeys also removes the version (clean slate)', async () => {
+            await strategy.storeLocalShareVersion!(6);
+            await strategy.storeLocalKey('share-to-clear');
+
+            await strategy.clearLocalKeys();
+
+            // Both share and version are removed for a clean slate
+            expect(await strategy.hasLocalKey()).toBe(false);
+            expect(await strategy.getLocalShareVersion!()).toBeNull();
+        });
+    });
+
+    // -----------------------------------------------------------------------
+    // fetchServerKeyStatus — shareVersion extraction
+    // -----------------------------------------------------------------------
+
+    describe('fetchServerKeyStatus shareVersion', () => {
+        it('returns shareVersion when server includes it', async () => {
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({
+                    authShare: 'share-data',
+                    keyProvider: 'sss',
+                    primaryDid: 'did:key:z123',
+                    recoveryMethods: [],
+                    shareVersion: 5,
+                }), { status: 200 })
+            );
+
+            const status = await strategy.fetchServerKeyStatus('token', 'firebase');
+
+            expect(status.shareVersion).toBe(5);
+        });
+
+        it('returns null shareVersion when server omits it', async () => {
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({
+                    authShare: 'share-data',
+                    keyProvider: 'sss',
+                    primaryDid: 'did:key:z123',
+                    recoveryMethods: [],
+                }), { status: 200 })
+            );
+
+            const status = await strategy.fetchServerKeyStatus('token', 'firebase');
+
+            expect(status.shareVersion).toBeNull();
+        });
+
+        it('backfills local shareVersion when server has it but local does not', async () => {
+            // Simulate a legacy account: no local version stored
+            strategy.setActiveUser!('legacy-user');
+
+            expect(await strategy.getLocalShareVersion!()).toBeNull();
+
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({
+                    authShare: 'share-data',
+                    keyProvider: 'sss',
+                    primaryDid: 'did:key:z123',
+                    recoveryMethods: [],
+                    shareVersion: 3,
+                }), { status: 200 })
+            );
+
+            const status = await strategy.fetchServerKeyStatus('token', 'firebase');
+
+            expect(status.shareVersion).toBe(3);
+
+            // Wait for the fire-and-forget backfill to complete
+            await new Promise(r => setTimeout(r, 10));
+
+            expect(storage.storeShareVersion).toHaveBeenCalledWith(3, 'sss-device-share:legacy-user');
+            expect(await strategy.getLocalShareVersion!()).toBe(3);
+        });
+
+        it('does not overwrite local shareVersion when it already exists', async () => {
+            strategy.setActiveUser!('versioned-user');
+            await strategy.storeLocalShareVersion!(2);
+
+            storage.storeShareVersion.mockClear();
+
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({
+                    authShare: 'share-data',
+                    keyProvider: 'sss',
+                    primaryDid: 'did:key:z123',
+                    recoveryMethods: [],
+                    shareVersion: 5,
+                }), { status: 200 })
+            );
+
+            await strategy.fetchServerKeyStatus('token', 'firebase');
+
+            // storeShareVersion should NOT have been called — local version already exists
+            expect(storage.storeShareVersion).not.toHaveBeenCalled();
+
+            // Local version should remain unchanged
+            expect(await strategy.getLocalShareVersion!()).toBe(2);
+        });
+    });
+
+    // -----------------------------------------------------------------------
+    // storeAuthShare — persists returned shareVersion locally
+    // -----------------------------------------------------------------------
+
+    describe('storeAuthShare shareVersion persistence', () => {
+        it('stores the shareVersion returned by the server', async () => {
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({ success: true, shareVersion: 4 }), { status: 200 })
+            );
+
+            await strategy.storeAuthShare('token', 'firebase', 'share', 'did:key:z1');
+
+            expect(storage.storeShareVersion).toHaveBeenCalledWith(4, undefined);
+        });
+
+        it('defaults to version 1 when server response omits shareVersion', async () => {
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({ success: true }), { status: 200 })
+            );
+
+            await strategy.storeAuthShare('token', 'firebase', 'share', 'did:key:z1');
+
+            // putAuthShare defaults to shareVersion 1 when server omits it
+            expect(storage.storeShareVersion).toHaveBeenCalledWith(1, undefined);
+        });
+
+        it('stores shareVersion under the active user scope', async () => {
+            strategy.setActiveUser!('uid-99');
+
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({ success: true, shareVersion: 10 }), { status: 200 })
+            );
+
+            await strategy.storeAuthShare('token', 'firebase', 'share', 'did:key:z1');
+
+            expect(storage.storeShareVersion).toHaveBeenCalledWith(10, 'sss-device-share:uid-99');
+        });
+    });
+
+    // -----------------------------------------------------------------------
+    // executeRecovery — shareVersion stored after successful recovery
+    // -----------------------------------------------------------------------
+
+    describe('executeRecovery shareVersion storage', () => {
+        it('stores shareVersion from server response after successful recovery', async () => {
+            const originalKey = 'e1f2a3b4c5d6'.padEnd(64, '0');
+            const { localKey, remoteKey } = await strategy.splitKey(originalKey);
+
+            await strategy.storeLocalKey(localKey);
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const urlStr = typeof url === 'string' ? url : url.toString();
+                const method = (init?.method ?? 'GET').toUpperCase();
+
+                if (urlStr.includes('/keys/auth-share') && method === 'POST') {
+                    return new Response(JSON.stringify({
+                        authShare: { encryptedData: remoteKey, encryptedDek: '', iv: '' },
+                        primaryDid: 'did:key:zCorrect',
+                        recoveryMethods: [],
+                        keyProvider: 'sss',
+                        shareVersion: 42,
+                    }), { status: 200 });
+                }
+
+                return new Response(null, { status: 200 });
+            });
+
+            await strategy.executeRecovery({
+                token: 'tok',
+                providerType: 'firebase',
+                input: { method: 'email', emailShare: localKey },
+                didFromPrivateKey: async () => 'did:key:zCorrect',
+            });
+
+            expect(storage.storeShareVersion).toHaveBeenCalledWith(42, undefined);
+        });
+
+        it('defaults to shareVersion 1 when server response omits it', async () => {
+            const originalKey = 'e1f2a3b4c5d6'.padEnd(64, '0');
+            const { localKey, remoteKey } = await strategy.splitKey(originalKey);
+
+            await strategy.storeLocalKey(localKey);
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const urlStr = typeof url === 'string' ? url : url.toString();
+                const method = (init?.method ?? 'GET').toUpperCase();
+
+                if (urlStr.includes('/keys/auth-share') && method === 'POST') {
+                    return new Response(JSON.stringify({
+                        authShare: { encryptedData: remoteKey, encryptedDek: '', iv: '' },
+                        primaryDid: 'did:key:zCorrect',
+                        recoveryMethods: [],
+                        keyProvider: 'sss',
+                        // no shareVersion field
+                    }), { status: 200 });
+                }
+
+                return new Response(null, { status: 200 });
+            });
+
+            await strategy.executeRecovery({
+                token: 'tok',
+                providerType: 'firebase',
+                input: { method: 'email', emailShare: localKey },
+                didFromPrivateKey: async () => 'did:key:zCorrect',
+            });
+
+            expect(storage.storeShareVersion).toHaveBeenCalledWith(1, undefined);
         });
     });
 

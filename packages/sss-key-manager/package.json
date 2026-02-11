@@ -30,6 +30,7 @@
         "@types/node": "^18.7.19",
         "dts-bundle-generator": "^6.10.0",
         "esbuild": "^0.27.1",
+        "fake-indexeddb": "^6.2.5",
         "jsdom": "^24.0.0",
         "shx": "^0.3.4",
         "typescript": "^5.0.0",
@@ -40,8 +41,8 @@
         "@learncard/types": "workspace:*",
         "@noble/ed25519": "^2.0.0",
         "@scure/bip39": "^1.2.1",
-        "shamir-secret-sharing": "^0.0.4",
-        "hash-wasm": "^4.11.0"
+        "hash-wasm": "^4.11.0",
+        "shamir-secret-sharing": "^0.0.4"
     },
     "peerDependencies": {
         "@simplewebauthn/browser": ">=9.0.0"
