@@ -19,6 +19,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { createSSSStrategy } from './sss-strategy';
 import { reconstructFromShares } from './sss';
+import { splitAndVerify } from './atomic-operations';
 
 import type { SSSStorageFunctions } from './sss-strategy';
 import type { SSSKeyDerivationStrategy } from './types';
@@ -1035,12 +1036,19 @@ describe('createSSSStrategy', () => {
             // Step 1: Split the key (caches email share internally)
             const { remoteKey } = await emailStrategy.splitKey(originalKey);
 
+            // Step 1b: storeAuthShare so the version is cached for email send
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
+                new Response(JSON.stringify({ success: true, shareVersion: 5 }), { status: 200 })
+            );
+
+            await emailStrategy.storeAuthShare('token', 'firebase', remoteKey, 'did:key:z1');
+
             // Step 2: Send email backup — capture the emailShare from the fetch body
-            let capturedEmailShare: string | undefined;
+            let capturedPayload: string | undefined;
 
             vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async (_url, init) => {
                 const body = JSON.parse(init?.body as string);
-                capturedEmailShare = body.emailShare;
+                capturedPayload = body.emailShare;
 
                 return new Response(null, { status: 200 });
             });
@@ -1049,11 +1057,14 @@ describe('createSSSStrategy', () => {
                 'token', 'firebase', originalKey, 'user@test.com'
             );
 
-            expect(capturedEmailShare).toBeDefined();
-            expect(capturedEmailShare!.length).toBeGreaterThan(0);
+            expect(capturedPayload).toBeDefined();
+            expect(capturedPayload!).toContain(':'); // versioned format
+
+            // Strip version prefix for reconstruction
+            const rawShare = capturedPayload!.split(':').slice(1).join(':');
 
             // Step 3: Reconstruct from email share + auth share
-            const reconstructed = await reconstructFromShares([capturedEmailShare!, remoteKey]);
+            const reconstructed = await reconstructFromShares([rawShare, remoteKey]);
 
             expect(reconstructed).toBe(originalKey);
         });
@@ -1064,12 +1075,19 @@ describe('createSSSStrategy', () => {
             // Split once
             const { localKey, remoteKey } = await emailStrategy.splitKey(originalKey);
 
+            // storeAuthShare so version is cached
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
+                new Response(JSON.stringify({ success: true, shareVersion: 1 }), { status: 200 })
+            );
+
+            await emailStrategy.storeAuthShare('token', 'firebase', remoteKey, 'did:key:z1');
+
             // Capture the email share
-            let capturedEmailShare: string | undefined;
+            let capturedPayload: string | undefined;
 
             vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async (_url, init) => {
                 const body = JSON.parse(init?.body as string);
-                capturedEmailShare = body.emailShare;
+                capturedPayload = body.emailShare;
 
                 return new Response(null, { status: 200 });
             });
@@ -1078,13 +1096,16 @@ describe('createSSSStrategy', () => {
                 'token', 'firebase', originalKey, 'user@test.com'
             );
 
-            // The email share must NOT equal the device or auth shares
+            // Strip version prefix
+            const rawShare = capturedPayload!.split(':').slice(1).join(':');
+
+            // The raw email share must NOT equal the device or auth shares
             // (it's a distinct share from the same split)
-            expect(capturedEmailShare).not.toBe(localKey);
-            expect(capturedEmailShare).not.toBe(remoteKey);
+            expect(rawShare).not.toBe(localKey);
+            expect(rawShare).not.toBe(remoteKey);
 
             // But it must reconstruct the same key when combined with either
-            const fromEmailAndAuth = await reconstructFromShares([capturedEmailShare!, remoteKey]);
+            const fromEmailAndAuth = await reconstructFromShares([rawShare, remoteKey]);
 
             expect(fromEmailAndAuth).toBe(originalKey);
         });
@@ -1109,6 +1130,13 @@ describe('createSSSStrategy', () => {
 
             const { remoteKey } = await emailStrategy.splitKey(originalKey);
 
+            // storeAuthShare to cache version
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
+                new Response(JSON.stringify({ success: true, shareVersion: 2 }), { status: 200 })
+            );
+
+            await emailStrategy.storeAuthShare('token', 'firebase', remoteKey, 'did:key:z1');
+
             const fetchCalls: { url: string; body: string }[] = [];
 
             vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
@@ -1130,10 +1158,11 @@ describe('createSSSStrategy', () => {
 
             // The email share must NOT appear in any auth-share or recovery endpoint calls
             const emailBody = JSON.parse(fetchCalls[0]!.body);
-            const emailShare = emailBody.emailShare;
+            const emailPayload = emailBody.emailShare;
 
-            expect(emailShare).toBeDefined();
-            expect(emailShare).not.toBe(remoteKey); // different from the auth share
+            expect(emailPayload).toBeDefined();
+            expect(emailPayload).toContain(':'); // versioned
+            expect(emailPayload).not.toBe(remoteKey);
 
             // No calls to storage endpoints
             const storageCalls = fetchCalls.filter(
@@ -1204,9 +1233,170 @@ describe('createSSSStrategy', () => {
             // putAuthShare wraps as { encryptedData: share, encryptedDek: '', iv: '' }
             const newAuthShare = JSON.parse(putAuthCall!.body).authShare.encryptedData;
 
-            const reconstructed = await reconstructFromShares([emailBody.emailShare, newAuthShare]);
+            // Strip version prefix from the emailed share
+            const rawEmailShare = emailBody.emailShare.split(':').slice(1).join(':');
+
+            const reconstructed = await reconstructFromShares([rawEmailShare, newAuthShare]);
 
             expect(reconstructed).toBe(originalKey);
+        });
+
+        it('emailed share includes the shareVersion prefix from storeAuthShare', async () => {
+            const originalKey = 'e5f6a1b2c3d4'.padEnd(64, '0');
+
+            await emailStrategy.splitKey(originalKey);
+
+            // storeAuthShare returns version 7
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
+                new Response(JSON.stringify({ success: true, shareVersion: 7 }), { status: 200 })
+            );
+
+            await emailStrategy.storeAuthShare('token', 'firebase', 'auth-share', 'did:key:z1');
+
+            // Capture email payload
+            let capturedPayload: string | undefined;
+
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async (_url, init) => {
+                const body = JSON.parse(init?.body as string);
+                capturedPayload = body.emailShare;
+
+                return new Response(null, { status: 200 });
+            });
+
+            await emailStrategy.sendEmailBackupShare!(
+                'token', 'firebase', originalKey, 'user@test.com'
+            );
+
+            expect(capturedPayload).toMatch(/^7:/);
+        });
+
+        it('setupRecoveryMethod re-sends email share with shareVersion prefix', async () => {
+            const originalKey = 'f6a1b2c3d4e5'.padEnd(64, '0');
+
+            await emailStrategy.splitKey(originalKey);
+
+            const fetchCalls: { url: string; body: string }[] = [];
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const urlStr = typeof url === 'string' ? url : url.toString();
+                const method = (init?.method ?? 'GET').toUpperCase();
+
+                fetchCalls.push({
+                    url: urlStr,
+                    body: init?.body as string ?? '',
+                });
+
+                if (urlStr.includes('/keys/auth-share') && method === 'POST') {
+                    return new Response(JSON.stringify({
+                        authShare: 'existing',
+                        primaryDid: 'did:key:z1',
+                        recoveryMethods: [],
+                        shareVersion: 4,
+                    }), { status: 200 });
+                }
+
+                if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
+                    return new Response(JSON.stringify({ success: true, shareVersion: 5 }), { status: 200 });
+                }
+
+                return new Response(JSON.stringify({ success: true }), { status: 200 });
+            });
+
+            await emailStrategy.setupRecoveryMethod!({
+                token: 'token',
+                providerType: 'firebase',
+                privateKey: originalKey,
+                input: { method: 'password', password: 'test-password' },
+                authUser: { id: 'user-1', providerType: 'firebase', email: 'user@test.com' },
+            });
+
+            const emailCall = fetchCalls.find(c => c.url.includes('/keys/email-backup'));
+
+            expect(emailCall).toBeDefined();
+
+            const emailPayload = JSON.parse(emailCall!.body).emailShare;
+
+            // Should use the version from putAuthShare (5), not fetchAuthShareRaw (4)
+            expect(emailPayload).toMatch(/^5:/);
+        });
+
+        it('email recovery with versioned share fetches matching auth share version', async () => {
+            const originalKey = 'a1b2c3d4e5f6'.padEnd(64, '0');
+
+            // Split to get real shares
+            const { shares } = await splitAndVerify(originalKey);
+
+            // Simulate the versioned email share the user received
+            const versionedEmailShare = `2:${shares.emailShare}`;
+
+            let capturedVersion: number | undefined;
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const urlStr = typeof url === 'string' ? url : url.toString();
+
+                // fetchAuthShareRaw — capture the requested shareVersion
+                if (urlStr.includes('/keys/auth-share')) {
+                    const body = JSON.parse(init?.body as string);
+                    capturedVersion = body.shareVersion;
+
+                    return new Response(JSON.stringify({
+                        authShare: shares.authShare,
+                        primaryDid: 'did:key:z1',
+                        recoveryMethods: [],
+                        shareVersion: 2,
+                    }), { status: 200 });
+                }
+
+                return new Response(JSON.stringify({ success: true }), { status: 200 });
+            });
+
+            const result = await emailStrategy.executeRecovery!({
+                token: 'token',
+                providerType: 'firebase',
+                input: { method: 'email', emailShare: versionedEmailShare },
+            });
+
+            expect(result.privateKey).toBe(originalKey);
+            expect(capturedVersion).toBe(2);
+        });
+
+        it('email recovery with unversioned share falls back to latest auth share', async () => {
+            const originalKey = 'b2c3d4e5f6a1'.padEnd(64, '0');
+
+            const { shares } = await splitAndVerify(originalKey);
+
+            // No version prefix — raw hex share
+            const rawEmailShare = shares.emailShare;
+
+            let capturedVersion: number | undefined;
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const urlStr = typeof url === 'string' ? url : url.toString();
+
+                if (urlStr.includes('/keys/auth-share')) {
+                    const body = JSON.parse(init?.body as string);
+                    capturedVersion = body.shareVersion;
+
+                    return new Response(JSON.stringify({
+                        authShare: shares.authShare,
+                        primaryDid: 'did:key:z1',
+                        recoveryMethods: [],
+                        shareVersion: 3,
+                    }), { status: 200 });
+                }
+
+                return new Response(JSON.stringify({ success: true }), { status: 200 });
+            });
+
+            const result = await emailStrategy.executeRecovery!({
+                token: 'token',
+                providerType: 'firebase',
+                input: { method: 'email', emailShare: rawEmailShare },
+            });
+
+            expect(result.privateKey).toBe(originalKey);
+            // No version prefix, so should not send a shareVersion
+            expect(capturedVersion).toBeUndefined();
         });
     });
 });

@@ -189,21 +189,49 @@ const postRecoveryMethod = async (
 };
 
 /**
- * Fire-and-forget: relay the email backup share through the server.
- * Non-fatal — logs a warning on failure but never throws.
+ * Format an email share with its version prefix: `"<version>:<hexShare>"`.
+ * This allows the recovery flow to fetch the correct auth share version.
  */
+const formatVersionedEmailShare = (emailShare: string, shareVersion: number): string =>
+    `${shareVersion}:${emailShare}`;
+
+/**
+ * Parse a versioned email share string back into its components.
+ * Returns the raw hex share and the version number (if present).
+ */
+const parseVersionedEmailShare = (input: string): { share: string; version: number | undefined } => {
+    const colonIdx = input.indexOf(':');
+
+    if (colonIdx > 0) {
+        const maybVersion = Number(input.slice(0, colonIdx));
+
+        if (Number.isInteger(maybVersion) && maybVersion > 0) {
+            return { share: input.slice(colonIdx + 1), version: maybVersion };
+        }
+    }
+
+    // No valid prefix — treat the whole string as a raw share (no version)
+    return { share: input, version: undefined };
+};
+
 const sendEmailBackupShare = async (
     serverUrl: string,
     token: string,
     providerType: AuthProviderType,
     emailShare: string,
-    email: string
+    email: string,
+    shareVersion?: number
 ): Promise<void> => {
     try {
+        // Prepend the share version so the recovery flow can request the matching auth share
+        const payload = shareVersion != null
+            ? formatVersionedEmailShare(emailShare, shareVersion)
+            : emailShare;
+
         const response = await fetch(`${serverUrl}/keys/email-backup`, {
             method: 'POST',
             headers: buildHeaders(token),
-            body: JSON.stringify({ authToken: token, providerType, emailShare, email }),
+            body: JSON.stringify({ authToken: token, providerType, emailShare: payload, email }),
         });
 
         if (!response.ok) {
@@ -291,6 +319,14 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
      * reconstruction to work.
      */
     let lastEmailShare: string | undefined;
+
+    /**
+     * Cached share version from the most recent `storeAuthShare()` or
+     * `setupRecoveryMethod()` call. Used by `sendEmailBackupShare()` to
+     * prepend the version to the emailed share so recovery can fetch the
+     * matching auth share.
+     */
+    let lastShareVersion: number | undefined;
 
     return {
         name: 'sss',
@@ -438,6 +474,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             // Persist the version alongside the device share so we can request
             // the matching auth share on next login.
             await storage.storeShareVersion(shareVersion, activeStorageId);
+
+            // Cache for the upcoming sendEmailBackupShare call
+            lastShareVersion = shareVersion;
         },
 
         async markMigrated(token: string, providerType: AuthProviderType, didAuthVp?: string): Promise<void> {
@@ -533,9 +572,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 }
 
                 case 'email': {
-                    // The email share is a raw SSS share — no decryption needed
-                    recoveryShare = input.emailShare.trim();
-                    // Email recovery has no version — uses latest auth share
+                    // The email share may be versioned: "<version>:<hexShare>"
+                    const parsed = parseVersionedEmailShare(input.emailShare.trim());
+                    recoveryShare = parsed.share;
+                    recoveryShareVersion = parsed.version;
                     break;
                 }
             }
@@ -634,7 +674,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
             // Fire-and-forget: re-send email backup share so it stays in sync with the new auth share
             if (enableEmailBackupShare && authUser?.email && lastEmailShare) {
-                sendEmailBackupShare(serverUrl, token, providerType, lastEmailShare, authUser.email)
+                sendEmailBackupShare(serverUrl, token, providerType, lastEmailShare, authUser.email, shareVersion)
                     .catch(e => console.warn('Email backup share re-send failed (non-fatal):', e));
 
                 lastEmailShare = undefined;
@@ -754,10 +794,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 return;
             }
 
-            await sendEmailBackupShare(serverUrl, token, providerType, lastEmailShare, email);
+            await sendEmailBackupShare(serverUrl, token, providerType, lastEmailShare, email, lastShareVersion);
 
             // Clear after use — one-shot to avoid stale data
             lastEmailShare = undefined;
+            lastShareVersion = undefined;
         },
 
         // --- Share versioning ---
