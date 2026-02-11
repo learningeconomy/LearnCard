@@ -66,6 +66,7 @@ const SkillsPage: React.FC = () => {
         flags?.enableAdminTools ||
         lcNetworkProfile?.role === LearnCardRolesEnum.admin ||
         lcNetworkProfile?.role === LearnCardRolesEnum.teacher ||
+        lcNetworkProfile?.role === LearnCardRolesEnum.developer ||
         managedFrameworksExist;
 
     const handlePlusButton = () => {
