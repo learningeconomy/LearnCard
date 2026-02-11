@@ -187,8 +187,6 @@ export interface KeyDerivationStrategy<
         input: TRecoveryInput;
         /** Optional: validate the reconstructed key's DID before rotating shares */
         didFromPrivateKey?: (privateKey: string) => Promise<string>;
-        /** Optional: sign a DID-Auth VP JWT for server write operations */
-        signDidAuthVp?: (privateKey: string) => Promise<string>;
     }): Promise<RecoveryResult>;
 
     /** Set up a new recovery method */

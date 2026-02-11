@@ -417,9 +417,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             providerType: AuthProviderType;
             input: RecoveryInput;
             didFromPrivateKey?: (privateKey: string) => Promise<string>;
-            signDidAuthVp?: (privateKey: string) => Promise<string>;
         }): Promise<RecoveryResult> {
-            const { token, providerType, input, didFromPrivateKey, signDidAuthVp } = params;
+            const { token, providerType, input, didFromPrivateKey } = params;
 
             let recoveryShare: string;
 

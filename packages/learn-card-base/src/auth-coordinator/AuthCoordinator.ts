@@ -395,7 +395,6 @@ export class AuthCoordinator {
                 providerType,
                 input,
                 didFromPrivateKey: this.config.didFromPrivateKey,
-                signDidAuthVp: this.config.signDidAuthVp,
             });
 
             this.setState({
