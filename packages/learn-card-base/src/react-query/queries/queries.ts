@@ -73,7 +73,10 @@ export const getBoosts = async (
         return baseQuery;
     })();
 
-    const paginated = await wallet.invoke.getPaginatedBoosts({ limit: 1000, query: normalizedQuery });
+    const paginated = await wallet.invoke.getPaginatedBoosts({
+        limit: 1000,
+        query: normalizedQuery,
+    });
 
     return paginated?.records ?? [];
 };
@@ -1028,20 +1031,24 @@ export const useSearchFrameworkSkills = (
     });
 };
 
-export const useSemanticSearchFrameworkSkills = (
+export const useSemanticSearchSkills = (
+    text: string,
     frameworkId: string,
-    query: string,
     options?: { limit?: number }
 ) => {
     const { initWallet } = useWallet();
 
     return useQuery({
-        queryKey: ['semanticSearchFrameworkSkills', frameworkId, query, options],
+        queryKey: ['semanticSearchSkills', text, frameworkId, options],
         queryFn: async () => {
             const wallet = await initWallet();
-            return wallet.invoke.semanticSearchFrameworkSkills(frameworkId, query, options);
+            return wallet.invoke.semanticSearchSkills({
+                text,
+                limit: options?.limit ?? 50,
+                frameworkId,
+            });
         },
-        enabled: !!frameworkId && !!query?.trim(),
+        enabled: !!text?.trim() && !!frameworkId,
     });
 };
 
