@@ -42,6 +42,8 @@ export default defineConfig(({ mode }) => {
             LCN_URL: process.env.LCN_URL && `"${process.env.LCN_URL}"`,
             LCN_API_URL: process.env.LCN_API_URL && `"${process.env.LCN_API_URL}"`,
             CLOUD_URL: process.env.CLOUD_URL && `"${process.env.CLOUD_URL}"`,
+            LEARN_CLOUD_XAPI_URL:
+                process.env.LEARN_CLOUD_XAPI_URL && `"${process.env.LEARN_CLOUD_XAPI_URL}"`,
             API_URL: process.env.API_URL && `"${process.env.API_URL}"`,
             __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
             IS_PRODUCTION: process.env.NODE_ENV === 'production',
