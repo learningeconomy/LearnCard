@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
-import { useModal } from 'learn-card-base';
+import { useModal, useDeviceTypeByWidth } from 'learn-card-base';
 import { IonPage, IonContent, IonToast, IonHeader, IonToolbar } from '@ionic/react';
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
@@ -37,6 +37,8 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     const [showErrorToast, setShowErrorToast] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+
+    const { isMobile } = useDeviceTypeByWidth();
 
     // Credential claim modal state
     const [pendingCredential, setPendingCredential] = useState<{
@@ -124,7 +126,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                                             d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
                                         />
                                     </svg>
-                                    Full Screen
+                                    {isMobile ? '' : 'Full Screen'}
                                 </button>
                             )}
                             <button

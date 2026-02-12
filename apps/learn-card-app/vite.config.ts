@@ -71,6 +71,9 @@ export default defineConfig(({ mode }) => {
                 ? JSON.stringify(env.WEB3AUTH_TESTNET_CLIENT_ID)
                 : 'undefined',
             APP_THEME: env.APP_THEME ? JSON.stringify(env.APP_THEME) : '"colorful"',
+            CORS_PROXY_API_KEY: env.CORS_PROXY_API_KEY
+                ? JSON.stringify(env.CORS_PROXY_API_KEY)
+                : 'undefined',
         },
         resolve: {
             alias: {
