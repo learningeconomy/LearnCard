@@ -54,30 +54,21 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
             proficiency: SkillLevel;
         }[]
     >([]);
+    const [selectedSkillNodesCache, setSelectedSkillNodesCache] = useState<
+        Map<string, SkillFrameworkNode>
+    >(new Map());
+
+    const initialSkillIds = flags?.initialSelfAssignedSkillIds?.skillIds as string[];
 
     const frameworkId = flags?.selfAssignedSkillsFrameworkId; // https://app.launchdarkly.com/projects/default/flags/selfAssignedSkillsFrameworkId/targeting?env=test&env=production&selected-env=test
     const { data: selfAssignedSkillFramework, isLoading: selfAssignedSkillFrameworkLoading } =
         useGetSkillFrameworkById(frameworkId);
 
-    const { data: allFrameworkSkills, isLoading: allFrameworkSkillsLoading } =
-        useSearchFrameworkSkills(frameworkId, {
-            // $or: [
-            //     { code: { $regex: `/${searchInput}/i` } }, // Case-insensitive regex match on code
-            //     { statement: { $regex: `/${searchInput}/i` } }, // Case-insensitive regex match on statement
-            // ],
-            type: 'competency',
-
-            // Doesn't work :/
-            // $and: [
-            //     { type: 'competency' },
-            //     {
-            //         $or: [
-            //             { code: { $regex: searchInput, $options: 'i' } }, // Case-insensitive regex match on code
-            //             { statement: { $regex: searchInput, $options: 'i' } }, // Case-insensitive regex match on statement
-            //         ],
-            //     },
-            // ],
-        });
+    const { data: initialSkillsData, isLoading: initialSkillsLoading } = useSearchFrameworkSkills(
+        frameworkId,
+        { id: { $in: initialSkillIds ?? [] } },
+        { enabled: !!initialSkillIds?.length }
+    );
 
     const { data: semanticResultsApiData, isLoading: semanticLoading } = useSemanticSearchSkills(
         searchInput,
@@ -85,31 +76,64 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
         { limit: 25 }
     );
 
-    const searchLoading = Boolean(searchInput?.trim())
-        ? semanticLoading
-        : allFrameworkSkillsLoading;
-    const resultsToShow = Boolean(searchInput?.trim())
-        ? semanticResultsApiData
-        : allFrameworkSkills;
+    const { mutateAsync: createOrUpdateSkills } = useManageSelfAssignedSkillsBoost();
+    const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
+    const { data: sasBoostSkills, isLoading: skillsLoading } = useGetBoostSkills(sasBoostData?.uri);
 
-    const suggestedSkills =
-        // @ts-ignore
-        (resultsToShow as any)?.records
-            ? // Paginated results shape (string search)
-              (resultsToShow as any)?.records?.map((record: ApiSkillNode) =>
-                  convertApiSkillNodeToSkillTreeNode(record)
-              )
-            : // Array results shape (semantic search)
-              (resultsToShow as any)?.map((record: ApiSkillNode) =>
-                  convertApiSkillNodeToSkillTreeNode(record)
-              ) || [];
+    useEffect(() => {
+        if (sasBoostSkills) {
+            setSelectedSkills(
+                sasBoostSkills.map(s => ({ id: s.id, proficiency: s.proficiencyLevel }))
+            );
+        }
+    }, [sasBoostSkills]);
 
-    const handleToggleSelect = (skillId: string) => {
+    const hasSearchQuery = Boolean(searchInput?.trim());
+    const searchLoading = hasSearchQuery ? semanticLoading : initialSkillsLoading;
+
+    const initialSkills: SkillFrameworkNode[] =
+        (initialSkillsData as any)?.records?.map((record: ApiSkillNode) =>
+            convertApiSkillNodeToSkillTreeNode(record)
+        ) ?? [];
+
+    // We keep a stable, display-only list of any *pre-selected* skills that are not included in
+    // `initialSkillIds`.
+    //
+    // If we derived this list directly from `selectedSkills`, then de-selecting one of these
+    // skills would remove it from the list, causing the visible list to re-order ("jump").
+    // Instead, we capture these nodes once from the initially saved boost skills and keep them
+    // in the default list so toggling selection doesn't change list ordering.
+    const [stableExtraSkillNodes, setStableExtraSkillNodes] = useState<SkillFrameworkNode[]>([]);
+
+    useEffect(() => {
+        if (stableExtraSkillNodes.length === 0 && sasBoostSkills) {
+            const extraNodes: SkillFrameworkNode[] = sasBoostSkills
+                .filter((sk: { id: string }) => !initialSkillIds?.includes(sk.id))
+                .map((sk: any) => convertApiSkillNodeToSkillTreeNode(sk as any));
+            if (extraNodes.length > 0) {
+                setStableExtraSkillNodes(extraNodes);
+            }
+        }
+    }, [sasBoostSkills, initialSkillIds, stableExtraSkillNodes.length]);
+
+    const defaultSkillsToShow: SkillFrameworkNode[] = [...stableExtraSkillNodes, ...initialSkills];
+
+    const semanticSkills: SkillFrameworkNode[] =
+        semanticResultsApiData?.records?.map((record: ApiSkillNode) =>
+            convertApiSkillNodeToSkillTreeNode(record)
+        ) ?? [];
+
+    const suggestedSkills = hasSearchQuery ? semanticSkills : defaultSkillsToShow;
+
+    const handleToggleSelect = (skillId: string, skillNode?: SkillFrameworkNode) => {
         const isAlreadySelected = selectedSkills.some(s => s.id === skillId);
         if (isAlreadySelected) {
             setSelectedSkills(selectedSkills.filter(s => s.id !== skillId));
         } else {
             setSelectedSkills([...selectedSkills, { id: skillId, proficiency: SkillLevel.Hidden }]);
+            if (skillNode) {
+                setSelectedSkillNodesCache(prev => new Map(prev).set(skillId, skillNode));
+            }
         }
     };
 
@@ -168,18 +192,6 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
             setIsSubmittingSkillSuggestion(false);
         }
     };
-
-    const { mutateAsync: createOrUpdateSkills } = useManageSelfAssignedSkillsBoost();
-    const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
-    const { data: sasBoostSkills, isLoading: skillsLoading } = useGetBoostSkills(sasBoostData?.uri);
-
-    useEffect(() => {
-        if (sasBoostSkills) {
-            setSelectedSkills(
-                sasBoostSkills.map(s => ({ id: s.id, proficiency: s.proficiencyLevel }))
-            );
-        }
-    }, [sasBoostSkills]);
 
     const handleSave = async () => {
         setIsUpdating(true);
@@ -257,9 +269,11 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                     {!noResults && (
                         <>
                             {isAdd ? (
-                                <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
-                                    Suggested Skills
-                                </p>
+                                hasSearchQuery && (
+                                    <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
+                                        Suggested Skills
+                                    </p>
+                                )
                             ) : (
                                 <p className="py-[10px] text-grayscale-800 text-[17px] font-poppins">
                                     {conditionalPluralize(selectedSkills.length, 'Selected Skill')}
@@ -281,19 +295,19 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                         // In review mode, show all selected skills from combined sources
                         <>
                             {selectedSkills.map(selected => {
-                                // Try to find full skill data from sasBoostSkills first (saved skills)
+                                // Try to find full skill data from multiple sources
                                 const savedSkill = sasBoostSkills?.find(
                                     (s: { id: string }) => s.id === selected.id
                                 );
-                                // Fall back to suggestedSkills for newly added skills
+                                const cachedSkill = selectedSkillNodesCache.get(selected.id);
                                 const suggestedSkill = suggestedSkills.find(
                                     (s: SkillFrameworkNode) => s.id === selected.id
                                 );
 
-                                // Convert to SkillFrameworkNode format
+                                // Convert to SkillFrameworkNode format (priority: saved > cached > suggested)
                                 const skill = savedSkill
-                                    ? convertApiSkillNodeToSkillTreeNode(savedSkill)
-                                    : suggestedSkill;
+                                    ? convertApiSkillNodeToSkillTreeNode(savedSkill as any)
+                                    : cachedSkill ?? suggestedSkill;
 
                                 if (!skill) return null;
 
@@ -329,7 +343,9 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                                         key={skill.id}
                                         skill={skill}
                                         framework={selfAssignedSkillFramework}
-                                        handleToggleSelect={() => handleToggleSelect(skill.id)}
+                                        handleToggleSelect={() =>
+                                            handleToggleSelect(skill.id!, skill)
+                                        }
                                         isNodeSelected={!!selected}
                                         shouldCollapseOptions={false}
                                         proficiencyLevel={
