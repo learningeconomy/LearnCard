@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.94.24
+
+### Patch Changes
+
+-   [#1003](https://github.com/learningeconomy/LearnCard/pull/1003) [`2a2c65deb667315e54919ff5b6ae9e51c87bb6db`](https://github.com/learningeconomy/LearnCard/commit/2a2c65deb667315e54919ff5b6ae9e51c87bb6db) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: installing apps you've already consented too
+
 ## 1.94.23
 
 ### Patch Changes
