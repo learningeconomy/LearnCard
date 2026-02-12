@@ -26,7 +26,33 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
     return {
         plugins: [react(), svgr(), tsconfigPaths({ root: '../../' })],
-        build: { target: 'esnext', outDir: path.join(__dirname, 'build') },
+        build: {
+            target: 'esnext',
+            outDir: path.join(__dirname, 'build'),
+            rollupOptions: {
+                output: {
+                    manualChunks: {
+                        // Core framework
+                        'vendor-react': ['react', 'react-dom', 'react-router', 'react-router-dom'],
+                        'vendor-ionic': ['@ionic/react', '@ionic/react-router', '@ionic/core'],
+                        // Heavy deps in their own chunks
+                        'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/analytics'],
+                        'vendor-sentry': ['@sentry/react', '@sentry/browser'],
+                        'vendor-launchdarkly': ['launchdarkly-react-client-sdk'],
+                        'vendor-web3auth': [
+                            '@web3auth/no-modal',
+                            '@web3auth/base',
+                            '@web3auth/auth-adapter',
+                            '@web3auth/ethereum-provider',
+                            '@web3auth/single-factor-auth',
+                        ],
+                        'vendor-swiper': ['swiper'],
+                        'vendor-lottie': ['react-lottie-player'],
+                        'vendor-tanstack': ['@tanstack/react-query'],
+                    },
+                },
+            },
+        },
         optimizeDeps: {
             // disabled: false,
             include: ['buffer', 'process', 'react-router', 'react-router-dom', 'crypto-browserify'],
