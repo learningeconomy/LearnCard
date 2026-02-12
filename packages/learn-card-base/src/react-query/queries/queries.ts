@@ -35,6 +35,7 @@ import {
 import { LCR } from 'learn-card-base/types/credential-records';
 import { useIsLoggedIn, useCurrentUser } from 'learn-card-base';
 import { getBespokeLearnCard, generatePK } from 'learn-card-base/helpers/walletHelpers';
+import { SELF_ASSIGNED_SKILLS_BOOST_NAME } from 'learn-card-base/helpers/credentialHelpers';
 
 /** ===============================
  *      BOOST QUERIES
@@ -126,9 +127,10 @@ export const useGetSelfAssignedSkillsBoost = () => {
         queryFn: async () => {
             const wallet = await initWallet();
             const result = await wallet.invoke.getPaginatedBoosts({
+                limit: 1,
                 query: {
                     // category: CredentialCategoryEnum.selfAssignedSkills,
-                    name: 'Self-Assigned Skills',
+                    name: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                 },
             });
 

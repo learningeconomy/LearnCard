@@ -28,6 +28,7 @@ import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { BoostCMSState } from 'learn-card-base/components/boost/boost';
 import {
     SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
+    SELF_ASSIGNED_SKILLS_BOOST_NAME,
     getDefaultCategoryForCredential,
     getEndorsementsForVC,
 } from 'learn-card-base/helpers/credentialHelpers';
@@ -535,7 +536,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
             // Fetch the boost fresh to avoid stale cache issues
             const freshBoostResult = await wallet.invoke.getPaginatedBoosts({
                 limit: 10,
-                query: { name: 'Self-Assigned Skills' },
+                query: { name: SELF_ASSIGNED_SKILLS_BOOST_NAME },
             });
             const freshBoostRecords = freshBoostResult?.records ?? [];
             const freshSasBoost =
@@ -556,7 +557,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 // Also find by category and title (catches old records without boostUri)
                 const recordsByCategory = await wallet.index.LearnCloud.get<LCR>({
                     category: CredentialCategoryEnum.skill,
-                    title: 'Self-Assigned Skills',
+                    title: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                 });
 
                 // Combine and deduplicate by id
@@ -584,12 +585,12 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 subject: walletDid,
                 type: 'boost',
                 issuanceDate: currentDate,
-                boostName: 'Self-Assigned Skills',
+                boostName: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                 achievementType: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE, // e.g. "ext: Attendance"
                 achievementDescription:
                     'A self-attested credential that lists the skills you have.',
                 achievementNarrative: '',
-                achievementName: 'Self-Assigned Skills',
+                achievementName: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                 // boostImage: '',
                 // achievementImage: '',
                 // expirationDate: expirationDate,
@@ -625,7 +626,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
 
             if (sasBoostExists) {
                 const updatedBoostBoolean = await wallet?.invoke?.updateBoost(freshSasBoost.uri, {
-                    name: 'Self-Assigned Skills',
+                    name: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                     type: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE, // in boost CMS: 'ext:Artowork'
                     category: CredentialCategoryEnum.skill, // in boost CMS: "Achievement", "Accomplishment", etc.
                     status: 'PROVISIONAL',
@@ -640,7 +641,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 // metadata is used to categorize etc
                 // skillIds will auto-attach framework and align these skills
                 boostUri = await wallet.invoke.createBoost(unsignedCredential, {
-                    name: 'Self-Assigned Skills',
+                    name: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                     type: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
                     category: CredentialCategoryEnum.skill,
                     status: 'PROVISIONAL',
@@ -670,7 +671,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 id: uuidv4(),
                 uri: issuedVcUri,
                 category,
-                title: 'Self-Assigned Skills',
+                title: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                 boostUri: boostUri,
             });
 
