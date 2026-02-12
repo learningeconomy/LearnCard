@@ -92,28 +92,22 @@ jobs:
 
             - name: Build in Docker (x86_64-musl)
               if: matrix.settings.target == 'x86_64-unknown-linux-musl'
-              uses: addnab/docker-run-action@v3
               env:
                   TARGET: ${{ matrix.settings.target }}
                   STRIP_CMD: ${{ matrix.settings.strip }}
                   NODE_FILE: ${{ matrix.settings.node_file }}
-              with:
-                  image: ${{ matrix.settings.docker }}
-                  options: -v ${{ github.workspace }}:/build -w /build -e TARGET -e STRIP_CMD -e NODE_FILE
-                  run: |
-                      rustup update stable
-                      rustup default stable
-                      rustup target add $TARGET
-                      npm install -g corepack@latest
-                      corepack enable
-                      corepack prepare pnpm@9 --activate
-                      pnpm install --no-frozen-lockfile
-                      pnpm exec nx run didkit-plugin-node:build -- --target $TARGET
-                      $STRIP_CMD packages/plugins/didkit-plugin-node/$NODE_FILE
+              run: |
+                  docker run --rm \
+                    -v "${{ github.workspace }}:/build" \
+                    -w /build \
+                    -e TARGET \
+                    -e STRIP_CMD \
+                    -e NODE_FILE \
+                    "${{ matrix.settings.docker }}" \
+                    sh -lc "rustup update stable && rustup default stable && rustup target add \$TARGET && npm install -g corepack@latest && corepack enable && corepack prepare pnpm@9 --activate && pnpm install --no-frozen-lockfile && pnpm exec nx run didkit-plugin-node:build -- --target \$TARGET && \$STRIP_CMD packages/plugins/didkit-plugin-node/\$NODE_FILE"
 
             - name: Build in Docker (aarch64-musl)
               if: matrix.settings.target == 'aarch64-unknown-linux-musl'
-              uses: addnab/docker-run-action@v3
               env:
                   TARGET: ${{ matrix.settings.target }}
                   STRIP_CMD: ${{ matrix.settings.strip }}
@@ -122,19 +116,19 @@ jobs:
                   CC_aarch64_unknown_linux_musl: /aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc
                   CXX_aarch64_unknown_linux_musl: /aarch64-linux-musl-cross/bin/aarch64-linux-musl-g++
                   AR_aarch64_unknown_linux_musl: /aarch64-linux-musl-cross/bin/aarch64-linux-musl-ar
-              with:
-                  image: ${{ matrix.settings.docker }}
-                  options: -v ${{ github.workspace }}:/build -w /build -e TARGET -e STRIP_CMD -e NODE_FILE -e CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER -e CC_aarch64_unknown_linux_musl -e CXX_aarch64_unknown_linux_musl -e AR_aarch64_unknown_linux_musl
-                  run: |
-                      rustup update stable
-                      rustup default stable
-                      rustup target add $TARGET
-                      npm install -g corepack@latest
-                      corepack enable
-                      corepack prepare pnpm@9 --activate
-                      pnpm install --no-frozen-lockfile
-                      pnpm exec nx run didkit-plugin-node:build -- --target $TARGET
-                      $STRIP_CMD packages/plugins/didkit-plugin-node/$NODE_FILE
+              run: |
+                  docker run --rm \
+                    -v "${{ github.workspace }}:/build" \
+                    -w /build \
+                    -e TARGET \
+                    -e STRIP_CMD \
+                    -e NODE_FILE \
+                    -e CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER \
+                    -e CC_aarch64_unknown_linux_musl \
+                    -e CXX_aarch64_unknown_linux_musl \
+                    -e AR_aarch64_unknown_linux_musl \
+                    "${{ matrix.settings.docker }}" \
+                    sh -lc "rustup update stable && rustup default stable && rustup target add \$TARGET && npm install -g corepack@latest && corepack enable && corepack prepare pnpm@9 --activate && pnpm install --no-frozen-lockfile && pnpm exec nx run didkit-plugin-node:build -- --target \$TARGET && \$STRIP_CMD packages/plugins/didkit-plugin-node/\$NODE_FILE"
 
             - name: Build (aarch64-unknown-linux-gnu)
               if: matrix.settings.target == 'aarch64-unknown-linux-gnu'
