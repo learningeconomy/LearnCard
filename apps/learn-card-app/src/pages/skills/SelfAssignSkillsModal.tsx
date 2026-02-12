@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     useModal,
@@ -125,6 +125,19 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
 
     const suggestedSkills = hasSearchQuery ? semanticSkills : defaultSkillsToShow;
 
+    const hasNoChanges = useMemo(() => {
+        const currentIds = new Set(selectedSkills.map(s => s.id));
+        const originalIds = new Set(sasBoostSkills?.map((s: { id: string }) => s.id) ?? []);
+        const sameIds =
+            currentIds.size === originalIds.size &&
+            [...currentIds].every(id => originalIds.has(id));
+        if (!sameIds) return false;
+        return selectedSkills.every(s => {
+            const original = sasBoostSkills?.find((o: { id: string }) => o.id === s.id);
+            return original && original.proficiencyLevel === s.proficiency;
+        });
+    }, [selectedSkills, sasBoostSkills]);
+
     const handleToggleSelect = (skillId: string, skillNode?: SkillFrameworkNode) => {
         const isAlreadySelected = selectedSkills.some(s => s.id === skillId);
         if (isAlreadySelected) {
@@ -138,7 +151,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     };
 
     const handleClose = () => {
-        if (selectedSkills.length > 0) {
+        if (!hasNoChanges) {
             newModal(
                 <SkillsCloseConfirmationModal />,
                 { sectionClassName: '!bg-transparent !shadow-none !overflow-visible' },
@@ -425,10 +438,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                         }
                         className="px-[15px] py-[7px] bg-emerald-700 text-white rounded-[30px] text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] shadow-button-bottom h-[44px] flex-1 disabled:bg-grayscale-300"
                         disabled={
-                            selectedSkills.length === 0 ||
-                            skillsLoading ||
-                            isUpdating ||
-                            errorLoadingFramework
+                            hasNoChanges || skillsLoading || isUpdating || errorLoadingFramework
                         }
                     >
                         {isAdd ? 'Select' : 'Save'}
