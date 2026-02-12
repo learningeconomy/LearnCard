@@ -382,7 +382,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                     const canSetup = !!authProvider && !!keyDerivation.setupRecoveryMethod;
 
                     const setupMethod = canSetup
-                        ? async (input: { method: string; password?: string }, authUser?: unknown) => {
+                        ? async (input: { method: string; password?: string; did?: string }, authUser?: unknown) => {
                               const token = await authProvider!.getIdToken();
                               const providerType = authProvider!.getProviderType();
 
@@ -442,6 +442,17 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                           const authUser = await authProvider!.getCurrentUser();
                                           const result = await setupMethod({ method: 'phrase' }, authUser);
                                           return result?.method === 'phrase' ? result.phrase : '';
+                                      }
+                                    : requireAuth
+                            }
+                            onSetupBackup={
+                                setupMethod
+                                    ? async (backupPw: string) => {
+                                          const authUser = await authProvider!.getCurrentUser();
+                                          const lc = await getSigningLearnCard(currentUser.privateKey!);
+                                          const did = lc?.id?.did() || '';
+                                          const result = await setupMethod({ method: 'backup', password: backupPw, did }, authUser);
+                                          return result?.method === 'backup' ? JSON.stringify(result.backupFile, null, 2) : '';
                                       }
                                     : requireAuth
                             }

@@ -199,7 +199,7 @@ export const EncryptedShareValidator = z.object({
 });
 export type EncryptedShare = z.infer<typeof EncryptedShareValidator>;
 
-export const RecoveryMethodTypeValidator = z.enum(['password', 'passkey', 'backup']);
+export const RecoveryMethodTypeValidator = z.enum(['password', 'passkey', 'backup', 'phrase']);
 export type RecoveryMethodType = z.infer<typeof RecoveryMethodTypeValidator>;
 
 export const SecurityLevelValidator = z.enum(['basic', 'enhanced', 'advanced']);
@@ -212,6 +212,7 @@ export const RecoveryMethodInfoValidator = z.object({
     type: RecoveryMethodTypeValidator,
     createdAt: z.string(),
     credentialId: z.string().optional(),
+    shareVersion: z.number().optional(),
 });
 export type RecoveryMethodInfo = z.infer<typeof RecoveryMethodInfoValidator>;
 
@@ -345,7 +346,7 @@ export type LCAPluginMethods = {
         authToken: string,
         providerType: AuthProviderType,
         type: RecoveryMethodType,
-        encryptedShare: EncryptedShare,
+        encryptedShare?: EncryptedShare,
         credentialId?: string
     ) => Promise<{ success: boolean }>;
 
@@ -354,7 +355,7 @@ export type LCAPluginMethods = {
         providerType: AuthProviderType,
         type: RecoveryMethodType,
         credentialId?: string
-    ) => Promise<{ encryptedShare: EncryptedShare; shareVersion?: number } | null>;
+    ) => Promise<{ encryptedShare?: EncryptedShare; shareVersion?: number } | null>;
 
     markMigrated: (
         authToken: string,

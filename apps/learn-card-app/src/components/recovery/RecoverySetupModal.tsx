@@ -4,6 +4,7 @@ import {
     keyOutline,
     fingerPrint,
     documentTextOutline,
+    cloudDownloadOutline,
     checkmarkCircleOutline,
     alertCircleOutline,
     copyOutline,
@@ -13,12 +14,13 @@ import {
 import { Capacitor } from '@capacitor/core';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 
-export type RecoverySetupType = 'password' | 'passkey' | 'phrase';
+export type RecoverySetupType = 'password' | 'passkey' | 'phrase' | 'backup';
 
 interface RecoverySetupModalProps {
     onSetupPassword: (password: string) => Promise<void>;
     onSetupPasskey: () => Promise<string>;
     onGeneratePhrase: () => Promise<string>;
+    onSetupBackup: (password: string) => Promise<string>;
     existingMethods: { type: string; createdAt: string }[];
     onClose: () => void;
 }
@@ -27,6 +29,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     onSetupPassword,
     onSetupPasskey,
     onGeneratePhrase,
+    onSetupBackup,
     existingMethods,
     onClose,
 }) => {
@@ -63,6 +66,12 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const [recoveryPhrase, setRecoveryPhrase] = useState<string | null>(null);
     const [phraseCopied, setPhraseCopied] = useState(false);
     const [phraseConfirmed, setPhraseConfirmed] = useState(false);
+
+    const [backupPassword, setBackupPassword] = useState('');
+    const [confirmBackupPassword, setConfirmBackupPassword] = useState('');
+    const [backupFileJson, setBackupFileJson] = useState<string | null>(null);
+    const [backupDownloaded, setBackupDownloaded] = useState(false);
+    const [backupConfirmed, setBackupConfirmed] = useState(false);
 
     const handleTabSwitch = (tab: RecoverySetupType) => {
         setActiveTab(tab);
@@ -153,10 +162,62 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         setSuccess('Recovery phrase saved! Keep it somewhere safe.');
     };
 
+    const handleBackupSetup = async () => {
+        if (backupPassword.length < 8) {
+            setError('Password must be at least 8 characters.');
+            return;
+        }
+
+        if (backupPassword !== confirmBackupPassword) {
+            setError('Passwords don\'t match.');
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const fileJson = await onSetupBackup(backupPassword);
+            setBackupFileJson(fileJson);
+        } catch (e) {
+            console.error('[RecoverySetupModal] handleBackupSetup error:', e, typeof e);
+            setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDownloadBackup = () => {
+        if (!backupFileJson) return;
+
+        const blob = new Blob([backupFileJson], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `learncard-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        URL.revokeObjectURL(url);
+        setBackupDownloaded(true);
+    };
+
+    const handleConfirmBackup = () => {
+        setBackupConfirmed(true);
+        markConfigured('backup');
+        setSuccess('Backup file saved! Keep it and your password somewhere safe.');
+        setBackupPassword('');
+        setConfirmBackupPassword('');
+        setShowUpdateForm(false);
+    };
+
     const allTabs = [
         { id: 'password' as const, label: 'Password', icon: keyOutline },
         { id: 'passkey' as const, label: 'Passkey', icon: fingerPrint },
         { id: 'phrase' as const, label: 'Phrase', icon: documentTextOutline },
+        { id: 'backup' as const, label: 'Backup', icon: cloudDownloadOutline },
     ];
 
     // Hide passkey tab entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
@@ -228,7 +289,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     // ── Render ─────────────────────────────────────────────────────────
 
     return (
-        <div className="p-6 max-w-md mx-auto">
+        <div className="p-6 max-w-md mx-auto bg-white min-h-full">
             {/* Dynamic Header */}
             <div className="text-center mb-5">
                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -244,12 +305,12 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 mb-6">
+            <div className="flex gap-1.5 mb-6">
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => handleTabSwitch(tab.id)}
-                        className={`flex-1 py-2.5 px-3 rounded-full flex items-center justify-center gap-1.5 text-sm font-medium transition-all ${
+                        className={`flex-1 min-w-0 py-2 px-2 rounded-full flex items-center justify-center gap-1 text-xs font-medium transition-all ${
                             activeTab === tab.id
                                 ? 'bg-grayscale-900 text-white'
                                 : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
@@ -447,6 +508,92 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             {!phraseConfirmed && (
                                 <button
                                     onClick={handleConfirmPhrase}
+                                    className="w-full py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
+                                >
+                                    I've Saved It Somewhere Safe
+                                </button>
+                            )}
+                        </>
+                    )}
+                </div>
+            )}
+
+            {/* ── Backup Tab ──────────────────────────────────── */}
+            {activeTab === 'backup' && (
+                <div className="space-y-4">
+                    {isConfigured('backup') && !showUpdateForm && !backupFileJson ? (
+                        configuredRow('Backup file created', () => setShowUpdateForm(true))
+                    ) : !backupFileJson ? (
+                        <>
+                            {isUpdate && updateWarning('This will generate a new backup file. Your previous backup file will no longer work.')}
+
+                            <p className="text-sm text-grayscale-600 leading-relaxed">
+                                Generate an encrypted backup file protected by a password. Store it somewhere safe — you'll need both the file and the password to recover.
+                            </p>
+
+                            <div>
+                                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Backup Password</label>
+
+                                <input
+                                    type="password"
+                                    value={backupPassword}
+                                    onChange={e => setBackupPassword(e.target.value)}
+                                    placeholder="At least 8 characters"
+                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Confirm Password</label>
+
+                                <input
+                                    type="password"
+                                    value={confirmBackupPassword}
+                                    onChange={e => setConfirmBackupPassword(e.target.value)}
+                                    placeholder="Type it again"
+                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                />
+                            </div>
+
+                            {primaryButton(
+                                isUpdate ? 'Generate New Backup' : 'Generate Backup File',
+                                handleBackupSetup,
+                                loading || !backupPassword || !confirmBackupPassword,
+                                'Generating...',
+                            )}
+
+                            {isUpdate && cancelUpdateButton(() => {
+                                setBackupPassword('');
+                                setConfirmBackupPassword('');
+                            })}
+                        </>
+                    ) : (
+                        <>
+                            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                                <div className="flex items-start gap-2.5">
+                                    <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
+
+                                    <div>
+                                        <p className="text-sm font-medium text-emerald-800 mb-1">Backup file ready</p>
+
+                                        <p className="text-xs text-emerald-700 leading-relaxed">
+                                            Download this file and store it somewhere safe. You'll need it along with your backup password to recover.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleDownloadBackup}
+                                className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                            >
+                                <IonIcon icon={cloudDownloadOutline} className="text-base" />
+                                {backupDownloaded ? 'Download Again' : 'Download Backup File'}
+                            </button>
+
+                            {backupDownloaded && !backupConfirmed && (
+                                <button
+                                    onClick={handleConfirmBackup}
                                     className="w-full py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
                                 >
                                     I've Saved It Somewhere Safe

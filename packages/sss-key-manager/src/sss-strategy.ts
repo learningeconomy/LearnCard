@@ -772,6 +772,13 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         },
                     };
 
+                    // Register backup on the server so getAvailableRecoveryMethods
+                    // includes it. No encryptedShare — the file is self-contained.
+                    await postRecoveryMethod(serverUrl, token, providerType, {
+                        type: 'backup',
+                        shareVersion,
+                    }, vpJwt);
+
                     return { method: 'backup', backupFile };
                 }
             }

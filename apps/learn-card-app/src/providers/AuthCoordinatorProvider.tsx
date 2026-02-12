@@ -896,6 +896,14 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                                 const result = await setupMethod({ method: 'phrase' }, authUser);
                                 return result.method === 'phrase' ? result.phrase : '';
                             }}
+                            onSetupBackup={async (backupPw: string) => {
+                                const authUser = await recoveryAuthProvider.getCurrentUser();
+                                const did = coordinator.state.status === 'ready' ? coordinator.state.did : '';
+                                const result = await setupMethod({ method: 'backup', password: backupPw, did }, authUser);
+
+                                setRecoveryMethodCount(prev => (prev ?? 0) + 1);
+                                return result.method === 'backup' ? JSON.stringify(result.backupFile, null, 2) : '';
+                            }}
                             onClose={() => setShowRecoverySetup(false)}
                         />
                     </Overlay>

@@ -1517,5 +1517,71 @@ describe('createSSSStrategy', () => {
             // Should have requested the specific shareVersion from the phrase record
             expect(authShareRequestVersion).toBe(3);
         });
+
+        it('setupRecoveryMethod for backup registers method on server with shareVersion', async () => {
+            const originalKey = 'c1c2c3c4c5c6'.padEnd(64, '0');
+
+            await emailStrategy.splitKey(originalKey);
+
+            const fetchCalls: { url: string; method: string; body: string }[] = [];
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const urlStr = typeof url === 'string' ? url : url.toString();
+                const method = (init?.method ?? 'GET').toUpperCase();
+
+                fetchCalls.push({
+                    url: urlStr,
+                    method,
+                    body: init?.body as string ?? '',
+                });
+
+                // fetchAuthShareRaw
+                if (urlStr.includes('/keys/auth-share') && method === 'POST') {
+                    return new Response(JSON.stringify({
+                        authShare: 'existing',
+                        primaryDid: 'did:key:z1',
+                        recoveryMethods: [],
+                        shareVersion: 7,
+                    }), { status: 200 });
+                }
+
+                // putAuthShare
+                if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
+                    return new Response(JSON.stringify({ success: true, shareVersion: 8 }), { status: 200 });
+                }
+
+                return new Response(JSON.stringify({ success: true }), { status: 200 });
+            });
+
+            const result = await emailStrategy.setupRecoveryMethod!({
+                token: 'token',
+                providerType: 'firebase',
+                privateKey: originalKey,
+                input: { method: 'backup', password: 'testpass123', did: 'did:key:z1' },
+                authUser: { id: 'user-1', providerType: 'firebase', email: 'user@test.com' },
+            });
+
+            expect(result.method).toBe('backup');
+            expect('backupFile' in result && result.backupFile).toBeTruthy();
+
+            // Backup file should embed the shareVersion
+            if (result.method === 'backup') {
+                expect(result.backupFile.shareVersion).toBe(8);
+            }
+
+            // Verify postRecoveryMethod was called for backup
+            const recoveryCalls = fetchCalls.filter(
+                c => c.url.includes('/keys/recovery') && c.method === 'POST'
+            );
+
+            expect(recoveryCalls).toHaveLength(1);
+
+            const recoveryBody = JSON.parse(recoveryCalls[0]!.body);
+
+            expect(recoveryBody.type).toBe('backup');
+            expect(recoveryBody.shareVersion).toBe(8);
+            // No encryptedShare on the server record — the backup file is self-contained
+            expect(recoveryBody.encryptedShare).toBeUndefined();
+        });
     });
 });

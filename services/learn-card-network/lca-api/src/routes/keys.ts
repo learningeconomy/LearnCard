@@ -66,7 +66,7 @@ export const keysRouter = t.router({
                 securityLevel: z.enum(['basic', 'enhanced', 'advanced']),
                 recoveryMethods: z.array(
                     z.object({
-                        type: z.enum(['password', 'passkey', 'backup']),
+                        type: z.enum(['password', 'passkey', 'backup', 'phrase']),
                         createdAt: z.string(),
                         credentialId: z.string().optional(),
                         shareVersion: z.number().optional(),
@@ -247,8 +247,8 @@ export const keysRouter = t.router({
             if (!recoveryMethod) return null;
 
             return {
-                encryptedShare: recoveryMethod.encryptedShare,
-                shareVersion: recoveryMethod.shareVersion,
+                encryptedShare: recoveryMethod.encryptedShare ?? undefined,
+                shareVersion: recoveryMethod.shareVersion ?? undefined,
             };
         }),
 
