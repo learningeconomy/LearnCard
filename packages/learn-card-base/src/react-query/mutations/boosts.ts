@@ -34,6 +34,7 @@ import {
 import { insertItem } from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
 import { v4 as uuidv4 } from 'uuid';
+import { LCR } from 'learn-card-base/types/credential-records';
 
 type SharedCredentialsIndex = {
     type: 'shared-credentials';
@@ -591,7 +592,18 @@ export const useManageSelfAssignedSkillsBoost = () => {
 
                 boostUri = sasBoost.uri;
 
-                await deleteCredentialRecord(sasCred?.record);
+                // Fetch the credential record fresh to avoid stale cache issues
+                const credentialRecords = await wallet.index.all.get<LCR>({
+                    boostUri: sasBoost.uri,
+                });
+                const freshCredentialRecord =
+                    credentialRecords.length > 0
+                        ? credentialRecords[credentialRecords.length - 1]
+                        : undefined;
+
+                if (freshCredentialRecord) {
+                    await deleteCredentialRecord(freshCredentialRecord);
+                }
             } else {
                 /// CREATE BOOST
                 // makes request to LCN, second param is metadata associated with template

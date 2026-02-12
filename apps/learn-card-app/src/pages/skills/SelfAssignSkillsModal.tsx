@@ -252,7 +252,12 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
             {errorLoadingFramework && <GenericErrorView errorMessage="Error loading framework" />}
 
             {!errorLoadingFramework && (
-                <section className="h-full flex flex-col gap-[20px] pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0">
+                <section className="h-full flex flex-col gap-[20px] pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative">
+                    {isUpdating && (
+                        <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
+                            <IonSpinner color="dark" name="crescent" />
+                        </div>
+                    )}
                     <div className="relative">
                         <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                             <Search className="text-grayscale-900 w-[24px] h-[24px]" />
