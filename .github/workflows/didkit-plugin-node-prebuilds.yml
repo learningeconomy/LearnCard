@@ -159,7 +159,7 @@ jobs:
     publish:
         name: Publish to npm
         needs: build
-        if: github.ref == 'refs/heads/main'
+        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
