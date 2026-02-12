@@ -46,33 +46,13 @@ function loadNativeAddon(): NativeAddon {
     if (nativeAddon) return nativeAddon;
 
     try {
-        // Load the platform-specific native addon
-        // napi-rs generates files like index.linux-x64-gnu.node
-        const path = require('path');
-        const fs = require('fs');
-
-        // Use require.resolve to find package location (works from any context)
-        const packageJson = require.resolve('@learncard/didkit-plugin-node/package.json');
-        const packageRoot = path.dirname(packageJson);
-
-        // Try to find the platform-specific .node file
-        const files = fs.readdirSync(packageRoot);
-        const nodeFile = files.find((f: string) => f.startsWith('index.') && f.endsWith('.node'));
-
-        if (!nodeFile) {
-            throw new Error(
-                `No .node binary found in ${packageRoot}. Files: ${files.join(
-                    ', '
-                )}. Run 'pnpm build' to compile.`
-            );
-        }
-
-        nativeAddon = require(path.join(packageRoot, nodeFile)) as NativeAddon;
+        // Delegate platform resolution to napi-rs generated loader (index.js).
+        // It supports both local .node files and optionalDependencies fallback.
+        nativeAddon = require('../index.js') as NativeAddon;
         return nativeAddon;
     } catch (error) {
         throw new Error(
-            `@learncard/didkit-plugin-node: Failed to load native module. ` +
-                `Ensure the addon is built for your platform. Original error: ${error}`
+            `@learncard/didkit-plugin-node: Failed to load native module. Ensure the addon is built for your platform. Original error: ${error}`
         );
     }
 }
@@ -180,7 +160,10 @@ export const getDidKitPlugin = async (
                     ? {}
                     : await getDocumentMap(_learnCard, presentation, _allowRemoteContexts);
                 // Filter out proofFormat as it's not part of LinkedDataProofOptions in Rust
-                const { proofFormat, ...nativeOptions } = options as any;
+                const { proofFormat, ...nativeOptions } = options as {
+                    proofFormat?: unknown;
+                    [key: string]: unknown;
+                };
                 const result = await native.verifyPresentation(
                     isJwt ? presentation : JSON.stringify(presentation),
                     JSON.stringify(nativeOptions),

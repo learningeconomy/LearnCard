@@ -208,16 +208,16 @@ jobs:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
             - name: Publish to npm
+              working-directory: packages/plugins/didkit-plugin-node
               run: |
-                  cd packages/plugins/didkit-plugin-node
+                  set -euo pipefail
+                  shopt -s nullglob
                   for dir in npm/*; do
                     if [ -d "$dir" ]; then
                       echo "Publishing $dir..."
-                      cd "$dir"
-                      npm publish --access public || true
-                      cd ../..
+                      (cd "$dir" && npm publish --access public)
                     fi
                   done
-                  npm publish --access public || true
+                  npm publish --access public
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,14 +1,20 @@
 {
     "name": "@learncard/didkit-plugin-node",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "description": "Node-native DIDKit plugin for LearnCard (N-API addon wrapper)",
     "main": "./dist/index.js",
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "files": [
         "dist",
-        "native"
+        "index.js",
+        "index.d.ts",
+        "README.md",
+        "CHANGELOG.md"
     ],
+    "publishConfig": {
+        "access": "public"
+    },
     "napi": {
         "name": "index",
         "triples": {
@@ -45,5 +51,14 @@
     "devDependencies": {
         "@napi-rs/cli": "^2.18.0",
         "typescript": "^5.3.3"
+    },
+    "optionalDependencies": {
+        "@learncard/didkit-plugin-node-win32-x64-msvc": "0.2.3",
+        "@learncard/didkit-plugin-node-darwin-x64": "0.2.3",
+        "@learncard/didkit-plugin-node-darwin-arm64": "0.2.3",
+        "@learncard/didkit-plugin-node-linux-x64-gnu": "0.2.3",
+        "@learncard/didkit-plugin-node-linux-arm64-gnu": "0.2.3",
+        "@learncard/didkit-plugin-node-linux-x64-musl": "0.2.3",
+        "@learncard/didkit-plugin-node-linux-arm64-musl": "0.2.3"
     }
 }
