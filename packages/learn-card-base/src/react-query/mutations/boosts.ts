@@ -532,7 +532,50 @@ export const useManageSelfAssignedSkillsBoost = () => {
 
             const wallet = await initWallet();
 
-            const sasBoostExists = !!sasBoost;
+            // Fetch the boost fresh to avoid stale cache issues
+            const freshBoostResult = await wallet.invoke.getPaginatedBoosts({
+                limit: 10,
+                query: { name: 'Self-Assigned Skills' },
+            });
+            const freshBoostRecords = freshBoostResult?.records ?? [];
+            const freshSasBoost =
+                freshBoostRecords.length > 0
+                    ? freshBoostRecords[freshBoostRecords.length - 1]
+                    : undefined;
+
+            const sasBoostExists = !!freshSasBoost;
+
+            // If boost exists, delete ALL old credential records BEFORE updating
+            // Query by multiple criteria to catch records with or without boostUri
+            if (sasBoostExists) {
+                // First try to find by boostUri (new records)
+                const recordsByBoostUri = await wallet.index.all.get<LCR>({
+                    boostUri: freshSasBoost.uri,
+                });
+
+                // Also find by category and title (catches old records without boostUri)
+                const recordsByCategory = await wallet.index.LearnCloud.get<LCR>({
+                    category: CredentialCategoryEnum.skill,
+                    title: 'Self-Assigned Skills',
+                });
+
+                // Combine and deduplicate by id
+                const allRecordsMap = new Map<string, LCR>();
+                [...recordsByBoostUri, ...recordsByCategory].forEach(record => {
+                    if (record?.id) {
+                        allRecordsMap.set(record.id, record);
+                    }
+                });
+
+                // Delete ALL matching records
+                for (const record of allRecordsMap.values()) {
+                    try {
+                        await deleteCredentialRecord(record);
+                    } catch (e) {
+                        console.warn('Failed to delete credential record:', e);
+                    }
+                }
+            }
 
             const walletDid = wallet?.id?.did();
             const currentDate = new Date()?.toISOString();
@@ -581,7 +624,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
             let boostUri;
 
             if (sasBoostExists) {
-                const updatedBoostBoolean = await wallet?.invoke?.updateBoost(sasBoost.uri, {
+                const updatedBoostBoolean = await wallet?.invoke?.updateBoost(freshSasBoost.uri, {
                     name: 'Self-Assigned Skills',
                     type: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE, // in boost CMS: 'ext:Artowork'
                     category: CredentialCategoryEnum.skill, // in boost CMS: "Achievement", "Accomplishment", etc.
@@ -590,20 +633,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                     skills,
                 });
 
-                boostUri = sasBoost.uri;
-
-                // Fetch the credential record fresh to avoid stale cache issues
-                const credentialRecords = await wallet.index.all.get<LCR>({
-                    boostUri: sasBoost.uri,
-                });
-                const freshCredentialRecord =
-                    credentialRecords.length > 0
-                        ? credentialRecords[credentialRecords.length - 1]
-                        : undefined;
-
-                if (freshCredentialRecord) {
-                    await deleteCredentialRecord(freshCredentialRecord);
-                }
+                boostUri = freshSasBoost.uri;
             } else {
                 /// CREATE BOOST
                 // makes request to LCN, second param is metadata associated with template
@@ -641,6 +671,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 uri: issuedVcUri,
                 category,
                 title: 'Self-Assigned Skills',
+                boostUri: boostUri,
             });
 
             return {
