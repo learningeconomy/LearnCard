@@ -214,10 +214,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     };
 
     const allTabs = [
-        { id: 'password' as const, label: 'Password', icon: keyOutline },
-        { id: 'passkey' as const, label: 'Passkey', icon: fingerPrint },
-        { id: 'phrase' as const, label: 'Phrase', icon: documentTextOutline },
-        { id: 'backup' as const, label: 'Backup', icon: cloudDownloadOutline },
+        { id: 'password' as const, label: 'Password', icon: keyOutline, iconClass: 'text-xl' },
+        { id: 'passkey' as const, label: 'Passkey', icon: fingerPrint, iconClass: 'text-sm' },
+        { id: 'phrase' as const, label: 'Phrase', icon: documentTextOutline, iconClass: 'text-sm' },
+        { id: 'backup' as const, label: 'Backup', icon: cloudDownloadOutline, iconClass: 'text-sm' },
     ];
 
     // Hide passkey tab entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
@@ -316,7 +316,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
                         }`}
                     >
-                        <IonIcon icon={tab.icon} className="text-sm" />
+                        <IonIcon icon={tab.icon} className={tab.iconClass} />
                         {tab.label}
 
                         {isConfigured(tab.id) && (
