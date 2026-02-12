@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.89.20
+
+### Patch Changes
+
+-   [#989](https://github.com/learningeconomy/LearnCard/pull/989) [`4d4f0d30a69f6228ff66a5ebfe891331670ffc6b`](https://github.com/learningeconomy/LearnCard/commit/4d4f0d30a69f6228ff66a5ebfe891331670ffc6b) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1423] Move xAPI statements into "Manage Data Sharing" based on contract
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.13
+    -   @learncard/react@2.9.12
+
 ## 1.89.19
 
 ### Patch Changes
