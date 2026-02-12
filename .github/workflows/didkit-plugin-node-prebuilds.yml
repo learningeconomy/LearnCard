@@ -19,6 +19,9 @@ jobs:
             fail-fast: false
             matrix:
                 settings:
+                    - host: windows-latest
+                      target: x86_64-pc-windows-msvc
+                      node_file: index.win32-x64-msvc.node
                     - host: ubuntu-latest
                       target: x86_64-unknown-linux-gnu
                       strip: strip -x
@@ -143,11 +146,16 @@ jobs:
               shell: bash
 
             - name: Build
-              if: ${{ !matrix.settings.docker && matrix.settings.target != 'aarch64-unknown-linux-gnu' }}
+              if: ${{ !matrix.settings.docker && matrix.settings.target != 'aarch64-unknown-linux-gnu' && matrix.settings.target != 'x86_64-pc-windows-msvc' }}
               run: |
                   pnpm exec nx run didkit-plugin-node:build ${{ matrix.settings.target != 'x86_64-unknown-linux-gnu' && format('-- --target {0}', matrix.settings.target) || '' }}
                   ${{ matrix.settings.strip }} packages/plugins/didkit-plugin-node/${{ matrix.settings.node_file }}
               shell: bash
+
+            - name: Build (windows)
+              if: matrix.settings.target == 'x86_64-pc-windows-msvc'
+              run: pnpm exec nx run didkit-plugin-node:build -- --target x86_64-pc-windows-msvc
+              shell: pwsh
 
             - name: Upload artifacts
               uses: actions/upload-artifact@v4
@@ -193,7 +201,19 @@ jobs:
 
             - name: Move artifacts to platform packages
               working-directory: packages/plugins/didkit-plugin-node
-              run: pnpm artifacts
+              run: |
+                  pnpm exec napi create-npm-dir -t .
+                  shopt -s nullglob
+                  for dir in npm/*; do
+                    if [ -d "$dir" ]; then
+                      node_file=$(node -p "require('./$dir/package.json').main")
+                      if [ ! -f "$node_file" ]; then
+                        echo "Missing binary $node_file in package root"
+                        exit 1
+                      fi
+                      cp "$node_file" "$dir/$node_file"
+                    fi
+                  done
 
             - name: Build TypeScript
               run: pnpm exec nx run didkit-plugin-node:build
