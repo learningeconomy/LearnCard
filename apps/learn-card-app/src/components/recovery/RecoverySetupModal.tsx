@@ -50,7 +50,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         return 'password';
     });
 
-    // Whether the user clicked "Update" on an already-configured method
+    // Whether the user clicked "Change" on an already-configured method
     const [showUpdateForm, setShowUpdateForm] = useState(false);
 
     const [loading, setLoading] = useState(false);
@@ -162,7 +162,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     // Hide passkey tab entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
     const tabs = isNative ? allTabs.filter(t => t.id !== 'passkey') : allTabs;
 
-    // ── Shared sub-components ──────────────────────────────────────────
+    const configuredCount = tabs.filter(t => isConfigured(t.id)).length;
+
+    // ── Shared helpers ──────────────────────────────────────────────
 
     const updateWarning = (text: string) => (
         <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2.5">
@@ -182,27 +184,6 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
         >
             Cancel
-        </button>
-    );
-
-    const configuredCard = (title: string, description: string) => (
-        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-3">
-            <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-xl mt-0.5 shrink-0" />
-
-            <div>
-                <p className="text-sm font-medium text-emerald-800">{title}</p>
-
-                <p className="text-xs text-emerald-700 mt-1 leading-relaxed">{description}</p>
-            </div>
-        </div>
-    );
-
-    const secondaryButton = (label: string, onClick: () => void) => (
-        <button
-            onClick={onClick}
-            className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
-        >
-            {label}
         </button>
     );
 
@@ -226,16 +207,39 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         </button>
     );
 
+    // Compact status row for a configured method — replaces the old large green card + button
+    const configuredRow = (statusText: string, onChangeClick: () => void) => (
+        <div className="flex items-center justify-between py-3 px-4 rounded-2xl bg-grayscale-100/60">
+            <div className="flex items-center gap-2.5">
+                <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-base shrink-0" />
+
+                <span className="text-sm text-grayscale-900">{statusText}</span>
+            </div>
+
+            <button
+                onClick={onChangeClick}
+                className="text-xs font-medium text-grayscale-500 hover:text-grayscale-900 transition-colors"
+            >
+                Change
+            </button>
+        </div>
+    );
+
     // ── Render ─────────────────────────────────────────────────────────
 
     return (
         <div className="p-6 max-w-md mx-auto">
-            {/* Header */}
+            {/* Dynamic Header */}
             <div className="text-center mb-5">
-                <h2 className="text-xl font-semibold text-grayscale-900 mb-1">Protect Your Account</h2>
+                <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
+                    {anyConfigured ? 'Account Recovery' : 'Protect Your Account'}
+                </h2>
 
                 <p className="text-sm text-grayscale-600 leading-relaxed">
-                    Set up a recovery method so you can get back in if you lose access to this device.
+                    {anyConfigured
+                        ? `${configuredCount} recovery ${configuredCount === 1 ? 'method' : 'methods'} active`
+                        : 'Set up a recovery method so you can get back in if you lose access to this device.'
+                    }
                 </p>
             </div>
 
@@ -283,14 +287,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {activeTab === 'password' && (
                 <div className="space-y-4">
                     {isConfigured('password') && !showUpdateForm ? (
-                        <>
-                            {configuredCard(
-                                'Password recovery is active',
-                                'You can recover your account using your recovery password.'
-                            )}
-
-                            {secondaryButton('Update Password', () => setShowUpdateForm(true))}
-                        </>
+                        configuredRow('Password is set up', () => setShowUpdateForm(true))
                     ) : (
                         <>
                             {isUpdate && updateWarning('This will replace your current recovery password.')}
@@ -349,14 +346,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             </p>
                         </div>
                     ) : isConfigured('passkey') && !showUpdateForm ? (
-                        <>
-                            {configuredCard(
-                                'Passkey recovery is active',
-                                'You can recover your account using biometric authentication.'
-                            )}
-
-                            {secondaryButton('Replace Passkey', () => setShowUpdateForm(true))}
-                        </>
+                        configuredRow('Passkey is set up', () => setShowUpdateForm(true))
                     ) : (
                         <>
                             {!anyConfigured && (
@@ -402,14 +392,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {activeTab === 'phrase' && (
                 <div className="space-y-4">
                     {isConfigured('phrase') && !showUpdateForm && !recoveryPhrase ? (
-                        <>
-                            {configuredCard(
-                                'Recovery phrase is saved',
-                                'Make sure you\'ve stored your phrase somewhere safe.'
-                            )}
-
-                            {secondaryButton('Generate New Phrase', () => setShowUpdateForm(true))}
-                        </>
+                        configuredRow('Phrase is saved', () => setShowUpdateForm(true))
                     ) : !recoveryPhrase ? (
                         <>
                             {isUpdate && updateWarning('This will generate a new phrase. Your previous phrase will no longer work.')}
@@ -472,6 +455,13 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         </>
                     )}
                 </div>
+            )}
+
+            {/* Progress hint — only when some (but not all) methods are configured */}
+            {anyConfigured && configuredCount < tabs.length && (
+                <p className="mt-4 text-center text-xs text-grayscale-500 leading-relaxed">
+                    Adding another method improves your security.
+                </p>
             )}
 
             {/* Bottom action */}

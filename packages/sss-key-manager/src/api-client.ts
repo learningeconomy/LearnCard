@@ -27,9 +27,10 @@ export interface StoreAuthShareInput {
 }
 
 export interface StoreRecoveryShareInput {
-    type: 'password' | 'passkey' | 'backup';
-    encryptedShare: EncryptedShare;
+    type: 'password' | 'passkey' | 'backup' | 'phrase';
+    encryptedShare?: EncryptedShare;
     credentialId?: string;
+    shareVersion?: number;
 }
 
 export interface ApiClientConfig {
@@ -124,9 +125,9 @@ export class SSSApiClient {
     }
 
     async getRecoveryShare(
-        type: 'password' | 'passkey' | 'backup',
+        type: 'password' | 'passkey' | 'backup' | 'phrase',
         credentialId?: string
-    ): Promise<{ encryptedShare: EncryptedShare; shareVersion?: number } | null> {
+    ): Promise<{ encryptedShare?: EncryptedShare; shareVersion?: number } | null> {
         const token = await this.authProvider.getIdToken();
         const providerType = this.authProvider.getProviderType();
 

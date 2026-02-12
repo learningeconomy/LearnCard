@@ -27,7 +27,7 @@ export const EncryptedShareValidator = z.object({
 });
 
 export const RecoveryMethodValidator = z.object({
-    type: z.enum(['password', 'passkey', 'backup']),
+    type: z.enum(['password', 'passkey', 'backup', 'phrase']),
     createdAt: z.date(),
     credentialId: z.string().optional(),
     encryptedShare: EncryptedShareValidator.optional(),

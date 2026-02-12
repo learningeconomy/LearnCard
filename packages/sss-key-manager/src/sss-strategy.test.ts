@@ -20,6 +20,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createSSSStrategy } from './sss-strategy';
 import { reconstructFromShares } from './sss';
 import { splitAndVerify } from './atomic-operations';
+import { shareToRecoveryPhrase, recoveryPhraseToShare } from './recovery-phrase';
 
 import type { SSSStorageFunctions } from './sss-strategy';
 import type { SSSKeyDerivationStrategy } from './types';
@@ -1397,6 +1398,124 @@ describe('createSSSStrategy', () => {
             expect(result.privateKey).toBe(originalKey);
             // No version prefix, so should not send a shareVersion
             expect(capturedVersion).toBeUndefined();
+        });
+
+        it('setupRecoveryMethod for phrase registers method on server with shareVersion', async () => {
+            const originalKey = 'a1a2a3a4a5a6'.padEnd(64, '0');
+
+            await emailStrategy.splitKey(originalKey);
+
+            const fetchCalls: { url: string; method: string; body: string }[] = [];
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const urlStr = typeof url === 'string' ? url : url.toString();
+                const method = (init?.method ?? 'GET').toUpperCase();
+
+                fetchCalls.push({
+                    url: urlStr,
+                    method,
+                    body: init?.body as string ?? '',
+                });
+
+                // fetchAuthShareRaw
+                if (urlStr.includes('/keys/auth-share') && method === 'POST') {
+                    return new Response(JSON.stringify({
+                        authShare: 'existing',
+                        primaryDid: 'did:key:z1',
+                        recoveryMethods: [],
+                        shareVersion: 5,
+                    }), { status: 200 });
+                }
+
+                // putAuthShare
+                if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
+                    return new Response(JSON.stringify({ success: true, shareVersion: 6 }), { status: 200 });
+                }
+
+                return new Response(JSON.stringify({ success: true }), { status: 200 });
+            });
+
+            const result = await emailStrategy.setupRecoveryMethod!({
+                token: 'token',
+                providerType: 'firebase',
+                privateKey: originalKey,
+                input: { method: 'phrase' },
+                authUser: { id: 'user-1', providerType: 'firebase', email: 'user@test.com' },
+            });
+
+            expect(result.method).toBe('phrase');
+            expect('phrase' in result && result.phrase).toBeTruthy();
+
+            // Verify postRecoveryMethod was called for phrase
+            const recoveryCall = fetchCalls.find(
+                c => c.url.includes('/keys/recovery') && c.method === 'POST'
+            );
+
+            expect(recoveryCall).toBeDefined();
+
+            const recoveryBody = JSON.parse(recoveryCall!.body);
+
+            expect(recoveryBody.type).toBe('phrase');
+            expect(recoveryBody.shareVersion).toBe(6);
+            // Phrase should NOT have an encryptedShare — the user holds the phrase
+            expect(recoveryBody.encryptedShare).toBeUndefined();
+        });
+
+        it('phrase recovery fetches shareVersion from server to get correct auth share', async () => {
+            const originalKey = 'b1b2b3b4b5b6'.padEnd(64, '0');
+
+            // Split to get real shares
+            const { shares } = await splitAndVerify(originalKey);
+
+            // Convert recovery share to phrase
+            const phrase = await shareToRecoveryPhrase(shares.recoveryShare);
+
+            // Verify the phrase round-trips
+            const recoveredShare = await recoveryPhraseToShare(phrase);
+
+            expect(recoveredShare).toBe(shares.recoveryShare);
+
+            // Mock server: phrase record returns shareVersion 3,
+            // fetchAuthShareRaw should be called with that version
+            let authShareRequestVersion: number | undefined;
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const urlStr = typeof url === 'string' ? url : url.toString();
+                const method = (init?.method ?? 'GET').toUpperCase();
+
+                // getRecoveryShare for phrase — returns shareVersion only (no encryptedShare)
+                if (urlStr.includes('/keys/recovery') && method === 'GET') {
+                    return new Response(JSON.stringify({
+                        shareVersion: 3,
+                    }), { status: 200 });
+                }
+
+                // fetchAuthShareRaw — capture requested shareVersion
+                if (urlStr.includes('/keys/auth-share') && method === 'POST') {
+                    const body = JSON.parse(init?.body as string);
+                    authShareRequestVersion = body.shareVersion;
+
+                    return new Response(JSON.stringify({
+                        authShare: shares.authShare,
+                        primaryDid: 'did:key:z1',
+                        recoveryMethods: [{ type: 'phrase', createdAt: new Date().toISOString() }],
+                        shareVersion: 3,
+                    }), { status: 200 });
+                }
+
+                return new Response(JSON.stringify({ success: true }), { status: 200 });
+            });
+
+            const result = await emailStrategy.executeRecovery!({
+                token: 'token',
+                providerType: 'firebase',
+                input: { method: 'phrase', phrase },
+            });
+
+            expect(result.privateKey).toBe(originalKey);
+
+            // Should have requested the specific shareVersion from the phrase record
+            expect(authShareRequestVersion).toBe(3);
         });
     });
 });

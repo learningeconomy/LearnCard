@@ -141,7 +141,7 @@ const putAuthShare = async (
 };
 
 interface RecoveryShareResponse {
-    encryptedShare: { encryptedData: string; iv: string; salt?: string };
+    encryptedShare?: { encryptedData: string; iv: string; salt?: string };
     shareVersion?: number;
 }
 
@@ -530,6 +530,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         serverUrl, token, providerType, 'passkey', input.credentialId
                     );
 
+                    if (!result?.encryptedShare) {
+                        throw new Error('No passkey recovery share found');
+                    }
+
                     recoveryShare = await decryptShareWithPasskey({
                         encryptedData: result.encryptedShare.encryptedData,
                         iv: result.encryptedShare.iv,
@@ -548,7 +552,20 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     }
 
                     recoveryShare = await recoveryPhraseToShare(input.phrase);
-                    // Phrase recovery has no version — uses latest auth share
+
+                    // Fetch the phrase method's shareVersion so we pair with
+                    // the correct historical auth share.
+                    try {
+                        const phraseRecord = await fetchRecoveryShare(
+                            serverUrl, token, providerType, 'phrase'
+                        );
+
+                        recoveryShareVersion = phraseRecord?.shareVersion;
+                    } catch {
+                        // Server may not have a phrase record (legacy setup).
+                        // Fall through with undefined version → uses latest auth share.
+                    }
+
                     break;
                 }
 
@@ -727,6 +744,14 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
                 case 'phrase': {
                     const phrase = await shareToRecoveryPhrase(shares.recoveryShare);
+
+                    // Register phrase on the server so getAvailableRecoveryMethods
+                    // includes it and we can look up the shareVersion during recovery.
+                    // No encryptedShare — the user holds the phrase directly.
+                    await postRecoveryMethod(serverUrl, token, providerType, {
+                        type: 'phrase',
+                        shareVersion,
+                    }, vpJwt);
 
                     return { method: 'phrase', phrase };
                 }

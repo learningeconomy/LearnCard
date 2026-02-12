@@ -169,8 +169,8 @@ export const keysRouter = t.router({
         })
         .input(
             AuthInputValidator.extend({
-                type: z.enum(['password', 'passkey', 'backup']),
-                encryptedShare: EncryptedShareValidator,
+                type: z.enum(['password', 'passkey', 'backup', 'phrase']),
+                encryptedShare: EncryptedShareValidator.optional(),
                 credentialId: z.string().optional(),
                 shareVersion: z.number().optional(),
             })
@@ -218,13 +218,13 @@ export const keysRouter = t.router({
         })
         .input(
             AuthInputValidator.extend({
-                type: z.enum(['password', 'passkey', 'backup']),
+                type: z.enum(['password', 'passkey', 'backup', 'phrase']),
                 credentialId: z.string().optional(),
             })
         )
         .output(
             z.object({
-                encryptedShare: EncryptedShareValidator,
+                encryptedShare: EncryptedShareValidator.optional(),
                 shareVersion: z.number().optional(),
             }).nullable()
         )
@@ -244,7 +244,7 @@ export const keysRouter = t.router({
                 return true;
             });
 
-            if (!recoveryMethod?.encryptedShare) return null;
+            if (!recoveryMethod) return null;
 
             return {
                 encryptedShare: recoveryMethod.encryptedShare,
