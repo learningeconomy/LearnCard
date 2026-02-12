@@ -58,7 +58,7 @@ import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
 import { useQueryClient } from '@tanstack/react-query';
 
-import { createSSSStrategy, generateEd25519PrivateKey } from '@learncard/sss-key-manager';
+import { createSSSStrategy, generateEd25519PrivateKey, createAdaptiveStorage, isPublicComputerMode } from '@learncard/sss-key-manager';
 import type { RecoveryInput, RecoverySetupInput } from '@learncard/sss-key-manager';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorage';
@@ -197,7 +197,11 @@ registerKeyDerivationFactory('sss', (config) =>
         serverUrl: config.serverUrl,
         // On native Capacitor (iOS/Android), use encrypted SQLite instead of
         // IndexedDB to avoid iOS WKWebView IndexedDB eviction issues.
-        storage: Capacitor.isNativePlatform() ? createNativeSSSStorage() : undefined,
+        // On web, use adaptive storage that routes to sessionStorage when the
+        // user has enabled "public computer" mode.
+        storage: Capacitor.isNativePlatform()
+            ? createNativeSSSStorage()
+            : createAdaptiveStorage(),
         enableEmailBackupShare: config.enableEmailBackupShare,
     })
 );
@@ -320,6 +324,19 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 
         return () => clearTimeout(timer);
     }, [coordinator.state.status]);
+
+    // --- Public computer mode: warn before tab close ---
+    useEffect(() => {
+        if (!isPublicComputerMode()) return;
+
+        const handler = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+        };
+
+        window.addEventListener('beforeunload', handler);
+
+        return () => window.removeEventListener('beforeunload', handler);
+    }, []);
 
     // --- Recovery setup prompt (shown after first-time setup with no recovery methods) ---
     const [showRecoverySetup, setShowRecoverySetup] = useState(false);
@@ -591,11 +608,15 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                 // Bridge to legacy stores for backward compatibility
                 walletStore.set.wallet(newWallet);
 
-                // Persist the private key in secure storage
-                try {
-                    await setPlatformPrivateKey(privateKey);
-                } catch (e) {
-                    console.warn('Failed to persist private key to secure storage', e);
+                // Persist the private key in secure storage (skip in public
+                // computer mode — key stays in memory only so nothing
+                // survives tab close).
+                if (!isPublicComputerMode()) {
+                    try {
+                        await setPlatformPrivateKey(privateKey);
+                    } catch (e) {
+                        console.warn('Failed to persist private key to secure storage', e);
+                    }
                 }
 
                 // Set currentUserStore for backward compatibility
@@ -639,7 +660,9 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 
                         setRecoveryMethodCount(userConfiguredCount);
 
-                        if (isNewUser && userConfiguredCount === 0) {
+                        // Show recovery setup for new users, or always in public
+                        // computer mode when no recovery methods exist.
+                        if (userConfiguredCount === 0 && (isNewUser || isPublicComputerMode())) {
                             setShowRecoverySetup(true);
                         }
                     } catch {
@@ -664,6 +687,36 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
             walletInitRef.current = false;
         }
     }, [coordinator.state.status, wallet]);
+
+    // --- Clear stale legacy stores when coordinator is idle ---
+    // After a public-computer session, the tab close destroys the Firebase
+    // session (browserSessionPersistence) and sessionStorage, but zustand
+    // stores may still have cached user data from localStorage. Detect and
+    // clean up this inconsistent state so the UI shows the login page.
+    //
+    // We use a delay so that on normal page refresh the coordinator has time
+    // to leave 'idle' (via the private-key-first path) before we wipe stores.
+    useEffect(() => {
+        if (coordinator.state.status !== 'idle') return;
+        if (!firebaseUser?.uid) return;
+
+        const timer = setTimeout(() => {
+            // Confirm the Firebase SDK truly has no active session
+            const firebaseAuth = auth();
+
+            if (!firebaseAuth.currentUser) {
+                firebaseAuthStore.set.firebaseAuth(null);
+                firebaseAuthStore.set.setFirebaseCurrentUser(null);
+                authStore.set.typeOfLogin(null);
+                currentUserStore.set.currentUser(null);
+                currentUserStore.set.currentUserPK(null);
+                currentUserStore.set.currentUserIsLoggedIn(false);
+                walletStore.set.wallet(null);
+            }
+        }, 1500);
+
+        return () => clearTimeout(timer);
+    }, [coordinator.state.status, firebaseUser]);
 
     // --- LCN profile fetching when wallet is available ---
     const fetchLCNProfile = useCallback(async () => {
@@ -914,7 +967,11 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 };
 
 // --- Cached private key retrieval for private-key-first init ---
+// In public computer mode, skip the persistent cache so the coordinator
+// always re-derives the key from shares (which live in sessionStorage).
 const getCachedPrivateKey = async (): Promise<string | null> => {
+    if (isPublicComputerMode()) return null;
+
     try {
         return await getCurrentUserPrivateKey();
     } catch (e) {
@@ -929,6 +986,13 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
     const serverUrl = authConfig.serverUrl;
     const queryClient = useQueryClient();
     const { clearDB } = useSQLiteStorage();
+
+    // Ref for clearDB — useSQLiteStorage() returns a new function identity
+    // on every render (not memoized), which would cascade through
+    // handleAppLogout → onLogout → base coordinator useEffect, causing an
+    // infinite re-init loop. Using a ref keeps handleAppLogout stable.
+    const clearDBRef = useRef(clearDB);
+    clearDBRef.current = clearDB;
 
     // Create Firebase auth provider
     const authProvider = useMemo(() => {
@@ -1007,7 +1071,7 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         clearAuthServiceProvider();
         unsetAuthToken();
 
-        try { await clearDB(); } catch (e) { console.warn('Failed to clear SQLite DB', e); }
+        try { await clearDBRef.current(); } catch (e) { console.warn('Failed to clear SQLite DB', e); }
 
         currentUserStore.set.currentUser(null);
         currentUserStore.set.currentUserPK(null);
@@ -1024,7 +1088,7 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         try { await clearWebSecureAll(); } catch (e) { console.warn('Failed to clear secure storage', e); }
 
         try { await clearAllIndexedDB(keyDerivation); } catch (e) { console.warn('Failed to clear IndexedDB', e); }
-    }, [queryClient, clearDB, keyDerivation]);
+    }, [queryClient, keyDerivation]);
 
     return (
         <BaseAuthCoordinatorProvider

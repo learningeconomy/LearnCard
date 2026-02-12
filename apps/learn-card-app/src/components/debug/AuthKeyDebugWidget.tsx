@@ -37,6 +37,7 @@ import {
     listAllDeviceShares,
     deleteDeviceShare,
     getShareVersion,
+    isPublicComputerMode,
 } from '@learncard/sss-key-manager';
 import type { DeviceShareEntry } from '@learncard/sss-key-manager';
 
@@ -494,6 +495,8 @@ export const AuthKeyDebugWidget: React.FC = () => {
         const exportData = {
             exportedAt: new Date().toISOString(),
             coordinatorStatus: state.status,
+            publicComputerMode: isPublicComputerMode(),
+            storageBackend: isPublicComputerMode() ? 'sessionStorage' : 'IndexedDB',
             did,
             didKeyDid,
             didWebDid,
@@ -633,6 +636,8 @@ export const AuthKeyDebugWidget: React.FC = () => {
                             <KVRow label="Key Derivation" value={authConfig.keyDerivation} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="SSS Server URL" value={truncate(authConfig.serverUrl, 32)} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="Migration Enabled" value={authConfig.enableMigration} copied={copied} onCopy={copyToClipboard} />
+                            <KVRow label="Public Computer Mode" value={isPublicComputerMode()} copied={copied} onCopy={copyToClipboard} />
+                            <KVRow label="Storage Backend" value={isPublicComputerMode() ? 'sessionStorage (ephemeral)' : 'IndexedDB (persistent)'} mono={false} copied={copied} onCopy={copyToClipboard} />
 
                             <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2.5 mb-0.5">Web3Auth</p>
                             <KVRow label="Client ID" value={authConfig.web3AuthClientId ? truncate(authConfig.web3AuthClientId, 20) : '—'} copied={copied} onCopy={copyToClipboard} />
@@ -826,11 +831,19 @@ export const AuthKeyDebugWidget: React.FC = () => {
                             title="Device Shares"
                             icon={<Key className="w-3 h-3 text-gray-500" />}
                             badge={
-                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
-                                    allShares.length > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-700 text-gray-500'
-                                }`}>
-                                    {allShares.length === 0 ? 'none' : `${allShares.length} share${allShares.length > 1 ? 's' : ''}`}
-                                </span>
+                                <div className="flex items-center gap-1">
+                                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                                        allShares.length > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-700 text-gray-500'
+                                    }`}>
+                                        {allShares.length === 0 ? 'none' : `${allShares.length} share${allShares.length > 1 ? 's' : ''}`}
+                                    </span>
+
+                                    {isPublicComputerMode() && (
+                                        <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-amber-500/20 text-amber-400">
+                                            ephemeral
+                                        </span>
+                                    )}
+                                </div>
                             }
                             actions={
                                 allShares.length > 0 ? (
@@ -848,7 +861,11 @@ export const AuthKeyDebugWidget: React.FC = () => {
                             <KVRow label="Legacy Default Exists" value={deviceShareExists} copied={copied} onCopy={copyToClipboard} />
 
                             {allShares.length === 0 ? (
-                                <p className="text-[10px] text-gray-600 text-center py-2">No device shares in IndexedDB</p>
+                                <p className="text-[10px] text-gray-600 text-center py-2">
+                                    {isPublicComputerMode()
+                                        ? 'No device shares in sessionStorage (public mode)'
+                                        : 'No device shares in IndexedDB'}
+                                </p>
                             ) : (
                                 <div className="mt-1.5 space-y-1">
                                     {allShares.map((entry) => {

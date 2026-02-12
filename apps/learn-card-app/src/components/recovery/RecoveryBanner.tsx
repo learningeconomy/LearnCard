@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { IonIcon } from '@ionic/react';
 import { shieldOutline, closeOutline } from 'ionicons/icons';
 
+import { isPublicComputerMode } from '@learncard/sss-key-manager';
+
 const DISMISS_KEY = 'lc_recovery_banner_dismissed';
 
 interface RecoveryBannerProps {
@@ -13,12 +15,19 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
     recoveryMethodCount,
     onSetup,
 }) => {
+    const isPublic = isPublicComputerMode();
     const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
 
     useEffect(() => {
+        // In public mode, never start dismissed — always nag until recovery is set up
+        if (isPublic) {
+            setDismissed(false);
+            return;
+        }
+
         const wasDismissed = localStorage.getItem(DISMISS_KEY) === 'true';
         setDismissed(wasDismissed);
-    }, []);
+    }, [isPublic]);
 
     // Don't render until we've checked, or if the user has recovery methods, or if dismissed
     if (recoveryMethodCount === null || recoveryMethodCount > 0 || dismissed) {
@@ -26,7 +35,11 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
     }
 
     const handleDismiss = () => {
-        localStorage.setItem(DISMISS_KEY, 'true');
+        // In public mode, only dismiss in memory (no localStorage persistence)
+        if (!isPublic) {
+            localStorage.setItem(DISMISS_KEY, 'true');
+        }
+
         setDismissed(true);
     };
 
@@ -41,11 +54,13 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
 
             <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-grayscale-900 leading-tight">
-                    Protect your account
+                    {isPublic ? 'Set up recovery before you leave' : 'Protect your account'}
                 </p>
 
                 <p className="text-xs text-grayscale-600 leading-snug mt-0.5">
-                    Set up recovery so you can get back in if you lose this device.
+                    {isPublic
+                        ? 'This is a temporary session. Closing the tab will sign you out permanently unless you set up a recovery method.'
+                        : 'Set up recovery so you can get back in if you lose this device.'}
                 </p>
             </div>
 

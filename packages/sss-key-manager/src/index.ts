@@ -24,6 +24,9 @@ export {
     listAllDeviceShares,
     storeShareVersion,
     getShareVersion,
+    isPublicComputerMode,
+    setPublicComputerMode,
+    createAdaptiveStorage,
 } from './storage';
 
 export type { DeviceShareEntry } from './storage';

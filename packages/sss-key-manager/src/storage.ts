@@ -309,12 +309,123 @@ export async function listAllDeviceShares(): Promise<DeviceShareEntry[]> {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Session-only storage (public / shared computer mode)
+//
+// Uses sessionStorage instead of IndexedDB. Data is cleared when the tab
+// closes. No encryption is applied — sessionStorage is same-origin and
+// tab-scoped, so the threat model is different (goal: don't persist).
+// ---------------------------------------------------------------------------
+
+const SESSION_PREFIX = 'sss:';
+
+export function isPublicComputerMode(): boolean {
+    try {
+        return typeof sessionStorage !== 'undefined' &&
+            sessionStorage.getItem('lc-session-mode') === 'public';
+    } catch {
+        return false;
+    }
+}
+
+export function setPublicComputerMode(enabled: boolean): void {
+    try {
+        if (enabled) {
+            sessionStorage.setItem('lc-session-mode', 'public');
+        } else {
+            sessionStorage.removeItem('lc-session-mode');
+        }
+    } catch {
+        // sessionStorage unavailable (SSR, etc.)
+    }
+}
+
+async function sessionStoreDeviceShare(share: string, id: string = DEFAULT_DEVICE_SHARE_ID): Promise<void> {
+    sessionStorage.setItem(`${SESSION_PREFIX}${id}`, share);
+}
+
+async function sessionGetDeviceShare(id: string = DEFAULT_DEVICE_SHARE_ID): Promise<string | null> {
+    return sessionStorage.getItem(`${SESSION_PREFIX}${id}`);
+}
+
+async function sessionHasDeviceShare(id: string = DEFAULT_DEVICE_SHARE_ID): Promise<boolean> {
+    return sessionStorage.getItem(`${SESSION_PREFIX}${id}`) !== null;
+}
+
+async function sessionDeleteDeviceShare(id: string = DEFAULT_DEVICE_SHARE_ID): Promise<void> {
+    sessionStorage.removeItem(`${SESSION_PREFIX}${id}`);
+    sessionStorage.removeItem(`${SESSION_PREFIX}${id}:version`);
+}
+
+async function sessionStoreShareVersion(version: number, id: string = DEFAULT_DEVICE_SHARE_ID): Promise<void> {
+    sessionStorage.setItem(`${SESSION_PREFIX}${id}:version`, String(version));
+}
+
+async function sessionGetShareVersion(id: string = DEFAULT_DEVICE_SHARE_ID): Promise<number | null> {
+    const raw = sessionStorage.getItem(`${SESSION_PREFIX}${id}:version`);
+
+    return raw !== null ? Number(raw) : null;
+}
+
+async function sessionClearAllShares(id?: string): Promise<void> {
+    if (id) {
+        await sessionDeleteDeviceShare(id);
+        return;
+    }
+
+    // Remove all sss: prefixed keys from sessionStorage
+    const keysToRemove: string[] = [];
+
+    for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+
+        if (key?.startsWith(SESSION_PREFIX)) {
+            keysToRemove.push(key);
+        }
+    }
+
+    keysToRemove.forEach(k => sessionStorage.removeItem(k));
+}
+
 /**
- * Clear shares from local storage.
- *
- * When `id` is provided, only that single share is removed (per-user clear).
- * When omitted, the entire IndexedDB database is deleted (legacy full-wipe).
+ * Create storage functions that dynamically route to sessionStorage (public
+ * computer mode) or IndexedDB (normal mode) based on the `lc-session-mode`
+ * flag in sessionStorage. Checked at call time, not at creation time.
  */
+export function createAdaptiveStorage() {
+    return {
+        storeDeviceShare: (share: string, id?: string) =>
+            isPublicComputerMode()
+                ? sessionStoreDeviceShare(share, id)
+                : storeDeviceShare(share, id),
+
+        getDeviceShare: (id?: string) =>
+            isPublicComputerMode()
+                ? sessionGetDeviceShare(id)
+                : getDeviceShare(id),
+
+        hasDeviceShare: (id?: string) =>
+            isPublicComputerMode()
+                ? sessionHasDeviceShare(id)
+                : hasDeviceShare(id),
+
+        clearAllShares: (id?: string) =>
+            isPublicComputerMode()
+                ? sessionClearAllShares(id)
+                : clearAllShares(id),
+
+        storeShareVersion: (version: number, id?: string) =>
+            isPublicComputerMode()
+                ? sessionStoreShareVersion(version, id)
+                : storeShareVersion(version, id),
+
+        getShareVersion: (id?: string) =>
+            isPublicComputerMode()
+                ? sessionGetShareVersion(id)
+                : getShareVersion(id),
+    };
+}
+
 export async function clearAllShares(id?: string): Promise<void> {
     if (id) {
         await deleteDeviceShare(id);

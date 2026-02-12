@@ -422,3 +422,109 @@ describe('SSS Storage', () => {
         });
     });
 });
+
+// ---------------------------------------------------------------------------
+// Session-only storage (public computer mode)
+// ---------------------------------------------------------------------------
+
+import {
+    isPublicComputerMode,
+    setPublicComputerMode,
+    createAdaptiveStorage,
+} from './storage';
+
+describe('Session-only storage (public computer mode)', () => {
+    beforeEach(() => {
+        sessionStorage.clear();
+    });
+
+    describe('isPublicComputerMode / setPublicComputerMode', () => {
+        it('defaults to false', () => {
+            expect(isPublicComputerMode()).toBe(false);
+        });
+
+        it('returns true after enabling', () => {
+            setPublicComputerMode(true);
+
+            expect(isPublicComputerMode()).toBe(true);
+        });
+
+        it('returns false after disabling', () => {
+            setPublicComputerMode(true);
+            setPublicComputerMode(false);
+
+            expect(isPublicComputerMode()).toBe(false);
+        });
+    });
+
+    describe('adaptive storage routes by mode', () => {
+        it('stores in sessionStorage when public mode is on', async () => {
+            setPublicComputerMode(true);
+            const storage = createAdaptiveStorage();
+
+            await storage.storeDeviceShare('session-share', 'test-id');
+
+            expect(await storage.getDeviceShare('test-id')).toBe('session-share');
+            expect(await storage.hasDeviceShare('test-id')).toBe(true);
+
+            // Verify it's in sessionStorage, not IndexedDB
+            expect(sessionStorage.getItem('sss:test-id')).toBe('session-share');
+        });
+
+        it('stores share version in sessionStorage when public mode is on', async () => {
+            setPublicComputerMode(true);
+            const storage = createAdaptiveStorage();
+
+            await storage.storeShareVersion(5, 'test-id');
+
+            expect(await storage.getShareVersion('test-id')).toBe(5);
+            expect(sessionStorage.getItem('sss:test-id:version')).toBe('5');
+        });
+
+        it('clearAllShares removes session data for a specific id', async () => {
+            setPublicComputerMode(true);
+            const storage = createAdaptiveStorage();
+
+            await storage.storeDeviceShare('share-data', 'user-1');
+            await storage.storeShareVersion(3, 'user-1');
+
+            await storage.clearAllShares('user-1');
+
+            expect(await storage.hasDeviceShare('user-1')).toBe(false);
+            expect(await storage.getShareVersion('user-1')).toBeNull();
+        });
+
+        it('clearAllShares with no id removes all sss: keys', async () => {
+            setPublicComputerMode(true);
+            const storage = createAdaptiveStorage();
+
+            await storage.storeDeviceShare('share-a', 'id-a');
+            await storage.storeDeviceShare('share-b', 'id-b');
+            await storage.storeShareVersion(1, 'id-a');
+
+            // Add a non-sss key to prove it's not removed
+            sessionStorage.setItem('unrelated-key', 'keep-me');
+
+            await storage.clearAllShares();
+
+            expect(await storage.hasDeviceShare('id-a')).toBe(false);
+            expect(await storage.hasDeviceShare('id-b')).toBe(false);
+            expect(sessionStorage.getItem('unrelated-key')).toBe('keep-me');
+        });
+
+        it('uses IndexedDB when public mode is off', async () => {
+            setPublicComputerMode(false);
+            const storage = createAdaptiveStorage();
+
+            await storage.storeDeviceShare('idb-share', 'idb-test');
+
+            expect(await storage.getDeviceShare('idb-test')).toBe('idb-share');
+
+            // sessionStorage should NOT have it
+            expect(sessionStorage.getItem('sss:idb-test')).toBeNull();
+
+            // Clean up
+            await storage.clearAllShares('idb-test');
+        });
+    });
+});

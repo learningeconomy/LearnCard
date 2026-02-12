@@ -22,8 +22,15 @@ import {
     getAuthConfig,
 } from 'learn-card-base';
 
+import { Capacitor } from '@capacitor/core';
+
 import { useFirebase } from '../../hooks/useFirebase';
 import useLogout from '../../hooks/useLogout';
+
+import { setPublicComputerMode, isPublicComputerMode } from '@learncard/sss-key-manager';
+import { setPersistence, browserSessionPersistence, indexedDBLocalPersistence } from 'firebase/auth';
+
+import { auth } from '../../firebase/firebase';
 
 import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import EmailForm from './forms/EmailForm';
@@ -66,7 +73,9 @@ export const LoginContent: React.FC = () => {
     const [qrApproved, setQrApproved] = useState(false);
     const [showLinkedBanner, setShowLinkedBanner] = useState(false);
     const [accountHint, setAccountHint] = useState<string | null>(null);
+    const [isPublicMode, setIsPublicMode] = useState(() => isPublicComputerMode());
     const authConfig = getAuthConfig();
+    const isWeb = !Capacitor.isNativePlatform();
 
     const { mutateAsync: generatePinUpdateToken } = useGeneratePinUpdateToken();
     const { data: preferences, refetch: refetchPreferences } = useGetPreferencesForDid();
@@ -330,6 +339,59 @@ export const LoginContent: React.FC = () => {
                             </GenericErrorBoundary>
                         </IonRow>
                     </IonRow>
+
+                    {isWeb && (
+                        <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-3">
+                            <button
+                                onClick={async () => {
+                                    const next = !isPublicMode;
+                                    setIsPublicMode(next);
+                                    setPublicComputerMode(next);
+
+                                    // Switch Firebase persistence: session-only in public
+                                    // mode so the auth session dies with the tab, or
+                                    // IndexedDB (default) when toggling back.
+                                    try {
+                                        await setPersistence(
+                                            auth(),
+                                            next ? browserSessionPersistence : indexedDBLocalPersistence
+                                        );
+                                    } catch (e) {
+                                        console.warn('Failed to set Firebase persistence', e);
+                                    }
+                                }}
+                                className={`
+                                    flex items-center gap-2.5 px-4 py-2 rounded-full
+                                    transition-all duration-200 select-none
+                                    ${isPublicMode
+                                        ? 'bg-white/20 ring-1 ring-white/40'
+                                        : 'bg-white/10 hover:bg-white/15'
+                                    }
+                                `}
+                            >
+                                <div className={`
+                                    relative w-8 h-[18px] rounded-full transition-colors duration-200
+                                    ${isPublicMode ? 'bg-white/90' : 'bg-white/30'}
+                                `}>
+                                    <div className={`
+                                        absolute top-[2px] w-[14px] h-[14px] rounded-full
+                                        transition-all duration-200 shadow-sm
+                                        ${isPublicMode
+                                            ? 'left-[15px] bg-emerald-600'
+                                            : 'left-[2px] bg-white/70'
+                                        }
+                                    `} />
+                                </div>
+
+                                <span className={`
+                                    text-sm transition-colors duration-200
+                                    ${isPublicMode ? 'text-white font-medium' : 'text-white/60'}
+                                `}>
+                                    Shared or public computer
+                                </span>
+                            </button>
+                        </IonRow>
+                    )}
 
                     <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-4">
                         <button
