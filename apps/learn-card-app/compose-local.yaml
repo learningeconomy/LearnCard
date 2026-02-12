@@ -26,6 +26,7 @@ services:
             LCN_URL: http://localhost:4000/trpc
             LCN_API_URL: http://localhost:4000/api
             CLOUD_URL: http://localhost:4100/trpc
+            LEARN_CLOUD_XAPI_URL: http://localhost:4100/xapi
             API_URL: http://localhost:5100/trpc
             SKIP_DIDKIT_NAPI: '1'
             # Enable polling for Vite file watching in Docker
@@ -184,6 +185,13 @@ services:
             REDIS_HOST: redis2
             REDIS_PORT: 6379
 
+            XAPI_ENDPOINT: http://lrs:8080/xapi
+            XAPI_USERNAME: test-api-key
+            XAPI_PASSWORD: test-api-secret
+
+            SERVER_URL: http://cloud:4100
+            JWT_SIGNING_KEY: test
+
     api:
         image: learncard-monorepo-local
         build:
@@ -320,6 +328,47 @@ services:
             - '9324:9324'
         networks:
             - learn-card
+    postgres:
+        image: postgres
+        networks:
+            - learn-card
+        environment:
+            POSTGRES_USER: lrsql_user
+            POSTGRES_PASSWORD: lrsql_password
+            POSTGRES_DB: lrsql_db
+        ports:
+            - '5432:5432'
+
+    lrs:
+        image: yetanalytics/lrsql:latest
+        command:
+            - /lrsql/bin/run_postgres.sh
+        networks:
+            - learn-card
+        extra_hosts:
+            - 'localhost:host-gateway'
+        ports:
+            - '8080:8080'
+        depends_on:
+            - postgres
+            - cloud
+        environment:
+            LRSQL_API_KEY_DEFAULT: test-api-key
+            LRSQL_API_SECRET_DEFAULT: test-api-secret
+            LRSQL_ADMIN_USER_DEFAULT: test_username
+            LRSQL_ADMIN_PASS_DEFAULT: test_password
+            LRSQL_DB_HOST: postgres
+            LRSQL_DB_NAME: lrsql_db
+            LRSQL_DB_USER: lrsql_user
+            LRSQL_DB_PASSWORD: lrsql_password
+
+            LRSQL_OIDC_ISSUER: http://cloud:4100
+            LRSQL_OIDC_AUDIENCE: http://lrs:8080/xapi
+            LRSQL_OIDC_SCOPE_PREFIX: 'lrs:'
+
+            # If Postgres is too slow to start, increase this
+            LRSQL_POOL_INITIALIZATION_FAIL_TIMEOUT: 10000
+            LRSQL_ALLOW_ALL_ORIGINS: true
 
 networks:
     learn-card:
