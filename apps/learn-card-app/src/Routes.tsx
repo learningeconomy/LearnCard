@@ -81,9 +81,6 @@ const ClaimFromRequest = lazyWithRetry(() => import('./pages/claim-from-request/
 const InteractionsPage = lazyWithRetry(() => import('./pages/interactions/InteractionsPage'));
 const LoginWithSeed = lazyWithRetry(() => import('./pages/hidden/LoginWithSeed'));
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
-const PostConsentFlowDataFeed = lazyWithRetry(
-    () => import('./pages/launchPad/PostConsentFlowDataFeed')
-);
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
 
 // App Store Developer Portal
@@ -228,7 +225,6 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/store" component={CredentialStorage} />
                         <PrivateRoute exact path="/exchange" component={CredentialExchange} />
                         <PrivateRoute exact path="/get" component={CredentialStorageGet} />
-                        <PrivateRoute exact path="/data-feed" component={PostConsentFlowDataFeed} />
 
                         <PrivateRoute
                             exact

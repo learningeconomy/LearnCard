@@ -42,6 +42,8 @@ export default defineConfig(({ mode }) => {
             LCN_URL: process.env.LCN_URL && `"${process.env.LCN_URL}"`,
             LCN_API_URL: process.env.LCN_API_URL && `"${process.env.LCN_API_URL}"`,
             CLOUD_URL: process.env.CLOUD_URL && `"${process.env.CLOUD_URL}"`,
+            LEARN_CLOUD_XAPI_URL:
+                process.env.LEARN_CLOUD_XAPI_URL && `"${process.env.LEARN_CLOUD_XAPI_URL}"`,
             API_URL: process.env.API_URL && `"${process.env.API_URL}"`,
             __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
             IS_PRODUCTION: process.env.NODE_ENV === 'production',
@@ -59,6 +61,9 @@ export default defineConfig(({ mode }) => {
                 ? JSON.stringify(env.WEB3AUTH_TESTNET_CLIENT_ID)
                 : 'undefined',
             APP_THEME: env.APP_THEME ? JSON.stringify(env.APP_THEME) : '"colorful"',
+            CORS_PROXY_API_KEY: env.CORS_PROXY_API_KEY
+                ? JSON.stringify(env.CORS_PROXY_API_KEY)
+                : 'undefined',
         },
         resolve: {
             alias: {
