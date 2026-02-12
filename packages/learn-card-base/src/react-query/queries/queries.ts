@@ -116,7 +116,6 @@ export const useGetSelfAssignedSkillsBoost = () => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
-    // TODO: Better way to identify boost. i.e. not just by hardcoded name
     return useQuery({
         queryKey: ['selfAssignedSkillsBoost', switchedDid ?? ''],
         queryFn: async () => {
@@ -130,7 +129,7 @@ export const useGetSelfAssignedSkillsBoost = () => {
             });
 
             const records = result?.records ?? [];
-            return records.length > 0 ? records[records.length - 1] : undefined;
+            return records.length > 0 ? records[records.length - 1] : null;
         },
     });
 };
@@ -141,12 +140,12 @@ export const useGetSelfAssignedSkillsCredential = () => {
 
     const { data: boost } = useGetSelfAssignedSkillsBoost();
 
-    return useQuery<{ uri: string; record: LCR; credential: VC | undefined } | undefined>({
+    return useQuery<{ uri: string; record: LCR; credential: VC | undefined } | null>({
         queryKey: ['selfAssignedSkillsCredential', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
 
-            if (!boost?.uri) return undefined;
+            if (!boost?.uri) return null;
 
             const credentialRecords = await wallet.index.all.get<LCR>({ boostUri: boost.uri });
             const credentialRecord =
@@ -154,7 +153,7 @@ export const useGetSelfAssignedSkillsCredential = () => {
                     ? credentialRecords[credentialRecords.length - 1]
                     : undefined;
 
-            if (!credentialRecord?.uri) return undefined;
+            if (!credentialRecord?.uri) return null;
 
             return {
                 uri: credentialRecord.uri,
