@@ -1,4 +1,3 @@
-import { neogma } from '@instance';
 import { SkillsProvider, Options, Obv3Alignment } from '../types';
 import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import {
@@ -8,36 +7,6 @@ import {
 
 export function createNeo4jProvider(options?: Options): SkillsProvider {
     const baseUrl = options?.baseUrl?.replace(/\/$/, '');
-
-    // const embeddingsBaseUrl = options?.embeddingsBaseUrl?.replace(/\/$/, '');
-    const embeddingsApiKey = options?.embeddingsApiKey;
-    const embeddingsVectorIndexName = 'TEST_VECTOR_INDEX';
-    const embeddingsTopK = options?.embeddingsTopK;
-
-    const getQueryEmbedding = async (query: string): Promise<number[] | null> => {
-        if (!embeddingsBaseUrl) return null;
-
-        const res = await fetch(`${embeddingsBaseUrl}/embed`, {
-            method: 'POST',
-            headers: {
-                'content-type': 'application/json',
-                ...(embeddingsApiKey ? { 'x-api-key': embeddingsApiKey } : {}),
-                ...(embeddingsApiKey ? { authorization: `Bearer ${embeddingsApiKey}` } : {}),
-            },
-            body: JSON.stringify({ texts: [query] }),
-        });
-
-        if (!res.ok) return null;
-
-        const json = (await res.json()) as any;
-        const embedding = json?.embeddings?.[0];
-
-        if (!Array.isArray(embedding)) return null;
-        if (embedding.length === 0) return null;
-        if (embedding.some((n: any) => typeof n !== 'number')) return null;
-
-        return embedding as number[];
-    };
 
     const getFrameworkById: SkillsProvider['getFrameworkById'] = async frameworkId => {
         const framework = await getSkillFrameworkById(frameworkId);
@@ -78,80 +47,6 @@ export function createNeo4jProvider(options?: Options): SkillsProvider {
             status: skill.status,
             parentId: skill.parentId ?? undefined,
         }));
-    };
-
-    const searchSkills: SkillsProvider['searchSkills'] = async (frameworkId, query) => {
-        const normalizedQuery = query.trim();
-        if (!normalizedQuery) return [];
-
-        const topKRaw = embeddingsTopK ?? 25;
-        const topK = Number.isFinite(topKRaw) ? Math.max(0, Math.floor(topKRaw)) : 25;
-
-        if (embeddingsBaseUrl && embeddingsVectorIndexName) {
-            try {
-                const embedding = await getQueryEmbedding(normalizedQuery);
-                if (embedding) {
-                    const result = await neogma.queryRunner.run(
-                        `CALL db.index.vector.queryNodes($indexName, toInteger($k), $embedding)
-                         YIELD node, score
-                         WITH node, score
-                         WHERE node:Skill AND node.frameworkId = $frameworkId
-                         RETURN node AS s
-                         ORDER BY score DESC
-                         LIMIT toInteger($k)`,
-                        {
-                            indexName: embeddingsVectorIndexName,
-                            k: topK,
-                            embedding,
-                            frameworkId,
-                        }
-                    );
-
-                    return result.records.map(r => {
-                        const props = ((r.get('s') as any)?.properties ?? {}) as Record<
-                            string,
-                            any
-                        >;
-                        return {
-                            id: props.id,
-                            statement: props.statement,
-                            description: props.description ?? undefined,
-                            code: props.code ?? undefined,
-                            icon: props.icon ?? undefined,
-                            type: props.type ?? 'skill',
-                            status: props.status ?? undefined,
-                            parentId: props.parentId ?? undefined,
-                        };
-                    });
-                }
-            } catch {
-                // Fall through to string search
-            }
-        }
-
-        const fallback = await neogma.queryRunner.run(
-            `MATCH (:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
-             WHERE toLower(s.statement) CONTAINS toLower($query)
-                OR toLower(coalesce(s.description, '')) CONTAINS toLower($query)
-             RETURN s AS s
-             ORDER BY s.statement
-             LIMIT toInteger($limit)`,
-            { frameworkId, query: normalizedQuery, limit: topK }
-        );
-
-        return fallback.records.map(r => {
-            const props = ((r.get('s') as any)?.properties ?? {}) as Record<string, any>;
-            return {
-                id: props.id,
-                statement: props.statement,
-                description: props.description ?? undefined,
-                code: props.code ?? undefined,
-                icon: props.icon ?? undefined,
-                type: props.type ?? 'skill',
-                status: props.status ?? undefined,
-                parentId: props.parentId ?? undefined,
-            };
-        });
     };
 
     const buildObv3Alignments: SkillsProvider['buildObv3Alignments'] = async (
@@ -269,7 +164,6 @@ export function createNeo4jProvider(options?: Options): SkillsProvider {
         getFrameworkById,
         getSkillsForFramework,
         getSkillsByIds,
-        searchSkills,
         buildObv3Alignments,
         createFramework,
         updateFramework,

@@ -16,8 +16,6 @@ export function getSkillsProvider(config?: SkillsProviderConfig): SkillsProvider
         const options = config?.options || {
             baseUrl: process.env.SKILLS_PROVIDER_BASE_URL,
             apiKey: process.env.SKILLS_PROVIDER_API_KEY,
-            embeddingsBaseUrl: process.env.SKILLS_PROVIDER_EMBEDDINGS_BASE_URL,
-            embeddingsApiKey: process.env.SKILLS_PROVIDER_EMBEDDINGS_API_KEY,
         };
 
         switch (providerId) {
