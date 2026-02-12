@@ -9,6 +9,7 @@ import { TRPCError } from '@trpc/server';
 import { t, openRoute, didRoute } from '@routes';
 import { getDeliveryService } from '../services/delivery';
 import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
+import { encryptAuthShare, decryptAuthShare } from '@helpers/shareEncryption.helpers';
 import {
     findUserKeyByContactMethod,
     findAuthShareByVersion,
@@ -92,9 +93,25 @@ export const keysRouter = t.router({
 
             // If a specific shareVersion is requested, look it up from history
             const requestedVersion = input.shareVersion;
-            const authShare = requestedVersion != null
+            const rawAuthShare = requestedVersion != null
                 ? findAuthShareByVersion(userKey, requestedVersion)
                 : userKey.authShare ?? null;
+
+            // Decrypt the auth share before returning to client
+            let authShare = rawAuthShare;
+
+            if (rawAuthShare) {
+                const seed = process.env.SEED;
+
+                if (!seed) {
+                    throw new TRPCError({
+                        code: 'INTERNAL_SERVER_ERROR',
+                        message: 'Server misconfiguration: SEED is required for auth share encryption',
+                    });
+                }
+
+                authShare = decryptAuthShare(rawAuthShare, seed);
+            }
 
             const recoveryMethods = (userKey.recoveryMethods ?? [])
                 .filter(rm => rm && rm.type && rm.createdAt)
@@ -147,8 +164,20 @@ export const keysRouter = t.router({
 
             const { user, contactMethod } = await verifyAndGetContactMethod(input);
 
+            // Encrypt the auth share at rest using the server SEED
+            const seed = process.env.SEED;
+
+            if (!seed) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Server misconfiguration: SEED is required for auth share encryption',
+                });
+            }
+
+            const authShareToStore = encryptAuthShare(input.authShare, seed);
+
             const updatedDoc = await upsertUserKey(contactMethod, {
-                authShare: input.authShare,
+                authShare: authShareToStore,
                 primaryDid: authenticatedDid,
                 securityLevel: input.securityLevel ?? 'basic',
                 keyProvider: 'sss',
