@@ -25,6 +25,8 @@ const MainSkillInfoBox: React.FC<MainSkillInfoBoxProps> = ({ frameworkId, skillI
         : undefined;
 
     const sasLevel = sasBoostSkills?.find(s => s.id === skillId)?.proficiencyLevel;
+    const hasDescription = Boolean(alignment?.targetDescription);
+    const hasSasLevel = Boolean(sasLevel) && sasLevel !== SkillLevel.Hidden;
 
     return (
         <section className="bg-white rounded-[24px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 w-full">
@@ -48,15 +50,21 @@ const MainSkillInfoBox: React.FC<MainSkillInfoBoxProps> = ({ frameworkId, skillI
                 </div>
             </div>
 
-            {(alignment?.targetDescription || alignment?.targetCode) && (
+            {(hasDescription || hasSasLevel) && (
                 <div className="flex flex-col gap-[15px] p-[20px]">
-                    {alignment?.targetDescription && (
+                    {hasDescription && (
                         <p className="text-grayscale-700 font-poppins text-[16px] tracking-[-0.25px]">
                             {alignment?.targetDescription}
                         </p>
                     )}
-                    {Boolean(sasLevel) && sasLevel !== SkillLevel.Hidden && (
-                        <div className="border-t-[1px] border-grayscale-200 pt-[20px] flex flex-col gap-[5px] items-start w-full">
+                    {hasSasLevel && (
+                        <div
+                            className={`flex flex-col gap-[5px] items-start w-full ${
+                                hasDescription
+                                    ? 'border-t-[1px] border-grayscale-200 pt-[20px]'
+                                    : ''
+                            }`}
+                        >
                             <SkillProficiencyBar
                                 proficiencyLevel={sasLevel}
                                 mode={SkillProficiencyBarModeEnum.Display}
