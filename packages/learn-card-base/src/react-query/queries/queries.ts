@@ -10,7 +10,6 @@ import {
     BoostAndVCType,
     CredentialCategoryEnum,
     useWallet,
-    currentUserStore,
     switchedProfileStore,
     LEARNCARD_NETWORK_API_URL,
 } from 'learn-card-base';
@@ -27,11 +26,7 @@ import {
     BoostPermissions,
 } from '@learncard/types';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
-import {
-    CREDENTIAL_CATEGORIES,
-    CredentialCategory,
-    IndexMetadata,
-} from 'learn-card-base/types/credentials';
+import { CREDENTIAL_CATEGORIES } from 'learn-card-base/types/credentials';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { useIsLoggedIn, useCurrentUser } from 'learn-card-base';
 import { getBespokeLearnCard, generatePK } from 'learn-card-base/helpers/walletHelpers';
