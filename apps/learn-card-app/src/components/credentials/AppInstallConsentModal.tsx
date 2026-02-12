@@ -180,6 +180,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
         // If there's a contract, consent to it first
         if (contractUri && contractDetails && terms) {
             setIsConsenting(true);
+
             try {
                 await consentToContract({
                     terms,
@@ -189,13 +190,23 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
 
                 // Sync any auto-boost credentials
                 fetchNewContractCredentials();
-            } catch (error) {
-                setIsConsenting(false);
+            } catch (error: any) {
+                // If the user has already consented, ignore the error
+                const isAlreadyConsented =
+                    error?.data?.code === 'CONFLICT' ||
+                    error?.shape?.code === 'CONFLICT' ||
+                    error?.message?.includes('already consented');
+
+                if (!isAlreadyConsented) {
+                    setIsConsenting(false);
+                    return;
+                }
             }
+
             setIsConsenting(false);
         }
 
-        // Then proceed with regular app install
+        // Proceed with the install
         onAccept();
     };
 
