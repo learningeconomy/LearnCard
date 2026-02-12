@@ -11,6 +11,8 @@ import {
     useSyncConsentFlow,
     contractCategoryNameToCategoryMetadata,
     ModalTypes,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import type { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
@@ -79,6 +81,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
 }) => {
     const { newModal } = useModal();
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
     const currentUser = useCurrentUser();
     const [isConsenting, setIsConsenting] = useState(false);
 
@@ -199,6 +202,10 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
 
                 if (!isAlreadyConsented) {
                     setIsConsenting(false);
+                    presentToast('Unable to install app, please try again.', {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
                     return;
                 }
             }
