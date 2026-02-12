@@ -8,8 +8,6 @@ import SkillBreadcrumbText from '../SkillFrameworks/SkillBreadcrumbText';
 import BrowseFrameworkPage from '../SkillFrameworks/BrowseFrameworkPage';
 import FrameworkSkillsCount from '../SkillFrameworks/FrameworkSkillsCount';
 
-import { VC } from '@learncard/types';
-
 type SkillFrameworkInfoBoxProps = {
     frameworkId: string;
     skillId: string;
@@ -37,7 +35,7 @@ const SkillFrameworkInfoBox: React.FC<SkillFrameworkInfoBoxProps> = ({ framework
     if (!frameworkData) return <></>;
 
     return (
-        <div className="flex flex-col gap-[20px] p-[15px] bg-white rounded-[15px] shadow-bottom-2-4">
+        <div className="flex flex-col gap-[20px] p-[15px] bg-white rounded-[15px] shadow-bottom-2-4 w-full">
             <p className="font-poppins text-[17px] text-grayscale-900">Framework</p>
 
             <div className="flex items-center gap-[10px]">

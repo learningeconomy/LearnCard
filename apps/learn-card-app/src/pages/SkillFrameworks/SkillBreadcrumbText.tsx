@@ -23,7 +23,7 @@ const SkillBreadcrumbText: React.FC<SkillBreadcrumbTextProps> = ({
     path: _path,
     includeSkill = false,
 }) => {
-    const { data: pathData, isLoading: pathLoading } = useGetSkillPath(frameworkId, skillId);
+    const { data: pathData } = useGetSkillPath(frameworkId, skillId);
 
     const pathToUse =
         _path?.map(node => convertSkillToBackendFormat(node)) ??
@@ -41,7 +41,9 @@ const SkillBreadcrumbText: React.FC<SkillBreadcrumbTextProps> = ({
                                 isCompetency ? 'bg-violet-100 px-[5px] py-[1px] rounded-[5px]' : ''
                             }
                         >
-                            {isCompetency && `${node.icon} `}
+                            {isCompetency && (
+                                <span className="font-fluentEmoji">{`${node.icon} `}</span>
+                            )}
                             {node.targetName || node.statement}
                         </span>
                         {index < path.length - 1 ? ' > ' : ''}
