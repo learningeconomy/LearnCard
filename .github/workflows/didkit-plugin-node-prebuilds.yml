@@ -161,6 +161,9 @@ jobs:
         needs: build
         if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
         runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            id-token: write
         steps:
             - uses: actions/checkout@v4
 
@@ -197,9 +200,7 @@ jobs:
 
             - name: Publish platform packages
               working-directory: packages/plugins/didkit-plugin-node
-              run: pnpm exec napi prepublish -t npm
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+              run: pnpm exec napi prepublish -t npm --skip-gh-release
 
             - name: Publish to npm
               working-directory: packages/plugins/didkit-plugin-node
@@ -209,9 +210,7 @@ jobs:
                   for dir in npm/*; do
                     if [ -d "$dir" ]; then
                       echo "Publishing $dir..."
-                      (cd "$dir" && npm publish --access public)
+                      (cd "$dir" && npm publish --access public --provenance --ignore-scripts)
                     fi
                   done
-                  npm publish --access public
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+                  npm publish --access public --provenance --ignore-scripts
