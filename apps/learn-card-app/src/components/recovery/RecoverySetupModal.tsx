@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
-import { keyOutline, fingerPrint, documentTextOutline, checkmarkCircleOutline, alertCircleOutline, copyOutline, checkmarkOutline } from 'ionicons/icons';
+import {
+    keyOutline,
+    fingerPrint,
+    documentTextOutline,
+    checkmarkCircleOutline,
+    alertCircleOutline,
+    copyOutline,
+    checkmarkOutline,
+} from 'ionicons/icons';
 
 import { Capacitor } from '@capacitor/core';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
@@ -22,7 +30,29 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     existingMethods,
     onClose,
 }) => {
-    const [activeTab, setActiveTab] = useState<RecoverySetupType>('password');
+    const webAuthnSupported = isWebAuthnSupported();
+    const isNative = Capacitor.isNativePlatform();
+
+    const hasExistingMethod = (type: string) => existingMethods.some(m => m.type === type);
+
+    // Track methods configured during this modal session (persists across tab switches)
+    const [sessionConfigured, setSessionConfigured] = useState<Set<RecoverySetupType>>(new Set());
+
+    const isConfigured = (type: RecoverySetupType): boolean =>
+        hasExistingMethod(type) || sessionConfigured.has(type);
+
+    const anyConfigured = existingMethods.some(m => m.type !== 'email') || sessionConfigured.size > 0;
+
+    // Default to passkey when supported, no existing methods, and not native
+    const [activeTab, setActiveTab] = useState<RecoverySetupType>(() => {
+        if (!anyConfigured && !isNative && webAuthnSupported) return 'passkey';
+
+        return 'password';
+    });
+
+    // Whether the user clicked "Update" on an already-configured method
+    const [showUpdateForm, setShowUpdateForm] = useState(false);
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -34,8 +64,19 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const [phraseCopied, setPhraseCopied] = useState(false);
     const [phraseConfirmed, setPhraseConfirmed] = useState(false);
 
-    const hasMethod = (type: string) => existingMethods.some(m => m.type === type);
-    const webAuthnSupported = isWebAuthnSupported();
+    const handleTabSwitch = (tab: RecoverySetupType) => {
+        setActiveTab(tab);
+        setError(null);
+        setSuccess(null);
+        setShowUpdateForm(false);
+    };
+
+    const markConfigured = (type: RecoverySetupType) => {
+        setSessionConfigured(prev => new Set(prev).add(type));
+    };
+
+    // Whether the active tab's form is for an update (vs first-time setup)
+    const isUpdate = isConfigured(activeTab) && showUpdateForm;
 
     const handlePasswordSetup = async () => {
         if (password.length < 8) {
@@ -53,9 +94,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
         try {
             await onSetupPassword(password);
+            markConfigured('password');
             setSuccess('Password recovery is set up!');
             setPassword('');
             setConfirmPassword('');
+            setShowUpdateForm(false);
         } catch (e) {
             console.error('[RecoverySetupModal] handlePasswordSetup error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
@@ -70,7 +113,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
         try {
             await onSetupPasskey();
+            markConfigured('passkey');
             setSuccess('Passkey recovery is set up!');
+            setShowUpdateForm(false);
         } catch (e) {
             console.error('[RecoverySetupModal] handlePasskeySetup error:', e, typeof e);
             setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
@@ -104,6 +149,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
     const handleConfirmPhrase = () => {
         setPhraseConfirmed(true);
+        markConfigured('phrase');
         setSuccess('Recovery phrase saved! Keep it somewhere safe.');
     };
 
@@ -114,12 +160,77 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     ];
 
     // Hide passkey tab entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
-    const tabs = Capacitor.isNativePlatform()
-        ? allTabs.filter(t => t.id !== 'passkey')
-        : allTabs;
+    const tabs = isNative ? allTabs.filter(t => t.id !== 'passkey') : allTabs;
+
+    // ── Shared sub-components ──────────────────────────────────────────
+
+    const updateWarning = (text: string) => (
+        <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2.5">
+            <IonIcon icon={alertCircleOutline} className="text-amber-500 text-base mt-0.5 shrink-0" />
+
+            <span className="text-xs text-amber-700 leading-relaxed">{text}</span>
+        </div>
+    );
+
+    const cancelUpdateButton = (onCancel?: () => void) => (
+        <button
+            onClick={() => {
+                setShowUpdateForm(false);
+                setError(null);
+                onCancel?.();
+            }}
+            className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+        >
+            Cancel
+        </button>
+    );
+
+    const configuredCard = (title: string, description: string) => (
+        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-3">
+            <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-xl mt-0.5 shrink-0" />
+
+            <div>
+                <p className="text-sm font-medium text-emerald-800">{title}</p>
+
+                <p className="text-xs text-emerald-700 mt-1 leading-relaxed">{description}</p>
+            </div>
+        </div>
+    );
+
+    const secondaryButton = (label: string, onClick: () => void) => (
+        <button
+            onClick={onClick}
+            className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+        >
+            {label}
+        </button>
+    );
+
+    const primaryButton = (
+        label: string,
+        onClick: () => void,
+        disabled: boolean,
+        loadingText: string,
+    ) => (
+        <button
+            onClick={onClick}
+            disabled={disabled}
+            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+            {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    {loadingText}
+                </span>
+            ) : label}
+        </button>
+    );
+
+    // ── Render ─────────────────────────────────────────────────────────
 
     return (
         <div className="p-6 max-w-md mx-auto">
+            {/* Header */}
             <div className="text-center mb-5">
                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">Protect Your Account</h2>
 
@@ -128,15 +239,12 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 </p>
             </div>
 
+            {/* Tabs */}
             <div className="flex gap-2 mb-6">
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
-                        onClick={() => {
-                            setActiveTab(tab.id);
-                            setError(null);
-                            setSuccess(null);
-                        }}
+                        onClick={() => handleTabSwitch(tab.id)}
                         className={`flex-1 py-2.5 px-3 rounded-full flex items-center justify-center gap-1.5 text-sm font-medium transition-all ${
                             activeTab === tab.id
                                 ? 'bg-grayscale-900 text-white'
@@ -146,13 +254,14 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         <IonIcon icon={tab.icon} className="text-sm" />
                         {tab.label}
 
-                        {hasMethod(tab.id) && (
+                        {isConfigured(tab.id) && (
                             <IonIcon icon={checkmarkCircleOutline} className="text-emerald-400 text-sm" />
                         )}
                     </button>
                 ))}
             </div>
 
+            {/* Error */}
             {error && (
                 <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
                     <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
@@ -161,6 +270,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 </div>
             )}
 
+            {/* Success */}
             {success && (
                 <div className="mb-5 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
                     <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
@@ -169,51 +279,67 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 </div>
             )}
 
+            {/* ── Password Tab ──────────────────────────────────── */}
             {activeTab === 'password' && (
                 <div className="space-y-4">
-                    <p className="text-sm text-grayscale-600 leading-relaxed">
-                        Choose a password you'll remember. You'll need it to recover your account on a new device.
-                    </p>
+                    {isConfigured('password') && !showUpdateForm ? (
+                        <>
+                            {configuredCard(
+                                'Password recovery is active',
+                                'You can recover your account using your recovery password.'
+                            )}
 
-                    <div>
-                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Password</label>
+                            {secondaryButton('Update Password', () => setShowUpdateForm(true))}
+                        </>
+                    ) : (
+                        <>
+                            {isUpdate && updateWarning('This will replace your current recovery password.')}
 
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            placeholder="At least 8 characters"
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                        />
-                    </div>
+                            <p className="text-sm text-grayscale-600 leading-relaxed">
+                                Choose a password you'll remember. You'll need it to recover your account on a new device.
+                            </p>
 
-                    <div>
-                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Confirm Password</label>
+                            <div>
+                                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Password</label>
 
-                        <input
-                            type="password"
-                            value={confirmPassword}
-                            onChange={e => setConfirmPassword(e.target.value)}
-                            placeholder="Type it again"
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                        />
-                    </div>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                    placeholder="At least 8 characters"
+                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                />
+                            </div>
 
-                    <button
-                        onClick={handlePasswordSetup}
-                        disabled={loading || !password || !confirmPassword}
-                        className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        {loading ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Setting up...
-                            </span>
-                        ) : 'Set Up Password'}
-                    </button>
+                            <div>
+                                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Confirm Password</label>
+
+                                <input
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={e => setConfirmPassword(e.target.value)}
+                                    placeholder="Type it again"
+                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                />
+                            </div>
+
+                            {primaryButton(
+                                isUpdate ? 'Update Password' : 'Set Up Password',
+                                handlePasswordSetup,
+                                loading || !password || !confirmPassword,
+                                isUpdate ? 'Updating...' : 'Setting up...',
+                            )}
+
+                            {isUpdate && cancelUpdateButton(() => {
+                                setPassword('');
+                                setConfirmPassword('');
+                            })}
+                        </>
+                    )}
                 </div>
             )}
 
+            {/* ── Passkey Tab ───────────────────────────────────── */}
             {activeTab === 'passkey' && (
                 <div className="space-y-4">
                     {!webAuthnSupported ? (
@@ -222,8 +348,25 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 Passkeys aren't supported on this device or browser. Try using a password or recovery phrase instead.
                             </p>
                         </div>
+                    ) : isConfigured('passkey') && !showUpdateForm ? (
+                        <>
+                            {configuredCard(
+                                'Passkey recovery is active',
+                                'You can recover your account using biometric authentication.'
+                            )}
+
+                            {secondaryButton('Replace Passkey', () => setShowUpdateForm(true))}
+                        </>
                     ) : (
                         <>
+                            {!anyConfigured && (
+                                <span className="inline-block text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full">
+                                    Recommended
+                                </span>
+                            )}
+
+                            {isUpdate && updateWarning('This will replace your current passkey.')}
+
                             <p className="text-sm text-grayscale-600 leading-relaxed">
                                 Use Face ID, Touch ID, or Windows Hello as your recovery method. Nothing to remember.
                             </p>
@@ -242,27 +385,35 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 </div>
                             </div>
 
-                            <button
-                                onClick={handlePasskeySetup}
-                                disabled={loading}
-                                className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                {loading ? (
-                                    <span className="flex items-center justify-center gap-2">
-                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Setting up...
-                                    </span>
-                                ) : 'Set Up Passkey'}
-                            </button>
+                            {primaryButton(
+                                isUpdate ? 'Replace Passkey' : 'Set Up Passkey',
+                                handlePasskeySetup,
+                                loading,
+                                isUpdate ? 'Replacing...' : 'Setting up...',
+                            )}
+
+                            {isUpdate && cancelUpdateButton()}
                         </>
                     )}
                 </div>
             )}
 
+            {/* ── Phrase Tab ────────────────────────────────────── */}
             {activeTab === 'phrase' && (
                 <div className="space-y-4">
-                    {!recoveryPhrase ? (
+                    {isConfigured('phrase') && !showUpdateForm && !recoveryPhrase ? (
                         <>
+                            {configuredCard(
+                                'Recovery phrase is saved',
+                                'Make sure you\'ve stored your phrase somewhere safe.'
+                            )}
+
+                            {secondaryButton('Generate New Phrase', () => setShowUpdateForm(true))}
+                        </>
+                    ) : !recoveryPhrase ? (
+                        <>
+                            {isUpdate && updateWarning('This will generate a new phrase. Your previous phrase will no longer work.')}
+
                             <p className="text-sm text-grayscale-600 leading-relaxed">
                                 Generate a 25-word phrase that can restore your account from anywhere. Write it down and keep it safe.
                             </p>
@@ -283,18 +434,14 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 </ul>
                             </div>
 
-                            <button
-                                onClick={handleGeneratePhrase}
-                                disabled={loading}
-                                className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                {loading ? (
-                                    <span className="flex items-center justify-center gap-2">
-                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Generating...
-                                    </span>
-                                ) : 'Generate Recovery Phrase'}
-                            </button>
+                            {primaryButton(
+                                isUpdate ? 'Generate New Phrase' : 'Generate Recovery Phrase',
+                                handleGeneratePhrase,
+                                loading,
+                                'Generating...',
+                            )}
+
+                            {isUpdate && cancelUpdateButton()}
                         </>
                     ) : (
                         <>
@@ -327,12 +474,13 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 </div>
             )}
 
+            {/* Bottom action */}
             <div className="mt-6 pt-4 border-t border-grayscale-200">
                 <button
                     onClick={onClose}
                     className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                 >
-                    {success ? 'Done' : 'Skip for Now'}
+                    {anyConfigured ? 'Done' : 'Skip for Now'}
                 </button>
             </div>
         </div>
