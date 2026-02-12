@@ -72,6 +72,41 @@ These pages are statically imported and bundled into the main chunk, even though
 
 ---
 
+## 🔥 Bundle Visualizer Findings (2026-02-12)
+
+After running `rollup-plugin-visualizer`, the **real** composition of the 19.3 MB `index.js` was revealed:
+
+| Module | Rendered Size | Notes |
+|--------|--------------|-------|
+| `@learncard/init` (`init.esm.js`) | **~10 MB** | Pre-bundles 17 workspace plugins into one fat file |
+| `@learncard/lca-api-plugin` (`lca-api-plugin.esm.js`) | **~9.3 MB** | Re-bundles `learn-card-init` + its own deps — total duplication |
+| `katex` | **~4.1 MB** | Used in 1 file (`MarkdownRenderer.tsx`) |
+| Lottie JSON files | Significant | `factory.json`, `cuteopulpo.json` baked into JS |
+| `zod` locales | Moderate | Internationalized error messages |
+
+### Root Cause: Pre-Bundled Workspace Packages
+
+Both `learn-card-init` and `lca-api-plugin` use esbuild with `bundle: true` in their build scripts. This causes esbuild to **inline all workspace dependencies** into a single output file:
+
+- `learn-card-init/dist/init.esm.js` = **8.4 MB** — contains all 17 plugins (didkit, vc, crypto, ethereum, etc.)
+- `lca-api-plugin/dist/lca-api-plugin.esm.js` = **9.3 MB** — re-bundles `learn-card-init` + lca-api-client
+
+When Vite bundles the app, it imports both pre-bundled blobs. Since they're already flattened single files, Vite **cannot deduplicate or tree-shake** the shared code between them. The entire LearnCard SDK effectively ships twice.
+
+### Why `vendor-web3auth` Is 4.5 MB
+
+Web3Auth bundles its own crypto sub-dependencies (`elliptic`, `asn1`, `eth-sig-util`, `jrpc`, etc.) plus a copy of `lodash` (528 KB). This is mostly unavoidable, but since web3auth is only used in 2 files (`useFirebase.ts`, `AppRouter.tsx`), it should be **dynamically imported**.
+
+### Potential Fixes (Highest Impact → Lowest)
+
+1. **Fix workspace package builds** — Change `bundle: true` to `bundle: false` (or externalize workspace deps) in `learn-card-init` and `lca-api-plugin` build scripts. This would let Vite resolve shared deps once instead of duplicating them. **Estimated savings: ~9 MB.**
+2. **Dynamic import `@learncard/init`** — Only 3 source files actually import it. Lazy-load it to defer the cost.
+3. **Dynamic import `katex`** — 4.1 MB for a single-file dependency is an easy win.
+4. **Lazy-load Lottie JSON** — Fetch animation files at runtime instead of bundling as JS.
+5. **Dynamic import web3auth** — 4.5 MB used in 2 files, no reason to load at startup.
+
+---
+
 ## Proposed Changes
 
 ### Phase 1: Vite Configuration — Chunk Splitting
