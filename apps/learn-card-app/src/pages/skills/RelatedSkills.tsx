@@ -1,27 +1,18 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 
 import {
-    BoostCategoryOptionsEnum,
     conditionalPluralize,
-    useGetSkill,
     useGetSkillChildren,
     useGetSkillPath,
+    useSemanticSearchSkills,
 } from 'learn-card-base';
 
-import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
-import BoostEarnedIDCard from '../../components/boost/boost-earned-card/BoostEarnedIDCard';
 import SkillCard from './SkillCard';
-
-import { VC } from '@learncard/types';
-import {
-    SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
-    getDefaultCategoryForCredential,
-} from 'learn-card-base/helpers/credentialHelpers';
 
 type RelatedSkillsProps = {
     frameworkId: string;
@@ -36,9 +27,16 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) =
     const { data: pathData } = useGetSkillPath(frameworkId, skillId);
     const path = pathData?.path;
     const parent = path?.[1];
+    const currentSkill = path?.[0];
 
     const { data: skillChildren } = useGetSkillChildren(frameworkId, skillId);
     const { data: skillSiblings } = useGetSkillChildren(frameworkId, parent?.id ?? '');
+
+    const { data: similarSkillsData } = useSemanticSearchSkills(
+        currentSkill?.statement ?? '',
+        frameworkId,
+        { limit: 5 }
+    );
 
     const parentSkill = parent && parent.type === 'competency' ? parent : null;
 
@@ -46,12 +44,14 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) =
         PARENT = 'parent',
         SIBLING = 'sibling',
         CHILD = 'child',
+        SIMILAR = 'similar',
     }
 
     const puzzlePieceText = {
         [SkillType.PARENT]: 'PARENT SKILL',
         [SkillType.SIBLING]: 'SIBLING SKILL',
         [SkillType.CHILD]: 'SUBSKILL',
+        [SkillType.SIMILAR]: 'SIMILAR',
     };
 
     const relatedSkills = [];
@@ -80,10 +80,36 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) =
         );
     }
 
+    // Add similar skills from semantic search (excluding duplicates, current skill, and same-name skills)
+    if (similarSkillsData?.records) {
+        const existingIds = new Set([skillId, ...relatedSkills.map(s => s.id)]);
+        const currentSkillName = currentSkill?.statement?.toLowerCase();
+        relatedSkills.push(
+            ...similarSkillsData.records
+                .filter(
+                    (record: any) =>
+                        !existingIds.has(record.id) &&
+                        record.statement?.toLowerCase() !== currentSkillName
+                )
+                .map((record: any) => ({
+                    id: record.id,
+                    type: SkillType.SIMILAR,
+                }))
+        );
+    }
+
     const handleSwiperUpdate = (swiper: any) => {
         setAtBeginning(swiper.isBeginning);
         setAtEnd(swiper.isEnd);
     };
+
+    // Re-check swiper bounds when relatedSkills changes (e.g., when similarSkillsData loads)
+    useEffect(() => {
+        if (swiperRef.current) {
+            swiperRef.current.update();
+            handleSwiperUpdate(swiperRef.current);
+        }
+    }, [relatedSkills.length]);
 
     if (relatedSkills.length === 0) {
         return null;
@@ -122,7 +148,9 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) =
                                     <SkillCard
                                         skillId={skill?.id}
                                         frameworkId={frameworkId}
-                                        skillTextOverride={puzzlePieceText[skill?.type]}
+                                        skillTextOverride={
+                                            puzzlePieceText[skill?.type as SkillType]
+                                        }
                                     />
                                 </SwiperSlide>
                             );
