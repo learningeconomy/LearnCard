@@ -40,7 +40,9 @@ export const areAiPassportAppsAvailable = (): boolean => {
     const overriddenNetworkUrl = typeof LCN_URL === 'string' ? LCN_URL : undefined;
     const storedNetworkUrl = networkStore.get.networkUrl();
 
-    const effectiveNetworkUrl = overriddenNetworkUrl?.trim() ? overriddenNetworkUrl : storedNetworkUrl;
+    const effectiveNetworkUrl = overriddenNetworkUrl?.trim()
+        ? overriddenNetworkUrl
+        : storedNetworkUrl;
 
     return effectiveNetworkUrl === LEARNCARD_NETWORK_URL;
 };
@@ -65,11 +67,11 @@ export const aiPassportApps: (LaunchPadAppListItem & { url: string })[] = [
         id: 2,
         name: 'ChatGPT',
         /* description:
-            'is an artificial intelligence (AI) chatbot that uses natural language processing to create humanlike conversational dialogue. The language model can respond to questions and compose various written content, including articles, social media posts, essays, code and emails.', */
+                'is an artificial intelligence (AI) chatbot that uses natural language processing to create humanlike conversational dialogue. The language model can respond to questions and compose various written content, including articles, social media posts, essays, code and emails.', */
         description: 'AI Tutoring by OpenAI',
         img: 'https://cdn.filestackcontent.com/lO9sxSZS4Gr2iBjZ8ey5',
         isConnected: false,
-        displayInLaunchPad: true,
+        displayInLaunchPad: false,
         handleConnect: () => {},
         handleView: () => {},
         type: AiPassportAppsEnum.chatGPT,
@@ -81,12 +83,12 @@ export const aiPassportApps: (LaunchPadAppListItem & { url: string })[] = [
     {
         id: 3,
         name: 'Claude',
-        /* description: `is an intelligent learning and skills assessment tool that helps users expand their knowledge through interactive lessons, personalized feedback, and adaptive quizzes. 
-Through session assessments, it evaluates proficiency and generates credentials, providing verifiable proof of skills and knowledge mastery.`, */
+        /* description: `is an intelligent learning and skills assessment tool that helps users expand their knowledge through interactive lessons, personalized feedback, and adaptive quizzes.
+    Through session assessments, it evaluates proficiency and generates credentials, providing verifiable proof of skills and knowledge mastery.`, */
         description: 'AI Tutoring by Anthropic',
         img: 'https://cdn.filestackcontent.com/EN4xPGrUTvCq5P62TrPI',
         isConnected: false,
-        displayInLaunchPad: true,
+        displayInLaunchPad: false,
         handleConnect: () => {},
         handleView: () => {},
         type: AiPassportAppsEnum.claude,
