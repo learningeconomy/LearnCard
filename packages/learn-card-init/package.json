@@ -68,5 +68,6 @@
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
         "@learncard/vpqr-plugin": "workspace:*"
-    }
+    },
+    "sideEffects": false
 }

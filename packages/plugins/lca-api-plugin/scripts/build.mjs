@@ -1,13 +1,15 @@
 import path from 'path';
 
 import esbuild from 'esbuild';
-import rimraf from 'rimraf';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const rimraf = require('rimraf');
 
 const buildOptions = {
     // target: 'es6',
     target: 'es2020',
     sourcemap: true,
-    external: ['isomorphic-fetch', 'isomorphic-webcrypto'],
+    external: ['isomorphic-fetch', 'isomorphic-webcrypto', '@learncard/core', '@learncard/didkit-plugin', '@learncard/init', '@learncard/lca-api-client', '@learncard/types'],
 };
 
 const configurations = [
@@ -47,14 +49,11 @@ const configurations = [
     },
 ];
 
-function asyncRimraf(path) {
+function asyncRimraf(dirPath) {
     return new Promise((resolve, reject) => {
-        rimraf(path, err => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve();
-            }
+        rimraf(dirPath, err => {
+            if (err) reject(err);
+            else resolve();
         });
     });
 }

@@ -1,12 +1,13 @@
 import path from 'path';
 
 import esbuild from 'esbuild';
-import rimraf from 'rimraf';
+import { rimraf } from 'rimraf';
 
 const buildOptions = {
     // target: 'es6',
     target: 'es2020',
     sourcemap: true,
+    external: ['@learncard/core', '@learncard/types'],
 };
 
 const configurations = [
@@ -46,16 +47,8 @@ const configurations = [
     },
 ];
 
-function asyncRimraf(path) {
-    return new Promise((resolve, reject) => {
-        rimraf(path, err => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
-    });
+function asyncRimraf(dirPath) {
+    return rimraf(dirPath);
 }
 
 await Promise.all(
