@@ -875,6 +875,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                     <RecoveryFlowModal
                         availableMethods={availableMethods}
                         recoveryReason={coordinator.state.status === 'needs_recovery' ? coordinator.state.recoveryReason : undefined}
+                        maskedRecoveryEmail={coordinator.state.status === 'needs_recovery' ? coordinator.state.maskedRecoveryEmail : null}
                         onRecoverWithPasskey={async (credentialId: string) => {
                             await coordinator.recover({ method: 'passkey', credentialId });
                         }}
@@ -989,6 +990,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                 }
 
                 // Session valid — show the recovery setup modal
+                const { serverUrl } = getAuthConfig();
                 const currentPrivateKey = coordinator.state.status === 'ready' ? coordinator.state.privateKey : '';
 
                 const setupMethod = async (input: RecoverySetupInput, authUser?: { id: string; email?: string; phone?: string; providerType: string } | null) => {
@@ -1016,10 +1018,26 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                     });
                 };
 
+                const getTokenAndProvider = async () => {
+                    const token = await recoveryAuthProvider.getIdToken();
+                    const providerType = recoveryAuthProvider.getProviderType();
+                    return { token, providerType };
+                };
+
+                const getDidAuthHeaders = async (): Promise<Record<string, string>> => {
+                    const vpJwt = await signDidAuthVp(currentPrivateKey);
+
+                    return {
+                        'Content-Type': 'application/json',
+                        ...(vpJwt ? { Authorization: `Bearer ${vpJwt}` } : {}),
+                    };
+                };
+
                 return (
                     <Overlay>
                         <RecoverySetupModal
                             existingMethods={[]}
+                            maskedRecoveryEmail={null}
                             onSetupPasskey={async () => {
                                 const authUser = await recoveryAuthProvider.getCurrentUser();
                                 const result = await setupMethod({ method: 'passkey' }, authUser);
@@ -1040,6 +1058,43 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 
                                 setRecoveryMethodCount(prev => (prev ?? 0) + 1);
                                 return result.method === 'backup' ? JSON.stringify(result.backupFile, null, 2) : '';
+                            }}
+                            onAddRecoveryEmail={async (email: string) => {
+                                const { token, providerType } = await getTokenAndProvider();
+                                const headers = await getDidAuthHeaders();
+
+                                const res = await fetch(`${serverUrl}/keys/recovery-email/add`, {
+                                    method: 'POST',
+                                    headers,
+                                    body: JSON.stringify({ authToken: token, providerType, email }),
+                                });
+
+                                if (!res.ok) {
+                                    const data = await res.json().catch(() => ({}));
+                                    throw new Error(data?.message || 'Failed to send verification code.');
+                                }
+                            }}
+                            onVerifyRecoveryEmail={async (code: string) => {
+                                const { token, providerType } = await getTokenAndProvider();
+                                const headers = await getDidAuthHeaders();
+
+                                const res = await fetch(`${serverUrl}/keys/recovery-email/verify`, {
+                                    method: 'POST',
+                                    headers,
+                                    body: JSON.stringify({ authToken: token, providerType, code }),
+                                });
+
+                                if (!res.ok) {
+                                    const data = await res.json().catch(() => ({}));
+                                    throw new Error(data?.message || 'Incorrect code.');
+                                }
+
+                                return res.json();
+                            }}
+                            onSetupEmailRecovery={async () => {
+                                const authUser = await recoveryAuthProvider.getCurrentUser();
+                                await setupMethod({ method: 'email' }, authUser);
+                                setRecoveryMethodCount(prev => (prev ?? 0) + 1);
                             }}
                             onClose={() => setShowRecoverySetup(false)}
                         />

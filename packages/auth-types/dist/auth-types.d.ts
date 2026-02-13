@@ -75,6 +75,7 @@ export interface ServerKeyStatus {
 	recoveryMethods: RecoveryMethodInfo[];
 	authShare: string | null;
 	shareVersion: number | null;
+	maskedRecoveryEmail?: string | null;
 }
 /**
  * Key Derivation Strategy

@@ -8,18 +8,23 @@ import {
     alertCircleOutline,
     copyOutline,
     checkmarkOutline,
+    mailOutline,
 } from 'ionicons/icons';
 
 import { Capacitor } from '@capacitor/core';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 
-export type RecoverySetupType = 'passkey' | 'phrase' | 'backup';
+export type RecoverySetupType = 'passkey' | 'phrase' | 'backup' | 'email';
 
 interface RecoverySetupModalProps {
     onSetupPasskey: () => Promise<string>;
     onGeneratePhrase: () => Promise<string>;
     onSetupBackup: (password: string) => Promise<string>;
+    onAddRecoveryEmail: (email: string) => Promise<void>;
+    onVerifyRecoveryEmail: (code: string) => Promise<{ maskedEmail: string }>;
+    onSetupEmailRecovery: () => Promise<void>;
     existingMethods: { type: string; createdAt: string }[];
+    maskedRecoveryEmail?: string | null;
     onClose: () => void;
 }
 
@@ -27,7 +32,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     onSetupPasskey,
     onGeneratePhrase,
     onSetupBackup,
+    onAddRecoveryEmail,
+    onVerifyRecoveryEmail,
+    onSetupEmailRecovery,
     existingMethods,
+    maskedRecoveryEmail,
     onClose,
 }) => {
     const webAuthnSupported = isWebAuthnSupported();
@@ -66,6 +75,14 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const [backupFileJson, setBackupFileJson] = useState<string | null>(null);
     const [backupDownloaded, setBackupDownloaded] = useState(false);
     const [backupConfirmed, setBackupConfirmed] = useState(false);
+
+    // Email recovery state
+    const [emailInput, setEmailInput] = useState('');
+    const [emailCodeSent, setEmailCodeSent] = useState(false);
+    const [emailCode, setEmailCode] = useState('');
+    const [emailVerified, setEmailVerified] = useState(!!maskedRecoveryEmail);
+    const [emailMasked, setEmailMasked] = useState(maskedRecoveryEmail ?? '');
+    const [emailShareSent, setEmailShareSent] = useState(false);
 
     const handleTabSwitch = (tab: RecoverySetupType) => {
         setActiveTab(tab);
@@ -178,10 +195,70 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         setShowUpdateForm(false);
     };
 
+    const handleSendEmailCode = async () => {
+        if (!emailInput.includes('@')) {
+            setError('Please enter a valid email address.');
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            await onAddRecoveryEmail(emailInput);
+            setEmailCodeSent(true);
+        } catch (e) {
+            console.error('[RecoverySetupModal] handleSendEmailCode error:', e, typeof e);
+            setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyEmailCode = async () => {
+        if (emailCode.length !== 6) {
+            setError('Please enter the 6-digit code.');
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const { maskedEmail } = await onVerifyRecoveryEmail(emailCode);
+            setEmailVerified(true);
+            setEmailMasked(maskedEmail);
+        } catch (e) {
+            console.error('[RecoverySetupModal] handleVerifyEmailCode error:', e, typeof e);
+            setError(e instanceof Error ? e.message : 'Incorrect code. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSetupEmailRecovery = async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            await onSetupEmailRecovery();
+            setEmailShareSent(true);
+            markConfigured('email');
+            setSuccess('Recovery key sent to your email!');
+            setShowUpdateForm(false);
+        } catch (e) {
+            console.error('[RecoverySetupModal] handleSetupEmailRecovery error:', e, typeof e);
+            setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const allTabs = [
         { id: 'passkey' as const, label: 'Passkey', icon: fingerPrint, iconClass: 'text-sm' },
         { id: 'phrase' as const, label: 'Phrase', icon: documentTextOutline, iconClass: 'text-sm' },
         { id: 'backup' as const, label: 'Backup', icon: cloudDownloadOutline, iconClass: 'text-sm' },
+        { id: 'email' as const, label: 'Email', icon: mailOutline, iconClass: 'text-sm' },
     ];
 
     // Hide passkey tab entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
@@ -511,6 +588,146 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 </button>
                             )}
                         </>
+                    )}
+                </div>
+            )}
+
+            {/* ── Email Tab ─────────────────────────────────── */}
+            {activeTab === 'email' && (
+                <div className="space-y-4">
+                    {isConfigured('email') && !showUpdateForm ? (
+                        configuredRow(
+                            emailMasked ? `Recovery email: ${emailMasked}` : 'Email recovery is set up',
+                            () => {
+                                setShowUpdateForm(true);
+                                // Reset email flow for re-setup
+                                setEmailInput('');
+                                setEmailCodeSent(false);
+                                setEmailCode('');
+                                setEmailVerified(false);
+                                setEmailMasked('');
+                                setEmailShareSent(false);
+                            }
+                        )
+                    ) : !emailVerified ? (
+                        // Step 1 & 2: Verify email
+                        <>
+                            {isUpdate && updateWarning('This will replace your current recovery email.')}
+
+                            <p className="text-sm text-grayscale-600 leading-relaxed">
+                                Add a personal email (different from your login) as a recovery destination. A recovery key will be sent there.
+                            </p>
+
+                            {!emailCodeSent ? (
+                                // Step 1: Enter email
+                                <>
+                                    <div>
+                                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Recovery Email</label>
+
+                                        <input
+                                            type="email"
+                                            value={emailInput}
+                                            onChange={e => setEmailInput(e.target.value)}
+                                            placeholder="personal@gmail.com"
+                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                        />
+                                    </div>
+
+                                    {primaryButton(
+                                        'Send Verification Code',
+                                        handleSendEmailCode,
+                                        loading || !emailInput.includes('@'),
+                                        'Sending...',
+                                    )}
+
+                                    {isUpdate && cancelUpdateButton(() => {
+                                        setEmailInput('');
+                                        setEmailCodeSent(false);
+                                    })}
+                                </>
+                            ) : (
+                                // Step 2: Enter code
+                                <>
+                                    <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                                        <p className="text-sm text-emerald-700 leading-relaxed">
+                                            We sent a 6-digit code to <strong>{emailInput}</strong>. Check your inbox.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Verification Code</label>
+
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            maxLength={6}
+                                            value={emailCode}
+                                            onChange={e => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                            placeholder="123456"
+                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-center tracking-[0.3em] font-mono"
+                                        />
+                                    </div>
+
+                                    {primaryButton(
+                                        'Verify Code',
+                                        handleVerifyEmailCode,
+                                        loading || emailCode.length !== 6,
+                                        'Verifying...',
+                                    )}
+
+                                    <button
+                                        onClick={() => {
+                                            setEmailCodeSent(false);
+                                            setEmailCode('');
+                                        }}
+                                        className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                                    >
+                                        Use a different email
+                                    </button>
+                                </>
+                            )}
+                        </>
+                    ) : !emailShareSent ? (
+                        // Step 3: Email verified, send recovery share
+                        <>
+                            <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
+                                <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
+
+                                <div>
+                                    <p className="text-sm font-medium text-emerald-800">Email verified</p>
+
+                                    <p className="text-xs text-emerald-700 mt-0.5">{emailMasked}</p>
+                                </div>
+                            </div>
+
+                            <p className="text-sm text-grayscale-600 leading-relaxed">
+                                We'll send a recovery key to this email. If you ever lose access, just check your inbox and paste the key to recover.
+                            </p>
+
+                            {primaryButton(
+                                'Send Recovery Key',
+                                handleSetupEmailRecovery,
+                                loading,
+                                'Sending...',
+                            )}
+
+                            {isUpdate && cancelUpdateButton()}
+                        </>
+                    ) : (
+                        // Step 4: Done
+                        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                            <div className="flex items-start gap-2.5">
+                                <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
+
+                                <div>
+                                    <p className="text-sm font-medium text-emerald-800 mb-1">Recovery key sent</p>
+
+                                    <p className="text-xs text-emerald-700 leading-relaxed">
+                                        Check your inbox at {emailMasked}. Keep that email safe — you'll need the recovery key if you ever lose access.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     )}
                 </div>
             )}

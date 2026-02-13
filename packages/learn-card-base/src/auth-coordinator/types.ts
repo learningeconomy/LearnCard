@@ -52,7 +52,7 @@ export type UnifiedAuthState =
     | { status: 'checking_key_status' }
     | { status: 'needs_setup'; authUser: AuthUser }
     | { status: 'needs_migration'; authUser: AuthUser; migrationData?: Record<string, unknown> }
-    | { status: 'needs_recovery'; authUser: AuthUser; recoveryMethods: RecoveryMethodInfo[]; recoveryReason: RecoveryReason }
+    | { status: 'needs_recovery'; authUser: AuthUser; recoveryMethods: RecoveryMethodInfo[]; recoveryReason: RecoveryReason; maskedRecoveryEmail?: string | null }
     | { status: 'deriving_key' }
     | { status: 'ready'; authUser?: AuthUser; did: string; privateKey: string; authSessionValid: boolean }
     | { status: 'error'; error: string; canRetry: boolean; previousState?: UnifiedAuthState };

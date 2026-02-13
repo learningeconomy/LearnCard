@@ -90,7 +90,8 @@ export type RecoveryInput =
 export type RecoverySetupInput =
     | { method: 'passkey' }
     | { method: 'phrase' }
-    | { method: 'backup'; password: string; did: string };
+    | { method: 'backup'; password: string; did: string }
+    | { method: 'email' };
 
 /**
  * SSS-specific recovery setup result.
@@ -98,7 +99,8 @@ export type RecoverySetupInput =
 export type RecoverySetupResult =
     | { method: 'passkey'; credentialId: string }
     | { method: 'phrase'; phrase: string }
-    | { method: 'backup'; backupFile: BackupFile };
+    | { method: 'backup'; backupFile: BackupFile }
+    | { method: 'email' };
 
 // ---------------------------------------------------------------------------
 // SSS-specific: Share & encryption types

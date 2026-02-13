@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import mongodb from '@mongo';
+import { pruneOrphanedRecoveryMethods } from './pruneOrphanedRecoveryMethods';
 
 export const USER_KEYS_COLLECTION = 'userkeys';
 
@@ -27,7 +28,7 @@ export const EncryptedShareValidator = z.object({
 });
 
 export const RecoveryMethodValidator = z.object({
-    type: z.enum(['passkey', 'backup', 'phrase']),
+    type: z.enum(['passkey', 'backup', 'phrase', 'email']),
     createdAt: z.date(),
     credentialId: z.string().optional(),
     encryptedShare: EncryptedShareValidator.optional(),
@@ -68,6 +69,12 @@ export const MongoUserKeyValidator = z.object({
 
     recoveryMethods: z.array(RecoveryMethodValidator).default([]),
 
+    // Verified secondary email for email-based recovery.
+    // The encrypted share is sent to this address during setup;
+    // it is never stored server-side.
+    recoveryEmail: z.string().email().optional(),
+    recoveryEmailVerifiedAt: z.date().optional(),
+
     migratedFromWeb3Auth: z.boolean().default(false),
     migratedAt: z.date().optional(),
 
@@ -85,7 +92,7 @@ export type PreviousAuthShare = z.infer<typeof PreviousAuthShareValidator>;
 
 export const MAX_PREVIOUS_AUTH_SHARES = 5;
 
-export { pruneOrphanedRecoveryMethods } from './pruneOrphanedRecoveryMethods';
+export { pruneOrphanedRecoveryMethods };
 
 export const getUserKeysCollection = () => {
     return mongodb.collection<MongoUserKeyType>(USER_KEYS_COLLECTION);
@@ -314,6 +321,27 @@ export const markUserKeyMigrated = async (contactMethod: ContactMethod): Promise
                 migratedFromWeb3Auth: true,
                 migratedAt: new Date(),
                 keyProvider: 'sss',
+                updatedAt: new Date(),
+            },
+        }
+    );
+};
+
+export const setRecoveryEmail = async (
+    contactMethod: ContactMethod,
+    email: string
+): Promise<void> => {
+    const collection = getUserKeysCollection();
+
+    await collection.updateOne(
+        {
+            'contactMethod.type': contactMethod.type,
+            'contactMethod.value': contactMethod.value,
+        },
+        {
+            $set: {
+                recoveryEmail: email,
+                recoveryEmailVerifiedAt: new Date(),
                 updatedAt: new Date(),
             },
         }

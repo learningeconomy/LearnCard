@@ -1,4 +1,10 @@
-import type { RecoveryMethod } from './UserKey';
+/**
+ * Minimal shape needed for pruning — avoids circular import with UserKey.ts.
+ */
+interface RecoveryMethodLike {
+    shareVersion?: number;
+    [key: string]: unknown;
+}
 
 /**
  * Remove recovery methods whose shareVersion no longer has a corresponding
@@ -10,11 +16,11 @@ import type { RecoveryMethod } from './UserKey';
  * - Methods whose shareVersion matches any entry in `previousVersions` are kept.
  * - Everything else is pruned — the auth share it depends on has been evicted.
  */
-export const pruneOrphanedRecoveryMethods = (
-    recoveryMethods: RecoveryMethod[],
+export const pruneOrphanedRecoveryMethods = <T extends RecoveryMethodLike>(
+    recoveryMethods: T[],
     currentShareVersion: number,
     previousVersions: number[],
-): RecoveryMethod[] => {
+): T[] => {
     const validVersions = new Set([currentShareVersion, ...previousVersions]);
 
     return recoveryMethods.filter(method => {

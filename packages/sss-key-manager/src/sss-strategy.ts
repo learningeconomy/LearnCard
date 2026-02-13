@@ -37,7 +37,7 @@ import {
     getShareVersion as defaultGetShareVersion,
 } from './storage';
 import { encryptWithPassword, decryptWithPassword } from './crypto';
-import { createPasskeyCredential, encryptShareWithPasskey, decryptShareWithPasskey, isWebAuthnSupported } from './passkey';
+import { createPasskeyCredential, encryptShareWithPasskey, decryptShareWithPasskey, isWebAuthnSupported, type PasskeyCredential } from './passkey';
 import { shareToRecoveryPhrase, recoveryPhraseToShare, validateRecoveryPhrase } from './recovery-phrase';
 
 const SSS_DB_NAME = 'lcb-sss-keys';
@@ -243,6 +243,37 @@ const sendEmailBackupShare = async (
 };
 
 /**
+ * Send the email share to the user's verified recovery email (stored server-side).
+ * The raw recovery email never leaves the server.
+ */
+const sendEmailShareToRecoveryEmail = async (
+    serverUrl: string,
+    token: string,
+    providerType: AuthProviderType,
+    emailShare: string,
+    shareVersion?: number
+): Promise<void> => {
+    const payload = shareVersion != null
+        ? formatVersionedEmailShare(emailShare, shareVersion)
+        : emailShare;
+
+    const response = await fetch(`${serverUrl}/keys/email-backup`, {
+        method: 'POST',
+        headers: buildHeaders(token),
+        body: JSON.stringify({
+            authToken: token,
+            providerType,
+            emailShare: payload,
+            useRecoveryEmail: true,
+        }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to send recovery share to recovery email: ${response.statusText}`);
+    }
+};
+
+/**
  * After recovery, re-split the private key and store fresh shares.
  *
  * SAFETY: When `didFromPrivateKey` is provided, the key is validated against
@@ -327,6 +358,13 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
      * matching auth share.
      */
     let lastShareVersion: number | undefined;
+
+    /**
+     * Whether the user has a verified recovery email. Set during
+     * `fetchServerKeyStatus()`. When true, `sendEmailBackupShare()`
+     * routes the share to the recovery email instead of the primary.
+     */
+    let hasRecoveryEmail = false;
 
     return {
         name: 'sss',
@@ -431,6 +469,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     recoveryMethods: [],
                     authShare: null,
                     shareVersion: null,
+                    maskedRecoveryEmail: null,
                 };
             }
 
@@ -452,6 +491,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     .catch(e => console.warn('SSS: failed to backfill local shareVersion', e));
             }
 
+            // Cache whether a recovery email is set so sendEmailBackupShare
+            // can route future shares to the recovery email instead of primary.
+            hasRecoveryEmail = !!data.maskedRecoveryEmail;
+
             return {
                 exists: !!rawAuthShare || !!data.keyProvider || !!data.primaryDid,
                 needsMigration: data.keyProvider === 'web3auth',
@@ -459,6 +502,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 recoveryMethods: data.recoveryMethods || [],
                 authShare: authShareString,
                 shareVersion: serverVersion,
+                maskedRecoveryEmail: data.maskedRecoveryEmail ?? null,
             };
         },
 
@@ -640,6 +684,22 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         }): Promise<RecoverySetupResult> {
             const { token, providerType, privateKey, input, authUser, signDidAuthVp } = params;
 
+            // Passkey pre-flight: create the credential and verify PRF support
+            // BEFORE any split/store/email work. If PRF isn't available, fail
+            // cleanly without side effects (no version bump, no email re-send).
+            let passkeyCredential: PasskeyCredential | undefined;
+
+            if (input.method === 'passkey') {
+                if (!isWebAuthnSupported()) {
+                    throw new Error('WebAuthn is not supported in this browser');
+                }
+
+                const userId = authUser?.id || '';
+                const userName = authUser?.email || authUser?.phone || authUser?.id || '';
+
+                passkeyCredential = await createPasskeyCredential(userId, userName);
+            }
+
             // Sign DID-Auth VP once for all write operations in this method
             console.debug('[setupRecoveryMethod] step 1: signing VP, signDidAuthVp available:', !!signDidAuthVp);
             const vpJwt = signDidAuthVp ? await signDidAuthVp(privateKey) : undefined;
@@ -670,24 +730,26 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             // Persist the new version alongside the device share
             await storage.storeShareVersion(shareVersion, activeStorageId);
 
-            // Fire-and-forget: re-send email backup share so it stays in sync with the new auth share
-            if (enableEmailBackupShare && authUser?.email && lastEmailShare) {
-                sendEmailBackupShare(serverUrl, token, providerType, lastEmailShare, authUser.email, shareVersion)
-                    .catch(e => console.warn('Email backup share re-send failed (non-fatal):', e));
+            // Fire-and-forget: re-send email backup share so it stays in sync
+            // with the new auth share. Skip for the 'email' method — that case
+            // handles its own send to the recovery email exclusively.
+            if (enableEmailBackupShare && input.method !== 'email' && lastEmailShare) {
+                const resend = hasRecoveryEmail
+                    ? sendEmailShareToRecoveryEmail(serverUrl, token, providerType, lastEmailShare, shareVersion)
+                    : authUser?.email
+                        ? sendEmailBackupShare(serverUrl, token, providerType, lastEmailShare, authUser.email, shareVersion)
+                        : Promise.resolve();
+
+                resend.catch(e => console.warn('Email backup share re-send failed (non-fatal):', e));
 
                 lastEmailShare = undefined;
             }
 
             switch (input.method) {
                 case 'passkey': {
-                    if (!isWebAuthnSupported()) {
-                        throw new Error('WebAuthn is not supported in this browser');
-                    }
-
-                    const userId = authUser?.id || '';
-                    const userName = authUser?.email || authUser?.phone || authUser?.id || '';
-
-                    const credential = await createPasskeyCredential(userId, userName);
+                    // passkeyCredential was created in the pre-flight block above
+                    // (before any split/store work) so PRF is already validated.
+                    const credential = passkeyCredential!;
 
                     const encryptedShare = await encryptShareWithPasskey(
                         shares.recoveryShare,
@@ -746,6 +808,29 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
                     return { method: 'backup', backupFile };
                 }
+
+                case 'email': {
+                    // Send the recovery share to the user's verified recovery email.
+                    // The raw email address never leaves the server — we pass
+                    // useRecoveryEmail: true so the server reads it from UserKey.
+                    await sendEmailShareToRecoveryEmail(
+                        serverUrl, token, providerType,
+                        shares.emailShare, shareVersion
+                    );
+
+                    // Register email recovery on the server so
+                    // getAvailableRecoveryMethods includes it.
+                    await postRecoveryMethod(serverUrl, token, providerType, {
+                        type: 'email',
+                        shareVersion,
+                    }, vpJwt);
+
+                    // Future sendEmailBackupShare calls should route to
+                    // the recovery email, not the primary.
+                    hasRecoveryEmail = true;
+
+                    return { method: 'email' };
+                }
             }
         },
 
@@ -757,10 +842,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 const serverData = await fetchAuthShareRaw(serverUrl, token, providerType);
                 const methods = serverData?.recoveryMethods || [];
 
-                // Inject email recovery option when email backup share is enabled.
-                // The email share is sent fire-and-forget during setup and isn't
-                // registered as a server-side recovery method, so we add it here.
-                if (enableEmailBackupShare) {
+                // When email backup share is enabled (primary email), inject
+                // an email recovery option so the user can recover from their
+                // primary inbox. Skip if the server already has a registered
+                // 'email' method (from a secondary recovery email setup).
+                if (enableEmailBackupShare && !methods.some((m: RecoveryMethodInfo) => m.type === 'email')) {
                     methods.push({ type: 'email', createdAt: new Date() });
                 }
 
@@ -781,17 +867,25 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         ): Promise<void> {
             if (!enableEmailBackupShare) return;
 
-            if (!email) {
-                console.warn('Cannot send email backup share: no email address');
-                return;
-            }
-
             if (!lastEmailShare) {
                 console.warn('Cannot send email backup share: no cached email share from splitKey()');
                 return;
             }
 
-            await sendEmailBackupShare(serverUrl, token, providerType, lastEmailShare, email, lastShareVersion);
+            // When a recovery email is configured, send ONLY to the recovery
+            // email — eliminates the primary-email single point of failure.
+            if (hasRecoveryEmail) {
+                await sendEmailShareToRecoveryEmail(
+                    serverUrl, token, providerType, lastEmailShare, lastShareVersion
+                );
+            } else {
+                if (!email) {
+                    console.warn('Cannot send email backup share: no email address');
+                    return;
+                }
+
+                await sendEmailBackupShare(serverUrl, token, providerType, lastEmailShare, email, lastShareVersion);
+            }
 
             // Clear after use — one-shot to avoid stale data
             lastEmailShare = undefined;

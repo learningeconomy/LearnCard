@@ -18,6 +18,7 @@ export interface GetAuthShareResponse {
     securityLevel: SecurityLevel;
     recoveryMethods: RecoveryMethodInfo[];
     keyProvider: 'web3auth' | 'sss';
+    maskedRecoveryEmail?: string | null;
 }
 
 export interface StoreAuthShareInput {
@@ -27,7 +28,7 @@ export interface StoreAuthShareInput {
 }
 
 export interface StoreRecoveryShareInput {
-    type: 'passkey' | 'backup' | 'phrase';
+    type: 'passkey' | 'backup' | 'phrase' | 'email';
     encryptedShare?: EncryptedShare;
     credentialId?: string;
     shareVersion?: number;
@@ -125,7 +126,7 @@ export class SSSApiClient {
     }
 
     async getRecoveryShare(
-        type: 'passkey' | 'backup' | 'phrase',
+        type: 'passkey' | 'backup' | 'phrase' | 'email',
         credentialId?: string
     ): Promise<{ encryptedShare?: EncryptedShare; shareVersion?: number } | null> {
         const token = await this.authProvider.getIdToken();
@@ -173,15 +174,19 @@ export class SSSApiClient {
         }
     }
 
-    async sendEmailBackupShare(emailShare: string): Promise<void> {
+    async sendEmailBackupShare(emailShare: string, overrideEmail?: string): Promise<void> {
         const headers = await this.getAuthHeaders();
         const providerType = this.authProvider.getProviderType();
 
-        const user = await this.authProvider.getCurrentUser();
-        const email = user?.email;
+        let email = overrideEmail;
 
         if (!email) {
-            console.warn('Cannot send email backup share: no email address on auth user');
+            const user = await this.authProvider.getCurrentUser();
+            email = user?.email;
+        }
+
+        if (!email) {
+            console.warn('Cannot send email backup share: no email address available');
             return;
         }
 
@@ -199,6 +204,40 @@ export class SSSApiClient {
             // Non-fatal: log but don't throw — the user can still use the app
             console.warn(`Failed to send email backup share: ${response.statusText}`);
         }
+    }
+
+    async addRecoveryEmail(email: string): Promise<void> {
+        const token = await this.authProvider.getIdToken();
+        const providerType = this.authProvider.getProviderType();
+
+        const response = await fetch(`${this.serverUrl}/keys/recovery-email/add`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ authToken: token, providerType, email }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data?.message || `Failed to add recovery email: ${response.statusText}`);
+        }
+    }
+
+    async verifyRecoveryEmail(code: string): Promise<{ maskedEmail: string }> {
+        const token = await this.authProvider.getIdToken();
+        const providerType = this.authProvider.getProviderType();
+
+        const response = await fetch(`${this.serverUrl}/keys/recovery-email/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ authToken: token, providerType, code }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data?.message || `Failed to verify recovery email: ${response.statusText}`);
+        }
+
+        return response.json();
     }
 
     async deleteUserKey(): Promise<void> {

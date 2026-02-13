@@ -1584,4 +1584,229 @@ describe('createSSSStrategy', () => {
             expect(recoveryBody.encryptedShare).toBeUndefined();
         });
     });
+
+    // -----------------------------------------------------------------------
+    // Email routing: recovery email vs primary email
+    // -----------------------------------------------------------------------
+
+    describe('email routing — recovery email vs primary', () => {
+
+        it('setupRecoveryMethod("email") sends ONLY to recovery email, never to primary', async () => {
+            const strat = createSSSStrategy({
+                serverUrl: 'http://test-server:5100/api',
+                storage: createMemoryStorage(),
+                enableEmailBackupShare: true,
+            });
+
+            const originalKey = 'e1e2e3e4e5e6'.padEnd(64, '0');
+
+            await strat.splitKey(originalKey);
+
+            const fetchCalls: { url: string; method: string; body: string }[] = [];
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const urlStr = typeof url === 'string' ? url : url.toString();
+                const method = (init?.method ?? 'GET').toUpperCase();
+
+                fetchCalls.push({ url: urlStr, method, body: init?.body as string ?? '' });
+
+                // fetchAuthShareRaw
+                if (urlStr.includes('/keys/auth-share') && method === 'POST') {
+                    return new Response(JSON.stringify({
+                        authShare: 'existing',
+                        primaryDid: 'did:key:z1',
+                        recoveryMethods: [],
+                        shareVersion: 10,
+                    }), { status: 200 });
+                }
+
+                // putAuthShare
+                if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
+                    return new Response(JSON.stringify({ success: true, shareVersion: 11 }), { status: 200 });
+                }
+
+                return new Response(JSON.stringify({ success: true }), { status: 200 });
+            });
+
+            await strat.setupRecoveryMethod!({
+                token: 'token',
+                providerType: 'firebase',
+                privateKey: originalKey,
+                input: { method: 'email' },
+                authUser: { id: 'user-1', providerType: 'firebase', email: 'primary@test.com' },
+            });
+
+            const emailBackupCalls = fetchCalls.filter(c => c.url.includes('/keys/email-backup'));
+
+            // Should be exactly ONE call — to the recovery email endpoint
+            expect(emailBackupCalls).toHaveLength(1);
+
+            const body = JSON.parse(emailBackupCalls[0]!.body);
+
+            // Must use useRecoveryEmail (server-side routing), NOT an explicit email
+            expect(body.useRecoveryEmail).toBe(true);
+            expect(body.email).toBeUndefined();
+        });
+
+        it('setupRecoveryMethod("phrase") does NOT send to primary when recovery email is configured', async () => {
+            // Create a strategy and prime hasRecoveryEmail via fetchServerKeyStatus
+            const stratWithRecovery = createSSSStrategy({
+                serverUrl: 'http://test-server:5100/api',
+                storage: createMemoryStorage(),
+                enableEmailBackupShare: true,
+            });
+
+            const originalKey = 'f1f2f3f4f5f6'.padEnd(64, '0');
+
+            // First: fetchServerKeyStatus to set hasRecoveryEmail = true
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
+                new Response(JSON.stringify({
+                    authShare: 'existing-share',
+                    primaryDid: 'did:key:z1',
+                    recoveryMethods: [],
+                    shareVersion: 1,
+                    keyProvider: 'sss',
+                    maskedRecoveryEmail: 'r****@personal.com',
+                }), { status: 200 })
+            );
+
+            await stratWithRecovery.fetchServerKeyStatus('token', 'firebase');
+
+            // Now split the key
+            vi.restoreAllMocks();
+
+            await stratWithRecovery.splitKey(originalKey);
+
+            const fetchCalls: { url: string; method: string; body: string }[] = [];
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const urlStr = typeof url === 'string' ? url : url.toString();
+                const method = (init?.method ?? 'GET').toUpperCase();
+
+                fetchCalls.push({ url: urlStr, method, body: init?.body as string ?? '' });
+
+                if (urlStr.includes('/keys/auth-share') && method === 'POST') {
+                    return new Response(JSON.stringify({
+                        authShare: 'existing',
+                        primaryDid: 'did:key:z1',
+                        recoveryMethods: [],
+                        shareVersion: 1,
+                        maskedRecoveryEmail: 'r****@personal.com',
+                    }), { status: 200 });
+                }
+
+                if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
+                    return new Response(JSON.stringify({ success: true, shareVersion: 2 }), { status: 200 });
+                }
+
+                return new Response(JSON.stringify({ success: true }), { status: 200 });
+            });
+
+            await stratWithRecovery.setupRecoveryMethod!({
+                token: 'token',
+                providerType: 'firebase',
+                privateKey: originalKey,
+                input: { method: 'phrase' },
+                authUser: { id: 'user-1', providerType: 'firebase', email: 'primary@test.com' },
+            });
+
+            const emailBackupCalls = fetchCalls.filter(c => c.url.includes('/keys/email-backup'));
+
+            // Should re-send exactly once — to the recovery email
+            expect(emailBackupCalls).toHaveLength(1);
+
+            const body = JSON.parse(emailBackupCalls[0]!.body);
+
+            expect(body.useRecoveryEmail).toBe(true);
+            expect(body.email).toBeUndefined();
+        });
+
+        it('sendEmailBackupShare routes to recovery email when one is configured', async () => {
+            const stratWithRecovery = createSSSStrategy({
+                serverUrl: 'http://test-server:5100/api',
+                storage: createMemoryStorage(),
+                enableEmailBackupShare: true,
+            });
+
+            const originalKey = 'd1d2d3d4d5d6'.padEnd(64, '0');
+
+            // Prime hasRecoveryEmail via fetchServerKeyStatus
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
+                new Response(JSON.stringify({
+                    authShare: 'existing-share',
+                    primaryDid: 'did:key:z1',
+                    recoveryMethods: [],
+                    shareVersion: 3,
+                    keyProvider: 'sss',
+                    maskedRecoveryEmail: 'r****@personal.com',
+                }), { status: 200 })
+            );
+
+            await stratWithRecovery.fetchServerKeyStatus('token', 'firebase');
+
+            vi.restoreAllMocks();
+
+            // Split key to cache email share
+            const { remoteKey } = await stratWithRecovery.splitKey(originalKey);
+
+            // storeAuthShare to cache version
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
+                new Response(JSON.stringify({ success: true, shareVersion: 4 }), { status: 200 })
+            );
+
+            await stratWithRecovery.storeAuthShare('token', 'firebase', remoteKey, 'did:key:z1');
+
+            // Now capture sendEmailBackupShare call
+            let capturedBody: Record<string, unknown> | undefined;
+
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async (_url, init) => {
+                capturedBody = JSON.parse(init?.body as string);
+                return new Response(null, { status: 200 });
+            });
+
+            await stratWithRecovery.sendEmailBackupShare!(
+                'token', 'firebase', originalKey, 'primary@test.com'
+            );
+
+            // Should route to recovery email, not primary
+            expect(capturedBody).toBeDefined();
+            expect(capturedBody!.useRecoveryEmail).toBe(true);
+            expect(capturedBody!.email).toBeUndefined();
+        });
+
+        it('sendEmailBackupShare routes to primary email when no recovery email is configured', async () => {
+            const strat = createSSSStrategy({
+                serverUrl: 'http://test-server:5100/api',
+                storage: createMemoryStorage(),
+                enableEmailBackupShare: true,
+            });
+
+            const originalKey = 'a2b3c4d5e6f7'.padEnd(64, '0');
+
+            const { remoteKey } = await strat.splitKey(originalKey);
+
+            // storeAuthShare to cache version
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
+                new Response(JSON.stringify({ success: true, shareVersion: 1 }), { status: 200 })
+            );
+
+            await strat.storeAuthShare('token', 'firebase', remoteKey, 'did:key:z1');
+
+            let capturedBody: Record<string, unknown> | undefined;
+
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async (_url, init) => {
+                capturedBody = JSON.parse(init?.body as string);
+                return new Response(null, { status: 200 });
+            });
+
+            await strat.sendEmailBackupShare!(
+                'token', 'firebase', originalKey, 'primary@test.com'
+            );
+
+            // Should send to the explicit primary email
+            expect(capturedBody).toBeDefined();
+            expect(capturedBody!.email).toBe('primary@test.com');
+            expect(capturedBody!.useRecoveryEmail).toBeUndefined();
+        });
+    });
 });

@@ -199,7 +199,7 @@ export const EncryptedShareValidator = z.object({
 });
 export type EncryptedShare = z.infer<typeof EncryptedShareValidator>;
 
-export const RecoveryMethodTypeValidator = z.enum(['password', 'passkey', 'backup', 'phrase']);
+export const RecoveryMethodTypeValidator = z.enum(['passkey', 'backup', 'phrase', 'email']);
 export type RecoveryMethodType = z.infer<typeof RecoveryMethodTypeValidator>;
 
 export const SecurityLevelValidator = z.enum(['basic', 'enhanced', 'advanced']);
@@ -222,6 +222,8 @@ export const GetAuthShareResponseValidator = z.object({
     securityLevel: SecurityLevelValidator,
     recoveryMethods: z.array(RecoveryMethodInfoValidator),
     keyProvider: KeyProviderValidator,
+    shareVersion: z.number(),
+    maskedRecoveryEmail: z.string().nullable(),
 }).nullable();
 export type GetAuthShareResponse = z.infer<typeof GetAuthShareResponseValidator>;
 

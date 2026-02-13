@@ -167,6 +167,7 @@ export class AuthCoordinator {
                     authUser,
                     recoveryMethods,
                     recoveryReason: 'new_device',
+                    maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
                 });
                 return this.state;
             }
@@ -182,6 +183,7 @@ export class AuthCoordinator {
                     authUser,
                     recoveryMethods,
                     recoveryReason: 'missing_server_data',
+                    maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
                 });
                 return this.state;
             }
@@ -201,6 +203,7 @@ export class AuthCoordinator {
                         authUser,
                         recoveryMethods,
                         recoveryReason: 'stale_local_key',
+                        maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
                     });
                     return this.state;
                 }

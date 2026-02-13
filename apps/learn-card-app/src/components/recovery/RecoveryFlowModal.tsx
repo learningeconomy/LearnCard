@@ -13,6 +13,7 @@ export type RecoveryFlowType = 'passkey' | 'phrase' | 'backup' | 'device' | 'ema
 interface RecoveryFlowModalProps {
     availableMethods: { type: string; credentialId?: string; createdAt: string }[];
     recoveryReason?: RecoveryReason;
+    maskedRecoveryEmail?: string | null;
     onRecoverWithPasskey: (credentialId: string) => Promise<void>;
     onRecoverWithPhrase: (phrase: string) => Promise<void>;
     onRecoverWithBackup: (fileContents: string, password: string) => Promise<void>;
@@ -55,6 +56,7 @@ const DEFAULT_COPY = {
 export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     availableMethods,
     recoveryReason,
+    maskedRecoveryEmail,
     onRecoverWithPasskey,
     onRecoverWithPhrase,
     onRecoverWithBackup,
@@ -374,7 +376,10 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Email Recovery Key</h3>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed">
-                            Paste the recovery key from the email we sent when your account was created.
+                            {maskedRecoveryEmail
+                                ? <>Check your inbox at <strong>{maskedRecoveryEmail}</strong> and paste the recovery key below.</>
+                                : 'Paste the recovery key from the email we sent to your recovery address.'
+                            }
                         </p>
                     </div>
 

@@ -10,18 +10,31 @@ import { t, openRoute, didRoute } from '@routes';
 import { getDeliveryService } from '../services/delivery';
 import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
 import { encryptAuthShare, decryptAuthShare } from '@helpers/shareEncryption.helpers';
+import { maskEmail } from '@helpers/maskEmail';
+import cache from '@cache';
 import {
     findUserKeyByContactMethod,
     findAuthShareByVersion,
     upsertUserKey,
     addAuthProviderToUserKey,
     addRecoveryMethodToUserKey,
+    setRecoveryEmail,
     markUserKeyMigrated,
     deleteUserKey,
     ServerEncryptedShareValidator,
     EncryptedShareValidator,
     type ContactMethod,
 } from '@models';
+
+const RECOVERY_EMAIL_CODE_PREFIX = 'recovery_email_code:';
+const RECOVERY_EMAIL_CODE_TTL_SECS = 15 * 60; // 15 minutes
+
+const generate6DigitCode = (): string => {
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    if (!array[0]) throw new Error('Failed to generate random number');
+    return (100000 + (array[0] % 900000)).toString();
+};
 
 const AuthProviderTypeValidator = z.enum(['firebase', 'supertokens', 'keycloak', 'oidc']);
 
@@ -67,7 +80,7 @@ export const keysRouter = t.router({
                 securityLevel: z.enum(['basic', 'enhanced', 'advanced']),
                 recoveryMethods: z.array(
                     z.object({
-                        type: z.enum(['passkey', 'backup', 'phrase']),
+                        type: z.enum(['passkey', 'backup', 'phrase', 'email']),
                         createdAt: z.string(),
                         credentialId: z.string().optional(),
                         shareVersion: z.number().optional(),
@@ -75,6 +88,7 @@ export const keysRouter = t.router({
                 ),
                 keyProvider: z.enum(['web3auth', 'sss']),
                 shareVersion: z.number(),
+                maskedRecoveryEmail: z.string().nullable(),
             }).nullable()
         )
         .mutation(async ({ input }) => {
@@ -129,6 +143,7 @@ export const keysRouter = t.router({
                 recoveryMethods,
                 keyProvider: userKey.keyProvider ?? 'sss',
                 shareVersion: userKey.shareVersion ?? 1,
+                maskedRecoveryEmail: userKey.recoveryEmail ? maskEmail(userKey.recoveryEmail) : null,
             };
         }),
 
@@ -198,7 +213,7 @@ export const keysRouter = t.router({
         })
         .input(
             AuthInputValidator.extend({
-                type: z.enum(['passkey', 'backup', 'phrase']),
+                type: z.enum(['passkey', 'backup', 'phrase', 'email']),
                 encryptedShare: EncryptedShareValidator.optional(),
                 credentialId: z.string().optional(),
                 shareVersion: z.number().optional(),
@@ -247,7 +262,7 @@ export const keysRouter = t.router({
         })
         .input(
             AuthInputValidator.extend({
-                type: z.enum(['passkey', 'backup', 'phrase']),
+                type: z.enum(['passkey', 'backup', 'phrase', 'email']),
                 credentialId: z.string().optional(),
             })
         )
@@ -308,6 +323,153 @@ export const keysRouter = t.router({
             return { success: true };
         }),
 
+    // ── Recovery email verification ─────────────────────────────
+
+    addRecoveryEmail: didRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/keys/recovery-email/add',
+                tags: ['Keys'],
+                summary: 'Send a 6-digit verification code to a secondary recovery email',
+            },
+        })
+        .input(
+            AuthInputValidator.extend({
+                email: z.string().email(),
+            })
+        )
+        .output(z.object({ success: z.boolean() }))
+        .mutation(async ({ input }) => {
+            const { contactMethod } = await verifyAndGetContactMethod(input);
+
+            const userKey = await findUserKeyByContactMethod(contactMethod);
+            if (!userKey) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'User key not found. Set up SSS first.',
+                });
+            }
+
+            // Prevent using the primary login email as the recovery email
+            if (
+                userKey.contactMethod.type === 'email' &&
+                userKey.contactMethod.value.toLowerCase() === input.email.toLowerCase()
+            ) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Recovery email must be different from your login email.',
+                });
+            }
+
+            const code = generate6DigitCode();
+            const cacheKey = `${RECOVERY_EMAIL_CODE_PREFIX}${contactMethod.type}:${contactMethod.value}`;
+
+            // Store: code + target email so verify can confirm both
+            await cache.set(cacheKey, JSON.stringify({ code, email: input.email }), RECOVERY_EMAIL_CODE_TTL_SECS);
+
+            try {
+                await getDeliveryService().send({
+                    to: input.email,
+                    subject: 'Verify Your Recovery Email',
+                    textBody: [
+                        'Verify Your Recovery Email',
+                        '',
+                        `Your verification code is: ${code}`,
+                        '',
+                        'Enter this code in the app to verify your recovery email address.',
+                        'This code expires in 15 minutes.',
+                        '',
+                        'If you did not request this, you can safely ignore this email.',
+                    ].join('\n'),
+                });
+            } catch (emailError) {
+                console.error('[addRecoveryEmail] Failed to send verification email:', emailError);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to send verification email. Please try again.',
+                });
+            }
+
+            return { success: true };
+        }),
+
+    verifyRecoveryEmail: didRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/keys/recovery-email/verify',
+                tags: ['Keys'],
+                summary: 'Verify the 6-digit code sent to the recovery email',
+            },
+        })
+        .input(
+            AuthInputValidator.extend({
+                code: z.string().length(6),
+            })
+        )
+        .output(z.object({ success: z.boolean(), maskedEmail: z.string() }))
+        .mutation(async ({ input }) => {
+            const { contactMethod } = await verifyAndGetContactMethod(input);
+
+            const userKey = await findUserKeyByContactMethod(contactMethod);
+            if (!userKey) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'User key not found.',
+                });
+            }
+
+            const cacheKey = `${RECOVERY_EMAIL_CODE_PREFIX}${contactMethod.type}:${contactMethod.value}`;
+            const raw = await cache.get(cacheKey);
+
+            if (!raw) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'No pending verification. Please request a new code.',
+                });
+            }
+
+            const { code: storedCode, email } = JSON.parse(raw) as { code: string; email: string };
+
+            if (input.code !== storedCode) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Incorrect code. Please try again.',
+                });
+            }
+
+            // Code is valid — consume it and store the verified recovery email
+            await cache.delete([cacheKey]);
+            await setRecoveryEmail(contactMethod, email);
+
+            return { success: true, maskedEmail: maskEmail(email) };
+        }),
+
+    getRecoveryEmail: openRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/keys/recovery-email',
+                tags: ['Keys'],
+                summary: 'Get the verified recovery email (masked) for the authenticated user',
+            },
+        })
+        .input(AuthInputValidator)
+        .output(z.object({ recoveryEmail: z.string().nullable() }))
+        .mutation(async ({ input }) => {
+            const { contactMethod } = await verifyAndGetContactMethod(input);
+
+            const userKey = await findUserKeyByContactMethod(contactMethod);
+            if (!userKey) {
+                return { recoveryEmail: null };
+            }
+
+            return {
+                recoveryEmail: userKey.recoveryEmail ? maskEmail(userKey.recoveryEmail) : null,
+            };
+        }),
+
     sendEmailBackup: openRoute
         .meta({
             openapi: {
@@ -320,19 +482,45 @@ export const keysRouter = t.router({
         .input(
             AuthInputValidator.extend({
                 emailShare: z.string().min(1),
-                email: z.string().email(),
+                // Provide either an explicit email OR set useRecoveryEmail to
+                // use the verified recovery email stored on the UserKey.
+                email: z.string().email().optional(),
+                useRecoveryEmail: z.boolean().optional(),
             })
         )
         .output(z.object({ success: z.boolean() }))
         .mutation(async ({ input }) => {
             // Verify the caller is authenticated
-            await verifyAndGetContactMethod(input);
+            const { contactMethod } = await verifyAndGetContactMethod(input);
+
+            let targetEmail = input.email;
+
+            // When useRecoveryEmail is set, look up the stored recovery email
+            if (input.useRecoveryEmail && !targetEmail) {
+                const userKey = await findUserKeyByContactMethod(contactMethod);
+
+                targetEmail = userKey?.recoveryEmail;
+
+                if (!targetEmail) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: 'No verified recovery email on file.',
+                    });
+                }
+            }
+
+            if (!targetEmail) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'An email address or useRecoveryEmail flag is required.',
+                });
+            }
 
             // IMPORTANT: The emailShare is NEVER written to the database.
             // It is only held in memory for the duration of this request.
             try {
                 await getDeliveryService().send({
-                    to: input.email,
+                    to: targetEmail,
                     subject: 'Your LearnCard Recovery Key',
                     textBody: [
                         'Your LearnCard Recovery Key',

@@ -977,4 +977,147 @@ describe('SSS Key Management API', () => {
             expect(data.encryptedData).toBe('post-migration-recovery-share');
         });
     });
+
+    describe('Recovery Email Verification', () => {
+        const userId = `recovery-email-user-${Date.now()}`;
+        const primaryEmail = `primary-${Date.now()}@example.com`;
+        const recoveryEmail = `recovery-${Date.now()}@personal.com`;
+        const did = `did:key:z6MkRecovery${Date.now()}`;
+
+        let token: string;
+
+        beforeAll(async () => {
+            token = createMockAuthToken(userId, primaryEmail);
+
+            // Create user key first
+            await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                    authShare: {
+                        encryptedData: 'recovery-email-test-auth-share',
+                        encryptedDek: 'recovery-email-test-dek',
+                        iv: 'recovery-email-test-iv',
+                    },
+                    primaryDid: did,
+                }),
+            });
+        });
+
+        test('addRecoveryEmail requires DID auth (rejects without VP)', async () => {
+            const response = await fetch(`${LCA_API_URL}/api/keys/recovery-email/add`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                    email: recoveryEmail,
+                }),
+            });
+
+            // didRoute — requires a DID-signed VP in Authorization header
+            expect(response.status).toEqual(401);
+        });
+
+        test('verifyRecoveryEmail requires DID auth (rejects without VP)', async () => {
+            const response = await fetch(`${LCA_API_URL}/api/keys/recovery-email/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                    code: '123456',
+                }),
+            });
+
+            // didRoute — requires a DID-signed VP in Authorization header
+            expect(response.status).toEqual(401);
+        });
+
+        test('getAuthShare should not have maskedRecoveryEmail before verification', async () => {
+            const response = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                }),
+            });
+
+            expect(response.status).toEqual(200);
+
+            const data = await response.json();
+            expect(data.maskedRecoveryEmail).toBeNull();
+        });
+
+        test('should register email recovery method after verification', async () => {
+            // Register the email recovery method type (simulates what setupRecoveryMethod does)
+            const response = await fetch(`${LCA_API_URL}/api/keys/recovery`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                    type: 'email',
+                    shareVersion: 1,
+                }),
+            });
+
+            expect(response.status).toEqual(200);
+
+            const data = await response.json();
+            expect(data.success).toBe(true);
+        });
+
+        test('email recovery method should appear in getAuthShare', async () => {
+            const response = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                }),
+            });
+
+            expect(response.status).toEqual(200);
+
+            const data = await response.json();
+            const emailMethod = data.recoveryMethods.find((m: { type: string }) => m.type === 'email');
+
+            expect(emailMethod).toBeDefined();
+            expect(emailMethod.shareVersion).toBe(1);
+        });
+
+        test('sendEmailBackup should reject when no email or useRecoveryEmail flag', async () => {
+            const response = await fetch(`${LCA_API_URL}/api/keys/email-backup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                    emailShare: 'test-share-data',
+                }),
+            });
+
+            expect(response.status).toEqual(400);
+        });
+
+        test('sendEmailBackup with useRecoveryEmail should fail without verified recovery email', async () => {
+            // This user hasn't completed verification (the code test above used wrong code)
+            const response = await fetch(`${LCA_API_URL}/api/keys/email-backup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                    emailShare: 'test-share-data',
+                    useRecoveryEmail: true,
+                }),
+            });
+
+            expect(response.status).toEqual(400);
+        });
+    });
 });

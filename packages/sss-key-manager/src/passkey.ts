@@ -95,7 +95,10 @@ export async function createPasskeyCredential(
     };
 
     if (!extensionResults.prf?.enabled && !extensionResults.prf?.results?.first) {
-        console.warn('PRF extension may not be supported, passkey created but encryption key derivation may fail');
+        throw new Error(
+            'PRF extension not available. Your browser or device does not support ' +
+            'the encryption required for passkey recovery. Please use a different recovery method.'
+        );
     }
 
     return {
