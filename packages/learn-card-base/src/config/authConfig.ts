@@ -10,8 +10,8 @@
  *   VITE_AUTH_PROVIDER / REACT_APP_AUTH_PROVIDER                   — 'firebase' (default)
  *   VITE_KEY_DERIVATION / REACT_APP_KEY_DERIVATION_PROVIDER        — 'sss' (default)
  *   VITE_SSS_SERVER_URL / REACT_APP_SSS_SERVER_URL                 — 'http://localhost:5100/api' (default)
- *   VITE_ENABLE_MIGRATION / REACT_APP_ENABLE_MIGRATION             — 'true' (default)
- *   VITE_ENABLE_EMAIL_BACKUP_SHARE / REACT_APP_ENABLE_EMAIL_BACKUP_SHARE — 'false' (default)
+ *   VITE_ENABLE_MIGRATION / REACT_APP_ENABLE_MIGRATION             — 'false' (default)
+ *   VITE_ENABLE_EMAIL_BACKUP_SHARE / REACT_APP_ENABLE_EMAIL_BACKUP_SHARE — 'true' (default)
  *   VITE_WEB3AUTH_CLIENT_ID                                                 — Web3Auth client ID from dashboard
  *   VITE_WEB3AUTH_NETWORK                                                   — Web3Auth network (e.g. 'testnet', 'cyan', 'sapphire_mainnet')
  *   VITE_WEB3AUTH_VERIFIER_ID                                               — Web3Auth verifier name (e.g. 'learncardapp-firebase')
@@ -117,10 +117,9 @@ export const getAuthConfig = (): AuthConfig => {
         readEnv('SSS_SERVER_URL', 'SSS_SERVER_URL') || 'http://localhost:5100/api';
 
     const enableMigration =
-        readEnv('ENABLE_MIGRATION', 'ENABLE_MIGRATION') !== 'false';
+        readEnv('ENABLE_MIGRATION', 'ENABLE_MIGRATION') === 'true';
 
-    const enableEmailBackupShare = true;
-        //readEnv('ENABLE_EMAIL_BACKUP_SHARE', 'ENABLE_EMAIL_BACKUP_SHARE') === 'true';
+    const enableEmailBackupShare = readEnv('ENABLE_EMAIL_BACKUP_SHARE', 'ENABLE_EMAIL_BACKUP_SHARE') !== 'false';
 
     const web3AuthClientId =
         readEnv('WEB3AUTH_CLIENT_ID', 'WEB3AUTH_CLIENT_ID') || '';

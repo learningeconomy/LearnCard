@@ -70,8 +70,8 @@ describe('getAuthConfig', () => {
             expect(config.authProvider).toBe('firebase');
             expect(config.keyDerivation).toBe('sss');
             expect(config.serverUrl).toBe('http://localhost:5100/api');
-            expect(config.enableMigration).toBe(true);
-            expect(config.enableEmailBackupShare).toBe(false);
+            expect(config.enableMigration).toBe(false);
+            expect(config.enableEmailBackupShare).toBe(true);
         });
     });
 
@@ -100,20 +100,20 @@ describe('getAuthConfig', () => {
             expect(config.serverUrl).toBe('https://custom.server/api');
         });
 
-        it('reads VITE_ENABLE_MIGRATION=false', () => {
-            setEnv({ VITE_ENABLE_MIGRATION: 'false' });
+        it('reads VITE_ENABLE_MIGRATION=true', () => {
+            setEnv({ VITE_ENABLE_MIGRATION: 'true' });
 
             const config = getAuthConfig();
 
-            expect(config.enableMigration).toBe(false);
+            expect(config.enableMigration).toBe(true);
         });
 
-        it('reads VITE_ENABLE_EMAIL_BACKUP_SHARE=true', () => {
-            setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'true' });
+        it('reads VITE_ENABLE_EMAIL_BACKUP_SHARE=false', () => {
+            setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'false' });
 
             const config = getAuthConfig();
 
-            expect(config.enableEmailBackupShare).toBe(true);
+            expect(config.enableEmailBackupShare).toBe(false);
         });
 
     });
@@ -187,38 +187,38 @@ describe('getAuthConfig', () => {
     });
 
     describe('boolean parsing', () => {
-        it('enableMigration defaults to true', () => {
+        it('enableMigration defaults to false', () => {
             const config = getAuthConfig();
 
-            expect(config.enableMigration).toBe(true);
+            expect(config.enableMigration).toBe(false);
         });
 
-        it('enableMigration is true for any value except "false"', () => {
+        it('enableMigration is only true for "true"', () => {
             setEnv({ VITE_ENABLE_MIGRATION: 'true' });
             expect(getAuthConfig().enableMigration).toBe(true);
 
             setEnv({ VITE_ENABLE_MIGRATION: '1' });
-            expect(getAuthConfig().enableMigration).toBe(true);
+            expect(getAuthConfig().enableMigration).toBe(false);
 
             setEnv({ VITE_ENABLE_MIGRATION: 'yes' });
-            expect(getAuthConfig().enableMigration).toBe(true);
+            expect(getAuthConfig().enableMigration).toBe(false);
         });
 
-        it('enableEmailBackupShare defaults to false', () => {
+        it('enableEmailBackupShare defaults to true', () => {
             const config = getAuthConfig();
 
-            expect(config.enableEmailBackupShare).toBe(false);
+            expect(config.enableEmailBackupShare).toBe(true);
         });
 
-        it('enableEmailBackupShare is only true for "true"', () => {
+        it('enableEmailBackupShare is true for any value except "false"', () => {
             setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'true' });
             expect(getAuthConfig().enableEmailBackupShare).toBe(true);
 
             setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: '1' });
-            expect(getAuthConfig().enableEmailBackupShare).toBe(false);
+            expect(getAuthConfig().enableEmailBackupShare).toBe(true);
 
             setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'yes' });
-            expect(getAuthConfig().enableEmailBackupShare).toBe(false);
+            expect(getAuthConfig().enableEmailBackupShare).toBe(true);
         });
 
     });
@@ -246,8 +246,8 @@ describe('helper functions', () => {
     });
 
     describe('isAuthMigrationEnabled', () => {
-        it('returns true by default', () => {
-            expect(isAuthMigrationEnabled()).toBe(true);
+        it('returns false by default', () => {
+            expect(isAuthMigrationEnabled()).toBe(false);
         });
 
         it('returns false when explicitly disabled', () => {
@@ -258,14 +258,14 @@ describe('helper functions', () => {
     });
 
     describe('isEmailBackupShareEnabled', () => {
-        it('returns false by default', () => {
-            expect(isEmailBackupShareEnabled()).toBe(false);
+        it('returns true by default', () => {
+            expect(isEmailBackupShareEnabled()).toBe(true);
         });
 
-        it('returns true when explicitly enabled', () => {
-            setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'true' });
+        it('returns false when explicitly disabled', () => {
+            setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'false' });
 
-            expect(isEmailBackupShareEnabled()).toBe(true);
+            expect(isEmailBackupShareEnabled()).toBe(false);
         });
     });
 

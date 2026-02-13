@@ -225,7 +225,8 @@ Set these in your `.env` file or deployment environment:
 | `REACT_APP_AUTH_PROVIDER` | `'firebase' \| 'supertokens' \| 'keycloak' \| 'oidc'` | `'firebase'` | Which auth provider to use |
 | `REACT_APP_KEY_DERIVATION_PROVIDER` | `'sss' \| 'web3auth'` | `'sss'` | Which key derivation strategy |
 | `REACT_APP_SSS_SERVER_URL` | `string` | `'http://localhost:5100/api'` | Server URL for key share operations |
-| `REACT_APP_ENABLE_MIGRATION` | `'true' \| 'false'` | `'true'` | Whether Web3Auth → SSS migration is enabled |
+| `REACT_APP_ENABLE_MIGRATION` | `'true' \| 'false'` | `'false'` | Whether Web3Auth → SSS migration is enabled |
+| `REACT_APP_ENABLE_EMAIL_BACKUP_SHARE` | `'true' \| 'false'` | `'true'` | Whether to send a backup share to the user's email during key setup |
 
 These are read by `getAuthConfig()` in `packages/learn-card-base/src/config/authConfig.ts`.
 
