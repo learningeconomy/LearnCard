@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
-    keyOutline,
     fingerPrint,
     documentTextOutline,
     cloudDownloadOutline,
@@ -14,10 +13,9 @@ import {
 import { Capacitor } from '@capacitor/core';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 
-export type RecoverySetupType = 'password' | 'passkey' | 'phrase' | 'backup';
+export type RecoverySetupType = 'passkey' | 'phrase' | 'backup';
 
 interface RecoverySetupModalProps {
-    onSetupPassword: (password: string) => Promise<void>;
     onSetupPasskey: () => Promise<string>;
     onGeneratePhrase: () => Promise<string>;
     onSetupBackup: (password: string) => Promise<string>;
@@ -26,7 +24,6 @@ interface RecoverySetupModalProps {
 }
 
 export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
-    onSetupPassword,
     onSetupPasskey,
     onGeneratePhrase,
     onSetupBackup,
@@ -50,7 +47,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const [activeTab, setActiveTab] = useState<RecoverySetupType>(() => {
         if (!anyConfigured && !isNative && webAuthnSupported) return 'passkey';
 
-        return 'password';
+        return 'phrase';
     });
 
     // Whether the user clicked "Change" on an already-configured method
@@ -59,9 +56,6 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
 
     const [recoveryPhrase, setRecoveryPhrase] = useState<string | null>(null);
     const [phraseCopied, setPhraseCopied] = useState(false);
@@ -86,35 +80,6 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
     // Whether the active tab's form is for an update (vs first-time setup)
     const isUpdate = isConfigured(activeTab) && showUpdateForm;
-
-    const handlePasswordSetup = async () => {
-        if (password.length < 8) {
-            setError('Password must be at least 8 characters.');
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            setError('Passwords don\'t match.');
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            await onSetupPassword(password);
-            markConfigured('password');
-            setSuccess('Password recovery is set up!');
-            setPassword('');
-            setConfirmPassword('');
-            setShowUpdateForm(false);
-        } catch (e) {
-            console.error('[RecoverySetupModal] handlePasswordSetup error:', e, typeof e);
-            setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handlePasskeySetup = async () => {
         setLoading(true);
@@ -214,7 +179,6 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     };
 
     const allTabs = [
-        { id: 'password' as const, label: 'Password', icon: keyOutline, iconClass: 'text-xl' },
         { id: 'passkey' as const, label: 'Passkey', icon: fingerPrint, iconClass: 'text-sm' },
         { id: 'phrase' as const, label: 'Phrase', icon: documentTextOutline, iconClass: 'text-sm' },
         { id: 'backup' as const, label: 'Backup', icon: cloudDownloadOutline, iconClass: 'text-sm' },
@@ -344,66 +308,13 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 </div>
             )}
 
-            {/* ── Password Tab ──────────────────────────────────── */}
-            {activeTab === 'password' && (
-                <div className="space-y-4">
-                    {isConfigured('password') && !showUpdateForm ? (
-                        configuredRow('Password is set up', () => setShowUpdateForm(true))
-                    ) : (
-                        <>
-                            {isUpdate && updateWarning('This will replace your current recovery password.')}
-
-                            <p className="text-sm text-grayscale-600 leading-relaxed">
-                                Choose a password you'll remember. You'll need it to recover your account on a new device.
-                            </p>
-
-                            <div>
-                                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Password</label>
-
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={e => setPassword(e.target.value)}
-                                    placeholder="At least 8 characters"
-                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Confirm Password</label>
-
-                                <input
-                                    type="password"
-                                    value={confirmPassword}
-                                    onChange={e => setConfirmPassword(e.target.value)}
-                                    placeholder="Type it again"
-                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                                />
-                            </div>
-
-                            {primaryButton(
-                                isUpdate ? 'Update Password' : 'Set Up Password',
-                                handlePasswordSetup,
-                                loading || !password || !confirmPassword,
-                                isUpdate ? 'Updating...' : 'Setting up...',
-                            )}
-
-                            {isUpdate && cancelUpdateButton(() => {
-                                setPassword('');
-                                setConfirmPassword('');
-                            })}
-                        </>
-                    )}
-                </div>
-            )}
-
             {/* ── Passkey Tab ───────────────────────────────────── */}
             {activeTab === 'passkey' && (
                 <div className="space-y-4">
                     {!webAuthnSupported ? (
                         <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
                             <p className="text-sm text-amber-800 leading-relaxed">
-                                Passkeys aren't supported on this device or browser. Try using a password or recovery phrase instead.
+                                Passkeys aren't supported on this device or browser. Try using a recovery phrase or backup file instead.
                             </p>
                         </div>
                     ) : isConfigured('passkey') && !showUpdateForm ? (

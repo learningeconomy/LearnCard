@@ -93,7 +93,7 @@ describe('SSSKeyManager', () => {
             });
 
             await expect(
-                keyManager.addRecoveryMethod({ type: 'password', password: 'test123' })
+                keyManager.addRecoveryMethod({ type: 'passkey' })
             ).rejects.toThrow('No active key');
         });
 
@@ -173,7 +173,7 @@ describe('Recovery method types', () => {
     it('should define all recovery method types', async () => {
         const types = await import('./types');
 
-        const validTypes = ['password', 'passkey', 'backup', 'phrase'];
+        const validTypes = ['passkey', 'backup', 'phrase'];
 
         // Check that RecoveryMethodType includes expected types
         expect(types).toHaveProperty('SecurityLevels');
@@ -237,71 +237,6 @@ describe('Integration: SSS split and recover', () => {
         ]);
 
         expect(reconstructed).toBe(privateKey);
-    });
-});
-
-describe('Integration: Password recovery flow', () => {
-    it('should encrypt and decrypt recovery share with password', async () => {
-        const { splitPrivateKey } = await import('./sss');
-        const { encryptWithPassword, decryptWithPassword } = await import('./crypto');
-
-        const privateKey = 'deadbeef'.repeat(8);
-        const password = 'securePassword123!';
-
-        // Split the key
-        const shares = await splitPrivateKey(privateKey);
-
-        // Encrypt the recovery share
-        const encrypted = await encryptWithPassword(shares.recoveryShare, password);
-
-        expect(encrypted.ciphertext).toBeDefined();
-        expect(encrypted.iv).toBeDefined();
-        expect(encrypted.salt).toBeDefined();
-
-        // Decrypt the recovery share
-        const decrypted = await decryptWithPassword(
-            encrypted.ciphertext,
-            encrypted.iv,
-            encrypted.salt,
-            password,
-            encrypted.kdfParams
-        );
-
-        expect(decrypted).toBe(shares.recoveryShare);
-    });
-
-    it('should complete full password recovery flow', async () => {
-        const { splitPrivateKey, reconstructFromShares } = await import('./sss');
-        const { encryptWithPassword, decryptWithPassword } = await import('./crypto');
-
-        const originalPrivateKey = 'cafebabe'.repeat(8);
-        const password = 'myRecoveryPassword!@#';
-
-        // Step 1: Initial setup - split the key
-        const shares = await splitPrivateKey(originalPrivateKey);
-
-        // Step 2: Add password recovery - encrypt recovery share
-        const encryptedRecovery = await encryptWithPassword(shares.recoveryShare, password);
-
-        // Step 3: Simulate losing device share but having auth share on server
-        const authShareFromServer = shares.authShare;
-
-        // Step 4: Recovery - decrypt recovery share with password
-        const recoveredShare = await decryptWithPassword(
-            encryptedRecovery.ciphertext,
-            encryptedRecovery.iv,
-            encryptedRecovery.salt,
-            password,
-            encryptedRecovery.kdfParams
-        );
-
-        // Step 5: Reconstruct key from auth + decrypted recovery share
-        const recoveredKey = await reconstructFromShares([
-            authShareFromServer,
-            recoveredShare,
-        ]);
-
-        expect(recoveredKey).toBe(originalPrivateKey);
     });
 });
 

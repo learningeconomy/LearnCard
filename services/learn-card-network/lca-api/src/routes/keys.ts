@@ -67,7 +67,7 @@ export const keysRouter = t.router({
                 securityLevel: z.enum(['basic', 'enhanced', 'advanced']),
                 recoveryMethods: z.array(
                     z.object({
-                        type: z.enum(['password', 'passkey', 'backup', 'phrase']),
+                        type: z.enum(['passkey', 'backup', 'phrase']),
                         createdAt: z.string(),
                         credentialId: z.string().optional(),
                         shareVersion: z.number().optional(),
@@ -198,7 +198,7 @@ export const keysRouter = t.router({
         })
         .input(
             AuthInputValidator.extend({
-                type: z.enum(['password', 'passkey', 'backup', 'phrase']),
+                type: z.enum(['passkey', 'backup', 'phrase']),
                 encryptedShare: EncryptedShareValidator.optional(),
                 credentialId: z.string().optional(),
                 shareVersion: z.number().optional(),
@@ -247,7 +247,7 @@ export const keysRouter = t.router({
         })
         .input(
             AuthInputValidator.extend({
-                type: z.enum(['password', 'passkey', 'backup', 'phrase']),
+                type: z.enum(['passkey', 'backup', 'phrase']),
                 credentialId: z.string().optional(),
             })
         )
@@ -338,8 +338,7 @@ export const keysRouter = t.router({
                         'Your LearnCard Recovery Key',
                         '',
                         'Keep this email safe. You can use the recovery key below to regain',
-                        'access to your LearnCard account if you lose your device or forget',
-                        'your recovery password.',
+                        'access to your LearnCard account if you lose your device.',
                         '',
                         '--- RECOVERY KEY (do NOT share this with anyone) ---',
                         input.emailShare,

@@ -54,12 +54,7 @@ export const SecurityLevels: readonly SecurityLevel[] = ['basic', 'enhanced', 'a
  * SSS recovery method type identifiers.
  * These are the specific recovery methods supported by the SSS strategy.
  */
-export type RecoveryMethodType = 'password' | 'passkey' | 'backup' | 'phrase' | 'email';
-
-export interface PasswordRecoveryMethod {
-    type: 'password';
-    password: string;
-}
+export type RecoveryMethodType = 'passkey' | 'backup' | 'phrase' | 'email';
 
 export interface PasskeyRecoveryMethod {
     type: 'passkey';
@@ -78,13 +73,12 @@ export interface RecoveryPhraseRecoveryMethod {
 }
 
 /** @deprecated Use RecoveryInput instead. Kept for legacy SSSKeyManager class. */
-export type RecoveryMethod = PasswordRecoveryMethod | PasskeyRecoveryMethod | BackupFileRecoveryMethod | RecoveryPhraseRecoveryMethod;
+export type RecoveryMethod = PasskeyRecoveryMethod | BackupFileRecoveryMethod | RecoveryPhraseRecoveryMethod;
 
 /**
  * SSS-specific recovery input — what the user provides to recover their key.
  */
 export type RecoveryInput =
-    | { method: 'password'; password: string }
     | { method: 'passkey'; credentialId: string }
     | { method: 'phrase'; phrase: string }
     | { method: 'backup'; fileContents: string; password: string }
@@ -94,7 +88,6 @@ export type RecoveryInput =
  * SSS-specific recovery setup input — what the user provides to set up a method.
  */
 export type RecoverySetupInput =
-    | { method: 'password'; password: string }
     | { method: 'passkey' }
     | { method: 'phrase' }
     | { method: 'backup'; password: string; did: string };
@@ -103,7 +96,6 @@ export type RecoverySetupInput =
  * SSS-specific recovery setup result.
  */
 export type RecoverySetupResult =
-    | { method: 'password' }
     | { method: 'passkey'; credentialId: string }
     | { method: 'phrase'; phrase: string }
     | { method: 'backup'; backupFile: BackupFile };

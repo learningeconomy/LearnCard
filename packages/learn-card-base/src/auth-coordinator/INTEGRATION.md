@@ -169,7 +169,9 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 {coordinator.state.status === 'needs_recovery' && (
     <RecoveryFlowModal
         availableMethods={coordinator.state.recoveryMethods}
-        onRecoverWithPassword={...}
+        onRecoverWithPasskey={...}
+        onRecoverWithPhrase={...}
+        onRecoverWithBackup={...}
         onCancel={coordinator.logout}
     />
 )}
@@ -187,9 +189,9 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 {showRecoverySetup && coordinator.state.status === 'ready' && (
     <RecoverySetupModal
         existingMethods={[]}
-        onSetupPassword={...}
         onSetupPasskey={...}
         onGeneratePhrase={...}
+        onSetupBackup={...}
         onClose={() => setShowRecoverySetup(false)}
     />
 )}

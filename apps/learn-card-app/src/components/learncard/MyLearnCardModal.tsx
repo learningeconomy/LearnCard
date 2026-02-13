@@ -485,14 +485,6 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                     ? m.createdAt.toISOString()
                                     : String(m.createdAt),
                             }))}
-                            onSetupPassword={
-                                setupMethod
-                                    ? async (password: string) => {
-                                          const authUser = await contextAuthProvider.getCurrentUser();
-                                          await setupMethod({ method: 'password', password }, authUser);
-                                      }
-                                    : requireAuth
-                            }
                             onSetupPasskey={
                                 setupMethod
                                     ? async () => {

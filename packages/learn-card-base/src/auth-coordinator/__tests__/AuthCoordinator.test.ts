@@ -383,7 +383,7 @@ describe('AuthCoordinator', () => {
         });
 
         it('goes to needs_recovery (new_device) when no local key exists', async () => {
-            const recoveryMethods = [{ type: 'password' as const, createdAt: new Date() }];
+            const recoveryMethods = [{ type: 'passkey' as const, createdAt: new Date() }];
 
             const { coordinator } = setup({
                 keyDerivation: {
@@ -835,7 +835,7 @@ describe('AuthCoordinator', () => {
 
     describe('recover()', () => {
         const setupForRecovery = () => {
-            const recoveryMethods = [{ type: 'password' as const, createdAt: new Date() }];
+            const recoveryMethods = [{ type: 'passkey' as const, createdAt: new Date() }];
 
             return setup({
                 keyDerivation: {
@@ -862,7 +862,7 @@ describe('AuthCoordinator', () => {
             await coordinator.initialize();
             expect(coordinator.getState().status).toBe('needs_recovery');
 
-            const input = { method: 'password', password: 'test123' };
+            const input = { method: 'passkey', credentialId: 'test-cred-123' };
             const result = await coordinator.recover(input);
 
             expect(result.status).toBe('ready');
@@ -884,7 +884,7 @@ describe('AuthCoordinator', () => {
             const { coordinator } = setup();
 
             await expect(
-                coordinator.recover({ method: 'password', password: 'test' })
+                coordinator.recover({ method: 'passkey', credentialId: 'test-cred' })
             ).rejects.toThrow('Cannot recover in state: idle');
         });
 
@@ -929,7 +929,7 @@ describe('AuthCoordinator', () => {
                         exists: true,
                         needsMigration: false,
                         primaryDid: 'did:key:z123',
-                        recoveryMethods: [{ type: 'password' as const, createdAt: new Date() }],
+                        recoveryMethods: [{ type: 'passkey' as const, createdAt: new Date() }],
                         authShare: 'server-share',
                         shareVersion: 1,
                     } satisfies ServerKeyStatus),
@@ -939,7 +939,7 @@ describe('AuthCoordinator', () => {
 
             await s.coordinator.initialize();
 
-            const result = await s.coordinator.recover({ method: 'password', password: 'wrong' });
+            const result = await s.coordinator.recover({ method: 'passkey', credentialId: 'bad-cred' });
 
             expect(result.status).toBe('error');
 

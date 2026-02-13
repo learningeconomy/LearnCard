@@ -134,7 +134,6 @@ export type {
     RecoveryResult,
     RecoverySetupInput,
     RecoverySetupResult,
-    PasswordRecoveryMethod,
     PasskeyRecoveryMethod,
     BackupFileRecoveryMethod,
     RecoveryPhraseRecoveryMethod,

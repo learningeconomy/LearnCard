@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
-import { keyOutline, fingerPrint, documentTextOutline, alertCircleOutline, cloudUploadOutline, phonePortraitOutline, chevronBackOutline, mailOutline } from 'ionicons/icons';
+import { fingerPrint, documentTextOutline, alertCircleOutline, cloudUploadOutline, phonePortraitOutline, chevronBackOutline, mailOutline } from 'ionicons/icons';
 import { QRCodeSVG } from 'qrcode.react';
 
 import { Capacitor } from '@capacitor/core';
@@ -8,12 +8,11 @@ import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 import { QrLoginRequester, getAuthConfig } from 'learn-card-base';
 import type { RecoveryReason } from 'learn-card-base';
 
-export type RecoveryFlowType = 'password' | 'passkey' | 'phrase' | 'backup' | 'device' | 'email';
+export type RecoveryFlowType = 'passkey' | 'phrase' | 'backup' | 'device' | 'email';
 
 interface RecoveryFlowModalProps {
     availableMethods: { type: string; credentialId?: string; createdAt: string }[];
     recoveryReason?: RecoveryReason;
-    onRecoverWithPassword: (password: string) => Promise<void>;
     onRecoverWithPasskey: (credentialId: string) => Promise<void>;
     onRecoverWithPhrase: (phrase: string) => Promise<void>;
     onRecoverWithBackup: (fileContents: string, password: string) => Promise<void>;
@@ -56,7 +55,6 @@ const DEFAULT_COPY = {
 export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     availableMethods,
     recoveryReason,
-    onRecoverWithPassword,
     onRecoverWithPasskey,
     onRecoverWithPhrase,
     onRecoverWithBackup,
@@ -68,7 +66,6 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [password, setPassword] = useState('');
     const [phrase, setPhrase] = useState('');
     const [backupFile, setBackupFile] = useState<string | null>(null);
     const [backupPassword, setBackupPassword] = useState('');
@@ -76,23 +73,6 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
 
     const hasMethod = (type: string) => availableMethods.some(m => m.type === type);
     const webAuthnSupported = isWebAuthnSupported();
-
-    const handlePasswordRecovery = async () => {
-        if (!password) {
-            setError('Please enter your recovery password.');
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            await onRecoverWithPassword(password);
-        } catch (e) {
-            setError(friendlyError(e));
-            setLoading(false);
-        }
-    };
 
     const handlePasskeyRecovery = async () => {
         const passkeyMethod = availableMethods.find(m => m.type === 'passkey');
@@ -186,7 +166,6 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     };
 
     const allMethods = [
-        { id: 'password' as const, label: 'Password', desc: 'Use your recovery password', icon: keyOutline, available: hasMethod('password') },
         { id: 'passkey' as const, label: 'Passkey', desc: 'Use Face ID, Touch ID, or similar', icon: fingerPrint, available: hasMethod('passkey') && webAuthnSupported },
         { id: 'phrase' as const, label: 'Recovery Phrase', desc: 'Enter your 25-word phrase', icon: documentTextOutline, available: hasMethod('phrase') },
         { id: 'backup' as const, label: 'Backup File', desc: 'Upload your backup file', icon: cloudUploadOutline, available: hasMethod('backup') },
@@ -275,43 +254,6 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
 
                     <span className="text-sm text-red-700 leading-relaxed">{error}</span>
-                </div>
-            )}
-
-            {activeMethod === 'password' && (
-                <div className="space-y-5">
-                    <div>
-                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Recovery Password</h3>
-
-                        <p className="text-sm text-grayscale-600 leading-relaxed">
-                            Enter the password you created when setting up recovery.
-                        </p>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Password</label>
-
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            placeholder="Enter your recovery password"
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                        />
-                    </div>
-
-                    <button
-                        onClick={handlePasswordRecovery}
-                        disabled={loading || !password}
-                        className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        {loading ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Recovering...
-                            </span>
-                        ) : 'Recover Account'}
-                    </button>
                 </div>
             )}
 

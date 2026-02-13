@@ -36,7 +36,7 @@ import {
     storeShareVersion as defaultStoreShareVersion,
     getShareVersion as defaultGetShareVersion,
 } from './storage';
-import { encryptWithPassword, decryptWithPassword, DEFAULT_KDF_PARAMS } from './crypto';
+import { encryptWithPassword, decryptWithPassword } from './crypto';
 import { createPasskeyCredential, encryptShareWithPasskey, decryptShareWithPasskey, isWebAuthnSupported } from './passkey';
 import { shareToRecoveryPhrase, recoveryPhraseToShare, validateRecoveryPhrase } from './recovery-phrase';
 
@@ -506,25 +506,6 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
             // Step 1: Decrypt the recovery share based on method
             switch (input.method) {
-                case 'password': {
-                    const result = await fetchRecoveryShare(serverUrl, token, providerType, 'password');
-
-                    if (!result?.encryptedShare?.salt) {
-                        throw new Error('Invalid recovery share data');
-                    }
-
-                    recoveryShare = await decryptWithPassword(
-                        result.encryptedShare.encryptedData,
-                        result.encryptedShare.iv,
-                        result.encryptedShare.salt,
-                        input.password,
-                        DEFAULT_KDF_PARAMS
-                    );
-
-                    recoveryShareVersion = result.shareVersion;
-                    break;
-                }
-
                 case 'passkey': {
                     const result = await fetchRecoveryShare(
                         serverUrl, token, providerType, 'passkey', input.credentialId
@@ -698,22 +679,6 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             }
 
             switch (input.method) {
-                case 'password': {
-                    const encrypted = await encryptWithPassword(shares.recoveryShare, input.password);
-
-                    await postRecoveryMethod(serverUrl, token, providerType, {
-                        type: 'password',
-                        encryptedShare: {
-                            encryptedData: encrypted.ciphertext,
-                            iv: encrypted.iv,
-                            salt: encrypted.salt,
-                        },
-                        shareVersion,
-                    }, vpJwt);
-
-                    return { method: 'password' };
-                }
-
                 case 'passkey': {
                     if (!isWebAuthnSupported()) {
                         throw new Error('WebAuthn is not supported in this browser');

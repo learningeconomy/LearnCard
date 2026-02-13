@@ -27,7 +27,7 @@ export const EncryptedShareValidator = z.object({
 });
 
 export const RecoveryMethodValidator = z.object({
-    type: z.enum(['password', 'passkey', 'backup', 'phrase']),
+    type: z.enum(['passkey', 'backup', 'phrase']),
     createdAt: z.date(),
     credentialId: z.string().optional(),
     encryptedShare: EncryptedShareValidator.optional(),
@@ -83,7 +83,9 @@ export type EncryptedShare = z.infer<typeof EncryptedShareValidator>;
 export type RecoveryMethod = z.infer<typeof RecoveryMethodValidator>;
 export type PreviousAuthShare = z.infer<typeof PreviousAuthShareValidator>;
 
-const MAX_PREVIOUS_AUTH_SHARES = 5;
+export const MAX_PREVIOUS_AUTH_SHARES = 5;
+
+export { pruneOrphanedRecoveryMethods } from './pruneOrphanedRecoveryMethods';
 
 export const getUserKeysCollection = () => {
     return mongodb.collection<MongoUserKeyType>(USER_KEYS_COLLECTION);
@@ -192,8 +194,21 @@ export const upsertUserKey = async (
             const history = [...(existing.previousAuthShares ?? []), oldEntry];
 
             // Keep only the most recent MAX_PREVIOUS_AUTH_SHARES entries
-            (updateOps.$set as Record<string, unknown>).previousAuthShares =
-                history.slice(-MAX_PREVIOUS_AUTH_SHARES);
+            const trimmedHistory = history.slice(-MAX_PREVIOUS_AUTH_SHARES);
+            (updateOps.$set as Record<string, unknown>).previousAuthShares = trimmedHistory;
+
+            // The new current version after $inc
+            const newCurrentVersion = (existing.shareVersion ?? 1) + 1;
+            const survivingVersions = trimmedHistory.map(p => p.shareVersion);
+
+            // Prune recovery methods whose auth share was evicted
+            const prunedMethods = pruneOrphanedRecoveryMethods(
+                existing.recoveryMethods ?? [],
+                newCurrentVersion,
+                survivingVersions,
+            );
+
+            (updateOps.$set as Record<string, unknown>).recoveryMethods = prunedMethods;
         } else if (data.authShare) {
             // First auth share — no history to push
             updateOps.$inc = { shareVersion: 1 };
@@ -261,7 +276,7 @@ export const addRecoveryMethodToUserKey = async (
     const collection = getUserKeysCollection();
 
     // Replace any existing recovery method of the same type (e.g., updating
-    // a password). Other types are preserved — with versioned auth shares,
+    // a passkey). Other types are preserved — with versioned auth shares,
     // old recovery shares still pair with their matching auth share version.
     await collection.updateOne(
         {

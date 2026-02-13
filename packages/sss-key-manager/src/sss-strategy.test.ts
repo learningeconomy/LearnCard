@@ -568,7 +568,7 @@ describe('createSSSStrategy', () => {
                     authShare: 'raw-auth-share-string',
                     keyProvider: 'sss',
                     primaryDid: 'did:key:z123',
-                    recoveryMethods: [{ type: 'password', createdAt: '2024-01-01' }],
+                    recoveryMethods: [{ type: 'passkey', createdAt: '2024-01-01' }],
                 }), { status: 200 })
             );
 
@@ -906,7 +906,7 @@ describe('createSSSStrategy', () => {
                     authShare: { encryptedData: v2AuthShare, encryptedDek: '', iv: '' },
                     keyProvider: 'sss',
                     primaryDid: 'did:key:zRecoveredUser',
-                    recoveryMethods: [{ type: 'password', createdAt: '2024-01-01' }],
+                    recoveryMethods: [{ type: 'passkey', createdAt: '2024-01-01' }],
                     shareVersion: 3, // server is at v3 but returns v2 auth share
                 }), { status: 200 })
             );
@@ -1217,7 +1217,7 @@ describe('createSSSStrategy', () => {
                 token: 'token',
                 providerType: 'firebase',
                 privateKey: originalKey,
-                input: { method: 'password', password: 'test-password' },
+                input: { method: 'phrase' },
                 authUser: { id: 'user-1', providerType: 'firebase', email: 'user@test.com' },
             });
 
@@ -1307,7 +1307,7 @@ describe('createSSSStrategy', () => {
                 token: 'token',
                 providerType: 'firebase',
                 privateKey: originalKey,
-                input: { method: 'password', password: 'test-password' },
+                input: { method: 'phrase' },
                 authUser: { id: 'user-1', providerType: 'firebase', email: 'user@test.com' },
             });
 

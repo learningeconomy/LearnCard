@@ -10,7 +10,6 @@ import type {
     SecurityLevel,
     BackupFile,
     AuthProvider,
-    RecoveryPhraseRecoveryMethod,
 } from './types';
 
 import { SSSApiClient } from './api-client';
@@ -26,7 +25,6 @@ import {
     encryptWithPassword,
     decryptWithPassword,
     generateEd25519PrivateKey,
-    DEFAULT_KDF_PARAMS,
 } from './crypto';
 
 import {
@@ -142,18 +140,7 @@ export class SSSKeyManager implements SSSKeyDerivationProvider {
         const shares = await splitPrivateKey(this.currentPrivateKey);
         const recoveryShare = shares.recoveryShare;
 
-        if (method.type === 'password') {
-            const encrypted = await encryptWithPassword(recoveryShare, method.password);
-
-            await this.apiClient.addRecoveryMethod({
-                type: 'password',
-                encryptedShare: {
-                    encryptedData: encrypted.ciphertext,
-                    iv: encrypted.iv,
-                    salt: encrypted.salt,
-                },
-            });
-        } else if (method.type === 'passkey') {
+        if (method.type === 'passkey') {
             const user = await this.config.authProvider.getCurrentUser();
             if (!user) {
                 throw new Error('No authenticated user');
@@ -199,40 +186,7 @@ export class SSSKeyManager implements SSSKeyDerivationProvider {
     }
 
     async recover(method: RecoveryMethod): Promise<string> {
-        if (method.type === 'password') {
-            const result = await this.apiClient.getRecoveryShare('password');
-
-            if (!result?.encryptedShare?.salt) {
-                throw new Error('No password recovery share found');
-            }
-
-            const recoveryShare = await decryptWithPassword(
-                result.encryptedShare.encryptedData,
-                result.encryptedShare.iv,
-                result.encryptedShare.salt,
-                method.password,
-                DEFAULT_KDF_PARAMS
-            );
-
-            const serverResponse = await this.apiClient.getAuthShare();
-
-            if (!serverResponse || !serverResponse.authShare) {
-                throw new Error('No auth share found on server');
-            }
-
-            const privateKey = await reconstructPrivateKey(
-                recoveryShare,
-                serverResponse.authShare.encryptedData
-            );
-
-            const newShares = await splitPrivateKey(privateKey);
-            await storeDeviceShare(newShares.deviceShare, this.config.deviceStorageKey);
-
-            this.currentPrivateKey = privateKey;
-            this.initialized = true;
-
-            return privateKey;
-        } else if (method.type === 'backup') {
+        if (method.type === 'backup') {
             const backup: BackupFile = JSON.parse(method.fileContents);
 
             if (backup.version !== 1) {

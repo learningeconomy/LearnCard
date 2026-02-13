@@ -119,7 +119,7 @@ describe('Critical: Key must NEVER be lost', () => {
         });
     });
 
-    describe('Password recovery round-trip', () => {
+    describe('Password encryption round-trip (used by backup files)', () => {
 
         it('should preserve exact private key through password encryption/decryption', async () => {
             const privateKey = await generateEd25519PrivateKey();

@@ -41,11 +41,10 @@ When the device share is lost (new device, cleared storage), the private key is 
 
 ## Recovery Methods
 
-Four methods are supported. Each encrypts the **recovery share** differently and stores the encrypted result on the SSS server.
+Three methods are supported. Each encrypts the **recovery share** differently.
 
 | Method | Storage | User Input | Encryption |
 |---|---|---|---|
-| **Password** | Server (encrypted recovery share) | User-chosen password | `encryptWithPassword` (Argon2id KDF → AES-GCM) |
 | **Passkey** | Server (encrypted recovery share) | Biometric/FIDO2 auth | WebAuthn PRF → AES-GCM |
 | **Phrase** | User writes down 25 words | 25-word mnemonic | Direct encoding (`shareToRecoveryPhrase`) |
 | **Backup File** | User downloads `.json` file | File + password | `encryptWithPassword` (Argon2id KDF → AES-GCM) |
@@ -84,17 +83,6 @@ sequenceDiagram
 
     Note over UI: User chooses a method
 
-    alt Password
-        UI->>Hook: addPasswordRecovery(authProvider, password, privateKey)
-        Hook->>SSS: splitAndVerify(privateKey)
-        SSS-->>Hook: { deviceShare, authShare, recoveryShare }
-        Hook->>SSS: encryptWithPassword(recoveryShare, password)
-        SSS-->>Hook: { ciphertext, iv, salt }
-        Hook->>SSS: storeDeviceShare(deviceShare)
-        Hook->>Server: PUT /keys/auth-share (authShare)
-        Hook->>Server: POST /keys/recovery (type: password, encrypted share)
-    end
-
     alt Passkey
         UI->>Hook: addPasskeyRecovery(authProvider, privateKey)
         Hook->>SSS: createPasskeyCredential(userId, userName)
@@ -122,7 +110,6 @@ sequenceDiagram
 ```ts
 const {
     getRecoveryMethods,      // (authProvider) => Promise<RecoveryMethodInfo[]>
-    addPasswordRecovery,     // (authProvider, password, privateKey) => Promise<void>
     addPasskeyRecovery,      // (authProvider, privateKey) => Promise<string> (credentialId)
     generateRecoveryPhrase,  // (privateKey, authProvider?) => Promise<string> (25 words)
     exportBackup,            // (privateKey, password, did) => Promise<BackupFile>
@@ -148,14 +135,6 @@ sequenceDiagram
     participant AC as AuthCoordinator
 
     Note over UI: User picks an available method
-
-    alt Password Recovery
-        UI->>Hook: recoverWithPassword(authProvider, password)
-        Hook->>Server: GET /keys/recovery?type=password
-        Server-->>Hook: { encryptedData, iv, salt }
-        Hook->>SSS: decryptWithPassword(encryptedData, iv, salt, password)
-        SSS-->>Hook: recoveryShare
-    end
 
     alt Passkey Recovery
         UI->>Hook: recoverWithPasskey(authProvider, credentialId)
@@ -200,7 +179,6 @@ sequenceDiagram
 
 ```ts
 const {
-    recoverWithPassword,  // (authProvider, password) => Promise<string> (privateKey)
     recoverWithPasskey,   // (authProvider, credentialId) => Promise<string>
     recoverWithPhrase,    // (authProvider, phrase) => Promise<string>
     recoverWithBackup,    // (authProvider, fileContents, password) => Promise<string>
@@ -232,7 +210,7 @@ graph TD
     end
 
     subgraph "Recovery"
-        DECRYPT["Decrypt recovery share<br/>(password/passkey/phrase/backup)"]
+        DECRYPT["Decrypt recovery share<br/>(passkey/phrase/backup)"]
         DECRYPT --> RECON2["reconstructFromShares(recovery, auth)"]
         RECON2 --> RESPLIT["splitAndVerify(privateKey)<br/><i>Generate fresh shares</i>"]
         RESPLIT --> STORE_DEV2["storeDeviceShare(newDevice)"]
@@ -240,7 +218,7 @@ graph TD
     end
 
     subgraph "Recovery Setup"
-        SPLIT_RS["splitAndVerify(privateKey)"] --> ENCRYPT["Encrypt recoveryShare<br/>(password/passkey/phrase)"]
+        SPLIT_RS["splitAndVerify(privateKey)"] --> ENCRYPT["Encrypt recoveryShare<br/>(passkey/phrase/backup)"]
         ENCRYPT --> STORE_RS["POST /keys/recovery<br/>→ SSS Server"]
         SPLIT_RS --> UPDATE_DEV["storeDeviceShare(deviceShare)"]
         SPLIT_RS --> UPDATE_AUTH["PUT /keys/auth-share(authShare)"]
@@ -286,7 +264,6 @@ Each method is only shown as "Available" if the server has a recovery record of 
 
 ```ts
 const methods = [
-    { id: 'password', available: hasMethod('password') },
     { id: 'passkey', available: hasMethod('passkey') && webAuthnSupported },
     { id: 'phrase', available: hasMethod('phrase') },
     { id: 'backup', available: hasMethod('backup') },
@@ -296,7 +273,7 @@ const methods = [
 ### User flow
 
 1. User sees list of available recovery methods
-2. Selects one → enters credentials (password, passkey auth, phrase, or file + password)
+2. Selects one → enters credentials (passkey auth, phrase, or file + password)
 3. On success → coordinator transitions to `ready` → wallet initializes
 4. On failure → error shown inline, user can try again or pick another method
 5. Cancel → calls `coordinator.logout()` → returns to `idle`
@@ -315,7 +292,7 @@ Shown as a **dismissible prompt** for first-time users who:
 
 ### User flow
 
-1. User sees options: Password, Passkey, Recovery Phrase
+1. User sees options: Passkey, Recovery Phrase, Backup File
 2. Can configure one or more methods
 3. Can dismiss without configuring (prompt disappears, wallet still works)
 

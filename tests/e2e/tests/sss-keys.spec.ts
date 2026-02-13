@@ -90,7 +90,7 @@ describe('SSS Key Management API', () => {
             iv: 'recovery-iv-' + Date.now(),
         };
 
-        test('should add a password recovery method', async () => {
+        test('should add a passkey recovery method', async () => {
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery`, {
                 method: 'POST',
                 headers: {
@@ -99,7 +99,7 @@ describe('SSS Key Management API', () => {
                 body: JSON.stringify({
                     authToken: mockAuthToken,
                     providerType: 'firebase',
-                    type: 'password',
+                    type: 'passkey',
                     encryptedShare,
                 }),
             });
@@ -114,7 +114,7 @@ describe('SSS Key Management API', () => {
             const params = new URLSearchParams({
                 authToken: mockAuthToken,
                 providerType: 'firebase',
-                type: 'password',
+                type: 'passkey',
             });
 
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery?${params}`, {
@@ -311,7 +311,7 @@ describe('SSS Key Management API', () => {
                     `norecovery-${Date.now()}@example.com`
                 ),
                 providerType: 'firebase',
-                type: 'password',
+                type: 'passkey',
             });
 
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery?${params}`, {
@@ -679,7 +679,7 @@ describe('SSS Key Management API', () => {
                 body: JSON.stringify({
                     authToken: saltToken,
                     providerType: 'firebase',
-                    type: 'password',
+                    type: 'passkey',
                     encryptedShare: shareWithSalt,
                 }),
             });
@@ -687,7 +687,7 @@ describe('SSS Key Management API', () => {
             const params = new URLSearchParams({
                 authToken: saltToken,
                 providerType: 'firebase',
-                type: 'password',
+                type: 'passkey',
             });
 
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery?${params}`, {
@@ -699,6 +699,132 @@ describe('SSS Key Management API', () => {
             const data = await response.json();
             expect(data.encryptedData).toBe('salted-share');
             expect(data.salt).toBe('random-salt-value-abc123');
+        });
+    });
+
+    describe('Orphaned Recovery Method Pruning', () => {
+        const userId = `prune-user-${Date.now()}`;
+        const email = `prune-${Date.now()}@example.com`;
+        let token: string;
+
+        beforeAll(() => {
+            token = createMockAuthToken(userId, email);
+        });
+
+        test('prunes recovery method whose auth share version was evicted from history', async () => {
+            // Step 1: Create user with initial auth share (version 1)
+            await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                    authShare: { encryptedData: 'share-v1', encryptedDek: 'dek-v1', iv: 'iv-v1' },
+                    primaryDid: 'did:key:z6MkPrune',
+                }),
+            });
+
+            // Step 2: Update auth share → version becomes 2
+            await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                    authShare: { encryptedData: 'share-v2', encryptedDek: 'dek-v2', iv: 'iv-v2' },
+                    primaryDid: 'did:key:z6MkPrune',
+                }),
+            });
+
+            // Step 3: Add a passkey recovery method (tied to current version = 2)
+            await fetch(`${LCA_API_URL}/api/keys/recovery`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                    type: 'passkey',
+                    encryptedShare: { encryptedData: 'passkey-share-v2', iv: 'passkey-iv-v2' },
+                    shareVersion: 2,
+                }),
+            });
+
+            // Step 4: Verify recovery method exists
+            let status = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ authToken: token, providerType: 'firebase' }),
+            }).then(r => r.json());
+
+            expect(status.recoveryMethods).toHaveLength(1);
+            expect(status.recoveryMethods[0].type).toBe('passkey');
+
+            // Step 5: Rotate auth share 6 more times (v3 through v8).
+            // After 6 rotations: current = v8, previousAuthShares = [v3, v4, v5, v6, v7].
+            // Version 2 (where the passkey was created) has been evicted.
+            for (let v = 3; v <= 8; v++) {
+                await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        authToken: token,
+                        providerType: 'firebase',
+                        authShare: { encryptedData: `share-v${v}`, encryptedDek: `dek-v${v}`, iv: `iv-v${v}` },
+                        primaryDid: 'did:key:z6MkPrune',
+                    }),
+                });
+            }
+
+            // Step 6: Verify the passkey recovery method has been pruned
+            status = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ authToken: token, providerType: 'firebase' }),
+            }).then(r => r.json());
+
+            expect(status.recoveryMethods).toHaveLength(0);
+            expect(status.shareVersion).toBe(8);
+        });
+
+        test('does NOT prune recovery method whose auth share version is still in history', async () => {
+            // Continuing from the previous test: current = v8, previous = [v3..v7]
+
+            // Add a phrase recovery method (tied to current version = 8)
+            await fetch(`${LCA_API_URL}/api/keys/recovery`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                    type: 'phrase',
+                    encryptedShare: { encryptedData: 'phrase-share-v8', iv: 'phrase-iv-v8' },
+                    shareVersion: 8,
+                }),
+            });
+
+            // Rotate once more → v9, previous = [v4..v8]
+            // Version 8 is still in history, so phrase method should survive
+            await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: 'firebase',
+                    authShare: { encryptedData: 'share-v9', encryptedDek: 'dek-v9', iv: 'iv-v9' },
+                    primaryDid: 'did:key:z6MkPrune',
+                }),
+            });
+
+            const status = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ authToken: token, providerType: 'firebase' }),
+            }).then(r => r.json());
+
+            // The phrase recovery method from v8 should still exist
+            expect(status.recoveryMethods).toHaveLength(1);
+            expect(status.recoveryMethods[0].type).toBe('phrase');
+            expect(status.shareVersion).toBe(9);
         });
     });
 
@@ -820,7 +946,7 @@ describe('SSS Key Management API', () => {
                 body: JSON.stringify({
                     authToken: token,
                     providerType: 'firebase',
-                    type: 'password',
+                    type: 'passkey',
                     encryptedShare: {
                         encryptedData: 'post-migration-recovery-share',
                         iv: 'post-migration-iv',
@@ -838,7 +964,7 @@ describe('SSS Key Management API', () => {
             const params = new URLSearchParams({
                 authToken: token,
                 providerType: 'firebase',
-                type: 'password',
+                type: 'passkey',
             });
 
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery?${params}`, {

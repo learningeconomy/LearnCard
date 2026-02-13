@@ -875,9 +875,6 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                     <RecoveryFlowModal
                         availableMethods={availableMethods}
                         recoveryReason={coordinator.state.status === 'needs_recovery' ? coordinator.state.recoveryReason : undefined}
-                        onRecoverWithPassword={async (password: string) => {
-                            await coordinator.recover({ method: 'password', password });
-                        }}
                         onRecoverWithPasskey={async (credentialId: string) => {
                             await coordinator.recover({ method: 'passkey', credentialId });
                         }}
@@ -1023,12 +1020,6 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                     <Overlay>
                         <RecoverySetupModal
                             existingMethods={[]}
-                            onSetupPassword={async (password: string) => {
-                                const authUser = await recoveryAuthProvider.getCurrentUser();
-                                await setupMethod({ method: 'password', password }, authUser);
-                                setRecoveryMethodCount(prev => (prev ?? 0) + 1);
-                                setShowRecoverySetup(false);
-                            }}
                             onSetupPasskey={async () => {
                                 const authUser = await recoveryAuthProvider.getCurrentUser();
                                 const result = await setupMethod({ method: 'passkey' }, authUser);
