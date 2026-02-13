@@ -373,14 +373,35 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             {activeMethod === 'email' && onRecoverWithEmail && (
                 <div className="space-y-5">
                     <div>
-                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Email Recovery Key</h3>
+                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Recover via Email</h3>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed">
                             {maskedRecoveryEmail
-                                ? <>Check your inbox at <strong>{maskedRecoveryEmail}</strong> and paste the recovery key below.</>
-                                : 'Paste the recovery key from the email we sent to your recovery address.'
+                                ? <>We previously sent a recovery email to <strong>{maskedRecoveryEmail}</strong>. Open that email and follow the steps below.</>
+                                : 'We previously sent a recovery email to your recovery address. Open that email and follow the steps below.'
                             }
                         </p>
+                    </div>
+
+                    <div className="p-4 bg-grayscale-100/60 rounded-2xl space-y-3">
+                        <p className="text-xs font-medium text-grayscale-700">How to find your recovery key</p>
+
+                        <ol className="text-sm text-grayscale-600 leading-relaxed space-y-2 list-none">
+                            <li className="flex items-start gap-2.5">
+                                <span className="shrink-0 w-5 h-5 rounded-full bg-grayscale-900 text-white text-xs font-medium flex items-center justify-center mt-0.5">1</span>
+                                <span>Search your inbox for an email with the subject <strong>"Your LearnCard Recovery Key"</strong></span>
+                            </li>
+
+                            <li className="flex items-start gap-2.5">
+                                <span className="shrink-0 w-5 h-5 rounded-full bg-grayscale-900 text-white text-xs font-medium flex items-center justify-center mt-0.5">2</span>
+                                <span>Find the long string of characters between <strong>"RECOVERY KEY"</strong> and <strong>"END RECOVERY KEY"</strong></span>
+                            </li>
+
+                            <li className="flex items-start gap-2.5">
+                                <span className="shrink-0 w-5 h-5 rounded-full bg-grayscale-900 text-white text-xs font-medium flex items-center justify-center mt-0.5">3</span>
+                                <span>Copy that entire string and paste it below</span>
+                            </li>
+                        </ol>
                     </div>
 
                     <div>
@@ -389,10 +410,14 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         <textarea
                             value={emailShare}
                             onChange={e => setEmailShare(e.target.value)}
-                            placeholder="Paste your recovery key here"
+                            placeholder="Paste your recovery key here — it looks like a long string of letters and numbers"
                             rows={3}
                             className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white font-mono resize-none"
                         />
+
+                        <p className="mt-1.5 text-xs text-grayscale-400">
+                            The key is a long string of letters and numbers. Copy and paste it exactly as it appears in the email.
+                        </p>
                     </div>
 
                     <button

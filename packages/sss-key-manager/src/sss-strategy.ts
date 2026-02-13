@@ -189,24 +189,31 @@ const postRecoveryMethod = async (
 };
 
 /**
- * Format an email share with its version prefix: `"<version>:<hexShare>"`.
- * This allows the recovery flow to fetch the correct auth share version.
+ * Format an email share with a 4-character hex version prefix.
+ *
+ * Example: version 12 + share "47dee4…" → "000c47dee4…"
+ *
+ * The 4-hex-digit prefix keeps the entire string as one contiguous
+ * hex blob, so double-clicking in an email selects the whole thing
+ * (no word-boundary characters like ":" to trip up selection).
  */
-const formatVersionedEmailShare = (emailShare: string, shareVersion: number): string =>
-    `${shareVersion}:${emailShare}`;
+export const VERSION_PREFIX_LEN = 4;
+
+export const formatVersionedEmailShare = (emailShare: string, shareVersion: number): string =>
+    shareVersion.toString(16).padStart(VERSION_PREFIX_LEN, '0') + emailShare;
 
 /**
  * Parse a versioned email share string back into its components.
+ * Expects a 4-char hex version prefix followed by the hex share.
  * Returns the raw hex share and the version number (if present).
  */
-const parseVersionedEmailShare = (input: string): { share: string; version: number | undefined } => {
-    const colonIdx = input.indexOf(':');
+export const parseVersionedEmailShare = (input: string): { share: string; version: number | undefined } => {
+    if (input.length > VERSION_PREFIX_LEN) {
+        const prefix = input.slice(0, VERSION_PREFIX_LEN);
+        const maybeVersion = parseInt(prefix, 16);
 
-    if (colonIdx > 0) {
-        const maybVersion = Number(input.slice(0, colonIdx));
-
-        if (Number.isInteger(maybVersion) && maybVersion > 0) {
-            return { share: input.slice(colonIdx + 1), version: maybVersion };
+        if (!isNaN(maybeVersion) && maybeVersion > 0) {
+            return { share: input.slice(VERSION_PREFIX_LEN), version: maybeVersion };
         }
     }
 

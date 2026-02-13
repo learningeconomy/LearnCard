@@ -17,7 +17,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { createSSSStrategy } from './sss-strategy';
+import { createSSSStrategy, formatVersionedEmailShare, parseVersionedEmailShare } from './sss-strategy';
 import { reconstructFromShares } from './sss';
 import { splitAndVerify } from './atomic-operations';
 import { shareToRecoveryPhrase, recoveryPhraseToShare } from './recovery-phrase';
@@ -474,7 +474,7 @@ describe('createSSSStrategy', () => {
             await strategy.executeRecovery({
                 token: 'tok',
                 providerType: 'firebase',
-                input: { method: 'email', emailShare: localKey },
+                input: { method: 'email', emailShare: '002a' + localKey },
                 didFromPrivateKey: async () => 'did:key:zCorrect',
             });
 
@@ -507,7 +507,7 @@ describe('createSSSStrategy', () => {
             await strategy.executeRecovery({
                 token: 'tok',
                 providerType: 'firebase',
-                input: { method: 'email', emailShare: localKey },
+                input: { method: 'email', emailShare: '0001' + localKey },
                 didFromPrivateKey: async () => 'did:key:zCorrect',
             });
 
@@ -759,7 +759,7 @@ describe('createSSSStrategy', () => {
                 strategy.executeRecovery({
                     token: 'tok',
                     providerType: 'firebase',
-                    input: { method: 'email', emailShare: staleShare },
+                    input: { method: 'email', emailShare: '0001' + staleShare },
                     didFromPrivateKey: async () => 'did:key:zWrong',
                 })
             ).rejects.toThrow('Recovery produced an incorrect key');
@@ -779,7 +779,7 @@ describe('createSSSStrategy', () => {
             const result = await strategy.executeRecovery({
                 token: 'tok',
                 providerType: 'firebase',
-                input: { method: 'email', emailShare: localKey },
+                input: { method: 'email', emailShare: '0001' + localKey },
                 didFromPrivateKey: async () => 'did:key:zCorrect',
             });
 
@@ -814,7 +814,7 @@ describe('createSSSStrategy', () => {
                 strategy.executeRecovery({
                     token: 'tok',
                     providerType: 'firebase',
-                    input: { method: 'email', emailShare: staleShare },
+                    input: { method: 'email', emailShare: '0001' + staleShare },
                     didFromPrivateKey: async () => 'did:key:zWrong',
                 })
             ).rejects.toThrow('Recovery produced an incorrect key');
@@ -823,7 +823,7 @@ describe('createSSSStrategy', () => {
             const result = await strategy.executeRecovery({
                 token: 'tok',
                 providerType: 'firebase',
-                input: { method: 'email', emailShare: localKey },
+                input: { method: 'email', emailShare: '0001' + localKey },
                 didFromPrivateKey: async () => 'did:key:zCorrect',
             });
 
@@ -1059,10 +1059,11 @@ describe('createSSSStrategy', () => {
             );
 
             expect(capturedPayload).toBeDefined();
-            expect(capturedPayload!).toContain(':'); // versioned format
+            // New format: 4-char hex prefix (e.g. "0005" for version 5)
+            expect(capturedPayload!.slice(0, 4)).toBe('0005');
 
-            // Strip version prefix for reconstruction
-            const rawShare = capturedPayload!.split(':').slice(1).join(':');
+            // Strip 4-char version prefix for reconstruction
+            const rawShare = capturedPayload!.slice(4);
 
             // Step 3: Reconstruct from email share + auth share
             const reconstructed = await reconstructFromShares([rawShare, remoteKey]);
@@ -1097,8 +1098,8 @@ describe('createSSSStrategy', () => {
                 'token', 'firebase', originalKey, 'user@test.com'
             );
 
-            // Strip version prefix
-            const rawShare = capturedPayload!.split(':').slice(1).join(':');
+            // Strip 4-char hex version prefix
+            const rawShare = capturedPayload!.slice(4);
 
             // The raw email share must NOT equal the device or auth shares
             // (it's a distinct share from the same split)
@@ -1162,7 +1163,8 @@ describe('createSSSStrategy', () => {
             const emailPayload = emailBody.emailShare;
 
             expect(emailPayload).toBeDefined();
-            expect(emailPayload).toContain(':'); // versioned
+            // 4-char hex version prefix (version 2 = "0002")
+            expect(emailPayload.slice(0, 4)).toBe('0002');
             expect(emailPayload).not.toBe(remoteKey);
 
             // No calls to storage endpoints
@@ -1234,8 +1236,8 @@ describe('createSSSStrategy', () => {
             // putAuthShare wraps as { encryptedData: share, encryptedDek: '', iv: '' }
             const newAuthShare = JSON.parse(putAuthCall!.body).authShare.encryptedData;
 
-            // Strip version prefix from the emailed share
-            const rawEmailShare = emailBody.emailShare.split(':').slice(1).join(':');
+            // Strip 4-char hex version prefix from the emailed share
+            const rawEmailShare = emailBody.emailShare.slice(4);
 
             const reconstructed = await reconstructFromShares([rawEmailShare, newAuthShare]);
 
@@ -1268,7 +1270,8 @@ describe('createSSSStrategy', () => {
                 'token', 'firebase', originalKey, 'user@test.com'
             );
 
-            expect(capturedPayload).toMatch(/^7:/);
+            // New format: 4-char hex prefix (version 7 = "0007")
+            expect(capturedPayload!.slice(0, 4)).toBe('0007');
         });
 
         it('setupRecoveryMethod re-sends email share with shareVersion prefix', async () => {
@@ -1318,7 +1321,8 @@ describe('createSSSStrategy', () => {
             const emailPayload = JSON.parse(emailCall!.body).emailShare;
 
             // Should use the version from putAuthShare (5), not fetchAuthShareRaw (4)
-            expect(emailPayload).toMatch(/^5:/);
+            // New format: 4-char hex prefix "0005"
+            expect(emailPayload.slice(0, 4)).toBe('0005');
         });
 
         it('email recovery with versioned share fetches matching auth share version', async () => {
@@ -1328,7 +1332,8 @@ describe('createSSSStrategy', () => {
             const { shares } = await splitAndVerify(originalKey);
 
             // Simulate the versioned email share the user received
-            const versionedEmailShare = `2:${shares.emailShare}`;
+            // New format: 4-char hex prefix (version 2 = "0002")
+            const versionedEmailShare = `0002${shares.emailShare}`;
 
             let capturedVersion: number | undefined;
 
@@ -1361,13 +1366,13 @@ describe('createSSSStrategy', () => {
             expect(capturedVersion).toBe(2);
         });
 
-        it('email recovery with unversioned share falls back to latest auth share', async () => {
+        it('email recovery with large version still parses correctly', async () => {
             const originalKey = 'b2c3d4e5f6a1'.padEnd(64, '0');
 
             const { shares } = await splitAndVerify(originalKey);
 
-            // No version prefix — raw hex share
-            const rawEmailShare = shares.emailShare;
+            // Version 255 = "00ff" in hex
+            const prefixedShare = '00ff' + shares.emailShare;
 
             let capturedVersion: number | undefined;
 
@@ -1382,7 +1387,7 @@ describe('createSSSStrategy', () => {
                         authShare: shares.authShare,
                         primaryDid: 'did:key:z1',
                         recoveryMethods: [],
-                        shareVersion: 3,
+                        shareVersion: 255,
                     }), { status: 200 });
                 }
 
@@ -1392,12 +1397,11 @@ describe('createSSSStrategy', () => {
             const result = await emailStrategy.executeRecovery!({
                 token: 'token',
                 providerType: 'firebase',
-                input: { method: 'email', emailShare: rawEmailShare },
+                input: { method: 'email', emailShare: prefixedShare },
             });
 
             expect(result.privateKey).toBe(originalKey);
-            // No version prefix, so should not send a shareVersion
-            expect(capturedVersion).toBeUndefined();
+            expect(capturedVersion).toBe(255);
         });
 
         it('setupRecoveryMethod for phrase registers method on server with shareVersion', async () => {
@@ -1807,6 +1811,80 @@ describe('createSSSStrategy', () => {
             expect(capturedBody).toBeDefined();
             expect(capturedBody!.email).toBe('primary@test.com');
             expect(capturedBody!.useRecoveryEmail).toBeUndefined();
+        });
+    });
+
+    // -----------------------------------------------------------------------
+    // Versioned email share format edge cases
+    // -----------------------------------------------------------------------
+
+    describe('formatVersionedEmailShare / parseVersionedEmailShare', () => {
+
+        it('round-trip: format then parse recovers the original share and version', () => {
+            const share = 'abcdef1234567890';
+            const version = 5;
+
+            const formatted = formatVersionedEmailShare(share, version);
+            const parsed = parseVersionedEmailShare(formatted);
+
+            expect(parsed.share).toBe(share);
+            expect(parsed.version).toBe(version);
+        });
+
+        it('format produces no word-boundary characters (pure hex)', () => {
+            const formatted = formatVersionedEmailShare('deadbeef', 42);
+
+            // Must be entirely hex: [0-9a-f]
+            expect(formatted).toMatch(/^[0-9a-f]+$/);
+        });
+
+        it('format pads version to exactly 4 hex chars', () => {
+            expect(formatVersionedEmailShare('aa', 1)).toBe('0001aa');
+            expect(formatVersionedEmailShare('aa', 255)).toBe('00ffaa');
+            expect(formatVersionedEmailShare('aa', 4096)).toBe('1000aa');
+            expect(formatVersionedEmailShare('aa', 65535)).toBe('ffffaa');
+        });
+
+        it('version 0 prefix ("0000") is treated as unversioned', () => {
+            const parsed = parseVersionedEmailShare('0000abcdef');
+
+            // maybeVersion > 0 check fails, so entire string is the share
+            expect(parsed.version).toBeUndefined();
+            expect(parsed.share).toBe('0000abcdef');
+        });
+
+        it('version 1 is the minimum valid version', () => {
+            const parsed = parseVersionedEmailShare('0001abcdef');
+
+            expect(parsed.version).toBe(1);
+            expect(parsed.share).toBe('abcdef');
+        });
+
+        it('large version (65535 = "ffff") parses correctly', () => {
+            const parsed = parseVersionedEmailShare('ffffabcdef');
+
+            expect(parsed.version).toBe(65535);
+            expect(parsed.share).toBe('abcdef');
+        });
+
+        it('input shorter than 5 chars is treated as unversioned', () => {
+            expect(parseVersionedEmailShare('abcd')).toEqual({ share: 'abcd', version: undefined });
+            expect(parseVersionedEmailShare('abc')).toEqual({ share: 'abc', version: undefined });
+            expect(parseVersionedEmailShare('')).toEqual({ share: '', version: undefined });
+        });
+
+        it('input that is exactly 4 chars is treated as unversioned (no share data after prefix)', () => {
+            const parsed = parseVersionedEmailShare('0005');
+
+            expect(parsed.version).toBeUndefined();
+            expect(parsed.share).toBe('0005');
+        });
+
+        it('system never produces version 0 (formatVersionedEmailShare with version >= 1)', () => {
+            // This documents the contract: version starts at 1
+            const formatted = formatVersionedEmailShare('share', 1);
+
+            expect(formatted.slice(0, 4)).toBe('0001');
         });
     });
 });

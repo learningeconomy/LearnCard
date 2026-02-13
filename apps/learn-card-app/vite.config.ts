@@ -94,8 +94,6 @@ export default defineConfig(({ mode }) => {
         },
         server: {
             port: 3000,
-            host: '0.0.0.0',
-            allowedHosts: 'all',
             watch: {
                 // Enable polling for Docker volume mounts
                 usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
