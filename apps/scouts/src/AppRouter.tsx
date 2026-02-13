@@ -30,6 +30,7 @@ import {
     useModal,
     ModalTypes,
     useSyncConsentFlow,
+    useSyncRevokedCredentials,
     useIsCollapsed,
     LOGIN_REDIRECTS,
     lazyWithRetry,
@@ -116,6 +117,7 @@ const AppRouter: React.FC = () => {
     useSentryIdentify({ debug: !IS_PRODUCTION });
     useSetFirebaseAnalyticsUserId({ debug: false });
     useSyncConsentFlow(enablePrefetch);
+    useSyncRevokedCredentials(enablePrefetch);
 
     const { newModal: newBoostSelectModal, closeModal: closeBoostSelectModal } = useModal({
         mobile: ModalTypes.Cancel,

@@ -368,7 +368,6 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
     };
 
     const handleNextStep = () => {
-        closePreviewModal();
         if (currentStep === BoostCMSStepsEnum.create) {
             setCurrentStep(BoostCMSStepsEnum.publish);
             logAnalyticsEvent('boostCMS_publish', {
@@ -445,12 +444,12 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
         }
     };
 
-    const handleSaveAndQuit = async (goBack: boolean) => {
+    const handleSaveAndQuit = async (goBack?: boolean, fromPreview?: boolean) => {
         const wallet = await initWallet();
 
         try {
             setIsSaveLoading(true);
-            closePreviewModal();
+            if (fromPreview) closePreviewModal();
             handleAddAdmin();
             handleRemoveAdmin();
 
@@ -502,10 +501,11 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
         }
     };
 
-    const handlePublishBoost = async () => {
+    const handlePublishBoost = async (fromPreview?: boolean) => {
         const wallet = await initWallet();
 
         if (isEditDisabled) {
+            if (fromPreview) closePreviewModal();
             handleNextStep();
         } else {
             try {
@@ -526,6 +526,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                         boostType: state?.basicInfo?.achievementType,
                         category: state?.basicInfo?.type,
                     });
+                    if (fromPreview) closePreviewModal();
                     handleNextStep();
                 }
             } catch (e) {
@@ -539,7 +540,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
         }
     };
 
-    const handleSaveAndIssue = async () => {
+    const handleSaveAndIssue = async (fromPreview?: boolean) => {
         const wallet = await initWallet();
 
         try {
@@ -555,6 +556,10 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                                 profile?.profileId,
                                 _boostUri
                             );
+
+                            // Auto-accept the credential on LCN so it's not stuck in "pending" state
+                            await wallet.invoke.acceptCredential(sentBoostUri, { skipNotification: true });
+
                             //in future allow user to set storage option, eg ceramic or LCN
                             // const uri = await wallet?.store['LearnCard Network'].uploadEncrypted(sentBoost);
                             const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
@@ -580,6 +585,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
+                    if (fromPreview) closePreviewModal();
                     handleNextStep();
                 }
             } else {
@@ -672,9 +678,9 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                 }
                 customFooterComponent={
                     <BoostPreviewFooter
-                        handleSaveAndQuit={handleSaveAndQuit}
+                        handleSaveAndQuit={(goBack) => handleSaveAndQuit(goBack, true)}
                         isSaveLoading={isSaveLoading}
-                        handleSubmit={handlePublishBoost}
+                        handleSubmit={() => handlePublishBoost(true)}
                         isLoading={isLoading}
                         showSaveAndQuitButton={
                             currentStep !== BoostCMSStepsEnum.confirmation && !isEditDisabled
@@ -818,9 +824,10 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             <BoostCMSPublish
                 state={state}
                 handlePreview={handlePreview}
-                handleSaveAndQuit={handleSaveAndQuit}
-                handlePublishBoost={handlePublishBoost}
+                handleSaveAndQuit={() => handleSaveAndQuit()}
+                handlePublishBoost={() => handlePublishBoost()}
                 showSaveAsDraftButton={!isEditDisabled}
+                isLoading={isLoading}
                 isSaveLoading={isSaveLoading}
                 isPublishLoading={isPublishLoading}
             />
