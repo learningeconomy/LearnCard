@@ -38,6 +38,7 @@ import {
     authStore,
     getAuthConfig,
     type AuthCoordinatorContextValue,
+    type AuthProvider,
     type DebugEventLevel,
     type KeyDerivationStrategy,
 } from 'learn-card-base';
@@ -57,6 +58,8 @@ import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
 import { useQueryClient } from '@tanstack/react-query';
+import { IonIcon } from '@ionic/react';
+import { alertCircleOutline } from 'ionicons/icons';
 
 import { createSSSStrategy, generateEd25519PrivateKey, createAdaptiveStorage, isPublicComputerMode } from '@learncard/sss-key-manager';
 import type { RecoveryInput, RecoverySetupInput } from '@learncard/sss-key-manager';
@@ -259,6 +262,9 @@ export interface AppAuthContextValue extends AuthCoordinatorContextValue {
 
     /** Open the recovery setup modal */
     openRecoverySetup: () => void;
+
+    /** Provider-agnostic auth provider for token/user operations (null if no session) */
+    authProvider: AuthProvider | null;
 }
 
 const AppAuthContext = createContext<AppAuthContextValue | null>(null);
@@ -341,6 +347,9 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
     // --- Recovery setup prompt (shown after first-time setup with no recovery methods) ---
     const [showRecoverySetup, setShowRecoverySetup] = useState(false);
     const wasNewUserRef = useRef(false);
+
+    // --- Proactive auth session check state (effect is below, after recoveryAuthProvider) ---
+    const [recoverySessionValid, setRecoverySessionValid] = useState<boolean | null>(null);
 
     // --- Recovery method count (null = not yet checked) ---
     const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
@@ -440,6 +449,25 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
             user: firebaseUser,
         });
     }, [firebaseUser]);
+
+    // --- Proactive auth session check for recovery setup ---
+    // Before showing the recovery setup modal, verify the auth session is
+    // still valid. If the token refresh fails, show a "session expired" card
+    // instead of the modal.
+    useEffect(() => {
+        if (!showRecoverySetup || !recoveryAuthProvider) {
+            setRecoverySessionValid(null);
+            return;
+        }
+
+        let cancelled = false;
+
+        recoveryAuthProvider.getIdToken()
+            .then(() => { if (!cancelled) setRecoverySessionValid(true); })
+            .catch(() => { if (!cancelled) setRecoverySessionValid(false); });
+
+        return () => { cancelled = true; };
+    }, [showRecoverySetup, recoveryAuthProvider]);
 
     // --- DID derivation (shared between auto-setup and recovery) ---
     // Uses getSigningLearnCard (no network) so lc.id.did() returns did:key,
@@ -818,6 +846,10 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
         // Recovery
         recoveryMethodCount,
         openRecoverySetup: () => setShowRecoverySetup(true),
+
+        // Provider-agnostic auth provider (consumers should use this
+        // instead of importing Firebase directly)
+        authProvider: recoveryAuthProvider,
     }), [
         coordinator,
         wallet,
@@ -830,6 +862,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
         showDeviceLinkModal,
         deviceLinkVisible,
         recoveryMethodCount,
+        recoveryAuthProvider,
     ]);
 
     return (
@@ -906,12 +939,72 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 
             {/* ── Recovery setup prompt (new users) ───────────── */}
             {showRecoverySetup && recoveryAuthProvider && coordinator.state.status === 'ready' && keyDerivation.setupRecoveryMethod && (() => {
+                // Session check still in progress — show loading
+                if (recoverySessionValid === null) {
+                    return (
+                        <Overlay>
+                            <div className="p-8 flex flex-col items-center">
+                                <div className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
+                                <p className="text-sm text-grayscale-500">Verifying session...</p>
+                            </div>
+                        </Overlay>
+                    );
+                }
+
+                // Session expired — show friendly re-auth card
+                if (recoverySessionValid === false) {
+                    return (
+                        <Overlay>
+                            <div className="p-8 text-center space-y-5">
+                                <div className="flex justify-center">
+                                    <IonIcon icon={alertCircleOutline} className="text-amber-500 text-4xl" />
+                                </div>
+
+                                <h2 className="text-xl font-semibold text-grayscale-900">
+                                    Session Expired
+                                </h2>
+
+                                <p className="text-sm text-grayscale-600 leading-relaxed">
+                                    Your sign-in session has expired. Please sign in again to set up recovery methods.
+                                </p>
+
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        onClick={async () => {
+                                            try { await handleLogout(); } catch (e) { console.warn('Logout failed during session expired flow', e); }
+                                            window.location.href = '/login';
+                                        }}
+                                        className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                                    >
+                                        Sign In Again
+                                    </button>
+
+                                    <button
+                                        onClick={() => setShowRecoverySetup(false)}
+                                        className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                                    >
+                                        Skip for Now
+                                    </button>
+                                </div>
+                            </div>
+                        </Overlay>
+                    );
+                }
+
+                // Session valid — show the recovery setup modal
                 const currentPrivateKey = coordinator.state.status === 'ready' ? coordinator.state.privateKey : '';
 
                 const setupMethod = async (input: RecoverySetupInput, authUser?: { id: string; email?: string; phone?: string; providerType: string } | null) => {
                     console.debug('[setupMethod] starting, privateKey length:', currentPrivateKey?.length, 'method:', input.method);
 
-                    const token = await recoveryAuthProvider.getIdToken();
+                    let token: string;
+
+                    try {
+                        token = await recoveryAuthProvider.getIdToken();
+                    } catch {
+                        throw new Error('Your session has expired. Please close this dialog and sign in again.');
+                    }
+
                     const providerType = recoveryAuthProvider.getProviderType();
 
                     console.debug('[setupMethod] got token, providerType:', providerType, 'calling setupRecoveryMethod');

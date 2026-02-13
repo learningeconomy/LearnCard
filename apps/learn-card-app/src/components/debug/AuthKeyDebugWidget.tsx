@@ -18,6 +18,7 @@ import {
     Download,
     Fingerprint,
     AlertTriangle,
+    Zap,
 } from 'lucide-react';
 
 import {
@@ -230,6 +231,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
     const [keyIntegrityResult, setKeyIntegrityResult] = useState<boolean | null>(null);
     const [serverState, setServerState] = useState<ServerState | null>(null);
     const [serverLoading, setServerLoading] = useState(false);
+    const [serverError, setServerError] = useState<string | null>(null);
     const [didKeyDid, setDidKeyDid] = useState<string | null>(null);
     const [didWebDid, setDidWebDid] = useState<string | null>(null);
     const [localShareVersion, setLocalShareVersion] = useState<number | null>(null);
@@ -425,12 +427,29 @@ export const AuthKeyDebugWidget: React.FC = () => {
 
     // --- Fetch server state ---
     const fetchServerState = useCallback(async () => {
-        if (!firebaseUser || !authConfig.serverUrl) return;
+        if (!firebaseUser) {
+            setServerError('No Firebase user — cannot fetch');
+            return;
+        }
+
+        if (!authConfig.serverUrl) {
+            setServerError('No SSS server URL configured');
+            return;
+        }
 
         setServerLoading(true);
+        setServerError(null);
 
         try {
-            const token = await firebaseUser.getIdToken();
+            // Use the live Firebase SDK user (not the zustand store's plain object)
+            const { auth } = await import('../../firebase/firebase');
+            const liveUser = auth().currentUser;
+
+            if (!liveUser) {
+                throw new Error('Firebase SDK has no current user (session may be expired)');
+            }
+
+            const token = await liveUser.getIdToken();
 
             const response = await fetch(`${authConfig.serverUrl}/keys/auth-share`, {
                 method: 'POST',
@@ -440,11 +459,12 @@ export const AuthKeyDebugWidget: React.FC = () => {
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    setServerState({ exists: false, needsMigration: false, primaryDid: null, recoveryMethods: [], authShareFingerprint: null, rawAuthShare: null });
+                    setServerState({ exists: false, needsMigration: false, primaryDid: null, recoveryMethods: [], authShareFingerprint: null, rawAuthShare: null, shareVersion: null });
                     return;
                 }
 
-                throw new Error(`HTTP ${response.status}`);
+                const body = await response.text().catch(() => '');
+                throw new Error(`HTTP ${response.status}: ${body.slice(0, 200) || response.statusText}`);
             }
 
             const data = await response.json();
@@ -459,8 +479,11 @@ export const AuthKeyDebugWidget: React.FC = () => {
                 rawAuthShare: rawAuth || null,
                 shareVersion: data.shareVersion ?? null,
             });
+
+            setServerError(null);
         } catch (e) {
             console.error('[DebugWidget] fetchServerState error:', e);
+            setServerError(e instanceof Error ? e.message : String(e));
             setServerState(null);
         } finally {
             setServerLoading(false);
@@ -491,6 +514,31 @@ export const AuthKeyDebugWidget: React.FC = () => {
     }, [state]);
 
     // --- Export events as JSON ---
+    // --- Invalidate auth session (for testing) ---
+    const handleInvalidateSession = useCallback(async () => {
+        if (!firebaseUser) return;
+
+        try {
+            // Sign out of Firebase to invalidate the session token.
+            // This does NOT clear local storage/coordinator state — it only
+            // kills the Firebase auth session so getIdToken() will fail,
+            // simulating a session expiration.
+            const { signOut } = await import('firebase/auth');
+            const firebaseAuth = (await import('../../firebase/firebase')).auth();
+            await signOut(firebaseAuth);
+
+            // Clear just the Firebase store entry so the coordinator doesn't
+            // auto-detect user presence from the store
+            firebaseAuthStore.set.setFirebaseCurrentUser(null);
+            firebaseAuthStore.set.firebaseAuth(null);
+
+            alert('Firebase session invalidated. Auth session is now expired.\nTry opening Account Recovery to see the re-auth gate.');
+        } catch (e) {
+            console.error('[DebugWidget] invalidate session error:', e);
+            alert(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+        }
+    }, [firebaseUser]);
+
     const handleExportEvents = useCallback(async () => {
         const exportData = {
             exportedAt: new Date().toISOString(),
@@ -734,7 +782,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
                             }
                         >
                             {!serverState ? (
-                                <div className="text-center py-2">
+                                <div className="text-center py-2 space-y-1">
                                     <button
                                         onClick={fetchServerState}
                                         disabled={serverLoading || !firebaseUser}
@@ -742,6 +790,12 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                     >
                                         {serverLoading ? 'Fetching...' : 'Click to fetch server state'}
                                     </button>
+
+                                    {serverError && (
+                                        <div className="text-[9px] text-red-400 bg-red-950/30 rounded p-1.5 text-left break-words">
+                                            <span className="font-semibold">Error:</span> {serverError}
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <>
@@ -941,6 +995,25 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                     })}
                                 </div>
                             )}
+                        </Section>
+
+                        {/* ── Danger Zone (testing tools) ── */}
+                        <Section
+                            title="Danger Zone"
+                            icon={<Zap className="w-3 h-3 text-red-400" />}
+                        >
+                            <div className="space-y-2 py-1">
+                                <div>
+                                    <button
+                                        onClick={handleInvalidateSession}
+                                        disabled={!firebaseUser}
+                                        className="w-full text-[10px] py-1.5 px-2 rounded-md bg-red-950/40 text-red-400 hover:bg-red-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-left"
+                                    >
+                                        Invalidate Auth Session
+                                    </button>
+                                    <p className="text-[8px] text-gray-600 mt-0.5">Signs out of Firebase without clearing coordinator state. Simulates session expiration.</p>
+                                </div>
+                            </div>
                         </Section>
 
                         {/* ── Event Timeline ── */}

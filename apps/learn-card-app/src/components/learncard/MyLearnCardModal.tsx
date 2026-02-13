@@ -45,10 +45,8 @@ import {
     useWallet,
     useGetCheckListStatus,
 } from 'learn-card-base';
-import { createFirebaseAuthProvider, firebaseAuthStore } from 'learn-card-base';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import useLogout from '../../hooks/useLogout';
-import { auth } from '../../firebase/firebase';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 
@@ -63,6 +61,42 @@ import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helper
 import { checklistItems } from 'learn-card-base';
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
+import { IonIcon } from '@ionic/react';
+import { alertCircleOutline } from 'ionicons/icons';
+
+// Shown when the auth session has expired and the user tries to manage recovery
+const SessionExpiredCard: React.FC<{ onSignIn: () => void | Promise<void>; onClose: () => void }> = ({
+    onSignIn,
+    onClose,
+}) => (
+    <div className="p-8 text-center space-y-5 font-poppins">
+        <div className="flex justify-center">
+            <IonIcon icon={alertCircleOutline} className="text-amber-500 text-4xl" />
+        </div>
+
+        <h2 className="text-xl font-semibold text-grayscale-900">Session Expired</h2>
+
+        <p className="text-sm text-grayscale-600 leading-relaxed">
+            Your sign-in session has expired. Please sign in again to manage recovery methods.
+        </p>
+
+        <div className="flex flex-col gap-3">
+            <button
+                onClick={onSignIn}
+                className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+            >
+                Sign In Again
+            </button>
+
+            <button
+                onClick={onClose}
+                className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+            >
+                Cancel
+            </button>
+        </div>
+    </div>
+);
 
 export enum MyLearnCardModalViewModeEnum {
     child = 'child',
@@ -106,7 +140,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
     const { data: connections } = useGetConnections();
 
-    const { keyDerivation, showDeviceLinkModal } = useAppAuth();
+    const { keyDerivation, showDeviceLinkModal, authProvider: contextAuthProvider } = useAppAuth();
 
     const { checklistItemsWithStatus, completedItems, numStepsRemaining } = useGetCheckListStatus();
     const checkListItemText = `${completedItems} of ${checklistItems?.length}`;
@@ -362,29 +396,61 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         return;
                     }
 
-                    const firebaseUser = firebaseAuthStore.get.currentUser();
+                    const showSessionExpired = () => {
+                        newModal(
+                            <SessionExpiredCard
+                                onSignIn={async () => {
+                                    closeModal();
+                                    try { await handleLogout(); } catch (e) { console.warn('Logout failed during session expired flow', e); }
+                                    window.location.href = '/login';
+                                }}
+                                onClose={closeModal}
+                            />,
+                            { sectionClassName: '!max-w-[480px]' },
+                            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                        );
+                    };
 
-                    const authProvider = firebaseUser
-                        ? createFirebaseAuthProvider({
-                              getAuth: () => auth(),
-                              user: firebaseUser,
-                          })
-                        : null;
+                    // Proactive session check — verify the token before
+                    // opening the modal so we can show a friendly message
+                    // instead of letting individual actions fail.
+                    if (!contextAuthProvider) {
+                        showSessionExpired();
+                        return;
+                    }
+
+                    try {
+                        await contextAuthProvider.getIdToken();
+                    } catch {
+                        showSessionExpired();
+                        return;
+                    }
 
                     let existingMethods: Array<{ type: string; createdAt: Date }> = [];
 
-                    if (authProvider && keyDerivation.getAvailableRecoveryMethods) {
-                        const token = await authProvider.getIdToken();
-                        const providerType = authProvider.getProviderType();
-                        existingMethods = await keyDerivation.getAvailableRecoveryMethods(token, providerType);
+                    if (keyDerivation.getAvailableRecoveryMethods) {
+                        try {
+                            const token = await contextAuthProvider.getIdToken();
+                            const providerType = contextAuthProvider.getProviderType();
+                            existingMethods = await keyDerivation.getAvailableRecoveryMethods(token, providerType);
+                        } catch {
+                            // Non-critical — show modal with empty methods
+                        }
                     }
 
-                    const canSetup = !!authProvider && !!keyDerivation.setupRecoveryMethod;
+                    const canSetup = !!keyDerivation.setupRecoveryMethod;
 
                     const setupMethod = canSetup
                         ? async (input: { method: string; password?: string; did?: string }, authUser?: unknown) => {
-                              const token = await authProvider!.getIdToken();
-                              const providerType = authProvider!.getProviderType();
+                              let token: string;
+
+                              try {
+                                  token = await contextAuthProvider.getIdToken();
+                              } catch {
+                                  throw new Error('Your session has expired. Please close this dialog and sign in again.');
+                              }
+
+                              const providerType = contextAuthProvider.getProviderType();
 
                               const signVp = async (pk: string): Promise<string> => {
                                   const lc = await getSigningLearnCard(pk);
@@ -408,7 +474,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         : null;
 
                     const requireAuth = async () => {
-                        throw new Error('Recovery setup requires authentication. Please log in again.');
+                        throw new Error('Your session has expired. Please close this dialog and sign in again.');
                     };
 
                     newModal(
@@ -422,7 +488,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             onSetupPassword={
                                 setupMethod
                                     ? async (password: string) => {
-                                          const authUser = await authProvider!.getCurrentUser();
+                                          const authUser = await contextAuthProvider.getCurrentUser();
                                           await setupMethod({ method: 'password', password }, authUser);
                                       }
                                     : requireAuth
@@ -430,7 +496,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             onSetupPasskey={
                                 setupMethod
                                     ? async () => {
-                                          const authUser = await authProvider!.getCurrentUser();
+                                          const authUser = await contextAuthProvider.getCurrentUser();
                                           const result = await setupMethod({ method: 'passkey' }, authUser);
                                           return result?.method === 'passkey' ? result.credentialId : 'Passkey created';
                                       }
@@ -439,7 +505,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             onGeneratePhrase={
                                 setupMethod
                                     ? async () => {
-                                          const authUser = await authProvider!.getCurrentUser();
+                                          const authUser = await contextAuthProvider.getCurrentUser();
                                           const result = await setupMethod({ method: 'phrase' }, authUser);
                                           return result?.method === 'phrase' ? result.phrase : '';
                                       }
@@ -448,7 +514,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             onSetupBackup={
                                 setupMethod
                                     ? async (backupPw: string) => {
-                                          const authUser = await authProvider!.getCurrentUser();
+                                          const authUser = await contextAuthProvider.getCurrentUser();
                                           const lc = await getSigningLearnCard(currentUser.privateKey!);
                                           const did = lc?.id?.did() || '';
                                           const result = await setupMethod({ method: 'backup', password: backupPw, did }, authUser);
