@@ -1,7 +1,7 @@
 import path from 'path';
 
 import esbuild from 'esbuild';
-import { rimraf } from 'rimraf';
+import fs from 'fs/promises';
 
 const buildOptions = {
     target: 'es2020',
@@ -47,7 +47,7 @@ const configurations = [
 ];
 
 function asyncRimraf(dirPath) {
-    return rimraf(dirPath);
+    return fs.rm(dirPath, { recursive: true, force: true });
 }
 
 await Promise.all(

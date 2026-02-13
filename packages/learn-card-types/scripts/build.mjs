@@ -2,7 +2,7 @@ import path from 'path';
 
 import esbuild from 'esbuild';
 import { NodeResolvePlugin } from '@esbuild-plugins/node-resolve';
-import { rimraf } from 'rimraf';
+import fs from 'fs/promises';
 
 const nodeResolveExternal = NodeResolvePlugin({
     extensions: ['.ts', '.js', '.tsx', '.jsx', '.cjs', '.mjs'],
@@ -51,7 +51,7 @@ const configurations = [
 ];
 
 function asyncRimraf(dirPath) {
-    return rimraf(dirPath);
+    return fs.rm(dirPath, { recursive: true, force: true });
 }
 
 await Promise.all(

@@ -1,9 +1,7 @@
 import path from 'path';
 
 import esbuild from 'esbuild';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const rimraf = require('rimraf');
+import fs from 'fs/promises';
 
 const buildOptions = {
     // target: 'es6',
@@ -50,12 +48,7 @@ const configurations = [
 ];
 
 function asyncRimraf(dirPath) {
-    return new Promise((resolve, reject) => {
-        rimraf(dirPath, err => {
-            if (err) reject(err);
-            else resolve();
-        });
-    });
+    return fs.rm(dirPath, { recursive: true, force: true });
 }
 
 function main() {
