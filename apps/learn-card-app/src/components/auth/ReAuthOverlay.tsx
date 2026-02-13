@@ -18,6 +18,7 @@ import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import {
     signInWithPopup,
     signInWithCredential,
+    signOut as firebaseSignOut,
     GoogleAuthProvider,
     OAuthProvider,
 } from 'firebase/auth';
@@ -28,6 +29,7 @@ import {
     authStore,
     SocialLoginTypes,
     firebaseAuthStore,
+    currentUserStore,
 } from 'learn-card-base';
 
 import { auth } from '../../firebase/firebase';
@@ -43,6 +45,8 @@ interface ReAuthOverlayProps {
     onCancel: () => void;
 }
 
+const UID_MISMATCH_ERROR = 'You signed in with a different account. Please try again with the correct account.';
+
 const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) => {
     const { refreshAuthSession } = useAppAuth();
 
@@ -52,6 +56,12 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
     const attemptedRef = useRef(false);
 
     const loginType = authStore.use.typeOfLogin();
+
+    // Capture the expected UID from the persisted store (auth()?.currentUser is null
+    // when the session is expired, but currentUserStore retains the UID)
+    const expectedUidRef = useRef<string | null>(
+        currentUserStore.get.currentUser()?.uid ?? null
+    );
 
     // Step 1: Try silent refresh on mount
     useEffect(() => {
@@ -83,11 +93,15 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
         try {
             const firebaseAuth = auth();
 
+            let newUid: string | undefined;
+
             if (Capacitor.isNativePlatform()) {
                 const result = await FirebaseAuthentication.signInWithGoogle();
                 const { user } = await FirebaseAuthentication.getCurrentUser();
 
                 if (result.user && user) {
+                    newUid = user.uid;
+
                     authStore.set.typeOfLogin(SocialLoginTypes.google);
                     firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
                     firebaseAuthStore.set.setFirebaseCurrentUser(user);
@@ -108,9 +122,20 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                 const result = await signInWithPopup(firebaseAuth, provider);
 
                 if (result?.user) {
+                    newUid = result.user.uid;
+
                     authStore.set.typeOfLogin(SocialLoginTypes.google);
                     firebaseAuthStore.set.setFirebaseCurrentUser(result.user);
                 }
+            }
+
+            // UID mismatch guard — reject if a different account was used
+            if (expectedUidRef.current && newUid && newUid !== expectedUidRef.current) {
+                console.warn('ReAuth: UID mismatch — expected', expectedUidRef.current, 'got', newUid);
+                await firebaseSignOut(firebaseAuth);
+                setError(UID_MISMATCH_ERROR);
+                setState('error');
+                return;
             }
 
             // Refresh the coordinator's session state
@@ -143,6 +168,8 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
         try {
             const firebaseAuth = auth();
 
+            let newUid: string | undefined;
+
             if (Capacitor.isNativePlatform()) {
                 const result = await FirebaseAuthentication.signInWithApple({
                     skipNativeAuth: true,
@@ -159,6 +186,8 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                 const user = firebaseAuth.currentUser;
 
                 if (user) {
+                    newUid = user.uid;
+
                     authStore.set.typeOfLogin(SocialLoginTypes.apple);
                     firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
                     firebaseAuthStore.set.setFirebaseCurrentUser(user);
@@ -168,9 +197,20 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                 const result = await signInWithPopup(firebaseAuth, provider);
 
                 if (result?.user) {
+                    newUid = result.user.uid;
+
                     authStore.set.typeOfLogin(SocialLoginTypes.apple);
                     firebaseAuthStore.set.setFirebaseCurrentUser(result.user);
                 }
+            }
+
+            // UID mismatch guard — reject if a different account was used
+            if (expectedUidRef.current && newUid && newUid !== expectedUidRef.current) {
+                console.warn('ReAuth: UID mismatch — expected', expectedUidRef.current, 'got', newUid);
+                await firebaseSignOut(firebaseAuth);
+                setError(UID_MISMATCH_ERROR);
+                setState('error');
+                return;
             }
 
             await refreshAuthSession();
