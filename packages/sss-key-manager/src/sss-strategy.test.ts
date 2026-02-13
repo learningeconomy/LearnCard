@@ -1815,6 +1815,72 @@ describe('createSSSStrategy', () => {
     });
 
     // -----------------------------------------------------------------------
+    // hasRecoveryEmail reset on 404 (new/migrated user)
+    // -----------------------------------------------------------------------
+
+    describe('hasRecoveryEmail reset on server 404', () => {
+        it('sendEmailBackupShare uses primary email after fetchServerKeyStatus returns no data', async () => {
+            const strat = createSSSStrategy({
+                serverUrl: 'http://test-server:5100/api',
+                enableEmailBackupShare: true,
+                storage,
+            });
+
+            strat.setActiveUser!('user-with-recovery');
+
+            // Step 1: fetchServerKeyStatus returns a user WITH a recovery email
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({
+                    authShare: 'share',
+                    keyProvider: 'sss',
+                    primaryDid: 'did:key:z1',
+                    recoveryMethods: [{ type: 'email', createdAt: new Date().toISOString() }],
+                    maskedRecoveryEmail: 'r***@test.com',
+                    shareVersion: 1,
+                }), { status: 200 })
+            );
+
+            await strat.fetchServerKeyStatus('token', 'firebase');
+
+            // Step 2: Switch to a NEW user whose server returns 404 (no record)
+            strat.setActiveUser!('brand-new-user');
+
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(null, { status: 404 })
+            );
+
+            await strat.fetchServerKeyStatus('token', 'firebase');
+
+            // Step 3: Split a key so sendEmailBackupShare has a cached email share
+            const originalKey = 'a1b2c3d4e5f6'.padEnd(64, '0');
+
+            await strat.splitKey(originalKey);
+
+            // storeAuthShare to cache shareVersion
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({ success: true, shareVersion: 1 }), { status: 200 })
+            );
+
+            await strat.storeAuthShare('token', 'firebase', 'auth-share', 'did:key:z1');
+
+            // Step 4: sendEmailBackupShare — should send to primary email, NOT useRecoveryEmail
+            let capturedBody: Record<string, unknown> | undefined;
+
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async (_url, init) => {
+                capturedBody = JSON.parse(init?.body as string);
+
+                return new Response(null, { status: 200 });
+            });
+
+            await strat.sendEmailBackupShare!('token', 'firebase', originalKey, 'primary@test.com');
+
+            expect(capturedBody).toBeDefined();
+            expect(capturedBody!.email).toBe('primary@test.com');
+            expect(capturedBody!.useRecoveryEmail).toBeUndefined();
+        });
+    });
+
+    // -----------------------------------------------------------------------
     // Versioned email share format edge cases
     // -----------------------------------------------------------------------
 

@@ -469,6 +469,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             );
 
             if (!data) {
+                // Reset — no server record means no recovery email either.
+                // Prevents stale state from a previous user session.
+                hasRecoveryEmail = false;
+
                 return {
                     exists: false,
                     needsMigration: false,
