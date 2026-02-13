@@ -1034,3 +1034,70 @@ export const useGetSummaryInfo = (summaryUri?: string) => {
         refetchOnMount: 'always',
     });
 };
+
+/**
+ * Hook to sync revoked credentials from the network.
+ * Fetches revoked credential URIs from the brain-service and removes them from the learn-cloud index.
+ * This ensures that when a credential is revoked by an admin, it is removed from the user's wallet.
+ */
+export const useSyncRevokedCredentials = (enabled = true) => {
+    const { initWallet } = useWallet();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+    const queryClient = useQueryClient();
+    const processingRef = useRef(false);
+
+    const query = useQuery<string[]>({
+        queryKey: ['useSyncRevokedCredentials', switchedDid ?? ''],
+        queryFn: async () => {
+            const wallet = await initWallet();
+
+            // Get revoked credential URIs from brain-service
+            const revokedUris = await wallet.invoke.getRevokedCredentials();
+
+            return revokedUris ?? [];
+        },
+        staleTime: 30 * 1000, // Check every 30 seconds
+        refetchOnWindowFocus: true,
+        enabled,
+    });
+
+    useEffect(() => {
+        if (!query.data || query.data.length === 0) return;
+        if (processingRef.current) return;
+
+        processingRef.current = true;
+
+        (async () => {
+            try {
+                const wallet = await initWallet();
+                const revokedUris = query.data;
+
+                // Remove each revoked credential from the learn-cloud index
+                for (const uri of revokedUris) {
+                    try {
+                        // Get the record from the index by URI
+                        const records = await wallet.index.LearnCloud.get({ uri });
+
+                        if (records && records.length > 0) {
+                            // Remove the record from the index
+                            await wallet.index.LearnCloud.remove?.(records[0]!.id);
+                            console.log('[useSyncRevokedCredentials] Removed revoked credential from index:', uri);
+                        }
+                    } catch (e) {
+                        console.error('[useSyncRevokedCredentials] Error removing credential:', uri, e);
+                    }
+                }
+
+                // Invalidate relevant queries to refresh the UI
+                queryClient.invalidateQueries({ queryKey: ['useGetIDs'] });
+                queryClient.invalidateQueries({ queryKey: ['useGetCredentials'] });
+                queryClient.invalidateQueries({ queryKey: ['currentUserTroopIds'] });
+                queryClient.invalidateQueries({ queryKey: ['useGetCurrentUserTroopIdsResolved'] });
+            } finally {
+                processingRef.current = false;
+            }
+        })();
+    }, [query.data, initWallet, queryClient]);
+
+    return query;
+};
