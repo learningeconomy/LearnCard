@@ -1,250 +1,126 @@
-# Bundle Size Audit & Reduction Plan — learn-card-app
+# LearnCard App — Bundle Size Audit & Optimization
 
-**Date:** 2026-02-12  
-**Status:** Proposed
+> Last updated: February 13, 2025  
+> Build tool: Vite 4.3 + esbuild/Rollup
 
-The `learn-card-app` is a large Ionic/React/Vite application with **108 runtime dependencies** and **1,300+ source files**. The build currently requires `--max-old-space-size=16608` (16 GB!). This document is an audit of the major bundle size problems and a phased plan to address them.
+## Summary
 
----
+We reduced the **initial JS payload** from **~12 MB → ~9.6 MB** and eliminated **~10 MB of total JS** from the build through a combination of lazy loading, asset optimization, and dependency cleanup.
 
-## Audit Summary
-
-### 🔴 Critical Issues (Highest Impact)
-
-| Problem | Est. Savings | Details |
-|---------|-------------|---------|
-| No `manualChunks` in Vite config | — | Everything merges into a few giant chunks. No vendor splitting at all. |
-| `moment` + `moment-timezone` (47+ files) | ~300-500 KB | Ships all locales. Replace with `dayjs` (~7 KB) or `date-fns` (tree-shakeable). |
-| `lodash` full bundle (20+ files) | ~70-100 KB | `import _ from 'lodash'` and `import { fn } from 'lodash'` both pull the entire library. Switch to `lodash-es` (tree-shakeable) or per-function imports (`lodash/cloneDeep`). |
-| 18 eagerly-imported pages in `Routes.tsx` | ~200-400 KB | These are loaded on every page load regardless of route. |
-
-### 🟡 Moderate Issues
-
-| Problem | Est. Savings | Details |
-|---------|-------------|---------|
-| `firebase` + `@capacitor-firebase` | ~100-200 KB | Used in 5 files. Ensure only used sub-packages are imported (e.g. `firebase/auth` not `firebase`). |
-| `@web3auth/*` (5 packages!) | ~100-200 KB | Only used in 2 files (`useFirebase.ts`, `AppRouter.tsx`). Should be dynamically imported. |
-| `@ionic/core` + `@ionic/react` | ~200+ KB | Framework dependency, can't remove, but ensure `@ionic/core` isn't separately bundled. |
-| `@sentry/browser` + `@sentry/react` (both!) | ~50-100 KB | Two Sentry packages — consolidate to just `@sentry/react`. Use lazy loading for feedback widget. |
-| `launchdarkly-react-client-sdk` | ~50-80 KB | Used in 28 files. Can't easily reduce, but can be split into its own chunk. |
-
-### 🟢 Low-Hanging Fruit (Easy Wins)
-
-| Problem | Est. Savings | Details |
-|---------|-------------|---------|
-| `jspdf` + `html2canvas` | ~200+ KB | Used in **1 file** (`QrCodeDownloadOptions.tsx`). Dynamic `import()` at point of use. |
-| `jszip` | ~50 KB | Used in **2 files** (admin bulk-import only). Dynamic `import()`. |
-| `@xterm/*` (3 packages) | ~200+ KB | Used in **1 file** (`DevCli.tsx`). Already lazy-loaded at route level ✓ but should be in its own chunk. |
-| `katex` + `rehype-katex` + `remark-math` | ~300+ KB | Used in **1 file** (`MarkdownRenderer.tsx`). Dynamic import. |
-| `react-shiki` | ~100+ KB | Used in **1 file** (same `MarkdownRenderer.tsx`). Dynamic import. |
-| `pdf-lib` | ~400+ KB | Used in **0 files** in app src (only in `package.json`!). **Remove entirely**. |
-| `emoji-picker-react` | ~200+ KB | Used in 5 files (family CMS only). Already behind lazy route, but ensure chunk isolation. |
-| `react-lottie-player` | ~50 KB | 16 files — too widespread to dynamic-import, but should get its own vendor chunk. |
+| Metric | Before | After | Δ |
+|--------|--------|-------|---|
+| Main chunk (`index.js`) | 11,806 KB | 8,945 KB | **−2,861 KB (−24.2%)** |
+| Total initial JS (main + vendor-react + vendor-ionic + vendor-firebase) | ~12,228 KB | ~10,168 KB | **−2,060 KB** |
+| Largest lazy chunk (web3auth) | 4,579 KB | 4,579 KB | *(already lazy)* |
+| Lottie JSON assets | 2,959 KB (bundled) | 446 KB (static) | **−2,513 KB (−84.9%)** |
+| Shiki language grammars | 7,675 KB (100+ langs) | ~1,100 KB (25 langs, lazy) | **−6,575 KB (−85.7%)** |
+| Ethereum/MetaMask stack | bundled in main | 583 KB (lazy) | **−654 KB from main** |
 
 ---
 
-## Eagerly Imported Pages in Routes.tsx
+## Optimizations Applied
 
-These pages are statically imported and bundled into the main chunk, even though most users never visit them on any given session:
+### 1. Shiki Fine-Grained Bundle (−6,575 KB)
 
-| Component | File |
-|-----------|------|
-| `LaunchPad` | `./pages/launchPad/LaunchPad` |
-| `LoginPage` | `./pages/login/LoginPage` |
-| `AchievementsPage` | `./pages/achievements/AchievementsPage` |
-| `IdsPage` | `./pages/ids/IdsPage` |
-| `LearningHistoryPage` | `./pages/learninghistory/LearningHistoryPage` |
-| `WorkHistoryPage` | `./pages/workhistory/WorkHistoryPage` |
-| `SocialBadgesPage` | `./pages/socialBadgesPage/SocialBadgesPage` |
-| `AccomplishmentsPage` | `./pages/accomplishments/AccomplishmentsPage` |
-| `AccommodationsPage` | `./pages/accommodations/AccommodationsPage` |
-| `AdminToolsPage` | `./pages/adminToolsPage/AdminToolsPage` |
-| `ViewAllManagedBoostsPage` | `./pages/adminToolsPage/ViewAllManagedBoostsPage` |
-| `BulkBoostImportPage` | `./pages/adminToolsPage/bulk-import/BulkBoostImportPage` |
-| `ManageServiceProfilesPage` | `./pages/adminToolsPage/ManageServiceProfilePage` |
-| `ManageConsentFlowContractsPage` | `./pages/adminToolsPage/ManageConsentFlowContractsPage` |
-| `SigningAuthoritiesPage` | `./pages/adminToolsPage/SigningAuthoritiesPage` |
-| `APITokensPage` | `./pages/adminToolsPage/api-tokens/APITokensPage` |
-| `AiSessionTopicsContainer` | `./components/ai-sessions/AiSessionTopicsContainer` |
-| `AiSessionsContainer` | `./components/ai-sessions/AiSessionsContainer` |
+**Problem:** `react-shiki` imports the full `shiki` bundle, which includes 100+ programming language grammars (7.7 MB). We only use syntax highlighting in the AI chat feature.
 
-> **Note:** `LoginPage` is hit on first visit by logged-out users, so lazifying it adds a small loading spinner. `LaunchPad` is the landing page for logged-in users. Both are acceptable to lazify — the existing `<Suspense fallback={<LoadingPageDumb />}>` wrapper handles the transition.
+**Fix:** Replaced `react-shiki` with a custom `CodeHighlighter.tsx` using `shiki/core` that only imports ~25 languages we actually need, loaded on-demand via dynamic `import()`.
 
----
+**Result:** Eliminated ~80 unused language grammar chunks (emacs-lisp 780 KB, wolfram 262 KB, vue-vine 190 KB, angular-ts 184 KB, etc.). Remaining language grammars are lazy-loaded individual chunks of 10-180 KB each.
 
-## 🔥 Bundle Visualizer Findings (2026-02-12)
+### 2. Lottie WebP Re-encoding (−2,513 KB)
 
-After running `rollup-plugin-visualizer`, the **real** composition of the 19.3 MB `index.js` was revealed:
+**Problem:** 6 Lottie JSON files contained 39 embedded base64 PNG images (98-99% of each file's size). They were statically imported, inlining 2,959 KB of JSON into the main JS bundle.
 
-| Module | Rendered Size | Notes |
-|--------|--------------|-------|
-| `@learncard/init` (`init.esm.js`) | **~10 MB** | Pre-bundles 17 workspace plugins into one fat file |
-| `@learncard/lca-api-plugin` (`lca-api-plugin.esm.js`) | **~9.3 MB** | Re-bundles `learn-card-init` + its own deps — total duplication |
-| `katex` | **~4.1 MB** | Used in 1 file (`MarkdownRenderer.tsx`) |
-| Lottie JSON files | Significant | `factory.json`, `cuteopulpo.json` baked into JS |
-| `zod` locales | Moderate | Internationalized error messages |
+**Fix:** Re-encoded all 39 PNGs as WebP (quality 80) using `sharp`. Moved files from `src/assets/lotties/` → `public/lotties/` and updated 16 components to use the `path` prop (fetched on-demand via network request).
 
-### Root Cause: Pre-Bundled Workspace Packages
+| File | Before | After |
+|------|--------|-------|
+| cuteopulpo.json | 776 KB | 80 KB |
+| purpghost.json | 515 KB | 102 KB |
+| factory.json | 487 KB | 75 KB |
+| lizardflame.json | 461 KB | 87 KB |
+| reaperghost.json | 403 KB | 50 KB |
+| hourglass.json | 317 KB | 52 KB |
 
-Both `learn-card-init` and `lca-api-plugin` use esbuild with `bundle: true` in their build scripts. This causes esbuild to **inline all workspace dependencies** into a single output file:
+### 3. Katex Dynamic Import (−710 KB)
 
-- `learn-card-init/dist/init.esm.js` = **8.4 MB** — contains all 17 plugins (didkit, vc, crypto, ethereum, etc.)
-- `lca-api-plugin/dist/lca-api-plugin.esm.js` = **9.3 MB** — re-bundles `learn-card-init` + lca-api-client
+**Problem:** `katex` (~4 MB with CSS, fonts etc.) was eagerly loaded in the main bundle, used only in the AI chat markdown renderer.
 
-When Vite bundles the app, it imports both pre-bundled blobs. Since they're already flattened single files, Vite **cannot deduplicate or tree-shake** the shared code between them. The entire LearnCard SDK effectively ships twice.
+**Fix:** Created `LazyMarkdownRenderer.tsx` using `React.lazy()` + `Suspense` to code-split katex, rehype-katex, remark-math, and the code highlighter into a lazy chunk.
 
-### Why `vendor-web3auth` Is 4.5 MB
+### 4. Lodash → lodash-es (tree-shaking enabled)
 
-Web3Auth bundles its own crypto sub-dependencies (`elliptic`, `asn1`, `eth-sig-util`, `jrpc`, etc.) plus a copy of `lodash` (528 KB). This is mostly unavoidable, but since web3auth is only used in 2 files (`useFirebase.ts`, `AppRouter.tsx`), it should be **dynamically imported**.
+**Problem:** `lodash` (547 KB, CommonJS) cannot be tree-shaken by Vite/Rollup, so the entire library was bundled even though only `cloneDeep`, `capitalize`, `isEqual`, and `omit` are used.
 
-### Potential Fixes (Highest Impact → Lowest)
+**Fix:** Migrated all 22 import sites from `lodash` to `lodash-es` (ESM), enabling Vite to tree-shake unused functions.
 
-1. **Fix workspace package builds** — Change `bundle: true` to `bundle: false` (or externalize workspace deps) in `learn-card-init` and `lca-api-plugin` build scripts. This would let Vite resolve shared deps once instead of duplicating them. **Estimated savings: ~9 MB.**
-2. **Dynamic import `@learncard/init`** — Only 3 source files actually import it. Lazy-load it to defer the cost.
-3. **Dynamic import `katex`** — 4.1 MB for a single-file dependency is an easy win.
-4. **Lazy-load Lottie JSON** — Fetch animation files at runtime instead of bundling as JS.
-5. **Dynamic import web3auth** — 4.5 MB used in 2 files, no reason to load at startup.
+### 5. Emoji Picker Lazy Loading
 
----
+**Problem:** `emoji-picker-react` (398 KB) + `@emoji-mart/data` (549 KB) were eagerly loaded but used only in the Family CMS emoji picker modal.
 
-## Proposed Changes
+**Fix:** Lazy-loaded `FamilyEmojiPicker` component with `React.lazy()`.
 
-### Phase 1: Vite Configuration — Chunk Splitting
+### 6. Ethereum/MetaMask Lazy Loading (−654 KB from main)
 
-**File:** `vite.config.ts`
+**Problem:** `@learncard/ethereum-plugin` (and its transitive deps: `ethers`, `viem`, `@metamask/sdk`, `@metamask/delegation-abis`, `@noble/curves`) was statically imported in all 4 `learn-card-init` initializer files, bundling ~3 MB of Ethereum stack into the main chunk.
 
-Add `rollupOptions.output.manualChunks` to split vendor dependencies into separate cacheable chunks:
+**Fix:** Converted static `import { getEthereumPlugin }` to dynamic `const { getEthereumPlugin } = await import('@learncard/ethereum-plugin')` in all 4 initializer files. Since the functions are already `async`, this is a drop-in change with zero API impact.
 
-```typescript
-build: {
-    target: 'esnext',
-    outDir: path.join(__dirname, 'build'),
-    rollupOptions: {
-        output: {
-            manualChunks: {
-                // Core framework
-                'vendor-react': ['react', 'react-dom', 'react-router', 'react-router-dom'],
-                'vendor-ionic': ['@ionic/react', '@ionic/react-router', '@ionic/core'],
-                // Heavy deps in their own chunks
-                'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/analytics'],
-                'vendor-sentry': ['@sentry/react', '@sentry/browser'],
-                'vendor-launchdarkly': ['launchdarkly-react-client-sdk'],
-                'vendor-web3auth': [
-                    '@web3auth/no-modal', '@web3auth/base',
-                    '@web3auth/auth-adapter', '@web3auth/ethereum-provider',
-                    '@web3auth/single-factor-auth'
-                ],
-                'vendor-swiper': ['swiper'],
-                'vendor-lottie': ['react-lottie-player'],
-                'vendor-tanstack': ['@tanstack/react-query'],
-            },
-        },
-    },
-},
-```
+**Result:** New lazy chunk `ethereum-plugin.esm.js` (583 KB). `index.js` reduced by 654 KB.
 
-**Why:** Even though this doesn't reduce total download size, it dramatically improves caching (vendor chunks rarely change) and initial load time (only needed chunks are loaded).
+### 7. Web3Auth Dynamic Import
+
+**Problem:** `@web3auth/*` packages (4,579 KB) were eagerly loaded in the main bundle.
+
+**Fix:** Dynamic import in `useWeb3Auth.ts` — now a separate lazy chunk.
+
+### 8. Rimraf → `fs.rm` Migration
+
+**Problem:** `rimraf@3` and `rimraf@6` coexisted in the lockfile, causing build failures due to incompatible APIs.
+
+**Fix:** Replaced `rimraf` with Node.js native `fs.rm(path, { recursive: true, force: true })` in all 31 build scripts.
 
 ---
 
-### Phase 2: Lazy-Load Eagerly Imported Pages
+## Current Bundle Composition
 
-**File:** `src/Routes.tsx`
+### Main Chunk (index.js): 8,945 KB
 
-Convert all 18 static `import` statements to use `lazyWithRetry(() => import(...))`. Example:
+| Category | KB | % |
+|----------|---:|--:|
+| LearnCard SDK plugins | ~3,850 | 43% |
+| App source code | ~2,000 | 21% |
+| node_modules (ethers, viem, zod, etc.) | ~2,500 | 26% |
+| Other | ~600 | 6% |
 
-```diff
--import LaunchPad from './pages/launchPad/LaunchPad';
-+const LaunchPad = lazyWithRetry(() => import('./pages/launchPad/LaunchPad'));
+### Lazy-Loaded Chunks
 
--import AdminToolsPage from './pages/adminToolsPage/AdminToolsPage';
-+const AdminToolsPage = lazyWithRetry(() => import('./pages/adminToolsPage/AdminToolsPage'));
-```
-
-**Risk:** Low — the app already uses `<Suspense>` with a loading fallback throughout.
-
----
-
-### Phase 3: Replace `lodash` with Tree-Shakeable Alternative
-
-**Files:** ~20 source files
-
-**Recommended approach:** Replace `lodash` with `lodash-es` in `package.json`. Named imports like `import { cloneDeep } from 'lodash-es'` will be tree-shaken by Vite automatically.
-
-Files using `import _ from 'lodash'` (full namespace) need to be refactored to named imports:
-- `LoginLoader.tsx` / `LogoutLoader.tsx`
-- `LearnerInsights.tsx`
-- `AdminToolsStorageOption.tsx` / `AdminToolsNetwork.tsx`
-- `personalizedQuestionCredential.helpers.ts`
-- `FamilyPinWrapper.tsx`
-
-Functions actually used: `cloneDeep`, `capitalize`, `isEqual`, `isRegExp`, `debounce`, `get`, `set`, `isEmpty`, `uniqBy`, `sortBy`, `groupBy`.
+| Chunk | KB | Trigger |
+|-------|---:|---------|
+| vendor-web3auth | 4,579 | Wallet/Web3 features |
+| vendor-ionic | 817 | UI framework (needed per page) |
+| DeveloperPortalRoutes | 701 | Developer portal pages |
+| ethereum-plugin.esm | 583 | LearnCard init (Ethereum features) |
+| MarkdownRenderer | 562 | AI chat code highlighting |
+| DeveloperPortalRoutes | 701 | Developer portal pages |
+| BrowseFrameworkPage | 560 | Skill frameworks page |
+| cpp grammar (largest lang) | 638 | Code block rendering |
+| DevCli | 420 | Developer CLI tools |
+| jspdf | 413 | PDF generation |
+| vendor-lottie | 322 | Animation rendering |
+| vendor-firebase | 237 | Firebase auth/analytics |
+| html2canvas | 201 | Screenshot capture |
 
 ---
 
-### Phase 4: Replace `moment` with `dayjs`
+## Remaining Opportunities
 
-**Files:** 47+ source files  
-**Estimated savings:** ~300-500 KB
-
-Replace `moment` / `moment-timezone` with `dayjs` + plugins (`timezone`, `utc`, `relativeTime`, `customParseFormat`). The API is largely compatible:
-
-```diff
--import moment from 'moment';
-+import dayjs from 'dayjs';
-
--moment(date).format('MMM D, YYYY')
-+dayjs(date).format('MMM D, YYYY')
-
--moment(date).fromNow()
-+dayjs(date).fromNow()  // requires relativeTime plugin
-```
-
-> ⚠️ **This is the highest-risk, highest-reward change.** Recommend doing it as a separate PR with thorough testing. Some `moment-timezone` usage may need the `dayjs` timezone plugin.
-
----
-
-### Phase 5: Dynamic Import Heavy Dependencies
-
-| File | Dependencies | Approach |
-|------|-------------|----------|
-| `QrCodeDownloadOptions.tsx` | `jspdf`, `html2canvas` | `const { jsPDF } = await import('jspdf')` inside handler |
-| `AdminToolsBulkBoostImportOption.tsx` | `jszip` | `const JSZip = (await import('jszip')).default` inside handler |
-| `BulkBoostImportPage.tsx` | `jszip` | Same as above |
-| `MarkdownRenderer.tsx` | `katex`, `rehype-katex`, `remark-math`, `react-shiki` | Wrap in lazy-loaded component or dynamic import |
-| `package.json` | `pdf-lib` | **Remove entirely** — not imported anywhere in source |
-
----
-
-### Phase 6 (Optional): Consolidate Sentry Packages
-
-**Files:** `package.json`, `index.tsx`, `SideMenu.tsx`
-
-The app currently imports both `@sentry/browser` and `@sentry/react`. Consolidate to `@sentry/react` only (which includes browser functionality):
-
-```diff
--import * as Sentry from '@sentry/browser';
-+import * as Sentry from '@sentry/react';
-```
-
----
-
-## Priority Order
-
-| Priority | Phase | Effort | Impact | Risk |
-|----------|-------|--------|--------|------|
-| 1 | Phase 1 — Vite manualChunks | Low | High | Low |
-| 2 | Phase 2 — Lazy routes | Low | High | Low |
-| 3 | Phase 5 — Dynamic imports | Low | Medium | Low |
-| 4 | Phase 3 — lodash-es | Medium | Medium | Low |
-| 5 | Phase 6 — Sentry consolidation | Low | Low | Low |
-| 6 | Phase 4 — moment → dayjs | High | High | Medium |
-
----
-
-## Verification
-
-1. **Run baseline build** — capture current chunk sizes from Vite output
-2. **Apply changes** — rebuild and compare
-3. **Smoke test** — verify login, navigation, PDF export, bulk import, markdown rendering, DevCli
-4. **Optional** — install `rollup-plugin-visualizer` for interactive treemap analysis
+| Optimization | Est. Savings | Effort |
+|-------------|-------------|--------|
+| Lazy-load `filestack-js` | ~480 KB | Med — 50+ files |
+| Consolidate `ethers` + `viem` | ~700 KB | Med — two Ethereum libraries doing similar work |
+| Lazy-load MetaMask/Ethereum stack | ~3,000 KB | Med — only needed for wallet features |
+| Remove `@emoji-mart/data` | ~549 KB | Low — may already be tree-shaken if emoji picker is lazy |
+| LearnCard SDK plugin lazy-loading | ~4,000+ KB | High — architectural change to load plugins on-demand |
+| Server-side credential operations | Significant | Very High — move crypto/DID ops to API |

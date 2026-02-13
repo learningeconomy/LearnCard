@@ -1,6 +1,6 @@
 import React from 'react';
 
-import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/MarkdownRenderer';
+import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
 
 import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 

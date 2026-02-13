@@ -7,6 +7,7 @@ import react from '@vitejs/plugin-react-swc';
 import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // Workspace packages that should not be pre-bundled for HMR support
 const workspacePackages = [
@@ -25,7 +26,21 @@ const workspacePackages = [
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
     return {
-        plugins: [react(), svgr(), tsconfigPaths({ root: '../../' })],
+        plugins: [
+            react(),
+            svgr(),
+            tsconfigPaths({ root: '../../' }),
+            ...(process.env.ANALYZE
+                ? [
+                      visualizer({
+                          open: true,
+                          filename: path.join(__dirname, 'build', 'stats.html'),
+                          gzipSize: true,
+                          template: 'treemap',
+                      }),
+                  ]
+                : []),
+        ],
         build: {
             target: 'esnext',
             outDir: path.join(__dirname, 'build'),

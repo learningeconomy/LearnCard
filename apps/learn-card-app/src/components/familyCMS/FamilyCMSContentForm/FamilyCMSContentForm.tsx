@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { EmojiClickData } from 'emoji-picker-react';
 
 import { IonInput, IonTextarea, IonToggle, useIonModal } from '@ionic/react';
-import FamilyEmojiPicker from '../FamilyCMSEmojiPicker/FamilyEmojiPicker';
+const FamilyEmojiPicker = React.lazy(() => import('../FamilyCMSEmojiPicker/FamilyEmojiPicker'));
 import EmojiRenderer from '../FamilyCMSEmojiPicker/FamilyCMSEmojiRenderer';
 import X from '../../svgs/X';
 
@@ -64,7 +64,9 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
 
     const presentEmojiPicker = () => {
         newModal(
-            <FamilyEmojiPicker handleSetEmoji={handleSetEmoji} handleCloseModal={closeModal} />,
+            <Suspense fallback={<div className="flex items-center justify-center p-8">Loading…</div>}>
+                <FamilyEmojiPicker handleSetEmoji={handleSetEmoji} handleCloseModal={closeModal} />
+            </Suspense>,
             { sectionClassName: '!bg-transparent !shadow-none !w-fit' }
         );
     };
