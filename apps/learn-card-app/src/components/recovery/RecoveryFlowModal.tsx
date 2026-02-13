@@ -168,10 +168,10 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     };
 
     const allMethods = [
-        { id: 'passkey' as const, label: 'Passkey', desc: 'Use Face ID, Touch ID, or similar', icon: fingerPrint, available: hasMethod('passkey') && webAuthnSupported },
+        { id: 'email' as const, label: 'Email Recovery Key', desc: 'Paste the key sent to your email', icon: mailOutline, available: hasMethod('email') && !!onRecoverWithEmail },
         { id: 'phrase' as const, label: 'Recovery Phrase', desc: 'Enter your 25-word phrase', icon: documentTextOutline, available: hasMethod('phrase') },
         { id: 'backup' as const, label: 'Backup File', desc: 'Upload your backup file', icon: cloudUploadOutline, available: hasMethod('backup') },
-        { id: 'email' as const, label: 'Email Recovery Key', desc: 'Paste the key sent to your email', icon: mailOutline, available: hasMethod('email') && !!onRecoverWithEmail },
+        { id: 'passkey' as const, label: 'Passkey', desc: 'Use Face ID, Touch ID, or similar', icon: fingerPrint, available: hasMethod('passkey') && webAuthnSupported },
         { id: 'device' as const, label: 'Another Device', desc: 'Scan a code from a signed-in device', icon: phonePortraitOutline, available: !!onRecoverWithDevice },
     ];
 

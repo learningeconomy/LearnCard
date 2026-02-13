@@ -52,11 +52,15 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
     const anyConfigured = existingMethods.some(m => m.type !== 'email') || sessionConfigured.size > 0;
 
-    // Default to passkey when supported, no existing methods, and not native
+    // Default to the first unconfigured method in priority order:
+    // email > phrase > backup > passkey
     const [activeTab, setActiveTab] = useState<RecoverySetupType>(() => {
-        if (!anyConfigured && !isNative && webAuthnSupported) return 'passkey';
+        if (!isConfigured('email')) return 'email';
+        if (!isConfigured('phrase')) return 'phrase';
+        if (!isConfigured('backup')) return 'backup';
+        if (!isNative && webAuthnSupported && !isConfigured('passkey')) return 'passkey';
 
-        return 'phrase';
+        return 'email';
     });
 
     // Whether the user clicked "Change" on an already-configured method
@@ -255,10 +259,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     };
 
     const allTabs = [
-        { id: 'passkey' as const, label: 'Passkey', icon: fingerPrint, iconClass: 'text-sm' },
+        { id: 'email' as const, label: 'Email', icon: mailOutline, iconClass: 'text-sm' },
         { id: 'phrase' as const, label: 'Phrase', icon: documentTextOutline, iconClass: 'text-sm' },
         { id: 'backup' as const, label: 'Backup', icon: cloudDownloadOutline, iconClass: 'text-sm' },
-        { id: 'email' as const, label: 'Email', icon: mailOutline, iconClass: 'text-sm' },
+        { id: 'passkey' as const, label: 'Passkey', icon: fingerPrint, iconClass: 'text-sm' },
     ];
 
     // Hide passkey tab entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
@@ -398,17 +402,17 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         configuredRow('Passkey is set up', () => setShowUpdateForm(true))
                     ) : (
                         <>
-                            {!anyConfigured && (
-                                <span className="inline-block text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full">
-                                    Recommended
-                                </span>
-                            )}
-
                             {isUpdate && updateWarning('This will replace your current passkey.')}
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
                                 Use Face ID, Touch ID, or Windows Hello as your recovery method. Nothing to remember.
                             </p>
+
+                            <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl">
+                                <p className="text-xs text-amber-700 leading-relaxed">
+                                    Passkeys with encryption are currently supported on desktop Chrome and Edge only.
+                                </p>
+                            </div>
 
                             <div className="p-5 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                 <div className="space-y-2.5 text-sm text-emerald-800">
@@ -614,6 +618,12 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         <>
                             {isUpdate && updateWarning('This will replace your current recovery email.')}
 
+                            {!anyConfigured && (
+                                <span className="inline-block text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full">
+                                    Recommended
+                                </span>
+                            )}
+
                             <p className="text-sm text-grayscale-600 leading-relaxed">
                                 Add a personal email (different from your login) as a recovery destination. A recovery key will be sent there.
                             </p>
@@ -732,10 +742,13 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 </div>
             )}
 
-            {/* Progress hint — only when some (but not all) methods are configured */}
+            {/* Progress hint */}
             {anyConfigured && configuredCount < tabs.length && (
                 <p className="mt-4 text-center text-xs text-grayscale-500 leading-relaxed">
-                    Adding another method improves your security.
+                    {configuredCount === 1
+                        ? 'We recommend setting up at least two recovery methods.'
+                        : 'Adding another method improves your security.'
+                    }
                 </p>
             )}
 
