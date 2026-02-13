@@ -210,12 +210,13 @@ registerKeyDerivationFactory('sss', (config) =>
 );
 
 registerKeyDerivationFactory('web3auth', () => {
-    const { web3AuthClientId, web3AuthNetwork, web3AuthVerifierId } = getAuthConfig();
+    const { web3AuthClientId, web3AuthNetwork, web3AuthVerifierId, web3AuthRpcTarget } = getAuthConfig();
 
     return createWeb3AuthStrategy({
         clientId: web3AuthClientId,
         web3AuthNetwork,
         verifier: web3AuthVerifierId,
+        chainConfig: web3AuthRpcTarget ? { rpcTarget: web3AuthRpcTarget } : undefined,
     });
 });
 
