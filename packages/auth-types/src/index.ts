@@ -60,6 +60,18 @@ export interface AuthProvider {
     getCurrentUser(): Promise<AuthUser | null>;
     getProviderType(): AuthProviderType;
     signOut(): Promise<void>;
+
+    /**
+     * Attempt to silently refresh the auth session (e.g., force-refresh
+     * the JWT using the underlying refresh token).
+     *
+     * Returns `true` if the session was successfully refreshed.
+     * Returns `false` if a full re-authentication is required.
+     *
+     * Optional — providers that don't implement this will require full
+     * re-auth whenever the session expires.
+     */
+    refreshSession?(): Promise<boolean>;
 }
 
 // ---------------------------------------------------------------------------

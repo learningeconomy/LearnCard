@@ -86,6 +86,7 @@ import {
 import { RecoveryFlowModal } from '../components/recovery/RecoveryFlowModal';
 import { RecoverySetupModal } from '../components/recovery/RecoverySetupModal';
 import { DeviceLinkModal } from '../components/device-link/DeviceLinkModal';
+import ReAuthOverlay from '../components/auth/ReAuthOverlay';
 
 // ---------------------------------------------------------------------------
 // DeviceLinkOverlay — fetches the device share then renders the approver modal
@@ -452,8 +453,8 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // --- Proactive auth session check for recovery setup ---
     // Before showing the recovery setup modal, verify the auth session is
-    // still valid. If the token refresh fails, show a "session expired" card
-    // instead of the modal.
+    // still valid. Tries silent refresh (force-refreshes the JWT) first.
+    // If that fails, shows the ReAuthOverlay for in-place re-auth.
     useEffect(() => {
         if (!showRecoverySetup || !recoveryAuthProvider) {
             setRecoverySessionValid(null);
@@ -462,12 +463,30 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 
         let cancelled = false;
 
-        recoveryAuthProvider.getIdToken()
-            .then(() => { if (!cancelled) setRecoverySessionValid(true); })
-            .catch(() => { if (!cancelled) setRecoverySessionValid(false); });
+        const check = async () => {
+            // Try a force-refresh first via the coordinator
+            const refreshed = await coordinator.refreshAuthSession();
+
+            if (cancelled) return;
+
+            if (refreshed) {
+                setRecoverySessionValid(true);
+            } else {
+                // Fallback: try plain getIdToken (may still work if Firebase SDK has a valid session)
+                try {
+                    await recoveryAuthProvider.getIdToken();
+
+                    if (!cancelled) setRecoverySessionValid(true);
+                } catch {
+                    if (!cancelled) setRecoverySessionValid(false);
+                }
+            }
+        };
+
+        check();
 
         return () => { cancelled = true; };
-    }, [showRecoverySetup, recoveryAuthProvider]);
+    }, [showRecoverySetup, recoveryAuthProvider, coordinator]);
 
     // --- DID derivation (shared between auto-setup and recovery) ---
     // Uses getSigningLearnCard (no network) so lc.id.did() returns did:key,
@@ -949,42 +968,14 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                     );
                 }
 
-                // Session expired — show friendly re-auth card
+                // Session expired — show in-place re-auth overlay
                 if (recoverySessionValid === false) {
                     return (
                         <Overlay>
-                            <div className="p-8 text-center space-y-5">
-                                <div className="flex justify-center">
-                                    <IonIcon icon={alertCircleOutline} className="text-amber-500 text-4xl" />
-                                </div>
-
-                                <h2 className="text-xl font-semibold text-grayscale-900">
-                                    Session Expired
-                                </h2>
-
-                                <p className="text-sm text-grayscale-600 leading-relaxed">
-                                    Your sign-in session has expired. Please sign in again to set up recovery methods.
-                                </p>
-
-                                <div className="flex flex-col gap-3">
-                                    <button
-                                        onClick={async () => {
-                                            try { await handleLogout(); } catch (e) { console.warn('Logout failed during session expired flow', e); }
-                                            window.location.href = '/login';
-                                        }}
-                                        className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
-                                    >
-                                        Sign In Again
-                                    </button>
-
-                                    <button
-                                        onClick={() => setShowRecoverySetup(false)}
-                                        className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
-                                    >
-                                        Skip for Now
-                                    </button>
-                                </div>
-                            </div>
+                            <ReAuthOverlay
+                                onSuccess={() => setRecoverySessionValid(true)}
+                                onCancel={() => setShowRecoverySetup(false)}
+                            />
                         </Overlay>
                     );
                 }

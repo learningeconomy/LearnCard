@@ -467,6 +467,78 @@ export class AuthCoordinator {
     }
 
     /**
+     * Attempt to refresh the auth session without navigating away.
+     *
+     * Layer 1: Silent refresh via the provider's refreshSession() (e.g.,
+     *          Firebase force-refreshes the JWT using the refresh token).
+     * Layer 2: Falls back to getIdToken() which may also trigger a refresh.
+     *
+     * On success, updates the current ready state with authSessionValid: true.
+     * Returns true if the session was refreshed, false if full re-auth is needed.
+     */
+    async refreshAuthSession(): Promise<boolean> {
+        // Only makes sense when we're in the ready state
+        if (this.state.status !== 'ready') {
+            return false;
+        }
+
+        // Layer 1: Try the provider's dedicated refresh method
+        if (this.config.authProvider.refreshSession) {
+            const refreshed = await this.config.authProvider.refreshSession();
+
+            if (refreshed) {
+                // Also re-fetch the authUser so it's up to date
+                let authUser = this.state.authUser;
+
+                try {
+                    const freshUser = await this.config.authProvider.getCurrentUser();
+
+                    if (freshUser) {
+                        authUser = freshUser;
+                    }
+                } catch {
+                    // Non-critical — keep existing authUser
+                }
+
+                this.setState({
+                    ...this.state,
+                    authUser,
+                    authSessionValid: true,
+                });
+
+                return true;
+            }
+        }
+
+        // Layer 2: Try getIdToken() directly (may use cached refresh token)
+        try {
+            await this.config.authProvider.getIdToken();
+
+            let authUser = this.state.authUser;
+
+            try {
+                const freshUser = await this.config.authProvider.getCurrentUser();
+
+                if (freshUser) {
+                    authUser = freshUser;
+                }
+            } catch {
+                // Non-critical
+            }
+
+            this.setState({
+                ...this.state,
+                authUser,
+                authSessionValid: true,
+            });
+
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
      * Logout and clear session state.
      *
      * The device share is intentionally preserved so that returning users

@@ -47,6 +47,7 @@ import {
 } from 'learn-card-base';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import useLogout from '../../hooks/useLogout';
+import ReAuthOverlay from '../auth/ReAuthOverlay';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 
@@ -61,42 +62,6 @@ import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helper
 import { checklistItems } from 'learn-card-base';
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline } from 'ionicons/icons';
-
-// Shown when the auth session has expired and the user tries to manage recovery
-const SessionExpiredCard: React.FC<{ onSignIn: () => void | Promise<void>; onClose: () => void }> = ({
-    onSignIn,
-    onClose,
-}) => (
-    <div className="p-8 text-center space-y-5 font-poppins">
-        <div className="flex justify-center">
-            <IonIcon icon={alertCircleOutline} className="text-amber-500 text-4xl" />
-        </div>
-
-        <h2 className="text-xl font-semibold text-grayscale-900">Session Expired</h2>
-
-        <p className="text-sm text-grayscale-600 leading-relaxed">
-            Your sign-in session has expired. Please sign in again to manage recovery methods.
-        </p>
-
-        <div className="flex flex-col gap-3">
-            <button
-                onClick={onSignIn}
-                className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
-            >
-                Sign In Again
-            </button>
-
-            <button
-                onClick={onClose}
-                className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
-            >
-                Cancel
-            </button>
-        </div>
-    </div>
-);
 
 export enum MyLearnCardModalViewModeEnum {
     child = 'child',
@@ -140,7 +105,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
     const { data: connections } = useGetConnections();
 
-    const { keyDerivation, showDeviceLinkModal, authProvider: contextAuthProvider } = useAppAuth();
+    const { keyDerivation, showDeviceLinkModal, authProvider: contextAuthProvider, refreshAuthSession } = useAppAuth();
 
     const { checklistItemsWithStatus, completedItems, numStepsRemaining } = useGetCheckListStatus();
     const checkListItemText = `${completedItems} of ${checklistItems?.length}`;
@@ -396,34 +361,34 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         return;
                     }
 
-                    const showSessionExpired = () => {
+                    const showReAuth = () => {
                         newModal(
-                            <SessionExpiredCard
-                                onSignIn={async () => {
-                                    closeModal();
-                                    try { await handleLogout(); } catch (e) { console.warn('Logout failed during session expired flow', e); }
-                                    window.location.href = '/login';
-                                }}
-                                onClose={closeModal}
+                            <ReAuthOverlay
+                                onSuccess={closeModal}
+                                onCancel={closeModal}
                             />,
                             { sectionClassName: '!max-w-[480px]' },
                             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                         );
                     };
 
-                    // Proactive session check — verify the token before
-                    // opening the modal so we can show a friendly message
-                    // instead of letting individual actions fail.
+                    // Proactive session check — try silent refresh first,
+                    // then verify the token before opening the modal.
                     if (!contextAuthProvider) {
-                        showSessionExpired();
+                        showReAuth();
                         return;
                     }
 
-                    try {
-                        await contextAuthProvider.getIdToken();
-                    } catch {
-                        showSessionExpired();
-                        return;
+                    // Try silent refresh first
+                    const refreshed = await refreshAuthSession();
+
+                    if (!refreshed) {
+                        try {
+                            await contextAuthProvider.getIdToken();
+                        } catch {
+                            showReAuth();
+                            return;
+                        }
                     }
 
                     let existingMethods: Array<{ type: string; createdAt: Date }> = [];

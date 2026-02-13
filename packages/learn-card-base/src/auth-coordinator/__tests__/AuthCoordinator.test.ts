@@ -1136,6 +1136,109 @@ describe('AuthCoordinator', () => {
     });
 
     // -----------------------------------------------------------------------
+    // refreshAuthSession
+    // -----------------------------------------------------------------------
+
+    describe('refreshAuthSession()', () => {
+        it('returns true and updates authSessionValid when refreshSession() succeeds', async () => {
+            const { coordinator, onStateChange } = setup({
+                authProvider: {
+                    refreshSession: vi.fn().mockResolvedValue(true),
+                },
+            });
+
+            await coordinator.initialize();
+
+            // Manually simulate expired session by re-initializing state
+            const readyState = coordinator.getState();
+
+            expect(readyState.status).toBe('ready');
+
+            const result = await coordinator.refreshAuthSession();
+
+            expect(result).toBe(true);
+
+            const finalState = coordinator.getState();
+
+            expect(finalState.status).toBe('ready');
+
+            if (finalState.status === 'ready') {
+                expect(finalState.authSessionValid).toBe(true);
+            }
+        });
+
+        it('falls back to getIdToken() when refreshSession is not available', async () => {
+            const getIdToken = vi.fn().mockResolvedValue('fresh-token');
+
+            const { coordinator } = setup({
+                authProvider: {
+                    getIdToken,
+                    // No refreshSession method
+                },
+            });
+
+            await coordinator.initialize();
+
+            const result = await coordinator.refreshAuthSession();
+
+            expect(result).toBe(true);
+        });
+
+        it('returns false when both refreshSession and getIdToken fail', async () => {
+            const { coordinator } = setup({
+                authProvider: {
+                    refreshSession: vi.fn().mockResolvedValue(false),
+                    getIdToken: vi.fn()
+                        .mockResolvedValueOnce('token-for-init') // used during initialize
+                        .mockRejectedValue(new Error('Token expired')),
+                },
+            });
+
+            await coordinator.initialize();
+
+            const result = await coordinator.refreshAuthSession();
+
+            expect(result).toBe(false);
+        });
+
+        it('returns false when not in ready state', async () => {
+            const { coordinator } = setup();
+
+            // Don't initialize — state is 'idle'
+            const result = await coordinator.refreshAuthSession();
+
+            expect(result).toBe(false);
+        });
+
+        it('updates authUser after successful refresh', async () => {
+            const updatedUser: AuthUser = {
+                id: 'user-1',
+                email: 'updated@example.com',
+                providerType: 'firebase',
+            };
+
+            const { coordinator } = setup({
+                authProvider: {
+                    refreshSession: vi.fn().mockResolvedValue(true),
+                    getCurrentUser: vi.fn()
+                        .mockResolvedValueOnce(mockUser) // during initialize
+                        .mockResolvedValue(updatedUser), // during refresh
+                },
+            });
+
+            await coordinator.initialize();
+
+            await coordinator.refreshAuthSession();
+
+            const state = coordinator.getState();
+
+            if (state.status === 'ready') {
+                expect(state.authUser?.email).toBe('updated@example.com');
+            }
+        });
+    });
+
+    // -----------------------------------------------------------------------
     // createAuthCoordinator factory
     // -----------------------------------------------------------------------
 

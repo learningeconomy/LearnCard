@@ -49,6 +49,12 @@ export interface AuthCoordinatorContextValue {
     forgetDevice: () => Promise<void>;
     retry: () => Promise<void>;
     verifyKeyIntegrity: () => Promise<boolean>;
+
+    /**
+     * Attempt to silently refresh the auth session (e.g., refresh an expired JWT).
+     * Returns true if the session was refreshed, false if full re-auth is needed.
+     */
+    refreshAuthSession: () => Promise<boolean>;
 }
 
 const AuthCoordinatorContext = createContext<AuthCoordinatorContextValue | null>(null);
@@ -289,6 +295,13 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         return coordinatorRef.current.verifyKeyIntegrity();
     }, []);
 
+    const refreshAuthSession = useCallback(async () => {
+        if (!coordinatorRef.current) {
+            return false;
+        }
+        return coordinatorRef.current.refreshAuthSession();
+    }, []);
+
     // Derived state
     const isReady = state.status === 'ready';
     const isLoading = ['authenticating', 'checking_key_status', 'deriving_key'].includes(state.status);
@@ -324,6 +337,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         forgetDevice,
         retry,
         verifyKeyIntegrity,
+        refreshAuthSession,
     }), [
         state,
         isReady,
@@ -346,6 +360,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         forgetDevice,
         retry,
         verifyKeyIntegrity,
+        refreshAuthSession,
     ]);
 
     return (

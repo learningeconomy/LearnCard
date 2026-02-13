@@ -86,6 +86,25 @@ export function createFirebaseAuthProvider(config: FirebaseAuthConfig): AuthProv
             return 'firebase';
         },
 
+        async refreshSession(): Promise<boolean> {
+            try {
+                const firebaseAuth = getAuth();
+                const currentUser = firebaseAuth.currentUser;
+
+                if (!currentUser) {
+                    return false;
+                }
+
+                // Force refresh — Firebase uses its long-lived refresh token
+                // (~1 year) to mint a fresh JWT even if the current one expired.
+                await currentUser.getIdToken(true);
+
+                return true;
+            } catch {
+                return false;
+            }
+        },
+
         async signOut(): Promise<void> {
             if (onSignOut) {
                 await onSignOut();
