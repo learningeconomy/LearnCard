@@ -1,5 +1,28 @@
 # learn-card-base
 
+## 0.1.16
+
+### Patch Changes
+
+-   [#989](https://github.com/learningeconomy/LearnCard/pull/989) [`4d4f0d30a69f6228ff66a5ebfe891331670ffc6b`](https://github.com/learningeconomy/LearnCard/commit/4d4f0d30a69f6228ff66a5ebfe891331670ffc6b) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1423] Move xAPI statements into "Manage Data Sharing" based on contract
+
+-   [#1001](https://github.com/learningeconomy/LearnCard/pull/1001) [`3e2e71af075cef55039ae39baa902f76f7b5fa34`](https://github.com/learningeconomy/LearnCard/commit/3e2e71af075cef55039ae39baa902f76f7b5fa34) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1586 - Migrate AI Tutor Apps to use Official App Store
+
+-   [#988](https://github.com/learningeconomy/LearnCard/pull/988) [`3ea5b9d4b65e1344d0639e84f6fa27d1cef12a3f`](https://github.com/learningeconomy/LearnCard/commit/3ea5b9d4b65e1344d0639e84f6fa27d1cef12a3f) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1373 - Update CMS Thumbnail (Add Media Type preview)
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.13
+
+## 0.1.15
+
+### Patch Changes
+
+-   [#987](https://github.com/learningeconomy/LearnCard/pull/987) [`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1578] Optimize skill framework uploads (aka fix timeout error)
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.6
+    -   @learncard/lca-api-plugin@1.1.12
+
 ## 0.1.14
 
 ### Patch Changes

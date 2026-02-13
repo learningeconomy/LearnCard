@@ -19,10 +19,14 @@ services:
             - learn-card
         extra_hosts:
             - 'localhost:host-gateway'
+        env_file:
+            - path: ./.env
+              required: false
         environment:
             LCN_URL: http://localhost:4000/trpc
             LCN_API_URL: http://localhost:4000/api
             CLOUD_URL: http://localhost:4100/trpc
+            LEARN_CLOUD_XAPI_URL: http://localhost:4100/xapi
             API_URL: http://localhost:5100/trpc
             SKIP_DIDKIT_NAPI: '1'
             # Enable polling for Vite file watching in Docker
@@ -112,6 +116,9 @@ services:
             - learn-card
         extra_hosts:
             - 'localhost:host-gateway'
+        env_file:
+            - path: ../../services/learn-card-network/brain-service/.env
+              required: false
         volumes:
             - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
             - ../../services/learn-card-network/brain-service/nodemon.docker.json:/app/services/learn-card-network/brain-service/nodemon.docker.json
@@ -135,6 +142,8 @@ services:
             AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-notARealSecretKey}
             NOTIFICATIONS_QUEUE_POLL_URL: ${NOTIFICATIONS_QUEUE_POLL_URL:-http://elasticmq:9324/notifications}
             NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-http://elasticmq:9324/notifications}
+            SKILL_EMBEDDING_GOOGLE_API_KEY: ${SKILL_EMBEDDING_GOOGLE_API_KEY:-}
+            SKILL_EMBEDDING_GOOGLE_MODEL: ${SKILL_EMBEDDING_GOOGLE_MODEL:-gemini-embedding-001}
             SMART_RESUME_CLIENT_ID: ${SMART_RESUME_CLIENT_ID:-5B5AE2CE}
             SMART_RESUME_ACCESS_KEY: ${SMART_RESUME_ACCESS_KEY:-BACF7EF16263}
             SMART_RESUME_CONTRACT_URI: ${SMART_RESUME_CONTRACT_URI:-lc:network:localhost%3A4000/trpc:contract:a1087887-88ac-4eea-9a70-71b88b728719}
@@ -157,6 +166,9 @@ services:
             - learn-card
         extra_hosts:
             - 'localhost:host-gateway'
+        env_file:
+            - path: ../../services/learn-card-network/learn-cloud-service/.env
+              required: false
         volumes:
             - ../../services/learn-card-network/learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
             - ../../services/learn-card-network/learn-cloud-service/nodemon.docker.json:/app/services/learn-card-network/learn-cloud-service/nodemon.docker.json
@@ -172,6 +184,13 @@ services:
             LEARN_CLOUD_MONGO_DB_NAME: ${LEARN_CLOUD_MONGO_DB_NAME:-learn-cloud}
             REDIS_HOST: redis2
             REDIS_PORT: 6379
+
+            XAPI_ENDPOINT: http://lrs:8080/xapi
+            XAPI_USERNAME: test-api-key
+            XAPI_PASSWORD: test-api-secret
+
+            SERVER_URL: http://cloud:4100
+            JWT_SIGNING_KEY: test
 
     api:
         image: learncard-monorepo-local
@@ -191,6 +210,9 @@ services:
             - learn-card
         extra_hosts:
             - 'localhost:host-gateway'
+        env_file:
+            - path: ../../services/learn-card-network/lca-api/.env
+              required: false
         volumes:
             - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
             - ../../services/learn-card-network/lca-api/nodemon.docker.json:/app/services/learn-card-network/lca-api/nodemon.docker.json
@@ -222,11 +244,12 @@ services:
                     'wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1',
                 ]
             interval: 10s
-            timeout: 5s
-            retries: 5
-            start_period: 30s
+            timeout: 10s
+            retries: 10
+            start_period: 120s
         environment:
             NEO4J_AUTH: none
+            NEO4J_server_jvm_additional: --add-modules=jdk.incubator.vector
         networks:
             - learn-card
 
@@ -305,6 +328,47 @@ services:
             - '9324:9324'
         networks:
             - learn-card
+    postgres:
+        image: postgres
+        networks:
+            - learn-card
+        environment:
+            POSTGRES_USER: lrsql_user
+            POSTGRES_PASSWORD: lrsql_password
+            POSTGRES_DB: lrsql_db
+        ports:
+            - '5432:5432'
+
+    lrs:
+        image: yetanalytics/lrsql:latest
+        command:
+            - /lrsql/bin/run_postgres.sh
+        networks:
+            - learn-card
+        extra_hosts:
+            - 'localhost:host-gateway'
+        ports:
+            - '8080:8080'
+        depends_on:
+            - postgres
+            - cloud
+        environment:
+            LRSQL_API_KEY_DEFAULT: test-api-key
+            LRSQL_API_SECRET_DEFAULT: test-api-secret
+            LRSQL_ADMIN_USER_DEFAULT: test_username
+            LRSQL_ADMIN_PASS_DEFAULT: test_password
+            LRSQL_DB_HOST: postgres
+            LRSQL_DB_NAME: lrsql_db
+            LRSQL_DB_USER: lrsql_user
+            LRSQL_DB_PASSWORD: lrsql_password
+
+            LRSQL_OIDC_ISSUER: http://cloud:4100
+            LRSQL_OIDC_AUDIENCE: http://lrs:8080/xapi
+            LRSQL_OIDC_SCOPE_PREFIX: 'lrs:'
+
+            # If Postgres is too slow to start, increase this
+            LRSQL_POOL_INITIALIZATION_FAIL_TIMEOUT: 10000
+            LRSQL_ALLOW_ALL_ORIGINS: true
 
 networks:
     learn-card:

@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.89.20
+
+### Patch Changes
+
+-   [#989](https://github.com/learningeconomy/LearnCard/pull/989) [`4d4f0d30a69f6228ff66a5ebfe891331670ffc6b`](https://github.com/learningeconomy/LearnCard/commit/4d4f0d30a69f6228ff66a5ebfe891331670ffc6b) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1423] Move xAPI statements into "Manage Data Sharing" based on contract
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.13
+    -   @learncard/react@2.9.12
+
+## 1.89.19
+
+### Patch Changes
+
+-   [#987](https://github.com/learningeconomy/LearnCard/pull/987) [`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1578] Optimize skill framework uploads (aka fix timeout error)
+
+-   Updated dependencies [[`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c)]:
+    -   @learncard/react@2.9.11
+    -   @learncard/helpers@1.2.6
+    -   @learncard/lca-api-plugin@1.1.12
+
 ## 1.89.18
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
     "name": "learn-card-app",
-    "version": "1.94.21",
+    "version": "1.94.24",
     "private": true,
     "dependencies": {
         "@capacitor-community/media": "^9.0.0",
@@ -79,6 +79,7 @@
         "lucide-react": "^0.560.0",
         "moment": "^2.30.1",
         "moment-timezone": "^0.5.47",
+        "motion": "^12.23.24",
         "nanostores": "^0.11.3",
         "numeral": "^2.0.6",
         "papaparse": "^5.5.1",
@@ -114,11 +115,12 @@
     },
     "scripts": {
         "dev": "docker compose -f compose-local.yaml up --build",
+        "dev:services": "docker compose -f compose-local.yaml up --build --scale app=0",
         "dev-no-build": "docker compose -f compose-local.yaml up",
         "dev-build-brain": "docker compose -f compose-local.yaml up --build brain",
         "start": "vite --host",
         "start-p-4000": "vite --port=4000",
-        "docker-start": "LCN_URL=http://localhost:4000/trpc LCN_API_URL=http://localhost:4000/api CLOUD_URL=http://localhost:4100/trpc API_URL=http://localhost:5100/trpc vite --host",
+        "docker-start": "LCN_URL=http://localhost:4000/trpc LCN_API_URL=http://localhost:4000/api CLOUD_URL=http://localhost:4100/trpc LEARN_CLOUD_XAPI_URL=http://localhost:4100/xapi API_URL=http://localhost:5100/trpc vite --host",
         "serve": "vite",
         "build": "NODE_OPTIONS=\"--max-old-space-size=16608\"  vite build",
         "docker-build": "LCN_URL=http://localhost:4000/trpc CLOUD_URL=http://localhost:4100/trpc API_URL=http://localhost:5100/trpc NODE_OPTIONS=\"--max-old-space-size=4608\" vite build -d",
@@ -174,8 +176,8 @@
         "tailwindcss": "^3.4.17",
         "vite": "4.3.8",
         "vite-plugin-svgr": "^3.3.0",
-        "vitest": "^3.0.0",
-        "vite-tsconfig-paths": "4.2.3"
+        "vite-tsconfig-paths": "4.2.3",
+        "vitest": "^3.0.0"
     },
     "description": "An Ionic project"
 }

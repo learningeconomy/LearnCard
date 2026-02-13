@@ -9,7 +9,7 @@ import { getAppDidWeb, getDidWeb, getManagedDidWeb } from '@helpers/did.helpers'
 import { isValidAppSlug } from '@helpers/slug.helpers';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import {
-    getPrimarySigningAuthorityForListing,
+    getSigningAuthoritiesForListing,
     getSigningAuthoritiesForUser,
 } from '@accesslayer/signing-authority/relationships/read';
 import { readAppStoreListingBySlug } from '@accesslayer/app-store-listing/read';
@@ -275,7 +275,13 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         const listing = await readAppStoreListingBySlug(slug);
         if (!listing) return reply.status(404).send();
 
-        const signingAuthority = await getPrimarySigningAuthorityForListing(listing);
+        const signingAuthorities = (await getSigningAuthoritiesForListing(listing)).filter(
+            sa => !sa.relationship.did.includes('did:web')
+        );
+        if (!signingAuthorities.length) return reply.status(404).send();
+
+        const signingAuthority =
+            signingAuthorities.find(sa => sa.relationship.isPrimary) || signingAuthorities[0];
         if (!signingAuthority) return reply.status(404).send();
 
         const authorityDid = signingAuthority.relationship.did;
@@ -303,6 +309,38 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
             replacedDoc.verificationMethod[0].controller = `${did}#${authorityName}`;
         }
 
+        let saDocs: Record<string, any>[] = [];
+        try {
+            const additionalSigningAuthorities = signingAuthorities.filter(
+                sa =>
+                    !(
+                        sa.relationship.did === signingAuthority.relationship.did &&
+                        sa.relationship.name === signingAuthority.relationship.name
+                    )
+            );
+
+            saDocs = await Promise.all(
+                additionalSigningAuthorities.map(async (sa): Promise<Record<string, any>> => {
+                    const _didDoc = await learnCard.invoke.resolveDid(sa.relationship.did);
+                    const _key = sa.relationship.did.split(':')[2];
+
+                    const _replacedDoc = JSON.parse(
+                        JSON.stringify(_didDoc)
+                            .replaceAll(sa.relationship.did, did)
+                            .replaceAll(`#${_key}`, `#${sa.relationship.name}`)
+                    );
+
+                    if (_replacedDoc?.verificationMethod?.[0]) {
+                        _replacedDoc.verificationMethod[0].controller += `#${sa.relationship.name}`;
+                    }
+
+                    return _replacedDoc;
+                })
+            );
+        } catch (e) {
+            console.error(e);
+        }
+
         let finalDoc: DidDocument = { ...replacedDoc, controller: authorityDid };
 
         try {
@@ -327,6 +365,27 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                 { err: e },
                 'Failed to set 2019 keyAgreement on app did:web document'
             );
+        }
+
+        if (saDocs.length) {
+            saDocs.map(sa => {
+                finalDoc.verificationMethod = [
+                    ...(finalDoc.verificationMethod || []),
+                    ...(sa.verificationMethod || []),
+                ];
+                finalDoc.authentication = [
+                    ...(finalDoc.authentication || []),
+                    ...(sa.authentication || []),
+                ];
+                finalDoc.assertionMethod = [
+                    ...(finalDoc.assertionMethod || []),
+                    ...(sa.assertionMethod || []),
+                ];
+                finalDoc.keyAgreement = [
+                    ...(finalDoc.keyAgreement || []),
+                    ...(sa.keyAgreement || []),
+                ];
+            });
         }
 
         await setDidDocForApp(slug, finalDoc);

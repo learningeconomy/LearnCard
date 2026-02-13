@@ -8,3 +8,7 @@ export const FlatSkillValidator = SkillValidator.extend({
 });
 
 export type FlatSkillType = z.infer<typeof FlatSkillValidator>;
+
+export type SkillDbType = FlatSkillType & {
+    embedding?: number[];
+};

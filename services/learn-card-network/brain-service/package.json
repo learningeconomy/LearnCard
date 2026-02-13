@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "3.10.2",
+    "version": "3.11.1",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -46,12 +46,10 @@
         "@types/mustache": "^4.2.5"
     },
     "dependencies": {
+        "@google/genai": "^1.27.0",
         "@aws-sdk/client-sqs": "^3.379.1",
         "@digitalcredentials/issuer-registry-client": "^3.2.0-beta.5",
         "@fastify/cors": "^11.2.0",
-        "@fastify/static": "^9.0.0",
-        "@fastify/swagger": "^9.6.1",
-        "@fastify/swagger-ui": "^5.2.4",
         "@learncard/core": "workspace:*",
         "@learncard/crypto-plugin": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",

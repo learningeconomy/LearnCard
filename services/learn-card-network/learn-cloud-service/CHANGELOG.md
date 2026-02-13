@@ -1,5 +1,30 @@
 # @learncard/network-brain-service
 
+## 2.5.3
+
+### Patch Changes
+
+-   [#983](https://github.com/learningeconomy/LearnCard/pull/983) [`50e72d3dd3abc9a8d4309ce1b3c1637f1baf6dbe`](https://github.com/learningeconomy/LearnCard/commit/50e72d3dd3abc9a8d4309ce1b3c1637f1baf6dbe) Thanks [@Custard7](https://github.com/Custard7)! - feat: Sentry Filtering
+
+## 2.5.2
+
+### Patch Changes
+
+-   Updated dependencies [[`32e5cfacf499e9a68700170298040f3d313b38da`](https://github.com/learningeconomy/LearnCard/commit/32e5cfacf499e9a68700170298040f3d313b38da)]:
+    -   @learncard/types@5.12.0
+    -   @learncard/core@9.4.6
+    -   @learncard/helpers@1.2.6
+    -   @learncard/did-web-plugin@1.1.6
+    -   @learncard/didkey-plugin@1.1.6
+    -   @learncard/didkit-plugin@1.7.2
+    -   @learncard/didkit-plugin-node@0.2.2
+    -   @learncard/encryption-plugin@1.1.6
+    -   @learncard/learn-card-plugin@1.2.6
+    -   @learncard/vc-plugin@1.4.2
+    -   @learncard/vc-templates-plugin@1.1.6
+    -   @learncard/crypto-plugin@1.1.6
+    -   @learncard/expiration-plugin@1.2.6
+
 ## 2.5.1
 
 ### Patch Changes

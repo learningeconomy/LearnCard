@@ -37,6 +37,40 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
+        container_name: 'scouts-app'
+        expose:
+            - 3000
+        ports:
+            - '3000:3000'
+        command: ['sh', '-c', 'pnpm exec nx docker-start scouts']
+        depends_on:
+            - brain
+            - cloud
+            - api
+            - delete-service
+        networks:
+            - learn-card
+        extra_hosts:
+            - 'localhost:host-gateway'
+        env_file:
+            - path: ./.env
+              required: false
+        environment:
+            LCN_URL: http://localhost:4000/trpc
+            LCN_API_URL: http://localhost:4000/api
+            CLOUD_URL: http://localhost:4100/trpc
+            LEARN_CLOUD_XAPI_URL: http://localhost:4100/xapi
+            API_URL: http://localhost:5100/trpc
+            SKIP_DIDKIT_NAPI: '1'
+            CHOKIDAR_USEPOLLING: 'true'
+            CHOKIDAR_INTERVAL: '1000'
+        volumes:
+            - ./src:/app/apps/scouts/src
+            - ./vite.config.ts:/app/apps/scouts/vite.config.ts
+            - ../../packages:/app/packages
+
+    watcher:
+        image: learncard-monorepo-local
         container_name: 'lcn-watcher'
         # user: '${UID:-1000}:${GID:-1000}'
         command:
@@ -113,6 +147,9 @@ services:
             - learn-card
         extra_hosts:
             - 'localhost:host-gateway'
+        env_file:
+            - path: ../../services/learn-card-network/brain-service/.env
+              required: false
         volumes:
             - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
             - ../../services/learn-card-network/brain-service/nodemon.docker.json:/app/services/learn-card-network/brain-service/nodemon.docker.json
@@ -135,6 +172,8 @@ services:
             AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-notARealSecretKey}
             NOTIFICATIONS_QUEUE_POLL_URL: ${NOTIFICATIONS_QUEUE_POLL_URL:-http://elasticmq:9324/notifications}
             NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-http://elasticmq:9324/notifications}
+            SKILL_EMBEDDING_GOOGLE_API_KEY: ${SKILL_EMBEDDING_GOOGLE_API_KEY:-}
+            SKILL_EMBEDDING_GOOGLE_MODEL: ${SKILL_EMBEDDING_GOOGLE_MODEL:-gemini-embedding-001}
 
     cloud:
         image: learncard-monorepo-local
@@ -154,6 +193,9 @@ services:
             - learn-card
         extra_hosts:
             - 'localhost:host-gateway'
+        env_file:
+            - path: ../../services/learn-card-network/learn-cloud-service/.env
+              required: false
         volumes:
             - ../../services/learn-card-network/learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
             - ../../services/learn-card-network/learn-cloud-service/nodemon.docker.json:/app/services/learn-card-network/learn-cloud-service/nodemon.docker.json
@@ -188,6 +230,9 @@ services:
             - learn-card
         extra_hosts:
             - 'localhost:host-gateway'
+        env_file:
+            - path: ../../services/learn-card-network/lca-api/.env
+              required: false
         volumes:
             - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
             - ../../services/learn-card-network/lca-api/nodemon.docker.json:/app/services/learn-card-network/lca-api/nodemon.docker.json
@@ -224,6 +269,7 @@ services:
             start_period: 30s
         environment:
             NEO4J_AUTH: none
+            NEO4J_server_jvm_additional: --add-modules=jdk.incubator.vector
         networks:
             - learn-card
 

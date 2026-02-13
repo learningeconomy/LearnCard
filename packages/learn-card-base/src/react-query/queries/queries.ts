@@ -787,9 +787,7 @@ export const useGetAppStoreListingBySlug = (
             const networkUrl = networkStore.get.networkUrl() || LEARNCARD_NETWORK_API_URL;
 
             try {
-                const response = await fetch(
-                    `${networkUrl}/app-store/public/listing/slug/${slug}`
-                );
+                const response = await fetch(`${networkUrl}/app-store/public/listing/slug/${slug}`);
 
                 if (!response.ok) return undefined;
 
@@ -961,9 +959,10 @@ export const useGetSkillFrameworkById = (
 export const useSearchFrameworkSkills = (
     frameworkId: string,
     query: any,
-    options?: { limit?: number }
+    options?: { limit?: number; enabled?: boolean }
 ) => {
     const { initWallet } = useWallet();
+    const enabled = options?.enabled ?? true;
 
     return useQuery({
         queryKey: ['searchFrameworkSkills', frameworkId, query, options],
@@ -971,7 +970,7 @@ export const useSearchFrameworkSkills = (
             const wallet = await initWallet();
             return wallet.invoke.searchFrameworkSkills(frameworkId, query, options);
         },
-        enabled: !!frameworkId && !!query,
+        enabled: !!frameworkId && !!query && enabled,
     });
 };
 
@@ -1031,8 +1030,13 @@ export const useGetSkillChildren = (frameworkId: string, skillId: string) => {
     });
 };
 
-export const useGetSkillPath = (frameworkId: string, skillId: string) => {
+export const useGetSkillPath = (
+    frameworkId: string,
+    skillId: string,
+    options?: { enabled?: boolean }
+) => {
     const { initWallet } = useWallet();
+    const enabled = options?.enabled ?? true;
 
     return useQuery({
         queryKey: ['getSkillPath', frameworkId, skillId],
@@ -1040,7 +1044,7 @@ export const useGetSkillPath = (frameworkId: string, skillId: string) => {
             const wallet = await initWallet();
             return wallet.invoke.getSkillPath({ frameworkId, skillId });
         },
-        enabled: !!frameworkId && !!skillId,
+        enabled: !!frameworkId && !!skillId && enabled,
     });
 };
 

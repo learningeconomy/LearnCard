@@ -1,5 +1,28 @@
 # @welibraryos/lca-api-service
 
+## 1.1.13
+
+### Patch Changes
+
+-   [#983](https://github.com/learningeconomy/LearnCard/pull/983) [`50e72d3dd3abc9a8d4309ce1b3c1637f1baf6dbe`](https://github.com/learningeconomy/LearnCard/commit/50e72d3dd3abc9a8d4309ce1b3c1637f1baf6dbe) Thanks [@Custard7](https://github.com/Custard7)! - feat: Sentry Filtering
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.3
+
+## 1.1.12
+
+### Patch Changes
+
+-   [#980](https://github.com/learningeconomy/LearnCard/pull/980) [`efdfced27681ae5e68818a8a595eb76da59bd842`](https://github.com/learningeconomy/LearnCard/commit/efdfced27681ae5e68818a8a595eb76da59bd842) Thanks [@Custard7](https://github.com/Custard7)! - feat: Upgrade Instrumentation Tracing for Performance Monitoring
+
+-   Updated dependencies [[`32e5cfacf499e9a68700170298040f3d313b38da`](https://github.com/learningeconomy/LearnCard/commit/32e5cfacf499e9a68700170298040f3d313b38da)]:
+    -   @learncard/types@5.12.0
+    -   @learncard/core@9.4.6
+    -   @learncard/init@2.3.2
+    -   @learncard/did-web-plugin@1.1.6
+    -   @learncard/didkit-plugin@1.7.2
+    -   @learncard/didkit-plugin-node@0.2.2
+
 ## 1.1.11
 
 ### Patch Changes
