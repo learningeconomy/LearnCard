@@ -376,6 +376,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
     return {
         name: 'sss',
 
+        capabilities: {
+            recovery: true,
+            deviceLinking: true,
+            localKeyPersistence: true,
+        },
+
         // --- User scoping ---
 
         setActiveUser(userId: string): void {

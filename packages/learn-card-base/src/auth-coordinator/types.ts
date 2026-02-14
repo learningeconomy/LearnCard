@@ -15,6 +15,7 @@ export { AuthSessionError } from '@learncard/auth-types';
 
 export type {
     KeyDerivationStrategy,
+    KeyDerivationCapabilities,
     ServerKeyStatus,
     AuthProvider,
     AuthUser,

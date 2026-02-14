@@ -12,6 +12,7 @@ import { AuthCoordinator, createAuthCoordinator } from './AuthCoordinator';
 import type {
     AuthProvider,
     AuthProviderType,
+    KeyDerivationCapabilities,
     KeyDerivationStrategy,
     UnifiedAuthState,
 } from './types';
@@ -36,6 +37,9 @@ export interface AuthCoordinatorContextValue {
 
     /** Whether the auth provider session (e.g. Firebase JWT) is currently valid */
     authSessionValid: boolean;
+
+    /** Declarative feature flags from the active key derivation strategy */
+    capabilities: KeyDerivationCapabilities;
 
     /** The key derivation strategy (for app-level recovery setup / method queries) */
     keyDerivation: KeyDerivationStrategy;
@@ -327,6 +331,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         privateKey,
         did,
         authSessionValid,
+        capabilities: keyDerivation.capabilities,
         keyDerivation,
         initialize,
         setupNewKey,

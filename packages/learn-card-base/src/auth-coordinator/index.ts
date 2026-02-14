@@ -40,6 +40,7 @@ export type {
     AuthProviderType,
     AuthUser,
     AuthCoordinatorConfig,
+    KeyDerivationCapabilities,
     KeyDerivationStrategy,
     ServerKeyStatus,
     RecoveryMethodType,

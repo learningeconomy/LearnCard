@@ -105,7 +105,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
     const { data: connections } = useGetConnections();
 
-    const { keyDerivation, showDeviceLinkModal, authProvider: contextAuthProvider, refreshAuthSession } = useAppAuth();
+    const { keyDerivation, capabilities, showDeviceLinkModal, authProvider: contextAuthProvider, refreshAuthSession } = useAppAuth();
 
     const { checklistItemsWithStatus, completedItems, numStepsRemaining } = useGetCheckListStatus();
     const checkListItemText = `${completedItems} of ${checklistItems?.length}`;
@@ -351,7 +351,10 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                     );
                 },
             },
-            {
+        );
+
+        if (capabilities.recovery) {
+            rows.push({
                 title: 'Account Recovery',
                 Icon: ShieldCheck,
                 caretText: '',
@@ -485,8 +488,11 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
                 },
-            },
-            {
+            });
+        }
+
+        if (capabilities.deviceLinking) {
+            rows.push({
                 title: 'Link a Device',
                 Icon: QRCodeScanner,
                 caretText: '',
@@ -494,8 +500,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                     closeModal();
                     showDeviceLinkModal();
                 },
-            }
-        );
+            });
+        }
     }
 
     // if (viewMode === MyLearnCardModalViewModeEnum.guardian) {

@@ -692,7 +692,8 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                 emitAuthSuccess('auth:wallet_ready', `Wallet initialized — DID: ${did.slice(0, 30)}...`);
 
                 // Check recovery methods for all users; prompt new users to set up
-                if (recoveryAuthProvider && keyDerivation.getAvailableRecoveryMethods) {
+                // (only relevant for strategies that support recovery)
+                if (keyDerivation.capabilities.recovery && recoveryAuthProvider && keyDerivation.getAvailableRecoveryMethods) {
                     const isNewUser = wasNewUserRef.current;
                     wasNewUserRef.current = false;
 

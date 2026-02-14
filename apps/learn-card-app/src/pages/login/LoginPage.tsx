@@ -29,6 +29,7 @@ import useLogout from '../../hooks/useLogout';
 
 import { setPublicComputerMode, isPublicComputerMode } from '@learncard/sss-key-manager';
 import { setPersistence, browserSessionPersistence, indexedDBLocalPersistence } from 'firebase/auth';
+import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
 
 import { auth } from '../../firebase/firebase';
 
@@ -75,6 +76,7 @@ export const LoginContent: React.FC = () => {
     const [accountHint, setAccountHint] = useState<string | null>(null);
     const [isPublicMode, setIsPublicMode] = useState(() => isPublicComputerMode());
     const authConfig = getAuthConfig();
+    const configCapabilities = getConfigCapabilities();
     const isWeb = !Capacitor.isNativePlatform();
 
     const { mutateAsync: generatePinUpdateToken } = useGeneratePinUpdateToken();
@@ -340,7 +342,7 @@ export const LoginContent: React.FC = () => {
                         </IonRow>
                     </IonRow>
 
-                    {isWeb && (
+                    {isWeb && configCapabilities.localKeyPersistence && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-3">
                             <button
                                 onClick={async () => {
@@ -393,14 +395,16 @@ export const LoginContent: React.FC = () => {
                         </IonRow>
                     )}
 
-                    <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-4">
-                        <button
-                            onClick={() => setShowQrLogin(true)}
-                            className="text-sm text-white/80 hover:text-white underline transition-colors"
-                        >
-                            Sign in from another device
-                        </button>
-                    </IonRow>
+                    {configCapabilities.deviceLinking && (
+                        <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-4">
+                            <button
+                                onClick={() => setShowQrLogin(true)}
+                                className="text-sm text-white/80 hover:text-white underline transition-colors"
+                            >
+                                Sign in from another device
+                            </button>
+                        </IonRow>
+                    )}
 
                     <GenericErrorBoundary hideGoHome>
                         <LoginFooter />

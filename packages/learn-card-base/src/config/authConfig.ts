@@ -154,6 +154,34 @@ export const shouldUseSSS = (): boolean => {
 };
 
 /**
+ * Default capabilities per strategy name.
+ * Used by `getConfigCapabilities()` for pre-auth UI gating (e.g. login page)
+ * when no strategy instance is available yet.
+ *
+ * To add a future strategy, just add an entry here.
+ */
+const STRATEGY_CAPABILITIES: Record<string, import('@learncard/auth-types').KeyDerivationCapabilities> = {
+    sss: { recovery: true, deviceLinking: true, localKeyPersistence: true },
+    web3auth: { recovery: false, deviceLinking: false, localKeyPersistence: false },
+};
+
+const DEFAULT_CAPABILITIES: import('@learncard/auth-types').KeyDerivationCapabilities = {
+    recovery: false,
+    deviceLinking: false,
+    localKeyPersistence: false,
+};
+
+/**
+ * Get key derivation capabilities from config alone (no strategy instance needed).
+ * Useful for pre-auth UI gating (e.g. login page public computer toggle).
+ */
+export const getConfigCapabilities = (): import('@learncard/auth-types').KeyDerivationCapabilities => {
+    const { keyDerivation } = getAuthConfig();
+
+    return STRATEGY_CAPABILITIES[keyDerivation] ?? DEFAULT_CAPABILITIES;
+};
+
+/**
  * Check if migration from Web3Auth to SSS is enabled.
  */
 export const isAuthMigrationEnabled = (): boolean => {

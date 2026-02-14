@@ -48,7 +48,7 @@ type LaunchPadItem = Partial<LaunchPadAppListItemType> &
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
-    const { recoveryMethodCount, openRecoverySetup } = useAppAuth();
+    const { recoveryMethodCount, openRecoverySetup, capabilities } = useAppAuth();
     const history = useHistory();
     const { search } = useLocation();
     const { connectTo, challenge, uri, suppressContractModal, embedUrl, appName, appImage } =
@@ -469,10 +469,12 @@ const LaunchPad: React.FC = () => {
                             </div>
                         </LaunchPadHeader>
                         <div className="flex-grow flex flex-col items-center justify-start w-full pb-8 px-4 bg-grayscale-100">
-                            <RecoveryBanner
-                                recoveryMethodCount={recoveryMethodCount}
-                                onSetup={openRecoverySetup}
-                            />
+                            {capabilities.recovery && (
+                                <RecoveryBanner
+                                    recoveryMethodCount={recoveryMethodCount}
+                                    onSetup={openRecoverySetup}
+                                />
+                            )}
 
                             {searchInput.length > 0 ? (
                                 <>

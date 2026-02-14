@@ -118,6 +118,42 @@ export interface ServerKeyStatus {
 }
 
 // ---------------------------------------------------------------------------
+// Key Derivation Capabilities
+// ---------------------------------------------------------------------------
+
+/**
+ * Declarative capability flags for a key derivation strategy.
+ *
+ * UI components read these to decide which features to show.
+ * Each strategy declares its own capabilities — no strategy-specific
+ * checks needed in the UI layer.
+ *
+ * All flags default to `false` when absent.
+ *
+ * @example
+ * ```ts
+ * // SSS declares full capabilities:
+ * capabilities: { recovery: true, deviceLinking: true, localKeyPersistence: true }
+ *
+ * // Web3Auth derives keys on-demand, nothing local to manage:
+ * capabilities: { recovery: false, deviceLinking: false, localKeyPersistence: false }
+ * ```
+ */
+export interface KeyDerivationCapabilities {
+    /** Strategy supports user-facing recovery methods (setup + execution) */
+    recovery: boolean;
+
+    /** Strategy supports cross-device key transfer (e.g., QR-based device linking) */
+    deviceLinking: boolean;
+
+    /**
+     * Strategy persists key material locally (e.g., device share in IndexedDB).
+     * When true, "public computer" / "forget device" features are relevant.
+     */
+    localKeyPersistence: boolean;
+}
+
+// ---------------------------------------------------------------------------
 // Key Derivation Strategy (generic)
 // ---------------------------------------------------------------------------
 
@@ -152,6 +188,9 @@ export interface KeyDerivationStrategy<
     TRecoverySetupResult = unknown,
 > {
     readonly name: string;
+
+    /** Declarative feature flags — UI reads these to gate features */
+    readonly capabilities: KeyDerivationCapabilities;
 
     // --- Key lifecycle ---
 

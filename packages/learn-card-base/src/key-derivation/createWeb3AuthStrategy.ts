@@ -156,6 +156,12 @@ export const createWeb3AuthStrategy = (
     return {
         name: 'web3auth',
 
+        capabilities: {
+            recovery: false,
+            deviceLinking: false,
+            localKeyPersistence: false,
+        },
+
         // --- Key lifecycle ---
         // Web3Auth derives keys on-demand from the auth token. There are no
         // persistent local shares to manage — these are all no-ops.
