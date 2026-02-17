@@ -1,5 +1,12 @@
 # @welibraryos/lca-api-client
 
+## 1.1.13
+
+### Patch Changes
+
+-   Updated dependencies [[`50e72d3dd3abc9a8d4309ce1b3c1637f1baf6dbe`](https://github.com/learningeconomy/LearnCard/commit/50e72d3dd3abc9a8d4309ce1b3c1637f1baf6dbe)]:
+    -   @learncard/lca-api-service@1.1.13
+
 ## 1.1.12
 
 ### Patch Changes

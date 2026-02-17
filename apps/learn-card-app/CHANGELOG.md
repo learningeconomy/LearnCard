@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.94.24
+
+### Patch Changes
+
+-   [#1003](https://github.com/learningeconomy/LearnCard/pull/1003) [`2a2c65deb667315e54919ff5b6ae9e51c87bb6db`](https://github.com/learningeconomy/LearnCard/commit/2a2c65deb667315e54919ff5b6ae9e51c87bb6db) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: installing apps you've already consented too
+
+## 1.94.23
+
+### Patch Changes
+
+-   [#999](https://github.com/learningeconomy/LearnCard/pull/999) [`8a2789e817665f6608e490025d842a557d89d82e`](https://github.com/learningeconomy/LearnCard/commit/8a2789e817665f6608e490025d842a557d89d82e) Thanks [@rhen92](https://github.com/rhen92)! - fix: Remove test button for testing only on lc-1423
+
+-   [#996](https://github.com/learningeconomy/LearnCard/pull/996) [`b466db8c0b825debc61a3015e50283a34b7d17ef`](https://github.com/learningeconomy/LearnCard/commit/b466db8c0b825debc61a3015e50283a34b7d17ef) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1581 & LC-1582] Move screenshots to top and truncate about section in app profile
+
+-   [#989](https://github.com/learningeconomy/LearnCard/pull/989) [`4d4f0d30a69f6228ff66a5ebfe891331670ffc6b`](https://github.com/learningeconomy/LearnCard/commit/4d4f0d30a69f6228ff66a5ebfe891331670ffc6b) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1423] Move xAPI statements into "Manage Data Sharing" based on contract
+
+-   [#1000](https://github.com/learningeconomy/LearnCard/pull/1000) [`d2349ca259286045e97293e0398e1a6a6d30cfc3`](https://github.com/learningeconomy/LearnCard/commit/d2349ca259286045e97293e0398e1a6a6d30cfc3) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1584 & LC-1591] Make LaunchPadActionModal wider & Fix Get Started button
+
+-   [#1001](https://github.com/learningeconomy/LearnCard/pull/1001) [`3e2e71af075cef55039ae39baa902f76f7b5fa34`](https://github.com/learningeconomy/LearnCard/commit/3e2e71af075cef55039ae39baa902f76f7b5fa34) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1586 - Migrate AI Tutor Apps to use Official App Store
+
+-   [#988](https://github.com/learningeconomy/LearnCard/pull/988) [`3ea5b9d4b65e1344d0639e84f6fa27d1cef12a3f`](https://github.com/learningeconomy/LearnCard/commit/3ea5b9d4b65e1344d0639e84f6fa27d1cef12a3f) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1373 - Update CMS Thumbnail (Add Media Type preview)
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.13
+    -   @learncard/react@2.9.12
+
 ## 1.94.22
 
 ### Patch Changes

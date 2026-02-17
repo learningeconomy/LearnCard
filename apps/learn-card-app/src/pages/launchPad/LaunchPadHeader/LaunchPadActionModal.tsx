@@ -615,7 +615,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     };
 
     return (
-        <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[380px]">
+        <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[500px]">
             <button
                 type="button"
                 aria-label="Close modal"
