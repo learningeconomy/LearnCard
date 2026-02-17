@@ -7,7 +7,7 @@ import { useGetCredentialWithEdits, useGetCurrentLCNUser } from 'learn-card-base
 import TroopID from './TroopID';
 import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
-import TroopIdStatusButton, { useIsTroopIDRevokedFake } from './TroopIdStatusButton';
+import TroopIdStatusButton, { useTroopIDStatus } from './TroopIdStatusButton';
 import TroopIdBoxQRCodeFrame from '../../components/svgs/TroopIdBoxQRCodeFrame';
 import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { VC } from '@learncard/types';
@@ -39,7 +39,8 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
     );
     const credential = credentialWithEdits ?? credentialNoEdits;
 
-    const isRevoked = useIsTroopIDRevokedFake(credentialNoEdits, isError, error);
+    const credentialStatus = useTroopIDStatus(credentialNoEdits, undefined, boostUri);
+    const isRevokedOrPending = credentialStatus === 'revoked' || credentialStatus === 'pending';
 
     const network = useGetTroopNetwork(credential);
 
@@ -72,7 +73,7 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
                     <div className="flex justify-center relative pb-[10px]">
                         <button
                             onClick={() => {
-                                if (isRevoked) return;
+                                if (isRevokedOrPending) return;
 
                                 handleShare();
                             }}

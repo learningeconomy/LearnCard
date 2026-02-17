@@ -1,7 +1,4 @@
-import path from 'node:path';
-
 import Fastify from 'fastify';
-import fastifyStatic from '@fastify/static';
 import fastifyCors from '@fastify/cors';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import type { FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
@@ -88,9 +85,22 @@ server.register(fastifyTRPCOpenApiPlugin, {
 } satisfies CreateOpenApiFastifyPluginOptions<AppRouter>);
 
 server.get('/docs/openapi.json', () => openApiDocument);
-server.register(fastifyStatic, {
-    root: path.join(__dirname, '../src/swagger-ui'),
-    prefix: '/docs/',
+
+const SCALAR_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>LearnCloud Network API</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+    <script id="api-reference" data-url="./docs/openapi.json"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+</body>
+</html>`;
+
+server.get('/docs', (_request, reply) => {
+    return reply.type('text/html').send(SCALAR_HTML);
 });
 
 server.register(didFastifyPlugin);
