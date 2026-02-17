@@ -97,6 +97,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
     const getFile = async (event: React.ChangeEvent<HTMLInputElement>, uploadType: string) => {
         try {
             setIsUploading(true);
+            setBase64Data('');
+            setRawArtifactCredential(null);
             const wallet = await initWallet();
             const walletDid = wallet?.id?.did();
             const file = event.target.files?.[0];
@@ -127,6 +129,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
     ) => {
         try {
             setIsUploading(true);
+            setBase64Datas([]);
+            setRawArtifactCredentials([]);
             const wallet = await initWallet();
             const walletDid = wallet?.id?.did();
             const files = e.target.files;
