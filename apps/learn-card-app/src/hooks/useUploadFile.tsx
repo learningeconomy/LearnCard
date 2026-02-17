@@ -365,6 +365,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         const total = rawArtifactCredentials.length;
         let settled = 0;
 
+        // Called: Called when a file finishes processing (success or failure).
+        // Increments the settled count and resets the parsing state when all files are done.
         const onFileSettled = () => {
             settled += 1;
             if (settled >= total) {
