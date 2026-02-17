@@ -362,6 +362,16 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             checklistStore.set.updateIsParsing(fileType, true);
         }
 
+        const total = rawArtifactCredentials.length;
+        let settled = 0;
+
+        const onFileSettled = () => {
+            settled += 1;
+            if (settled >= total) {
+                checklistStore.set.updateIsParsing(fileType, false);
+            }
+        };
+
         try {
             const wallet = await initWallet();
             const did = wallet?.id?.did();
@@ -401,8 +411,11 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         // Update the store with the new credentials
                         newCredsStore.set.addNewCreds(recordsByCategory);
                     }
+
+                    onFileSettled();
                 } catch (error) {
                     console.error('Error processing file:', error);
+                    onFileSettled();
                     // Continue with next file even if one fails
                 }
             }
@@ -412,9 +425,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             await refetchCheckListStatus();
         } catch (error) {
             console.error('Error in parseFiles:', error);
-            throw error;
-        } finally {
             checklistStore.set.updateIsParsing(fileType, false);
+            throw error;
         }
     };
 
