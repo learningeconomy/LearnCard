@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { useHistory } from 'react-router-dom';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 import { auth } from '../firebase/firebase';
 import authStore from 'learn-card-base/stores/authStore';
 
 import {
-    useModal,
     BrandingEnum,
     pushUtilities,
     LOGIN_REDIRECTS,
@@ -22,13 +20,11 @@ import { useQueryClient } from '@tanstack/react-query';
 
 const useLogout = () => {
     const firebaseAuth = auth();
-    const history = useHistory();
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     const { clearDB } = useSQLiteStorage();
     const { logout, loggingOut: web3AuthLoggingOut } = useWeb3AuthSFA();
 
-    const { closeAllModals } = useModal();
     const { presentToast } = useToast();
 
     const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
@@ -98,10 +94,7 @@ const useLogout = () => {
                     console.error(e);
                 }
 
-                await logout();
-
-                // handle redirect from within LCA over web3Auth redirect
-                history.push(redirectUrl);
+                await logout(redirectUrl);
             } catch (e) {
                 console.error('There was an issue logging out', e);
                 setIsLoggingOut(false);
@@ -111,8 +104,6 @@ const useLogout = () => {
                 });
             }
         }, 1000);
-
-        closeAllModals();
     };
 
     return { handleLogout, isLoggingOut: isLoggingOut || web3AuthLoggingOut };
