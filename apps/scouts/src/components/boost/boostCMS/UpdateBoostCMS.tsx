@@ -556,6 +556,10 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                                 profile?.profileId,
                                 _boostUri
                             );
+
+                            // Auto-accept the credential on LCN so it's not stuck in "pending" state
+                            await wallet.invoke.acceptCredential(sentBoostUri, { skipNotification: true });
+
                             //in future allow user to set storage option, eg ceramic or LCN
                             // const uri = await wallet?.store['LearnCard Network'].uploadEncrypted(sentBoost);
                             const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(

@@ -1,5 +1,38 @@
 services:
-    app:
+    # app:
+    #     image: learncard-monorepo-local
+    #     build:
+    #         context: ../../
+    #         dockerfile: Dockerfile.monorepo
+    #     container_name: 'scouts-app'
+    #     expose:
+    #         - 3000
+    #     ports:
+    #         - '3000:3000'
+    #     command: ['sh', '-c', 'pnpm exec nx docker-start scouts']
+    #     depends_on:
+    #         - brain
+    #         - cloud
+    #         - api
+    #         - delete-service
+    #     networks:
+    #         - learn-card
+    #     extra_hosts:
+    #         - 'localhost:host-gateway'
+    #     environment:
+    #         LCN_URL: http://localhost:4000/trpc
+    #         LCN_API_URL: http://localhost:4000/api
+    #         CLOUD_URL: http://localhost:4100/trpc
+    #         API_URL: http://localhost:5100/trpc
+    #         SKIP_DIDKIT_NAPI: '1'
+    #         CHOKIDAR_USEPOLLING: 'true'
+    #         CHOKIDAR_INTERVAL: '1000'
+    #     volumes:
+    #         - ./src:/app/apps/scouts/src
+    #         - ./vite.config.ts:/app/apps/scouts/vite.config.ts
+    #         - ../../packages:/app/packages
+
+    watcher:
         image: learncard-monorepo-local
         build:
             context: ../../
@@ -39,7 +72,7 @@ services:
     watcher:
         image: learncard-monorepo-local
         container_name: 'lcn-watcher'
-        user: '${UID:-1000}:${GID:-1000}'
+        # user: '${UID:-1000}:${GID:-1000}'
         command:
             [
                 'pnpm',
