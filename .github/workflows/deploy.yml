@@ -236,6 +236,8 @@ jobs:
 
             - name: Build native plugin
               working-directory: packages/plugins/didkit-plugin-node
+              env:
+                  BUILD_DIDKIT_NAPI: true
               run: |
                   pnpm exec nx build didkit-plugin-node
                   strip -x *.node
