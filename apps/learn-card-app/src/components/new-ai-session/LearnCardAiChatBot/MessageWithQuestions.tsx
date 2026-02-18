@@ -43,7 +43,7 @@ export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
 
         return (
             <div className="w-full flex items-center justify-end">
-                {message.role === 'assistant' && !$isTyping && enableChatBubbles && (
+                {message.role === 'assistant' && enableChatBubbles && (
                     <div className="mr-2 self-stretch flex items-end pb-5">
                         {mode === AiSessionMode.insights ? (
                             <AiInsightsIconWithShape className="text-grayscale-900 h-[35px] w-[35px] min-h-[35px] min-w-[35px] max-h-[35px] max-w-[35px] mt-[0px] mb-0" />
@@ -59,7 +59,7 @@ export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
                 >
                     {text}
                 </div>
-                {message.role !== 'assistant' && !$isTyping && enableChatBubbles && (
+                {message.role !== 'assistant' && enableChatBubbles && (
                     <div className="ml-2 self-stretch flex items-end pb-5">
                         <ProfilePicture
                             customContainerClass="text-grayscale-900 h-[35px] w-[35px] min-h-[35px] min-w-[35px] max-h-[35px] max-w-[35px] mt-[0px] mb-0"
