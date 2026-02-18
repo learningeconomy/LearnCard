@@ -10,6 +10,7 @@ import {
 } from '../../../../components/new-ai-session/newAiSession.helpers';
 
 import useLCNGatedAction from '../../../../components/network-prompts/hooks/useLCNGatedAction';
+import { useModal } from 'learn-card-base';
 
 import { chatBotStore } from '../../../../stores/chatBotStore';
 import { resetChatStores } from 'learn-card-base/stores/nanoStores/chatStore';
@@ -18,6 +19,7 @@ import { ChatBotQuestionsEnum } from '../../../../components/new-ai-session/NewA
 export const AiInsightsPromptListItem: React.FC<{ prompt: string }> = ({ prompt }) => {
     const history = useHistory();
     const { gate } = useLCNGatedAction();
+    const { closeModal } = useModal();
 
     const setMode = chatBotStore.set.setMode;
     const setChatBotQA = chatBotStore.set.setChatBotQA;
@@ -26,6 +28,8 @@ export const AiInsightsPromptListItem: React.FC<{ prompt: string }> = ({ prompt 
     const handlePromptClick = async () => {
         const { prompted } = await gate();
         if (prompted) return;
+
+        closeModal();
 
         resetChatStores();
         setMode(AiSessionMode.insights);
