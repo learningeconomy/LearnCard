@@ -547,7 +547,6 @@ jobs:
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
                   WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
                   WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
-                  SKIP_DIDKIT_NAPI: '1'
 
             # Deploy OTA update to CapGo
             - name: Upload to CapGo
@@ -675,8 +674,6 @@ jobs:
         permissions:
             id-token: write
             contents: read
-        env:
-            SKIP_DIDKIT_NAPI: '1'
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v4
