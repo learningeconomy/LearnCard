@@ -13,6 +13,7 @@ const useNetworkMembers = (
     return useInfiniteQuery({
         queryKey: ['useNetworkMembers', boostUri, profileSearchString, initialOptions.limit],
         queryFn: async ({ pageParam }) => {
+            console.log('[ScoutsApp] useNetworkMembers fetching for URI:', boostUri);
             const wallet = await initWallet();
             const options = { ...initialOptions, cursor: pageParam as string | undefined };
 

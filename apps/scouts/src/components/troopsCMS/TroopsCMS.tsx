@@ -140,12 +140,13 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                             boostUri
                         );
 
-                        console.log('sentBoost', sentBoost);
+                        // Auto-accept the credential on LCN so it's not stuck in "pending" state
+                        await wallet.invoke.acceptCredential(sentBoostUri, { skipNotification: true });
 
                         const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
                             sentBoost
                         );
-                        await addCredentialToWallet({ uri: issuedVcUri });
+                        await addCredentialToWallet({ uri: issuedVcUri, boostUri });
                         return issuedVcUri;
                     }
                     // handle boosting someone else

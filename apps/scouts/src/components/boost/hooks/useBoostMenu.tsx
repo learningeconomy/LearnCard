@@ -11,7 +11,7 @@ import {
     useShareBoostMutation,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
-import { useIsTroopIDRevokedFake } from '../../../pages/troop/TroopIdStatusButton';
+import { useTroopIDStatus } from '../../../pages/troop/TroopIdStatusButton';
 
 import { isTroopCategory } from '../../../helpers/troop.helpers';
 
@@ -31,11 +31,12 @@ const useBoostMenu = (
     onCloseModal?: () => void,
     onDelete?: () => void
 ) => {
-    const { isLoading, error, isError } = useGetBoost(boost?.boostId);
-    const isRevoked = useIsTroopIDRevokedFake(boost, isError, error);
+    const { isLoading } = useGetBoost(boost?.boostId);
+    const credentialStatus = useTroopIDStatus(boost, undefined, boost?.boostId);
+    const isRevokedOrPending = credentialStatus === 'revoked' || credentialStatus === 'pending';
     const isTroopID = isTroopCategory(categoryType as BoostCategoryOptionsEnum);
 
-    const showDeleteButton = (!isLoading && isRevoked && isTroopID) || !isTroopID;
+    const showDeleteButton = (!isLoading && isRevokedOrPending && isTroopID) || !isTroopID;
 
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,

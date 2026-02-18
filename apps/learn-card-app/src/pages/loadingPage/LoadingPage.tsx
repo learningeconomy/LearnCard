@@ -68,7 +68,8 @@ export const LoadingPage2: React.FC = React.memo(() => {
         // If logged out on waitingsofa, always go to /login, preserving redirectTo if present
         const pendingRedirect = query.get('redirectTo');
         if (!currentUser && !isLoggedIn) {
-            if (pendingRedirect) history.replace(`/login?redirectTo=${pendingRedirect}`);
+            if (pendingRedirect)
+                history.replace(`/login?redirectTo=${encodeURIComponent(pendingRedirect)}`);
             else history.replace('/login');
             return;
         }
@@ -100,6 +101,7 @@ export const LoadingPage2: React.FC = React.memo(() => {
                 }
                 history.push(redirectTo);
             } else if (lcnRedirectTo) {
+                redirectStore.set.lcnRedirect(null);
                 handleLCNetworkRedirect(lcnRedirectTo);
             } else {
                 history.push('/launchpad');

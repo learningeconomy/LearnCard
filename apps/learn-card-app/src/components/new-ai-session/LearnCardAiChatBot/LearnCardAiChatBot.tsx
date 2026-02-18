@@ -5,7 +5,9 @@ import { useDeviceTypeByWidth, LEARNCARD_AI_URL } from 'learn-card-base';
 import ChatInput from './ChatInput';
 import CaretDown from '../../svgs/CaretDown';
 import AiChatLoading from './AiChatLoading';
+import AiSessionPlan from './AiSessionPlan';
 import AiSessionLoader from '../AiSessionLoader';
+import FinishSessionButton from './FinishSessionButton';
 import MessageWithQuestions from './MessageWithQuestions';
 
 import {
@@ -358,9 +360,11 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                 />
             )}
 
-            {loading && <AiChatLoading contractUri={contractUri} />}
+            {loading && mode === AiSessionMode.insights && (
+                <AiChatLoading contractUri={contractUri} />
+            )}
 
-            {!loading && (
+            {(!loading || mode !== AiSessionMode.insights) && (
                 <>
                     <div
                         ref={chatContainerRef}
@@ -371,6 +375,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                             className="flex flex-col transition-transform duration-300 ease-out"
                             style={{ paddingBottom: `${scrollOffset}px` }}
                         >
+                            {mode !== AiSessionMode.insights && <AiSessionPlan />}
                             {messagesToShow.map((msg, index) => {
                                 return (
                                     <div
@@ -379,11 +384,11 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                         className="w-full"
                                     >
                                         <MessageWithQuestions message={msg} />
-                                        {/* {index < messagesToShow.length - 1 &&
+                                        {index < messagesToShow.length - 1 &&
                                             msg.role === 'assistant' &&
                                             messagesToShow[index + 1].role === 'assistant' && (
-                                                <hr className="border-grayscale-100 w-full my-4" />
-                                            )} */}
+                                                <hr className="border-black w-full my-4" />
+                                            )}
 
                                         {typing && index === messagesToShow.length - 1 && (
                                             <div className="py-4 px-2 rounded-lg mb-4 flex items-center gap-2">
@@ -420,6 +425,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                         )}
                     </div>
 
+                    {mode !== AiSessionMode.insights && <FinishSessionButton />}
                     <div className="sm:px-4">{!loading && <ChatInput />}</div>
                 </>
             )}

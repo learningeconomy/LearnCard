@@ -245,11 +245,11 @@ const ChatInput: React.FC = () => {
     };
 
     const disableSend = !input.trim() || $isTyping;
-    const showFinishButton = mode === AiSessionMode.insights || (!showContinue && !$isTyping);
+    // const showFinishButton = !showContinue && !$isTyping;
 
     return (
         <>
-            {showFinishButton && <FinishSessionButton />}
+            {/* <FinishSessionButton /> */}
             <div className="flex flex-col gap-[10px] p-[15px] sm:p-0">
                 <div className="flex rounded-[15px] overflow-hidden w-full items-center border-[1px] border-grayscale-200 border-solid">
                     <form

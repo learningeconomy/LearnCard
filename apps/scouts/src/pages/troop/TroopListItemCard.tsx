@@ -18,11 +18,12 @@ import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import TroopActionMenu from './TroopActionMenu';
 import BoostRecipients from 'learn-card-base/components/boost/BoostRecipients';
 import ScoutConnectModal from './ScoutConnectModal';
+import InviteSelectionModal from './InviteSelectionModal';
 
 import { Boost, VC } from '@learncard/types';
 import { pluralize } from 'learn-card-base';
 import { useCanInviteTroop } from './useCanInviteTroop';
-import { getDefaultBadgeThumbForCredential } from '../../helpers/troop.helpers';
+import { getDefaultBadgeThumbForCredential, getScoutsRole, getScoutsNounForRole } from '../../helpers/troop.helpers';
 import { insertParamsToFilestackUrl, useGetCurrentUserTroopIds } from 'learn-card-base';
 
 type TroopListItemProps = {
@@ -133,12 +134,12 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
         );
     };
 
-    const openScoutConnectModal = (boostUri: string) => {
+    const openScoutConnectModal = (boostUri: string, typeOverride?: string) => {
         newModal(
             <ScoutConnectModal
                 boostUriForClaimLink={boostUri}
                 credential={_resolvedBoost!}
-                type={scoutNoun}
+                type={typeOverride || scoutNoun}
             />,
             {
                 sectionClassName: '!max-w-[450px]',
@@ -155,10 +156,28 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
         'resize=width:100/quality=value:75/'
     );
     const handleSelectInviteModal = () => {
-        if (myTroopIds?.isTroopLeader) {
-            openScoutConnectModal(scoutBoostUri);
-        } else if (boostPermissionsData?.canIssue) {
-            openScoutConnectModal(currentBoostUri);
+        const canInviteScout = myTroopIds?.isTroopLeader || scoutPermissionsData?.canIssue;
+        const canInviteLeader = boostPermissionsData?.canIssue;
+
+        // Determine the correct label for the current credential type
+        const credentialRole = getScoutsRole(_resolvedBoost);
+        const credentialLabel = getScoutsNounForRole(credentialRole);
+
+        if (canInviteScout && canInviteLeader) {
+            newModal(
+                <InviteSelectionModal
+                    onInviteLeader={() => openScoutConnectModal(currentBoostUri, credentialLabel)}
+                    onInviteScout={() => openScoutConnectModal(scoutBoostUri, 'Scout')}
+                    handleCloseModal={closeModal}
+                    scoutNoun={scoutNoun}
+                />,
+                { sectionClassName: '!max-w-[450px]' },
+                { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+            );
+        } else if (canInviteScout) {
+            openScoutConnectModal(scoutBoostUri, 'Scout');
+        } else if (canInviteLeader) {
+            openScoutConnectModal(currentBoostUri, credentialLabel);
         }
     };
 

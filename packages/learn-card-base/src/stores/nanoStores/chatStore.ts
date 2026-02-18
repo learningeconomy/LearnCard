@@ -20,8 +20,40 @@ export const sessionEnded = atom(false);
 export const planReady = atom(false);
 export const planReadyThread = atom<string | null>(null);
 
+// Plan streaming state
+export const planStreamActive = atom(false);
+export const planMetadata = atom<{
+    sections: {
+        title: string;
+        objectives: number;
+        skills: number;
+        roadmap: number;
+    };
+} | null>({
+    sections: {
+        title: '',
+        objectives: 0,
+        skills: 0,
+        roadmap: 0,
+    },
+});
+export const planSections = atom({
+    welcome: '',
+    summary: '',
+    objectives: [] as string[],
+    skills: [] as string[],
+    roadmap: [] as any[],
+});
+
+export const BACKEND_URL = LEARNCARD_AI_URL;
+
+/**
+ * Reset all chat-related stores to their initial values.
+ * Useful when starting a new session or logging out.
+ */
 export function resetChatStores() {
     messages.set([]);
+    threads.set([]);
     currentThreadId.set(null);
     isTyping.set(false);
     isLoading.set(false);
@@ -33,9 +65,23 @@ export function resetChatStores() {
     sessionEnded.set(false);
     planReady.set(false);
     planReadyThread.set(null);
+    planStreamActive.set(false);
+    planMetadata.set({
+        sections: {
+            title: '',
+            objectives: 0,
+            skills: 0,
+            roadmap: 0,
+        },
+    });
+    planSections.set({
+        welcome: '',
+        summary: '',
+        objectives: [],
+        skills: [],
+        roadmap: [],
+    });
 }
-
-export const BACKEND_URL = LEARNCARD_AI_URL;
 
 interface TopicCredential {
     uri: string;
@@ -206,40 +252,33 @@ export function connectWebSocket() {
     const { did } = auth.get();
     if (!did) throw new Error('Authentication required');
 
-    // Allow reconnects for normal connections
     shouldReconnect = true;
 
-    // Convert http:// to ws:// or https:// to wss://
     const wsUrl = BACKEND_URL.replace(/^http/, 'ws');
-    // Include threadId to restore session jobs
     const threadIdQuery = currentThreadId.get() ? `&threadId=${currentThreadId.get()}` : '';
+
     ws = new WebSocket(`${wsUrl}?did=${did}${threadIdQuery}`);
     const socket = ws;
 
     ws.onmessage = event => {
-        // Ignore messages from stale sockets
         if (ws !== socket) return;
+
         try {
             const data = JSON.parse(event.data);
 
-            // Handle credentials for topic event
+            if (data.event === 'no_conversation_summary') {
+                isTyping.set(false);
+                sessionEnded.set(true);
+                return;
+            }
+
             if (data.event === 'credentials_for_topic' && Array.isArray(data.credentials)) {
                 topicCredentials.set(data.credentials);
                 return;
             }
 
-            // Handle no conversation summary event
-            if (data.event === 'no_conversation_summary') {
-                isTyping.set(false);
-                sessionEnded.set(true);
-                // Optionally, we could surface a toast or UI note using data.reason
-                return;
-            }
-
-            // Handle credential ready event
             if (data.event === 'credentials_ready') {
-                // Update the suggestedTopics atom if topics are available
-                if (data.suggestedTopics && Array.isArray(data.suggestedTopics)) {
+                if (Array.isArray(data.suggestedTopics)) {
                     suggestedTopics.set(data.suggestedTopics);
                 }
                 return;
@@ -248,29 +287,77 @@ export function connectWebSocket() {
             if (data.event === 'vc_issued') {
                 showToast.set(true);
                 setTimeout(() => showToast.set(false), 5000);
+                return;
             }
 
-            // Handle plan introduction event
+            /* -------------------------------------------------- */
+            /* PLAN STREAMING (STRUCTURED)                       */
+            /* -------------------------------------------------- */
+
+            if (data.event === 'plan_structured_delta') {
+                planStreamActive.set(true);
+
+                const p = data.planData;
+
+                planSections.set({
+                    welcome: p.welcome ?? '',
+                    summary: p.summary ?? '',
+                    objectives: p.objectives ?? [],
+                    skills: p.skills ?? [],
+                    roadmap: p.roadmap ?? [],
+                });
+
+                return;
+            }
+
+            if (data.event === 'plan_structured') {
+                planMetadata.set({
+                    sections: {
+                        title: data.title,
+                        objectives: data.planData.objectives.length,
+                        skills: data.planData.skills.length,
+                        roadmap: data.planData.roadmap.length,
+                    },
+                });
+
+                planSections.set({
+                    welcome: data.planData.welcome,
+                    summary: data.planData.summary,
+                    objectives: data.planData.objectives,
+                    skills: data.planData.skills,
+                    roadmap: data.planData.roadmap,
+                });
+
+                planStreamActive.set(false); // Stream complete
+                return;
+            }
+
+            /* -------------------------------------------------- */
+            /* PLAN LIFECYCLE                                    */
+            /* -------------------------------------------------- */
+
             if (data.event === 'plan_intro') {
+                planStreamActive.set(false);
                 isTyping.set(false);
                 isLoading.set(false);
                 return;
             }
 
-            // Handle plan ready event (after intro)
             if (data.event === 'plan_ready') {
                 isTyping.set(false);
                 isLoading.set(false);
                 planReady.set(true);
                 planReadyThread.set(data.threadId);
                 currentThreadId.set(data.threadId);
-                // Update threads list with new thread title
+
                 if (data.title) {
-                    const currentThreads = threads.get();
-                    const idx = currentThreads.findIndex(t => t.id === data.threadId);
+                    const list = threads.get();
+                    const idx = list.findIndex(t => t.id === data.threadId);
+
                     if (idx > -1) {
-                        currentThreads[idx].title = data.title;
-                        threads.set(currentThreads);
+                        const copy = [...list];
+                        copy[idx].title = data.title;
+                        threads.set(copy);
                     } else {
                         threads.set([
                             {
@@ -280,7 +367,7 @@ export function connectWebSocket() {
                                 created_at: new Date().toISOString(),
                                 last_message_at: new Date().toISOString(),
                             },
-                            ...currentThreads,
+                            ...list,
                         ]);
                     }
                 }
@@ -298,64 +385,40 @@ export function connectWebSocket() {
             }
 
             // Handle conversation summary event
+            /* -------------------------------------------------- */
+            /* CONVERSATION SUMMARY                              */
+            /* -------------------------------------------------- */
+
             if (data.event === 'conversation_summary') {
                 isTyping.set(false);
                 sessionEnded.set(true);
-                // Update threads store to include new summary
+
                 if (data.threadId && data.credentialUri) {
-                    const newSummary = {
+                    const summary = {
                         summary_data: JSON.stringify(data.summary),
                         credential_uri: data.credentialUri,
                         created_at: new Date().toISOString(),
                     };
-                    const updated = threads.get().map(t =>
-                        t.id === data.threadId
-                            ? {
-                                  ...t,
-                                  summaries: [...(t.summaries || []), newSummary],
-                              }
-                            : t
+
+                    threads.set(
+                        threads
+                            .get()
+                            .map(t =>
+                                t.id === data.threadId
+                                    ? { ...t, summaries: [...(t.summaries || []), summary] }
+                                    : t
+                            )
                     );
-                    threads.set(updated);
                 }
-                // const {
-                //   title,
-                //   summary: sumText,
-                //   learned,
-                //   skills,
-                //   nextSteps,
-                // } = data.summary;
-                // let content = `## ${title}\n\n${sumText}\n\n### What you learned\n`;
-                // learned.forEach((item: string) => {
-                //   content += `- ${item}\n`;
-                // });
-                // content += `\n### Skills\n`;
-                // skills.forEach((s: any) => {
-                //   content += `- **${s.title}**: ${s.description}\n`;
-                // });
-                // content += `\n### Next Steps\n`;
-                // nextSteps.forEach((n: any) => {
-                //   content += `- **${n.title}**: ${n.description}\n`;
-                // });
-                // messages.set([...messages.get(), { role: "assistant", content }]);
                 return;
             }
 
-            // Handle debug event
+            /* -------------------------------------------------- */
+            /* DEBUG                                             */
+            /* -------------------------------------------------- */
+
             if (data.event === 'debug') {
-                // console.group(`🔍 MongoDB Debug: ${data.data.operation}`);
-                console.debug(`Collection: ${data.data.collection}`);
-                console.debug(`Timestamp: ${data.data.timestamp}`);
-                if (data.data.duration !== undefined) {
-                    console.debug(`Duration: ${data.data.duration}ms`);
-                }
-                if (data.data.input !== undefined) {
-                    console.debug('Input:', data.data.input);
-                }
-                if (data.data.output !== undefined) {
-                    console.debug('Output:', data.data.output);
-                }
-                // console.groupEnd();
+                console.debug(`[Mongo] ${data.data.collection}`, data.data);
                 return;
             }
 
@@ -380,55 +443,49 @@ export function connectWebSocket() {
             }
 
             // Handle structured response
+            /* -------------------------------------------------- */
+            /* STRUCTURED TOOL RESPONSE                          */
+            /* -------------------------------------------------- */
+
             if (data.assistantMessage) {
-                const { notes: _notes, questions } = JSON.parse(
+                const { questions } = JSON.parse(
                     data.assistantMessage.tool_calls?.[0]?.function?.arguments
                 );
 
-                // Get current messages, but exclude the last one if it's already this assistant message
-                // (this can happen if the server sends multiple of these events)
-                const currentMessages = messages.get().filter((msg, idx, arr) => {
-                    if (
-                        idx === arr.length - 1 &&
-                        msg.role === 'assistant' &&
-                        msg.tool_calls &&
-                        msg.tool_calls[0]?.function?.name === 'structuredResponse'
-                    ) {
-                        return false;
-                    }
-                    return true;
-                });
+                const currentMessages = messages.get();
+                messages.set([
+                    ...currentMessages.filter(
+                        (msg, idx, arr) =>
+                            !(
+                                idx === arr.length - 1 &&
+                                msg.role === 'assistant' &&
+                                msg.tool_calls?.[0]?.function?.name === 'structuredResponse'
+                            )
+                    ),
+                    data.assistantMessage,
+                ]);
 
-                // Add the assistant message with tool calls
-                messages.set([...currentMessages, data.assistantMessage]);
-
-                // Set active questions
                 activeQuestions.set(questions);
-
                 isTyping.set(false);
 
-                // Handle thread creation and title updates
                 if (data.threadId && data.title) {
-                    // Update threads list with new thread
-                    const currentThreads = threads.get();
-                    const currentThreadIndex = currentThreads.findIndex(
-                        t => t.id === data.threadId
-                    );
+                    const list = threads.get();
+                    const idx = list.findIndex(t => t.id === data.threadId);
 
-                    if (currentThreadIndex > -1) {
-                        const newThreads = [...currentThreads];
-                        newThreads[currentThreadIndex].title = data.title;
-                        threads.set(newThreads);
+                    if (idx > -1) {
+                        const copy = [...list];
+                        copy[idx].title = data.title;
+                        threads.set(copy);
                     } else {
                         threads.set([
                             {
                                 id: data.threadId,
-                                did: did,
+                                did,
                                 title: data.title,
                                 created_at: new Date().toISOString(),
                                 last_message_at: new Date().toISOString(),
                             },
-                            ...currentThreads,
+                            ...list,
                         ]);
                     }
                 }
@@ -471,23 +528,21 @@ export function connectWebSocket() {
                 return;
             }
 
-            // Handle streaming message content (legacy format)
-            if (typeof data === 'string') {
-                const currentMessages = messages.get();
-                const lastMessage = currentMessages[currentMessages.length - 1];
+            /* -------------------------------------------------- */
+            /* LEGACY STREAM (STRING)                            */
+            /* -------------------------------------------------- */
 
-                if (lastMessage?.role === 'assistant') {
-                    // Append to existing assistant message
+            if (typeof data === 'string') {
+                const current = messages.get();
+                const last = current[current.length - 1];
+
+                if (last?.role === 'assistant') {
                     messages.set([
-                        ...currentMessages.slice(0, -1),
-                        {
-                            ...lastMessage,
-                            content: lastMessage.content + data,
-                        },
+                        ...current.slice(0, -1),
+                        { ...last, content: last.content + data },
                     ]);
                 } else {
-                    // Create new assistant message
-                    messages.set([...currentMessages, { role: 'assistant', content: data }]);
+                    messages.set([...current, { role: 'assistant', content: data }]);
                 }
 
                 isLoading.set(false);
@@ -512,37 +567,36 @@ export function connectWebSocket() {
                     },
                 ]);
             }
-        } catch (error) {
-            console.error('WebSocket message error:', error);
+        } catch (err) {
+            console.error('WebSocket message error:', err);
         }
     };
 
     ws.onopen = () => {
         if (ws !== socket) return;
-        reconnectAttempts = 0; // Reset attempts on successful connection
-
-        // Notify ready listeners
-        readyListeners.forEach(listener => listener());
-        readyListeners = []; // Clear listeners after firing
+        reconnectAttempts = 0;
+        readyListeners.forEach(fn => fn());
+        readyListeners = [];
     };
 
     ws.onclose = () => {
         if (ws !== socket) return;
+
         isTyping.set(false);
         isLoading.set(false);
-        const willReconnect = shouldReconnect && reconnectAttempts < MAX_RECONNECT_ATTEMPTS;
         ws = null;
 
-        // Reconnect logic (skip if intentionally closed)
-        if (willReconnect) {
+        const shouldTryReconnect = shouldReconnect && reconnectAttempts < MAX_RECONNECT_ATTEMPTS;
+
+        if (shouldTryReconnect) {
             reconnectAttempts++;
             setTimeout(connectWebSocket, 1000);
         }
     };
 
-    ws.onerror = event => {
+    ws.onerror = err => {
         if (ws !== socket) return;
-        console.error('WebSocket error:', event);
+        console.error('WebSocket error:', err);
     };
 
     return ws;
@@ -714,6 +768,7 @@ export async function startTopicWithUri(topicUri: string) {
     const messageToSend = {
         action: 'start_topic_uri',
         topicUri,
+        introStreamMode: 'structured',
         did,
     };
 
@@ -776,6 +831,7 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
         action: 'start_learning_pathway',
         topicUri,
         pathwayUri,
+        introStreamMode: 'structured',
         did,
     };
 
@@ -910,6 +966,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
     const messageToSend = {
         action: 'start_topic',
         topic,
+        introStreamMode: 'structured',
         did, // Include DID for backend processing
         mode,
     };
