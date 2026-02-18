@@ -19,7 +19,5 @@ export const LCA_API_ENDPOINT = 'https://api.learncard.app/trpc';
 export const SCOUTPASS_API_ENDPOINT = 'https://api.scoutnetwork.org/trpc';
 
 // LearnCard AI
-// export const LEARNCARD_AI_URL = 'https://api.learncloud.ai';
-// 'http://localhost:3001'
-
-export const LEARNCARD_AI_URL = 'http://localhost:3001'; // For local dev / testing
+export const LEARNCARD_AI_URL = 'https://api.learncloud.ai';
+// export const LEARNCARD_AI_URL = 'http://localhost:3001'; // For local dev / testing
