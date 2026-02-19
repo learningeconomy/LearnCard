@@ -31,6 +31,7 @@ import {
     getManagedDidWeb,
     updateDidForProfile,
     updateDidForProfiles,
+    getProfileIdFromString,
 } from '@helpers/did.helpers';
 
 import { createProfile } from '@accesslayer/profile/create';
@@ -238,8 +239,13 @@ export const profilesRouter = t.router({
         .query(async ({ ctx, input }) => {
             const { profileId } = input;
 
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             const selfProfile = ctx.user?.did ? await getProfileByDid(ctx.user.did) : null;
-            const otherProfile = await getProfileByProfileId(profileId);
+            const otherProfile = await getProfileByProfileId(resolvedProfileId);
 
             if (!otherProfile) return undefined;
 
@@ -540,7 +546,12 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             const isBlocked = await isRelationshipBlocked(profile, targetProfile);
             if (!targetProfile || isBlocked) {
@@ -571,7 +582,12 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             const isBlocked = await isRelationshipBlocked(profile, targetProfile);
             if (!targetProfile || isBlocked) {
@@ -606,7 +622,12 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -635,7 +656,12 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId, challenge } = input;
 
-            const isValid = await isInviteValidForProfile(profileId, challenge);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const isValid = await isInviteValidForProfile(resolvedProfileId, challenge);
 
             if (!isValid) {
                 throw new TRPCError({
@@ -644,7 +670,7 @@ export const profilesRouter = t.router({
                 });
             }
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -656,7 +682,7 @@ export const profilesRouter = t.router({
             const success = await connectProfiles(profile, targetProfile, false);
 
             if (success) {
-                await consumeInviteUseForProfile(profileId, challenge);
+                await consumeInviteUseForProfile(resolvedProfileId, challenge);
             }
 
             return success;
@@ -681,7 +707,12 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -712,7 +743,12 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -1043,7 +1079,12 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -1075,7 +1116,12 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             if (!targetProfile) {
                 throw new TRPCError({

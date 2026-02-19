@@ -522,7 +522,12 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { profileId, credential, uri, options } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
             const isBlocked = await isRelationshipBlocked(profile, targetProfile);
 
             if (!targetProfile || isBlocked) {
@@ -2163,7 +2168,12 @@ export const boostsRouter = t.router({
 
             const { uri, profileId } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             const isBlocked = await isRelationshipBlocked(profile, targetProfile);
 
@@ -2221,7 +2231,12 @@ export const boostsRouter = t.router({
 
             const { uri, profileId } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             const isBlocked = await isRelationshipBlocked(profile, targetProfile);
 
@@ -2306,6 +2321,11 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { uri, profileId } = input;
 
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             const decodedUri = decodeURIComponent(uri);
             const boost = await getBoostByUri(decodedUri);
 
@@ -2318,7 +2338,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const otherProfile = await getProfileByProfileId(profileId);
+            const otherProfile = await getProfileByProfileId(resolvedProfileId);
 
             if (!otherProfile) {
                 throw new TRPCError({
@@ -2437,6 +2457,11 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { uri, updates, profileId } = input;
 
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             const decodedUri = decodeURIComponent(uri);
             const boost = await getBoostByUri(decodedUri);
 
@@ -2451,7 +2476,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const otherProfile = await getProfileByProfileId(profileId);
+            const otherProfile = await getProfileByProfileId(resolvedProfileId);
 
             if (!otherProfile) {
                 throw new TRPCError({
@@ -2865,6 +2890,12 @@ export const boostsRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { profileId, boostUri, signingAuthority, options } = input;
+
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             const normalizedSigningAuthority = {
                 ...signingAuthority,
                 name: signingAuthority.name.toLowerCase(),
@@ -2888,7 +2919,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             if (!targetProfile) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });
