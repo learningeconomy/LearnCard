@@ -345,6 +345,10 @@ jobs:
                     echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
                     FAILED=true
                   fi
+                  if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    FAILED=true
+                  fi
                   if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
                     echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
                     FAILED=true
@@ -430,6 +434,7 @@ jobs:
                   echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_learn_cloud_env }}"
                   echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
                   echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
+                  echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
                   echo "Stage:              ${{ vars.SERVERLESS_STAGE }}"
                   echo "Region:             ${{ vars.SERVERLESS_REGION }}"
                   echo "========================================"
@@ -442,6 +447,10 @@ jobs:
                   fi
                   if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
                     echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
@@ -516,6 +525,7 @@ jobs:
                   echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_lca_api_env }}"
                   echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
                   echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
+                  echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
                   echo "Stage:              ${{ vars.SERVERLESS_STAGE }}"
                   echo "Region:             ${{ vars.SERVERLESS_REGION }}"
                   echo "========================================"
@@ -528,6 +538,10 @@ jobs:
                   fi
                   if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
                     echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
