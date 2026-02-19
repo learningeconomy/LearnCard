@@ -23,6 +23,185 @@
 -   **Modules**: Keep files focused on single responsibility
 -   **Documentation**: Add JSDoc comments for public APIs and complex logic
 
+## UI/UX Design Guidelines
+
+All user-facing UI in `apps/learn-card-app`, `apps/scouts`, and shared components in `packages/learn-card-base` must follow these guidelines. The goal is **world-class, buttery UX** inspired by Airbnb, Headspace, Slack, and Google Maps — clean, clear, never flashy, never in the way.
+
+### Design Tokens (Tailwind)
+
+The apps define a custom color palette in their `tailwind.config.js`. **Never use generic Tailwind colors** (`gray-*`, `purple-*`, `blue-*`) — always use the app tokens:
+
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `grayscale-900` | `#18224E` | Headings, primary button fills, dark text |
+| `grayscale-800` | `#353E64` | Strong secondary text |
+| `grayscale-700` | `#52597A` | Secondary text, cancel button text |
+| `grayscale-600` | `#6F7590` | Body text, descriptions |
+| `grayscale-500` | `#8B91A7` | Hint text, subtitles |
+| `grayscale-400` | `#A8ACBD` | Placeholder text, disabled icons |
+| `grayscale-300` | `#C5C8D3` | Borders, dividers |
+| `grayscale-200` | `#E2E3E9` | Light borders, separator lines |
+| `grayscale-100` | `#EFF0F5` | Inactive tab fills, subtle backgrounds |
+| `grayscale-10` | `#FBFBFC` | Hover background on light surfaces |
+| `emerald-50`–`emerald-900` | — | Success states, positive actions, focus rings |
+| `amber-50`–`amber-900` | — | Warnings, caution callouts |
+| `red-50`–`red-700` | — | Errors, destructive states |
+
+### Typography
+
+- **Font family**: `font-poppins` (maps to Poppins in LCA, Noto Sans in Scouts)
+- **Headings**: `text-xl font-semibold text-grayscale-900`
+- **Body text**: `text-sm text-grayscale-600 leading-relaxed`
+- **Labels**: `text-xs font-medium text-grayscale-700`
+- **Hints / placeholders**: `text-xs text-grayscale-400` or `placeholder:text-grayscale-400`
+
+### Buttons
+
+| Type | Classes |
+|------|---------|
+| **Primary** | `py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed` |
+| **Secondary / Cancel** | `py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors` |
+| **Positive action** | `py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors` |
+| **Tab (active)** | `py-2.5 px-3 rounded-full bg-grayscale-900 text-white font-medium text-sm` |
+| **Tab (inactive)** | `py-2.5 px-3 rounded-full bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200 font-medium text-sm` |
+| **Text link / back** | `text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors` |
+
+All buttons use `rounded-[20px]` (pill shape), **never** `rounded-lg`.
+
+### Form Inputs
+
+**Never use `IonItem` / `IonInput` / `IonTextarea` for modal or overlay forms.** Ionic's theme layer can override text color, causing white-on-white text that is invisible. Use styled native HTML inputs instead:
+
+```tsx
+<input
+    type="password"
+    value={value}
+    onChange={e => setValue(e.target.value)}
+    placeholder="Placeholder text"
+    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900
+               placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500
+               focus:border-transparent bg-white"
+/>
+```
+
+Key rules:
+- Always set explicit `text-grayscale-900` and `bg-white` — never rely on defaults
+- Always set `placeholder:text-grayscale-400`
+- Use `rounded-xl` for inputs (slightly less rounded than buttons)
+- Focus state: `focus:ring-2 focus:ring-emerald-500 focus:border-transparent`
+- Add a `<label>` above: `text-xs font-medium text-grayscale-700 mb-1.5`
+
+### Overlays & Modals
+
+Use the shared `Overlay` component from `packages/learn-card-base/src/auth-coordinator/components/Overlay.tsx`:
+
+```tsx
+<Overlay>
+    <div className="p-8 text-center space-y-5">
+        {/* content */}
+    </div>
+</Overlay>
+```
+
+Overlay renders a fixed fullscreen backdrop with a white `rounded-[20px]` card, max-width 480px, with `font-poppins` and `animate-fade-in-up` entrance animation.
+
+### Loading States
+
+Never leave the user without feedback. Every async action must show a loading state:
+
+```tsx
+{loading ? (
+    <span className="flex items-center justify-center gap-2">
+        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        Recovering...
+    </span>
+) : 'Recover Account'}
+```
+
+Use contextual loading text: "Setting up...", "Recovering...", "Verifying...", "Generating...".
+
+### Error States
+
+Use the standard error banner pattern:
+
+```tsx
+{error && (
+    <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
+        <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+        <span className="text-sm text-red-700 leading-relaxed">{error}</span>
+    </div>
+)}
+```
+
+Map raw error messages to friendly language:
+- Decrypt errors → "Incorrect password or corrupted data. Please try again."
+- Network errors → "Connection issue. Please check your internet and try again."
+- Generic fallback → "Something went wrong. Please try again."
+
+### Success States
+
+```tsx
+{success && (
+    <div className="mb-5 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
+        <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
+        <span className="text-sm text-emerald-700 leading-relaxed">{success}</span>
+    </div>
+)}
+```
+
+### Copy & Language Rules
+
+- **No jargon.** Never use: "wallet", "migration", "device key", "key derivation", "SSS", "share", "DID". These are internal implementation details.
+- **User-friendly alternatives**: "account" (not "wallet"), "account upgrade" (not "migration"), "sign in" (not "authenticate")
+- **Be concise.** One short sentence for descriptions. No paragraphs.
+- **Be direct.** "Choose how you'd like to restore access." not "Please select one of the available recovery options below to proceed with restoring access to your wallet."
+- **Error titles**: "Something went wrong" — never expose stack traces or error codes.
+- **Button labels**: Use action verbs. "Recover Account", "Try Again", "Set Up Password". Not "Submit", "OK", "Proceed".
+- **Dismiss buttons**: "Skip for Now" (if optional), "Cancel" (if abandoning), "Done" (after success).
+
+### Icons
+
+- Use **Ionicons** (`ionicons/icons`) for inline icons: `alertCircleOutline`, `keyOutline`, `fingerPrint`, `checkmarkCircleOutline`, etc.
+- For larger decorative icons (e.g., modal hero images), use **inline SVGs** with `stroke="currentColor"` so they inherit text color.
+- **Never use raw emoji** (`&#x1F4F7;`, `&#x2705;`) — they render inconsistently across platforms.
+
+### Background Context Awareness
+
+Shared components from `learn-card-base` may render on different backgrounds:
+- **Inside an Overlay**: White card background → `grayscale-*` text is fine
+- **On a login page**: Colored background (green, purple) → **wrap in a white card**
+
+When placing a shared component on a colored page background, always wrap it:
+
+```tsx
+<div className="w-full max-w-[500px] bg-white rounded-[20px] shadow-2xl">
+    <QrLoginRequester ... />
+</div>
+```
+
+### Spacing & Layout
+
+- Modal padding: `p-6` (inner content) or `p-8` (simple overlays with fewer elements)
+- Section spacing: `space-y-5` for major sections, `space-y-4` for form fields
+- Between heading + description: `mb-1`
+- Between description + content: `mb-5` or `mb-6`
+- Card content max-width: `max-w-md mx-auto` (inside overlays already constrained to 480px)
+
+### Checklist for New UI Components
+
+Before shipping any new modal, overlay, or form:
+
+1. **Colors**: Only `grayscale-*`, `emerald-*`, `amber-*`, `red-*` from the app palette — no generic Tailwind
+2. **Typography**: `font-poppins` set on container, `text-grayscale-900` for headings
+3. **Inputs**: Native `<input>` / `<textarea>` with explicit `text-grayscale-900 bg-white` — not IonItem
+4. **Buttons**: `rounded-[20px]` pill shape, `bg-grayscale-900` primary, `border-grayscale-300` secondary
+5. **Loading**: Every button with an async handler shows a spinner + contextual text
+6. **Errors**: Friendly error messages, never raw `error.message`
+7. **Copy**: No jargon, concise, action-oriented
+8. **Icons**: Ionicons or inline SVGs, never raw emoji
+9. **Contrast**: Text readable on its background (test on white AND colored backgrounds)
+10. **Animation**: Use `animate-fade-in-up` for overlay entrance, `transition-colors` / `transition-opacity` for interactions
+
 ## Monorepo Structure
 
 The project uses pnpm workspaces and NX for monorepo management with packages organized in `packages/` directory, services in the `services/` directory, and end-to-end tests in the `tests/` directory
@@ -268,6 +447,107 @@ Plugins are merged into the LearnCard via `addPlugin`, which rebuilds the wallet
 6. **Test** the new route in `tests/e2e` using the top-level script: `pnpm test:e2e`.
 
 These steps ensure types flow consistently from definition to testing and help avoid stale builds by relying on Nx-managed scripts.
+
+## AuthCoordinator Architecture
+
+The AuthCoordinator is a unified state machine that coordinates authentication and key derivation across LearnCard applications. It replaces the previous ad-hoc Web3Auth flow with a composable, provider-agnostic system.
+
+### 3-Layer Auth Model
+
+| Layer | Components | Required | Purpose |
+| ----- | ---------- | -------- | ------- |
+| **0 — Core** | Private Key → DID → Wallet | **yes** | Everything depends on this |
+| **1 — Auth Session** | Auth Provider (Firebase) | no | Needed for SSS server ops |
+| **2 — Network Identity** | LCN Profile | no | Needed for network interactions |
+
+A user with a cached private key can use the wallet even without an active Firebase session.
+
+### State Machine (10 states)
+
+`idle` → `authenticating` → `authenticated` → `checking_key_status` → one of:
+-   `needs_setup` (new user, no server record)
+-   `needs_migration` (server has web3auth key)
+-   `needs_recovery` (no local key / stale key)
+-   `deriving_key` → `ready`
+
+Also: `error` (with `canRetry` + `previousState`)
+
+Private-key-first shortcut: `idle` → `deriving_key` → `ready` (from cached key)
+
+### Key Interfaces
+
+-   `AuthProvider` — Auth session abstraction (`getIdToken`, `getCurrentUser`, `signOut`)
+-   `KeyDerivationStrategy` — Key split/reconstruct abstraction (`splitKey`, `reconstructKey`, `hasLocalKey`)
+-   `AuthCoordinatorConfig` — Full configuration passed to `new AuthCoordinator()`
+
+### Logout vs Forget Device
+
+-   **`logout()`** — Signs out the auth provider, runs cleanup/onLogout callbacks, resets state to `idle`. **Preserves the device share** in IndexedDB so the user can reconstruct their key on re-login without recovery.
+-   **`forgetDevice()`** — Calls `clearLocalKeys()` to wipe the device share from IndexedDB. Use this for "public computer" scenarios where the device should not remain trusted. Can be called before or after `logout()`.
+
+### File Map
+
+```
+packages/learn-card-base/src/
+├── auth-coordinator/
+│   ├── AuthCoordinator.ts           — Core state machine class
+│   ├── AuthCoordinatorProvider.tsx   — Base React provider + context
+│   ├── createAuthCoordinatorApi.ts   — Default server API factory
+│   ├── useAuthCoordinatorAutoSetup.ts — Auto handles needs_setup & needs_migration
+│   ├── types.ts                      — Type definitions (re-exports from sss-key-manager)
+│   ├── index.ts                      — Public exports
+│   ├── README.md                     — Core reference with Mermaid diagrams
+│   ├── INTEGRATION.md                — App integration guide
+│   ├── RECOVERY.md                   — Recovery system guide
+│   └── __tests__/
+│       └── AuthCoordinator.test.ts   — 46+ unit tests
+├── auth-providers/
+│   ├── createFirebaseAuthProvider.ts — Firebase AuthProvider factory
+│   └── index.ts
+├── config/
+│   └── authConfig.ts                 — Environment-driven config (getAuthConfig)
+├── helpers/
+│   └── indexedDBHelpers.ts           — clearAllIndexedDB (preserves lcb-sss-keys)
+├── key-derivation/
+│   └── createWeb3AuthStrategy.ts    — Web3Auth KeyDerivationStrategy (migration only)
+└── hooks/
+    ├── useRecoveryMethods.ts         — Recovery execution (password, passkey, phrase, backup)
+    └── useRecoverySetup.ts           — Recovery setup (add methods, export backup)
+
+packages/sss-key-manager/src/
+├── types.ts              — Canonical shared types (AuthProvider, KeyDerivationStrategy, etc.)
+├── sss-strategy.ts       — createSSSStrategy() factory
+├── sss.ts                — Shamir split/reconstruct
+├── storage.ts            — IndexedDB device share storage (lcb-sss-keys)
+├── crypto.ts             — Argon2id KDF + AES-GCM encryption
+├── passkey.ts            — WebAuthn passkey operations
+├── recovery-phrase.ts    — Mnemonic phrase encode/decode (25 words)
+└── atomic-operations.ts  — splitAndVerify, atomicShareUpdate
+
+apps/learn-card-app/src/providers/
+└── AuthCoordinatorProvider.tsx — LCA app wrapper (wallet, LCN profile, recovery UI)
+
+apps/scouts/src/providers/
+└── AuthCoordinatorProvider.tsx — Scouts app wrapper (wallet, LCN profile)
+```
+
+### Environment Variables
+
+All auth-related env vars use the `VITE_` prefix for Vite compatibility and are read via `getAuthConfig()` in `config/authConfig.ts`.
+
+-   `VITE_AUTH_PROVIDER`: `'firebase' | 'supertokens' | 'keycloak' | 'oidc'` (default: `'firebase'`)
+-   `VITE_KEY_DERIVATION`: `'sss' | 'web3auth'` (default: `'sss'`)
+-   `VITE_SSS_SERVER_URL`: Server URL for key share operations (default: `'http://localhost:5100/api'`)
+-   `VITE_ENABLE_MIGRATION`: `'true' | 'false'` (default: `'false'`)
+-   `VITE_ENABLE_EMAIL_BACKUP_SHARE`: `'true' | 'false'` (default: `'true'`)
+-   `VITE_WEB3AUTH_CLIENT_ID`: Web3Auth client ID (per app, from dashboard)
+-   `VITE_WEB3AUTH_NETWORK`: Web3Auth network (e.g. `'testnet'`, `'sapphire_mainnet'`)
+-   `VITE_WEB3AUTH_VERIFIER_ID`: Web3Auth verifier name (e.g. `'learncardapp-firebase'`)
+-   `VITE_WEB3AUTH_RPC_TARGET`: Ethereum RPC URL for Web3Auth private key provider (e.g. Infura endpoint)
+
+### Detailed Documentation
+
+See `packages/learn-card-base/src/auth-coordinator/README.md` for full state machine diagrams, sequence diagrams for every method, configuration reference, and server API contract. See `INTEGRATION.md` and `RECOVERY.md` in the same directory for app integration and recovery system guides.
 
 ## Partner Connect SDK Architecture
 

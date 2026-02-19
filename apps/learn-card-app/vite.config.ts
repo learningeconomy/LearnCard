@@ -47,6 +47,16 @@ export default defineConfig(({ mode }) => {
             API_URL: process.env.API_URL && `"${process.env.API_URL}"`,
             __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
             IS_PRODUCTION: process.env.NODE_ENV === 'production',
+            // SSS Key Manager configuration
+            'process.env.REACT_APP_KEY_DERIVATION_PROVIDER': process.env.REACT_APP_KEY_DERIVATION_PROVIDER
+                ? JSON.stringify(process.env.REACT_APP_KEY_DERIVATION_PROVIDER)
+                : 'undefined',
+            'process.env.REACT_APP_SSS_SERVER_URL': process.env.REACT_APP_SSS_SERVER_URL
+                ? JSON.stringify(process.env.REACT_APP_SSS_SERVER_URL)
+                : 'undefined',
+            'process.env.REACT_APP_ENABLE_SSS_MIGRATION': process.env.REACT_APP_ENABLE_SSS_MIGRATION
+                ? JSON.stringify(process.env.REACT_APP_ENABLE_SSS_MIGRATION)
+                : 'undefined',
             SENTRY_ENV: process.env.SENTRY_ENV ? `"${process.env.SENTRY_ENV}"` : '"development"',
             SENTRY_DSN: process.env.SENTRY_DSN
                 ? `"${process.env.SENTRY_DSN}"`

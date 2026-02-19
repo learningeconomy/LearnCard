@@ -30,7 +30,9 @@ import { WrenchColorFillIcon } from 'learn-card-base/svgs/WrenchIcon';
 import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';
 import ManageDataSharingModal from '../data-sharing/ManageDataSharingModal';
 import DataSharingIcon from 'learn-card-base/svgs/DataSharingIcon';
+import ShieldCheck from 'learn-card-base/svgs/ShieldCheck';
 import LearnCardIDCMS, { LearnCardIdCMSEditorModeEnum } from '../learncardID-CMS/LearnCardIDCMS';
+import { RecoverySetupModal } from '../recovery';
 
 import {
     useModal,
@@ -42,8 +44,11 @@ import {
     useCurrentUser,
     useWallet,
     useGetCheckListStatus,
+    getAuthConfig,
 } from 'learn-card-base';
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import useLogout from '../../hooks/useLogout';
+import ReAuthOverlay from '../auth/ReAuthOverlay';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 
@@ -54,7 +59,7 @@ import {
 } from '../learncardID-CMS/learncard-cms.helpers';
 import { FamilyCMSAppearance } from '../familyCMS/familyCMSState';
 import { LCNProfile } from '@learncard/types';
-import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { checklistItems } from 'learn-card-base';
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
@@ -100,6 +105,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const notInNetwork = isNetworkUser === false;
 
     const { data: connections } = useGetConnections();
+
+    const { keyDerivation, capabilities, showDeviceLinkModal, authProvider: contextAuthProvider, refreshAuthSession } = useAppAuth();
 
     const { checklistItemsWithStatus, completedItems, numStepsRemaining } = useGetCheckListStatus();
     const checkListItemText = `${completedItems} of ${checklistItems?.length}`;
@@ -344,8 +351,224 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                     );
                 },
-            }
+            },
         );
+
+        if (capabilities.recovery) {
+            rows.push({
+                title: 'Account Recovery',
+                Icon: ShieldCheck,
+                caretText: '',
+                onClick: async () => {
+                    if (!currentUser?.privateKey) {
+                        console.error('No private key available');
+                        return;
+                    }
+
+                    const showReAuth = () => {
+                        newModal(
+                            <ReAuthOverlay
+                                onSuccess={closeModal}
+                                onCancel={closeModal}
+                            />,
+                            { sectionClassName: '!max-w-[480px]' },
+                            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                        );
+                    };
+
+                    // Proactive session check — try silent refresh first,
+                    // then verify the token before opening the modal.
+                    if (!contextAuthProvider) {
+                        showReAuth();
+                        return;
+                    }
+
+                    // Try silent refresh first
+                    const refreshed = await refreshAuthSession();
+
+                    if (!refreshed) {
+                        try {
+                            await contextAuthProvider.getIdToken();
+                        } catch {
+                            showReAuth();
+                            return;
+                        }
+                    }
+
+                    let existingMethods: Array<{ type: string; createdAt: Date }> = [];
+                    let fetchedMaskedRecoveryEmail: string | null = null;
+
+                    if (keyDerivation.getAvailableRecoveryMethods) {
+                        try {
+                            const token = await contextAuthProvider.getIdToken();
+                            const providerType = contextAuthProvider.getProviderType();
+                            existingMethods = await keyDerivation.getAvailableRecoveryMethods(token, providerType);
+
+                            // Fetch masked recovery email from server key status
+                            if (keyDerivation.fetchServerKeyStatus) {
+                                const status = await keyDerivation.fetchServerKeyStatus(token, providerType);
+                                fetchedMaskedRecoveryEmail = status.maskedRecoveryEmail ?? null;
+                            }
+                        } catch {
+                            // Non-critical — show modal with empty methods
+                        }
+                    }
+
+                    const canSetup = !!keyDerivation.setupRecoveryMethod;
+
+                    const setupMethod = canSetup
+                        ? async (input: { method: string; password?: string; did?: string }, authUser?: unknown) => {
+                              let token: string;
+
+                              try {
+                                  token = await contextAuthProvider.getIdToken();
+                              } catch {
+                                  throw new Error('Your session has expired. Please close this dialog and sign in again.');
+                              }
+
+                              const providerType = contextAuthProvider.getProviderType();
+
+                              const signVp = async (pk: string): Promise<string> => {
+                                  const lc = await getSigningLearnCard(pk);
+
+                                  const jwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+
+                                  if (!jwt || typeof jwt !== 'string') throw new Error('Failed to sign DID-Auth VP');
+
+                                  return jwt;
+                              };
+
+                              return keyDerivation.setupRecoveryMethod!({
+                                  token,
+                                  providerType,
+                                  privateKey: currentUser.privateKey!,
+                                  input: input as import('@learncard/sss-key-manager').RecoverySetupInput,
+                                  authUser: (authUser as import('@learncard/sss-key-manager').AuthUser) ?? undefined,
+                                  signDidAuthVp: signVp,
+                              });
+                          }
+                        : null;
+
+                    const requireAuth = async () => {
+                        throw new Error('Your session has expired. Please close this dialog and sign in again.');
+                    };
+
+                    const { serverUrl } = getAuthConfig();
+
+                    const getTokenAndProvider = async () => {
+                        const token = await contextAuthProvider.getIdToken();
+                        const providerType = contextAuthProvider.getProviderType();
+                        return { token, providerType };
+                    };
+
+                    const getDidAuthHeaders = async (): Promise<Record<string, string>> => {
+                        const lc = await getSigningLearnCard(currentUser.privateKey!);
+                        const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+
+                        return {
+                            'Content-Type': 'application/json',
+                            ...(vpJwt && typeof vpJwt === 'string' ? { Authorization: `Bearer ${vpJwt}` } : {}),
+                        };
+                    };
+
+                    newModal(
+                        <RecoverySetupModal
+                            existingMethods={existingMethods.map(m => ({
+                                type: m.type,
+                                createdAt: m.createdAt instanceof Date
+                                    ? m.createdAt.toISOString()
+                                    : String(m.createdAt),
+                            }))}
+                            maskedRecoveryEmail={fetchedMaskedRecoveryEmail}
+                            onSetupPasskey={
+                                setupMethod
+                                    ? async () => {
+                                          const authUser = await contextAuthProvider.getCurrentUser();
+                                          const result = await setupMethod({ method: 'passkey' }, authUser);
+                                          return result?.method === 'passkey' ? result.credentialId : 'Passkey created';
+                                      }
+                                    : requireAuth
+                            }
+                            onGeneratePhrase={
+                                setupMethod
+                                    ? async () => {
+                                          const authUser = await contextAuthProvider.getCurrentUser();
+                                          const result = await setupMethod({ method: 'phrase' }, authUser);
+                                          return result?.method === 'phrase' ? result.phrase : '';
+                                      }
+                                    : requireAuth
+                            }
+                            onSetupBackup={
+                                setupMethod
+                                    ? async (backupPw: string) => {
+                                          const authUser = await contextAuthProvider.getCurrentUser();
+                                          const lc = await getSigningLearnCard(currentUser.privateKey!);
+                                          const did = lc?.id?.did() || '';
+                                          const result = await setupMethod({ method: 'backup', password: backupPw, did }, authUser);
+                                          return result?.method === 'backup' ? JSON.stringify(result.backupFile, null, 2) : '';
+                                      }
+                                    : requireAuth
+                            }
+                            onAddRecoveryEmail={async (email: string) => {
+                                const { token, providerType } = await getTokenAndProvider();
+                                const headers = await getDidAuthHeaders();
+
+                                const res = await fetch(`${serverUrl}/keys/recovery-email/add`, {
+                                    method: 'POST',
+                                    headers,
+                                    body: JSON.stringify({ authToken: token, providerType, email }),
+                                });
+
+                                if (!res.ok) {
+                                    const data = await res.json().catch(() => ({}));
+                                    throw new Error(data?.message || 'Failed to send verification code.');
+                                }
+                            }}
+                            onVerifyRecoveryEmail={async (code: string) => {
+                                const { token, providerType } = await getTokenAndProvider();
+                                const headers = await getDidAuthHeaders();
+
+                                const res = await fetch(`${serverUrl}/keys/recovery-email/verify`, {
+                                    method: 'POST',
+                                    headers,
+                                    body: JSON.stringify({ authToken: token, providerType, code }),
+                                });
+
+                                if (!res.ok) {
+                                    const data = await res.json().catch(() => ({}));
+                                    throw new Error(data?.message || 'Incorrect code.');
+                                }
+
+                                return res.json();
+                            }}
+                            onSetupEmailRecovery={
+                                setupMethod
+                                    ? async () => {
+                                          const authUser = await contextAuthProvider.getCurrentUser();
+                                          await setupMethod({ method: 'email' }, authUser);
+                                      }
+                                    : requireAuth
+                            }
+                            onClose={closeModal}
+                        />,
+                        { sectionClassName: '!max-w-[480px]' },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                    );
+                },
+            });
+        }
+
+        if (capabilities.deviceLinking) {
+            rows.push({
+                title: 'Link a Device',
+                Icon: QRCodeScanner,
+                caretText: '',
+                onClick: () => {
+                    closeModal();
+                    showDeviceLinkModal();
+                },
+            });
+        }
     }
 
     // if (viewMode === MyLearnCardModalViewModeEnum.guardian) {

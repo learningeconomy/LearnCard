@@ -17,7 +17,6 @@ import {
     useWallet,
     ProfilePicture,
     pushUtilities,
-    useWeb3Auth,
     useSQLiteStorage,
     useContract,
     redirectStore,
@@ -27,6 +26,7 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
 import { auth } from '../../firebase/firebase';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
+import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
 enum Step {
@@ -42,7 +42,7 @@ const ExternalConsentFlowDoor: React.FC = () => {
     const firebaseAuth = auth();
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
-    const { logout } = useWeb3Auth();
+    const { logout: coordinatorLogout } = useAuthCoordinator();
     const { clearDB } = useSQLiteStorage();
 
     // Warm up the consented contracts cache
@@ -85,7 +85,7 @@ const ExternalConsentFlowDoor: React.FC = () => {
                 }
             }
 
-            logout(redirectUrl);
+            coordinatorLogout();
             await queryClient.resetQueries();
 
             await clearDB();

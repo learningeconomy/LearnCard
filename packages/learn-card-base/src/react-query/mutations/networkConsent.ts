@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useWallet } from '../../hooks/useWallet';
 import { getOrCreateSharedUriForWallet } from '../../hooks/useSharedUrisInTerms';
 import { getOrFetchConsentedContracts } from '../../hooks/useConsentedContracts';
+import { isProductionNetwork } from 'learn-card-base/helpers/networkHelpers';
 import type { QueryClient } from '@tanstack/react-query';
 import {
     categoryMetadata,
@@ -110,6 +111,10 @@ export const useNetworkConsentMutation = () => {
 
     return useMutation<NetworkConsentResult, Error, NetworkConsentMutationParams>({
         mutationFn: async ({ queryClient, checkExistingConsent = true }) => {
+            if (!isProductionNetwork()) {
+                return { success: true, alreadyConsented: true };
+            }
+
             try {
                 const wallet = await initWallet();
                 await wallet.invoke.getProfile();

@@ -7,12 +7,15 @@ import {
     NetworkLearnCardFromApiKey,
 } from '@learncard/init';
 import { getSimpleSigningPlugin, SimpleSigningPlugin } from '@learncard/simple-signing-plugin';
+import { getLCAPlugin, LCAPlugin } from '@learncard/lca-api-plugin';
 
 const didkit = readFile(
     require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
 );
 
 export type LearnCard = AddPlugin<NetworkLearnCardFromSeed['returnValue'], SimpleSigningPlugin>;
+
+export type LearnCardWithLCA = AddPlugin<LearnCard, LCAPlugin>;
 
 export type ApiKeyLearnCard = NetworkLearnCardFromApiKey['returnValue'];
 
@@ -146,4 +149,42 @@ export const initApiKeyLearnCard = async (
     });
 
     return apiLc;
+};
+
+export const getLearnCardWithLCA = async (
+    seed = 'a'.repeat(64),
+    debug = false
+): Promise<LearnCardWithLCA> => {
+    const learnCard = await getLearnCard(seed, undefined, debug);
+
+    const lcaPlugin = await getLCAPlugin(learnCard as any, 'http://localhost:5200/trpc');
+
+    return learnCard.addPlugin(lcaPlugin) as LearnCardWithLCA;
+};
+
+export const getLearnCardWithLCAForUser = async (
+    userKey: keyof typeof USERS,
+    debug = false
+): Promise<LearnCardWithLCA> => {
+    const user = USERS[userKey];
+
+    const learnCard = await getLearnCardWithLCA(user.seed, debug);
+
+    try {
+        const existing = await learnCard.invoke.getProfile();
+
+        if (!existing) {
+            await learnCard.invoke.createProfile({
+                profileId: user.profileId,
+                displayName: user.displayName,
+                bio: '',
+                shortBio: '',
+            });
+        }
+    } catch (error) {
+        const msg = (error as any)?.message ?? String(error);
+        if (!/already exists/i.test(msg)) throw error;
+    }
+
+    return learnCard;
 };

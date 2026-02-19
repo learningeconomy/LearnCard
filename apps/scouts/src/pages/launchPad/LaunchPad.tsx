@@ -8,6 +8,8 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
+import { RecoveryBanner } from '../../components/recovery/RecoveryBanner';
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import NewBoostSelectMenu from '../../components/boost/boost-select-menu/NewBoostSelectMenu';
 import { ScoutsNewsList } from '../../components/scout-news/ScoutNews';
 import { MV_TYPEFORM, openExternalLink } from '../../helpers/externalLinkHelpers';
@@ -50,6 +52,8 @@ const LaunchPad: React.FC = () => {
         String(connectTo || ''),
         String(challenge || '')
     );
+
+    const { recoveryMethodCount, openRecoverySetup } = useAppAuth();
 
     const isAndroid = /android/i.test(navigator.userAgent);
 
@@ -148,6 +152,13 @@ const LaunchPad: React.FC = () => {
             />
 
             <IonContent fullscreen>
+                <div className="w-full flex justify-center px-4">
+                    <RecoveryBanner
+                        recoveryMethodCount={recoveryMethodCount}
+                        onSetup={openRecoverySetup}
+                    />
+                </div>
+
                 <section className="w-full flex items-center justify-center h-32">
                     <div className="flex items-center justify-around w-full max-w-[600px] h-32">
                         {navButtons.map(button => (

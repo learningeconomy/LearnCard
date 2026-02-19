@@ -5,7 +5,6 @@ import { SocialLoginTypes } from '../hooks/useSocialLogins';
 export const authStore = createStore('authStore')<{
     jwt: string | null;
     discord: string | null;
-    initLoading: boolean;
     typeOfLogin: SocialLoginTypes | null;
     verificationId: string | null; // exclusive to firebase sms login
     loginAttempts: number;
@@ -16,7 +15,6 @@ export const authStore = createStore('authStore')<{
     {
         jwt: null,
         discord: null,
-        initLoading: false,
         typeOfLogin: null,
         verificationId: null,
         loginAttempts: 0,
@@ -24,12 +22,17 @@ export const authStore = createStore('authStore')<{
         pinToken: '',
         pinTokenExpire: null,
     },
-    { persist: { name: 'auth', enabled: true } }
+    {
+        persist: {
+            name: 'auth',
+            enabled: true,
+            partialize: state => ({ ...state }),
+        },
+    }
 );
 
 export const useAuthToken = authStore.use.jwt;
 export const useDiscordToken = authStore.use.discord;
-export const useInitLoading = authStore.use.initLoading;
 export const useLoginAttempts = authStore.use.loginAttempts;
 export const useVerificationId = authStore.use.verificationId;
 

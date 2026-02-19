@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore, useCurrentUser, useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useConsentFlowByUri } from 'apps/learn-card-app/src/pages/consentFlow/useConsentFlow';
 import useJoinLCNetworkModal from '../../network-prompts/hooks/useJoinLCNetworkModal';
+import { isProductionNetwork } from 'learn-card-base/helpers/networkHelpers';
 
 import {
     useConfirmation,
@@ -41,7 +42,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const { closeAllModals } = useModal();
     const currentUser = useCurrentUser()!!!!!!!!!;
 
-    const demoContractUri = flags.demoContractUri;
+    const demoContractUri = isProductionNetwork() ? flags.demoContractUri : undefined;
     const { data: contract } = useContract(demoContractUri);
     const { hasConsented, consentedContract } = useConsentFlowByUri(demoContractUri);
 

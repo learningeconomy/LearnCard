@@ -70,8 +70,13 @@ export * from './hooks/useWithdrawConsent';
 export * from './hooks/useUpdateTerms';
 export * from './hooks/useConsentToContract';
 export * from './hooks/useTermsTransactions';
-export * from './hooks/useWeb3Auth';
-export * from './hooks/useWeb3AuthSFA';
+
+// Auth Coordinator - unified auth + key derivation orchestration
+export * from './auth-coordinator';
+export * from './auth-providers';
+export * from './key-derivation';
+export * from './config/authConfig';
+export * from './config/providerRegistry';
 export * from './hooks/useSocialLogins';
 export * from './hooks/useSQLiteStorage';
 export * from './hooks/useGetCurrentUser';
@@ -99,6 +104,8 @@ export * from './stores/aiBoostStore';
 export * from './hooks/useGetCheckListStatus';
 export * from './hooks/useAiInsightCredential';
 export * from './hooks/useGetCurrentUserRole';
+export * from './hooks/useQrLogin';
+export * from './components/qr-login';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';

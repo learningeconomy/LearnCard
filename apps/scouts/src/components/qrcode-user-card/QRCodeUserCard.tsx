@@ -25,7 +25,6 @@ import Camera from '../svgs/Camera';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import UserProfileSetup from '../user-profile/UserProfileSetup';
 
-import { useWeb3AuthSFA } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 import useLogout from '../../hooks/useLogout';
@@ -49,7 +48,6 @@ const QrCodeUserCard: React.FC<{
     const { initWallet } = useWallet();
     const firebaseAuth = auth();
     const currentUser = useCurrentUser();
-    const { logout } = useWeb3AuthSFA();
     const { clearDB } = useSQLiteStorage();
     const { presentToast } = useToast();
     const queryClient = useQueryClient();

@@ -181,6 +181,52 @@ export const NotificationQueryInputValidator = z
 export type NotificationQueryInputType = z.infer<typeof NotificationQueryInputValidator>;
 /** END Synced Types**/
 
+/** @group LCA API Plugin - SSS Key Management */
+export const AuthProviderTypeValidator = z.enum(['firebase', 'supertokens', 'keycloak', 'oidc']);
+export type AuthProviderType = z.infer<typeof AuthProviderTypeValidator>;
+
+export const ServerEncryptedShareValidator = z.object({
+    encryptedData: z.string(),
+    encryptedDek: z.string(),
+    iv: z.string(),
+});
+export type ServerEncryptedShare = z.infer<typeof ServerEncryptedShareValidator>;
+
+export const EncryptedShareValidator = z.object({
+    encryptedData: z.string(),
+    iv: z.string(),
+    salt: z.string().optional(),
+});
+export type EncryptedShare = z.infer<typeof EncryptedShareValidator>;
+
+export const RecoveryMethodTypeValidator = z.enum(['passkey', 'backup', 'phrase', 'email']);
+export type RecoveryMethodType = z.infer<typeof RecoveryMethodTypeValidator>;
+
+export const SecurityLevelValidator = z.enum(['basic', 'enhanced', 'advanced']);
+export type SecurityLevel = z.infer<typeof SecurityLevelValidator>;
+
+export const KeyProviderValidator = z.enum(['web3auth', 'sss']);
+export type KeyProvider = z.infer<typeof KeyProviderValidator>;
+
+export const RecoveryMethodInfoValidator = z.object({
+    type: RecoveryMethodTypeValidator,
+    createdAt: z.string(),
+    credentialId: z.string().optional(),
+    shareVersion: z.number().optional(),
+});
+export type RecoveryMethodInfo = z.infer<typeof RecoveryMethodInfoValidator>;
+
+export const GetAuthShareResponseValidator = z.object({
+    authShare: ServerEncryptedShareValidator.nullable(),
+    primaryDid: z.string().nullable(),
+    securityLevel: SecurityLevelValidator,
+    recoveryMethods: z.array(RecoveryMethodInfoValidator),
+    keyProvider: KeyProviderValidator,
+    shareVersion: z.number(),
+    maskedRecoveryEmail: z.string().nullable(),
+}).nullable();
+export type GetAuthShareResponse = z.infer<typeof GetAuthShareResponseValidator>;
+
 /** @group LCA API Plugin */
 export type LCAPluginDependentMethods = {
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
@@ -283,6 +329,45 @@ export type LCAPluginMethods = {
         },
         message: string
     ) => Promise<boolean>;
+
+    // SSS Key Management Methods
+    getAuthShare: (
+        authToken: string,
+        providerType: AuthProviderType
+    ) => Promise<GetAuthShareResponse>;
+
+    storeAuthShare: (
+        authToken: string,
+        providerType: AuthProviderType,
+        authShare: ServerEncryptedShare,
+        primaryDid: string,
+        securityLevel?: SecurityLevel
+    ) => Promise<{ success: boolean }>;
+
+    addRecoveryMethod: (
+        authToken: string,
+        providerType: AuthProviderType,
+        type: RecoveryMethodType,
+        encryptedShare?: EncryptedShare,
+        credentialId?: string
+    ) => Promise<{ success: boolean }>;
+
+    getRecoveryShare: (
+        authToken: string,
+        providerType: AuthProviderType,
+        type: RecoveryMethodType,
+        credentialId?: string
+    ) => Promise<{ encryptedShare?: EncryptedShare; shareVersion?: number } | null>;
+
+    markMigrated: (
+        authToken: string,
+        providerType: AuthProviderType
+    ) => Promise<{ success: boolean }>;
+
+    deleteUserKey: (
+        authToken: string,
+        providerType: AuthProviderType
+    ) => Promise<{ success: boolean }>;
 };
 
 /** @group LearnCardNetwork Plugin */

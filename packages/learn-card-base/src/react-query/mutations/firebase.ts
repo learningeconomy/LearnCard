@@ -150,6 +150,7 @@ export const useVerifyLoginVerificationCode = () => {
         },
         onSuccess: data => {
             if (!data?.success) {
+                console.error(data)
                 presentAlert({
                     header: 'Error',
                     message: data?.message || 'Failed to verify login verification code',

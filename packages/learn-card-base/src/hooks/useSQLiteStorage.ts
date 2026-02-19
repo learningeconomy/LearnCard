@@ -263,7 +263,7 @@ export const sqliteInit = () => {
             setExistConnection(true);
             return db;
         } catch (error) {
-            console.warn('initDB::error', (error as any).message);
+            console.debug('initDB::error', (error as any).message);
             return false;
         }
     };

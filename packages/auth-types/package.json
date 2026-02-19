@@ -1,0 +1,35 @@
+{
+    "name": "@learncard/auth-types",
+    "version": "0.0.1",
+    "description": "Provider-agnostic auth and key derivation interfaces for LearnCard",
+    "main": "./dist/index.js",
+    "module": "./dist/auth-types.esm.js",
+    "types": "./dist/auth-types.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntrypoint.js ./dist/index.js && dts-bundle-generator src/index.ts -o dist/auth-types.d.ts --no-check",
+        "dev": "node ./scripts/build.mjs --watch",
+        "typecheck": "tsc --noEmit"
+    },
+    "author": "Learning Economy Foundation (www.learningeconomy.io)",
+    "license": "MIT",
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/auth-types/README.md",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
+    },
+    "devDependencies": {
+        "@esbuild-plugins/node-resolve": "^0.1.4",
+        "@types/node": "^18.7.19",
+        "dts-bundle-generator": "^6.10.0",
+        "esbuild": "^0.27.1",
+        "shx": "^0.3.4",
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {}
+}

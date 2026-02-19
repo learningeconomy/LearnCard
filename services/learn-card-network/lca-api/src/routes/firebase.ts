@@ -13,15 +13,13 @@ import {
     FirebaseCustomAuthResponseSchema,
 } from '@helpers/firebase.helpers';
 import cache from '@cache';
-import {
-    getFrom,
-    sendEmailWithTemplate,
-    LOGIN_VERIFICATION_CODE_TEMPLATE_ID,
-} from '@helpers/postmark.helpers';
 import { TRPCError } from '@trpc/server';
+import { getDeliveryService, getFrom } from '../services/delivery';
 import jwtDecode from 'jwt-decode';
 import { getDidWebLearnCard, getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { isAuthorizedDID } from '@helpers/dids.helpers';
+
+const LOGIN_VERIFICATION_CODE_TEMPLATE_ALIAS = process.env.POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS ?? '';
 
 export const ScoutsSSOUserLoginEndpoint: string =
     'https://sso.scout.org/auth/realms/wsb/protocol/openid-connect/token';
@@ -280,22 +278,20 @@ export const firebaseRouter = t.router({
                 // store code in Redis with 5-min TTL
                 await cache.set(redisKey, '1', CODE_TTL_SECONDS);
 
-                if (code) {
-                    try {
-                        await sendEmailWithTemplate(
-                            email,
-                            Number(LOGIN_VERIFICATION_CODE_TEMPLATE_ID),
-                            {
-                                verificationCode: code,
-                                verificationEmail: email,
-                                recipient: { name: email },
-                            },
-                            getFrom({ mailbox: 'login' })
-                        );
-                    } catch (error) {
-                        console.error('Failed to send verification email:', error);
-                        return { success: false, error: 'Error sending login verification code' };
-                    }
+                try {
+                    await getDeliveryService().send({
+                        to: email,
+                        templateAlias: LOGIN_VERIFICATION_CODE_TEMPLATE_ALIAS,
+                        templateModel: {
+                            verificationCode: code,
+                            verificationEmail: email,
+                            recipient: { name: email },
+                        },
+                        from: getFrom({ mailbox: 'login' }),
+                    });
+                } catch (error) {
+                    console.error('Failed to send verification email:', error);
+                    return { success: false, error: 'Error sending login verification code' };
                 }
 
                 return { success: true };
@@ -339,6 +335,7 @@ export const firebaseRouter = t.router({
                 await cache.delete([redisKey]);
 
                 // get or create the Firebase user
+                console.log('Getting or creating Firebase user...', email, code, app);
                 let user;
                 try {
                     user = await app?.auth().getUserByEmail(email);

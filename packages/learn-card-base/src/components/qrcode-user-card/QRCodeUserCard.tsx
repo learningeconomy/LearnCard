@@ -19,7 +19,7 @@ import Print from 'learn-card-base/assets/images/print.png';
 import Share from 'learn-card-base/svgs/Share';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 
-import useWeb3Auth from 'learn-card-base/hooks/useWeb3Auth';
+import { useAuthCoordinator } from 'learn-card-base/auth-coordinator';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 
@@ -34,7 +34,7 @@ const QrCodeUserCard: React.FC<{
     handleQRCodeCardModal: () => void;
     branding: BrandingEnum;
 }> = ({ handleQRCodeCardModal, branding }) => {
-    const { logout } = useWeb3Auth();
+    const { logout: coordinatorLogout } = useAuthCoordinator();
     const { clearDB } = useSQLiteStorage();
     const currentUser = useCurrentUser();
     const firebaseAuthentication = firebaseAuthStore.get.firebaseAuth();
@@ -117,7 +117,7 @@ const QrCodeUserCard: React.FC<{
                                             console.log('firebase::signout::error', e);
                                         }
                                     }
-                                    logout(redirectUrl);
+                                    coordinatorLogout();
                                     await clearDB();
                                 }}
                                 className="mr-1 text-indigo-500 font-semibold text-lg text-center"

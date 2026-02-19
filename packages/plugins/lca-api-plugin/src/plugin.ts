@@ -452,6 +452,86 @@ export const getLCAPlugin = async (
 
                     return result;
                 },
+
+                // SSS Key Management Methods
+                getAuthShare: async (_learnCard, authToken, providerType) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    return client.keys.getAuthShare.mutate({ authToken, providerType });
+                },
+
+                storeAuthShare: async (
+                    _learnCard,
+                    authToken,
+                    providerType,
+                    authShare,
+                    primaryDid,
+                    securityLevel
+                ) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    return client.keys.storeAuthShare.mutate({
+                        authToken,
+                        providerType,
+                        authShare,
+                        primaryDid,
+                        securityLevel,
+                    });
+                },
+
+                addRecoveryMethod: async (
+                    _learnCard,
+                    authToken,
+                    providerType,
+                    type,
+                    encryptedShare,
+                    credentialId
+                ) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    return client.keys.addRecoveryMethod.mutate({
+                        authToken,
+                        providerType,
+                        type,
+                        encryptedShare,
+                        credentialId,
+                    });
+                },
+
+                getRecoveryShare: async (
+                    _learnCard,
+                    authToken,
+                    providerType,
+                    type,
+                    credentialId
+                ) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    return client.keys.getRecoveryShare.query({
+                        authToken,
+                        providerType,
+                        type,
+                        credentialId,
+                    });
+                },
+
+                markMigrated: async (_learnCard, authToken, providerType) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    return client.keys.markMigrated.mutate({ authToken, providerType });
+                },
+
+                deleteUserKey: async (_learnCard, authToken, providerType) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    return client.keys.deleteUserKey.mutate({ authToken, providerType });
+                },
             },
         };
     } catch (e) {
@@ -606,6 +686,32 @@ export const getLCAPlugin = async (
                 sendEndorsementShareLink: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
                     return false;
+                },
+
+                // SSS Key Management Methods (Offline)
+                getAuthShare: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return null;
+                },
+                storeAuthShare: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { success: false };
+                },
+                addRecoveryMethod: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { success: false };
+                },
+                getRecoveryShare: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return null;
+                },
+                markMigrated: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { success: false };
+                },
+                deleteUserKey: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { success: false };
                 },
             },
         };

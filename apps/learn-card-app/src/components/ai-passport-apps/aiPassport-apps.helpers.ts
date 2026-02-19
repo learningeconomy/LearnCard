@@ -1,6 +1,7 @@
 import ChatGPTAppBG from '../../assets/images/chatGpt-app-bg.png';
 
 import { LaunchPadAppListItem } from 'learn-card-base';
+import { isProductionNetwork } from 'learn-card-base/helpers/networkHelpers';
 import { LEARNCARD_NETWORK_URL, LEARNCARD_AI_URL } from 'learn-card-base/constants/Networks';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
@@ -36,16 +37,8 @@ export enum AiPassportAppContractUri {
     learncardapp = 'lc:network:network.learncard.com/trpc:contract:2ed7b889-c06e-47c4-835b-d924c17e9891',
 }
 
-export const areAiPassportAppsAvailable = (): boolean => {
-    const overriddenNetworkUrl = typeof LCN_URL === 'string' ? LCN_URL : undefined;
-    const storedNetworkUrl = networkStore.get.networkUrl();
-
-    const effectiveNetworkUrl = overriddenNetworkUrl?.trim()
-        ? overriddenNetworkUrl
-        : storedNetworkUrl;
-
-    return effectiveNetworkUrl === LEARNCARD_NETWORK_URL;
-};
+/** @deprecated Use `isProductionNetwork` from `learn-card-base/helpers/networkHelpers` instead. */
+export const areAiPassportAppsAvailable = (): boolean => isProductionNetwork();
 
 export const aiPassportApps: (LaunchPadAppListItem & { url: string })[] = [
     {

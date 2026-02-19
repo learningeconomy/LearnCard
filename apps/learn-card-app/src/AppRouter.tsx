@@ -23,7 +23,6 @@ import {
     usePrefetchBoosts,
     useModal,
     ModalTypes,
-    useWeb3Auth,
     LOGIN_REDIRECTS,
     useSyncConsentFlow,
     useCurrentUser,
@@ -31,11 +30,11 @@ import {
     useContract,
     switchedProfileStore,
 } from 'learn-card-base';
+import { useAppAuth } from './providers/AuthCoordinatorProvider';
 import { useNetworkConsentMutation } from 'learn-card-base/react-query/mutations/networkConsent';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
-import { WALLET_ADAPTERS } from '@web3auth/base';
 
 import endorsementsRequestStore from './stores/endorsementsRequestStore';
 import { useFirebase } from './hooks/useFirebase';
@@ -53,8 +52,13 @@ import useConsentFlow from './pages/consentFlow/useConsentFlow';
 
 export const aiRoutes = ['/ai/topics', '/ai/sessions', '/chats'];
 
-const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
-    const { web3AuthInit } = useWeb3Auth();
+const AppRouter: React.FC = () => {
+    const { isLoading: coordinatorLoading, walletReady } = useAppAuth();
+
+    // The coordinator detects Firebase auth changes via firebaseAuthStore and
+    // handles the full lifecycle (authenticating → deriving_key → ready).
+    // Once walletReady is true, we always show the app regardless of other signals.
+    const initLoading = walletReady ? false : coordinatorLoading;
     const { verifySignInLinkAndLogin, verifyAppleLogin } = useFirebase();
     const history = useHistory();
     const location = useLocation();
@@ -214,21 +218,6 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
     const saved_email = window.localStorage.getItem('emailForSignIn');
 
     useEffect(() => {
-        const handleLoginAsync = async () => {
-            // re-init
-            const web3Auth = await web3AuthInit({
-                redirectUrl:
-                    IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                        ? LOGIN_REDIRECTS?.[BrandingEnum.learncard].redirectUrl
-                        : LOGIN_REDIRECTS?.[BrandingEnum.learncard].devRedirectUrl,
-                branding: BrandingEnum.learncard,
-                showLoading: false,
-            });
-
-            // re-connect
-            await web3Auth?.connectTo(WALLET_ADAPTERS.OPENLOGIN);
-        };
-
         App.addListener('appUrlOpen', data => {
             // get the url when the event "appUrlOpen" is triggered
             const authLink = data?.url;
@@ -241,9 +230,7 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
 
             const isNative = Capacitor?.isNativePlatform();
 
-            if (params.has('loginCompleted') && isNative) {
-                handleLoginAsync();
-            } else if (params.get('verifyCode') === 'true' && isNative) {
+            if (params.get('verifyCode') === 'true' && isNative) {
                 redirectStore.set.email(params.get('email') as string);
                 history.replace('/login?verifyCode=true');
             } else {
@@ -267,17 +254,6 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
         if (!saved_email) {
             verifyAppleLogin();
         }
-    }, []);
-
-    useEffect(() => {
-        web3AuthInit({
-            redirectUrl:
-                IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                    ? LOGIN_REDIRECTS[BrandingEnum.learncard].redirectUrl
-                    : LOGIN_REDIRECTS[BrandingEnum.learncard].devRedirectUrl,
-            branding: BrandingEnum.learncard,
-            showLoading: false,
-        });
     }, []);
 
     // Backfill consent logic for existing users

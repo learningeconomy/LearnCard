@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Capacitor } from '@capacitor/core';
 import authStore from 'learn-card-base/stores/authStore';
@@ -6,20 +6,16 @@ import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
 import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
 import { BrandingEnum, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
 import { pushUtilities } from 'learn-card-base';
-import { auth } from '../firebase/firebase';
-import { useWeb3AuthSFA, useWallet } from 'learn-card-base';
-import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
-import { useQueryClient } from '@tanstack/react-query';
+import { useWallet } from 'learn-card-base';
 import LoggingOutModal from '../components/auth/LoggingOutModal';
+
+import { useAuthCoordinator } from '../providers/AuthCoordinatorProvider';
 
 const useLogout = () => {
     const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
-    const { logout } = useWeb3AuthSFA();
-    const { clearDB } = useSQLiteStorage();
-    const firebaseAuth = auth();
+    const { logout: coordinatorLogout } = useAuthCoordinator();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
-    const queryClient = useQueryClient();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -27,6 +23,7 @@ const useLogout = () => {
 
     const handleLogout = async (branding: BrandingEnum) => {
         setIsLoggingOut(true);
+
         newModal(
             <div className="flex flex-col items-center justify-center h-full w-full p-5">
                 <LoggingOutModal />
@@ -36,6 +33,7 @@ const useLogout = () => {
                 className: 'full-screen-modal-transparent-bg',
             }
         );
+
         const typeOfLogin = authStore?.get?.typeOfLogin();
         const nativeSocialLogins = [
             SocialLoginTypes.apple,
@@ -60,7 +58,8 @@ const useLogout = () => {
                     }
                 }
 
-                await firebaseAuth.signOut(); // sign out of web layer
+                // Native Firebase sign-out for Capacitor social logins
+                // (web Firebase sign-out is handled by the coordinator via authProvider.signOut)
                 if (typeOfLogin && nativeSocialLogins.includes(typeOfLogin) && Capacitor.isNativePlatform()) {
                     try {
                         await FirebaseAuthentication?.signOut?.();
@@ -69,14 +68,14 @@ const useLogout = () => {
                     }
                 }
 
-                try {
-                    await clearDB();
-                    await queryClient.resetQueries();
-                } catch (e) {
-                    console.error(e);
-                }
+                // Coordinator handles: authProvider.signOut, clearLocalKeys, onLogout callback
+                // (onLogout clears stores, queryClient, SQLite, localStorage, IndexedDB, etc.)
+                await coordinatorLogout();
 
-                await logout(redirectUrl);
+                // Hard redirect — localStorage.clear() in the logout callback wipes
+                // Ionic's internal router state, so client-side navigation would
+                // land on a white screen. A full page reload reinitializes cleanly.
+                window.location.href = '/login';
             } catch (e) {
                 console.error('There was an issue logging out', e);
                 setIsLoggingOut(false);

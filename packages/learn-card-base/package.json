@@ -5,8 +5,8 @@
     "description": "LearnCard Apps shared components",
     "main": "src/index.ts",
     "scripts": {
-        "test": "echo \"Skipping tests...\"",
-        "test:watch": "echo \"Skipping tests...\""
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "dependencies": {
         "@capacitor-community/sqlite": "^7.0.1",
@@ -20,7 +20,9 @@
         "@koale/useworker": "^4.0.2",
         "@radix-ui/react-popover": "1.0.7",
         "@radix-ui/react-slot": "1.0.2",
+        "@learncard/auth-types": "workspace:*",
         "@learncard/helpers": "workspace:*",
+        "@learncard/sss-key-manager": "workspace:*",
         "@udecode/zustood": "1.1.1",
         "@web3auth/base": "^9.7.0",
         "@web3auth/ethereum-provider": "^9.7.0",
@@ -62,7 +64,8 @@
         "@types/lodash": "^4.14.191",
         "@types/uuid": "^9.0.0",
         "esbuild-jest": "^0.5.0",
-        "react": "18.3.1"
+        "react": "18.3.1",
+        "vitest": "^1.0.0"
     },
     "repository": {
         "type": "git",
