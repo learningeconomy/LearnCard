@@ -1,12 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { useGetCredentialList, useModal, useSyncConsentFlow } from 'learn-card-base';
 
-import SendIcon from 'learn-card-base/svgs/SendIcon';
-import TickSquareIcon from 'learn-card-base/svgs/TickSquareIcon';
+import { ArrowUp } from 'lucide-react';
 
 import {
     currentThreadId,
@@ -20,6 +18,7 @@ import {
     startLearningPathway,
     fetchLearningPathways,
     isEndingSession,
+    chatInputText,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 
 import type { LearningPathway } from 'learn-card-base/types/ai-chat';
@@ -31,7 +30,7 @@ import {
     aiPassportApps,
     AiPassportAppsEnum,
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
-import { NewAiSessionStepEnum, sessionWrapUpText } from '../newAiSession.helpers';
+import { AiSessionMode, NewAiSessionStepEnum, sessionWrapUpText } from '../newAiSession.helpers';
 import FinishSessionButton from './FinishSessionButton';
 
 import { chatBotStore } from '../../../stores/chatBotStore';
@@ -47,10 +46,11 @@ const ChatInput: React.FC = () => {
     const $currentThreadId = useStore(currentThreadId);
     const $threads = useStore(threads);
     const $isEndingSession = useStore(isEndingSession);
-    const [input, setInput] = useState('');
+    const $input = useStore(chatInputText);
     const [showPathwaySelection, setShowPathwaySelection] = useState(false);
     const [pathways, setPathways] = useState<LearningPathway[]>([]);
     const [loadingPathways, setLoadingPathways] = useState(false);
+    const mode = chatBotStore.useTracked.mode();
 
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
     const { refetch: fetchTopics } = useGetCredentialList('AI Topic');
@@ -87,7 +87,7 @@ const ChatInput: React.FC = () => {
 
     const showContinue = $planReady;
 
-    if (showContinue) {
+    if (showContinue && mode === AiSessionMode.tutor) {
         return (
             <div className="flex justify-center p-5">
                 <button
@@ -122,7 +122,10 @@ const ChatInput: React.FC = () => {
                         {thread?.topicCredentialUri && !thread?.summaries?.[0] && (
                             <>
                                 <button
-                                    onClick={() => history.push('/')}
+                                    onClick={() => {
+                                        closeAllModals();
+                                        history.push('/');
+                                    }}
                                     className="bg-emerald-700 text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                                 >
                                     Return Home
@@ -221,9 +224,9 @@ const ChatInput: React.FC = () => {
     }
 
     const handleSend = () => {
-        if (!input.trim()) return;
-        sendMessage(input);
-        setInput('');
+        if (!$input.trim()) return;
+        sendMessage($input);
+        chatInputText.set('');
     };
 
     const handleFinish = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -241,16 +244,16 @@ const ChatInput: React.FC = () => {
         }
     };
 
-    const disableSend = !input.trim() || $isTyping;
+    const disableSend = !$input.trim() || $isTyping;
     // const showFinishButton = !showContinue && !$isTyping;
 
     return (
         <>
             {/* <FinishSessionButton /> */}
             <div className="flex flex-col gap-[10px] p-[15px] sm:p-0">
-                <div className="flex rounded-[15px] overflow-hidden w-full sm:shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)] items-center">
+                <div className="flex rounded-[15px] overflow-hidden w-full items-center border-[1px] border-grayscale-200 border-solid">
                     <form
-                        className="flex-1 flex items-center bg-white sm:py-[15px] sm:px-[20px] sm:gap-[15px] sm:border-r border-grayscale-200"
+                        className="flex-1 flex items-center bg-white sm:py-[15px] sm:px-[20px] sm:gap-[15px]"
                         // className="flex items-end gap-3 w-full p-5 bg-white rounded-2xl shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)]"
                         onSubmit={e => {
                             e.preventDefault();
@@ -260,10 +263,10 @@ const ChatInput: React.FC = () => {
                     >
                         <textarea
                             rows={1}
-                            className="flex-1 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[5px] py-[15px] focus:outline-none disabled:opacity-60 resize-none overflow-y-auto"
-                            value={input}
+                            className="flex-1 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[5px] py-[15px] focus:outline-none disabled:opacity-60 resize-none overflow-y-auto phone:!pl-[12px]"
+                            value={$input}
                             onChange={e => {
-                                setInput(e.target.value);
+                                chatInputText.set(e.target.value);
                                 e.target.style.height = 'auto';
                                 e.target.style.height = `${Math.min(
                                     e.target.scrollHeight,
@@ -272,7 +275,7 @@ const ChatInput: React.FC = () => {
                             }}
                             onKeyDown={handleKeyPress}
                             // disabled={$isTyping}
-                            placeholder={'Type a message...'}
+                            placeholder={'Ask anything...'}
                             style={{ resize: 'none' }}
                             ref={el => {
                                 if (el) {
@@ -283,15 +286,13 @@ const ChatInput: React.FC = () => {
                         ></textarea>
                         <button
                             type="submit"
-                            className={`bg-${primaryColor} hover:bg-${primaryColor} disabled:bg-white p-[7px] sm:p-[10px] disabled:opacity-50 hover:cursor-pointer disabled:hover:cursor-not-allowed rounded-[15px]`}
+                            className={`bg-${primaryColor} hover:bg-${primaryColor} disabled:bg-grayscale-400 p-[7px] sm:p-[10px] disabled:opacity-50 hover:cursor-pointer disabled:hover:cursor-not-allowed rounded-full phone:!mr-[8px]`}
                             disabled={disableSend}
                         >
                             {$isTyping ? (
                                 <CustomSpinner className="text-gray-700 h-[30px] w-[30px]" />
                             ) : (
-                                <SendIcon
-                                    className={disableSend ? 'text-grayscale-400' : 'text-white'}
-                                />
+                                <ArrowUp className={disableSend ? 'text-white' : 'text-white'} />
                             )}
                         </button>
                     </form>

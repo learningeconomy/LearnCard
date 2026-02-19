@@ -97,6 +97,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
     const getFile = async (event: React.ChangeEvent<HTMLInputElement>, uploadType: string) => {
         try {
             setIsUploading(true);
+            setBase64Data('');
+            setRawArtifactCredential(null);
             const wallet = await initWallet();
             const walletDid = wallet?.id?.did();
             const file = event.target.files?.[0];
@@ -127,6 +129,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
     ) => {
         try {
             setIsUploading(true);
+            setBase64Datas([]);
+            setRawArtifactCredentials([]);
             const wallet = await initWallet();
             const walletDid = wallet?.id?.did();
             const files = e.target.files;
@@ -362,6 +366,18 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             checklistStore.set.updateIsParsing(fileType, true);
         }
 
+        const total = rawArtifactCredentials.length;
+        let settled = 0;
+
+        // Called: Called when a file finishes processing (success or failure).
+        // Increments the settled count and resets the parsing state when all files are done.
+        const onFileSettled = () => {
+            settled += 1;
+            if (settled >= total) {
+                checklistStore.set.updateIsParsing(fileType, false);
+            }
+        };
+
         try {
             const wallet = await initWallet();
             const did = wallet?.id?.did();
@@ -401,8 +417,11 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         // Update the store with the new credentials
                         newCredsStore.set.addNewCreds(recordsByCategory);
                     }
+
+                    onFileSettled();
                 } catch (error) {
                     console.error('Error processing file:', error);
+                    onFileSettled();
                     // Continue with next file even if one fails
                 }
             }
@@ -412,9 +431,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             await refetchCheckListStatus();
         } catch (error) {
             console.error('Error in parseFiles:', error);
-            throw error;
-        } finally {
             checklistStore.set.updateIsParsing(fileType, false);
+            throw error;
         }
     };
 

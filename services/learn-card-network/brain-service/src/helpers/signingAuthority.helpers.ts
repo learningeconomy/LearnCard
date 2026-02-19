@@ -106,7 +106,7 @@ export async function issueCredentialWithSigningAuthority(
                 return validationResult.data;
             }
         } catch (error) {
-            console.error('SA Helpers - Error While Sending:', error);
+            console.error('SA Helpers - Error While Sending:', JSON.stringify(error));
             throw new Error('SA Helpers - Error While Sending');
         }
     }, { owner: owner.profileId, saEndpoint: signingAuthorityForUser.signingAuthority.endpoint });
