@@ -28,6 +28,7 @@ const AiPathwaysDiscoverySearch: React.FC<{
                     <IonInput
                         value={keywordInput}
                         onIonInput={(e: any) => setKeywordInput(e.detail.value)}
+                        onKeyDown={(e: any) => e.key === 'Enter' && handleSearch()}
                         autocapitalize="on"
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-sm`}
                         placeholder="e.g. Software Engineer"
