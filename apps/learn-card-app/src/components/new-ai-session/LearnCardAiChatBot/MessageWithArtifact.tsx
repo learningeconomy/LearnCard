@@ -26,6 +26,7 @@ import {
     dismissedArtifacts,
     dismissArtifact,
 } from 'learn-card-base/stores/nanoStores/artifactsStore';
+import { updateArtifactClaimedStatus } from 'learn-card-base/stores/nanoStores/chatStore';
 
 interface MessageProps {
     message: ChatMessage;
@@ -95,7 +96,10 @@ export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
             }
 
             // Update the artifact claimed status to true
-            if (artifact?.id) claimArtifact(artifact.id);
+            if (artifact?.id) {
+                claimArtifact(artifact.id);
+                updateArtifactClaimedStatus(artifact.id, true);
+            }
 
             presentToast(`Credential added to LearnCard`, {
                 duration: 3000,
