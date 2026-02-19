@@ -11,6 +11,8 @@ import {
     useSyncConsentFlow,
     contractCategoryNameToCategoryMetadata,
     ModalTypes,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import type { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
@@ -79,29 +81,29 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
 }) => {
     const { newModal } = useModal();
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
     const currentUser = useCurrentUser();
     const [isConsenting, setIsConsenting] = useState(false);
 
     // Filter to only known permissions
-    const validPermissions = permissions.filter(
-        (p): p is AppPermission => p in PERMISSION_INFO
-    );
+    const validPermissions = permissions.filter((p): p is AppPermission => p in PERMISSION_INFO);
 
     // Fetch contract details if contractUri is provided
-    const { data: contractDetails, isLoading: isLoadingContract } = useQuery<ConsentFlowContractDetails | null>({
-        queryKey: ['getContract', contractUri],
-        queryFn: async () => {
-            if (!contractUri) return null;
-            try {
-                const wallet = await initWallet();
-                return await wallet.invoke.getContract(contractUri);
-            } catch (error) {
-                console.error('Failed to fetch contract:', error);
-                return null;
-            }
-        },
-        enabled: !!contractUri,
-    });
+    const { data: contractDetails, isLoading: isLoadingContract } =
+        useQuery<ConsentFlowContractDetails | null>({
+            queryKey: ['getContract', contractUri],
+            queryFn: async () => {
+                if (!contractUri) return null;
+                try {
+                    const wallet = await initWallet();
+                    return await wallet.invoke.getContract(contractUri);
+                } catch (error) {
+                    console.error('Failed to fetch contract:', error);
+                    return null;
+                }
+            },
+            enabled: !!contractUri,
+        });
 
     // Initialize terms when contract is loaded
     const [terms, setTerms] = useImmer<ConsentFlowTerms | null>(null);
@@ -123,33 +125,34 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     // Filter to only show categories where sharing is enabled
     const acceptedReadCategories = terms?.read?.credentials?.categories
         ? Object.entries(terms.read.credentials.categories)
-            .filter(([_, config]) => {
-                const cfg = config as { sharing?: boolean };
-                return cfg.sharing !== false;
-            })
-            .map(([category]) => category)
+              .filter(([_, config]) => {
+                  const cfg = config as { sharing?: boolean };
+                  return cfg.sharing !== false;
+              })
+              .map(([category]) => category)
         : [];
 
     const acceptedWriteCategories = terms?.write?.credentials?.categories
         ? Object.entries(terms.write.credentials.categories)
-            .filter(([_, config]) => {
-                // Write categories can be boolean or object with sharing property
-                if (typeof config === 'boolean') return config;
-                const cfg = config as { sharing?: boolean };
-                return cfg.sharing !== false;
-            })
-            .map(([category]) => category)
+              .filter(([_, config]) => {
+                  // Write categories can be boolean or object with sharing property
+                  if (typeof config === 'boolean') return config;
+                  const cfg = config as { sharing?: boolean };
+                  return cfg.sharing !== false;
+              })
+              .map(([category]) => category)
         : [];
 
     const hasReadCategories = acceptedReadCategories.length > 0;
     const hasWriteCategories = acceptedWriteCategories.length > 0;
-    const hasAnyDataPermissions = contractUri && contractDetails && (hasReadCategories || hasWriteCategories);
+    const hasAnyDataPermissions =
+        contractUri && contractDetails && (hasReadCategories || hasWriteCategories);
 
     // Wrapper to adapt setTerms type for ConsentFlowPrivacyAndData
     // ConsentFlowPrivacyAndData expects Updater<ConsentFlowTerms> but our state is ConsentFlowTerms | null
     const setTermsWrapper: Updater<ConsentFlowTerms> = useCallback(
-        (updater) => {
-            setTerms((draft) => {
+        updater => {
+            setTerms(draft => {
                 if (draft === null) return;
 
                 if (typeof updater === 'function') {
@@ -180,6 +183,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
         // If there's a contract, consent to it first
         if (contractUri && contractDetails && terms) {
             setIsConsenting(true);
+
             try {
                 await consentToContract({
                     terms,
@@ -189,15 +193,27 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
 
                 // Sync any auto-boost credentials
                 fetchNewContractCredentials();
-            } catch (error) {
-                console.error('Failed to consent to contract:', error);
-                setIsConsenting(false);
-                return;
+            } catch (error: any) {
+                // If the user has already consented, ignore the error
+                const isAlreadyConsented =
+                    error?.data?.code === 'CONFLICT' ||
+                    error?.shape?.code === 'CONFLICT' ||
+                    error?.message?.includes('already consented');
+
+                if (!isAlreadyConsented) {
+                    setIsConsenting(false);
+                    presentToast('Unable to install app, please try again.', {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
+                    return;
+                }
             }
+
             setIsConsenting(false);
         }
 
-        // Then proceed with regular app install
+        // Proceed with the install
         onAccept();
     };
 
@@ -210,9 +226,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
                 }}
             >
-                <h2 className="text-2xl font-bold text-grayscale-900 text-center">
-                    Install App
-                </h2>
+                <h2 className="text-2xl font-bold text-grayscale-900 text-center">Install App</h2>
             </div>
 
             {/* Content */}
@@ -225,7 +239,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                 src={appIcon}
                                 alt={appName}
                                 className="w-full h-full object-cover"
-                                onError={(e) => {
+                                onError={e => {
                                     (e.target as HTMLImageElement).src =
                                         'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
                                 }}
@@ -267,14 +281,11 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                             </p>
 
                             <ul className="space-y-3">
-                                {validPermissions.map((permission) => {
+                                {validPermissions.map(permission => {
                                     const info = PERMISSION_INFO[permission];
 
                                     return (
-                                        <li
-                                            key={permission}
-                                            className="flex items-start text-sm"
-                                        >
+                                        <li key={permission} className="flex items-start text-sm">
                                             <svg
                                                 className="h-5 w-5 text-indigo-600 mr-3 flex-shrink-0 mt-0.5"
                                                 fill="none"
@@ -331,7 +342,9 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                             {isLoadingContract ? (
                                 <div className="bg-grayscale-50 rounded-lg p-4 flex items-center justify-center gap-2">
                                     <Loader2 className="w-4 h-4 animate-spin text-grayscale-400" />
-                                    <span className="text-sm text-grayscale-500">Loading data permissions...</span>
+                                    <span className="text-sm text-grayscale-500">
+                                        Loading data permissions...
+                                    </span>
                                 </div>
                             ) : contractDetails ? (
                                 <div className="space-y-3">
@@ -354,13 +367,18 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                     <div className="bg-cyan-50 border border-cyan-100 rounded-lg p-3 text-left">
                                         <div className="flex items-center gap-2 mb-2">
                                             <BookOpen className="w-4 h-4 text-cyan-600" />
-                                            <span className="text-xs font-medium text-cyan-700">Read Access</span>
+                                            <span className="text-xs font-medium text-cyan-700">
+                                                Read Access
+                                            </span>
                                         </div>
 
                                         {hasReadCategories ? (
                                             <div className="flex flex-wrap gap-1.5">
                                                 {acceptedReadCategories.map(category => {
-                                                    const metadata = contractCategoryNameToCategoryMetadata(category);
+                                                    const metadata =
+                                                        contractCategoryNameToCategoryMetadata(
+                                                            category
+                                                        );
                                                     return (
                                                         <span
                                                             key={category}
@@ -375,7 +393,9 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                                 })}
                                             </div>
                                         ) : (
-                                            <p className="text-xs text-cyan-600 italic">No read permissions requested</p>
+                                            <p className="text-xs text-cyan-600 italic">
+                                                No read permissions requested
+                                            </p>
                                         )}
                                     </div>
 
@@ -383,13 +403,18 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                     <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-left">
                                         <div className="flex items-center gap-2 mb-2">
                                             <PenTool className="w-4 h-4 text-emerald-600" />
-                                            <span className="text-xs font-medium text-emerald-700">Write Access</span>
+                                            <span className="text-xs font-medium text-emerald-700">
+                                                Write Access
+                                            </span>
                                         </div>
 
                                         {hasWriteCategories ? (
                                             <div className="flex flex-wrap gap-1.5">
                                                 {acceptedWriteCategories.map(category => {
-                                                    const metadata = contractCategoryNameToCategoryMetadata(category);
+                                                    const metadata =
+                                                        contractCategoryNameToCategoryMetadata(
+                                                            category
+                                                        );
                                                     return (
                                                         <span
                                                             key={category}
@@ -404,7 +429,9 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                                 })}
                                             </div>
                                         ) : (
-                                            <p className="text-xs text-emerald-600 italic">No write permissions requested</p>
+                                            <p className="text-xs text-emerald-600 italic">
+                                                No write permissions requested
+                                            </p>
                                         )}
                                     </div>
                                 </div>
@@ -445,7 +472,11 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                 <button
                     onClick={handleInstall}
                     disabled={isPreview || isConsenting || (!!contractUri && isLoadingContract)}
-                    className={`px-8 py-3 text-lg font-semibold text-white rounded-full transition-colors disabled:opacity-50 flex items-center gap-2 ${isPreview ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                    className={`px-8 py-3 text-lg font-semibold text-white rounded-full transition-colors disabled:opacity-50 flex items-center gap-2 ${
+                        isPreview
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-indigo-600 hover:bg-indigo-700'
+                    }`}
                     title={isPreview ? 'Install is disabled in preview mode' : undefined}
                 >
                     {isConsenting && <Loader2 className="w-5 h-5 animate-spin" />}

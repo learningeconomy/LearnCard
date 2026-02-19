@@ -1,5 +1,12 @@
 # @learncard/benchmarking
 
+## 1.0.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.3
+
 ## 1.0.3
 
 ### Patch Changes
