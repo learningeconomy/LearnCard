@@ -205,10 +205,7 @@ export const useTrainingProgramsByKeyword = ({ keywords }: { keywords: string[] 
             // Step 6: Extract unique school names from combined results
             const uniqueSchoolNames = [
                 ...new Set(
-                    combinedResults.map(
-                        // shuffle to get different schools each time
-                        (result: any) => _.shuffle(result?.SchoolPrograms)?.[0]?.SchoolName
-                    )
+                    combinedResults.map((result: any) => result?.SchoolPrograms?.[0]?.SchoolName)
                 ),
             ].filter(Boolean);
 
@@ -232,5 +229,7 @@ export const useTrainingProgramsByKeyword = ({ keywords }: { keywords: string[] 
                 .flat();
         },
         enabled: Boolean(keywords && keywords.length > 0),
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
     });
 };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import _ from 'lodash';
 
 import AiPathwayCourseItem from './AiPathwayCourseItem';
@@ -43,7 +43,10 @@ const AiPathwayCourses: React.FC<{
             </div>
         );
 
-    const trainingPrograms = [...(schoolPrograms || []), ...(courses || [])];
+    const trainingPrograms = useMemo(
+        () => [...(schoolPrograms || []), ...(courses || [])],
+        [schoolPrograms, courses]
+    );
 
     if (!isLoading && (!keywords?.length || !trainingPrograms?.length)) return null;
 
