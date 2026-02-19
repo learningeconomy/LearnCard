@@ -9,7 +9,6 @@ const queryKey = ['useAiInsightCredential'];
 export const createAiInsightCredential = async (wallet: BespokeLearnCard) => {
     const did = wallet.id.did();
     const aiInsightCredential = await fetch(
-        // `http://localhost:3001/credentials/ai-insight?did=${did}`,
         `${LEARNCARD_AI_URL}/credentials/ai-insight?did=${did}`,
         {
             method: 'POST',

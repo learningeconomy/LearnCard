@@ -236,6 +236,8 @@ jobs:
 
             - name: Build native plugin
               working-directory: packages/plugins/didkit-plugin-node
+              env:
+                  BUILD_DIDKIT_NAPI: true
               run: |
                   pnpm exec nx build didkit-plugin-node
                   strip -x *.node
@@ -320,42 +322,83 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Validate deployment target
+              run: |
+                  echo "========================================"
+                  echo "DEPLOYMENT TARGET VALIDATION"
+                  echo "========================================"
+                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_brain_service_env }}"
+                  echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
+                  echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
+                  echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
+                  echo "Stage:              ${{ vars.SERVERLESS_STAGE }}"
+                  echo "Region:             ${{ vars.SERVERLESS_REGION }}"
+                  echo "========================================"
+
+                  FAILED=false
+
+                  if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    FAILED=true
+                  fi
+
+                  if [[ "$FAILED" == "true" ]]; then
+                    echo "::error::Aborting deploy — required variables are missing. Configure them in the GitHub environment settings."
+                    exit 1
+                  fi
+
             - name: Deploy Brain Service Lambda
               run: pnpm exec nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
-        env:
-            CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
-            POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
-            SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
-            SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
-            SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
-            SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
-            SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
-            APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
-            SEED: ${{ secrets.SEED }}
-            DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
-            NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
-            NEO4J_URI: ${{ secrets.NEO4J_URI }}
-            NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
-            NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
-            POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
-            MESSAGEBIRD_AUTH_TOKEN: ${{ secrets.MESSAGEBIRD_AUTH_TOKEN }}
-            MESSAGEBIRD_ORIGINATOR: ${{ secrets.MESSAGEBIRD_ORIGINATOR }}
-            SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-            SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
-            SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-            SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-            SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-            SMART_RESUME_CLIENT_ID: ${{ secrets.SMART_RESUME_CLIENT_ID }}
-            SMART_RESUME_ACCESS_KEY: ${{ secrets.SMART_RESUME_ACCESS_KEY }}
-            SMART_RESUME_CONTRACT_URI: ${{ secrets.SMART_RESUME_CONTRACT_URI }}
-            LOGIN_PROVIDER_DID: ${{ secrets.LOGIN_PROVIDER_DID }}
-            SKILL_EMBEDDING_GOOGLE_API_KEY: ${{ secrets.SKILL_EMBEDDING_GOOGLE_API_KEY }}
-            SKILL_EMBEDDING_GOOGLE_MODEL: ${{ secrets.SKILL_EMBEDDING_GOOGLE_MODEL }}
-            SKILL_EMBEDDING_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BATCH_SIZE }}
-            SKILL_EMBEDDING_BACKFILL_ON_STARTUP: ${{ secrets.SKILL_EMBEDDING_BACKFILL_ON_STARTUP }}
-            SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS: ${{ secrets.SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS }}
-            SKILL_EMBEDDING_BACKFILL_PAGE_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_PAGE_SIZE }}
-            SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE }}
+              env:
+                  CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
+                  POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
+                  SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
+                  SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
+                  SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
+                  SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
+                  SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
+                  APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
+                  SEED: ${{ secrets.SEED }}
+                  DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+                  NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
+                  NEO4J_URI: ${{ secrets.NEO4J_URI }}
+                  NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
+                  NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+                  POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
+                  MESSAGEBIRD_AUTH_TOKEN: ${{ secrets.MESSAGEBIRD_AUTH_TOKEN }}
+                  MESSAGEBIRD_ORIGINATOR: ${{ secrets.MESSAGEBIRD_ORIGINATOR }}
+                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+                  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
+                  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+                  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+                  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+                  SMART_RESUME_CLIENT_ID: ${{ secrets.SMART_RESUME_CLIENT_ID }}
+                  SMART_RESUME_ACCESS_KEY: ${{ secrets.SMART_RESUME_ACCESS_KEY }}
+                  SMART_RESUME_CONTRACT_URI: ${{ secrets.SMART_RESUME_CONTRACT_URI }}
+                  LOGIN_PROVIDER_DID: ${{ secrets.LOGIN_PROVIDER_DID }}
+                  SKILL_EMBEDDING_GOOGLE_API_KEY: ${{ secrets.SKILL_EMBEDDING_GOOGLE_API_KEY }}
+                  SKILL_EMBEDDING_GOOGLE_MODEL: ${{ secrets.SKILL_EMBEDDING_GOOGLE_MODEL }}
+                  SKILL_EMBEDDING_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BATCH_SIZE }}
+                  SKILL_EMBEDDING_BACKFILL_ON_STARTUP: ${{ secrets.SKILL_EMBEDDING_BACKFILL_ON_STARTUP }}
+                  SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS: ${{ secrets.SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS }}
+                  SKILL_EMBEDDING_BACKFILL_PAGE_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_PAGE_SIZE }}
+                  SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE }}
 
     deploy-learn-cloud:
         name: Deploy LearnCloud (Storage API)
@@ -382,6 +425,47 @@ jobs:
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
+
+            - name: Validate deployment target
+              run: |
+                  echo "========================================"
+                  echo "DEPLOYMENT TARGET VALIDATION"
+                  echo "========================================"
+                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_learn_cloud_env }}"
+                  echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
+                  echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
+                  echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
+                  echo "Stage:              ${{ vars.SERVERLESS_STAGE }}"
+                  echo "Region:             ${{ vars.SERVERLESS_REGION }}"
+                  echo "========================================"
+
+                  FAILED=false
+
+                  if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    FAILED=true
+                  fi
+
+                  if [[ "$FAILED" == "true" ]]; then
+                    echo "::error::Aborting deploy — required variables are missing. Configure them in the GitHub environment settings."
+                    exit 1
+                  fi
 
             - name: Deploy LearnCloud Lambda
               run: pnpm exec nx serverless-deploy learn-cloud-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
@@ -433,9 +517,54 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Validate deployment target
+              run: |
+                  echo "========================================"
+                  echo "DEPLOYMENT TARGET VALIDATION"
+                  echo "========================================"
+                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_lca_api_env }}"
+                  echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
+                  echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
+                  echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
+                  echo "Stage:              ${{ vars.SERVERLESS_STAGE }}"
+                  echo "Region:             ${{ vars.SERVERLESS_REGION }}"
+                  echo "========================================"
+
+                  FAILED=false
+
+                  if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    FAILED=true
+                  fi
+
+                  if [[ "$FAILED" == "true" ]]; then
+                    echo "::error::Aborting deploy — required variables are missing. Configure them in the GitHub environment settings."
+                    exit 1
+                  fi
+
             - name: Deploy LCA API Service Lambda
-              run: pnpm exec nx serverless-deploy lca-api-service --stage ${{ vars.SERVERLESS_STAGE }}
+              run: pnpm exec nx serverless-deploy lca-api-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
+                  SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
+                  SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
+                  SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
+                  SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
                   DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
                   SEED: ${{ secrets.SEED }}
                   METABASE_SECRET_KEY: ${{ secrets.METABASE_SECRET_KEY }}
@@ -449,6 +578,8 @@ jobs:
                   GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GOOGLE_APPLICATION_CREDENTIAL }}
                   MONGO_URI: ${{ secrets.MONGO_URI }}
                   MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
+                  SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
+                  LEARN_CLOUD_URL: ${{ secrets.LEARN_CLOUD_URL }}
                   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
                   SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
                   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -547,7 +678,6 @@ jobs:
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
                   WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
                   WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
-                  SKIP_DIDKIT_NAPI: '1'
 
             # Deploy OTA update to CapGo
             - name: Upload to CapGo
@@ -675,8 +805,6 @@ jobs:
         permissions:
             id-token: write
             contents: read
-        env:
-            SKIP_DIDKIT_NAPI: '1'
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v4
