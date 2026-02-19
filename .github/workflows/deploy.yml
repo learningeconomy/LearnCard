@@ -455,7 +455,7 @@ jobs:
                   GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GOOGLE_APPLICATION_CREDENTIAL }}
                   MONGO_URI: ${{ secrets.MONGO_URI }}
                   MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
-                  SSO_CLIENT_SECRET: ${{ secrets.SSO_CLIENT_SECRET }}
+                  SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
                   LEARN_CLOUD_URL: ${{ secrets.LEARN_CLOUD_URL }}
                   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
                   SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
