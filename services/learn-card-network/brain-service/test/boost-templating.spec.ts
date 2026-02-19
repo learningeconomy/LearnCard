@@ -360,6 +360,60 @@ describe('Boost Templating (Mustache)', () => {
             expect(typeof result).toBe('string');
         });
 
+        it('should allow sending via signing authority to did:web', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.sendBoostViaSigningAuthority({
+                profileId: userBProfile!.did,
+                boostUri,
+                signingAuthority: {
+                    name: 'test-sa',
+                    endpoint: 'http://localhost:5000/api',
+                },
+            });
+
+            expect(result).toBeDefined();
+            expect(typeof result).toBe('string');
+        });
+
+        it('should allow sending via signing authority to did:key', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.sendBoostViaSigningAuthority({
+                profileId: userB.learnCard.id.did(),
+                boostUri,
+                signingAuthority: {
+                    name: 'test-sa',
+                    endpoint: 'http://localhost:5000/api',
+                },
+            });
+
+            expect(result).toBeDefined();
+            expect(typeof result).toBe('string');
+        });
+
+        it('should return NOT_FOUND for unsupported did format', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.sendBoostViaSigningAuthority({
+                    profileId: 'did:example:userb',
+                    boostUri,
+                    signingAuthority: {
+                        name: 'test-sa',
+                        endpoint: 'http://localhost:5000/api',
+                    },
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
         it('should render missing variables as empty strings via signing authority', async () => {
             const boostUri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testTemplatedBoost,

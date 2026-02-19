@@ -54,6 +54,35 @@ describe('Presentations', () => {
             ).resolves.not.toThrow();
         });
 
+        it('should allow sending a presentation to did:web', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            await expect(
+                userA.clients.fullAuth.presentation.sendPresentation({
+                    profileId: userBProfile!.did,
+                    presentation: testVp,
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('should allow sending a presentation to did:key', async () => {
+            await expect(
+                userA.clients.fullAuth.presentation.sendPresentation({
+                    profileId: userB.learnCard.id.did(),
+                    presentation: testVp,
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('should return NOT_FOUND for unsupported did format', async () => {
+            await expect(
+                userA.clients.fullAuth.presentation.sendPresentation({
+                    profileId: 'did:example:userb',
+                    presentation: testVp,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
         it('should allow sending an encrypted preesentation', async () => {
             const encryptedVp = await userA.learnCard.invoke.createDagJwe(testVp, [
                 userA.learnCard.id.did(),

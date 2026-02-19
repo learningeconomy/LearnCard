@@ -60,7 +60,7 @@ import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
 import { removeRequestedForRelationship } from '@accesslayer/consentflowcontract/relationships/delete';
 import { areTermsValid } from '@helpers/contract.helpers';
-import { updateDidForProfile } from '@helpers/did.helpers';
+import { updateDidForProfile, getProfileIdFromString } from '@helpers/did.helpers';
 import {
     syncCredentialsToContract,
     updateTerms,
@@ -1332,8 +1332,13 @@ export const contractsRouter = t.router({
         })
         .input(z.object({ uri: z.string(), profileId: z.string() }))
         .output(z.boolean())
-        .query(async ({ input }) => {
+        .query(async ({ input, ctx }) => {
             const { uri, profileId } = input;
+
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
 
             const decodedUri = decodeURIComponent(uri);
             const contract = await getContractByUri(decodedUri);
@@ -1344,7 +1349,7 @@ export const contractsRouter = t.router({
 
             if (contract.expiresAt && new Date() > new Date(contract.expiresAt)) return false;
 
-            const terms = await getContractTermsForProfile(profileId, contract);
+            const terms = await getContractTermsForProfile(resolvedProfileId, contract);
 
             if (!terms) return false;
 
