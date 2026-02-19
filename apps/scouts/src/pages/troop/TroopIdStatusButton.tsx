@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { BoostSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 
 import useVerifyCredential from 'learn-card-base/hooks/useVerifyCredential';
-import { useGetBoost, useGetBoostRecipients, useGetCurrentLCNUser } from 'learn-card-base';
+import { useGetBoost, useGetBoostRecipients, useGetCurrentLCNUser, useGetIDs } from 'learn-card-base';
 
 import { isCredentialExpired } from '../../components/boost/boostHelpers';
 import { VC, VerificationStatusEnum } from '@learncard/types';
@@ -41,6 +41,9 @@ export const useTroopIDStatus = (
     const profileId = otherUserProfileID ?? currentLCNUser?.profileId;
     const _boostUri = credential?.boostId || boostUri;
 
+    // Unconditional (rules of hooks) — used for pre-Feb-13 backcompat check below
+    const { data: walletIds } = useGetIDs();
+
     // Query 1: Get claimed recipients only (default: includeUnacceptedBoosts=false)
     const { 
         data: claimedRecipients, 
@@ -70,7 +73,26 @@ export const useTroopIDStatus = (
 
     // Check if user is in all recipients (includes pending)
     const isInAllRecipients = allRecipients.some(r => r.to.profileId === profileId);
-    if (isInAllRecipients) return 'pending';
+    if (isInAllRecipients) {
+        // Backcompat for pre-Feb-13 credentials: the old acceptance flow added credentials
+        // to the LearnCloud wallet index directly without calling acceptCredential on the
+        // brain-service, so CREDENTIAL_SENT exists but CREDENTIAL_RECEIVED was never created.
+        // If the credential is already in the user's local wallet, treat it as claimed.
+        // This is safe because revoked credentials are excluded from BOTH recipient queries
+        // (status='revoked' filter), so they show as 'revoked' — this check only fires for
+        // 'pending' and cannot accidentally override a real revocation.
+        // Only applies to the current user's own credentials (not admin viewing another user).
+        if (!otherUserProfileID && walletIds) {
+            const credBoostId = credential?.boostId;
+            const isInWallet =
+                credBoostId &&
+                walletIds.some(
+                    (id: any) => id?.boostId === credBoostId || id?.vc?.boostId === credBoostId
+                );
+            if (isInWallet) return 'valid';
+        }
+        return 'pending';
+    }
 
     // Not in any list - revoked
     return 'revoked';

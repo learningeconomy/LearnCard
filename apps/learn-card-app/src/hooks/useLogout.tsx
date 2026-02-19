@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { useHistory } from 'react-router-dom';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 import authStore from 'learn-card-base/stores/authStore';
 
 import {
-    useModal,
     BrandingEnum,
     pushUtilities,
     LOGIN_REDIRECTS,
@@ -19,11 +17,9 @@ import {
 import { useAuthCoordinator } from '../providers/AuthCoordinatorProvider';
 
 const useLogout = () => {
-    const history = useHistory();
     const { initWallet } = useWallet();
     const { logout: coordinatorLogout } = useAuthCoordinator();
 
-    const { closeAllModals } = useModal();
     const { presentToast } = useToast();
 
     const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
@@ -101,8 +97,6 @@ const useLogout = () => {
                 });
             }
         }, 1000);
-
-        closeAllModals();
     };
 
     return { handleLogout, isLoggingOut };
