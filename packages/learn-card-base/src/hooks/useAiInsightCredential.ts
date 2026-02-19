@@ -179,6 +179,8 @@ export const useAiInsightCredentialMutation = () => {
         mutationFn: async () => createAiInsightCredential(await initWallet()),
         onSuccess: aiInsightCredential => {
             queryClient.setQueryData(queryKey, aiInsightCredential);
+            queryClient.invalidateQueries({ queryKey: ['useAiPathways'] });
+            queryClient.invalidateQueries({ queryKey: ['training-programs'] });
         },
     });
 };
