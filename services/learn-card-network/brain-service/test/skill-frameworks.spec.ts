@@ -523,6 +523,104 @@ describe('Skill Frameworks (custom CRUD)', () => {
         ).rejects.toThrow('Cannot remove the last framework admin');
     });
 
+    it('should allow adding framework admin by did:web', async () => {
+        const ownerProfileId = await ensureProfile();
+        const otherProfileId = await ensureProfileFor(userB, 'userb');
+        const frameworkId = `fw-did-web-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'DID Web Framework',
+        });
+
+        const userBDid = await userB.clients.fullAuth.profile.getProfile().then(p => p!.did);
+
+        await userA.clients.fullAuth.skillFrameworks.addFrameworkAdmin({
+            frameworkId,
+            profileId: userBDid,
+        });
+
+        const admins = await userA.clients.fullAuth.skillFrameworks.listFrameworkAdmins({
+            frameworkId,
+        });
+        expect(admins.map(admin => admin.profileId)).toEqual(
+            expect.arrayContaining([ownerProfileId, otherProfileId])
+        );
+    });
+
+    it('should allow adding framework admin by did:key', async () => {
+        const ownerProfileId = await ensureProfile();
+        const otherProfileId = await ensureProfileFor(userB, 'userb');
+        const frameworkId = `fw-did-key-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'DID Key Framework',
+        });
+
+        const userBDidKey = userB.learnCard.id.did();
+
+        await userA.clients.fullAuth.skillFrameworks.addFrameworkAdmin({
+            frameworkId,
+            profileId: userBDidKey,
+        });
+
+        const admins = await userA.clients.fullAuth.skillFrameworks.listFrameworkAdmins({
+            frameworkId,
+        });
+        expect(admins.map(admin => admin.profileId)).toEqual(
+            expect.arrayContaining([ownerProfileId, otherProfileId])
+        );
+    });
+
+    it('should return NOT_FOUND when adding admin with unsupported did format', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-did-invalid-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Invalid DID Framework',
+        });
+
+        await expect(
+            userA.clients.fullAuth.skillFrameworks.addFrameworkAdmin({
+                frameworkId,
+                profileId: 'did:example:userb',
+            })
+        ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    });
+
+    it('should allow removing framework admin by did:web', async () => {
+        const ownerProfileId = await ensureProfile();
+        const otherProfileId = await ensureProfileFor(userB, 'userb');
+        const frameworkId = `fw-remove-did-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Remove DID Framework',
+        });
+
+        // First add the admin
+        await userA.clients.fullAuth.skillFrameworks.addFrameworkAdmin({
+            frameworkId,
+            profileId: otherProfileId,
+        });
+
+        // Then remove using did:web
+        const userBDid = await userB.clients.fullAuth.profile.getProfile().then(p => p!.did);
+        const result = await userA.clients.fullAuth.skillFrameworks.removeFrameworkAdmin({
+            frameworkId,
+            profileId: userBDid,
+        });
+        expect(result.success).toBe(true);
+
+        const admins = await userA.clients.fullAuth.skillFrameworks.listFrameworkAdmins({
+            frameworkId,
+        });
+        expect(admins.map(admin => admin.profileId)).not.toContain(otherProfileId);
+        expect(admins.map(admin => admin.profileId)).toContain(ownerProfileId);
+    });
+
     it('updates metadata for a custom framework I manage', async () => {
         await ensureProfile();
         const customFrameworkId = `fw-custom-${crypto.randomUUID()}`;
