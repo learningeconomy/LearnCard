@@ -54,13 +54,6 @@ export default defineConfig(({ mode }) => {
                         'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/analytics'],
                         'vendor-sentry': ['@sentry/react', '@sentry/browser'],
                         'vendor-launchdarkly': ['launchdarkly-react-client-sdk'],
-                        'vendor-web3auth': [
-                            '@web3auth/no-modal',
-                            '@web3auth/base',
-                            '@web3auth/auth-adapter',
-                            '@web3auth/ethereum-provider',
-                            '@web3auth/single-factor-auth',
-                        ],
                         'vendor-swiper': ['swiper'],
                         'vendor-lottie': ['react-lottie-player'],
                         'vendor-tanstack': ['@tanstack/react-query'],
