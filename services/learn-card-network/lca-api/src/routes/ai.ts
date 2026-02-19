@@ -63,7 +63,7 @@ const AIResponseValidator = z.object({
     description: z.string(),
     category: BoostCategoryOptionsEnumValidator,
     type: BoostTypeOptionsEnumValidator,
-    narrative: z.string().optional(),
+    narrative: z.string(),
 });
 
 // Map of skill name => single unicode emoji character

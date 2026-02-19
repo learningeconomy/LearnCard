@@ -1,10 +1,12 @@
-import { VCValidator, VC } from '@learncard/types';
 import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
-import { useWallet, LEARNCARD_AI_URL } from 'learn-card-base';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
-import { CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
+import { useWallet, LEARNCARD_AI_URL } from 'learn-card-base';
 
+import { CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+
+import { LCR } from 'learn-card-base/types/credential-records';
+import { VCValidator, VC } from '@learncard/types';
 
 // Types for pathway data
 interface PathwayStep {
