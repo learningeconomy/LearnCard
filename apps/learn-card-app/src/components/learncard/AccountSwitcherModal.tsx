@@ -165,69 +165,77 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                         />
                     )}
 
-                    {profileRecords?.map((p, index) => {
-                        const { profile, manager } = p;
+                    {profileRecords
+                        ?.filter(({ profile }: { profile: LCNProfile }) => {
+                            // Filter out the active child account since it's already shown in ActiveChildAccountButton
+                            if (profileType === 'child' && currentLCNUser?.did === profile?.did) {
+                                return false;
+                            }
+                            return true;
+                        })
+                        ?.map((p, index) => {
+                            const { profile, manager } = p;
 
-                        const displayName = profile?.displayName || manager?.displayName;
-                        const image = profile?.image || manager?.image;
-                        const isSelected = currentLCNUser?.did === profile?.did;
+                            const displayName = profile?.displayName || manager?.displayName;
+                            const image = profile?.image || manager?.image;
+                            const isSelected = currentLCNUser?.did === profile?.did;
 
-                        const isServiceProfile = profile?.isServiceProfile ?? false;
+                            const isServiceProfile = profile?.isServiceProfile ?? false;
 
-                        return (
-                            <button
-                                onClick={async () => {
-                                    const switchedUser = {
-                                        ...manager,
-                                        did: profile?.did,
-                                        profileId: profile?.profileId,
-                                        isServiceProfile: profile?.isServiceProfile,
-                                    };
+                            return (
+                                <button
+                                    onClick={async () => {
+                                        const switchedUser = {
+                                            ...manager,
+                                            did: profile?.did,
+                                            profileId: profile?.profileId,
+                                            isServiceProfile: profile?.isServiceProfile,
+                                        };
 
-                                    if (handlePlayerSwitchOverride) {
-                                        handlePlayerSwitchOverride(switchedUser);
-                                    } else {
-                                        await handleSwitchAccount(switchedUser);
-                                    }
-                                    onPlayerSwitch?.(switchedUser);
-                                }}
-                                key={index}
-                                className="flex flex-col gap-[5px] items-center disabled:opacity-60"
-                                disabled={isSwitching}
-                            >
-                                <UserProfilePicture
-                                    customContainerClass={`flex justify-center items-center w-[86px] h-[86px] max-w-[86px] max-h-[86px] rounded-full overflow-hidden text-white font-medium text-4xl shrink-0 ${
-                                        isSelected
-                                            ? 'border-[3px] border-solid border-emerald-700'
-                                            : ''
-                                    }`}
-                                    customImageClass="flex justify-center items-center w-[86px] h-[86px] max-w-[86px] max-h-[86px] rounded-full overflow-hidden object-cover shrink-0"
-                                    customSize={120}
-                                    user={{ displayName, image }}
-                                />
-
-                                <div className="flex flex-col items-center">
-                                    <p
-                                        className={`text-sm capitalize font-medium ${
+                                        if (handlePlayerSwitchOverride) {
+                                            handlePlayerSwitchOverride(switchedUser);
+                                        } else {
+                                            await handleSwitchAccount(switchedUser);
+                                        }
+                                        onPlayerSwitch?.(switchedUser);
+                                    }}
+                                    key={index}
+                                    className="flex flex-col gap-[5px] items-center disabled:opacity-60"
+                                    disabled={isSwitching}
+                                >
+                                    <UserProfilePicture
+                                        customContainerClass={`flex justify-center items-center w-[86px] h-[86px] max-w-[86px] max-h-[86px] rounded-full overflow-hidden text-white font-medium text-4xl shrink-0 ${
                                             isSelected
-                                                ? 'text-grayscale-900'
-                                                : 'text-grayscale-600 '
+                                                ? 'border-[3px] border-solid border-emerald-700'
+                                                : ''
                                         }`}
-                                    >
-                                        {displayName}
-                                    </p>
-                                    <p className="text-xs text-grayscale-600 font-semibold capitalize">
-                                        {isServiceProfile ? 'Organization' : 'Child'}
-                                    </p>
-                                    <div className="h-[15px] w-[15px]">
-                                        {isSelected && (
-                                            <CircleCheckmark className="h-[15px] w-[15px]" />
-                                        )}
+                                        customImageClass="flex justify-center items-center w-[86px] h-[86px] max-w-[86px] max-h-[86px] rounded-full overflow-hidden object-cover shrink-0"
+                                        customSize={120}
+                                        user={{ displayName, image }}
+                                    />
+
+                                    <div className="flex flex-col items-center">
+                                        <p
+                                            className={`text-sm capitalize font-medium ${
+                                                isSelected
+                                                    ? 'text-grayscale-900'
+                                                    : 'text-grayscale-600 '
+                                            }`}
+                                        >
+                                            {displayName}
+                                        </p>
+                                        <p className="text-xs text-grayscale-600 font-semibold capitalize">
+                                            {isServiceProfile ? 'Organization' : 'Child'}
+                                        </p>
+                                        <div className="h-[15px] w-[15px]">
+                                            {isSelected && (
+                                                <CircleCheckmark className="h-[15px] w-[15px]" />
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            </button>
-                        );
-                    })}
+                                </button>
+                            );
+                        })}
 
                     {showServiceProfiles && profileIsParent && (
                         <NewProfileButton
