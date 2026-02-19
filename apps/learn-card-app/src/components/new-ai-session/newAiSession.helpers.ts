@@ -1,5 +1,10 @@
 import { VC } from '@learncard/types';
 
+export enum AiSessionMode {
+    tutor = 'ai-tutor',
+    insights = 'ai-insights',
+}
+
 export enum NewAiSessionStepEnum {
     newTopic = 'newTopic',
     revisitTopic = 'revisitTopic',

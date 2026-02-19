@@ -17,7 +17,7 @@ import { sessionLoadingText } from '../newAiSession.helpers';
 import useAppStore from '../../../pages/launchPad/useAppStore';
 
 // Extended type to include url for launching
-type AiTutorApp = LaunchPadAppListItem & { 
+type AiTutorApp = LaunchPadAppListItem & {
     url: string;
     isAppStoreListing?: boolean;
     listingId?: string;
@@ -253,8 +253,8 @@ export const NewAiAppSessionChatBotContainer: React.FC<{}> = () => {
                             )}
 
                         {isIntro && !hasAnswer && (
-                            <AiSessionAppSelector 
-                                handleSetAiApp={handleSetAiApp} 
+                            <AiSessionAppSelector
+                                handleSetAiApp={handleSetAiApp}
                                 apps={allAiTutorApps}
                             />
                         )}
