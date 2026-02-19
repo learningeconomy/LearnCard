@@ -173,6 +173,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     const _boostUserType =
         (query.get('boostUserType') as BoostUserTypeEnum) || BoostUserTypeEnum.someone;
     const _otherUserProfileId = query.get('otherUserProfileId') ?? '';
+    const _isRecovering = query.get('recovering') === 'true';
 
     const { data: profile } = useGetProfile();
     const aiBoost = AIBoostStore.useStore();
@@ -263,6 +264,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     }, [newModal, closeModal]);
 
     // Show recovery prompt if we have recovered state
+    // If _isRecovering is true (from URL param), auto-recover without showing modal
     // Delay slightly to avoid race conditions with other mount effects that might call closeModal
     useEffect(() => {
         if (hasRecoveredState && recoveredState && !hasShownRecoveryRef.current) {
@@ -273,19 +275,24 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 clearTimeout(recoveryTimeoutRef.current);
             }
 
+            const handleRecover = () => {
+                setState(recoveredState);
+                setDisplayType(
+                    recoveredState.appearance?.displayType ||
+                        BoostCMSAppearanceDisplayTypeEnum.Certificate
+                );
+                // Clear the old recovered state from localStorage so new changes will be saved fresh
+                clearRecoveredState();
+            };
+
+            // If coming from the early recovery prompt (recovering=true in URL), auto-recover
+            if (_isRecovering) {
+                handleRecover();
+                return;
+            }
+
             // Delay showing the modal to let other mount effects settle
             recoveryTimeoutRef.current = setTimeout(() => {
-                const handleRecover = () => {
-                    setState(recoveredState);
-                    setDisplayType(
-                        recoveredState.appearance?.displayType ||
-                            BoostCMSAppearanceDisplayTypeEnum.Certificate
-                    );
-                    // Clear the old recovered state from localStorage so new changes will be saved fresh
-                    clearRecoveredState();
-                    closeModal();
-                };
-
                 const handleDiscard = () => {
                     clearRecoveredState(true); // Clear localStorage on discard
                     closeModal();
@@ -295,7 +302,10 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     <RecoveryPrompt
                         itemName={recoveredState?.basicInfo?.name || ''}
                         itemType="boost"
-                        onRecover={handleRecover}
+                        onRecover={() => {
+                            handleRecover();
+                            closeModal();
+                        }}
                         onDiscard={handleDiscard}
                     />,
                     { sectionClassName: '!max-w-[400px]' },
@@ -309,7 +319,14 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 clearTimeout(recoveryTimeoutRef.current);
             }
         };
-    }, [hasRecoveredState, recoveredState, clearRecoveredState, newModal, closeModal]);
+    }, [
+        hasRecoveredState,
+        recoveredState,
+        clearRecoveredState,
+        newModal,
+        closeModal,
+        _isRecovering,
+    ]);
 
     // Save state to localStorage whenever it changes
     useEffect(() => {
