@@ -1695,6 +1695,14 @@ export const contractsRouter = t.router({
             const { profile } = ctx.user;
             const { contractUri, targetProfileId, shareLink } = input;
 
+            const resolvedTargetProfileId = await getProfileIdFromString(
+                targetProfileId,
+                ctx.domain
+            );
+            if (!resolvedTargetProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             const contractByUri = await getContractByUri(contractUri);
 
             if (!contractByUri)
@@ -1716,7 +1724,7 @@ export const contractsRouter = t.router({
                 });
             }
 
-            const targetProfile = await getProfileByProfileId(targetProfileId);
+            const targetProfile = await getProfileByProfileId(resolvedTargetProfileId);
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -1728,7 +1736,7 @@ export const contractsRouter = t.router({
             try {
                 await upsertRequestedForRelationship(
                     contractByUri.id,
-                    targetProfileId,
+                    resolvedTargetProfileId,
                     'pending',
                     null
                 );
@@ -1782,6 +1790,21 @@ export const contractsRouter = t.router({
             const { profile } = ctx.user;
             const { childProfileId, targetProfileId, shareLink } = input;
 
+            const resolvedTargetProfileId = await getProfileIdFromString(
+                targetProfileId,
+                ctx.domain
+            );
+            if (!resolvedTargetProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const resolvedChildProfileId = childProfileId
+                ? await getProfileIdFromString(childProfileId, ctx.domain)
+                : undefined;
+            if (childProfileId && !resolvedChildProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             if (!profile) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
@@ -1789,7 +1812,7 @@ export const contractsRouter = t.router({
                 });
             }
 
-            const targetProfile = await getProfileByProfileId(targetProfileId);
+            const targetProfile = await getProfileByProfileId(resolvedTargetProfileId);
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -1799,7 +1822,8 @@ export const contractsRouter = t.router({
             }
 
             let fromProfile: ProfileType | null = profile;
-            if (childProfileId) fromProfile = await getProfileByProfileId(childProfileId);
+            if (resolvedChildProfileId)
+                fromProfile = await getProfileByProfileId(resolvedChildProfileId);
 
             if (!fromProfile) {
                 throw new TRPCError({
@@ -1910,18 +1934,24 @@ export const contractsRouter = t.router({
 
             const { contractId, contractUri, targetProfileId } = input;
 
-            let contract;
-
-            if (contractUri) {
-                contract = await getContractByUri(contractUri);
-            } else if (contractId) {
-                contract = await getContractById(contractId);
+            const resolvedTargetProfileId = await getProfileIdFromString(
+                targetProfileId,
+                ctx.domain
+            );
+            if (!resolvedTargetProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
             }
+
+            const contract = contractUri
+                ? await getContractByUri(contractUri)
+                : contractId
+                ? await getContractById(contractId)
+                : null;
 
             if (!contract)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
 
-            const isCheckingOwnStatus = profile.profileId === targetProfileId;
+            const isCheckingOwnStatus = profile.profileId === resolvedTargetProfileId;
 
             if (!isCheckingOwnStatus) {
                 const writers = await getWritersForContract(contract);
@@ -1936,7 +1966,7 @@ export const contractsRouter = t.router({
                 }
             }
 
-            const requests = await getRequestedForForUser(contract.id, targetProfileId);
+            const requests = await getRequestedForForUser(contract.id, resolvedTargetProfileId);
 
             return requests?.[0] ?? null;
         }),
@@ -1964,6 +1994,14 @@ export const contractsRouter = t.router({
             const { profile } = ctx.user;
             const { contractUri, targetProfileId } = input;
 
+            const resolvedTargetProfileId = await getProfileIdFromString(
+                targetProfileId,
+                ctx.domain
+            );
+            if (!resolvedTargetProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             const contractByUri = await getContractByUri(contractUri);
 
             if (!contractByUri)
@@ -1982,7 +2020,7 @@ export const contractsRouter = t.router({
             try {
                 await upsertRequestedForRelationship(
                     contractByUri.id,
-                    targetProfileId,
+                    resolvedTargetProfileId,
                     undefined,
                     'seen'
                 );
@@ -2019,12 +2057,20 @@ export const contractsRouter = t.router({
             const { profile } = ctx.user;
             const { contractUri, targetProfileId } = input;
 
+            const resolvedTargetProfileId = await getProfileIdFromString(
+                targetProfileId,
+                ctx.domain
+            );
+            if (!resolvedTargetProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             const contractByUri = await getContractByUri(contractUri);
 
             if (!contractByUri)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
 
-            const isDenyingRequest = profile.profileId === targetProfileId;
+            const isDenyingRequest = profile.profileId === resolvedTargetProfileId;
 
             if (!isDenyingRequest) {
                 const writers = await getWritersForContract(contractByUri);
@@ -2042,7 +2088,7 @@ export const contractsRouter = t.router({
             try {
                 const result = await removeRequestedForRelationship(
                     contractByUri.id,
-                    targetProfileId
+                    resolvedTargetProfileId
                 );
 
                 if (!result.existed) {
@@ -2094,8 +2140,16 @@ export const contractsRouter = t.router({
             const { profile } = ctx.user;
             const { targetProfileId } = input;
 
+            const resolvedTargetProfileId = await getProfileIdFromString(
+                targetProfileId,
+                ctx.domain
+            );
+            if (!resolvedTargetProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             // Users can query their own requests
-            const isCheckingOwnRequests = profile.profileId === targetProfileId;
+            const isCheckingOwnRequests = profile.profileId === resolvedTargetProfileId;
 
             if (!isCheckingOwnRequests) {
                 throw new TRPCError({
@@ -2104,7 +2158,7 @@ export const contractsRouter = t.router({
                 });
             }
 
-            const requests = await getAllRequestsForTargetProfile(targetProfileId);
+            const requests = await getAllRequestsForTargetProfile(resolvedTargetProfileId);
 
             // Construct URIs for contracts
             return requests.map(request => ({
@@ -2139,8 +2193,24 @@ export const contractsRouter = t.router({
             const { profile } = ctx.user;
             const { contractUri, targetProfileId, parentProfileId } = input;
 
-            const parentProfile = await getProfileByProfileId(parentProfileId);
-            const targetProfile = await getProfileByProfileId(targetProfileId);
+            const resolvedParentProfileId = await getProfileIdFromString(
+                parentProfileId,
+                ctx.domain
+            );
+            if (!resolvedParentProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const resolvedTargetProfileId = await getProfileIdFromString(
+                targetProfileId,
+                ctx.domain
+            );
+            if (!resolvedTargetProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const parentProfile = await getProfileByProfileId(resolvedParentProfileId);
+            const targetProfile = await getProfileByProfileId(resolvedTargetProfileId);
 
             if (!parentProfile) {
                 throw new TRPCError({
@@ -2171,7 +2241,7 @@ export const contractsRouter = t.router({
                     metadata: {
                         type: 'AI Insight',
                         subtype: 'forwarded-share',
-                        targetProfileId,
+                        targetProfileId: resolvedTargetProfileId,
                         contractUri,
                     },
                 },
