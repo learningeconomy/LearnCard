@@ -19,6 +19,7 @@ export const topicCredentials = atom<TopicCredential[]>([]);
 export const sessionEnded = atom(false);
 export const planReady = atom(false);
 export const planReadyThread = atom<string | null>(null);
+export const chatInputText = atom('');
 
 // Plan streaming state
 export const planStreamActive = atom(false);
@@ -81,6 +82,7 @@ export function resetChatStores() {
         skills: [],
         roadmap: [],
     });
+    chatInputText.set('');
 }
 
 interface TopicCredential {

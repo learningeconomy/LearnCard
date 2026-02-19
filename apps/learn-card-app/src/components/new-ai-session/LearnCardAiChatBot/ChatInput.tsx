@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { useGetCredentialList, useModal, useSyncConsentFlow } from 'learn-card-base';
 
@@ -19,6 +18,7 @@ import {
     startLearningPathway,
     fetchLearningPathways,
     isEndingSession,
+    chatInputText,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 
 import type { LearningPathway } from 'learn-card-base/types/ai-chat';
@@ -46,7 +46,7 @@ const ChatInput: React.FC = () => {
     const $currentThreadId = useStore(currentThreadId);
     const $threads = useStore(threads);
     const $isEndingSession = useStore(isEndingSession);
-    const [input, setInput] = useState('');
+    const input = useStore(chatInputText);
     const [showPathwaySelection, setShowPathwaySelection] = useState(false);
     const [pathways, setPathways] = useState<LearningPathway[]>([]);
     const [loadingPathways, setLoadingPathways] = useState(false);
@@ -226,7 +226,7 @@ const ChatInput: React.FC = () => {
     const handleSend = () => {
         if (!input.trim()) return;
         sendMessage(input);
-        setInput('');
+        chatInputText.set('');
     };
 
     const handleFinish = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -266,7 +266,7 @@ const ChatInput: React.FC = () => {
                             className="flex-1 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[5px] py-[15px] focus:outline-none disabled:opacity-60 resize-none overflow-y-auto phone:!pl-[12px]"
                             value={input}
                             onChange={e => {
-                                setInput(e.target.value);
+                                chatInputText.set(e.target.value);
                                 e.target.style.height = 'auto';
                                 e.target.style.height = `${Math.min(
                                     e.target.scrollHeight,
