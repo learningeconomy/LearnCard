@@ -21,12 +21,13 @@ import {
     isEndingSession,
     showEndingSessionLoader,
     disconnectWebSocket,
+    startInsightsSession,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 import { auth } from 'learn-card-base/stores/nanoStores/authStore';
 
 import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 
-import { sessionWrapUpText } from '../newAiSession.helpers';
+import { sessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
 import { AiPassportAppContractUri } from '../../ai-passport-apps/aiPassport-apps.helpers';
 
 export const BACKEND_URL = LEARNCARD_AI_URL;
@@ -37,6 +38,7 @@ type LearnCardAiChatBotProps = {
     initialTopicUri?: string | undefined;
     contractUri?: string | undefined;
     handleStartOver?: () => void;
+    mode?: AiSessionMode;
 };
 
 export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
@@ -45,6 +47,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     initialTopicUri: _initialTopicUri = undefined,
     contractUri = AiPassportAppContractUri.learncardapp,
     handleStartOver: _handleStartOver,
+    mode = AiSessionMode.tutor,
 }) => {
     const { isDesktop } = useDeviceTypeByWidth();
     const [showInitialMessages, setShowInitialMessages] = useState(true);
@@ -110,7 +113,12 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
             if (!authState?.did) return; // Wait for auth to be ready
 
             setTopicInitialized(true);
-            startTopic(initialTopic);
+
+            if (mode === AiSessionMode.insights) {
+                startInsightsSession(initialTopic);
+            } else {
+                startTopic(initialTopic, mode);
+            }
         }
     }, [initialTopic, _initialTopicUri, topicInitialized, authState?.did]);
 
@@ -352,69 +360,75 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                 />
             )}
 
-            {/* {loading && <AiChatLoading contractUri={contractUri} />} */}
+            {loading && mode === AiSessionMode.insights && (
+                <AiChatLoading contractUri={contractUri} />
+            )}
 
-            <div
-                ref={chatContainerRef}
-                className="flex-1 pt-[100px] sm:pt-0 overflow-y-auto flex flex-col px-4 relative"
-            >
-                <div
-                    ref={chatInnerScrollRef}
-                    className="flex flex-col transition-transform duration-300 ease-out"
-                    style={{ paddingBottom: `${scrollOffset}px` }}
-                >
-                    <AiSessionPlan />
-                    {messagesToShow.map((msg, index) => {
-                        return (
-                            <div
-                                ref={el => (messageRefs.current[index] = el)}
-                                key={index}
-                                className="w-full"
-                            >
-                                <MessageWithQuestions message={msg} />
-                                {index < messagesToShow.length - 1 &&
-                                    msg.role === 'assistant' &&
-                                    messagesToShow[index + 1].role === 'assistant' && (
-                                        <hr className="border-black w-full my-4" />
-                                    )}
-
-                                {typing && index === messagesToShow.length - 1 && (
-                                    <div className="py-4 px-2 rounded-lg mb-4 flex items-center gap-2">
-                                        <div className="flex space-x-2">
-                                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                                            <div
-                                                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                                                style={{ animationDelay: '0.2s' }}
-                                            ></div>
-                                            <div
-                                                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                                                style={{ animationDelay: '0.4s' }}
-                                            ></div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-
-                <div ref={messagesEndRef} />
-
-                {!isAtBottom && (
-                    <button
-                        onClick={() => {
-                            // setScrollOffset(0);
-                            setScrollToBottomSmooth(true);
-                        }}
-                        className="sticky bottom-[20px] left-1/2 transform -translate-x-1/2 p-[11px] bg-white rounded-full border-solid border-[1px] border-grayscale-200 w-fit shadow-button-bottom text-grayscale-900"
+            {(!loading || mode !== AiSessionMode.insights) && (
+                <>
+                    <div
+                        ref={chatContainerRef}
+                        className="flex-1 pt-[100px] sm:pt-0 overflow-y-auto flex flex-col px-4 relative"
                     >
-                        <CaretDown version="2" />
-                    </button>
-                )}
-            </div>
+                        <div
+                            ref={chatInnerScrollRef}
+                            className="flex flex-col transition-transform duration-300 ease-out"
+                            style={{ paddingBottom: `${scrollOffset}px` }}
+                        >
+                            {mode !== AiSessionMode.insights && <AiSessionPlan />}
+                            {messagesToShow.map((msg, index) => {
+                                return (
+                                    <div
+                                        ref={el => (messageRefs.current[index] = el)}
+                                        key={index}
+                                        className="w-full"
+                                    >
+                                        <MessageWithQuestions message={msg} />
+                                        {index < messagesToShow.length - 1 &&
+                                            msg.role === 'assistant' &&
+                                            messagesToShow[index + 1].role === 'assistant' && (
+                                                <hr className="border-black w-full my-4" />
+                                            )}
 
-            <FinishSessionButton />
-            <div className="sm:px-4">{!loading && <ChatInput />}</div>
+                                        {typing && index === messagesToShow.length - 1 && (
+                                            <div className="py-4 px-2 rounded-lg mb-4 flex items-center gap-2">
+                                                <div className="flex space-x-2">
+                                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                                                    <div
+                                                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                                                        style={{ animationDelay: '0.2s' }}
+                                                    ></div>
+                                                    <div
+                                                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                                                        style={{ animationDelay: '0.4s' }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div ref={messagesEndRef} />
+
+                        {!isAtBottom && (
+                            <button
+                                onClick={() => {
+                                    // setScrollOffset(0);
+                                    setScrollToBottomSmooth(true);
+                                }}
+                                className="sticky bottom-[20px] left-1/2 transform -translate-x-1/2 p-[11px] bg-white rounded-full border-solid border-[1px] border-grayscale-200 w-fit shadow-button-bottom text-grayscale-900"
+                            >
+                                <CaretDown version="2" />
+                            </button>
+                        )}
+                    </div>
+
+                    {mode !== AiSessionMode.insights && <FinishSessionButton />}
+                    <div className="sm:px-4">{!loading && <ChatInput />}</div>
+                </>
+            )}
         </div>
     );
 };
