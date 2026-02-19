@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import {
     BoostUserTypeEnum,
@@ -116,7 +116,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import BoostCMSMediaOptions from './boostCMSForms/boostCMSMedia/BoostCMSMediaOptions';
 import { extractSkillIdsFromAlignments } from '../alignmentHelpers';
-import { useRef } from 'react';
 
 const FamilyCMS = lazyWithRetry(() => import('../../familyCMS/FamilyCMS'));
 
@@ -250,6 +249,18 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     const recoveryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     // Track intentional navigation to bypass the navigation blocker
     const isIntentionalNavigationRef = useRef(false);
+    // Track when a modal operation (like saving category/type) is in progress
+    // This prevents the navigation blocker from showing during modal closes
+    const isModalOperationInProgressRef = useRef(false);
+
+    // Refs to stabilize modal functions for the navigation blocker effect
+    // This prevents the effect from re-running when modals are opened/closed
+    const newModalRef = useRef(newModal);
+    const closeModalRef = useRef(closeModal);
+    useEffect(() => {
+        newModalRef.current = newModal;
+        closeModalRef.current = closeModal;
+    }, [newModal, closeModal]);
 
     // Show recovery prompt if we have recovered state
     // Delay slightly to avoid race conditions with other mount effects that might call closeModal
@@ -322,7 +333,13 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 return;
             }
 
-            newModal(
+            // Skip blocking if a modal operation is in progress (e.g., saving category/type from a nested modal)
+            if (isModalOperationInProgressRef.current) {
+                isModalOperationInProgressRef.current = false;
+                return;
+            }
+
+            newModalRef.current(
                 <div className="pt-[36px] pb-[16px]">
                     <div className="flex flex-col items-center justify-center w-full">
                         <div className="w-full flex flex-col items-center justify-center px-4 text-grayscale-900">
@@ -344,7 +361,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                                 Leave Page
                             </button>
                             <button
-                                onClick={() => closeModal()}
+                                onClick={() => closeModalRef.current()}
                                 className="flex items-center justify-center text-white rounded-full px-[50px] py-[10px] bg-grayscale-900 font-poppins font-medium text-xl w-full shadow-lg mt-4"
                             >
                                 Stay & Continue Editing
@@ -363,7 +380,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         return () => {
             unblock();
         };
-    }, [hasUnsavedChanges, publishedBoostUri, history, newModal, closeModal]);
+    }, [hasUnsavedChanges, publishedBoostUri, history]);
 
     useEffect(() => {
         const initializeWallet = async () => {
@@ -473,6 +490,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         categoryType: BoostCategoryOptionsEnum,
         achievementType: string
     ) => {
+        // Set flag to prevent navigation blocker from showing during this modal operation
+        isModalOperationInProgressRef.current = true;
+
         const _badgeThumbnail =
             aiBoost?.imageUrl ||
             getDefaultAchievementTypeImage(
