@@ -46,7 +46,7 @@ const ChatInput: React.FC = () => {
     const $currentThreadId = useStore(currentThreadId);
     const $threads = useStore(threads);
     const $isEndingSession = useStore(isEndingSession);
-    const input = useStore(chatInputText);
+    const $input = useStore(chatInputText);
     const [showPathwaySelection, setShowPathwaySelection] = useState(false);
     const [pathways, setPathways] = useState<LearningPathway[]>([]);
     const [loadingPathways, setLoadingPathways] = useState(false);
@@ -224,8 +224,8 @@ const ChatInput: React.FC = () => {
     }
 
     const handleSend = () => {
-        if (!input.trim()) return;
-        sendMessage(input);
+        if (!$input.trim()) return;
+        sendMessage($input);
         chatInputText.set('');
     };
 
@@ -244,7 +244,7 @@ const ChatInput: React.FC = () => {
         }
     };
 
-    const disableSend = !input.trim() || $isTyping;
+    const disableSend = !$input.trim() || $isTyping;
     // const showFinishButton = !showContinue && !$isTyping;
 
     return (
@@ -264,7 +264,7 @@ const ChatInput: React.FC = () => {
                         <textarea
                             rows={1}
                             className="flex-1 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[5px] py-[15px] focus:outline-none disabled:opacity-60 resize-none overflow-y-auto phone:!pl-[12px]"
-                            value={input}
+                            value={$input}
                             onChange={e => {
                                 chatInputText.set(e.target.value);
                                 e.target.style.height = 'auto';
