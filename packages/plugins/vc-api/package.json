@@ -38,5 +38,6 @@
     "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*"
-    }
+    },
+    "sideEffects": false
 }

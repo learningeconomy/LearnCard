@@ -6,7 +6,7 @@ import { openExternalLink } from '../../helpers/externalLinkHelpers';
 import { LaunchPadAppListItem } from 'learn-card-base';
 import { ConsentFlowContractDetails } from '@learncard/types';
 import { isSupportedPersonalField } from '../../helpers/contract.helpers';
-import { isRegExp } from 'lodash';
+import { isRegExp } from 'lodash-es';
 
 import useTheme from '../../theme/hooks/useTheme';
 

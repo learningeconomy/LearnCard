@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import _ from 'lodash';
+import _ from 'lodash-es';
 
 import FamilyPinModal from './FamilyPinModal';
 import { confirmPinValidator, existingPinValidator, pinValidator } from './familyPin.helpers';

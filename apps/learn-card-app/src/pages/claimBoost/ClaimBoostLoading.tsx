@@ -2,7 +2,7 @@ import React from 'react';
 import { IonCol, IonContent, IonRow, IonGrid, IonHeader, IonPage } from '@ionic/react';
 
 import Lottie from 'react-lottie-player';
-import HourGlass from '../../assets/lotties/hourglass.json';
+const HourGlass = '/lotties/hourglass.json';
 
 const ClaimBoostLoading: React.FC = () => {
     return (
@@ -16,7 +16,7 @@ const ClaimBoostLoading: React.FC = () => {
                         <div className="max-w-[150px]">
                             <Lottie
                                 loop
-                                animationData={HourGlass}
+                                path={HourGlass}
                                 play
                                 style={{ width: '100%', height: '100%' }}
                             />

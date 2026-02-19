@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 import { useImmer } from 'use-immer';
-import { cloneDeep } from 'lodash';
+import { cloneDeep } from 'lodash-es';
 import { curriedStateSlice } from '@learncard/helpers';
 import { createPortal } from 'react-dom';
 

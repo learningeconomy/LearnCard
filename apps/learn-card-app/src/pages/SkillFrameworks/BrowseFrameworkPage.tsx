@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { cloneDeep } from 'lodash';
+import { cloneDeep } from 'lodash-es';
 import {
     useModal,
     ModalTypes,
