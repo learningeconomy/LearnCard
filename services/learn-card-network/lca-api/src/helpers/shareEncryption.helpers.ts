@@ -95,6 +95,11 @@ export const decryptAuthShare = (
     share: ServerEncryptedShare,
     seed: string
 ): ServerEncryptedShare => {
+    // Legacy (unencrypted) shares don't have the version marker — pass through as-is
+    if (share.encryptedDek !== 'server-v1') {
+        return share;
+    }
+
     const key = deriveKey(seed);
     const iv = Buffer.from(share.iv, 'base64');
     const ciphertextWithTag = Buffer.from(share.encryptedData, 'base64');

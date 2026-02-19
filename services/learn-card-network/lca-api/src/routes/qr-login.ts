@@ -55,17 +55,28 @@ const NOTIFY_RATE_WINDOW = 300;     // 5-minute window (seconds)
 /**
  * Check and increment a rate-limit counter in Redis.
  * Returns true if the request is allowed, false if rate-limited.
+ *
+ * Uses atomic INCR + EXPIRE to avoid TOCTOU races where two concurrent
+ * requests could both read the same counter value and both pass.
  */
 const checkRateLimit = async (
     key: string,
     maxAttempts: number,
     windowSeconds: number
 ): Promise<boolean> => {
-    const current = Number(await cache.get(`${RATE_PREFIX}${key}`)) || 0;
+    const fullKey = `${RATE_PREFIX}${key}`;
+    const redis = cache.redis ?? cache.node;
 
-    if (current >= maxAttempts) return false;
+    // INCR is atomic — returns the new value after incrementing.
+    // If the key doesn't exist, Redis creates it with value 1.
+    const current = await redis.incr(fullKey);
 
-    await cache.set(`${RATE_PREFIX}${key}`, current + 1, windowSeconds, current > 0);
+    // First request for this window — set the TTL
+    if (current === 1) {
+        await redis.expire(fullKey, windowSeconds);
+    }
+
+    if (current > maxAttempts) return false;
 
     return true;
 };

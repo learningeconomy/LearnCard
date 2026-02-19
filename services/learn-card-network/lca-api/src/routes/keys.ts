@@ -449,7 +449,7 @@ export const keysRouter = t.router({
     getRecoveryEmail: openRoute
         .meta({
             openapi: {
-                method: 'POST',
+                method: 'GET',
                 path: '/keys/recovery-email',
                 tags: ['Keys'],
                 summary: 'Get the verified recovery email (masked) for the authenticated user',
@@ -457,7 +457,7 @@ export const keysRouter = t.router({
         })
         .input(AuthInputValidator)
         .output(z.object({ recoveryEmail: z.string().nullable() }))
-        .mutation(async ({ input }) => {
+        .query(async ({ input }) => {
             const { contactMethod } = await verifyAndGetContactMethod(input);
 
             const userKey = await findUserKeyByContactMethod(contactMethod);

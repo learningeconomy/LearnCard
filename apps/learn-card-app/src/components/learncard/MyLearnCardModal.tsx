@@ -44,6 +44,7 @@ import {
     useCurrentUser,
     useWallet,
     useGetCheckListStatus,
+    getAuthConfig,
 } from 'learn-card-base';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import useLogout from '../../hooks/useLogout';
@@ -395,12 +396,19 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                     }
 
                     let existingMethods: Array<{ type: string; createdAt: Date }> = [];
+                    let fetchedMaskedRecoveryEmail: string | null = null;
 
                     if (keyDerivation.getAvailableRecoveryMethods) {
                         try {
                             const token = await contextAuthProvider.getIdToken();
                             const providerType = contextAuthProvider.getProviderType();
                             existingMethods = await keyDerivation.getAvailableRecoveryMethods(token, providerType);
+
+                            // Fetch masked recovery email from server key status
+                            if (keyDerivation.fetchServerKeyStatus) {
+                                const status = await keyDerivation.fetchServerKeyStatus(token, providerType);
+                                fetchedMaskedRecoveryEmail = status.maskedRecoveryEmail ?? null;
+                            }
                         } catch {
                             // Non-critical — show modal with empty methods
                         }
@@ -445,6 +453,24 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         throw new Error('Your session has expired. Please close this dialog and sign in again.');
                     };
 
+                    const { serverUrl } = getAuthConfig();
+
+                    const getTokenAndProvider = async () => {
+                        const token = await contextAuthProvider.getIdToken();
+                        const providerType = contextAuthProvider.getProviderType();
+                        return { token, providerType };
+                    };
+
+                    const getDidAuthHeaders = async (): Promise<Record<string, string>> => {
+                        const lc = await getSigningLearnCard(currentUser.privateKey!);
+                        const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+
+                        return {
+                            'Content-Type': 'application/json',
+                            ...(vpJwt && typeof vpJwt === 'string' ? { Authorization: `Bearer ${vpJwt}` } : {}),
+                        };
+                    };
+
                     newModal(
                         <RecoverySetupModal
                             existingMethods={existingMethods.map(m => ({
@@ -453,6 +479,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                     ? m.createdAt.toISOString()
                                     : String(m.createdAt),
                             }))}
+                            maskedRecoveryEmail={fetchedMaskedRecoveryEmail}
                             onSetupPasskey={
                                 setupMethod
                                     ? async () => {
@@ -479,6 +506,46 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                           const did = lc?.id?.did() || '';
                                           const result = await setupMethod({ method: 'backup', password: backupPw, did }, authUser);
                                           return result?.method === 'backup' ? JSON.stringify(result.backupFile, null, 2) : '';
+                                      }
+                                    : requireAuth
+                            }
+                            onAddRecoveryEmail={async (email: string) => {
+                                const { token, providerType } = await getTokenAndProvider();
+                                const headers = await getDidAuthHeaders();
+
+                                const res = await fetch(`${serverUrl}/keys/recovery-email/add`, {
+                                    method: 'POST',
+                                    headers,
+                                    body: JSON.stringify({ authToken: token, providerType, email }),
+                                });
+
+                                if (!res.ok) {
+                                    const data = await res.json().catch(() => ({}));
+                                    throw new Error(data?.message || 'Failed to send verification code.');
+                                }
+                            }}
+                            onVerifyRecoveryEmail={async (code: string) => {
+                                const { token, providerType } = await getTokenAndProvider();
+                                const headers = await getDidAuthHeaders();
+
+                                const res = await fetch(`${serverUrl}/keys/recovery-email/verify`, {
+                                    method: 'POST',
+                                    headers,
+                                    body: JSON.stringify({ authToken: token, providerType, code }),
+                                });
+
+                                if (!res.ok) {
+                                    const data = await res.json().catch(() => ({}));
+                                    throw new Error(data?.message || 'Incorrect code.');
+                                }
+
+                                return res.json();
+                            }}
+                            onSetupEmailRecovery={
+                                setupMethod
+                                    ? async () => {
+                                          const authUser = await contextAuthProvider.getCurrentUser();
+                                          await setupMethod({ method: 'email' }, authUser);
                                       }
                                     : requireAuth
                             }

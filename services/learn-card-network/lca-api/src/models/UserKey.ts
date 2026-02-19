@@ -281,31 +281,36 @@ export const addRecoveryMethodToUserKey = async (
     recoveryMethod: RecoveryMethod
 ): Promise<void> => {
     const collection = getUserKeysCollection();
+    const now = new Date();
 
-    // Replace any existing recovery method of the same type (e.g., updating
-    // a passkey). Other types are preserved — with versioned auth shares,
-    // old recovery shares still pair with their matching auth share version.
-    await collection.updateOne(
+    // Atomic: pull any existing method of the same type, then push the new one.
+    // Uses bulkWrite so both ops execute in a single server round-trip / batch,
+    // preventing a crash between $pull and $push from losing the method.
+    await collection.bulkWrite([
         {
-            'contactMethod.type': contactMethod.type,
-            'contactMethod.value': contactMethod.value,
+            updateOne: {
+                filter: {
+                    'contactMethod.type': contactMethod.type,
+                    'contactMethod.value': contactMethod.value,
+                },
+                update: {
+                    $pull: { recoveryMethods: { type: recoveryMethod.type } as Record<string, unknown> },
+                },
+            },
         },
         {
-            $pull: { recoveryMethods: { type: recoveryMethod.type } as Record<string, unknown> },
-        }
-    );
-
-    // Now add the new recovery method
-    await collection.updateOne(
-        {
-            'contactMethod.type': contactMethod.type,
-            'contactMethod.value': contactMethod.value,
+            updateOne: {
+                filter: {
+                    'contactMethod.type': contactMethod.type,
+                    'contactMethod.value': contactMethod.value,
+                },
+                update: {
+                    $push: { recoveryMethods: recoveryMethod },
+                    $set: { updatedAt: now },
+                },
+            },
         },
-        {
-            $push: { recoveryMethods: recoveryMethod },
-            $set: { updatedAt: new Date() },
-        }
-    );
+    ], { ordered: true });
 };
 
 export const markUserKeyMigrated = async (contactMethod: ContactMethod): Promise<void> => {

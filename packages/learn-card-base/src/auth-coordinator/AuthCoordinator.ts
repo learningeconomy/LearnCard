@@ -387,6 +387,7 @@ export class AuthCoordinator {
         const authUser = this.state.authUser;
         const recoveryMethods = this.state.recoveryMethods;
         const recoveryReason = this.state.recoveryReason;
+        const maskedRecoveryEmail = this.state.maskedRecoveryEmail;
 
         try {
             this.setState({ status: 'deriving_key' });
@@ -416,7 +417,7 @@ export class AuthCoordinator {
                 status: 'error',
                 error: errorMessage,
                 canRetry: true,
-                previousState: { status: 'needs_recovery', authUser, recoveryMethods, recoveryReason },
+                previousState: { status: 'needs_recovery', authUser, recoveryMethods, recoveryReason, maskedRecoveryEmail },
             });
 
             return this.state;

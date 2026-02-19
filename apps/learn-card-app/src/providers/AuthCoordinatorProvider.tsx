@@ -533,9 +533,11 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
         const extractAndInject = async () => {
             try {
                 emitAuthDebugEvent('web3auth:migration_key', 'Extracting Web3Auth key for migration', {
-                    clientId: authConfig.web3AuthClientId ? `${authConfig.web3AuthClientId.slice(0, 8)}...` : '(empty)',
-                    network: authConfig.web3AuthNetwork || '(empty)',
-                    verifier: authConfig.web3AuthVerifierId || '(empty)',
+                    data: {
+                        clientId: authConfig.web3AuthClientId ? `${authConfig.web3AuthClientId.slice(0, 8)}...` : '(empty)',
+                        network: authConfig.web3AuthNetwork || '(empty)',
+                        verifier: authConfig.web3AuthVerifierId || '(empty)',
+                    },
                 });
 
                 const privateKeyProvider = new EthereumPrivateKeyProvider({
@@ -579,9 +581,11 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                 }
 
                 emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: calling connect()...', {
-                    verifier: authConfig.web3AuthVerifierId,
-                    verifierId: liveUser.uid,
-                    tokenLength: token.length,
+                    data: {
+                        verifier: authConfig.web3AuthVerifierId,
+                        verifierId: liveUser.uid,
+                        tokenLength: token.length,
+                    },
                 });
                 await web3auth.connect({
                     verifier: authConfig.web3AuthVerifierId,

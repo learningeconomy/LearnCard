@@ -47,6 +47,16 @@ export default defineConfig(async ({ mode }) => {
             GOOGLE_MAPS_API_KEY: env.GOOGLE_MAPS_API_KEY
                 ? JSON.stringify(env.GOOGLE_MAPS_API_KEY)
                 : 'undefined',
+            // SSS Key Manager configuration
+            'process.env.REACT_APP_KEY_DERIVATION_PROVIDER': env.REACT_APP_KEY_DERIVATION_PROVIDER
+                ? JSON.stringify(env.REACT_APP_KEY_DERIVATION_PROVIDER)
+                : 'undefined',
+            'process.env.REACT_APP_SSS_SERVER_URL': env.REACT_APP_SSS_SERVER_URL
+                ? JSON.stringify(env.REACT_APP_SSS_SERVER_URL)
+                : 'undefined',
+            'process.env.REACT_APP_ENABLE_SSS_MIGRATION': env.REACT_APP_ENABLE_SSS_MIGRATION
+                ? JSON.stringify(env.REACT_APP_ENABLE_SSS_MIGRATION)
+                : 'undefined',
         },
         resolve: {
             alias: [
@@ -71,6 +81,18 @@ export default defineConfig(async ({ mode }) => {
             ],
             dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom'],
         },
-        server: { port: 3000 },
+        server: {
+            port: 3000,
+            proxy: {
+                // Proxy SSS key-manager API requests to the lca-api Docker service.
+                // Used when VITE_SSS_SERVER_URL is set to '/lca-api' (e.g. in docker-start)
+                // to avoid CORS issues during local development.
+                '/lca-api': {
+                    target: 'http://localhost:5100',
+                    changeOrigin: true,
+                    rewrite: (path) => path.replace(/^\/lca-api/, '/api'),
+                },
+            },
+        },
     };
 });

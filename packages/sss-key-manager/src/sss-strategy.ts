@@ -718,31 +718,21 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             }
 
             // Sign DID-Auth VP once for all write operations in this method
-            console.debug('[setupRecoveryMethod] step 1: signing VP, signDidAuthVp available:', !!signDidAuthVp);
             const vpJwt = signDidAuthVp ? await signDidAuthVp(privateKey) : undefined;
-            console.debug('[setupRecoveryMethod] step 1 done, vpJwt:', vpJwt ? `${vpJwt.slice(0, 20)}...` : 'undefined');
 
             // All setup methods start by re-splitting the key to get a fresh recovery share
-            console.debug('[setupRecoveryMethod] step 2: splitAndVerify');
             const { shares } = await splitAndVerify(privateKey);
-            console.debug('[setupRecoveryMethod] step 2 done');
 
             // Cache the email share so sendEmailBackupShare can use it
             lastEmailShare = shares.emailShare;
 
             // Store new device + auth shares
-            console.debug('[setupRecoveryMethod] step 3: storeDeviceShare');
             await storage.storeDeviceShare(shares.deviceShare, activeStorageId);
-            console.debug('[setupRecoveryMethod] step 3 done');
 
-            console.debug('[setupRecoveryMethod] step 4: fetchAuthShareRaw');
             const serverData = await fetchAuthShareRaw(serverUrl, token, providerType);
             const primaryDid = serverData?.primaryDid || '';
-            console.debug('[setupRecoveryMethod] step 4 done, primaryDid:', primaryDid ? `${primaryDid.slice(0, 30)}...` : '(empty)');
 
-            console.debug('[setupRecoveryMethod] step 5: putAuthShare');
             const { shareVersion } = await putAuthShare(serverUrl, token, providerType, shares.authShare, primaryDid, vpJwt);
-            console.debug('[setupRecoveryMethod] step 5 done, shareVersion:', shareVersion);
 
             // Persist the new version alongside the device share
             await storage.storeShareVersion(shareVersion, activeStorageId);

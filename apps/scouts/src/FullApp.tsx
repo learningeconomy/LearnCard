@@ -26,6 +26,7 @@ import {
     Toast,
 } from 'learn-card-base';
 import { AuthCoordinatorProvider } from './providers/AuthCoordinatorProvider';
+import AuthKeyDebugWidget from './components/debug/AuthKeyDebugWidget';
 import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import useFeedbackWidget from './hooks/useFeedbackWidget';
 import PresentVcModalListener from './components/modalListener/ModalListener';
@@ -132,6 +133,7 @@ const FullApp: React.FC = () => {
                                         <p>Feedback</p>
                                     </button>
                                 )}
+                                <AuthKeyDebugWidget />
                             </ModalsProvider>
                         </AuthCoordinatorProvider>
                     </IonApp>
