@@ -322,6 +322,43 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Validate deployment target
+              run: |
+                  echo "========================================"
+                  echo "DEPLOYMENT TARGET VALIDATION"
+                  echo "========================================"
+                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_brain_service_env }}"
+                  echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
+                  echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
+                  echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
+                  echo "Stage:              ${{ vars.SERVERLESS_STAGE }}"
+                  echo "Region:             ${{ vars.SERVERLESS_REGION }}"
+                  echo "========================================"
+
+                  FAILED=false
+
+                  if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    FAILED=true
+                  fi
+
+                  if [[ "$FAILED" == "true" ]]; then
+                    echo "::error::Aborting deploy — required variables are missing. Configure them in the GitHub environment settings."
+                    exit 1
+                  fi
+
             - name: Deploy Brain Service Lambda
               run: pnpm exec nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
@@ -385,6 +422,42 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Validate deployment target
+              run: |
+                  echo "========================================"
+                  echo "DEPLOYMENT TARGET VALIDATION"
+                  echo "========================================"
+                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_learn_cloud_env }}"
+                  echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
+                  echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
+                  echo "Stage:              ${{ vars.SERVERLESS_STAGE }}"
+                  echo "Region:             ${{ vars.SERVERLESS_REGION }}"
+                  echo "========================================"
+
+                  FAILED=false
+
+                  if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    FAILED=true
+                  fi
+
+                  if [[ "$FAILED" == "true" ]]; then
+                    echo "::error::Aborting deploy — required variables are missing. Configure them in the GitHub environment settings."
+                    exit 1
+                  fi
+
             - name: Deploy LearnCloud Lambda
               run: pnpm exec nx serverless-deploy learn-cloud-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
@@ -434,6 +507,42 @@ jobs:
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
+
+            - name: Validate deployment target
+              run: |
+                  echo "========================================"
+                  echo "DEPLOYMENT TARGET VALIDATION"
+                  echo "========================================"
+                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_lca_api_env }}"
+                  echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
+                  echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
+                  echo "Stage:              ${{ vars.SERVERLESS_STAGE }}"
+                  echo "Region:             ${{ vars.SERVERLESS_REGION }}"
+                  echo "========================================"
+
+                  FAILED=false
+
+                  if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    FAILED=true
+                  fi
+                  if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    FAILED=true
+                  fi
+
+                  if [[ "$FAILED" == "true" ]]; then
+                    echo "::error::Aborting deploy — required variables are missing. Configure them in the GitHub environment settings."
+                    exit 1
+                  fi
 
             - name: Deploy LCA API Service Lambda
               run: pnpm exec nx serverless-deploy lca-api-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
