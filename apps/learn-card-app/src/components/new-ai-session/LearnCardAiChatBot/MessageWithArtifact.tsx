@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useStore } from '@nanostores/react';
 
 import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/MarkdownRenderer';
 import { IonSpinner } from '@ionic/react';
@@ -19,6 +20,12 @@ import { getDefaultDisplayType, sendBoostCredential } from '../../boost/boostHel
 import { initialBoostCMSState, BoostCMSState, LCNBoostStatusEnum } from '../../boost/boost';
 
 import type { ChatMessage } from 'learn-card-base/types/ai-chat';
+import {
+    claimedArtifacts,
+    claimArtifact,
+    dismissedArtifacts,
+    dismissArtifact,
+} from 'learn-card-base/stores/nanoStores/artifactsStore';
 
 interface MessageProps {
     message: ChatMessage;
@@ -38,7 +45,10 @@ export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
     const narrative = artifact?.narrative as string;
     const achievementType = constructCustomBoostType(categoryType, title);
 
-    const [claimed, setClaimed] = useState<boolean>(artifact?.claimed ?? false);
+    const $claimedArtifacts = useStore(claimedArtifacts);
+    const $dismissedArtifacts = useStore(dismissedArtifacts);
+    const claimed = artifact?.id ? $claimedArtifacts.has(artifact.id) : artifact?.claimed ?? false;
+    const dismissed = artifact?.id ? $dismissedArtifacts.has(artifact.id) : false;
     const [isSaving, setIsSaving] = useState<boolean>(false);
 
     const [state, setState] = useState<BoostCMSState>({
@@ -69,7 +79,7 @@ export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
 
             const { sentBoost } = await sendBoostCredential(
                 wallet,
-                currentLCNUser?.profileId,
+                currentLCNUser?.profileId || '',
                 boostUri
             );
             const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
@@ -84,8 +94,8 @@ export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
                 });
             }
 
-            // Update the artfact claimed status to true
-            if (artifact?.id) setClaimed(true);
+            // Update the artifact claimed status to true
+            if (artifact?.id) claimArtifact(artifact.id);
 
             presentToast(`Credential added to LearnCard`, {
                 duration: 3000,
@@ -99,25 +109,39 @@ export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
     };
 
     const statusText = claimed ? 'Claimed' : 'Yes';
+    const isDisabled = isSaving || claimed || dismissed;
 
     return (
         <>
             <MarkdownRenderer>{message?.artifact?.question}</MarkdownRenderer>
-            <button
-                className={`w-full gap-2 flex items-center justify-center px-4 py-2 font-semibold rounded-full ${
-                    claimed ? 'bg-grayscale-200 text-grayscale-500' : 'bg-indigo-500 text-white'
-                }`}
-                onClick={handleYes}
-                disabled={isSaving || claimed}
-            >
-                {isSaving ? (
-                    <>
-                        <IonSpinner name="crescent" /> Claiming...
-                    </>
-                ) : (
-                    statusText
+            <div className="flex gap-2 w-full">
+                {!claimed && !dismissed && artifact?.id && (
+                    <button
+                        className="flex-1 px-4 py-2 font-semibold rounded-full bg-grayscale-200 text-grayscale-900"
+                        onClick={() => dismissArtifact(artifact.id!)}
+                        disabled={isSaving}
+                    >
+                        Dismiss
+                    </button>
                 )}
-            </button>
+                <button
+                    className={`flex-1 gap-2 flex items-center justify-center px-4 py-2 font-semibold rounded-full ${
+                        isDisabled
+                            ? 'bg-grayscale-200 text-grayscale-500'
+                            : 'bg-indigo-500 text-white'
+                    }`}
+                    onClick={handleYes}
+                    disabled={isDisabled}
+                >
+                    {isSaving ? (
+                        <>
+                            <IonSpinner name="crescent" /> Claiming...
+                        </>
+                    ) : (
+                        statusText
+                    )}
+                </button>
+            </div>
         </>
     );
 };

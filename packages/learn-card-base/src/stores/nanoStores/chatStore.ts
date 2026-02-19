@@ -1,6 +1,7 @@
 import { atom } from 'nanostores';
 import { v4 as uuid } from 'uuid';
 import type { ChatMessage, Thread, LearningPathway } from '../../types/ai-chat';
+import { resetArtifactsStore } from './artifactsStore';
 import { auth } from './authStore';
 import { showErrorModal } from './ErrorModalStore';
 import { showToast } from './toastStore';
@@ -83,6 +84,7 @@ export function resetChatStores() {
         roadmap: [],
     });
     chatInputText.set('');
+    resetArtifactsStore();
 }
 
 interface TopicCredential {
