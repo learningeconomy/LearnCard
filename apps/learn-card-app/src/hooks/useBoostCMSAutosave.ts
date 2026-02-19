@@ -67,6 +67,7 @@ export function useBoostCMSAutosave({
 
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const currentStateRef = useRef<BoostCMSState | null>(null);
+    const lastSavedCategoryRef = useRef<string | null>(null);
 
     // Build storage key that includes category context
     const getStorageKey = useCallback(() => {
@@ -184,22 +185,38 @@ export function useBoostCMSAutosave({
 
             saveTimeoutRef.current = setTimeout(() => {
                 try {
+                    const stateCategoryType = state.basicInfo?.type || boostCategoryType;
+                    const stateSubCategoryType =
+                        state.basicInfo?.achievementType || boostSubCategoryType;
+
                     const wrapper: AutosaveStorageWrapper = {
                         version: STORAGE_VERSION,
                         timestamp: Date.now(),
                         data: state,
-                        boostCategoryType,
-                        boostSubCategoryType: boostSubCategoryType ?? undefined,
+                        boostCategoryType: stateCategoryType,
+                        boostSubCategoryType: stateSubCategoryType ?? undefined,
                     };
 
-                    const storageKey = getStorageKey();
+                    // Use state's category for storage key so category changes are saved to the correct key
+                    const storageKey = stateCategoryType
+                        ? `${STORAGE_KEY}_${stateCategoryType}`
+                        : STORAGE_KEY;
+
+                    // If category changed, clear the old category's storage key to prevent stale data
+                    const lastCategory = lastSavedCategoryRef.current;
+                    if (lastCategory && lastCategory !== stateCategoryType) {
+                        const oldKey = `${STORAGE_KEY}_${lastCategory}`;
+                        localStorage.removeItem(oldKey);
+                    }
+
                     localStorage.setItem(storageKey, JSON.stringify(wrapper));
+                    lastSavedCategoryRef.current = stateCategoryType || null;
                 } catch (err) {
                     console.warn('[useBoostCMSAutosave] Failed to save to localStorage:', err);
                 }
             }, DEBOUNCE_MS);
         },
-        [enabled, boostCategoryType, boostSubCategoryType, getStorageKey]
+        [enabled, boostCategoryType, boostSubCategoryType]
     );
 
     // Clear local save
@@ -218,9 +235,6 @@ export function useBoostCMSAutosave({
 
     const clearRecoveredState = useCallback(
         (alsoCleanLocalStorage: boolean = false) => {
-            // Always clear the specific key that was recovered from
-            // This prevents old data from being found when the user comes back later
-            // with a different category (new saves will go to the new category's key)
             if (recoveredStorageKey && typeof window !== 'undefined') {
                 try {
                     localStorage.removeItem(recoveredStorageKey);
