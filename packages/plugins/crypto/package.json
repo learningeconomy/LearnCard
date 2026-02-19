@@ -38,5 +38,6 @@
     "dependencies": {
         "@learncard/core": "workspace:*",
         "isomorphic-webcrypto": "^2.3.8"
-    }
+    },
+    "sideEffects": false
 }

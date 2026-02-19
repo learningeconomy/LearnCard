@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useImmer } from 'use-immer';
-import omit from 'lodash/omit';
+import omit from 'lodash-es/omit';
 import { LCNProfile } from '@learncard/types';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { curriedStateSlice } from '@learncard/helpers';
