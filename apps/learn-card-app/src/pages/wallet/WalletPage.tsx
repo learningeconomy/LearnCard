@@ -14,6 +14,7 @@ import {
     lazyWithRetry,
 } from 'learn-card-base';
 
+import ResumeBuilderController from '../../components/resume-builder/ResumeBuilderController';
 import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/ThemeSelector';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import WalletActionButton from '../../components/main-subheader/WalletActionButton';
@@ -185,7 +186,8 @@ const WalletPage: React.FC = () => {
                                     </div>
                                 </div>
                             </IonRow>
-                            <CheckListButton className="mb-[20px] mt-[10px]" />
+                            <CheckListButton className="mb-[10px] mt-[10px]" />
+                            <ResumeBuilderController className="mb-[10px]" />
                             <IonRow className="wallet-squares-wrapper max-w-[600px] mx-auto">
                                 <IonCol
                                     className={`wallet-squares-container ${
