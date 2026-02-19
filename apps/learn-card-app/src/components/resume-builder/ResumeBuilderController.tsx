@@ -28,6 +28,8 @@ export const ResumeBuilderController: React.FC<{ className?: string }> = ({ clas
 
     if (!flags?.enableResumeBuilder) return null;
 
+    const resumeExists = false; // TODO: Check if resume exists
+
     return (
         <div
             role="button"
@@ -44,10 +46,16 @@ export const ResumeBuilderController: React.FC<{ className?: string }> = ({ clas
                 </div>
                 <div className="flex flex-col">
                     <h5 className="text-[17px] font-poppins font-[600] text-grayscale-900 leading-[130%]">
-                        Build Your Resume
+                        {resumeExists ? 'Your Resume' : 'Build Your Resume'}
                     </h5>
                     <p className="text-[14px] text-grayscale-900 font-poppins">
-                        Stand out with a tailored resume
+                        {resumeExists ? (
+                            <span>
+                                Updated <span className="font-semibold">today</span>
+                            </span>
+                        ) : (
+                            'Stand out with a tailored resume'
+                        )}
                     </p>
                 </div>
             </div>
