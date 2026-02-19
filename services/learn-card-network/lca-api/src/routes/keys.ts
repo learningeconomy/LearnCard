@@ -518,15 +518,17 @@ export const keysRouter = t.router({
 
             // IMPORTANT: The emailShare is NEVER written to the database.
             // It is only held in memory for the duration of this request.
+            const brandName = process.env.POSTMARK_BRAND_NAME || 'LearnCard';
+
             try {
                 await getDeliveryService().send({
                     to: targetEmail,
-                    subject: 'Your LearnCard Recovery Key',
+                    subject: `Your ${brandName} Recovery Key`,
                     textBody: [
-                        'Your LearnCard Recovery Key',
+                        `Your ${brandName} Recovery Key`,
                         '',
                         'Keep this email safe. You can use the recovery key below to regain',
-                        'access to your LearnCard account if you lose your device.',
+                        `access to your ${brandName} account if you lose your device.`,
                         '',
                         '--- RECOVERY KEY (do NOT share this with anyone) ---',
                         input.emailShare,
