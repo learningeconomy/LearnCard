@@ -828,6 +828,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
                 if (uris.length > 0) {
                     setIsLoading(false);
+                    clearLocalSave();
                     presentToast(`Boost issued successfully`, {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
@@ -839,6 +840,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
                 if (boostUri) {
                     setIsSaveLoading(false);
+                    clearLocalSave();
                     presentToast(`Boost saved successfully`, {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
