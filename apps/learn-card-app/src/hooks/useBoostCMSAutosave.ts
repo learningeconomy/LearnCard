@@ -61,6 +61,7 @@ export function useBoostCMSAutosave({
     const [hasRecoveredState, setHasRecoveredState] = useState(false);
     const [recoveredState, setRecoveredState] = useState<BoostCMSState | null>(null);
     const [recoveredBoostCategory, setRecoveredBoostCategory] = useState<string | null>(null);
+    const [recoveredStorageKey, setRecoveredStorageKey] = useState<string | null>(null);
     const [isAutosaving] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -80,7 +81,7 @@ export function useBoostCMSAutosave({
         (
             stored: string,
             storageKey: string
-        ): { data: BoostCMSState; category: string | null } | null => {
+        ): { data: BoostCMSState; category: string | null; storageKey: string } | null => {
             try {
                 const parsed: AutosaveStorageWrapper = JSON.parse(stored);
 
@@ -107,6 +108,7 @@ export function useBoostCMSAutosave({
                     return {
                         data: parsed.data,
                         category: parsed.boostCategoryType || null,
+                        storageKey,
                     };
                 }
             } catch {
@@ -130,6 +132,7 @@ export function useBoostCMSAutosave({
             if (result) {
                 setRecoveredState(result.data);
                 setRecoveredBoostCategory(result.category);
+                setRecoveredStorageKey(result.storageKey);
                 setHasRecoveredState(true);
                 return;
             }
@@ -146,6 +149,7 @@ export function useBoostCMSAutosave({
                 if (result) {
                     setRecoveredState(result.data);
                     setRecoveredBoostCategory(result.category);
+                    setRecoveredStorageKey(result.storageKey);
                     setHasRecoveredState(true);
                     return;
                 }
@@ -158,6 +162,7 @@ export function useBoostCMSAutosave({
             if (result) {
                 setRecoveredState(result.data);
                 setRecoveredBoostCategory(result.category);
+                setRecoveredStorageKey(result.storageKey);
                 setHasRecoveredState(true);
             }
         }
@@ -211,28 +216,48 @@ export function useBoostCMSAutosave({
         }
     }, [getStorageKey]);
 
-    const clearRecoveredState = useCallback((alsoCleanLocalStorage: boolean = false) => {
-        setRecoveredState(null);
-        setRecoveredBoostCategory(null);
-        setHasRecoveredState(false);
-
-        // Only clear localStorage if explicitly requested (e.g., on discard)
-        // On recovery, we want to keep saving new changes
-        if (alsoCleanLocalStorage) {
-            if (typeof window !== 'undefined') {
+    const clearRecoveredState = useCallback(
+        (alsoCleanLocalStorage: boolean = false) => {
+            // Always clear the specific key that was recovered from
+            // This prevents old data from being found when the user comes back later
+            // with a different category (new saves will go to the new category's key)
+            if (recoveredStorageKey && typeof window !== 'undefined') {
                 try {
-                    localStorage.removeItem(STORAGE_KEY);
-                    for (const category of ALL_BOOST_CATEGORIES) {
-                        localStorage.removeItem(`${STORAGE_KEY}_${category}`);
-                    }
+                    localStorage.removeItem(recoveredStorageKey);
                 } catch (err) {
-                    console.warn('[useBoostCMSAutosave] Failed to clear all saved states:', err);
+                    console.warn(
+                        '[useBoostCMSAutosave] Failed to clear recovered storage key:',
+                        err
+                    );
                 }
             }
-            currentStateRef.current = null;
-            setHasUnsavedChanges(false);
-        }
-    }, []);
+
+            setRecoveredState(null);
+            setRecoveredBoostCategory(null);
+            setRecoveredStorageKey(null);
+            setHasRecoveredState(false);
+
+            // If explicitly discarding, clear all saved states
+            if (alsoCleanLocalStorage) {
+                if (typeof window !== 'undefined') {
+                    try {
+                        localStorage.removeItem(STORAGE_KEY);
+                        for (const category of ALL_BOOST_CATEGORIES) {
+                            localStorage.removeItem(`${STORAGE_KEY}_${category}`);
+                        }
+                    } catch (err) {
+                        console.warn(
+                            '[useBoostCMSAutosave] Failed to clear all saved states:',
+                            err
+                        );
+                    }
+                }
+                currentStateRef.current = null;
+                setHasUnsavedChanges(false);
+            }
+        },
+        [recoveredStorageKey]
+    );
 
     useEffect(() => {
         if (!enabled || typeof window === 'undefined' || typeof document === 'undefined') return;
