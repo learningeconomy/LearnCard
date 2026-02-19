@@ -133,9 +133,10 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                 newModal(
                     <RecoveryPrompt
                         itemName={frameworkInfo.name || 'Framework'}
-                        itemType="framework edits"
+                        itemType="framework"
                         onRecover={handleRecover}
                         onDiscard={handleDiscard}
+                        discardButtonText="Create New Framework"
                     />,
                     { sectionClassName: '!max-w-[400px]' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }

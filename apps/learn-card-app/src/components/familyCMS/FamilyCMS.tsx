@@ -168,6 +168,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                         itemType="family"
                         onRecover={handleRecover}
                         onDiscard={handleDiscard}
+                        discardButtonText="Create New Family"
                     />,
                     { sectionClassName: '!max-w-[400px]' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }

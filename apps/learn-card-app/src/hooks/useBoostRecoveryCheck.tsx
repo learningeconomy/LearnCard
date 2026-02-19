@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { useModal, ModalTypes, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { BoostCMSState } from '../components/boost/boost';
 import RecoveryPrompt from '../components/common/RecoveryPrompt';
+import { getFallBackImage } from 'learn-card-base/helpers/credentialHelpers';
 
 const STORAGE_KEY = 'lc_boost_cms_autosave';
 const STORAGE_VERSION = 1;
@@ -165,12 +166,18 @@ export function useBoostRecoveryCheck() {
                 onProceed();
             };
 
+            const itemType =
+                savedState?.category === 'Social Badge' ? 'Social Boost' : savedState?.category;
+            const defaultImage = getFallBackImage(savedState?.category || '');
+
             newModal(
                 <RecoveryPrompt
                     itemName={savedState.data?.basicInfo?.name || 'Untitled Credential'}
-                    itemType="boost"
+                    itemType={itemType}
                     onRecover={handleRecover}
                     onDiscard={handleDiscard}
+                    discardButtonText="Create New Credential"
+                    icon={defaultImage}
                 />,
                 { sectionClassName: '!max-w-[400px]' },
                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }

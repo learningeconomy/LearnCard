@@ -318,6 +318,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
                         itemType="contract"
                         onRecover={handleRecover}
                         onDiscard={handleDiscard}
+                        discardButtonText="Create New Contract"
                     />,
                     { sectionClassName: '!max-w-[400px]' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
