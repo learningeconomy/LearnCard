@@ -39,5 +39,6 @@
     "types": "./dist/index.d.ts",
     "dependencies": {
         "@learncard/core": "workspace:*"
-    }
+    },
+    "sideEffects": false
 }

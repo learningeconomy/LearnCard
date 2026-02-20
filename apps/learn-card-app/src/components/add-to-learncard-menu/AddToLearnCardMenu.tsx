@@ -15,6 +15,7 @@ import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 import BoostsTwoTonedIcon from 'learn-card-base/svgs/SideNav/BoostsTwoTonedIcon';
 import BoostSelectMenu from '../boost/boost-select-menu/BoostSelectMenu';
 import useBoostModal from '../boost/hooks/useBoostModal';
+import useBoostRecoveryCheck from '../../hooks/useBoostRecoveryCheck';
 import IssueManagedBoostSelector from '../../pages/launchPad/LaunchPadHeader/IssueManagedBoostSelector';
 import { NewAiSessionIconShaded } from 'learn-card-base/svgs/NewAiSessionIcon';
 
@@ -75,6 +76,7 @@ export const AddToLearnCardMenu: React.FC = () => {
     };
 
     const { handlePresentBoostModal } = useBoostModal(undefined, undefined, true, true);
+    const { checkAndPromptRecovery } = useBoostRecoveryCheck();
 
     const handleNewBoostModal = () => {
         closeModal();
@@ -121,17 +123,19 @@ export const AddToLearnCardMenu: React.FC = () => {
         label: 'Boost Someone',
         onClick: () => {
             closeModal();
-            newModal(
-                <BoostTemplateSelector />,
-                {
-                    hideButton: true,
-                    sectionClassName: '!max-w-[500px]',
-                },
-                {
-                    desktop: ModalTypes.Cancel,
-                    mobile: ModalTypes.Cancel,
-                }
-            );
+            checkAndPromptRecovery(() => {
+                newModal(
+                    <BoostTemplateSelector />,
+                    {
+                        hideButton: true,
+                        sectionClassName: '!max-w-[500px]',
+                    },
+                    {
+                        desktop: ModalTypes.Cancel,
+                        mobile: ModalTypes.Cancel,
+                    }
+                );
+            });
         },
     });
 
@@ -155,7 +159,12 @@ export const AddToLearnCardMenu: React.FC = () => {
             type: AddToLearnCardMenuEnum.createCredential,
             Icon: AddCredentialIcon,
             label: 'Create Credential',
-            onClick: () => handleNewBoostModal(),
+            onClick: () => {
+                closeModal();
+                checkAndPromptRecovery(() => {
+                    handlePresentBoostModal();
+                });
+            },
         },
         {
             type: AddToLearnCardMenuEnum.uploadCredential,
