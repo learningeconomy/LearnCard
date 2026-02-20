@@ -23,6 +23,9 @@ export const AnalyticsEvents = {
     
     // Navigation/Screens
     SCREEN_VIEW: 'screen_view',
+
+    // Authentication
+    LOGIN: 'login',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -93,6 +96,10 @@ export interface AnalyticsEventPayloads {
 
     [AnalyticsEvents.SCREEN_VIEW]: {
         screen_name: string;
+    };
+
+    [AnalyticsEvents.LOGIN]: {
+        method: string;
     };
 }
 
