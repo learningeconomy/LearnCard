@@ -10,6 +10,7 @@ import {
     switchedProfileStore,
     currentUserStore,
     UserProfilePicture,
+    clearGuardianVerification,
 } from 'learn-card-base';
 
 import { LCNProfile } from '@learncard/types';
@@ -40,6 +41,9 @@ const ParentSwitcherButton: React.FC<ParentSwitcherButtonProps> = ({
     const isServiceProfile = currentLCNUser?.isServiceProfile;
 
     const handleClick = async () => {
+        // Clear guardian verification cache when switching back to parent
+        clearGuardianVerification();
+
         if (handlePlayerSwitchOverride) {
             await handlePlayerSwitchOverride(currentLCNUser);
         } else {
