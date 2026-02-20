@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import useCurrentUser from './useGetCurrentUser';
 import useGetCurrentLCNUser from './useGetCurrentLCNUser';
@@ -12,6 +13,7 @@ import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 export const useSwitchProfile = (options?: { onSwitch?: () => void }) => {
     const { onSwitch } = options ?? {};
 
+    const queryClient = useQueryClient();
     const flags = useFlags();
     const currentUser = useCurrentUser();
     const { currentLCNUser, refetch: refetchCurrentLCNUser } = useGetCurrentLCNUser();
@@ -38,6 +40,9 @@ export const useSwitchProfile = (options?: { onSwitch?: () => void }) => {
             currentUserStore.set.parentLDFlags(undefined);
             switchedProfileStore.set.profileType('parent');
             refetchCurrentLCNUser();
+
+            // Invalidate profile-specific queries
+            queryClient.invalidateQueries({ queryKey: ['developer', 'isAdmin'] });
         } finally {
             setIsSwitching(false);
         }
@@ -67,6 +72,9 @@ export const useSwitchProfile = (options?: { onSwitch?: () => void }) => {
                 account?.image
             );
             await refetchCurrentLCNUser();
+
+            // Invalidate profile-specific queries
+            queryClient.invalidateQueries({ queryKey: ['developer', 'isAdmin'] });
         } finally {
             setIsSwitching(false);
         }

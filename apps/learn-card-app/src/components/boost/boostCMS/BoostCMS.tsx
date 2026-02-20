@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import {
     BoostUserTypeEnum,
@@ -67,6 +67,8 @@ import BoostCMSMediaDisplayWarning from './boostCMSForms/boostCMSMedia/BoostCMSM
 import BoostLoader from '../boostLoader/BoostLoader';
 import BoostCMSConfirmationPrompt from './BoostCMSConfirmationPrompts/BoostCMSConfirmationPrompt';
 import BoostSuccessConfirmation from './BoostSuccessConfirmation/BoostSuccessConfirmation';
+import RecoveryPrompt from '../../common/RecoveryPrompt';
+import useBoostCMSAutosave from '../../../hooks/useBoostCMSAutosave';
 
 import BoostCMSAchievementTypeSelectorButton from './boostCMSForms/boostCMSAppearance/BoostCMSAchievementTypeSelectorButton';
 
@@ -171,6 +173,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     const _boostUserType =
         (query.get('boostUserType') as BoostUserTypeEnum) || BoostUserTypeEnum.someone;
     const _otherUserProfileId = query.get('otherUserProfileId') ?? '';
+    const _isRecovering = query.get('recovering') === 'true';
 
     const { data: profile } = useGetProfile();
     const aiBoost = AIBoostStore.useStore();
@@ -225,6 +228,176 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     const isAwardDisplay = displayType === BoostCMSAppearanceDisplayTypeEnum.Award;
     const isMediaDisplay = displayType === BoostCMSAppearanceDisplayTypeEnum.Media;
     const issueToLength = state?.issueTo?.length;
+
+    // Autosave hook - saves progress to localStorage and can recover from interruptions
+    const {
+        hasRecoveredState,
+        recoveredState,
+        recoveredBoostCategory,
+        clearRecoveredState,
+        saveToLocal,
+        clearLocalSave,
+        isAutosaving,
+        hasUnsavedChanges,
+    } = useBoostCMSAutosave({
+        enabled: !propBoostCMSState, // Disable autosave if editing an existing boost
+        boostCategoryType: _boostCategoryType,
+        boostSubCategoryType: _boostSubCategoryType,
+    });
+
+    // Track if recovery prompt has been shown
+    const hasShownRecoveryRef = useRef(false);
+    const recoveryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Track intentional navigation to bypass the navigation blocker
+    const isIntentionalNavigationRef = useRef(false);
+    // Track when a modal operation (like saving category/type) is in progress
+    // This prevents the navigation blocker from showing during modal closes
+    const isModalOperationInProgressRef = useRef(false);
+
+    // Refs to stabilize modal functions for the navigation blocker effect
+    // This prevents the effect from re-running when modals are opened/closed
+    const newModalRef = useRef(newModal);
+    const closeModalRef = useRef(closeModal);
+    useEffect(() => {
+        newModalRef.current = newModal;
+        closeModalRef.current = closeModal;
+    }, [newModal, closeModal]);
+
+    // Show recovery prompt if we have recovered state
+    // If _isRecovering is true (from URL param), auto-recover without showing modal
+    // Delay slightly to avoid race conditions with other mount effects that might call closeModal
+    useEffect(() => {
+        if (hasRecoveredState && recoveredState && !hasShownRecoveryRef.current) {
+            hasShownRecoveryRef.current = true;
+
+            // Clear any existing timeout
+            if (recoveryTimeoutRef.current) {
+                clearTimeout(recoveryTimeoutRef.current);
+            }
+
+            const handleRecover = () => {
+                setState(recoveredState);
+                setDisplayType(
+                    recoveredState.appearance?.displayType ||
+                        BoostCMSAppearanceDisplayTypeEnum.Certificate
+                );
+                // Clear the old recovered state from localStorage so new changes will be saved fresh
+                clearRecoveredState();
+            };
+
+            // If coming from the early recovery prompt (recovering=true in URL), auto-recover
+            if (_isRecovering) {
+                handleRecover();
+                return;
+            }
+
+            // Delay showing the modal to let other mount effects settle
+            recoveryTimeoutRef.current = setTimeout(() => {
+                const handleDiscard = () => {
+                    clearRecoveredState(true); // Clear localStorage on discard
+                    closeModal();
+                };
+
+                newModal(
+                    <RecoveryPrompt
+                        itemName={recoveredState?.basicInfo?.name || ''}
+                        itemType="boost"
+                        onRecover={() => {
+                            handleRecover();
+                            closeModal();
+                        }}
+                        onDiscard={handleDiscard}
+                    />,
+                    { sectionClassName: '!max-w-[400px]' },
+                    { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                );
+            }, 300);
+        }
+
+        return () => {
+            if (recoveryTimeoutRef.current) {
+                clearTimeout(recoveryTimeoutRef.current);
+            }
+        };
+    }, [
+        hasRecoveredState,
+        recoveredState,
+        clearRecoveredState,
+        newModal,
+        closeModal,
+        _isRecovering,
+    ]);
+
+    // Save state to localStorage whenever it changes
+    useEffect(() => {
+        if (
+            !propBoostCMSState &&
+            !publishedBoostUri &&
+            (state.basicInfo.name || state.basicInfo.description)
+        ) {
+            saveToLocal(state);
+        }
+    }, [state, saveToLocal, propBoostCMSState, publishedBoostUri]);
+
+    // Block navigation when there are unsaved changes and show warning modal
+    useEffect(() => {
+        if (!hasUnsavedChanges || publishedBoostUri) return;
+
+        const unblock = history.block((location, action) => {
+            // Skip blocking if this is an intentional navigation (Save & Quit, Quit Without Saving)
+            if (isIntentionalNavigationRef.current) {
+                isIntentionalNavigationRef.current = false;
+                return;
+            }
+
+            // Skip blocking if a modal operation is in progress (e.g., saving category/type from a nested modal)
+            if (isModalOperationInProgressRef.current) {
+                isModalOperationInProgressRef.current = false;
+                return;
+            }
+
+            newModalRef.current(
+                <div className="pt-[36px] pb-[16px]">
+                    <div className="flex flex-col items-center justify-center w-full">
+                        <div className="w-full flex flex-col items-center justify-center px-4 text-grayscale-900">
+                            <h6 className="font-semibold text-black font-poppins text-xl mb-2">
+                                Leave This Page?
+                            </h6>
+                            <p className="text-center text-grayscale-600 font-poppins text-sm mb-4">
+                                You have unsaved changes. Your progress will be saved locally and
+                                you can continue editing later.
+                            </p>
+                            <button
+                                onClick={() => {
+                                    closeModal();
+                                    unblock();
+                                    history.push(location);
+                                }}
+                                className="flex items-center justify-center text-white rounded-full px-[64px] py-[10px] bg-rose-600 font-poppins font-medium text-xl w-full shadow-lg"
+                            >
+                                Leave Page
+                            </button>
+                            <button
+                                onClick={() => closeModalRef.current()}
+                                className="flex items-center justify-center text-white rounded-full px-[50px] py-[10px] bg-grayscale-900 font-poppins font-medium text-xl w-full shadow-lg mt-4"
+                            >
+                                Stay & Continue Editing
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                { sectionClassName: '!max-w-[400px]' },
+                { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+            );
+
+            // Return false to block navigation
+            return false;
+        });
+
+        return () => {
+            unblock();
+        };
+    }, [hasUnsavedChanges, publishedBoostUri, history]);
 
     useEffect(() => {
         const initializeWallet = async () => {
@@ -334,6 +507,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         categoryType: BoostCategoryOptionsEnum,
         achievementType: string
     ) => {
+        // Set flag to prevent navigation blocker from showing during this modal operation
+        isModalOperationInProgressRef.current = true;
+
         const _badgeThumbnail =
             aiBoost?.imageUrl ||
             getDefaultAchievementTypeImage(
@@ -541,6 +717,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
 
             if (boostUri) {
+                // Clear autosave since we successfully saved to server
+                clearLocalSave();
+
                 setIsSaveLoading(false);
                 presentToast(`Boost saved successfully`, {
                     duration: 3000,
@@ -554,6 +733,8 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     category: state?.basicInfo?.type,
                 });
 
+                // Mark as intentional navigation to bypass the blocker
+                isIntentionalNavigationRef.current = true;
                 history.replace(
                     `/${BOOST_CATEGORY_TO_WALLET_ROUTE[state?.basicInfo?.type]}?managed=true`
                 );
@@ -661,6 +842,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
                 if (uris.length > 0) {
                     setIsLoading(false);
+                    clearLocalSave();
                     presentToast(`Boost issued successfully`, {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
@@ -672,6 +854,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
                 if (boostUri) {
                     setIsSaveLoading(false);
+                    clearLocalSave();
                     presentToast(`Boost saved successfully`, {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
@@ -721,6 +904,10 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 currentStep={currentStep}
                 isEditMode={false}
                 isSaveLoading={isSaveLoading}
+                clearLocalSave={clearLocalSave}
+                onIntentionalNavigation={() => {
+                    isIntentionalNavigationRef.current = true;
+                }}
             />,
             { sectionClassName: '!max-w-[400px]', cancelButtonTextOverride: buttonText },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
@@ -852,15 +1039,19 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         loadingText = 'Publishing boost...';
     } else if (isSaveLoading) {
         loadingText = 'Saving boost...';
+    } else if (isAutosaving) {
+        loadingText = 'Auto-saving...';
     } else if (stylePackLoading) {
         loadingText = 'Loading boost...';
     }
 
     return (
         <IonPage>
-            {(isLoading || isSaveLoading || isPublishLoading || stylePackLoading) && (
-                <BoostLoader text={loadingText} darkBackground />
-            )}
+            {(isLoading ||
+                isSaveLoading ||
+                isPublishLoading ||
+                isAutosaving ||
+                stylePackLoading) && <BoostLoader text={loadingText} darkBackground />}
 
             <BoostCMSHeader
                 boostUserType={_boostUserType}

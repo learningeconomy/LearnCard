@@ -104,4 +104,5 @@ jobs:
                   npx @capgo/cli@latest channel set ${{ inputs.channel }}
                   --apikey ${{ secrets.CAPGO_TOKEN }}
                   --bundle ${{ inputs.version }}
+                  --self-assign
                   ${{ inputs.app_id }}

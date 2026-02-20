@@ -14,10 +14,24 @@ export const issuePresentation = (initLearnCard: VCDependentLearnCard) => {
 
         if (!kp) throw new Error('Cannot issue credential: Could not get subject keypair');
 
+        // Check if presentation uses v2 context
+        const contexts = Array.isArray(presentation['@context']) 
+            ? presentation['@context'] 
+            : [presentation['@context']];
+        const hasV2Context = contexts.some(ctx => 
+            typeof ctx === 'string' && (ctx.includes('/ns/credentials/v2') || ctx.includes('/credentials/v2'))
+        );
+
+        // For v2 contexts, upgrade Ed25519Signature2018 to Ed25519Signature2020
+        // Ed25519Signature2018 is incompatible with credentials v2
+        const proofType = hasV2Context && signingOptions.type === 'Ed25519Signature2018'
+            ? 'Ed25519Signature2020'
+            : signingOptions.type ?? 'Ed25519Signature2020';
+
         const options = {
             ...(signingOptions.proofFormat === 'jwt'
                 ? {}
-                : { proofPurpose: 'assertionMethod', type: 'Ed25519Signature2020' }),
+                : { proofPurpose: 'assertionMethod', type: proofType }),
             ...signingOptions,
         };
 

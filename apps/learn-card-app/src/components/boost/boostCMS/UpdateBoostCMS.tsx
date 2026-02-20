@@ -99,7 +99,7 @@ const UpdateBoostCMS: React.FC = () => {
         useLCAStylesPackRegistry();
     const { data: searchResults, isLoading: loading } = useGetSearchProfiles(search ?? '');
 
-    const { data: recipients, isLoading: recipientsLoading } = useGetBoostRecipients(_boostUri);
+    const { data: recipients, isLoading: recipientsLoading } = useGetBoostRecipients(_boostUri ?? null);
 
     const [state, setState] = useState<BoostCMSState>({
         ...initialBoostCMSState,
@@ -112,7 +112,7 @@ const UpdateBoostCMS: React.FC = () => {
             ...initialBoostCMSState.appearance,
             badgeThumbnail: boostCategoryMetadata[_boostCategoryType].CategoryImage,
             displayType:
-                getDefaultDisplayType(initialBoostCMSState.basicInfo.type) || 'certificate',
+                getDefaultDisplayType(_boostCategoryType) || 'certificate',
         },
     });
     const [customTypes, setCustomTypes] = useState<any>(initialCustomBoostTypesState);
@@ -131,17 +131,15 @@ const UpdateBoostCMS: React.FC = () => {
             setIsBoostLoading(true);
             const wallet = await initWallet();
 
-            const boostVC: VC = await wallet?.invoke?.resolveFromLCN(uri);
-            const _boostVC = unwrapBoostCredential(boostVC);
-            const admin = await getBoostAdmin(wallet, _boostUri);
+            const boostVC = await wallet?.invoke?.resolveFromLCN(uri);
+            const _boostVC = unwrapBoostCredential(boostVC as any);
+            const admin = await getBoostAdmin(wallet, uri);
             const filteredAdmin = admin?.records?.filter(
-                record => record.profileId !== profile.profileId
+                record => record.profileId !== profile?.profileId
             );
             setAdmin(filteredAdmin);
 
-            // TODO: convert getBoosts() => getBoostByURI
-            const allboosts = await wallet?.invoke?.getBoosts();
-            const boostWrapper = allboosts.find(b => b.uri === _boostUri);
+            const boostWrapper = await wallet?.invoke?.getBoost(uri);
             // disable editing boost based on boost status
             // DRAFT and PROVISIONAL boosts are editable, LIVE boosts are not
             if (boostWrapper?.status === LCNBoostStatusEnum.draft || boostWrapper?.status === LCNBoostStatusEnum.provisional) {

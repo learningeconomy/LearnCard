@@ -1,6 +1,6 @@
 {
     "name": "@learncard/crypto-plugin",
-    "version": "1.1.4",
+    "version": "1.1.6",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/crypto-plugin.esm.js",
@@ -38,5 +38,6 @@
     "dependencies": {
         "@learncard/core": "workspace:*",
         "isomorphic-webcrypto": "^2.3.8"
-    }
+    },
+    "sideEffects": false
 }

@@ -1,6 +1,6 @@
 {
     "name": "@learncard/vpqr-plugin",
-    "version": "1.1.4",
+    "version": "1.1.6",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/vpqr-plugin.esm.js",
@@ -39,5 +39,6 @@
         "@digitalbazaar/vpqr": "^3.0.0",
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*"
-    }
+    },
+    "sideEffects": false
 }

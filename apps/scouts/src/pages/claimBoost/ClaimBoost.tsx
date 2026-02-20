@@ -34,13 +34,14 @@ import {
 } from 'learn-card-base';
 
 import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
-import { isTroopCredential } from '../../helpers/troop.helpers';
+import { isTroopCredential, getRoleFromCred, getScoutsNounForRole } from '../../helpers/troop.helpers';
 
 import { VC } from '@learncard/types';
 import {
     getAchievementType,
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { useHighlightedCredentials } from '../../hooks/useHighlightedCredentials';
 
 const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) => {
     const isLoggedIn = useIsLoggedIn();
@@ -129,6 +130,18 @@ export const ClaimBoostModal: React.FC<{
     const [isFront, setIsFront] = useState(true);
     const { presentToast } = useToast();
     const troopTypes = ['ext:TroopID', 'ext:GlobalID', 'ext:NetworkID', 'ext:ScoutID'];
+
+    // Get issuer DID and profile ID for unknownVerifierTitle
+    const issuerDid = typeof boost?.issuer === 'string' ? boost.issuer : boost?.issuer?.id;
+    const profileID = issuerDid?.split(':').pop();
+    const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
+
+    const unknownVerifierTitle = React.useMemo(() => {
+        if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
+
+        const role = getRoleFromCred(highlightedCreds[0]);
+        return getScoutsNounForRole(role); // Just the role, no "Verified" prefix
+    }, [highlightedCreds]);
 
     const handleRedirectTo = () => {
         const redirectTo = `/claim/boost?boostUri=${boostUri}&challenge=${challenge}`;
@@ -330,6 +343,7 @@ export const ClaimBoostModal: React.FC<{
                                     isFrontOverride={isFront}
                                     setIsFrontOverride={setIsFront}
                                     hideNavButtons
+                                    unknownVerifierTitle={unknownVerifierTitle}
                                 />
                             ) : (
                                 <ViewTroopIdModal

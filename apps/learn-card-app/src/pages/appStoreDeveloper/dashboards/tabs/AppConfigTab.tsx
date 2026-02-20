@@ -319,6 +319,7 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
         try {
             await updateListingMutation.mutateAsync({
                 listingId: selectedListing.listing_id,
+                integrationId: integration.id,
                 updates: {
                     launch_config_json: JSON.stringify({
                         url: appUrl,

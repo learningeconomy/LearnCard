@@ -8,7 +8,7 @@ Name | Type | Description | Notes
 **did** | **str** |  | 
 **contract_uri** | **str** |  | 
 **boost_uri** | **str** |  | 
-**signing_authority** | [**BoostSendBoostViaSigningAuthorityRequestSigningAuthority**](BoostSendBoostViaSigningAuthorityRequestSigningAuthority.md) |  | 
+**signing_authority** | [**ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority**](ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority.md) |  | 
 
 ## Example
 

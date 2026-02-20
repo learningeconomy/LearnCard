@@ -91,6 +91,7 @@ const result = await learnCard.invoke.send({
                 "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json"
             ],
             "type": ["VerifiableCredential", "OpenBadgeCredential"],
+            "issuer": "did:web:example.com",
             "name": "Course Completion",
             "credentialSubject": {
                 "type": ["AchievementSubject"],
@@ -228,7 +229,9 @@ const templatedBoostUri = await learnCard.invoke.createBoost({
         "https://www.w3.org/2018/credentials/v1",
         "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json"
     ],
-    "type": ["VerifiableCredential", "OpenBadgeCredential", "BoostCredential"],
+    "type": ["VerifiableCredential", "OpenBadgeCredential"],
+    "issuer": learnCard.id.did(),
+    "issuanceDate": new Date().toISOString(),
     "name": "Certificate for {{courseName}}",
     "credentialSubject": {
         "type": ["AchievementSubject"],
@@ -249,7 +252,7 @@ Provide `templateData` when sending to substitute the variables:
 ```typescript
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: 'student-profile-id',
+    recipient: 'recipient-profile-id',
     templateUri: templatedBoostUri,
     templateData: {
         courseName: 'Web Development 101',

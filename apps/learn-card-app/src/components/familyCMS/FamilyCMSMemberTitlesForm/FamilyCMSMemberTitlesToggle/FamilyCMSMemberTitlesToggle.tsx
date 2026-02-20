@@ -18,18 +18,10 @@ export const FamilyCMSMemberTitlesToggle: React.FC<{
     setState: React.Dispatch<React.SetStateAction<FamilyCMSState>>;
 }> = ({ state, setState }) => {
     const { newModal, closeModal } = useModal();
-    const [memberTitles, setMemberTitles] = useState<{
-        guardians: MemberTitleTypes;
-        dependents: MemberTitleTypes;
-    }>(
-        state?.basicInfo?.memberTitles ?? {
-            guardians: {
-                singular: 'Guardian',
-                plural: 'Guardians',
-            },
-            dependents: { singular: 'Child', plural: 'Children' },
-        }
-    );
+    const memberTitles = state?.basicInfo?.memberTitles ?? {
+        guardians: { singular: 'Guardian', plural: 'Guardians' },
+        dependents: { singular: 'Child', plural: 'Children' },
+    };
 
     const handleSetState = (topLevelKey: string, titleOption: TitleOption) => {
         setState(prevState => {
@@ -44,16 +36,6 @@ export const FamilyCMSMemberTitlesToggle: React.FC<{
                             ...titleOption,
                         },
                     },
-                },
-            };
-        });
-
-        setMemberTitles(prevState => {
-            return {
-                ...prevState,
-                [topLevelKey]: {
-                    ...prevState?.[topLevelKey],
-                    ...titleOption,
                 },
             };
         });

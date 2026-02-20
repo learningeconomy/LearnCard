@@ -28,6 +28,7 @@ import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
 
 import { AnalyticsContextProvider } from '@analytics';
+import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator';
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
 import localforage from 'localforage';
 
@@ -164,33 +165,34 @@ const FullApp: React.FC = () => {
                         <ExternalAuthServiceProvider>
                             <ModalsProvider>
                                 <IonApp>
-                                <div id="modal-mid-root"></div>
-                                <Toast />
-                                <NetworkListener />
-                                <AppUrlListener />
-                                <PushNotificationListener />
-                                <PresentVcModalListener />
-                                {/* <UserProfileSetupListener loading={initLoading} /> */}
-                                <AppRouter initLoading={initLoading} />
-                                <QRCodeScannerListener />
+                                    <div id="modal-mid-root"></div>
+                                    <Toast />
+                                    <SdkActivityIndicator />
+                                    <NetworkListener />
+                                    <AppUrlListener />
+                                    <PushNotificationListener />
+                                    <PresentVcModalListener />
+                                    {/* <UserProfileSetupListener loading={initLoading} /> */}
+                                    <AppRouter initLoading={initLoading} />
+                                    <QRCodeScannerListener />
 
-                                {showScannerOverlay && <QRCodeScannerOverlay />}
-                                {isSentryEnabled && (
-                                    <button
-                                        className="sentry-feedback-widget-btn z-[99999999999999]"
-                                        ref={buttonRef}
-                                    >
-                                        <p>Feedback</p>
-                                    </button>
-                                )}
-                            </IonApp>
+                                    {showScannerOverlay && <QRCodeScannerOverlay />}
+                                    {isSentryEnabled && (
+                                        <button
+                                            className="sentry-feedback-widget-btn z-[99999999999999]"
+                                            ref={buttonRef}
+                                        >
+                                            <p>Feedback</p>
+                                        </button>
+                                    )}
+                                </IonApp>
                             </ModalsProvider>
                         </ExternalAuthServiceProvider>
                     </Suspense>
                 </IonReactRouter>
-                </AnalyticsContextProvider>
-            </PersistQueryClientProvider>
-        );
+            </AnalyticsContextProvider>
+        </PersistQueryClientProvider>
+    );
 };
 
 export default FullApp;

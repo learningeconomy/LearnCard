@@ -35,11 +35,11 @@ class TestClaimHookCreateClaimHookRequest(unittest.TestCase):
         model = ClaimHookCreateClaimHookRequest()
         if include_optional:
             return ClaimHookCreateClaimHookRequest(
-                hook = None
+                hook = openapi_client.models.claim_hook_create_claim_hook_request_hook.claimHook_createClaimHook_request_hook()
             )
         else:
             return ClaimHookCreateClaimHookRequest(
-                hook = None,
+                hook = openapi_client.models.claim_hook_create_claim_hook_request_hook.claimHook_createClaimHook_request_hook(),
         )
         """
 

@@ -1,6 +1,6 @@
 # serverless.yml
 
-service: lca-api-service
+service: ${env:SERVERLESS_SERVICE_NAME, 'lca-api-service'}
 
 frameworkVersion: '3'
 
@@ -23,7 +23,12 @@ custom:
         plugins: esbuildPlugins.cjs
         bundle: true
         minify: true
-        external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
+        external:
+            [
+                'snappy',
+                '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm',
+                '@learncard/didkit-plugin-node/*.node',
+            ]
         sourcemap: external
         target: 'node20'
         watch:
@@ -32,19 +37,21 @@ custom:
     domains:
         # References to 'prod' stage
         production:
-            domainName: api.learncard.app
-            certificateName: api.learncard.app
+            hostedZoneName: ${env:SERVERLESS_HOSTED_ZONE_NAMES, 'api.learncard.app.'}
+            domainName: ${env:SERVERLESS_DOMAIN_NAME, 'api.learncard.app'}
+            certificateName: ${env:SERVERLESS_DOMAIN_NAME, 'api.learncard.app'}
 
         # References to 'dev' stage
         dev:
-            domainName: staging.api.learncard.app
-            certificateName: staging.api.learncard.app
+            hostedZoneName: ${env:SERVERLESS_HOSTED_ZONE_NAMES, 'api.learncard.app.'}
+            domainName: ${env:SERVERLESS_DOMAIN_NAME, 'staging.api.learncard.app'}
+            certificateName: ${env:SERVERLESS_DOMAIN_NAME, 'staging.api.learncard.app'}
 
     # Amazon Certificate Manager
     customCertificate:
         # Route 53 Hosted Zone name
         # don't forget the dot on the end!
-        hostedZoneNames: 'api.learncard.app.'
+        hostedZoneNames: ${self:custom.domains.${self:provider.stage}.hostedZoneName}
 
         # Here we get our certificate name inside custom.domain.STAGE.certificateName
         # STAGE will be automatically filled with the value from "provider > stage"
@@ -76,6 +83,9 @@ package:
     patterns:
         - '!node_modules/**'
         - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+        - 'node_modules/@learncard/didkit-plugin-node/*.node'
+        - 'node_modules/@learncard/didkit-plugin-node/package.json'
+        - 'node_modules/@learncard/didkit-plugin-node/dist/**'
         - 'src/swagger-ui'
 
 provider:
@@ -101,6 +111,10 @@ provider:
         MONGO_DB_NAME: ${env:MONGO_DB_NAME, ''}
         AUTHORIZED_DIDS: ${env:AUTHORIZED_DIDS, ''}
         GOOGLE_APPLICATION_CREDENTIAL: ${env:GOOGLE_APPLICATION_CREDENTIAL, ''}
+        SCOUTS_SSO_CLIENT_SECRET: ${env:SCOUTS_SSO_CLIENT_SECRET, ''}
+        LEARN_CLOUD_URL: ${env:LEARN_CLOUD_URL, ''}
+        SENTRY_DSN: ${env:SENTRY_DSN, ''}
+        SENTRY_ENV: ${env:SENTRY_ENV, ''}
         REDIS_HOST:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Address]
         REDIS_PORT:

@@ -78,3 +78,18 @@ export * from './state';
 
 // Export utilities from shared-types migration
 export * from './Utilities';
+
+/**
+ * Checks if a DID is an app-specific did:web
+ *
+ * App did:webs follow the pattern: did:web:learncard.app:app:<slug>
+ *
+ * @param did - The DID to check
+ * @returns true if the DID is an app did:web, false otherwise
+ */
+export const isAppDidWeb = (did?: string): boolean => {
+    if (!did) return false;
+    // Matches did:web:<slug>:app:<slug> pattern
+    const LCN_APP_DID_WEB_REGEX = /^did:web:.*:app:([^:]+)$/;
+    return LCN_APP_DID_WEB_REGEX.test(did);
+};

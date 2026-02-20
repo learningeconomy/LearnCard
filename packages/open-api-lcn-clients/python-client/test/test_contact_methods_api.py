@@ -33,6 +33,13 @@ class TestContactMethodsApi(unittest.TestCase):
         """
         pass
 
+    def test_contact_methods_create_contact_method_session(self) -> None:
+        """Test case for contact_methods_create_contact_method_session
+
+        Create Contact Method Session
+        """
+        pass
+
     def test_contact_methods_get_my_contact_methods(self) -> None:
         """Test case for contact_methods_get_my_contact_methods
 
@@ -47,6 +54,13 @@ class TestContactMethodsApi(unittest.TestCase):
         """
         pass
 
+    def test_contact_methods_send_challenge(self) -> None:
+        """Test case for contact_methods_send_challenge
+
+        Send Contact Method Challenge (OTP)
+        """
+        pass
+
     def test_contact_methods_set_primary_contact_method(self) -> None:
         """Test case for contact_methods_set_primary_contact_method
 
@@ -58,6 +72,13 @@ class TestContactMethodsApi(unittest.TestCase):
         """Test case for contact_methods_verify_contact_method
 
         Verify Contact Method
+        """
+        pass
+
+    def test_contact_methods_verify_with_credential(self) -> None:
+        """Test case for contact_methods_verify_with_credential
+
+        Verify Contact Method With Credential
         """
         pass
 

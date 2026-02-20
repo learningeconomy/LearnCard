@@ -1,6 +1,6 @@
 {
     "name": "@learncard/vc-plugin",
-    "version": "1.3.4",
+    "version": "1.4.2",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/vc-plugin.esm.js",
@@ -40,5 +40,6 @@
         "@learncard/didkit-plugin": "workspace:^",
         "@learncard/types": "workspace:*",
         "multiformats": "^11.0.1"
-    }
+    },
+    "sideEffects": false
 }

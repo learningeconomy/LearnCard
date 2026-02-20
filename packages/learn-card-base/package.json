@@ -1,6 +1,6 @@
 {
     "name": "learn-card-base",
-    "version": "0.1.7",
+    "version": "0.1.16",
     "private": true,
     "description": "LearnCard Apps shared components",
     "main": "src/index.ts",
@@ -71,5 +71,6 @@
     "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-base/README.md",
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"
-    }
+    },
+    "sideEffects": false
 }

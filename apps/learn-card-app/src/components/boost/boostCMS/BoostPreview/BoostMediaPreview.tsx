@@ -61,10 +61,10 @@ export const BoostMediaPreview: React.FC<{
 
     const [videoMetaData, setVideoMetaData] = useState<VideoMetadata | null>(null);
     const [documentUrl, setDocumentUrl] = useState<string | null>(null);
-    const [isMediaLoading, setIsMediaLoading] = useState(true);
-    const [isMediaError, setIsMediaError] = useState(false);
+    const [isMediaLoading, setIsMediaLoading] = useState<boolean>(false);
+    const [isMediaError, setIsMediaError] = useState<boolean>(false);
 
-    const [isFullScreen, setIsFullScreen] = useState(false);
+    const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
 
     const attachments = getExistingAttachmentsOrEvidence(
         credential?.attachments || [],
@@ -111,7 +111,7 @@ export const BoostMediaPreview: React.FC<{
         } else if (attachment?.type === 'document') {
             handleGetDocumentUrl();
         }
-    }, [attachment]);
+    }, [attachment?.url]);
 
     let mediaContent = null;
 
@@ -143,14 +143,17 @@ export const BoostMediaPreview: React.FC<{
 
     if (attachment?.type === 'video') {
         const embedUrl = videoMetaData?.embedUrl;
+        const iframeSrc = embedUrl
+            ? `${embedUrl}${embedUrl.includes('?') ? '&' : '?'}autoplay=1`
+            : null;
 
         if (isMediaLoading) {
             mediaContent = <MediaLoader text="Video" />;
-        } else if (embedUrl && !isMediaLoading) {
+        } else if (iframeSrc) {
             mediaContent = (
                 <>
                     <iframe
-                        src={embedUrl}
+                        src={iframeSrc}
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                         title="YouTube video player"

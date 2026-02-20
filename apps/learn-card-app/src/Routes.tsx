@@ -13,23 +13,19 @@ import * as Sentry from '@sentry/react';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
-import LaunchPad from './pages/launchPad/LaunchPad';
-const EmbedAppFullScreen = lazyWithRetry(
-    () => import('./pages/launchPad/EmbedAppFullScreen')
-);
-const AppListingPage = lazyWithRetry(
-    () => import('./pages/launchPad/AppListingPage')
-);
+const LaunchPad = lazyWithRetry(() => import('./pages/launchPad/LaunchPad'));
+const EmbedAppFullScreen = lazyWithRetry(() => import('./pages/launchPad/EmbedAppFullScreen'));
+const AppListingPage = lazyWithRetry(() => import('./pages/launchPad/AppListingPage'));
 const NotificationsPage = lazyWithRetry(
     () => import('./pages/notificationsPage/NotificationsPage')
 );
-import LoginPage from './pages/login/LoginPage';
-import AchievementsPage from './pages/achievements/AchievementsPage';
+const LoginPage = lazyWithRetry(() => import('./pages/login/LoginPage'));
+const AchievementsPage = lazyWithRetry(() => import('./pages/achievements/AchievementsPage'));
 
-import IdsPage from './pages/ids/IdsPage';
+const IdsPage = lazyWithRetry(() => import('./pages/ids/IdsPage'));
 
-import LearningHistoryPage from './pages/learninghistory/LearningHistoryPage';
-import WorkHistoryPage from './pages/workhistory/WorkHistoryPage';
+const LearningHistoryPage = lazyWithRetry(() => import('./pages/learninghistory/LearningHistoryPage'));
+const WorkHistoryPage = lazyWithRetry(() => import('./pages/workhistory/WorkHistoryPage'));
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 const CurrenciesPage = lazyWithRetry(() => import('./pages/currencies/CurrenciesPage'));
@@ -68,15 +64,13 @@ const WalletServiceWorker = lazyWithRetry(
     () => import('./pages/walletServiceWorker/WalletServiceWorker')
 );
 const ClaimBoost = lazyWithRetry(() => import('./pages/claimBoost/ClaimBoost'));
-const ApproveAccount = lazyWithRetry(
-    () => import('./pages/approveAccount/ApproveAccount')
-);
+const ApproveAccount = lazyWithRetry(() => import('./pages/approveAccount/ApproveAccount'));
 
-import SocialBadgesPage from './pages/socialBadgesPage/SocialBadgesPage';
+const SocialBadgesPage = lazyWithRetry(() => import('./pages/socialBadgesPage/SocialBadgesPage'));
 
 import { LoadingPage2 } from './pages/loadingPage/LoadingPage';
-import AccomplishmentsPage from './pages/accomplishments/AccomplishmentsPage';
-import AccommodationsPage from './pages/accommodations/AccommodationsPage';
+const AccomplishmentsPage = lazyWithRetry(() => import('./pages/accomplishments/AccomplishmentsPage'));
+const AccommodationsPage = lazyWithRetry(() => import('./pages/accommodations/AccommodationsPage'));
 
 const CustomWallet = lazyWithRetry(() => import('./pages/hidden/CustomWallet'));
 const ClaimFromDashboard = lazyWithRetry(
@@ -86,20 +80,17 @@ const ClaimFromRequest = lazyWithRetry(() => import('./pages/claim-from-request/
 const InteractionsPage = lazyWithRetry(() => import('./pages/interactions/InteractionsPage'));
 const LoginWithSeed = lazyWithRetry(() => import('./pages/hidden/LoginWithSeed'));
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
-const PostConsentFlowDataFeed = lazyWithRetry(
-    () => import('./pages/launchPad/PostConsentFlowDataFeed')
-);
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
 
 // App Store Developer Portal
 const DeveloperPortalRoutes = lazyWithRetry(
     () => import('./pages/appStoreDeveloper/DeveloperPortalRoutes')
 );
-const AppStoreAdminDashboard = lazyWithRetry(
-    () => import('./pages/appStoreAdmin/AdminDashboard')
-);
-const DeveloperPortalProvider = lazyWithRetry(
-    () => import('./pages/appStoreDeveloper/DeveloperPortalContext').then(m => ({ default: m.DeveloperPortalProvider }))
+const AppStoreAdminDashboard = lazyWithRetry(() => import('./pages/appStoreAdmin/AdminDashboard'));
+const DeveloperPortalProvider = lazyWithRetry(() =>
+    import('./pages/appStoreDeveloper/DeveloperPortalContext').then(m => ({
+        default: m.DeveloperPortalProvider,
+    }))
 );
 
 // Wrapper to provide DeveloperPortalContext for admin dashboard
@@ -115,19 +106,19 @@ const AppStoreAdminWithProvider: React.FC = () => (
 // import ClaimFromDashboard from './pages/claim-from-dashboard/ClaimFromDashboard';
 // import LoginWithSeed from './pages/hidden/LoginWithSeed';
 // import FamilyPage from './pages/familyPage/FamilyPage';
-import AdminToolsPage from './pages/adminToolsPage/AdminToolsPage';
-import ViewAllManagedBoostsPage from './pages/adminToolsPage/ViewAllManagedBoostsPage';
-import BulkBoostImportPage from './pages/adminToolsPage/bulk-import/BulkBoostImportPage';
-import ManageServiceProfilesPage from './pages/adminToolsPage/ManageServiceProfilePage';
-import ManageConsentFlowContractsPage from './pages/adminToolsPage/ManageConsentFlowContractsPage';
-import SigningAuthoritiesPage from './pages/adminToolsPage/SigningAuthoritiesPage';
-import APITokensPage from './pages/adminToolsPage/api-tokens/APITokensPage';
+const AdminToolsPage = lazyWithRetry(() => import('./pages/adminToolsPage/AdminToolsPage'));
+const ViewAllManagedBoostsPage = lazyWithRetry(() => import('./pages/adminToolsPage/ViewAllManagedBoostsPage'));
+const BulkBoostImportPage = lazyWithRetry(() => import('./pages/adminToolsPage/bulk-import/BulkBoostImportPage'));
+const ManageServiceProfilesPage = lazyWithRetry(() => import('./pages/adminToolsPage/ManageServiceProfilePage'));
+const ManageConsentFlowContractsPage = lazyWithRetry(() => import('./pages/adminToolsPage/ManageConsentFlowContractsPage'));
+const SigningAuthoritiesPage = lazyWithRetry(() => import('./pages/adminToolsPage/SigningAuthoritiesPage'));
+const APITokensPage = lazyWithRetry(() => import('./pages/adminToolsPage/api-tokens/APITokensPage'));
 
 const DevCli = lazyWithRetry(() => import('./pages/devCli/DevCli'));
 
-import AiSessionTopicsContainer from './components/ai-sessions/AiSessionTopicsContainer';
-import AiSessionsContainer from './components/ai-sessions/AiSessionsContainer';
-import UserVerifyEmail from './components/user-profile/UserContact/UserVerifyEmail';
+const AiSessionTopicsContainer = lazyWithRetry(() => import('./components/ai-sessions/AiSessionTopicsContainer'));
+const AiSessionsContainer = lazyWithRetry(() => import('./components/ai-sessions/AiSessionsContainer'));
+const UserVerifyEmail = lazyWithRetry(() => import('./components/user-profile/UserContact/UserVerifyEmail'));
 const LearnCardAiChatBot = lazyWithRetry(
     () => import('./components/new-ai-session/LearnCardAiChatBot/LearnCardAiChatBot')
 );
@@ -182,9 +173,16 @@ export const Routes: React.FC = () => {
                         <SentryRoute exact path="/app/:listingId" component={AppListingPage} />
 
                         {/* App Store Developer Portal - all routes wrapped in context provider */}
-                        <PrivateRoute path="/app-store/developer" component={DeveloperPortalRoutes} />
-                        
-                        <PrivateRoute exact path="/app-store/admin" component={AppStoreAdminWithProvider} />
+                        <PrivateRoute
+                            path="/app-store/developer"
+                            component={DeveloperPortalRoutes}
+                        />
+
+                        <PrivateRoute
+                            exact
+                            path="/app-store/admin"
+                            component={AppStoreAdminWithProvider}
+                        />
 
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />
                         <PrivateRoute exact path="/contacts" component={AddressBook} />
@@ -219,7 +217,6 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/store" component={CredentialStorage} />
                         <PrivateRoute exact path="/exchange" component={CredentialExchange} />
                         <PrivateRoute exact path="/get" component={CredentialStorageGet} />
-                        <PrivateRoute exact path="/data-feed" component={PostConsentFlowDataFeed} />
 
                         <PrivateRoute
                             exact
@@ -275,11 +272,7 @@ export const Routes: React.FC = () => {
                         <SentryRoute exact path="/connect/:profileId" component={ConnectPage} />
                         <SentryRoute exact path="/invite" component={InvitePage} />
                         <SentryRoute exact path="/claim/boost" component={ClaimBoost} />
-                        <SentryRoute
-                            exact
-                            path="/approve-account"
-                            component={ApproveAccount}
-                        />
+                        <SentryRoute exact path="/approve-account" component={ApproveAccount} />
                         <SentryRoute
                             exact
                             path="/claim/from-dashboard"

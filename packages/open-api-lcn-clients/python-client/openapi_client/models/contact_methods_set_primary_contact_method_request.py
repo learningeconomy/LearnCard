@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -26,7 +26,7 @@ class ContactMethodsSetPrimaryContactMethodRequest(BaseModel):
     """
     ContactMethodsSetPrimaryContactMethodRequest
     """ # noqa: E501
-    contact_method_id: StrictStr = Field(alias="contactMethodId")
+    contact_method_id: Optional[StrictStr] = Field(alias="contactMethodId")
     __properties: ClassVar[List[str]] = ["contactMethodId"]
 
     model_config = ConfigDict(
@@ -68,6 +68,11 @@ class ContactMethodsSetPrimaryContactMethodRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if contact_method_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.contact_method_id is None and "contact_method_id" in self.model_fields_set:
+            _dict['contactMethodId'] = None
+
         return _dict
 
     @classmethod

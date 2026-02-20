@@ -30,6 +30,7 @@ import {
     useModal,
     ModalTypes,
     useSyncConsentFlow,
+    useSyncRevokedCredentials,
     useIsCollapsed,
     useWeb3Auth,
     LOGIN_REDIRECTS,
@@ -65,7 +66,7 @@ const getBackgroundGradientForNavbar = ({ path }: NavbarGradientProps): string =
     return gradientMap[path] || '';
 };
 
-const AppRouter: React.FC = () => {
+const AppRouter: React.FC<{ initLoading?: boolean }> = ({ initLoading }) => {
     const { web3AuthInit } = useWeb3Auth();
     const { verifySignInLinkAndLogin } = useFirebase();
     const history = useHistory();
@@ -112,6 +113,7 @@ const AppRouter: React.FC = () => {
     useSentryIdentify({ debug: !IS_PRODUCTION });
     useSetFirebaseAnalyticsUserId({ debug: false });
     useSyncConsentFlow(enablePrefetch);
+    useSyncRevokedCredentials(enablePrefetch);
 
     const { newModal: newBoostSelectModal, closeModal: closeBoostSelectModal } = useModal({
         mobile: ModalTypes.Cancel,
@@ -203,7 +205,7 @@ const AppRouter: React.FC = () => {
 
     return (
         <>
-            <LoginOverlay isOpen={showLoginOverlay} />
+            <LoginOverlay isOpen={!!showLoginOverlay || !!initLoading} />
             <div id="app-router" style={{ display: showScanner ? 'none' : 'block' }}>
                 <IonSplitPane
                     contentId="main"

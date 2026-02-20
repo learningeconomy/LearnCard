@@ -24,7 +24,7 @@ export type SimpleSigningPluginDependentMethods = {
 };
 
 export type SimpleSigningPluginMethods = {
-    createSigningAuthority: (name: string) => Promise<SigningAuthorityType | false>;
+    createSigningAuthority: (name: string, ownerDid?: string) => Promise<SigningAuthorityType | false>;
     getSigningAuthorities: () => Promise<SigningAuthorityType[] | false>;
     authorizeSigningAuthority: (
         name: string,

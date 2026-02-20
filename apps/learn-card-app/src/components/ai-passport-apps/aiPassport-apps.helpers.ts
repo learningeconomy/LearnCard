@@ -1,6 +1,8 @@
 import ChatGPTAppBG from '../../assets/images/chatGpt-app-bg.png';
 
 import { LaunchPadAppListItem } from 'learn-card-base';
+import { LEARNCARD_NETWORK_URL, LEARNCARD_AI_URL } from 'learn-card-base/constants/Networks';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 // this is an internal app ranking
 // ex:
@@ -34,6 +36,17 @@ export enum AiPassportAppContractUri {
     learncardapp = 'lc:network:network.learncard.com/trpc:contract:2ed7b889-c06e-47c4-835b-d924c17e9891',
 }
 
+export const areAiPassportAppsAvailable = (): boolean => {
+    const overriddenNetworkUrl = typeof LCN_URL === 'string' ? LCN_URL : undefined;
+    const storedNetworkUrl = networkStore.get.networkUrl();
+
+    const effectiveNetworkUrl = overriddenNetworkUrl?.trim()
+        ? overriddenNetworkUrl
+        : storedNetworkUrl;
+
+    return effectiveNetworkUrl === LEARNCARD_NETWORK_URL;
+};
+
 export const aiPassportApps: (LaunchPadAppListItem & { url: string })[] = [
     {
         id: 1,
@@ -48,17 +61,17 @@ export const aiPassportApps: (LaunchPadAppListItem & { url: string })[] = [
         appStoreID: AiPassportAppStoreIDs.learncardapp,
         contractUri: AiPassportAppContractUri.learncardapp,
         privacyPolicyUrl: 'https://openai.com/policies/row-privacy-policy/',
-        url: 'https://api.learncloud.ai',
+        url: LEARNCARD_AI_URL,
     },
     {
         id: 2,
         name: 'ChatGPT',
         /* description:
-            'is an artificial intelligence (AI) chatbot that uses natural language processing to create humanlike conversational dialogue. The language model can respond to questions and compose various written content, including articles, social media posts, essays, code and emails.', */
+                'is an artificial intelligence (AI) chatbot that uses natural language processing to create humanlike conversational dialogue. The language model can respond to questions and compose various written content, including articles, social media posts, essays, code and emails.', */
         description: 'AI Tutoring by OpenAI',
         img: 'https://cdn.filestackcontent.com/lO9sxSZS4Gr2iBjZ8ey5',
         isConnected: false,
-        displayInLaunchPad: true,
+        displayInLaunchPad: false,
         handleConnect: () => {},
         handleView: () => {},
         type: AiPassportAppsEnum.chatGPT,
@@ -70,12 +83,12 @@ export const aiPassportApps: (LaunchPadAppListItem & { url: string })[] = [
     {
         id: 3,
         name: 'Claude',
-        /* description: `is an intelligent learning and skills assessment tool that helps users expand their knowledge through interactive lessons, personalized feedback, and adaptive quizzes. 
-Through session assessments, it evaluates proficiency and generates credentials, providing verifiable proof of skills and knowledge mastery.`, */
+        /* description: `is an intelligent learning and skills assessment tool that helps users expand their knowledge through interactive lessons, personalized feedback, and adaptive quizzes.
+    Through session assessments, it evaluates proficiency and generates credentials, providing verifiable proof of skills and knowledge mastery.`, */
         description: 'AI Tutoring by Anthropic',
         img: 'https://cdn.filestackcontent.com/EN4xPGrUTvCq5P62TrPI',
         isConnected: false,
-        displayInLaunchPad: true,
+        displayInLaunchPad: false,
         handleConnect: () => {},
         handleView: () => {},
         type: AiPassportAppsEnum.claude,

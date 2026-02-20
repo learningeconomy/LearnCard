@@ -1,6 +1,6 @@
 {
     "name": "@learncard/expiration-plugin",
-    "version": "1.2.4",
+    "version": "1.2.6",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/expiration-plugin.esm.js",
@@ -39,5 +39,6 @@
         "@learncard/core": "workspace:*",
         "@learncard/vc-plugin": "workspace:^",
         "why-is-node-running": "^2.2.2"
-    }
+    },
+    "sideEffects": false
 }

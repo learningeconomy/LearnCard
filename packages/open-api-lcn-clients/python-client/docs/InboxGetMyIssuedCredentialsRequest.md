@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **cursor** | **str** |  | [optional] 
 **sort** | **str** |  | [optional] 
 **query** | [**InboxGetMyIssuedCredentialsRequestQuery**](InboxGetMyIssuedCredentialsRequestQuery.md) |  | [optional] 
-**recipient** | [**InboxIssue200ResponseRecipient**](InboxIssue200ResponseRecipient.md) |  | [optional] 
+**recipient** | [**InboxGetMyIssuedCredentialsRequestRecipient**](InboxGetMyIssuedCredentialsRequestRecipient.md) |  | [optional] 
 
 ## Example
 

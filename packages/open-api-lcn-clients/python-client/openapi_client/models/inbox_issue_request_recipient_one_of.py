@@ -17,8 +17,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List
+from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -27,7 +28,7 @@ class InboxIssueRequestRecipientOneOf(BaseModel):
     InboxIssueRequestRecipientOneOf
     """ # noqa: E501
     type: StrictStr
-    value: StrictStr
+    value: Annotated[str, Field(strict=True)]
     __properties: ClassVar[List[str]] = ["type", "value"]
 
     @field_validator('type')
@@ -35,6 +36,13 @@ class InboxIssueRequestRecipientOneOf(BaseModel):
         """Validates the enum"""
         if value not in set(['email']):
             raise ValueError("must be one of enum values ('email')")
+        return value
+
+    @field_validator('value')
+    def value_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(

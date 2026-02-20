@@ -1,15 +1,13 @@
 import { useState } from 'react';
-import { Web3Auth } from '@web3auth/single-factor-auth';
+import type { Web3Auth } from '@web3auth/single-factor-auth';
 import { useQueryClient } from '@tanstack/react-query';
+import { Capacitor } from '@capacitor/core';
 
 import {
-    CHAIN_NAMESPACES,
-    ADAPTER_EVENTS,
-    CONNECTED_EVENT_DATA,
     IProvider,
     UserInfo,
 } from '@web3auth/base';
-import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
+import type { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 import { getWeb3AuthNetworkConfig } from 'learn-card-base/constants/web3AuthConfig';
 
 import useWallet from 'learn-card-base/hooks/useWallet';
@@ -52,8 +50,9 @@ export const useWeb3AuthSFA = () => {
         return privateKey as string;
     };
 
-    const subscribeAuthEvents = (web3auth: Web3Auth) => {
-        web3auth.on(ADAPTER_EVENTS.CONNECTED, async (_data: CONNECTED_EVENT_DATA) => {
+    const subscribeAuthEvents = async (web3auth: Web3Auth) => {
+        const { ADAPTER_EVENTS } = await import('@web3auth/base');
+        web3auth.on(ADAPTER_EVENTS.CONNECTED, async (_data) => {
             if (web3auth && !loggingOut) {
                 const user: Partial<UserInfo> = await web3auth.getUserInfo();
 
@@ -125,6 +124,10 @@ export const useWeb3AuthSFA = () => {
     };
 
     const web3AuthSFAInit = async (branding = BrandingEnum.learncard) => {
+        const { Web3Auth } = await import('@web3auth/single-factor-auth');
+        const { EthereumPrivateKeyProvider } = await import('@web3auth/ethereum-provider');
+        const { CHAIN_NAMESPACES } = await import('@web3auth/base');
+
         const web3AuthNetworkConfig = getWeb3AuthNetworkConfig(branding);
 
         // Initializing Ethereum Provider
@@ -150,7 +153,7 @@ export const useWeb3AuthSFA = () => {
             usePnPKey: true, // Setting this to true returns the same key as PnP Web SDK, By default, this SDK returns CoreKitKey.
         });
 
-        subscribeAuthEvents(web3authSfa);
+        await subscribeAuthEvents(web3authSfa);
         web3AuthStore.set.web3Auth(web3authSfa);
 
         await web3authSfa.init();
@@ -248,10 +251,6 @@ export const useWeb3AuthSFA = () => {
 
             await queryClient?.clear();
 
-            // prevent startup screens from appearing again
-            firstStartupStore.set.introSlidesCompleted(true);
-            firstStartupStore.set.firstStart(false);
-
             // clear stores
             walletStore.set.wallet(null);
             web3AuthStore.set.web3Auth(null);
@@ -276,11 +275,17 @@ export const useWeb3AuthSFA = () => {
             currentUserStore.set.currentUserPK(null);
             currentUserStore.set.currentUserIsLoggedIn(false);
 
-            // Clear localStorage
+            // Clear localStorage FIRST, before setting firstStartupStore values
+            // (otherwise the clear wipes the values we just set)
             window?.localStorage?.clear();
 
             // Clear sessionStorage
             window?.sessionStorage?.clear();
+
+            // prevent startup screens from appearing again
+            // (must be AFTER localStorage.clear so it persists)
+            firstStartupStore.set.introSlidesCompleted(true);
+            firstStartupStore.set.firstStart(false);
 
             // Clear platform-aware private key (native SQLite or web secure storage)
             try {
@@ -299,15 +304,18 @@ export const useWeb3AuthSFA = () => {
             await clearAllIndexedDB();
 
             setInitLoading(false);
-            if (redirectUrl) {
-                if (typeof redirectUrl === 'string') {
-                    window.location.href = redirectUrl;
-                } else {
-                    window.location.href = '/login';
-                }
+
+            // Navigate to login - on native, use in-app navigation to avoid opening browser
+            const isNative = typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform();
+            if (isNative) {
+                // On native: navigate in-app (do not use window.location.href which opens browser)
+                window.location.replace('/login');
+            } else if (redirectUrl && typeof redirectUrl === 'string') {
+                // On web: use redirect URL for full page reload
+                window.location.href = redirectUrl;
+            } else {
+                window.location.href = '/login';
             }
-            // One day we will solve this weird logout issue - must be hard refresh or state resets itself in a race condition somewhere.
-            //history.push('/login');
         } catch (e) {
             console.error('Error logging out', e);
             setInitLoading(false);

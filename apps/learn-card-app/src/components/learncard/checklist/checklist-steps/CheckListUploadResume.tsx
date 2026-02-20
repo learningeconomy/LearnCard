@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { v4 as uuid } from 'uuid';
 
 import TrashBin from '../../../svgs/TrashBin';
 import DocIcon from 'learn-card-base/svgs/DocIcon';
@@ -51,7 +50,9 @@ export const CheckListUploadResume: React.FC = () => {
 
     useEffect(() => {
         if (base64Data && rawArtifactCredential) {
-            parseFile(UploadTypesEnum.Resume);
+            parseFile(UploadTypesEnum.Resume).finally(() => {
+                handleSetResume();
+            });
         }
     }, [base64Data, rawArtifactCredential]);
 
@@ -151,16 +152,7 @@ export const CheckListUploadResume: React.FC = () => {
                         type="file"
                         accept=".pdf,.txt,.docx"
                         onChange={async e => {
-                            const resumeCredential = await getFile(e, UploadTypesEnum.Resume);
-                            if (resumeCredential?.fileInfo) {
-                                setResume({
-                                    fileName: resumeCredential.fileInfo.name,
-                                    fileSize: resumeCredential.fileInfo.size,
-                                    fileType: resumeCredential.fileInfo.type,
-                                    type: UploadTypesEnum.Resume,
-                                    id: uuid(),
-                                });
-                            }
+                            await getFile(e, UploadTypesEnum.Resume);
                         }}
                         ref={fileInputRef}
                         style={{ display: 'none' }}

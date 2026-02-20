@@ -1,6 +1,6 @@
 {
     "name": "@learncard/didkit-plugin",
-    "version": "1.6.4",
+    "version": "1.7.2",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/didkit-plugin.esm.js",
@@ -39,5 +39,6 @@
     "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*"
-    }
+    },
+    "sideEffects": false
 }

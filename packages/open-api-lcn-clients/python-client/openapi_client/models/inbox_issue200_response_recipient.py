@@ -17,24 +17,24 @@ import json
 import pprint
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
 from typing import Any, List, Optional
-from openapi_client.models.inbox_issue_request_recipient_one_of import InboxIssueRequestRecipientOneOf
-from openapi_client.models.inbox_issue_request_recipient_one_of1 import InboxIssueRequestRecipientOneOf1
+from openapi_client.models.inbox_issue200_response_recipient_one_of import InboxIssue200ResponseRecipientOneOf
+from openapi_client.models.inbox_issue200_response_recipient_one_of1 import InboxIssue200ResponseRecipientOneOf1
 from pydantic import StrictStr, Field
 from typing import Union, List, Set, Optional, Dict
 from typing_extensions import Literal, Self
 
-INBOXISSUE200RESPONSERECIPIENT_ONE_OF_SCHEMAS = ["InboxIssueRequestRecipientOneOf", "InboxIssueRequestRecipientOneOf1"]
+INBOXISSUE200RESPONSERECIPIENT_ONE_OF_SCHEMAS = ["InboxIssue200ResponseRecipientOneOf", "InboxIssue200ResponseRecipientOneOf1"]
 
 class InboxIssue200ResponseRecipient(BaseModel):
     """
     InboxIssue200ResponseRecipient
     """
-    # data type: InboxIssueRequestRecipientOneOf
-    oneof_schema_1_validator: Optional[InboxIssueRequestRecipientOneOf] = None
-    # data type: InboxIssueRequestRecipientOneOf1
-    oneof_schema_2_validator: Optional[InboxIssueRequestRecipientOneOf1] = None
-    actual_instance: Optional[Union[InboxIssueRequestRecipientOneOf, InboxIssueRequestRecipientOneOf1]] = None
-    one_of_schemas: Set[str] = { "InboxIssueRequestRecipientOneOf", "InboxIssueRequestRecipientOneOf1" }
+    # data type: InboxIssue200ResponseRecipientOneOf
+    oneof_schema_1_validator: Optional[InboxIssue200ResponseRecipientOneOf] = None
+    # data type: InboxIssue200ResponseRecipientOneOf1
+    oneof_schema_2_validator: Optional[InboxIssue200ResponseRecipientOneOf1] = None
+    actual_instance: Optional[Union[InboxIssue200ResponseRecipientOneOf, InboxIssue200ResponseRecipientOneOf1]] = None
+    one_of_schemas: Set[str] = { "InboxIssue200ResponseRecipientOneOf", "InboxIssue200ResponseRecipientOneOf1" }
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -57,22 +57,22 @@ class InboxIssue200ResponseRecipient(BaseModel):
         instance = InboxIssue200ResponseRecipient.model_construct()
         error_messages = []
         match = 0
-        # validate data type: InboxIssueRequestRecipientOneOf
-        if not isinstance(v, InboxIssueRequestRecipientOneOf):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `InboxIssueRequestRecipientOneOf`")
+        # validate data type: InboxIssue200ResponseRecipientOneOf
+        if not isinstance(v, InboxIssue200ResponseRecipientOneOf):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `InboxIssue200ResponseRecipientOneOf`")
         else:
             match += 1
-        # validate data type: InboxIssueRequestRecipientOneOf1
-        if not isinstance(v, InboxIssueRequestRecipientOneOf1):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `InboxIssueRequestRecipientOneOf1`")
+        # validate data type: InboxIssue200ResponseRecipientOneOf1
+        if not isinstance(v, InboxIssue200ResponseRecipientOneOf1):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `InboxIssue200ResponseRecipientOneOf1`")
         else:
             match += 1
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when setting `actual_instance` in InboxIssue200ResponseRecipient with oneOf schemas: InboxIssueRequestRecipientOneOf, InboxIssueRequestRecipientOneOf1. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when setting `actual_instance` in InboxIssue200ResponseRecipient with oneOf schemas: InboxIssue200ResponseRecipientOneOf, InboxIssue200ResponseRecipientOneOf1. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when setting `actual_instance` in InboxIssue200ResponseRecipient with oneOf schemas: InboxIssueRequestRecipientOneOf, InboxIssueRequestRecipientOneOf1. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting `actual_instance` in InboxIssue200ResponseRecipient with oneOf schemas: InboxIssue200ResponseRecipientOneOf, InboxIssue200ResponseRecipientOneOf1. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -87,25 +87,25 @@ class InboxIssue200ResponseRecipient(BaseModel):
         error_messages = []
         match = 0
 
-        # deserialize data into InboxIssueRequestRecipientOneOf
+        # deserialize data into InboxIssue200ResponseRecipientOneOf
         try:
-            instance.actual_instance = InboxIssueRequestRecipientOneOf.from_json(json_str)
+            instance.actual_instance = InboxIssue200ResponseRecipientOneOf.from_json(json_str)
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
-        # deserialize data into InboxIssueRequestRecipientOneOf1
+        # deserialize data into InboxIssue200ResponseRecipientOneOf1
         try:
-            instance.actual_instance = InboxIssueRequestRecipientOneOf1.from_json(json_str)
+            instance.actual_instance = InboxIssue200ResponseRecipientOneOf1.from_json(json_str)
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
 
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when deserializing the JSON string into InboxIssue200ResponseRecipient with oneOf schemas: InboxIssueRequestRecipientOneOf, InboxIssueRequestRecipientOneOf1. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when deserializing the JSON string into InboxIssue200ResponseRecipient with oneOf schemas: InboxIssue200ResponseRecipientOneOf, InboxIssue200ResponseRecipientOneOf1. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into InboxIssue200ResponseRecipient with oneOf schemas: InboxIssueRequestRecipientOneOf, InboxIssueRequestRecipientOneOf1. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into InboxIssue200ResponseRecipient with oneOf schemas: InboxIssue200ResponseRecipientOneOf, InboxIssue200ResponseRecipientOneOf1. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -119,7 +119,7 @@ class InboxIssue200ResponseRecipient(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], InboxIssueRequestRecipientOneOf, InboxIssueRequestRecipientOneOf1]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], InboxIssue200ResponseRecipientOneOf, InboxIssue200ResponseRecipientOneOf1]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

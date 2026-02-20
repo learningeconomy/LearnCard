@@ -93,6 +93,7 @@ export * from './hooks/useSwitchAccount';
 export * from './hooks/useToast';
 export * from './hooks/useSigningAuthority';
 export * from './hooks/useXApiStatements';
+export * from './hooks/useXApiStatementsForContract';
 export * from './hooks/useGetKeyboardHeight';
 export * from './stores/aiBoostStore';
 export * from './hooks/useGetCheckListStatus';
@@ -127,6 +128,34 @@ export * from './stores/newCredsStore';
 export * from './stores/aiLoadingStore';
 export * from './stores/syncProgressStore';
 export * from './stores/boostPreviewStore';
+export {
+    messages,
+    threads,
+    currentThreadId,
+    isTyping,
+    isLoading,
+    isEndingSession,
+    showEndingSessionLoader,
+    activeQuestions,
+    suggestedTopics,
+    topicCredentials,
+    sessionEnded,
+    planReady,
+    planReadyThread,
+    resetChatStores,
+    loadThreads,
+    loadThread,
+    createThread,
+    deleteThread,
+    fetchLearningPathways,
+    connectWebSocket,
+    sendMessageWithQuestion,
+    sendMessage,
+    startTopicWithUri,
+    startLearningPathway,
+    startTopic,
+    updateArtifactClaimedStatus,
+} from './stores/nanoStores/chatStore';
 
 export * from './helpers/credentials/queries';
 export * from './helpers/web3AuthHelpers';
@@ -199,3 +228,5 @@ export * from './svgs/DeepPurpleWand';
 export * from './svgs/SkyBlueGlobeStand';
 export * from './svgs/navbar/navbarIcons';
 export * from './svgs/navbar/formal/navbarFormalIcons';
+export * from './svgs/ScoutsLogo';
+export * from './svgs/ScoutLogoAndText';

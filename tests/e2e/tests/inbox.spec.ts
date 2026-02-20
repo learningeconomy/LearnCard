@@ -10,6 +10,8 @@ let c: LearnCard;
 let token: string;
 let integration: LCNIntegration | undefined;
 let integration2: LCNIntegration | undefined;
+let listingId: string | undefined;
+let listingId2: string | undefined;
 
 // Function to extract the workflowId and interactionId from the URL
 const parseInteractionUrl = (url: string): { workflowId: string; interactionId: string } | null => {
@@ -642,7 +644,7 @@ describe('Inbox', () => {
 
         test('(9) should send a ISSUANCE_CLAIMED notification to the issuer if a webhook is configured', async () => {
             const sa = await a.invoke.createSigningAuthority('test-sa');
-            if (!sa) { 
+            if (!sa) {
                 throw new Error('Failed to create signing authority');
             }
             const registered = await a.invoke.registerSigningAuthority(
@@ -820,11 +822,10 @@ describe('Inbox', () => {
     });
 
     describe('Claim credentials INTO inbox from an integration', () => {
-
         beforeEach(async () => {
             a = await getLearnCardForUser('a');
-            b_anonymous = await getLearnCard('b')
-            c = await getLearnCardForUser('c');        
+            b_anonymous = await getLearnCard('b');
+            c = await getLearnCardForUser('c');
 
             const sa = await a.invoke.createSigningAuthority('test-sa');
             if (!sa) {
@@ -834,41 +835,69 @@ describe('Inbox', () => {
             const integrationId = await a.invoke.addIntegration({
                 name: 'test',
                 whitelistedDomains: ['localhost:4000'],
-                description: 'test',    
-            }); 
-            
-            await a.invoke.associateIntegrationWithSigningAuthority(integrationId, sa.endpoint!, sa.name, sa.did!, true);
+                description: 'test',
+            });
 
+            listingId = await a.invoke.createAppStoreListing(integrationId, {
+                display_name: 'Inbox Listing',
+                tagline: 'Inbox listing',
+                full_description: 'Inbox listing for tests',
+                icon_url: 'https://example.com/icon.png',
+                launch_type: 'EMBEDDED_IFRAME',
+                launch_config_json: JSON.stringify({ iframeUrl: 'https://example.com' }),
+            });
+
+            await a.invoke.associateListingWithSigningAuthority(
+                listingId,
+                sa.endpoint!,
+                sa.name,
+                sa.did!,
+                true
+            );
 
             const integrationId2 = await a.invoke.addIntegration({
                 name: 'port-3000',
                 whitelistedDomains: ['localhost:3000'],
-                description: 'Integration ID 2',    
-            }); 
-            
-            await a.invoke.associateIntegrationWithSigningAuthority(integrationId2, sa.endpoint!, sa.name, sa.did!, true);
+                description: 'Integration ID 2',
+            });
+
+            listingId2 = await a.invoke.createAppStoreListing(integrationId2, {
+                display_name: 'Inbox Listing 2',
+                tagline: 'Inbox listing 2',
+                full_description: 'Inbox listing for tests',
+                icon_url: 'https://example.com/icon.png',
+                launch_type: 'EMBEDDED_IFRAME',
+                launch_config_json: JSON.stringify({ iframeUrl: 'https://example.com' }),
+            });
+
+            await a.invoke.associateListingWithSigningAuthority(
+                listingId2,
+                sa.endpoint!,
+                sa.name,
+                sa.did!,
+                true
+            );
 
             integration = await a.invoke.getIntegration(integrationId);
             integration2 = await a.invoke.getIntegration(integrationId2);
-
         });
 
-
         it('should allow you to claim a credential into your inbox from an integration', async () => {
-            const payload = {  
-                type: 'email', 
+            const payload = {
+                type: 'email',
                 value: 'userA@test.com',
-                configuration: { 
+                configuration: {
                     publishableKey: integration?.publishableKey,
-                }, 
-            }; 
- 
+                    listingId,
+                },
+            };
+
             // Send challenge
             const challengeResponse = await fetch(
                 `http://localhost:4000/api/contact-methods/challenge`,
                 {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(payload),
@@ -879,18 +908,18 @@ describe('Inbox', () => {
             const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
             const deliveryData = await testResponse.json();
             console.log(deliveryData);
-            const otpChallenge = deliveryData.templateModel.verificationToken;   
+            const otpChallenge = deliveryData.templateModel.verificationToken;
 
-            const res = await fetch(
-                `http://localhost:4000/api/contact-methods/session`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ contactMethod: { type: 'email', value: 'userA@test.com' }, otpChallenge }),
-                }
-            );
+            const res = await fetch(`http://localhost:4000/api/contact-methods/session`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    contactMethod: { type: 'email', value: 'userA@test.com' },
+                    otpChallenge,
+                }),
+            });
             const sessionJwt = (await res.json()).sessionJwt;
             expect(sessionJwt).toBeDefined();
             expect(sessionJwt).toBeTypeOf('string');
@@ -900,41 +929,40 @@ describe('Inbox', () => {
                 credential,
                 configuration: {
                     publishableKey: integration?.publishableKey,
+                    listingId,
                 },
-            }
+            };
 
-            const claimResponse = await fetch(
-                `http://localhost:4000/api/inbox/claim`,
-                {
-                    method: 'POST', 
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${sessionJwt}`,
-                    },
-                    body: JSON.stringify(claimPayload),
-                } 
-            ); 
+            const claimResponse = await fetch(`http://localhost:4000/api/inbox/claim`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionJwt}`,
+                },
+                body: JSON.stringify(claimPayload),
+            });
             const claimData = await claimResponse.json();
             expect(claimData).toBeDefined();
             expect(claimData).toBeTypeOf('object');
             expect(claimData.status).toBe('PENDING');
-        })
+        });
 
         it('should reject a claim if not from a whitelisted domain', async () => {
-            const payload = {  
-                type: 'email', 
+            const payload = {
+                type: 'email',
                 value: 'userA@test.com',
-                configuration: { 
+                configuration: {
                     publishableKey: integration2?.publishableKey,
-                }, 
-            }; 
- 
+                    listingId: listingId2,
+                },
+            };
+
             // Send challenge
             const challengeResponse = await fetch(
                 `http://localhost:4000/api/contact-methods/challenge`,
                 {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(payload),
@@ -942,6 +970,6 @@ describe('Inbox', () => {
             );
             const challengeData = await challengeResponse.json();
             expect(challengeData.code).toBe('UNAUTHORIZED');
-        })
-    })
+        });
+    });
 });

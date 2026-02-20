@@ -44,6 +44,7 @@ type BoostGenericCardWrapperProps = {
     displayType?: string;
     uri?: string;
     indicatorColor?: string;
+    unknownVerifierTitle?: string;
 };
 
 export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = ({
@@ -76,6 +77,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
     displayType,
     uri,
     indicatorColor,
+    unknownVerifierTitle,
 }) => {
     if (boostPageViewMode === BoostPageViewMode.List) {
         return (
@@ -93,6 +95,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                 thumbImgSrc={thumbImgSrc}
                 indicatorColor={indicatorColor}
                 uri={uri}
+                unknownVerifierTitle={unknownVerifierTitle}
             />
         );
     }
@@ -123,6 +126,8 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                     <CredentialVerificationDisplay
                         credential={credential}
                         iconClassName="!w-[15px] !h-[15px] mr-1"
+                        showText={!!unknownVerifierTitle}
+                        unknownVerifierTitle={unknownVerifierTitle}
                     />
                 )
             }

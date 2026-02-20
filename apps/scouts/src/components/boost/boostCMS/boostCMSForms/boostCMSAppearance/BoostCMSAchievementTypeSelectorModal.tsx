@@ -47,8 +47,6 @@ const BoostCMSAchievementTypeSelectorModal: React.FC<{
         BoostCMSActiveAppearanceForm.achievementTypeForm
     );
 
-    const [showStylePackCategoryList, setShowStylePackCategoryList] = useState<boolean>(false);
-
     return (
         <IonPage>
             <BoostCMSAppearanceFormHeader
@@ -64,8 +62,6 @@ const BoostCMSAchievementTypeSelectorModal: React.FC<{
                 handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                 activeForm={activeForm}
                 setActiveForm={handleCloseModal}
-                showStylePackCategoryList={showStylePackCategoryList}
-                setShowStylePackCategoryList={setShowStylePackCategoryList}
             />
             <IonContent fullscreen>
                 <BoostCMSCategoryAndTypeSelector

@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **status** | **str** |  | [optional] 
 **auto_connect_recipients** | **bool** |  | [optional] 
 **meta** | **Dict[str, object]** |  | [optional] 
+**default_permissions** | [**BoostGetBoost200ResponseClaimPermissions**](BoostGetBoost200ResponseClaimPermissions.md) |  | [optional] 
 **allow_anyone_to_create_children** | **bool** |  | [optional] 
 **uri** | **str** |  | 
 

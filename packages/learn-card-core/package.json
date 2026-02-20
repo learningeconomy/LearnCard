@@ -1,6 +1,6 @@
 {
     "name": "@learncard/core",
-    "version": "9.4.4",
+    "version": "9.4.6",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -54,5 +54,6 @@
         "abort-controller": "^3.0.0",
         "core-js": "^3.25.5",
         "isomorphic-webcrypto": "^2.3.8"
-    }
+    },
+    "sideEffects": false
 }

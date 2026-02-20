@@ -1,6 +1,6 @@
 {
     "name": "@learncard/simple-signing-plugin",
-    "version": "1.1.4",
+    "version": "1.1.8",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -47,5 +47,6 @@
     "dependencies": {
         "@learncard/simple-signing-client": "workspace:*",
         "isomorphic-webcrypto": "^2.3.8"
-    }
+    },
+    "sideEffects": false
 }

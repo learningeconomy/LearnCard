@@ -32,11 +32,10 @@ custom:
             pattern: ['src/**/*.ts', 'dids.ts']
 
 package:
-  individually: true
-  patterns: 
-    - '!node_modules/**'
-    - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
-    - 'src/swagger-ui'
+    individually: true
+    patterns:
+        - '!node_modules/**'
+        - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
 
 provider:
     name: aws
@@ -57,6 +56,13 @@ provider:
         REDIS_PORT:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Port]
         NOTIFICATIONS_QUEUE_URL: ${construct:notifications-queue.queueUrl}
+        SKILL_EMBEDDING_GOOGLE_API_KEY: ${env:SKILL_EMBEDDING_GOOGLE_API_KEY, ""}
+        SKILL_EMBEDDING_GOOGLE_MODEL: ${env:SKILL_EMBEDDING_GOOGLE_MODEL, "gemini-embedding-001"}
+        SKILL_EMBEDDING_BATCH_SIZE: ${env:SKILL_EMBEDDING_BATCH_SIZE, "25"}
+        SKILL_EMBEDDING_BACKFILL_ON_STARTUP: ${env:SKILL_EMBEDDING_BACKFILL_ON_STARTUP, "false"}
+        SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS: ${env:SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS, "900"}
+        SKILL_EMBEDDING_BACKFILL_PAGE_SIZE: ${env:SKILL_EMBEDDING_BACKFILL_PAGE_SIZE, "100"}
+        SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${env:SKILL_EMBEDDING_BACKFILL_BATCH_SIZE, "50"}
     tracing:
         apiGateway: true
         lambda: true
@@ -118,6 +124,7 @@ functions:
         events:
             - httpApi: GET /skills/{skillId}
             - httpApi: GET /frameworks/{frameworkId}
+            - httpApi: GET /frameworks/{frameworkId}/skills/{skillId}
 
 resources:
     Resources:

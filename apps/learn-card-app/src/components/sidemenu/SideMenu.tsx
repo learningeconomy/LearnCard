@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import * as Sentry from '@sentry/browser';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
+import { Capacitor } from '@capacitor/core';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useLocation, useHistory } from 'react-router-dom';
@@ -60,11 +61,19 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     useEffect(() => {
         // get & set the current capGo bundle version
         const getVersion = async () => {
-            const currentBundle = (await CapacitorUpdater.current()).bundle;
+            if (!Capacitor.isNativePlatform()) {
+                return;
+            }
 
-            if (currentBundle.version !== 'builtin' && currentBundle?.version?.trim?.() !== '') {
-                firstStartupStore.set.version(`${currentBundle.version}`);
-                Sentry.setTag('packageVersion', currentBundle.version);
+            try {
+                const currentBundle = (await CapacitorUpdater.current()).bundle;
+
+                if (currentBundle.version !== 'builtin' && currentBundle?.version?.trim?.() !== '') {
+                    firstStartupStore.set.version(`${currentBundle.version}`);
+                    Sentry.setTag('packageVersion', currentBundle.version);
+                }
+            } catch {
+                return;
             }
         };
 
@@ -155,7 +164,6 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                         </GenericErrorBoundary>
                         <GenericErrorBoundary>
                             <SideMenuSecondaryLinks
-                                branding={BrandingEnum.learncard}
                                 activeTab={activeTab}
                                 setActiveTab={setActiveTab}
                             />

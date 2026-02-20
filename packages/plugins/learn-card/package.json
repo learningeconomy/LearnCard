@@ -1,6 +1,6 @@
 {
     "name": "@learncard/learn-card-plugin",
-    "version": "1.2.4",
+    "version": "1.2.6",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/learn-card-plugin.esm.js",
@@ -40,5 +40,6 @@
         "@learncard/didkit-plugin": "workspace:^",
         "@learncard/types": "workspace:*",
         "date-fns": "^2.28.0"
-    }
+    },
+    "sideEffects": false
 }

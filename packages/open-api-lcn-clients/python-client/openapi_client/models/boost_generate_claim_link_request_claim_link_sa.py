@@ -26,8 +26,8 @@ class BoostGenerateClaimLinkRequestClaimLinkSA(BaseModel):
     """
     BoostGenerateClaimLinkRequestClaimLinkSA
     """ # noqa: E501
-    endpoint: StrictStr
-    name: StrictStr
+    endpoint: Optional[StrictStr]
+    name: Optional[StrictStr]
     did: Optional[StrictStr] = None
     __properties: ClassVar[List[str]] = ["endpoint", "name", "did"]
 
@@ -70,6 +70,21 @@ class BoostGenerateClaimLinkRequestClaimLinkSA(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if endpoint (nullable) is None
+        # and model_fields_set contains the field
+        if self.endpoint is None and "endpoint" in self.model_fields_set:
+            _dict['endpoint'] = None
+
+        # set to None if name (nullable) is None
+        # and model_fields_set contains the field
+        if self.name is None and "name" in self.model_fields_set:
+            _dict['name'] = None
+
+        # set to None if did (nullable) is None
+        # and model_fields_set contains the field
+        if self.did is None and "did" in self.model_fields_set:
+            _dict['did'] = None
+
         return _dict
 
     @classmethod

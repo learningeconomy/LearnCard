@@ -387,3 +387,573 @@ Partner Connect example apps follow a consistent pattern:
 - Verify origin validation works correctly
 - Test error scenarios (timeouts, user rejection, network issues)
 - Ensure proper cleanup on component unmount
+
+## Credential Revocation System
+
+### Purpose
+
+The revocation system allows troop leaders (or credential issuers) to revoke credentials from scouts (recipients) when they leave a troop or should no longer have access. When a credential is revoked:
+
+1. The scout is removed from member/recipient lists
+2. Any permissions granted via claim hooks are reversed
+3. Any connections created via auto-connect are cleaned up
+4. The credential is marked as revoked (not deleted) for audit purposes
+
+### Neo4j Data Model
+
+#### Key Relationship: `CREDENTIAL_RECEIVED`
+
+```
+(Credential)-[:CREDENTIAL_RECEIVED]->(Profile)
+```
+
+Properties on the `CREDENTIAL_RECEIVED` relationship:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `status` | string | `null` (claimed), `'pending'` (not yet accepted), `'revoked'` |
+| `date` | datetime | When the credential was received/claimed |
+| `revokedAt` | datetime | When the credential was revoked (if revoked) |
+
+#### Key Relationship: `CONNECTED_WITH`
+
+```
+(Profile)-[:CONNECTED_WITH]->(Profile)
+```
+
+Properties:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `sources` | string[] | Array of source keys like `['boost:uuid1', 'boost:uuid2']` |
+
+### Filtering Queries
+
+#### Get Recipients (Excluding Revoked)
+
+```cypher
+MATCH (c:Credential)-[r:CREDENTIAL_RECEIVED]->(p:Profile)
+WHERE c.boostId = $boostId
+  AND (r.status IS NULL OR r.status <> 'revoked')
+  AND ($includeUnacceptedBoosts = true OR r.status IS NULL)
+RETURN p
+```
+
+- `r.status IS NULL` = claimed/accepted credential
+- `r.status = 'pending'` = sent but not accepted
+- `r.status = 'revoked'` = revoked credential
+
+#### Setting Revoked Status
+
+The `revokeCredentialReceived` function uses MERGE to handle both claimed and pending credentials:
+
+```cypher
+MATCH (credential:Credential { id: $credentialId })
+MATCH (profile:Profile { profileId: $profileId })
+MERGE (credential)-[received:CREDENTIAL_RECEIVED]->(profile)
+ON CREATE SET received.status = "revoked", received.revokedAt = $revokedAt, received.date = $revokedAt
+ON MATCH SET received.status = "revoked", received.revokedAt = $revokedAt
+```
+
+### Revoke Hooks (`services/learn-card-network/brain-service/src/helpers/revoke-hooks.helpers.ts`)
+
+When a credential is revoked, several cleanup operations are performed:
+
+| Hook | Purpose |
+|------|---------|
+| `processPermissionsRevokeHooks` | Removes HAS_ROLE relationships granted via GRANT_PERMISSIONS claim hooks |
+| `processAutoConnectRevokeHooks` | Removes AUTO_CONNECT_RECIPIENT relationships |
+| `processAdminRevokeHooks` | Removes admin role relationships granted via ADD_ADMIN claim hooks |
+| `processConnectionRevoke` | Removes CONNECTED_WITH relationships sourced from the boost |
+
+### Connection Source Keys
+
+Connections created via `autoConnectRecipients` or AUTO_CONNECT hooks are tagged with source keys:
+- Pattern: `boost:${boostId}`
+- Connections can have multiple sources (from multiple boosts)
+- On revoke, only the source key from the revoked boost is removed
+- Connection is deleted only when all source keys are removed
+
+### Important: Parent Boost Handling
+
+When revoking, `processConnectionRevoke` checks:
+1. Direct boost (if `autoConnectRecipients=true`)
+2. All parent boosts with `autoConnectRecipients=true`
+3. All boosts targeted by AUTO_CONNECT claim hooks
+
+This mirrors the connection creation logic in `ensureConnectionsForCredentialAcceptance`.
+
+### Frontend Query Behavior
+
+| Query | `includeUnacceptedBoosts=false` (default) | `includeUnacceptedBoosts=true` |
+|-------|-------------------------------------------|-------------------------------|
+| `useGetBoostRecipients` | Only claimed credentials | Claimed + pending |
+| `useCountBoostRecipients` | Count of claimed only | Count of claimed + pending |
+
+Revoked credentials are **always** filtered out regardless of `includeUnacceptedBoosts`.
+
+### Testing with SEED Environment Variable
+
+Tests require a SEED to initialize LearnCard wallets:
+
+```bash
+SEED=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa pnpm test -- revoke-credential.spec.ts
+```
+
+
+## Scouts App Architecture (`apps/scouts/`)
+
+### Key Concepts
+
+- **Troop**: A group that issues TroopID credentials to scouts
+- **TroopID**: A credential issued to scouts when they join a troop
+- **Boost**: A credential template that can be issued to recipients
+
+### Troop Credential Status
+
+The `useTroopIDStatus` hook determines credential status:
+
+| Status | Meaning |
+|--------|---------|
+| `'valid'` | User is in the claimed recipients list |
+| `'pending'` | User is in all recipients but not claimed list |
+| `'revoked'` | User is not in either list |
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `TroopIdStatusButton.tsx` | Shows Valid ID / Pending Acceptance / ID Revoked |
+| `TroopPage.tsx` | Main troop view, hides members for revoked/pending |
+| `TroopPageIdAndTroopBox.tsx` | Share button, disabled for revoked/pending |
+| `useBoostMenu.tsx` | Hook for boost menu actions |
+| `AddressBookConnections.tsx` | Shows user connections, uses `useGetConnections` |
+
+### Address Book
+
+- **Main contacts**: Uses `useGetConnections()` → `CONNECTED_WITH` relationships
+- **Troop-filtered**: Uses `getPaginatedBoostRecipientsWithChildren()` → boost recipients
+
+### Running the Scouts App
+
+```bash
+cd apps/scouts
+pnpm dev              # Start frontend
+pnpm docker-start     # Start backend services (Neo4j, brain-service)
+```
+
+## Testing Brain Service
+
+### Test Setup
+
+Tests use `@testcontainers/neo4j` to spin up a Neo4j container:
+- Requires Docker to be running
+- `test-setup.ts` handles container lifecycle
+- Uses `vitest` as the test framework
+
+### Running Tests
+
+```bash
+cd services/learn-card-network/brain-service
+pnpm test -- revoke-credential.spec.ts   # Run specific test file
+pnpm test:watch                          # Watch mode
+```
+
+### Test Helpers
+
+- `getUser(seed?)`: Creates a test user with clients
+- `sendBoost(from, to, boostUri, accept)`: Helper to send and optionally accept boosts
+- Direct Neo4j queries use `neogma.queryRunner.run(cypher, params)`
+
+### Key Test Files
+
+| File | Tests |
+|------|-------|
+| `revoke-credential.spec.ts` | Revocation and claim hook reversal |
+| `claim-hooks.spec.ts` | Claim hook functionality |
+| `boosts.spec.ts` | Boost CRUD and permissions |
+| `auto-connect-hierarchy.spec.ts` | Auto-connect with boost hierarchies |
+
+## Frontend Query Hooks (`packages/learn-card-base/src/react-query/queries/`)
+
+### Boost Recipients
+
+```typescript
+// Get claimed recipients only (default for member lists)
+useGetBoostRecipients(boostUri, enabled, includeUnacceptedBoosts=false)
+
+// Get count (excludes pending by default)
+useCountBoostRecipients(uri, enabled, includeUnacceptedBoosts=false)
+```
+
+### Connections
+
+```typescript
+useGetConnections()           // All connections
+useGetPaginatedConnections()  // Paginated connections
+```
+
+## Common Debugging Tips
+
+### Check Docker Logs
+
+```bash
+docker logs lcn-brain-service --tail 100 -f
+```
+
+### Check Connection Sources
+
+```cypher
+MATCH (p:Profile {profileId: 'some-id'})-[r:CONNECTED_WITH]-(other)
+RETURN other.profileId, r.sources
+```
+
+### Check Credential Status
+
+```cypher
+MATCH (c:Credential)-[r:CREDENTIAL_RECEIVED]->(p:Profile {profileId: 'some-id'})
+RETURN c.id, r.status, r.revokedAt
+```
+
+## Credential Storage Architecture
+
+Understanding where credentials are stored is crucial for debugging and feature development. LearnCard has **three storage layers**, each serving different purposes.
+
+### The Three Storage Layers
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        USER'S WALLET VIEW                           │
+│                    (Membership Page, IDs Tab)                       │
+└─────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  LAYER 1: LearnCloud Personal Index (MongoDB)                      │
+│  Service: learn-cloud-service                                       │
+│  Collection: CredentialRecord                                       │
+│  Purpose: User's personal wallet - what they SEE in the app        │
+│  Owner: User (authenticated via DID)                                │
+│  Access: wallet.index.LearnCloud.get({ uri })                       │
+└─────────────────────────────────────────────────────────────────────┘
+                                  │
+                     (populated by frontend on claim)
+                                  │
+┌─────────────────────────────────────────────────────────────────────┐
+│  LAYER 2: Brain Service Network Index (Neo4j)                      │
+│  Service: brain-service                                             │
+│  Relationship: CREDENTIAL_RECEIVED                                  │
+│  Purpose: Network-level tracking of who received what               │
+│  Owner: System (managed by brain-service)                           │
+│  Access: wallet.invoke.getReceivedCredentials()                     │
+└─────────────────────────────────────────────────────────────────────┘
+                                  │
+                     (references credential content)
+                                  │
+┌─────────────────────────────────────────────────────────────────────┐
+│  LAYER 3: Credential Storage (Various backends)                    │
+│  Options: Brain storage, Ceramic, IPFS, S3                          │
+│  Purpose: Actual VC JSON content                                    │
+│  Access: wallet.read.get(uri)                                       │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Layer Details
+
+#### Layer 1: LearnCloud Personal Index (MongoDB)
+
+**Location**: `services/learn-cloud-service`
+
+**What it stores**:
+```typescript
+interface CredentialRecord {
+  id: string;           // Unique record ID
+  uri: string;          // Credential URI (e.g., "lc:credential:...")
+  category: string;     // "ID", "Achievement", etc.
+  // ... other metadata
+}
+```
+
+**Key characteristics**:
+- **User-owned**: Only the user can add/remove from their index
+- **Frontend-populated**: When user claims a credential, frontend calls `wallet.index.LearnCloud.add()`
+- **What shows in Membership page**: Queries like `useGetIDs` read from this
+
+**Access pattern**:
+```typescript
+// Add to index (on claim)
+await wallet.index.LearnCloud.add(credentialRecord);
+
+// Query index
+const records = await wallet.index.LearnCloud.get({ category: 'ID' });
+
+// Remove from index
+await wallet.index.LearnCloud.remove(recordId);
+```
+
+#### Layer 2: Brain Service Network Index (Neo4j)
+
+**Location**: `services/learn-card-network/brain-service`
+
+**What it stores**:
+```
+(Profile)-[:CREDENTIAL_SENT]->(Credential)-[:CREDENTIAL_RECEIVED]->(Profile)
+```
+
+**Key characteristics**:
+- **System-managed**: Brain-service controls this based on send/receive actions
+- **Source of truth for status**: `status` property = `null`, `'pending'`, or `'revoked'`
+- **Used for member lists**: "Who received this boost?" queries this
+
+**Key functions**:
+- `getReceivedCredentialsForProfile()` - What credentials did this user receive?
+- `getBoostRecipients()` - Who received this boost?
+- `revokeCredentialReceived()` - Mark credential as revoked
+
+#### Layer 3: Credential Storage
+
+**What it stores**: The actual Verifiable Credential JSON
+
+**Access pattern**:
+```typescript
+// Resolve credential content from URI
+const vc = await wallet.read.get(uri);
+```
+
+### Credential Lifecycle Flow
+
+```
+1. ISSUE: Admin creates boost and sends to user
+   ├── Brain: Creates CREDENTIAL_SENT relationship
+   └── Storage: VC JSON stored
+
+2. CLAIM: User accepts the credential
+   ├── Brain: Creates CREDENTIAL_RECEIVED relationship (status=null)
+   └── LearnCloud: Frontend adds to user's personal index
+
+3. DISPLAY: User views Membership page
+   ├── LearnCloud: useGetIDs() queries personal index
+   ├── Storage: wallet.read.get() fetches VC content
+   └── Brain: (optional) check status via getReceivedCredentials
+
+4. REVOKE: Admin revokes user's credential
+   ├── Brain: Sets CREDENTIAL_RECEIVED.status = 'revoked'
+   └── LearnCloud: Frontend sync removes from personal index
+```
+
+### Common Queries by Layer
+
+| Use Case | Layer | Query |
+|----------|-------|-------|
+| Show user's IDs on Membership page | LearnCloud | `wallet.index.LearnCloud.get({ category: 'ID' })` |
+| Show troop member list | Brain | `getBoostRecipients(boostId)` |
+| Get credential content | Storage | `wallet.read.get(uri)` |
+| Check if user received credential | Brain | `getCredentialReceivedByProfile(credId, profile)` |
+| Remove credential from user's view | LearnCloud | `wallet.index.LearnCloud.remove(recordId)` |
+
+### Why Two Indexes?
+
+**Q: Why not just use brain-service for everything?**
+
+The brain-service stores the *network view* (who sent what to whom). The LearnCloud index stores the *user view* (user's personal wallet). They can differ:
+
+- User might have credentials from outside the LearnCard Network
+- User might want to hide certain credentials
+- User might sync credentials from Ceramic
+- Privacy: LearnCloud is user-authenticated, brain-service is system-authenticated
+
+**Q: Why doesn't brain-service update LearnCloud directly on revoke?**
+
+Brain-service doesn't have the user's authentication context. Only the user (via their wallet in the frontend) can modify their LearnCloud index. That's why we need frontend sync hooks.
+
+### Debugging Tips
+
+**"Credential shows in brain-service but not in Membership page"**
+→ Check LearnCloud index: `wallet.index.LearnCloud.get({ uri })`
+
+**"Credential shows in Membership page but is revoked"**
+→ Run `useSyncRevokedCredentials()` to sync
+
+**"Credential in member list but user says they don't have it"**
+→ Check if they claimed it (CREDENTIAL_RECEIVED.status should be null, not 'pending')
+
+
+
+### Two-Tier Storage Architecture
+
+User credentials are stored in two places:
+
+| Layer | Service | Technology | Purpose |
+|-------|---------|------------|---------|
+| **Network Index** | brain-service | Neo4j | `CREDENTIAL_RECEIVED` relationship - source of truth for credential status |
+| **Personal Index** | learn-cloud-service | MongoDB | User's personal wallet index - what shows on Membership page |
+
+**Important**: The brain-service cannot directly modify the learn-cloud index (it's user-authenticated). Frontend sync is required.
+
+### Backend Filtering
+
+When querying received credentials, the brain-service filters out revoked credentials:
+
+**File**: `services/learn-card-network/brain-service/src/accesslayer/credential/read.ts`
+
+```typescript
+// getReceivedCredentialsForProfile now filters revoked
+.where('received.status IS NULL OR received.status <> "revoked"')
+```
+
+### getRevokedCredentials Endpoint
+
+New endpoint to query which credentials have been revoked for the current user:
+
+```typescript
+// In credentials.ts router
+getRevokedCredentials: profileRoute
+    .input(z.object({}).default({}))
+    .output(z.array(z.string()))
+    .query(async ({ ctx }) => {
+        return getRevokedCredentialUrisForProfile(ctx.domain, ctx.user.profile);
+    });
+```
+
+Returns an array of credential URIs that have `status='revoked'` for the authenticated user.
+
+### Frontend Sync Hook
+
+**File**: `packages/learn-card-base/src/react-query/queries/vcQueries.ts`
+
+```typescript
+export const useSyncRevokedCredentials = (enabled = true) => {
+    // 1. Fetch revoked credential URIs from brain-service
+    const revokedUris = await wallet.invoke.getRevokedCredentials();
+    
+    // 2. For each revoked URI, remove from learn-cloud index
+    for (const uri of revokedUris) {
+        const records = await wallet.index.LearnCloud.get({ uri });
+        if (records?.length > 0) {
+            await wallet.index.LearnCloud.remove?.(records[0]!.id);
+        }
+    }
+    
+    // 3. Invalidate queries to refresh UI
+    queryClient.invalidateQueries({ queryKey: ['useGetIDs'] });
+};
+```
+
+### Integration in Apps
+
+Add to top-level component (e.g., `AppRouter.tsx`):
+
+```typescript
+import { useSyncRevokedCredentials } from 'learn-card-base';
+
+// In component, alongside other sync hooks
+useSyncConsentFlow(enablePrefetch);
+useSyncRevokedCredentials(enablePrefetch);  // Add this
+```
+
+### Key Files Summary
+
+| File | Purpose |
+|------|---------|
+| `brain-service/src/accesslayer/credential/read.ts` | `getReceivedCredentialsForProfile` filters revoked, `getRevokedCredentialUrisForProfile` queries revoked |
+| `brain-service/src/routes/credentials.ts` | `getRevokedCredentials` endpoint |
+| `learn-card-base/src/react-query/queries/vcQueries.ts` | `useSyncRevokedCredentials` hook |
+| `apps/scouts/src/AppRouter.tsx` | Hook integration in ScoutPass |
+
+## Self-Issued Credentials Bug (Fixed Feb 2026)
+
+### Problem
+
+When a user self-issues a credential (e.g., creating a Global Network and receiving their own Global Admin ID), the credential was showing "Pending Acceptance" instead of being automatically accepted.
+
+### Root Cause
+
+The `handleIssueBoost` function in several CMS components was calling `sendBoostCredential()` but NOT calling `acceptCredential()` for the self-boosting case. This created only a `CREDENTIAL_SENT` relationship in Neo4j, but no `CREDENTIAL_RECEIVED` relationship.
+
+### The Fix
+
+Added `wallet.invoke.acceptCredential(sentBoostUri)` after `sendBoostCredential` in these files:
+- `apps/scouts/src/components/troopsCMS/TroopsCMS.tsx`
+- `apps/scouts/src/components/boost/boostCMS/BoostCMS.tsx`
+- `apps/scouts/src/components/boost/boostCMS/UpdateBoostCMS.tsx`
+
+### Pattern (Correct)
+
+```typescript
+// Self-boosting flow
+if (profileId === currentLCNUser?.profileId) {
+    const { sentBoost, sentBoostUri } = await sendBoostCredential(
+        wallet,
+        profileId,
+        boostUri
+    );
+
+    // REQUIRED: Accept the credential on LCN so it's not stuck in "pending" state
+    await wallet.invoke.acceptCredential(sentBoostUri);
+
+    // Store in personal index
+    const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
+    await addCredentialToWallet({ uri: issuedVcUri });
+}
+```
+
+### Backfill Script for Production
+
+For credentials already self-issued before the fix, run this Cypher in Neo4j:
+
+```cypher
+// Backfill CREDENTIAL_RECEIVED for self-issued credentials
+// Run with caution - test on staging first!
+
+// DRY RUN: Find self-issued credentials missing CREDENTIAL_RECEIVED
+MATCH (c:Credential)-[sent:CREDENTIAL_SENT]->(p:Profile)
+WHERE c.issuerId = p.did
+  AND NOT EXISTS((c)-[:CREDENTIAL_RECEIVED]->(p))
+RETURN count(c) as credentials_to_backfill, collect(c.id)[..10] as sample_ids;
+
+// EXECUTE: Create missing CREDENTIAL_RECEIVED relationships
+MATCH (c:Credential)-[sent:CREDENTIAL_SENT]->(p:Profile)
+WHERE c.issuerId = p.did
+  AND NOT EXISTS((c)-[:CREDENTIAL_RECEIVED]->(p))
+MERGE (c)-[received:CREDENTIAL_RECEIVED]->(p)
+ON CREATE SET 
+    received.date = sent.date,
+    received.uri = sent.uri,
+    received.status = null  // null = claimed/accepted
+RETURN count(received) as backfilled_count;
+```
+
+**Alternative: Match by boost category (Global Admin IDs only)**
+
+```cypher
+// More targeted: Only Global Admin ID credentials
+MATCH (b:Boost)<-[:CREDENTIAL_FOR]-(c:Credential)-[sent:CREDENTIAL_SENT]->(p:Profile)
+WHERE b.category = 'globalAdminId'
+  AND c.issuerId = p.did
+  AND NOT EXISTS((c)-[:CREDENTIAL_RECEIVED]->(p))
+MERGE (c)-[received:CREDENTIAL_RECEIVED]->(p)
+ON CREATE SET 
+    received.date = sent.date,
+    received.uri = sent.uri,
+    received.status = null
+RETURN count(received) as backfilled_count;
+```
+
+### Verification Query
+
+```cypher
+// Check status of self-issued credentials after backfill
+MATCH (c:Credential)-[sent:CREDENTIAL_SENT]->(p:Profile)
+WHERE c.issuerId = p.did
+OPTIONAL MATCH (c)-[received:CREDENTIAL_RECEIVED]->(p)
+RETURN 
+    c.id as credential_id,
+    p.profileId as profile_id,
+    sent IS NOT NULL as has_sent,
+    received IS NOT NULL as has_received,
+    received.status as received_status
+LIMIT 20;
+```
+
+
+Please read AGENTS.md

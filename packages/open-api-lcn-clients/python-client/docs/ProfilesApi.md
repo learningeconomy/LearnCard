@@ -4,6 +4,9 @@ All URIs are relative to *https://network.learncard.com/api*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**inbox_approve_guardian_request**](ProfilesApi.md#inbox_approve_guardian_request) | **POST** /inbox/guardian-approval/approve | Approve Guardian Request
+[**inbox_approve_guardian_request_by_path**](ProfilesApi.md#inbox_approve_guardian_request_by_path) | **GET** /inbox/guardian-approval/{token} | Approve Guardian Request (GET)
+[**inbox_send_guardian_approval_email**](ProfilesApi.md#inbox_send_guardian_approval_email) | **POST** /inbox/guardian-approval/send | Send Guardian Approval Email
 [**profile_accept_connection_request**](ProfilesApi.md#profile_accept_connection_request) | **POST** /profile/{profileId}/accept-connection | Accept Connection Request
 [**profile_block_profile**](ProfilesApi.md#profile_block_profile) | **POST** /profile/{profileId}/block | Block another profile
 [**profile_blocked**](ProfilesApi.md#profile_blocked) | **GET** /profile/blocked | View blocked profiles
@@ -22,6 +25,8 @@ Method | HTTP request | Description
 [**profile_get_managed_service_profiles**](ProfilesApi.md#profile_get_managed_service_profiles) | **GET** /profile/managed-services | Managed Service Profiles
 [**profile_get_other_profile**](ProfilesApi.md#profile_get_other_profile) | **GET** /profile/{profileId} | Get profile information
 [**profile_get_profile**](ProfilesApi.md#profile_get_profile) | **GET** /profile | Get your profile information
+[**profile_invalidate_invite**](ProfilesApi.md#profile_invalidate_invite) | **POST** /profile/invite/{challenge}/invalidate | Invalidate an invitation
+[**profile_list_invites**](ProfilesApi.md#profile_list_invites) | **GET** /profile/invites | List valid connection invitations
 [**profile_manager_create_managed_profile**](ProfilesApi.md#profile_manager_create_managed_profile) | **POST** /profile/create-managed-profile | Create a managed profile
 [**profile_manager_get_managed_profiles**](ProfilesApi.md#profile_manager_get_managed_profiles) | **POST** /profile/managed-profiles | Managed Profiles
 [**profile_paginated_connection_requests**](ProfilesApi.md#profile_paginated_connection_requests) | **GET** /profile/connection-requests/paginated | View connection requests
@@ -37,6 +42,255 @@ Method | HTTP request | Description
 [**profile_unblock_profile**](ProfilesApi.md#profile_unblock_profile) | **POST** /profile/{profileId}/unblock | Unblock another profile
 [**profile_update_profile**](ProfilesApi.md#profile_update_profile) | **POST** /profile | Update your profile
 
+
+# **inbox_approve_guardian_request**
+> ContactMethodsSendChallenge200Response inbox_approve_guardian_request(inbox_approve_guardian_request_request)
+
+Approve Guardian Request
+
+Consumes a guardian approval token and marks the requesting user profile as approved.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contact_methods_send_challenge200_response import ContactMethodsSendChallenge200Response
+from openapi_client.models.inbox_approve_guardian_request_request import InboxApproveGuardianRequestRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ProfilesApi(api_client)
+    inbox_approve_guardian_request_request = openapi_client.InboxApproveGuardianRequestRequest() # InboxApproveGuardianRequestRequest | 
+
+    try:
+        # Approve Guardian Request
+        api_response = api_instance.inbox_approve_guardian_request(inbox_approve_guardian_request_request)
+        print("The response of ProfilesApi->inbox_approve_guardian_request:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ProfilesApi->inbox_approve_guardian_request: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **inbox_approve_guardian_request_request** | [**InboxApproveGuardianRequestRequest**](InboxApproveGuardianRequestRequest.md)|  | 
+
+### Return type
+
+[**ContactMethodsSendChallenge200Response**](ContactMethodsSendChallenge200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **inbox_approve_guardian_request_by_path**
+> ContactMethodsSendChallenge200Response inbox_approve_guardian_request_by_path(token)
+
+Approve Guardian Request (GET)
+
+GET endpoint to consume guardian approval token from URL path.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contact_methods_send_challenge200_response import ContactMethodsSendChallenge200Response
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ProfilesApi(api_client)
+    token = 'token_example' # str | 
+
+    try:
+        # Approve Guardian Request (GET)
+        api_response = api_instance.inbox_approve_guardian_request_by_path(token)
+        print("The response of ProfilesApi->inbox_approve_guardian_request_by_path:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ProfilesApi->inbox_approve_guardian_request_by_path: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **token** | **str**|  | 
+
+### Return type
+
+[**ContactMethodsSendChallenge200Response**](ContactMethodsSendChallenge200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**404** | Not found |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **inbox_send_guardian_approval_email**
+> InboxSendGuardianApprovalEmail200Response inbox_send_guardian_approval_email(inbox_send_guardian_approval_email_request)
+
+Send Guardian Approval Email
+
+Generates a one-time approval token and emails a link to the guardian. When the link is consumed, the requester's profile will be marked as approved.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.inbox_send_guardian_approval_email200_response import InboxSendGuardianApprovalEmail200Response
+from openapi_client.models.inbox_send_guardian_approval_email_request import InboxSendGuardianApprovalEmailRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ProfilesApi(api_client)
+    inbox_send_guardian_approval_email_request = openapi_client.InboxSendGuardianApprovalEmailRequest() # InboxSendGuardianApprovalEmailRequest | 
+
+    try:
+        # Send Guardian Approval Email
+        api_response = api_instance.inbox_send_guardian_approval_email(inbox_send_guardian_approval_email_request)
+        print("The response of ProfilesApi->inbox_send_guardian_approval_email:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ProfilesApi->inbox_send_guardian_approval_email: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **inbox_send_guardian_approval_email_request** | [**InboxSendGuardianApprovalEmailRequest**](InboxSendGuardianApprovalEmailRequest.md)|  | 
+
+### Return type
+
+[**InboxSendGuardianApprovalEmail200Response**](InboxSendGuardianApprovalEmail200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_accept_connection_request**
 > bool profile_accept_connection_request(profile_id)
@@ -201,7 +455,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_blocked**
-> List[BoostGetBoostRecipients200ResponseInnerTo] profile_blocked()
+> List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo] profile_blocked()
 
 View blocked profiles
 
@@ -213,7 +467,7 @@ This route shows the current user's blocked profiles
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_boost_recipients200_response_inner_to import BoostGetBoostRecipients200ResponseInnerTo
+from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -255,7 +509,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**List[BoostGetBoostRecipients200ResponseInnerTo]**](BoostGetBoostRecipients200ResponseInnerTo.md)
+[**List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo]**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md)
 
 ### Authorization
 
@@ -444,8 +698,6 @@ Name | Type | Description  | Notes
 
 Connect using an invitation
 
-Connects with another profile using an invitation challenge
-
 ### Example
 
 * Bearer Authentication (Authorization):
@@ -523,7 +775,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_connection_requests**
-> List[BoostGetBoostRecipients200ResponseInnerTo] profile_connection_requests()
+> List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo] profile_connection_requests()
 
 View connection requests
 
@@ -536,7 +788,7 @@ Warning! This route is deprecated and currently has a hard limit of returning on
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_boost_recipients200_response_inner_to import BoostGetBoostRecipients200ResponseInnerTo
+from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -578,7 +830,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**List[BoostGetBoostRecipients200ResponseInnerTo]**](BoostGetBoostRecipients200ResponseInnerTo.md)
+[**List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo]**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md)
 
 ### Authorization
 
@@ -601,7 +853,7 @@ This endpoint does not need any parameter.
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_connections**
-> List[BoostGetBoostRecipients200ResponseInnerTo] profile_connections()
+> List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo] profile_connections()
 
 View connections
 
@@ -614,7 +866,7 @@ Warning! This route is deprecated and currently has a hard limit of returning on
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_boost_recipients200_response_inner_to import BoostGetBoostRecipients200ResponseInnerTo
+from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -656,7 +908,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**List[BoostGetBoostRecipients200ResponseInnerTo]**](BoostGetBoostRecipients200ResponseInnerTo.md)
+[**List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo]**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md)
 
 ### Authorization
 
@@ -679,7 +931,7 @@ This endpoint does not need any parameter.
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_create_managed_service_profile**
-> str profile_create_managed_service_profile(profile_create_profile_request)
+> str profile_create_managed_service_profile(profile_create_service_profile_request)
 
 Create a managed service profile
 
@@ -691,7 +943,7 @@ Creates a managed service profile
 
 ```python
 import openapi_client
-from openapi_client.models.profile_create_profile_request import ProfileCreateProfileRequest
+from openapi_client.models.profile_create_service_profile_request import ProfileCreateServiceProfileRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -715,11 +967,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_create_profile_request = openapi_client.ProfileCreateProfileRequest() # ProfileCreateProfileRequest | 
+    profile_create_service_profile_request = openapi_client.ProfileCreateServiceProfileRequest() # ProfileCreateServiceProfileRequest | 
 
     try:
         # Create a managed service profile
-        api_response = api_instance.profile_create_managed_service_profile(profile_create_profile_request)
+        api_response = api_instance.profile_create_managed_service_profile(profile_create_service_profile_request)
         print("The response of ProfilesApi->profile_create_managed_service_profile:\n")
         pprint(api_response)
     except Exception as e:
@@ -733,7 +985,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **profile_create_profile_request** | [**ProfileCreateProfileRequest**](ProfileCreateProfileRequest.md)|  | 
+ **profile_create_service_profile_request** | [**ProfileCreateServiceProfileRequest**](ProfileCreateServiceProfileRequest.md)|  | 
 
 ### Return type
 
@@ -843,7 +1095,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_create_service_profile**
-> str profile_create_service_profile(profile_create_profile_request)
+> str profile_create_service_profile(profile_create_service_profile_request)
 
 Create a service profile
 
@@ -855,7 +1107,7 @@ Creates a service profile
 
 ```python
 import openapi_client
-from openapi_client.models.profile_create_profile_request import ProfileCreateProfileRequest
+from openapi_client.models.profile_create_service_profile_request import ProfileCreateServiceProfileRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -879,11 +1131,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_create_profile_request = openapi_client.ProfileCreateProfileRequest() # ProfileCreateProfileRequest | 
+    profile_create_service_profile_request = openapi_client.ProfileCreateServiceProfileRequest() # ProfileCreateServiceProfileRequest | 
 
     try:
         # Create a service profile
-        api_response = api_instance.profile_create_service_profile(profile_create_profile_request)
+        api_response = api_instance.profile_create_service_profile(profile_create_service_profile_request)
         print("The response of ProfilesApi->profile_create_service_profile:\n")
         pprint(api_response)
     except Exception as e:
@@ -897,7 +1149,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **profile_create_profile_request** | [**ProfileCreateProfileRequest**](ProfileCreateProfileRequest.md)|  | 
+ **profile_create_service_profile_request** | [**ProfileCreateServiceProfileRequest**](ProfileCreateServiceProfileRequest.md)|  | 
 
 ### Return type
 
@@ -1086,7 +1338,7 @@ Name | Type | Description  | Notes
 
 Generate a connection invitation
 
-This route creates a one-time challenge that an unknown profile can use to connect with this account
+Generate a connection invitation challenge. By default, invites are single-use; set maxUses > 1 for multi-use, or maxUses = 0 for unlimited. Expiration is in seconds (default 30 days); set expiration = 0 for no expiration.
 
 ### Example
 
@@ -1337,7 +1589,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_get_other_profile**
-> BoostGetBoostRecipients200ResponseInnerTo profile_get_other_profile(profile_id)
+> BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo profile_get_other_profile(profile_id)
 
 Get profile information
 
@@ -1349,7 +1601,7 @@ This route grabs the profile information of any user, using their profileId
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_boost_recipients200_response_inner_to import BoostGetBoostRecipients200ResponseInnerTo
+from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -1395,7 +1647,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**BoostGetBoostRecipients200ResponseInnerTo**](BoostGetBoostRecipients200ResponseInnerTo.md)
+[**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md)
 
 ### Authorization
 
@@ -1420,7 +1672,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_get_profile**
-> BoostGetBoostRecipients200ResponseInnerTo profile_get_profile()
+> BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo profile_get_profile()
 
 Get your profile information
 
@@ -1432,7 +1684,7 @@ This route uses the request header to grab the profile of the current user
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_boost_recipients200_response_inner_to import BoostGetBoostRecipients200ResponseInnerTo
+from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -1474,7 +1726,165 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**BoostGetBoostRecipients200ResponseInnerTo**](BoostGetBoostRecipients200ResponseInnerTo.md)
+[**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **profile_invalidate_invite**
+> bool profile_invalidate_invite(challenge)
+
+Invalidate an invitation
+
+Invalidate a specific connection invitation by its challenge string. Idempotent: returns true even if the invite was already invalid or missing.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ProfilesApi(api_client)
+    challenge = 'challenge_example' # str | 
+
+    try:
+        # Invalidate an invitation
+        api_response = api_instance.profile_invalidate_invite(challenge)
+        print("The response of ProfilesApi->profile_invalidate_invite:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ProfilesApi->profile_invalidate_invite: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **challenge** | **str**|  | 
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **profile_list_invites**
+> List[ProfileListInvites200ResponseInner] profile_list_invites()
+
+List valid connection invitations
+
+List all valid connection invitation links you've created. Each item includes: challenge, expiresIn (seconds or null), usesRemaining (number or null), and maxUses (number or null). Exhausted invites are omitted.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.profile_list_invites200_response_inner import ProfileListInvites200ResponseInner
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ProfilesApi(api_client)
+
+    try:
+        # List valid connection invitations
+        api_response = api_instance.profile_list_invites()
+        print("The response of ProfilesApi->profile_list_invites:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ProfilesApi->profile_list_invites: %s\n" % e)
+```
+
+
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**List[ProfileListInvites200ResponseInner]**](ProfileListInvites200ResponseInner.md)
 
 ### Authorization
 
@@ -1579,7 +1989,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_get_managed_profiles**
-> BoostGetBoostAdmins200Response profile_manager_get_managed_profiles(profile_get_available_profiles_request=profile_get_available_profiles_request)
+> BoostGetBoostAdmins200Response profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
 
 Managed Profiles
 
@@ -1592,7 +2002,7 @@ This route gets all of your managed profiles
 ```python
 import openapi_client
 from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoostAdmins200Response
-from openapi_client.models.profile_get_available_profiles_request import ProfileGetAvailableProfilesRequest
+from openapi_client.models.profile_manager_get_managed_profiles_request import ProfileManagerGetManagedProfilesRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -1616,11 +2026,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_get_available_profiles_request = openapi_client.ProfileGetAvailableProfilesRequest() # ProfileGetAvailableProfilesRequest |  (optional)
+    profile_manager_get_managed_profiles_request = openapi_client.ProfileManagerGetManagedProfilesRequest() # ProfileManagerGetManagedProfilesRequest |  (optional)
 
     try:
         # Managed Profiles
-        api_response = api_instance.profile_manager_get_managed_profiles(profile_get_available_profiles_request=profile_get_available_profiles_request)
+        api_response = api_instance.profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
         print("The response of ProfilesApi->profile_manager_get_managed_profiles:\n")
         pprint(api_response)
     except Exception as e:
@@ -1634,7 +2044,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **profile_get_available_profiles_request** | [**ProfileGetAvailableProfilesRequest**](ProfileGetAvailableProfilesRequest.md)|  | [optional] 
+ **profile_manager_get_managed_profiles_request** | [**ProfileManagerGetManagedProfilesRequest**](ProfileManagerGetManagedProfilesRequest.md)|  | [optional] 
 
 ### Return type
 
@@ -1923,7 +2333,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_pending_connections**
-> List[BoostGetBoostRecipients200ResponseInnerTo] profile_pending_connections()
+> List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo] profile_pending_connections()
 
 View pending connections
 
@@ -1936,7 +2346,7 @@ Warning! This route is deprecated and currently has a hard limit of returning on
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_boost_recipients200_response_inner_to import BoostGetBoostRecipients200ResponseInnerTo
+from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -1978,7 +2388,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**List[BoostGetBoostRecipients200ResponseInnerTo]**](BoostGetBoostRecipients200ResponseInnerTo.md)
+[**List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo]**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md)
 
 ### Authorization
 
@@ -2001,7 +2411,7 @@ This endpoint does not need any parameter.
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_primary_signing_authority**
-> ProfileSigningAuthorities200ResponseInner profile_primary_signing_authority()
+> ProfileSigningAuthority200Response profile_primary_signing_authority()
 
 Get primary Signing Authority for user
 
@@ -2013,7 +2423,7 @@ This route is used to get the primary signing authority that can sign credential
 
 ```python
 import openapi_client
-from openapi_client.models.profile_signing_authorities200_response_inner import ProfileSigningAuthorities200ResponseInner
+from openapi_client.models.profile_signing_authority200_response import ProfileSigningAuthority200Response
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -2055,7 +2465,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**ProfileSigningAuthorities200ResponseInner**](ProfileSigningAuthorities200ResponseInner.md)
+[**ProfileSigningAuthority200Response**](ProfileSigningAuthority200Response.md)
 
 ### Authorization
 
@@ -2410,7 +2820,7 @@ This endpoint does not need any parameter.
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_signing_authority**
-> ProfileSigningAuthorities200ResponseInner profile_signing_authority(endpoint, name)
+> ProfileSigningAuthority200Response profile_signing_authority(endpoint, name)
 
 Get Signing Authority for user
 
@@ -2422,7 +2832,7 @@ This route is used to get a named signing authority that can sign credentials on
 
 ```python
 import openapi_client
-from openapi_client.models.profile_signing_authorities200_response_inner import ProfileSigningAuthorities200ResponseInner
+from openapi_client.models.profile_signing_authority200_response import ProfileSigningAuthority200Response
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -2470,7 +2880,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**ProfileSigningAuthorities200ResponseInner**](ProfileSigningAuthorities200ResponseInner.md)
+[**ProfileSigningAuthority200Response**](ProfileSigningAuthority200Response.md)
 
 ### Authorization
 

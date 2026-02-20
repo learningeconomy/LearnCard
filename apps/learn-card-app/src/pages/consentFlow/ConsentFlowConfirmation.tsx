@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useImmer } from 'use-immer';
 import useConsentFlow from './useConsentFlow';
-import { cloneDeep, isEqual } from 'lodash';
+import { cloneDeep, isEqual } from 'lodash-es';
 
 import {
     useModal,
