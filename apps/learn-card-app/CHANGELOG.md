@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.94.25
+
+### Patch Changes
+
+-   [#998](https://github.com/learningeconomy/LearnCard/pull/998) [`d33c5cb109efa9a81462d139ac80dec61fbe70b7`](https://github.com/learningeconomy/LearnCard/commit/d33c5cb109efa9a81462d139ac80dec61fbe70b7) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1464] "Autosave" user created content
+
+-   [#964](https://github.com/learningeconomy/LearnCard/pull/964) [`6115dbb71768ae98f2c04e30b19a77574e337bfa`](https://github.com/learningeconomy/LearnCard/commit/6115dbb71768ae98f2c04e30b19a77574e337bfa) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: LC-1463 - AI Pathways MVP
+
+-   [#964](https://github.com/learningeconomy/LearnCard/pull/964) [`6115dbb71768ae98f2c04e30b19a77574e337bfa`](https://github.com/learningeconomy/LearnCard/commit/6115dbb71768ae98f2c04e30b19a77574e337bfa) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: LC-1463 - AI Pathways MVP
+
+-   [#971](https://github.com/learningeconomy/LearnCard/pull/971) [`a5e21c66edcff63a75603e741b6907800bf8c984`](https://github.com/learningeconomy/LearnCard/commit/a5e21c66edcff63a75603e741b6907800bf8c984) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-1501 - AI Insight Sessions
+
+-   [#1005](https://github.com/learningeconomy/LearnCard/pull/1005) [`cef30a9bb66204a45c105c123b325ee7ab4fdedc`](https://github.com/learningeconomy/LearnCard/commit/cef30a9bb66204a45c105c123b325ee7ab4fdedc) Thanks [@goblincore](https://github.com/goblincore)! - Externalize Workspace Deps for all Learncard packages
+
+-   [#992](https://github.com/learningeconomy/LearnCard/pull/992) [`42849fe9be2e6654708546c2cc360589e5745fd5`](https://github.com/learningeconomy/LearnCard/commit/42849fe9be2e6654708546c2cc360589e5745fd5) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: LC-1503 - Add streamMode Support for Structured Plan Streaming
+
 ## 1.94.24
 
 ### Patch Changes
