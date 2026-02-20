@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Typewriter from 'typewriter-effect';
-import _ from 'lodash';
+import _ from 'lodash-es';
 
 import { IonContent, IonPage, IonRow } from '@ionic/react';
 import LearnCardTextLogo from '../../../assets/images/learncard-text-logo.svg';
