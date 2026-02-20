@@ -51,7 +51,7 @@ import {
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
-import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import useWallet from 'learn-card-base/hooks/useWallet';
 import {
     getAchievementTypeFromCustomType,
@@ -82,7 +82,7 @@ const UpdateBoostCMS: React.FC = () => {
     const location = useLocation();
     const query = usePathQuery();
 
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
 
     const { initWallet, addVCtoWallet } = useWallet();
     const { presentToast } = useToast();
@@ -336,7 +336,7 @@ const UpdateBoostCMS: React.FC = () => {
         dissmissModal();
         if (currentStep === BoostCMSStepsEnum.create) {
             setCurrentStep(BoostCMSStepsEnum.publish);
-            logAnalyticsEvent('boostCMS_publish', {
+            track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
                 timestamp: Date.now(),
                 action: 'publish',
                 boostType: state?.basicInfo?.achievementType,
@@ -344,7 +344,7 @@ const UpdateBoostCMS: React.FC = () => {
             });
         } else if (currentStep === BoostCMSStepsEnum.publish) {
             setCurrentStep(BoostCMSStepsEnum.issueTo);
-            logAnalyticsEvent('boostCMS_issue_to', {
+            track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
                 timestamp: Date.now(),
                 action: 'issue_to',
                 boostType: state?.basicInfo?.achievementType,
@@ -352,7 +352,7 @@ const UpdateBoostCMS: React.FC = () => {
             });
         } else if (currentStep === BoostCMSStepsEnum.issueTo) {
             setCurrentStep(BoostCMSStepsEnum.confirmation);
-            logAnalyticsEvent('boostCMS_confirmation', {
+            track(AnalyticsEvents.BOOST_CMS_CONFIRMATION, {
                 timestamp: Date.now(),
                 action: 'confirmation',
                 boostType: state?.basicInfo?.achievementType,
@@ -439,7 +439,7 @@ const UpdateBoostCMS: React.FC = () => {
                     type: ToastTypeEnum.Success,
                 });
 
-                logAnalyticsEvent('boostCMS_publish_draft', {
+                track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
                     timestamp: Date.now(),
                     action: 'publish_draft',
                     boostType: state?.basicInfo?.achievementType,
@@ -482,7 +482,7 @@ const UpdateBoostCMS: React.FC = () => {
                 );
                 setIsPublishLoading(false);
                 if (updatedBoost) {
-                    logAnalyticsEvent('boostCMS_publish_live', {
+                    track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
                         timestamp: Date.now(),
                         action: 'publish_live',
                         boostType: state?.basicInfo?.achievementType,

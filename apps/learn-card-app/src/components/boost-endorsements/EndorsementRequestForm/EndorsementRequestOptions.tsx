@@ -20,7 +20,7 @@ import {
     useWallet,
     useGetCurrentLCNUser,
 } from 'learn-card-base';
-import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { EndorsementRequestState } from './endorsement-request.helpers';
 import { VC } from '@learncard/types';
 
@@ -42,7 +42,7 @@ export const EndorsementRequestOptions: React.FC<{
         desktop: ModalTypes.FullScreen,
     });
     const { achievementType, title } = useGetVCInfo(credential, categoryType);
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
 
     const { presentToast } = useToast();
     const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -70,7 +70,7 @@ export const EndorsementRequestOptions: React.FC<{
                     setShareLink(
                         `https://${host}/?uri=${uri}&seed=${seed}&pin=${pin}&endorsementRequest=true`
                     );
-                    logAnalyticsEvent('generate_share_link', {
+                    track(AnalyticsEvents.GENERATE_SHARE_LINK, {
                         category: categoryType,
                         boostType: achievementType,
                         method: 'Share Boost',

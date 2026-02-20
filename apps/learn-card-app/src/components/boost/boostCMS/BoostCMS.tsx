@@ -108,7 +108,7 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
-import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { useAddCredentialToWallet } from '../mutations';
 import useWallet from 'learn-card-base/hooks/useWallet';
 import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
@@ -157,7 +157,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     const queryClient = useQueryClient();
     const { isDesktop } = useDeviceTypeByWidth();
 
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
 
     const { newModal, closeModal } = useModal();
     const { mutateAsync: createBoost } = useCreateBoost();
@@ -609,19 +609,19 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
             closeModal();
             setCurrentStep(BoostCMSStepsEnum.publish);
-            logAnalyticsEvent('boostCMS_publish', {
+            track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
                 timestamp: Date.now(),
                 action: 'publish',
-                boostType: state?.basicInfo?.achievementType,
+                boostType: state?.basicInfo?.achievementType ?? undefined,
                 category: state?.basicInfo?.type,
             });
         } else if (currentStep === BoostCMSStepsEnum.publish) {
             closeModal();
             setCurrentStep(BoostCMSStepsEnum.issueTo);
-            logAnalyticsEvent('boostCMS_issue_to', {
+            track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
                 timestamp: Date.now(),
                 action: 'issue_to',
-                boostType: state?.basicInfo?.achievementType,
+                boostType: state?.basicInfo?.achievementType ?? undefined,
                 category: state?.basicInfo?.type,
             });
         }
@@ -726,10 +726,10 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     type: ToastTypeEnum.Success,
                 });
 
-                logAnalyticsEvent('boostCMS_publish_draft', {
+                track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
                     timestamp: Date.now(),
                     action: 'publish_draft',
-                    boostType: state?.basicInfo?.achievementType,
+                    boostType: state?.basicInfo?.achievementType ?? undefined,
                     category: state?.basicInfo?.type,
                 });
 
@@ -772,13 +772,10 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
             setIsPublishLoading(false);
             if (boostUri) {
-                // Clear autosave since we successfully published
-                clearLocalSave();
-
-                logAnalyticsEvent('boostCMS_publish_live', {
+                track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
                     timestamp: Date.now(),
                     action: 'publish_live',
-                    boostType: state?.basicInfo?.achievementType,
+                    boostType: state?.basicInfo?.achievementType ?? undefined,
                     category: state?.basicInfo?.type,
                 });
 

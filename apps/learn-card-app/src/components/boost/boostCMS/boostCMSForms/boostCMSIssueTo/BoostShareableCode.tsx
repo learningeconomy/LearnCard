@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { Clipboard } from '@capacitor/clipboard';
 
 import useDebounce from 'apps/learn-card-app/src/hooks/useDebounce';
-import useFirebaseAnalytics from 'apps/learn-card-app/src/hooks/useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 import {
     IonRow,
@@ -67,7 +67,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
 }) => {
     const { newModal, closeModal } = useModal();
     const { initWallet } = useWallet();
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
     const { getRegisteredSigningAuthority, getRegisteredSigningAuthorities } =
         useSigningAuthority();
 
@@ -181,7 +181,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                             _boostClaimLink?.challenge
                         )
                     );
-                    logAnalyticsEvent('generate_claim_link', {
+                    track(AnalyticsEvents.GENERATE_CLAIM_LINK, {
                         category: state?.basicInfo?.type,
                         boostType: state?.basicInfo?.achievementType,
                         method: 'Claim Link',
@@ -222,7 +222,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                 _boostClaimLink?.challenge
                             )
                         );
-                        logAnalyticsEvent('generate_claim_link', {
+                        track(AnalyticsEvents.GENERATE_CLAIM_LINK, {
                             category: state?.basicInfo?.type,
                             boostType: state?.basicInfo?.achievementType,
                             method: 'Claim Link',

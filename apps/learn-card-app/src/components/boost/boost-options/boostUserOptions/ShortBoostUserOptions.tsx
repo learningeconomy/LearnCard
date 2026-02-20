@@ -10,7 +10,7 @@ import AddUser from '../../../svgs/AddUser';
 
 import { BoostUserTypeEnum } from '../boostOptions';
 
-import useFirebaseAnalytics from 'apps/learn-card-app/src/hooks/useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import useBoost from '../../../boost/hooks/useBoost';
 import {
     useModal,
@@ -66,7 +66,7 @@ const ShortBoostUserOptions: React.FC<{
     const [presentAlert] = useIonAlert();
     const sectionPortal = document.getElementById('section-cancel-portal');
 
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
 
     const firstPage =
         draftRecipients?.length && draftRecipients?.length > 0
@@ -103,7 +103,7 @@ const ShortBoostUserOptions: React.FC<{
 
         presentBoostIssueLoadingModal();
         await handleSubmitExistingBoostSelf(profileId, boostUri, boost?.status);
-        logAnalyticsEvent('self_boost', {
+        track(AnalyticsEvents.SELF_BOOST, {
             category: boost?.category,
             boostType: boost?.type,
             method: 'Managed Boost',
@@ -122,7 +122,7 @@ const ShortBoostUserOptions: React.FC<{
         setIssueLoading(true);
         presentBoostIssueLoadingModal();
         await handleSubmitExistingBoostOther(state.issueTo, boostUri, boost?.status);
-        logAnalyticsEvent('send_boost', {
+        track(AnalyticsEvents.SEND_BOOST, {
             category: boost?.category,
             boostType: boost?.type,
             method: 'Managed Boost',
