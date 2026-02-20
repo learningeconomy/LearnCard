@@ -8,7 +8,7 @@ import { getVCPlugin } from '@learncard/vc-plugin';
 import { getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
 import { getLearnCloudPlugin } from '@learncard/learn-cloud-plugin';
 import { expirationPlugin } from '@learncard/expiration-plugin';
-import { getEthereumPlugin } from '@learncard/ethereum-plugin';
+
 import { getVpqrPlugin } from '@learncard/vpqr-plugin';
 import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getVerifyBoostPlugin, getLearnCardNetworkPlugin } from '@learncard/network-plugin';
@@ -78,6 +78,7 @@ export const networkLearnCardFromSeed = async ({
 
     const expirationLc = await cloudLc.addPlugin(expirationPlugin(cloudLc));
 
+    const { getEthereumPlugin } = await import('@learncard/ethereum-plugin');
     const ethLc = await expirationLc.addPlugin(getEthereumPlugin(expirationLc, ethereumConfig));
 
     const vpqrLc = await ethLc.addPlugin(getVpqrPlugin(ethLc));

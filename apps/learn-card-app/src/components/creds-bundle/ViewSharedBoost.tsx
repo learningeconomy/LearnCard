@@ -18,7 +18,7 @@ import SharedBoostVerificationBlock, {
     SharedBoostVerificationBlockViewMode,
 } from './SharedBoostVerificationBlock';
 import Lottie from 'react-lottie-player';
-import HourGlass from '../../assets/lotties/hourglass.json';
+const HourGlass = '/lotties/hourglass.json';
 import MainHeader from '../main-header/MainHeader';
 import EndorsementRequestModal from '../boost-endorsements/EndorsementRequestModal/EndorsementRequestModal';
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
@@ -229,7 +229,7 @@ const ViewSharedBoost: React.FC<{
                         <div className="max-w-[200px] mt-[-50px]">
                             <Lottie
                                 loop
-                                animationData={HourGlass}
+                                path={HourGlass}
                                 play
                                 style={{ width: '100%', height: '100%' }}
                             />

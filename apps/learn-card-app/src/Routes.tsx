@@ -13,19 +13,21 @@ import * as Sentry from '@sentry/react';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
-import LaunchPad from './pages/launchPad/LaunchPad';
+const LaunchPad = lazyWithRetry(() => import('./pages/launchPad/LaunchPad'));
 const EmbedAppFullScreen = lazyWithRetry(() => import('./pages/launchPad/EmbedAppFullScreen'));
 const AppListingPage = lazyWithRetry(() => import('./pages/launchPad/AppListingPage'));
 const NotificationsPage = lazyWithRetry(
     () => import('./pages/notificationsPage/NotificationsPage')
 );
-import LoginPage from './pages/login/LoginPage';
-import AchievementsPage from './pages/achievements/AchievementsPage';
+const LoginPage = lazyWithRetry(() => import('./pages/login/LoginPage'));
+const AchievementsPage = lazyWithRetry(() => import('./pages/achievements/AchievementsPage'));
 
-import IdsPage from './pages/ids/IdsPage';
+const IdsPage = lazyWithRetry(() => import('./pages/ids/IdsPage'));
 
-import LearningHistoryPage from './pages/learninghistory/LearningHistoryPage';
-import WorkHistoryPage from './pages/workhistory/WorkHistoryPage';
+const LearningHistoryPage = lazyWithRetry(
+    () => import('./pages/learninghistory/LearningHistoryPage')
+);
+const WorkHistoryPage = lazyWithRetry(() => import('./pages/workhistory/WorkHistoryPage'));
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 const CurrenciesPage = lazyWithRetry(() => import('./pages/currencies/CurrenciesPage'));
@@ -41,6 +43,7 @@ const UpdateBoostCMS = lazyWithRetry(() => import('./components/boost/boostCMS/U
 const SkillsPage = lazyWithRetry(() => import('./pages/skills/SkillsPage'));
 const AiInsights = lazyWithRetry(() => import('./pages/ai-insights/AiInsights'));
 const ResumeBuilderPage = lazyWithRetry(() => import('./pages/resume-builder/ResumeBuilderPage'));
+const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
 const ViewSharedBoost = lazyWithRetry(() => import('./components/creds-bundle/ViewSharedBoost'));
 const MembershipPage = lazyWithRetry(() => import('./pages/membership/MembershipPage'));
@@ -67,11 +70,13 @@ const WalletServiceWorker = lazyWithRetry(
 const ClaimBoost = lazyWithRetry(() => import('./pages/claimBoost/ClaimBoost'));
 const ApproveAccount = lazyWithRetry(() => import('./pages/approveAccount/ApproveAccount'));
 
-import SocialBadgesPage from './pages/socialBadgesPage/SocialBadgesPage';
+const SocialBadgesPage = lazyWithRetry(() => import('./pages/socialBadgesPage/SocialBadgesPage'));
 
 import { LoadingPage2 } from './pages/loadingPage/LoadingPage';
-import AccomplishmentsPage from './pages/accomplishments/AccomplishmentsPage';
-import AccommodationsPage from './pages/accommodations/AccommodationsPage';
+const AccomplishmentsPage = lazyWithRetry(
+    () => import('./pages/accomplishments/AccomplishmentsPage')
+);
+const AccommodationsPage = lazyWithRetry(() => import('./pages/accommodations/AccommodationsPage'));
 
 const CustomWallet = lazyWithRetry(() => import('./pages/hidden/CustomWallet'));
 const ClaimFromDashboard = lazyWithRetry(
@@ -107,19 +112,39 @@ const AppStoreAdminWithProvider: React.FC = () => (
 // import ClaimFromDashboard from './pages/claim-from-dashboard/ClaimFromDashboard';
 // import LoginWithSeed from './pages/hidden/LoginWithSeed';
 // import FamilyPage from './pages/familyPage/FamilyPage';
-import AdminToolsPage from './pages/adminToolsPage/AdminToolsPage';
-import ViewAllManagedBoostsPage from './pages/adminToolsPage/ViewAllManagedBoostsPage';
-import BulkBoostImportPage from './pages/adminToolsPage/bulk-import/BulkBoostImportPage';
-import ManageServiceProfilesPage from './pages/adminToolsPage/ManageServiceProfilePage';
-import ManageConsentFlowContractsPage from './pages/adminToolsPage/ManageConsentFlowContractsPage';
-import SigningAuthoritiesPage from './pages/adminToolsPage/SigningAuthoritiesPage';
-import APITokensPage from './pages/adminToolsPage/api-tokens/APITokensPage';
+const AdminToolsPage = lazyWithRetry(() => import('./pages/adminToolsPage/AdminToolsPage'));
+const ViewAllManagedBoostsPage = lazyWithRetry(
+    () => import('./pages/adminToolsPage/ViewAllManagedBoostsPage')
+);
+const BulkBoostImportPage = lazyWithRetry(
+    () => import('./pages/adminToolsPage/bulk-import/BulkBoostImportPage')
+);
+const ManageServiceProfilesPage = lazyWithRetry(
+    () => import('./pages/adminToolsPage/ManageServiceProfilePage')
+);
+const ManageConsentFlowContractsPage = lazyWithRetry(
+    () => import('./pages/adminToolsPage/ManageConsentFlowContractsPage')
+);
+const SigningAuthoritiesPage = lazyWithRetry(
+    () => import('./pages/adminToolsPage/SigningAuthoritiesPage')
+);
+const APITokensPage = lazyWithRetry(
+    () => import('./pages/adminToolsPage/api-tokens/APITokensPage')
+);
 
 const DevCli = lazyWithRetry(() => import('./pages/devCli/DevCli'));
-
-import AiSessionTopicsContainer from './components/ai-sessions/AiSessionTopicsContainer';
-import AiSessionsContainer from './components/ai-sessions/AiSessionsContainer';
-import UserVerifyEmail from './components/user-profile/UserContact/UserVerifyEmail';
+const AiPathwaysDiscovery = lazyWithRetry(
+    () => import('./pages/ai-pathways/ai-pathways-discovery/AiPathwaysDiscovery')
+);
+const AiSessionTopicsContainer = lazyWithRetry(
+    () => import('./components/ai-sessions/AiSessionTopicsContainer')
+);
+const AiSessionsContainer = lazyWithRetry(
+    () => import('./components/ai-sessions/AiSessionsContainer')
+);
+const UserVerifyEmail = lazyWithRetry(
+    () => import('./components/user-profile/UserContact/UserVerifyEmail')
+);
 const LearnCardAiChatBot = lazyWithRetry(
     () => import('./components/new-ai-session/LearnCardAiChatBot/LearnCardAiChatBot')
 );
@@ -207,6 +232,12 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/skills" component={SkillsPage} />
                         <PrivateRoute exact path="/ai/insights" component={AiInsights} />
                         <PrivateRoute exact path="/resume-builder" component={ResumeBuilderPage} />
+                        <PrivateRoute exact path="/ai/pathways" component={AiPathways} />
+                        <Route
+                            exact
+                            path="/ai/pathways/discovery"
+                            component={AiPathwaysDiscovery}
+                        />
                         <PrivateRoute
                             exact
                             path="/learninghistory"

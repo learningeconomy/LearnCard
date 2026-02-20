@@ -98,7 +98,7 @@ const WalletPage: React.FC = () => {
 
     const categoryToPath: Partial<Record<CredentialCategoryEnum, string>> = {
         [CredentialCategoryEnum.aiTopic]: '/ai/topics',
-        // [CredentialCategoryEnum.aiPathway]: '/ai/pathways', // placeholder
+        [CredentialCategoryEnum.aiPathway]: '/ai/pathways', // placeholder
         [CredentialCategoryEnum.aiInsight]: '/ai/insights', // placeholder
         [CredentialCategoryEnum.skill]: '/skills',
         [CredentialCategoryEnum.socialBadge]: '/socialBadges',
