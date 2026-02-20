@@ -1,7 +1,7 @@
 import React from 'react';
 import Lottie from 'react-lottie-player';
 
-import FactoryMachine from '../../../assets/lotties/factory.json';
+const FactoryMachine = '/lotties/factory.json';
 
 export const BoostLoader: React.FC<{
     text: string;
@@ -14,7 +14,7 @@ export const BoostLoader: React.FC<{
                 } ${className}`}
         >
             <div className="max-w-[450px] m-auto h-full flex flex-col items-center justify-center">
-                <Lottie loop animationData={FactoryMachine} play style={{ width: '100%' }} />
+                <Lottie loop path={FactoryMachine} play style={{ width: '100%' }} />
                 <p
                     className={`text-center mt-[-25px] text-lg font-semibold ${darkBackground ? 'text-grayscale-50' : 'text-grayscale-900'
                         }`}
@@ -35,7 +35,7 @@ export const BoostIssuanceLoading: React.FC<{ text?: string }> = ({ text = 'Issu
                 <div className="max-w-[350px] m-auto mt-[5px]">
                     <Lottie
                         loop
-                        animationData={FactoryMachine}
+                        path={FactoryMachine}
                         play
                         style={{ width: '100%', height: '100%' }}
                     />

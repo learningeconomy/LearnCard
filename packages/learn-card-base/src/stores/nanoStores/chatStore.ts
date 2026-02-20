@@ -1,11 +1,14 @@
 import { atom } from 'nanostores';
 import { v4 as uuid } from 'uuid';
-import type { ChatMessage, Thread, LearningPathway } from '../../types/ai-chat';
-import { resetArtifactsStore } from './artifactsStore';
+
 import { auth } from './authStore';
-import { showErrorModal } from './ErrorModalStore';
+import { resetArtifactsStore } from './artifactsStore';
+
 import { showToast } from './toastStore';
+import { showErrorModal } from './ErrorModalStore';
+
 import { LEARNCARD_AI_URL } from '../../constants/Networks';
+import type { ChatMessage, Thread, LearningPathway } from '../../types/ai-chat';
 
 export const messages = atom<ChatMessage[]>([]);
 export const threads = atom<Thread[]>([]);
