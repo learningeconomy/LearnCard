@@ -22,7 +22,7 @@ import BoostAddressBookContactOptions from './BoostAddressBookContactOptions';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 import Lottie from 'react-lottie-player';
-import Pulpo from '../../../../../assets/lotties/cuteopulpo.json';
+const Pulpo = '/lotties/cuteopulpo.json';
 
 import BoostAddressBookContactList from './BoostAddressBookContactList';
 
@@ -279,7 +279,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             <div className="max-w-[280px] m-auto">
                                 <Lottie
                                     loop
-                                    animationData={Pulpo}
+                                    path={Pulpo}
                                     play
                                     style={{ width: '100%', height: '100%' }}
                                 />
