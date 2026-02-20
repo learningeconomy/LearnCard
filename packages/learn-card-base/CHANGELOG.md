@@ -1,5 +1,17 @@
 # learn-card-base
 
+## 0.1.17
+
+### Patch Changes
+
+-   [#973](https://github.com/learningeconomy/LearnCard/pull/973) [`5b76830d328bd38b4f184458414ef478c9cc118a`](https://github.com/learningeconomy/LearnCard/commit/5b76830d328bd38b4f184458414ef478c9cc118a) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1510] [LC-1508] Replace temporary revoke for scouts with a more comprehensive solution
+
+-   [#1009](https://github.com/learningeconomy/LearnCard/pull/1009) [`db1f854739a3238b93e594c59f8ed4b58635185f`](https://github.com/learningeconomy/LearnCard/commit/db1f854739a3238b93e594c59f8ed4b58635185f) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1422 - validate file uploads (resumes, transcripts, certificates, etc) + fix toast styles
+
+-   [#971](https://github.com/learningeconomy/LearnCard/pull/971) [`a5e21c66edcff63a75603e741b6907800bf8c984`](https://github.com/learningeconomy/LearnCard/commit/a5e21c66edcff63a75603e741b6907800bf8c984) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-1501 - AI Insight Sessions
+
+-   [#992](https://github.com/learningeconomy/LearnCard/pull/992) [`42849fe9be2e6654708546c2cc360589e5745fd5`](https://github.com/learningeconomy/LearnCard/commit/42849fe9be2e6654708546c2cc360589e5745fd5) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: LC-1503 - Add streamMode Support for Structured Plan Streaming
+
 ## 0.1.16
 
 ### Patch Changes
