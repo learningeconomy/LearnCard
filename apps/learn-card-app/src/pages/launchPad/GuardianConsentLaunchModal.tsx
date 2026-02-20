@@ -269,7 +269,7 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
     // Select Profile step
     if (step === LaunchStep.selectProfile) {
         return (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 max-w-[400px] mx-auto">
                 <AccountSwitcherModal
                     title="Who's using this app?"
                     showFooter={false}
@@ -290,7 +290,7 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
     // Confirm Consent step
     if (step === LaunchStep.confirmConsent && selectedUser) {
         return (
-            <div className="flex flex-col gap-4 p-6 bg-white rounded-[20px] max-w-[400px]">
+            <div className="flex flex-col gap-4 p-6 bg-white rounded-[20px] max-w-[400px] mx-auto">
                 <div className="flex flex-col items-center gap-4">
                     {appImage && (
                         <img
