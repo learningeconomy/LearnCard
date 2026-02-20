@@ -15,7 +15,6 @@ import {
     useGetAppReviews,
     AppStoreAppMetadata,
     AppStoreAppReview,
-    useGuardianGate,
 } from 'learn-card-base';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
