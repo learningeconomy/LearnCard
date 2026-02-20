@@ -1,10 +1,31 @@
-import React, { useState } from 'react';
-import { resumeBuilderStore, RESUME_SECTIONS, ResumeSectionKey, PersonalDetails } from '../../../stores/resumeBuilderStore';
+import React, { useRef, useState } from 'react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
+import {
+    useGetCredentialList,
+    BoostCategoryOptionsEnum,
+    categoryMetadata,
+    CredentialCategoryEnum,
+} from 'learn-card-base';
+import BoostEarnedCard from '../../boost/boost-earned-card/BoostEarnedCard';
+import BoostEarnedIDCard from '../../boost/boost-earned-card/BoostEarnedIDCard';
+import SlimCaretLeft from '../../svgs/SlimCaretLeft';
+import SlimCaretRight from '../../svgs/SlimCaretRight';
+import {
+    resumeBuilderStore,
+    RESUME_SECTIONS,
+    ResumeSectionKey,
+    PersonalDetails,
+} from '../../../stores/resumeBuilderStore';
 
 const ChevronIcon: React.FC<{ open: boolean }> = ({ open }) => (
     <svg
-        className={`w-4 h-4 text-grayscale-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        className={`w-4 h-4 text-grayscale-400 transition-transform duration-200 ${
+            open ? 'rotate-180' : ''
+        }`}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
     >
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
     </svg>
@@ -15,12 +36,22 @@ const PersonalInfoSection: React.FC = () => {
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const setPersonalDetails = resumeBuilderStore.set.setPersonalDetails;
 
-    const fields: { key: keyof PersonalDetails; label: string; placeholder: string; multiline?: boolean }[] = [
+    const fields: {
+        key: keyof PersonalDetails;
+        label: string;
+        placeholder: string;
+        multiline?: boolean;
+    }[] = [
         { key: 'name', label: 'Full Name', placeholder: 'Jane Doe' },
         { key: 'email', label: 'Email', placeholder: 'jane@example.com' },
         { key: 'phone', label: 'Phone', placeholder: '+1 (555) 000-0000' },
         { key: 'location', label: 'Location', placeholder: 'San Francisco, CA' },
-        { key: 'summary', label: 'Summary', placeholder: 'Brief professional summary...', multiline: true },
+        {
+            key: 'summary',
+            label: 'Summary',
+            placeholder: 'Brief professional summary...',
+            multiline: true,
+        },
     ];
 
     return (
@@ -36,7 +67,9 @@ const PersonalInfoSection: React.FC = () => {
                 <div className="px-4 pb-4 flex flex-col gap-3">
                     {fields.map(({ key, label, placeholder, multiline }) => (
                         <div key={key} className="flex flex-col gap-1">
-                            <label className="text-xs font-medium text-grayscale-500">{label}</label>
+                            <label className="text-xs font-medium text-grayscale-500">
+                                {label}
+                            </label>
                             {multiline ? (
                                 <textarea
                                     rows={3}
@@ -62,13 +95,30 @@ const PersonalInfoSection: React.FC = () => {
     );
 };
 
-const CredentialSection: React.FC<{ sectionKey: ResumeSectionKey; label: string }> = ({ sectionKey, label }) => {
+const CredentialSection: React.FC<{ sectionKey: ResumeSectionKey; label: string }> = ({
+    sectionKey,
+    label,
+}) => {
     const [open, setOpen] = useState(false);
+    const swiperRef = useRef<any>(null);
+    const [atBeginning, setAtBeginning] = useState(true);
+    const [atEnd, setAtEnd] = useState(false);
+
     const selectedCredentialUris = resumeBuilderStore.useTracked.selectedCredentialUris();
     const toggleCredential = resumeBuilderStore.set.toggleCredential;
-
     const selected = selectedCredentialUris[sectionKey] ?? [];
-    const count = selected.length;
+
+    const { data: credentialPages, isLoading } = useGetCredentialList(sectionKey as any, open);
+
+    const records = credentialPages?.pages?.flatMap(page => page?.records ?? []) ?? [];
+    const totalCount = records.length;
+    const selectedCount = selected.length;
+    const showNavigation = totalCount > 1;
+
+    const handleSwiperUpdate = (swiper: any) => {
+        setAtBeginning(swiper.isBeginning);
+        setAtEnd(swiper.isEnd);
+    };
 
     return (
         <div className="border-b border-grayscale-100">
@@ -78,34 +128,111 @@ const CredentialSection: React.FC<{ sectionKey: ResumeSectionKey; label: string 
             >
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-grayscale-800">{label}</span>
-                    {count > 0 && (
+                    {selectedCount > 0 && (
                         <span className="text-xs font-semibold bg-indigo-100 text-indigo-600 rounded-full px-2 py-0.5">
-                            {count}
+                            {selectedCount}
                         </span>
                     )}
                 </div>
                 <ChevronIcon open={open} />
             </button>
             {open && (
-                <div className="px-4 pb-4">
-                    <p className="text-xs text-grayscale-400 mb-3">
-                        Credential selection coming soon — credentials from your wallet will appear here.
-                    </p>
-                    {count > 0 && (
-                        <div className="flex flex-col gap-2">
-                            {selected.map(uri => (
-                                <div key={uri} className="flex items-center justify-between bg-indigo-50 rounded-lg px-3 py-2">
-                                    <span className="text-xs text-indigo-700 font-mono truncate max-w-[220px]">{uri}</span>
-                                    <button
-                                        onClick={() => toggleCredential(sectionKey, uri)}
-                                        className="ml-2 text-grayscale-400 hover:text-rose-500 shrink-0"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            ))}
+                <div className="pb-4">
+                    {isLoading && (
+                        <p className="text-xs text-grayscale-400 px-4 mb-2">Loading credentials…</p>
+                    )}
+                    {!isLoading && totalCount === 0 && (
+                        <p className="text-xs text-grayscale-400 px-4 mb-2">
+                            No credentials in this category.
+                        </p>
+                    )}
+                    {!isLoading && totalCount > 0 && (
+                        <div className="relative">
+                            <Swiper
+                                onSwiper={swiper => {
+                                    swiperRef.current = swiper;
+                                    handleSwiperUpdate(swiper);
+                                }}
+                                onSlideChange={handleSwiperUpdate}
+                                onReachBeginning={() => setAtBeginning(true)}
+                                onFromEdge={() => {
+                                    if (swiperRef.current) {
+                                        setAtBeginning(swiperRef.current.isBeginning);
+                                        setAtEnd(swiperRef.current.isEnd);
+                                    }
+                                }}
+                                onReachEnd={() => setAtEnd(true)}
+                                spaceBetween={12}
+                                slidesPerView={'auto'}
+                                grabCursor={true}
+                            >
+                                {records.map((record, index) => {
+                                    const isSelected = selected.includes(record.uri);
+                                    const boostCategory = record.category as any;
+                                    const isID = boostCategory === BoostCategoryOptionsEnum.id;
+                                    const isMembership =
+                                        boostCategory === BoostCategoryOptionsEnum.membership;
+
+                                    return (
+                                        <SwiperSlide
+                                            key={record.uri ?? index}
+                                            style={{ width: 'auto' }}
+                                            onClick={() => toggleCredential(sectionKey, record.uri)}
+                                        >
+                                            <div
+                                                className={`cursor-pointer transition-opacity ${
+                                                    isSelected
+                                                        ? 'ring-2 ring-indigo-500 rounded-xl'
+                                                        : 'opacity-70 hover:opacity-100'
+                                                }`}
+                                            >
+                                                {isID || isMembership ? (
+                                                    <div className="mt-6">
+                                                        <BoostEarnedIDCard
+                                                            record={record}
+                                                            categoryType={boostCategory}
+                                                            defaultImg={
+                                                                categoryMetadata[
+                                                                    boostCategory as CredentialCategoryEnum
+                                                                ]?.defaultImageSrc ?? ''
+                                                            }
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <BoostEarnedCard
+                                                        record={record}
+                                                        categoryType={boostCategory}
+                                                        sizeLg={12}
+                                                        sizeMd={12}
+                                                        sizeSm={12}
+                                                        className="!min-h-[310px]"
+                                                    />
+                                                )}
+                                            </div>
+                                        </SwiperSlide>
+                                    );
+                                })}
+                            </Swiper>
+
+                            {showNavigation && !atBeginning && (
+                                <button
+                                    onClick={() => swiperRef.current?.slidePrev()}
+                                    className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                    style={{ opacity: 0.8 }}
+                                >
+                                    <SlimCaretLeft className="w-5 h-auto" />
+                                </button>
+                            )}
+
+                            {showNavigation && !atEnd && (
+                                <button
+                                    onClick={() => swiperRef.current?.slideNext()}
+                                    className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                    style={{ opacity: 0.8 }}
+                                >
+                                    <SlimCaretRight className="w-5 h-auto" />
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
