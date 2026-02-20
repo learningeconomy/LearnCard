@@ -93,14 +93,11 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
                 return;
             }
 
-            // If switched to a child profile, verify guardian first using unified gate
-            await guardedAction(async () => {
-                if (!hasFamily) {
-                    setStep(LaunchStep.createFamily);
-                } else {
-                    setStep(LaunchStep.selectProfile);
-                }
-            });
+            if (!hasFamily) {
+                setStep(LaunchStep.createFamily);
+            } else {
+                setStep(LaunchStep.selectProfile);
+            }
         };
 
         determineStep();
@@ -124,25 +121,30 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
     const handleConsentAndLaunch = async () => {
         if (!selectedUser) return;
 
-        setIsProcessing(true);
+        await guardedAction(async () => {
+            setIsProcessing(true);
 
-        try {
-            // Consent to contract for selected user
-            await consentToContract({
-                terms,
-                expiresAt: '',
-                oneTime: false,
-            });
+            console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
+            console.log('success!');
 
-            // Sync credentials in background
-            fetchNewContractCredentials();
+            try {
+                // Consent to contract for selected user
+                await consentToContract({
+                    terms,
+                    expiresAt: '',
+                    oneTime: false,
+                });
 
-            // Launch with redirect
-            await launchWithCredentials(selectedUser.did);
-        } catch (error) {
-            console.error('Failed to consent:', error);
-            setIsProcessing(false);
-        }
+                // Sync credentials in background
+                fetchNewContractCredentials();
+
+                // Launch with redirect
+                await launchWithCredentials(selectedUser.did);
+            } catch (error) {
+                console.error('Failed to consent:', error);
+                setIsProcessing(false);
+            }
+        });
     };
 
     // Launch directly (for users who already have consent)
