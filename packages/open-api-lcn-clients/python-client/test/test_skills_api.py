@@ -208,6 +208,13 @@ class TestSkillsApi(unittest.TestCase):
         """
         pass
 
+    def test_skills_semantic_search_skills(self) -> None:
+        """Test case for skills_semantic_search_skills
+
+        Semantic search skills
+        """
+        pass
+
     def test_skills_sync_framework_skills(self) -> None:
         """Test case for skills_sync_framework_skills
 

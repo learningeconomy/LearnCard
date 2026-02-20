@@ -42,6 +42,7 @@ Method | HTTP request | Description
 [**boost_make_boost_parent**](BoostsApi.md#boost_make_boost_parent) | **POST** /boost/make-parent | Make Boost Parent
 [**boost_remove_boost_admin**](BoostsApi.md#boost_remove_boost_admin) | **POST** /boost/remove-admin | Remove a Boost admin
 [**boost_remove_boost_parent**](BoostsApi.md#boost_remove_boost_parent) | **POST** /boost/remove-parent | Remove Boost Parent
+[**boost_revoke_boost_recipient**](BoostsApi.md#boost_revoke_boost_recipient) | **POST** /boost/recipients/revoke | Revoke a boost recipient
 [**boost_search_skills_available_for_boost**](BoostsApi.md#boost_search_skills_available_for_boost) | **POST** /boost/skills/search | Search available skills for a boost
 [**boost_send_boost**](BoostsApi.md#boost_send_boost) | **POST** /boost/send/{profileId} | Send a Boost
 [**boost_send_boost_via_signing_authority**](BoostsApi.md#boost_send_boost_via_signing_authority) | **POST** /boost/send/via-signing-authority/{profileId} | Send a boost to a profile using a signing authority
@@ -3175,6 +3176,88 @@ with openapi_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **boost_remove_boost_parent_request** | [**BoostRemoveBoostParentRequest**](BoostRemoveBoostParentRequest.md)|  | 
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **boost_revoke_boost_recipient**
+> bool boost_revoke_boost_recipient(boost_revoke_boost_recipient_request)
+
+Revoke a boost recipient
+
+Revokes a credential for a specified recipient. This marks the credential as revoked instead of deleting it, and removes any permissions granted via claim hooks.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_revoke_boost_recipient_request import BoostRevokeBoostRecipientRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.BoostsApi(api_client)
+    boost_revoke_boost_recipient_request = openapi_client.BoostRevokeBoostRecipientRequest() # BoostRevokeBoostRecipientRequest | 
+
+    try:
+        # Revoke a boost recipient
+        api_response = api_instance.boost_revoke_boost_recipient(boost_revoke_boost_recipient_request)
+        print("The response of BoostsApi->boost_revoke_boost_recipient:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling BoostsApi->boost_revoke_boost_recipient: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **boost_revoke_boost_recipient_request** | [**BoostRevokeBoostRecipientRequest**](BoostRevokeBoostRecipientRequest.md)|  | 
 
 ### Return type
 

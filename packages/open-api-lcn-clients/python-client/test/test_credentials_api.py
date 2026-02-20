@@ -40,6 +40,13 @@ class TestCredentialsApi(unittest.TestCase):
         """
         pass
 
+    def test_credential_get_revoked_credentials(self) -> None:
+        """Test case for credential_get_revoked_credentials
+
+        Get revoked credentials
+        """
+        pass
+
     def test_credential_incoming_credentials(self) -> None:
         """Test case for credential_incoming_credentials
 
