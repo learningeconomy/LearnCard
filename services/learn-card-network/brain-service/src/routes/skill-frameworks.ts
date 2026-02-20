@@ -4,7 +4,6 @@ import { z } from 'zod';
 import { t, profileRoute } from '@routes';
 
 import {
-    SkillFrameworkType,
     SkillFrameworkValidator,
     LinkProviderFrameworkInputValidator,
     CreateManagedFrameworkInputValidator,
@@ -19,6 +18,7 @@ import {
     PaginatedBoostsValidator,
     BoostQueryValidator,
 } from '@learncard/types';
+import type { SkillFrameworkType } from '@learncard/types';
 import {
     upsertSkillFrameworkFromProvider,
     createSkillFramework as createSkillFrameworkNode,
@@ -35,7 +35,7 @@ import {
     updateSkillFramework as updateSkillFrameworkNode,
     deleteSkillFramework as deleteSkillFrameworkNode,
 } from '@accesslayer/skill-framework/update';
-import { getSkillsProvider } from '@services/skills-provider';
+import { getSkillsProvider, getSkillsProviderForFramework } from '@services/skills-provider';
 import { PaginatedSkillTreeValidator } from 'types/skill-tree';
 import { createSkill } from '@accesslayer/skill/create';
 import { createSkillTree, type SkillTreeInput, toCreateSkillInput } from './skill-inputs';
@@ -77,7 +77,7 @@ export const skillFrameworksRouter = t.router({
         .output(SkillFrameworkValidator)
         .mutation(async ({ ctx, input }): Promise<SkillFrameworkType> => {
             const profileId = ctx.user.profile.profileId;
-            const provider = getSkillsProvider();
+            const provider = getSkillsProviderForFramework(input.frameworkId);
             const providerFw = await provider.getFrameworkById(input.frameworkId);
             if (!providerFw)
                 throw new TRPCError({
@@ -400,7 +400,8 @@ export const skillFrameworksRouter = t.router({
         .query(async ({ input }) => {
             const { id, limit, childrenLimit, cursor } = input;
 
-            const provider = getSkillsProvider();
+            const localFramework = await getSkillFrameworkById(id);
+            const provider = getSkillsProviderForFramework(id, localFramework?.sourceURI);
             const fw = await provider.getFrameworkById(id);
             if (fw) {
                 const providerSkills = await provider.getSkillsForFramework(id);
@@ -430,7 +431,6 @@ export const skillFrameworksRouter = t.router({
                 };
             }
 
-            const localFramework = await getSkillFrameworkById(id);
             if (!localFramework) throw new TRPCError({ code: 'NOT_FOUND' });
 
             const skills = await buildLocalSkillTreePage(id, limit, childrenLimit, cursor ?? null);
