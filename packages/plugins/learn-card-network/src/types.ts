@@ -216,6 +216,7 @@ export type LearnCardNetworkPluginMethods = {
         }
     ) => Promise<boolean>;
     getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
+    getRevokedCredentials: () => Promise<string[]>;
     getSentCredentials: (to?: string) => Promise<SentCredentialInfo[]>;
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     deleteCredential: (uri: string) => Promise<boolean>;
@@ -381,6 +382,7 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<boolean>;
     addBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
     removeBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
+    revokeBoostRecipient: (boostUri: string, recipientProfileId: string) => Promise<boolean>;
     sendBoost: (
         profileId: string,
         boostUri: string,

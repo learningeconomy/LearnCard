@@ -370,9 +370,11 @@ export const getBoostRecipients = async (
             ],
         })
         .with('sender, sent, received, recipient, credential')
-        .where(whereClause);
+        // Filter out revoked credentials using WITH barrier pattern
+        .where(`(received IS NULL OR coalesce(received.status, '') <> 'revoked')${whereClause ? ' AND ' + whereClause : ''}`);
 
     const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
+
 
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: FlatProfileType;
@@ -398,7 +400,17 @@ export const getBoostRecipients = async (
 
     const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));
 
-    return resultsWithIds
+    // Deduplicate by recipient profileId - keep the most recent send
+    const seenProfileIds = new Set<string>();
+    const deduplicated = resultsWithIds.filter(result => {
+        if (seenProfileIds.has(result.to)) {
+            return false;
+        }
+        seenProfileIds.add(result.to);
+        return true;
+    });
+
+    return deduplicated
         .map(result => ({
             ...result,
             to: recipients.find(recipient => recipient.profileId === result.to),
@@ -449,7 +461,10 @@ export const getBoostRecipientsSkipLimit = async (
                 },
                 { identifier: 'recipient', model: Profile },
             ],
-        });
+        })
+        // Use WITH barrier pattern to properly filter revoked credentials
+        .with('sender, sent, received, credential')
+        .where(`received IS NULL OR coalesce(received.status, '') <> 'revoked'`);
 
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: FlatProfileType;
@@ -486,38 +501,25 @@ export const countBoostRecipients = async (
     boost: BoostInstance,
     { includeUnacceptedBoosts = true }: { includeUnacceptedBoosts?: boolean }
 ): Promise<number> => {
-    const query = new QueryBuilder()
-        .match({
-            related: [
-                { identifier: 'source', model: Boost, where: { id: boost.id } },
-                {
-                    ...Credential.getRelationshipByAlias('instanceOf'),
-                    identifier: 'instanceOf',
-                    direction: 'in',
-                },
-                { identifier: 'credential', model: Credential },
-                {
-                    ...Profile.getRelationshipByAlias('credentialSent'),
-                    identifier: 'sent',
-                    direction: 'in',
-                },
-                { identifier: 'sender', model: Profile },
-            ],
-        })
-        .match({
-            optional: includeUnacceptedBoosts,
-            related: [
-                { identifier: 'credential', model: Credential },
-                {
-                    ...Credential.getRelationshipByAlias('credentialReceived'),
-                    identifier: 'received',
-                },
-                { identifier: 'recipient', model: Profile },
-            ],
-        });
+    // Use raw Cypher to bypass potential QueryBuilder issues with OPTIONAL MATCH + WHERE
+    const cypher = includeUnacceptedBoosts
+        ? `
+            MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)
+            MATCH (credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)
+            OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile)
+            WITH DISTINCT sent.to AS recipientId, received
+            WHERE received IS NULL OR coalesce(received.status, '') <> 'revoked'
+            RETURN COUNT(DISTINCT recipientId) AS count
+          `
+        : `
+            MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)
+            MATCH (credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)
+            MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile)
+            WHERE coalesce(received.status, '') <> 'revoked'
+            RETURN COUNT(DISTINCT sent.to) AS count
+          `;
 
-    const result = await query.return('COUNT(DISTINCT sent.to) AS count').run();
-
+    const result = await neogma.queryRunner.run(cypher, { boostId: boost.id });
     return Number(result.records[0]?.get('count') ?? 0);
 };
 
@@ -1381,6 +1383,9 @@ export const getBoostRecipientsWithChildren = async (
         domain: string;
     }
 ): Promise<Array<Omit<BoostRecipientInfo, 'uri'> & { boostUris: string[] }>> => {
+    console.log('[AccessLayer] getBoostRecipientsWithChildren called');
+    console.log('[AccessLayer] boostQuery:', JSON.stringify(boostQuery, null, 2));
+    
     // Convert queries for Neo4j compatibility
     const boostQuery_neo4j = convertObjectRegExpToNeo4j(boostQuery);
     const profileQuery_neo4j = convertObjectRegExpToNeo4j(profileQuery);
@@ -1475,18 +1480,29 @@ export const getBoostRecipientsWithChildren = async (
         credential?: CredentialInstance;
     }>(await _query.run());
 
-    // Process results and group by profile
-    const resultsWithIds = results.map(({ relevantBoost, sender, sent, received, credential }) => {
-        const boostId = relevantBoost.id;
-        return {
-            sent: sent.date,
-            to: sent.to,
-            from: sender.profileId,
-            received: received?.date,
-            boostUri: getBoostUri(boostId, domain),
-            ...(credential && { uri: getCredentialUri(credential.id, domain) }),
-        };
-    });
+    // Process results and group by profile, filtering out revoked credentials
+    // Debug: log results with status info
+    console.log('[getBoostRecipientsWithChildren] Total results before filter:', results.length);
+    const revokedResults = results.filter(({ received }) => received?.status === 'revoked');
+    console.log('[getBoostRecipientsWithChildren] Revoked results:', revokedResults.map(r => ({ 
+        to: r.sent?.to, 
+        status: r.received?.status,
+        boostId: r.relevantBoost?.id 
+    })));
+    
+    const resultsWithIds = results
+        .filter(({ received }) => received?.status !== 'revoked')
+        .map(({ relevantBoost, sender, sent, received, credential }) => {
+            const boostId = relevantBoost.id;
+            return {
+                sent: sent.date,
+                to: sent.to,
+                from: sender.profileId,
+                received: received?.date,
+                boostUri: getBoostUri(boostId, domain),
+                ...(credential && { uri: getCredentialUri(credential.id, domain) }),
+            };
+        });
 
     // Get profile data for recipients (this should be a small set thanks to the limit)
     const recipientIds = [...new Set(resultsWithIds.map(result => result.to))];

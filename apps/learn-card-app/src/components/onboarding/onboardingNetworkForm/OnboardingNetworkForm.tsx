@@ -102,7 +102,6 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const flags = useFlags();
     const schoolCodes = (flags?.underageSchoolCodes as string[]) || [];
 
-
     const authToken = getAuthToken();
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
@@ -119,7 +118,6 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
             return newErrors;
         });
         updateFormData({ dob: date });
-
     };
     const handleCountrySelect = (selectedCountry: string) => {
         updateFormData({ country: selectedCountry });
@@ -457,7 +455,9 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                         { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                                     );
                                     handleLogout(BrandingEnum.learncard, {
-                                        appendQuery: { redirectTo: '/families?createFamily=true' },
+                                        overrideRedirectUrl: `/login?redirectTo=${encodeURIComponent(
+                                            '/families?createFamily=true'
+                                        )}`,
                                     });
                                 }}
                                 className="mx-[10px] shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"

@@ -80,7 +80,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     }
 
     const newCredsCountDisplay =
-        newCredsCount > 0 ? (
+        newCredsCount > 0 && category !== CredentialCategoryEnum.aiPathway ? (
             <span
                 className={`text-${colors?.indicatorColor} font-poppins text-[17px] font-[600] inline-flex items-center gap-[5px] ml-[5px]`}
             >

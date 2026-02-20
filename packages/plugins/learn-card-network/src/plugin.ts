@@ -106,7 +106,7 @@ export async function getLearnCardNetworkPlugin(
     learnCard?.debug?.('LCN: initial getProfile query starting', { apiToken: !!apiToken });
     const initialQuery = client.profile.getProfile
         .query()
-        .then(result => {
+        .then((result: LCNProfile | undefined) => {
             userData = result;
 
             if (userData?.did) did = userData.did;
@@ -114,7 +114,7 @@ export async function getLearnCardNetworkPlugin(
             learnCard?.debug?.('LCN: initial getProfile success', { did });
             return result;
         })
-        .catch(error => {
+        .catch((error: any) => {
             // Non-fatal: API-key tokens may not have profiles:read; avoid unhandled rejection
             learnCard?.debug?.('LCN: getProfile failed (non-fatal)', error);
             return undefined;
@@ -518,6 +518,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.credential.receivedCredentials.query({ from });
             },
+            getRevokedCredentials: async () => {
+                await ensureUser();
+
+                return client.credential.getRevokedCredentials.query();
+            },
             getSentCredentials: async (_learnCard, to) => {
                 await ensureUser();
 
@@ -884,6 +889,11 @@ export async function getLearnCardNetworkPlugin(
                 if (result) await _learnCard.invoke.clearDidWebCache?.();
 
                 return result;
+            },
+            revokeBoostRecipient: async (_learnCard, boostUri, recipientProfileId) => {
+                await ensureUser();
+
+                return client.boost.revokeBoostRecipient.mutate({ boostUri, recipientProfileId });
             },
             deleteBoost: async (_learnCard, uri) => {
                 await ensureUser();

@@ -1,5 +1,5 @@
 import AiSessionsIconFormal from './AiSessionsIconFormal';
-import AiPathwaysIconFormal from './AiPathwaysIconFormal';
+import AiPathwaysIconFormal, { AiPathwaysSideMenuIconFormal } from './AiPathwaysIconFormal';
 import AiInsightsIconFormal from './AiInsightsIconFormal';
 import SkillsIconFormal from './SkillsIconFormal';
 import BoostsIconFormal from './BoostsIconFormal';
@@ -14,6 +14,7 @@ import IDsIconFormal from './IDsIconFormal';
 export const FormalWalletIcons = {
     AiSessionsIconFormal,
     AiPathwaysIconFormal,
+    AiPathwaysSideMenuIconFormal,
     AiInsightsIconFormal,
     SkillsIconFormal,
     BoostsIconFormal,

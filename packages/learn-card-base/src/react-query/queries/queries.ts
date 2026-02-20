@@ -338,15 +338,20 @@ export const useGetCredentialWithEdits = (credential: VC | undefined, boostUri?:
 
 /**
  * Query: Count the number of recipients for a given boost.
+ * @param includeUnacceptedBoosts - If true, includes pending (sent but not claimed) credentials. Default: false
  */
-export const useCountBoostRecipients = (uri: string | undefined, enabled = true) => {
+export const useCountBoostRecipients = (
+    uri: string | undefined,
+    enabled = true,
+    includeUnacceptedBoosts = false
+) => {
     const { initWallet } = useWallet();
     return useQuery<number>({
-        queryKey: ['useCountBoostRecipients', uri],
+        queryKey: ['useCountBoostRecipients', uri, includeUnacceptedBoosts],
         queryFn: async () => {
             if (!uri) throw new Error('Boost URI is required.');
             const wallet = await initWallet();
-            return wallet.invoke.countBoostRecipients(uri);
+            return wallet.invoke.countBoostRecipients(uri, includeUnacceptedBoosts);
         },
         enabled: enabled && Boolean(uri),
     });
@@ -470,15 +475,25 @@ export const usePrefetchBoosts = (enabled = true) => {
 
 /**
  * Query: Get boost recipients.
+ * @param includeUnacceptedBoosts - If true, includes pending (sent but not claimed) credentials. Default: false
  */
-export const useGetBoostRecipients = (boostUri: string | null, enabled = true) => {
+export const useGetBoostRecipients = (
+    boostUri: string | null,
+    enabled = true,
+    includeUnacceptedBoosts = false
+) => {
     const { initWallet } = useWallet();
     return useQuery<BoostRecipientInfo[]>({
-        queryKey: ['boostRecipients', boostUri],
+        queryKey: ['boostRecipients', boostUri, includeUnacceptedBoosts],
         queryFn: async () => {
             if (!boostUri) throw new Error('Boost URI required.');
             const wallet = await initWallet();
-            const data = await wallet.invoke.getBoostRecipients(boostUri);
+            const data = await wallet.invoke.getBoostRecipients(
+                boostUri,
+                25,
+                undefined,
+                includeUnacceptedBoosts
+            );
             return Array.isArray(data) ? data : [];
         },
         enabled,

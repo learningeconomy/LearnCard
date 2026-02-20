@@ -25,8 +25,26 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
     ],
 });
 
+const SCALAR_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>LearnCloud Network API</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+    <script id="api-reference" data-url="./docs/openapi.json"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+</body>
+</html>`;
+
 export const app = express();
-app.use('/', express.static('src/swagger-ui'));
+
 app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
+
+app.get('/', (_req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.send(SCALAR_HTML);
+});
 
 export default app;
