@@ -231,17 +231,18 @@ export type LearnCardNetworkPluginMethods = {
     createBoost: (
         credential: VC | UnsignedVC,
         metadata?: Partial<Omit<Boost, 'uri'>> & {
-            skills?: { frameworkId: string; id: string }[];
+            skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
         }
     ) => Promise<string>;
     createChildBoost: (
         parentUri: string,
         credential: VC | UnsignedVC,
         metadata?: Partial<Omit<Boost, 'uri'>> & {
-            skills?: { frameworkId: string; id: string }[];
+            skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
         }
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
+    getBoostSkills: (uri: string) => Promise<(SkillType & { proficiencyLevel?: number })[]>;
     getBoostFrameworks: (
         uri: string,
         options?: { limit?: number; cursor?: string | null; query?: SkillFrameworkQuery }
@@ -357,14 +358,16 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedLCNProfileManagers>;
     updateBoost: (
         uri: string,
-        updates: Partial<Omit<Boost, 'uri'>>,
+        updates: Partial<Omit<Boost, 'uri'>> & {
+            skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
+        },
         credential?: UnsignedVC | VC
     ) => Promise<boolean>;
     attachFrameworkToBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;
     detachFrameworkFromBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;
     alignBoostSkills: (
         boostUri: string,
-        skills: { frameworkId: string; id: string }[]
+        skills: { frameworkId: string; id: string; proficiencyLevel?: number }[]
     ) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
     getBoostAdmins: (

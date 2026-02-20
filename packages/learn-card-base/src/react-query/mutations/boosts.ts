@@ -7,6 +7,10 @@ import {
     CredentialCategoryEnum,
     getBaseUrl,
     switchedProfileStore,
+    useDeleteCredentialRecord,
+    useGetProfile,
+    useGetSelfAssignedSkillsBoost,
+    useGetSelfAssignedSkillsCredential,
     useWallet,
     VC_WITH_URI,
 } from 'learn-card-base';
@@ -14,17 +18,24 @@ import {
     VC,
     VCValidator,
     UnsignedVP,
-    LCNBoostStatusEnum,
     // oxlint-disable-next-line no-unused-vars
     Boost,
     BoostPermissions,
     UnsignedVC,
+    LCNBoostStatusEnum,
 } from '@learncard/types';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { BoostCMSState } from 'learn-card-base/components/boost/boost';
-import { getEndorsementsForVC } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
+    SELF_ASSIGNED_SKILLS_BOOST_NAME,
+    getDefaultCategoryForCredential,
+    getEndorsementsForVC,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { insertItem } from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
+import { v4 as uuidv4 } from 'uuid';
+import { LCR } from 'learn-card-base/types/credential-records';
 
 type SharedCredentialsIndex = {
     type: 'shared-credentials';
@@ -151,7 +162,7 @@ export const useCreateBoost = () => {
             state: BoostCMSState;
             status: LCNBoostStatusEnum;
             defaultClaimPermissions?: BoostPermissions;
-            skillIds?: { frameworkId: string; id: string }[]; // Framework skill references for automatic alignment
+            skillIds?: { frameworkId: string; id: string; proficiencyLevel?: number }[]; // Framework skill references for automatic alignment
             meta?: Record<string, unknown>;
             autoConnectRecipients?: boolean;
         }) => {
@@ -490,6 +501,213 @@ export const useCreateChildBoost = () => {
                         validationResult.data
                     );
                 }
+            });
+        },
+    });
+};
+
+export const useManageSelfAssignedSkillsBoost = () => {
+    const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+
+    const { data: profile } = useGetProfile();
+    const { data: sasBoost, isLoading: isLoadingSasBoost } = useGetSelfAssignedSkillsBoost();
+    const { data: sasCred, isLoading: isLoadingSasCred } = useGetSelfAssignedSkillsCredential();
+
+    const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
+
+    return useMutation({
+        mutationFn: async ({
+            skills,
+        }: {
+            skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
+        }) => {
+            if (isLoadingSasBoost || isLoadingSasCred) {
+                console.log('Loading self-assigned skills boost/credential... please try again.');
+                return { boostUri: undefined };
+            }
+            if (!profile) {
+                console.log('No profile found, please try again.');
+                return { boostUri: undefined };
+            }
+
+            const wallet = await initWallet();
+
+            // Fetch the boost fresh to avoid stale cache issues
+            const freshBoostResult = await wallet.invoke.getPaginatedBoosts({
+                limit: 10,
+                query: { name: SELF_ASSIGNED_SKILLS_BOOST_NAME },
+            });
+            const freshBoostRecords = freshBoostResult?.records ?? [];
+            const freshSasBoost =
+                freshBoostRecords.length > 0
+                    ? freshBoostRecords[freshBoostRecords.length - 1]
+                    : undefined;
+
+            const sasBoostExists = !!freshSasBoost;
+
+            // If boost exists, delete ALL old credential records BEFORE updating
+            // Query by multiple criteria to catch records with or without boostUri
+            if (sasBoostExists) {
+                // First try to find by boostUri (new records)
+                const recordsByBoostUri = await wallet.index.all.get<LCR>({
+                    boostUri: freshSasBoost.uri,
+                });
+
+                // Also find by category and title (catches old records without boostUri)
+                const recordsByCategory = await wallet.index.LearnCloud.get<LCR>({
+                    category: CredentialCategoryEnum.skill,
+                    title: SELF_ASSIGNED_SKILLS_BOOST_NAME,
+                });
+
+                // Combine and deduplicate by id
+                const allRecordsMap = new Map<string, LCR>();
+                [...recordsByBoostUri, ...recordsByCategory].forEach(record => {
+                    if (record?.id) {
+                        allRecordsMap.set(record.id, record);
+                    }
+                });
+
+                // Delete ALL matching records
+                for (const record of allRecordsMap.values()) {
+                    try {
+                        await deleteCredentialRecord(record);
+                    } catch (e) {
+                        console.warn('Failed to delete credential record:', e);
+                    }
+                }
+            }
+
+            const walletDid = wallet?.id?.did();
+            const currentDate = new Date()?.toISOString();
+
+            const credentialPayload: Record<string, any> = {
+                subject: walletDid,
+                type: 'boost',
+                issuanceDate: currentDate,
+                boostName: SELF_ASSIGNED_SKILLS_BOOST_NAME,
+                achievementType: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE, // e.g. "ext: Attendance"
+                achievementDescription:
+                    'A self-attested credential that lists the skills you have.',
+                achievementNarrative: '',
+                achievementName: SELF_ASSIGNED_SKILLS_BOOST_NAME,
+                // boostImage: '',
+                // achievementImage: '',
+                // expirationDate: expirationDate,
+                display: {
+                    // backgroundColor: undefined,
+                    // backgroundImage: undefined,
+                    displayType: 'badge',
+                    previewType: 'default',
+
+                    // Troops 2.0 fields
+                    // fadeBackgroundImage: undefined,
+                    // repeatBackgroundImage: undefined,
+
+                    // family emoji
+                    // emoji: {
+                    //     activeSkinTone: '',
+                    //     unified: '',
+                    //     unifiedWithoutSkinTone: '',
+                    //     names: [],
+                    //     imageUrl: '',
+                    // },
+                },
+            };
+
+            const unsignedCredential = wallet.invoke.newCredential(credentialPayload as any);
+
+            // console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
+            // console.log('unsignedCredential:', unsignedCredential);
+            // console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+            // console.log('skills:', skills);
+
+            let boostUri;
+
+            if (sasBoostExists) {
+                const updatedBoostBoolean = await wallet?.invoke?.updateBoost(freshSasBoost.uri, {
+                    name: SELF_ASSIGNED_SKILLS_BOOST_NAME,
+                    type: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE, // in boost CMS: 'ext:Artowork'
+                    category: CredentialCategoryEnum.skill, // in boost CMS: "Achievement", "Accomplishment", etc.
+                    status: 'PROVISIONAL',
+                    credential: unsignedCredential,
+                    skills,
+                });
+
+                boostUri = freshSasBoost.uri;
+            } else {
+                /// CREATE BOOST
+                // makes request to LCN, second param is metadata associated with template
+                // metadata is used to categorize etc
+                // skillIds will auto-attach framework and align these skills
+                boostUri = await wallet.invoke.createBoost(unsignedCredential, {
+                    name: SELF_ASSIGNED_SKILLS_BOOST_NAME,
+                    type: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
+                    category: CredentialCategoryEnum.skill,
+                    status: 'PROVISIONAL',
+                    skills,
+                });
+            }
+
+            // TODO issue the credential
+            const sentCredentialUri = await wallet?.invoke?.sendBoost(
+                profile?.profileId,
+                boostUri,
+                {
+                    skipNotification: true,
+                    encrypt: true,
+                }
+            );
+
+            const sentCredential = await wallet?.read?.get(sentCredentialUri);
+            const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentCredential);
+
+            // addCredentialToWallet
+            const vc = await VCValidator.parseAsync(await wallet.read.get(issuedVcUri));
+
+            const category = getDefaultCategoryForCredential(vc) || 'Skill';
+
+            const res = await wallet.index.LearnCloud.add({
+                id: uuidv4(),
+                uri: issuedVcUri,
+                category,
+                title: SELF_ASSIGNED_SKILLS_BOOST_NAME,
+                boostUri: boostUri,
+            });
+
+            return {
+                boostUri,
+                // name: state.basicInfo.name,
+                // type: state.basicInfo.achievementType ?? '',
+                // category: state.basicInfo.type,
+                // status,
+            };
+        },
+        onSuccess: async ({ boostUri }) => {
+            const switchedDid = switchedProfileStore.get.switchedDid();
+            queryClient.invalidateQueries({
+                queryKey: ['selfAssignedSkillsBoost', switchedDid ?? ''],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['selfAssignedSkillsCredential', switchedDid ?? ''],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['useGetSkills', switchedDid ?? ''],
+            });
+            queryClient.refetchQueries({
+                queryKey: ['selfAssignedSkillsBoost', switchedDid ?? ''],
+            });
+            queryClient.refetchQueries({
+                queryKey: ['selfAssignedSkillsCredential', switchedDid ?? ''],
+            });
+            queryClient.refetchQueries({
+                queryKey: ['useGetSkills', switchedDid ?? ''],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['useGetBoostSkills', boostUri],
+            });
+            queryClient.refetchQueries({
+                queryKey: ['useGetBoostSkills', boostUri],
             });
         },
     });

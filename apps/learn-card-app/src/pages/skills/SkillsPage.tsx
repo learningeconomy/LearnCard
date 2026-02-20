@@ -2,37 +2,33 @@ import React, { useEffect, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useLocation } from 'react-router-dom';
 
-import TotalSkillsCount from './TotalSkillsCount';
-import { IonContent, IonPage } from '@ionic/react';
-import SkillsInsightCard from './SkillsInsightCard';
-import SkillsCategoryList from './SkillsCategoryList';
-import MainHeader from '../../components/main-header/MainHeader';
-import SkillsPageEmptyPlaceholder from './SkillsEmptyPlaceholder';
-import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
-import SkillsMyHub from './SkillsMyHub';
-import SkillsAdminPanel from './SkillsAdminPanel';
-import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
-
-import { useLoadingLine } from '../../stores/loadingStore';
-import {
-    conditionalPluralize,
-    CredentialCategoryEnum,
-    useGetCredentialsForSkills,
-    useGetProfile,
-    useListMySkillFrameworks,
-} from 'learn-card-base';
-
-import {
-    aggregateCategorizedEntries,
-    mapBoostsToSkills,
-    RawCategorizedEntry,
-} from './skills.helpers';
-import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
-import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
-
 import useTheme from '../../theme/hooks/useTheme';
 import useAlignments from '../../hooks/useAlignments';
+import { useLoadingLine } from '../../stores/loadingStore';
+
+import { IonContent, IonPage } from '@ionic/react';
+import Plus from 'learn-card-base/svgs/Plus';
+import MainHeader from '../../components/main-header/MainHeader';
+import SkillsMyHub from './SkillsMyHub';
+import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
+import SkillsAdminPanel from './SkillsAdminPanel';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
+import SelfAssignSkillsModal from './SelfAssignSkillsModal';
+import SkillsHubPlusOptionsModal from './SkillsHubPlusOptionsModal';
+
+import {
+    ModalTypes,
+    CredentialCategoryEnum,
+    conditionalPluralize,
+    useModal,
+    useGetProfile,
+    useListMySkillFrameworks,
+    useGetCredentialsForSkills,
+} from 'learn-card-base';
+
+import { mapBoostsToSkills } from './skills.helpers';
+import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
+
 import { LearnCardRolesEnum } from '../../components/onboarding/onboarding.helpers';
 
 enum TabEnum {
@@ -41,8 +37,9 @@ enum TabEnum {
 }
 
 const SkillsPage: React.FC = () => {
-    const { getThemedCategoryColors } = useTheme();
     const location = useLocation();
+    const { newModal } = useModal();
+    const { getThemedCategoryColors } = useTheme();
     const { data: lcNetworkProfile } = useGetProfile();
     const { data: frameworks = [] } = useListMySkillFrameworks();
 
@@ -64,26 +61,37 @@ const SkillsPage: React.FC = () => {
     const { backgroundSecondaryColor } = colors;
 
     const flags = useFlags();
-    const {
-        data: allResolvedCreds,
-        isFetching: credentialsFetching,
-        isLoading: allResolvedBoostsLoading,
-        error: allResolvedCredsError,
-        refetch,
-    } = useGetCredentialsForSkills();
-
     const showAiInsights = flags?.showAiInsights;
     const showAdminPanel =
         flags?.enableAdminTools ||
         lcNetworkProfile?.role === LearnCardRolesEnum.admin ||
         lcNetworkProfile?.role === LearnCardRolesEnum.teacher ||
+        lcNetworkProfile?.role === LearnCardRolesEnum.developer ||
         managedFrameworksExist;
+
+    const handlePlusButton = () => {
+        if (showAdminPanel) {
+            newModal(<SkillsHubPlusOptionsModal />, undefined, {
+                desktop: ModalTypes.Cancel,
+                mobile: ModalTypes.Cancel,
+            });
+        } else {
+            newModal(<SelfAssignSkillsModal />, undefined, {
+                desktop: ModalTypes.Right,
+                mobile: ModalTypes.Right,
+            });
+        }
+    };
+
+    const {
+        data: allResolvedCreds,
+        isFetching: credentialsFetching,
+        isLoading: allResolvedBoostsLoading,
+    } = useGetCredentialsForSkills();
 
     const credentialsBackgroundFetching = credentialsFetching && !allResolvedBoostsLoading;
 
     useLoadingLine(credentialsBackgroundFetching);
-
-    const boostError = allResolvedCredsError ? true : false;
 
     let isBoostsEmpty = false;
     if ((!allResolvedBoostsLoading && allResolvedCreds?.length === 0) || allResolvedBoostsLoading) {
@@ -93,11 +101,6 @@ const SkillsPage: React.FC = () => {
     }
 
     const skillsMap = mapBoostsToSkills(allResolvedCreds);
-    const categorizedSkills: [
-        string,
-        RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
-    ][] = Object.entries(skillsMap);
-    const aggregatedSkills = aggregateCategorizedEntries(categorizedSkills);
 
     // Calculate total count of skills and subskills
     const totalSkills = Object.values(skillsMap).reduce(
@@ -121,13 +124,21 @@ const SkillsPage: React.FC = () => {
                     showBackButton
                     subheaderType={SubheaderTypeEnum.Skill}
                     isBoostsEmpty={isBoostsEmpty}
-                    hidePlusBtn={true}
+                    plusButtonOverride={
+                        <button
+                            type="button"
+                            aria-label="plus-button"
+                            onClick={handlePlusButton}
+                            className="flex items-center justify-center h-fit w-fit p-[8px] rounded-full"
+                        >
+                            <Plus className="h-[20px] w-[20px]" />
+                        </button>
+                    }
                 />
                 <IonContent fullscreen className="skills-page" color={backgroundSecondaryColor}>
                     <div className="flex relative justify-center items-center w-full pb-[30px]">
                         <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] px-[20px]">
                             {/* {showAiInsights && <SkillsInsightCard />} */}
-                            {/* <TotalSkillsCount total={total} /> */}
                             {showAdminPanel && (
                                 <div
                                     className={`flex items-center justify-start w-full ${
@@ -164,28 +175,6 @@ const SkillsPage: React.FC = () => {
                             {selectedTab === TabEnum.ADMIN_PANEL && <SkillsAdminPanel />}
                         </div>
                     </div>
-
-                    {/* <div className="flex relative justify-center items-center w-full pb-[30px]">
-                        <div className="w-full max-w-[800px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px]">
-                            {showAiInsights && <SkillsInsightCard />}
-                            <TotalSkillsCount total={total} />
-                            <SkillsCategoryList
-                                allResolvedCreds={allResolvedCreds!}
-                                categorizedSkills={aggregatedSkills!}
-                                isLoading={allResolvedBoostsLoading}
-                            />
-
-                            {((!allResolvedBoostsLoading && aggregatedSkills?.length === 0) ||
-                                allResolvedBoostsLoading) &&
-                                !boostError && (
-                                    <SkillsPageEmptyPlaceholder
-                                        isLoading={allResolvedBoostsLoading}
-                                    />
-                                )}
-                        </div>
-                    </div> */}
-
-                    {/* {(boostError as Boolean) && <BoostErrorsDisplay refetch={refetch} />} */}
                 </IonContent>
             </GenericErrorBoundary>
         </IonPage>

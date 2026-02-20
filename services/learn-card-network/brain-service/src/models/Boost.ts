@@ -32,7 +32,12 @@ export type BoostRelationships = {
         { createdAt: string },
         { createdAt: string }
     >;
-    alignedTo: ModelRelatedNodesI<typeof Skill, SkillInstance>;
+    alignedTo: ModelRelatedNodesI<
+        typeof Skill,
+        SkillInstance,
+        { proficiencyLevel?: number },
+        { proficiencyLevel?: number }
+    >;
 };
 
 export type BoostInstance = NeogmaInstance<FlatBoostType, BoostRelationships>;
@@ -61,7 +66,11 @@ export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
                 },
             },
             parentOf: { model: 'self', direction: 'out', name: 'PARENT_OF' },
-            autoConnectRecipient: { model: Profile, direction: 'out', name: 'AUTO_CONNECT_RECIPIENT' },
+            autoConnectRecipient: {
+                model: Profile,
+                direction: 'out',
+                name: 'AUTO_CONNECT_RECIPIENT',
+            },
             hasRole: {
                 model: Profile,
                 direction: 'in',
@@ -115,7 +124,17 @@ export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
             claimRole: { model: Role, direction: 'out', name: 'CLAIM_ROLE' },
             defaultRole: { model: Role, direction: 'out', name: 'DEFAULT_ROLE' },
             usesFramework: { model: SkillFramework, direction: 'out', name: 'USES_FRAMEWORK' },
-            alignedTo: { model: Skill, direction: 'out', name: 'ALIGNED_TO' },
+            alignedTo: {
+                model: Skill,
+                direction: 'out',
+                name: 'ALIGNED_TO',
+                properties: {
+                    proficiencyLevel: {
+                        property: 'proficiencyLevel',
+                        schema: { type: 'number', required: false },
+                    },
+                },
+            },
         },
     },
     neogma

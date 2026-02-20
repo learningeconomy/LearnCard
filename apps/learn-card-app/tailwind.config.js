@@ -259,6 +259,9 @@ module.exports = {
                     700: '#1D4ED8',
                     950: '#18224E',
                 },
+                'light-blue': {
+                    500: '#0EA5E9',
+                },
                 green: {
                     dark: '#05B65D',
                 },

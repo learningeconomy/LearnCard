@@ -58,6 +58,7 @@ import {
     formatFramework,
     type ProviderSkillNode,
 } from '@helpers/skill-tree';
+import { upsertSkillEmbeddings } from '@helpers/skill-embedding.helpers';
 
 export const skillFrameworksRouter = t.router({
     create: profileRoute
@@ -700,6 +701,23 @@ export const skillFrameworksRouter = t.router({
             );
 
             const total = created + updated + deleted + unchanged;
+
+            try {
+                await upsertSkillEmbeddings(
+                    flattenedNew.map(({ skill }) => {
+                        const normalized = toCreateSkillInput(skill);
+                        return {
+                            id: normalized.id!,
+                            frameworkId,
+                            statement: normalized.statement,
+                            description: normalized.description ?? undefined,
+                            code: normalized.code ?? undefined,
+                        };
+                    })
+                );
+            } catch (error) {
+                console.error('Failed to update skill embeddings after replace:', error);
+            }
 
             return {
                 created,

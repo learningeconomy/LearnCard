@@ -10,7 +10,6 @@ import {
     BoostAndVCType,
     CredentialCategoryEnum,
     useWallet,
-    currentUserStore,
     switchedProfileStore,
     LEARNCARD_NETWORK_API_URL,
 } from 'learn-card-base';
@@ -27,13 +26,11 @@ import {
     BoostPermissions,
 } from '@learncard/types';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
-import {
-    CREDENTIAL_CATEGORIES,
-    CredentialCategory,
-    IndexMetadata,
-} from 'learn-card-base/types/credentials';
+import { CREDENTIAL_CATEGORIES } from 'learn-card-base/types/credentials';
+import { LCR } from 'learn-card-base/types/credential-records';
 import { useIsLoggedIn, useCurrentUser } from 'learn-card-base';
 import { getBespokeLearnCard, generatePK } from 'learn-card-base/helpers/walletHelpers';
+import { SELF_ASSIGNED_SKILLS_BOOST_NAME } from 'learn-card-base/helpers/credentialHelpers';
 
 /** ===============================
  *      BOOST QUERIES
@@ -72,7 +69,10 @@ export const getBoosts = async (
         return baseQuery;
     })();
 
-    const paginated = await wallet.invoke.getPaginatedBoosts({ limit: 1000, query: normalizedQuery });
+    const paginated = await wallet.invoke.getPaginatedBoosts({
+        limit: 1000,
+        query: normalizedQuery,
+    });
 
     return paginated?.records ?? [];
 };
@@ -107,6 +107,74 @@ export const useGetBoost = (uri: string) => {
             } catch (error: any) {
                 throw error;
             }
+        },
+        enabled: !!uri,
+    });
+};
+
+export const useGetSelfAssignedSkillsBoost = () => {
+    const { initWallet } = useWallet();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+
+    return useQuery({
+        queryKey: ['selfAssignedSkillsBoost', switchedDid ?? ''],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            const result = await wallet.invoke.getPaginatedBoosts({
+                limit: 1,
+                query: {
+                    // category: CredentialCategoryEnum.selfAssignedSkills,
+                    name: SELF_ASSIGNED_SKILLS_BOOST_NAME,
+                },
+            });
+
+            const records = result?.records ?? [];
+            return records.length > 0 ? records[records.length - 1] : null;
+        },
+    });
+};
+
+export const useGetSelfAssignedSkillsCredential = () => {
+    const { initWallet } = useWallet();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+
+    const { data: boost } = useGetSelfAssignedSkillsBoost();
+
+    return useQuery<{ uri: string; record: LCR; credential: VC | undefined } | null>({
+        queryKey: ['selfAssignedSkillsCredential', switchedDid ?? ''],
+        queryFn: async () => {
+            const wallet = await initWallet();
+
+            if (!boost?.uri) return null;
+
+            const credentialRecords = await wallet.index.all.get<LCR>({ boostUri: boost.uri });
+            const credentialRecord =
+                credentialRecords.length > 0
+                    ? credentialRecords[credentialRecords.length - 1]
+                    : undefined;
+
+            if (!credentialRecord?.uri) return null;
+
+            return {
+                uri: credentialRecord.uri,
+                record: credentialRecord,
+                credential: (await wallet.read.get(credentialRecord.uri)) as VC | undefined,
+            };
+        },
+    });
+};
+
+/**
+ * Query: Get aligned skills (with proficiencyLevel) for a specific boost by its URI.
+ */
+export const useGetBoostSkills = (uri?: string) => {
+    const { initWallet } = useWallet();
+    return useQuery({
+        queryKey: ['useGetBoostSkills', uri ?? ''],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            if (!uri) return [];
+            return wallet.invoke.getBoostSkills(uri);
         },
         enabled: !!uri,
     });
@@ -971,6 +1039,27 @@ export const useSearchFrameworkSkills = (
             return wallet.invoke.searchFrameworkSkills(frameworkId, query, options);
         },
         enabled: !!frameworkId && !!query && enabled,
+    });
+};
+
+export const useSemanticSearchSkills = (
+    text: string,
+    frameworkId: string,
+    options?: { limit?: number }
+) => {
+    const { initWallet } = useWallet();
+
+    return useQuery({
+        queryKey: ['semanticSearchSkills', text, frameworkId, options],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return wallet.invoke.semanticSearchSkills({
+                text,
+                limit: options?.limit ?? 50,
+                frameworkId,
+            });
+        },
+        enabled: !!text?.trim() && !!frameworkId,
     });
 };
 

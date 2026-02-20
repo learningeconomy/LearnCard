@@ -821,6 +821,14 @@ http://ionicframework.com/docs/theming/ */
     --ion-color-blue-600-shade: #2157cf;
     --ion-color-blue-600-tint: #3b73ed;
 
+    /* light-blue 500 (Tailwind sky-500) */
+    --ion-color-light-blue-500: #0ea5e9;
+    --ion-color-light-blue-500-rgb: 14, 165, 233;
+    --ion-color-light-blue-500-contrast: #ffffff;
+    --ion-color-light-blue-500-contrast-rgb: 255, 255, 255;
+    --ion-color-light-blue-500-shade: #0c94d1;
+    --ion-color-light-blue-500-tint: #2ab1ec;
+
     /* violet */
     --ion-color-violet-300: #c4b5fd;
     --ion-color-violet-300-rgb: 196, 181, 253;
@@ -1943,6 +1951,15 @@ http://ionicframework.com/docs/theming/ */
     --ion-color-contrast-rgb: var(--ion-color-blue-500-contrast-rgb);
     --ion-color-shade: var(--ion-color-blue-500-shade);
     --ion-color-tint: var(--ion-color-blue-500-tint);
+}
+
+.ion-color-light-blue-500 {
+    --ion-color-base: var(--ion-color-light-blue-500);
+    --ion-color-base-rgb: var(--ion-color-light-blue-500-rgb);
+    --ion-color-contrast: var(--ion-color-light-blue-500-contrast);
+    --ion-color-contrast-rgb: var(--ion-color-light-blue-500-contrast-rgb);
+    --ion-color-shade: var(--ion-color-light-blue-500-shade);
+    --ion-color-tint: var(--ion-color-light-blue-500-tint);
 }
 
 .ion-color-purple-loader {

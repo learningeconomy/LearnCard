@@ -1,9 +1,32 @@
 import React from 'react';
 
-const Checkmark: React.FC<{ className?: string; strokeWidth?: string }> = ({
-    className = '',
-    strokeWidth = '2',
-}) => {
+const Checkmark: React.FC<{
+    className?: string;
+    strokeWidth?: string;
+    version?: 'default' | 'no-padding';
+}> = ({ className = '', strokeWidth = '2', version = 'default' }) => {
+    if (version === 'no-padding') {
+        return (
+            <svg
+                width="13"
+                height="13"
+                viewBox="0 0 13 13"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className={className}
+            >
+                <path
+                    d="M10.9688 3.65625L5.28125 9.3435L2.4375 6.5"
+                    stroke="currentColor"
+                    strokeWidth={strokeWidth}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                />
+            </svg>
+        );
+    }
+
+    // default, has bottom padding :shrug:
     return (
         <svg
             viewBox="0 0 26 27"

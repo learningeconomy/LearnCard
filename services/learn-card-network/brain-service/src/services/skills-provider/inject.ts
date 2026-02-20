@@ -64,20 +64,34 @@ export async function injectObv3AlignmentsIntoCredentialForBoost(
         // Ensure JSON-LD alignment entries have a type, matching plugin behavior
         const jsonLdAlignments = cleanedAlignments.map(a => ({ ...a, type: ['Alignment'] }));
 
+        const isInjectedSkillAlignment = (alignment: any): boolean => {
+            if (!alignment || typeof alignment !== 'object') return false;
+
+            // If the alignment references a frameworkId/id pair, it's intended to be skill-based.
+            if (alignment.frameworkId && alignment.id) return true;
+
+            // If the alignment targetUrl points at our skill URL structure, treat it as skill-based.
+            // Example: https://{domain}/frameworks/{frameworkId}/skills/{skillId}
+            const targetUrl = alignment.targetUrl;
+            if (typeof targetUrl !== 'string') return false;
+
+            return targetUrl.startsWith(`https://${domain}/frameworks/`);
+        };
+
         const addAlignments = (subject: any) => {
             if (!subject) return;
             // OBv3-style: achievement.alignment[] preferred if present
             if (subject.achievement) {
                 const ach = subject.achievement;
-                if (!Array.isArray(ach.alignment))
-                    ach.alignment = Array.isArray(ach.alignment) ? ach.alignment : [];
-                ach.alignment = [...ach.alignment, ...jsonLdAlignments];
+                const existing = Array.isArray(ach.alignment) ? ach.alignment : [];
+                const retained = existing.filter((a: any) => !isInjectedSkillAlignment(a));
+                ach.alignment = [...retained, ...jsonLdAlignments];
                 return;
             }
             // Fallback: subject.alignment[]
-            if (!Array.isArray(subject.alignment))
-                subject.alignment = Array.isArray(subject.alignment) ? subject.alignment : [];
-            subject.alignment = [...subject.alignment, ...jsonLdAlignments];
+            const existing = Array.isArray(subject.alignment) ? subject.alignment : [];
+            const retained = existing.filter((a: any) => !isInjectedSkillAlignment(a));
+            subject.alignment = [...retained, ...jsonLdAlignments];
         };
 
         if (Array.isArray(credential.credentialSubject)) {
