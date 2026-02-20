@@ -1,10 +1,14 @@
 import { useCallback } from 'react';
 
-import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
-import currentUserStore from 'learn-card-base/stores/currentUserStore';
-import { useWallet } from 'learn-card-base/hooks/useWallet';
-import { useModal } from 'learn-card-base/components/modals/useModal';
-import { ModalTypes } from 'learn-card-base/components/modals/types/Modals';
+import {
+    switchedProfileStore,
+    useModal,
+    useWallet,
+    ModalTypes,
+    currentUserStore,
+} from 'learn-card-base';
+
+import { FamilyPinWrapper } from '../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
 
 const DEFAULT_VERIFICATION_TTL = 5 * 60 * 1000; // 5 minutes in ms
 
@@ -28,15 +32,6 @@ export type UseGuardianGateOptions = {
     skip?: boolean;
     /** Session duration in ms before re-verification is required (default: 5 min) */
     verificationTTL?: number;
-    /** Custom PIN wrapper component to use instead of default FamilyPinWrapper */
-    PinWrapper?: React.ComponentType<{
-        viewMode: 'edit';
-        skipVerification: boolean;
-        existingPin: string[];
-        handleOnSubmit: () => void;
-        familyName: string;
-        closeButtonText: string;
-    }>;
 };
 
 export type GuardianGateResult = {
@@ -56,7 +51,6 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
         onVerified,
         skip = false,
         verificationTTL = DEFAULT_VERIFICATION_TTL,
-        PinWrapper,
     } = options;
 
     const { newModal, closeModal } = useModal();
@@ -131,14 +125,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
                 return;
             }
 
-            // PinWrapper is required for PIN verification
-            if (!PinWrapper) {
-                console.warn('useGuardianGate: PinWrapper component required for PIN verification');
-                onCancel?.();
-                return;
-            }
-
-            // Show verification modal using provided PinWrapper
+            // Show verification modal using FamilyPinWrapper
             return new Promise<void>(resolve => {
                 const handleSuccess = async () => {
                     // Close modal FIRST, before running action
@@ -153,7 +140,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
                 };
 
                 newModal(
-                    <PinWrapper
+                    <FamilyPinWrapper
                         viewMode="edit"
                         skipVerification={false}
                         existingPin={['', '', '', '', '']}
@@ -183,7 +170,6 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
             setVerified,
             onVerified,
             onCancel,
-            PinWrapper,
         ]
     );
 

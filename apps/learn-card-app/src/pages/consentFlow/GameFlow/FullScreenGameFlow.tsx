@@ -3,8 +3,8 @@ import queryString from 'query-string';
 import { useHistory, useLocation } from 'react-router-dom';
 import useGetFamilyCredential from 'apps/learn-card-app/src/hooks/useGetFamilyCredential';
 
-import { useModal, useIsLoggedIn, switchedProfileStore, useGuardianGate } from 'learn-card-base';
-import { FamilyPinWrapper } from '../../../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
+import { useModal, useIsLoggedIn, switchedProfileStore } from 'learn-card-base';
+import { useGuardianGate } from '../../../hooks/useGuardianGate';
 
 import GameLogin from './GameLogin';
 import AddGamePrompt from './AddGamePrompt';
@@ -56,7 +56,6 @@ const FullScreenGameFlow: React.FC<FullScreenGameFlowProps> = ({ contractDetails
     // Guardian gate for child profiles - unified guardian verification
     const { guardedAction, isChildProfile } = useGuardianGate({
         skip: isPreview,
-        PinWrapper: FamilyPinWrapper,
     });
 
     useEffect(() => {

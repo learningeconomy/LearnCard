@@ -14,11 +14,10 @@ import {
     ModalTypes,
     useGetProfile,
     useSwitchProfile,
-    useGuardianGate,
 } from 'learn-card-base';
 
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
-import { FamilyPinWrapper } from '../../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
+import { useGuardianGate } from '../../hooks/useGuardianGate';
 import ConsentFlowConnecting from './ConsentFlowConnecting';
 import ConsentFlowConfirmation from './ConsentFlowConfirmation';
 import ConsentFlowGetAnAdultPrompt from './ConsentFlowGetAnAdult';
@@ -106,7 +105,6 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 setStep(ConsentFlowStep.confirmation);
             }
         },
-        PinWrapper: FamilyPinWrapper,
     });
 
     const { mutateAsync: consentToContract, isPending: consentingToContract } =

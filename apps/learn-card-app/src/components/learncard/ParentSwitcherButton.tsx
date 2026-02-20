@@ -10,8 +10,8 @@ import {
     switchedProfileStore,
     currentUserStore,
     UserProfilePicture,
-    clearGuardianVerification,
 } from 'learn-card-base';
+import { clearGuardianVerification } from '../../hooks/useGuardianGate';
 
 import { LCNProfile } from '@learncard/types';
 

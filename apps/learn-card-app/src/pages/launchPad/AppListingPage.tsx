@@ -27,7 +27,7 @@ import StaticStarRating from '../../components/ai-passport-apps/helpers/StaticSt
 import AiPassportAppProfileRatings from '../../components/ai-passport-apps/AiPassportAppProfileDetails/AiPassportAppProfileRatings';
 import Checkmark from '../../components/svgs/Checkmark';
 import { AppInstallConsentModal } from '../../components/credentials/AppInstallConsentModal';
-import { FamilyPinWrapper } from '../../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
+import { useGuardianGate } from '../../hooks/useGuardianGate';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData';
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
@@ -106,7 +106,7 @@ const AppListingPage: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Guardian gate for child profiles - verify before showing permissions modal
-    const { guardedAction } = useGuardianGate({ PinWrapper: FamilyPinWrapper });
+    const { guardedAction } = useGuardianGate();
 
     // Parse launch config
     const launchConfig = useMemo(() => {

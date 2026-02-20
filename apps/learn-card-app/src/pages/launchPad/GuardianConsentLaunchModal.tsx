@@ -16,11 +16,10 @@ import {
     useSyncConsentFlow,
     switchedProfileStore,
     UserProfilePicture,
-    useGuardianGate,
 } from 'learn-card-base';
 
 import useGetFamilyCredential from '../../hooks/useGetFamilyCredential';
-import { FamilyPinWrapper } from '../../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
+import { useGuardianGate } from '../../hooks/useGuardianGate';
 import AccountSwitcherModal from '../../components/learncard/AccountSwitcherModal';
 import FamilyCMS from '../../components/familyCMS/FamilyCMS';
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
@@ -61,7 +60,6 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
             closeAllModals();
             onCancel?.();
         },
-        PinWrapper: FamilyPinWrapper,
     });
     const { handleSwitchAccount } = useSwitchProfile();
 

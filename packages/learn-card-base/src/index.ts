@@ -99,7 +99,6 @@ export * from './stores/aiBoostStore';
 export * from './hooks/useGetCheckListStatus';
 export * from './hooks/useAiInsightCredential';
 export * from './hooks/useGetCurrentUserRole';
-export * from './hooks/useGuardianGate';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';

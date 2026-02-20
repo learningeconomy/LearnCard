@@ -8,47 +8,26 @@ import { useGuardianGate } from './useGuardianGate';
 const mockNewModal = jest.fn();
 const mockCloseModal = jest.fn();
 const mockInitWallet = jest.fn();
-const mockVerifyPin = jest.fn();
 
-jest.mock('learn-card-base/stores/walletStore', () => ({
+jest.mock('learn-card-base', () => ({
     switchedProfileStore: {
         use: {
             isSwitchedProfile: jest.fn(() => false),
             profileType: jest.fn(() => null),
         },
     },
-}));
-
-jest.mock('learn-card-base/stores/currentUserStore', () => ({
-    __esModule: true,
-    default: {
+    currentUserStore: {
         use: {
             parentUserDid: jest.fn(() => null),
         },
     },
-}));
-
-jest.mock('learn-card-base/hooks/useWallet', () => ({
-    useWallet: () => ({
-        initWallet: mockInitWallet,
-    }),
-}));
-
-jest.mock('learn-card-base/components/modals/useModal', () => ({
     useModal: () => ({
         newModal: mockNewModal,
         closeModal: mockCloseModal,
     }),
-}));
-
-jest.mock('learn-card-base/react-query/mutations/pins', () => ({
-    useVerifyPin: () => ({
-        mutateAsync: mockVerifyPin,
-        isPending: false,
+    useWallet: () => ({
+        initWallet: mockInitWallet,
     }),
-}));
-
-jest.mock('learn-card-base/components/modals/types/Modals', () => ({
     ModalTypes: {
         Center: 'Center',
         Cancel: 'Cancel',
@@ -56,9 +35,16 @@ jest.mock('learn-card-base/components/modals/types/Modals', () => ({
     },
 }));
 
+jest.mock('../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper', () => ({
+    FamilyPinWrapper: ({ handleOnSubmit }: { handleOnSubmit: () => void }) => (
+        <div data-testid="family-pin-wrapper">
+            <button onClick={handleOnSubmit}>Verify</button>
+        </div>
+    ),
+}));
+
 // Import mocked modules to manipulate them
-import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
-import currentUserStore from 'learn-card-base/stores/currentUserStore';
+import { switchedProfileStore, currentUserStore } from 'learn-card-base';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -69,20 +55,6 @@ const queryClient = new QueryClient({
 
 const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-);
-
-// Mock PinWrapper component for tests that need PIN verification
-const MockPinWrapper: React.FC<{
-    viewMode: 'edit';
-    skipVerification: boolean;
-    existingPin: string[];
-    handleOnSubmit: () => void;
-    familyName: string;
-    closeButtonText: string;
-}> = ({ handleOnSubmit }) => (
-    <div data-testid="mock-pin-wrapper">
-        <button onClick={handleOnSubmit}>Verify</button>
-    </div>
 );
 
 describe('useGuardianGate', () => {
@@ -216,9 +188,7 @@ describe('useGuardianGate', () => {
         it('should show PIN modal for child profile when action is triggered', async () => {
             const action = jest.fn();
 
-            const { result } = renderHook(() => useGuardianGate({ PinWrapper: MockPinWrapper }), {
-                wrapper,
-            });
+            const { result } = renderHook(() => useGuardianGate(), { wrapper });
 
             // Start the guarded action but don't await (modal will be shown)
             act(() => {
@@ -231,21 +201,6 @@ describe('useGuardianGate', () => {
 
             // Action should not be called yet (waiting for PIN)
             expect(action).not.toHaveBeenCalled();
-        });
-
-        it('should call onCancel when PinWrapper is not provided', async () => {
-            const onCancel = jest.fn();
-            const action = jest.fn();
-
-            const { result } = renderHook(() => useGuardianGate({ onCancel }), { wrapper });
-
-            await act(async () => {
-                await result.current.guardedAction(action);
-            });
-
-            expect(onCancel).toHaveBeenCalled();
-            expect(action).not.toHaveBeenCalled();
-            expect(mockNewModal).not.toHaveBeenCalled();
         });
 
         it('should skip verification and execute action when no PIN is set', async () => {
@@ -267,17 +222,6 @@ describe('useGuardianGate', () => {
             expect(action).toHaveBeenCalledTimes(1);
             expect(onVerified).toHaveBeenCalled();
             expect(mockNewModal).not.toHaveBeenCalled();
-        });
-
-        it('should call onCancel when guardian verification is cancelled', async () => {
-            const onCancel = jest.fn();
-
-            const { result } = renderHook(
-                () => useGuardianGate({ onCancel, PinWrapper: MockPinWrapper }),
-                { wrapper }
-            );
-
-            expect(result.current.isChildProfile).toBe(true);
         });
 
         it('should call onCancel when parentDid is missing', async () => {
