@@ -1,4 +1,5 @@
 import React from 'react';
+import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonIcon } from '@ionic/react';
@@ -7,11 +8,10 @@ import { documentTextOutline } from 'ionicons/icons';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 
 import { useTheme } from '../../theme/hooks/useTheme';
-import { useModal, ModalTypes } from 'learn-card-base';
 
 export const ResumeBuilderController: React.FC<{ className?: string }> = ({ className = '' }) => {
     const flags = useFlags();
-    const { newModal } = useModal();
+    const history = useHistory();
     const { gate } = useLCNGatedAction();
 
     const { theme, colors } = useTheme();
@@ -19,11 +19,7 @@ export const ResumeBuilderController: React.FC<{ className?: string }> = ({ clas
     const handleResumeBuilderButton = async () => {
         const { prompted } = await gate();
         if (prompted) return;
-        newModal(
-            <div>Resume Builder</div>,
-            { className: '!bg-transparent' },
-            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
-        );
+        history.push('/resume-builder');
     };
 
     if (!flags?.enableResumeBuilder) return null;
