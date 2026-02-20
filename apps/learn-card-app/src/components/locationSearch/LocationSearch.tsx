@@ -16,7 +16,7 @@ import {
 import GoogleLogo from 'learn-card-base/assets/images/google-logo.png';
 import X from 'learn-card-base/svgs/X';
 
-import HourGlass from '../../assets/lotties/hourglass.json';
+const HourGlass = '/lotties/hourglass.json';
 
 import { AddressSpec, formatLocationObject } from './location.helpers';
 
@@ -98,7 +98,7 @@ const LocationSearch: React.FC<{
                                 <div className="max-w-[150px]">
                                     <Lottie
                                         loop
-                                        animationData={HourGlass}
+                                        path={HourGlass}
                                         play
                                         style={{ width: '100%', height: '100%' }}
                                     />

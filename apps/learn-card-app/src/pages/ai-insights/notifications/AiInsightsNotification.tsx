@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { capitalize } from 'lodash';
+import { capitalize } from 'lodash-es';
 import moment from 'moment';
 
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';

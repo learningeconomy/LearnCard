@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
-import { cloneDeep } from 'lodash';
+import { cloneDeep } from 'lodash-es';
 
 import { useHistory } from 'react-router-dom';
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';

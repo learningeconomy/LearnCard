@@ -7,6 +7,7 @@ import react from '@vitejs/plugin-react-swc';
 import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // Workspace packages that should not be pre-bundled for HMR support
 const workspacePackages = [
@@ -25,8 +26,41 @@ const workspacePackages = [
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
     return {
-        plugins: [react(), svgr(), tsconfigPaths({ root: '../../' })],
-        build: { target: 'esnext', outDir: path.join(__dirname, 'build') },
+        plugins: [
+            react(),
+            svgr(),
+            tsconfigPaths({ root: '../../' }),
+            ...(process.env.ANALYZE
+                ? [
+                      visualizer({
+                          open: true,
+                          filename: path.join(__dirname, 'build', 'stats.html'),
+                          gzipSize: true,
+                          template: 'treemap',
+                      }),
+                  ]
+                : []),
+        ],
+        build: {
+            target: 'esnext',
+            outDir: path.join(__dirname, 'build'),
+            rollupOptions: {
+                output: {
+                    manualChunks: {
+                        // Core framework
+                        'vendor-react': ['react', 'react-dom', 'react-router', 'react-router-dom'],
+                        'vendor-ionic': ['@ionic/react', '@ionic/react-router', '@ionic/core'],
+                        // Heavy deps in their own chunks
+                        'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/analytics'],
+                        'vendor-sentry': ['@sentry/react', '@sentry/browser'],
+                        'vendor-launchdarkly': ['launchdarkly-react-client-sdk'],
+                        'vendor-swiper': ['swiper'],
+                        'vendor-lottie': ['react-lottie-player'],
+                        'vendor-tanstack': ['@tanstack/react-query'],
+                    },
+                },
+            },
+        },
         optimizeDeps: {
             // disabled: false,
             include: ['buffer', 'process', 'react-router', 'react-router-dom', 'crypto-browserify'],
