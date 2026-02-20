@@ -39,6 +39,7 @@ import { getSkillsProvider } from '@services/skills-provider';
 import { PaginatedSkillTreeValidator } from 'types/skill-tree';
 import { createSkill } from '@accesslayer/skill/create';
 import { createSkillTree, type SkillTreeInput, toCreateSkillInput } from './skill-inputs';
+import { getProfileIdFromString } from '@helpers/did.helpers';
 import { isProfileBoostAdmin } from '@accesslayer/boost/relationships/read';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { neogma } from '@instance';
@@ -227,6 +228,11 @@ export const skillFrameworksRouter = t.router({
             const { profile } = ctx.user;
             const { frameworkId, profileId } = input;
 
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             if (!(await doesProfileManageFramework(profile.profileId, frameworkId))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
@@ -234,7 +240,7 @@ export const skillFrameworksRouter = t.router({
                 });
             }
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
             if (!targetProfile) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
@@ -242,7 +248,7 @@ export const skillFrameworksRouter = t.router({
                 });
             }
 
-            const success = await addFrameworkManager(frameworkId, profileId);
+            const success = await addFrameworkManager(frameworkId, resolvedProfileId);
 
             return { success };
         }),
@@ -266,6 +272,11 @@ export const skillFrameworksRouter = t.router({
             const { profile } = ctx.user;
             const { frameworkId, profileId } = input;
 
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             if (!(await doesProfileManageFramework(profile.profileId, frameworkId))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
@@ -274,7 +285,7 @@ export const skillFrameworksRouter = t.router({
             }
 
             const admins = await listFrameworkManagers(frameworkId);
-            const targetIsAdmin = admins.some(admin => admin.profileId === profileId);
+            const targetIsAdmin = admins.some(admin => admin.profileId === resolvedProfileId);
 
             if (!targetIsAdmin) {
                 return { success: false };
@@ -287,7 +298,7 @@ export const skillFrameworksRouter = t.router({
                 });
             }
 
-            const success = await removeFrameworkManager(frameworkId, profileId);
+            const success = await removeFrameworkManager(frameworkId, resolvedProfileId);
 
             if (!success) {
                 throw new TRPCError({

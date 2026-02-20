@@ -3,7 +3,16 @@ import { vi } from 'vitest';
 
 import { getClient, getUser } from './helpers/getClient';
 import { sendBoost, testUnsignedBoost, testVc } from './helpers/send';
-import { Profile, Credential, Boost, SigningAuthority, SkillFramework, Skill, InboxCredential, ContactMethod } from '@models';
+import {
+    Profile,
+    Credential,
+    Boost,
+    SigningAuthority,
+    SkillFramework,
+    Skill,
+    InboxCredential,
+    ContactMethod,
+} from '@models';
 import { getClaimLinkOptionsInfoForBoost, getTTLForClaimLink } from '@cache/claim-links';
 import { BoostStatus } from 'types/boost';
 import { adminRole, creatorRole, emptyRole } from './helpers/permissions';
@@ -577,7 +586,9 @@ describe('Boosts', () => {
             });
 
             expect(boosts.records).toHaveLength(2);
-            expect(boosts.records.every(b => ['listing-A', 'listing-B'].includes(b.meta?.appListingId))).toBe(true);
+            expect(
+                boosts.records.every(b => ['listing-A', 'listing-B'].includes(b.meta?.appListingId))
+            ).toBe(true);
         });
 
         it('should allow combining meta query with other filters', async () => {
@@ -598,11 +609,11 @@ describe('Boosts', () => {
             });
 
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({
-                query: { 
+                query: {
                     category: 'achievement',
-                    meta: { appListingId: 'listing-123' } 
+                    meta: { appListingId: 'listing-123' },
                 },
-            }); 
+            });
 
             expect(boosts.records).toHaveLength(1);
             expect(boosts.records[0]?.category).toEqual('achievement');
@@ -732,6 +743,77 @@ describe('Boosts', () => {
                 credential,
             });
             expect(credentialUri).toBeDefined();
+        });
+
+        it('should allow sending a boost to did:web', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            const userBProfile = (await userB.clients.fullAuth.profile.getProfile())!;
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userBProfile.did,
+                uri,
+                credential,
+            });
+            expect(credentialUri).toBeDefined();
+        });
+
+        it('should allow sending a boost to did:key', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userB.learnCard.id.did(),
+                uri,
+                credential,
+            });
+            expect(credentialUri).toBeDefined();
+        });
+
+        it('should return NOT_FOUND for unsupported did format', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.sendBoost({
+                    profileId: 'did:example:userb',
+                    uri,
+                    credential,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
         });
 
         it('should allow admins to send a boost', async () => {
