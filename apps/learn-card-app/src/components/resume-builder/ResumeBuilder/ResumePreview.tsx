@@ -3,13 +3,37 @@ import {
     resumeBuilderStore,
     RESUME_SECTIONS,
     ResumeSectionKey,
-    ResolvedCredentialMeta,
 } from '../../../stores/resumeBuilderStore';
+import { useGetResolvedCredentials } from 'learn-card-base';
+import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 const ResumePreview: React.FC = () => {
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const selectedCredentialUris = resumeBuilderStore.useTracked.selectedCredentialUris();
-    const resolvedCredentials = resumeBuilderStore.useTracked.resolvedCredentials();
+    const allUris = useMemo(
+        () => Object.values(selectedCredentialUris).flat().filter(Boolean),
+        [selectedCredentialUris]
+    );
+    const resolvedResults = useGetResolvedCredentials(allUris);
+    const resolvedMap = useMemo(() => {
+        const map: Record<string, { title: string; issuer: string; date: string }> = {};
+        allUris.forEach((uri, i) => {
+            const vc = resolvedResults[i]?.data;
+            if (vc) {
+                const info = getInfoFromCredential(vc as any, 'MMM yyyy', { uppercaseDate: false });
+                const issuerStr =
+                    typeof vc.issuer === 'string'
+                        ? vc.issuer
+                        : (vc.issuer as any)?.name ?? (vc.issuer as any)?.id ?? '';
+                map[uri] = {
+                    title: info.title ?? '',
+                    issuer: issuerStr,
+                    date: info.createdAt ?? '',
+                };
+            }
+        });
+        return map;
+    }, [allUris, resolvedResults]);
     const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
 
     const orderedSections = useMemo(() => {
@@ -85,8 +109,7 @@ const ResumePreview: React.FC = () => {
                         </h2>
                         <div className="flex flex-col gap-3">
                             {uris.map(uri => {
-                                const meta: ResolvedCredentialMeta | undefined =
-                                    resolvedCredentials[uri];
+                                const meta = resolvedMap[uri];
                                 return (
                                     <div key={uri} className="flex items-start gap-3">
                                         <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />

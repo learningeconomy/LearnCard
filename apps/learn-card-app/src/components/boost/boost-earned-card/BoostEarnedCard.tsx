@@ -360,9 +360,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     innerOnClick={
                         cred && !showSkeleton
                             ? () => {
-                                resetIonicModalBackground();
-                                presentModal();
-                            }
+                                  resetIonicModalBackground();
+                                  presentModal();
+                              }
                             : undefined
                     }
                     onCheckClick={onCheckMarkClick}
@@ -387,8 +387,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                             backgroundImage={backgroundImage}
                             backgroundColor={backgroundColor}
                             badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                            badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
-                                }`}
+                            badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
+                                isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
+                            }`}
                             badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
                             badgeRibbonCustomClass="w-[26px]"
                             badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
@@ -422,8 +423,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     size-sm={isCardView && !isInSkillsModal ? '4' : undefined}
                     size-md={isCardView && !isInSkillsModal ? '4' : undefined}
                     size-lg={isCardView && !isInSkillsModal ? '3' : undefined}
-                    className={`flex justify-center items-center relative ${isCardView ? '' : 'p-0'
-                        }`}
+                    className={`flex justify-center items-center relative ${
+                        isCardView ? '' : 'p-0'
+                    }`}
                 >
                     <BoostGenericCardWrapper
                         innerOnClick={() => handleClick('innerOnClick')}
@@ -448,8 +450,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                     backgroundImage={backgroundImage}
                                     backgroundColor={backgroundColor}
                                     badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                                    badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
-                                        }`}
+                                    badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
+                                        isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
+                                    }`}
                                     badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
                                     badgeRibbonCustomClass="w-[26px]"
                                     badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
@@ -494,9 +497,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     innerOnClick={
                         cred && !showSkeleton
                             ? () => {
-                                resetIonicModalBackground();
-                                presentModal();
-                            }
+                                  resetIonicModalBackground();
+                                  presentModal();
+                              }
                             : undefined
                     }
                     className={`earned-small-card bg-white text-black z-[1000] ${className}`}
@@ -506,9 +509,12 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         showSkeleton
                             ? undefined
                             : () => {
-                                handleOptionsMenu();
-                            }
+                                  handleOptionsMenu();
+                              }
                     }
+                    showChecked={showChecked}
+                    checkStatus={initialCheckmarkState}
+                    onCheckClick={onCheckMarkClick}
                     dateDisplay={issueDate}
                     customDateDisplay={
                         showSkeleton ? (
@@ -538,8 +544,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 backgroundImage={backgroundImage}
                                 backgroundColor={backgroundColor}
                                 badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                                badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${isAwardDisplay ? 'mt-[17px] mb-[-22px]' : 'shadow-3xl'
-                                    }`}
+                                badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
+                                    isAwardDisplay ? 'mt-[17px] mb-[-22px]' : 'shadow-3xl'
+                                }`}
                                 badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
                                 badgeRibbonCustomClass="w-[26px]"
                                 badgeRibbonIconCustomClass="w-[90%] mt-[4px]"

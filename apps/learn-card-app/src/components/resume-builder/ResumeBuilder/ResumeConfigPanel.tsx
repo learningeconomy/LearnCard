@@ -165,6 +165,8 @@ const CredentialSection: React.FC<{ sectionKey: ResumeSectionKey; label: string 
                                 spaceBetween={12}
                                 slidesPerView={'auto'}
                                 grabCursor={true}
+                                preventClicks={false}
+                                preventClicksPropagation={false}
                             >
                                 {records.map((record, index) => {
                                     const isSelected = selected.includes(record.uri);
@@ -177,38 +179,44 @@ const CredentialSection: React.FC<{ sectionKey: ResumeSectionKey; label: string 
                                         <SwiperSlide
                                             key={record.uri ?? index}
                                             style={{ width: 'auto' }}
-                                            onClick={() => toggleCredential(sectionKey, record.uri)}
+                                            className={`cursor-pointer transition-opacity ${
+                                                isSelected
+                                                    ? 'ring-2 ring-indigo-500 rounded-[20px]'
+                                                    : 'opacity-70 hover:opacity-100'
+                                            }`}
                                         >
-                                            <div
-                                                className={`cursor-pointer transition-opacity ${
-                                                    isSelected
-                                                        ? 'ring-2 ring-indigo-500 rounded-xl'
-                                                        : 'opacity-70 hover:opacity-100'
-                                                }`}
-                                            >
-                                                {isID || isMembership ? (
-                                                    <div className="mt-6">
-                                                        <BoostEarnedIDCard
-                                                            record={record}
-                                                            categoryType={boostCategory}
-                                                            defaultImg={
-                                                                categoryMetadata[
-                                                                    boostCategory as CredentialCategoryEnum
-                                                                ]?.defaultImageSrc ?? ''
-                                                            }
-                                                        />
-                                                    </div>
-                                                ) : (
-                                                    <BoostEarnedCard
+                                            {isID || isMembership ? (
+                                                <div className="mt-6">
+                                                    <BoostEarnedIDCard
                                                         record={record}
                                                         categoryType={boostCategory}
-                                                        sizeLg={12}
-                                                        sizeMd={12}
-                                                        sizeSm={12}
-                                                        className="!min-h-[310px]"
+                                                        defaultImg={
+                                                            categoryMetadata[
+                                                                boostCategory as CredentialCategoryEnum
+                                                            ]?.defaultImageSrc ?? ''
+                                                        }
+                                                        showChecked
+                                                        initialCheckmarkState={isSelected}
+                                                        onCheckMarkClick={() =>
+                                                            toggleCredential(sectionKey, record.uri)
+                                                        }
                                                     />
-                                                )}
-                                            </div>
+                                                </div>
+                                            ) : (
+                                                <BoostEarnedCard
+                                                    record={record}
+                                                    categoryType={boostCategory}
+                                                    sizeLg={12}
+                                                    sizeMd={12}
+                                                    sizeSm={12}
+                                                    showChecked
+                                                    initialCheckmarkState={isSelected}
+                                                    onCheckMarkClick={() =>
+                                                        toggleCredential(sectionKey, record.uri)
+                                                    }
+                                                    className="!min-h-[310px]"
+                                                />
+                                            )}
                                         </SwiperSlide>
                                     );
                                 })}
