@@ -13,6 +13,7 @@ import {
     useGetAppReviews,
     AppStoreAppMetadata,
     AppStoreAppReview,
+    useGuardianGate,
 } from 'learn-card-base';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
@@ -25,6 +26,7 @@ import Checkmark from '../../components/svgs/Checkmark';
 import StaticStarRating from '../../components/ai-passport-apps/helpers/StaticStarRating';
 import AiPassportAppProfileRatings from '../../components/ai-passport-apps/AiPassportAppProfileDetails/AiPassportAppProfileRatings';
 import { AppInstallConsentModal } from '../../components/credentials/AppInstallConsentModal';
+import { FamilyPinWrapper } from '../../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData';
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
@@ -112,6 +114,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+
+    // Guardian gate for child profiles - verify before showing permissions modal
+    const { guardedAction } = useGuardianGate({ skip: isPreview, PinWrapper: FamilyPinWrapper });
     const [canExpand, setCanExpand] = useState(false);
     const textRef = useRef<HTMLParagraphElement>(null);
 
@@ -157,30 +162,33 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     };
 
     const handleInstall = () => {
-        // Get permissions from launch config
-        const permissions: string[] = launchConfig?.permissions || [];
-        const contractUri: string | undefined = launchConfig?.contractUri;
+        // Guardian verification before showing permissions modal
+        guardedAction(() => {
+            // Get permissions from launch config
+            const permissions: string[] = launchConfig?.permissions || [];
+            const contractUri: string | undefined = launchConfig?.contractUri;
 
-        // Show consent modal with permissions
-        newModal(
-            <AppInstallConsentModal
-                appName={listing.display_name}
-                appIcon={listing.icon_url}
-                permissions={permissions}
-                contractUri={contractUri}
-                isPreview={isPreview}
-                onAccept={() => {
-                    closeModal();
-                    doInstall();
-                }}
-                onReject={closeModal}
-            />,
-            {
-                sectionClassName: '!max-w-[500px]',
-                hideButton: true,
-            },
-            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
-        );
+            // Show consent modal with permissions
+            newModal(
+                <AppInstallConsentModal
+                    appName={listing.display_name}
+                    appIcon={listing.icon_url}
+                    permissions={permissions}
+                    contractUri={contractUri}
+                    isPreview={isPreview}
+                    onAccept={() => {
+                        closeModal();
+                        doInstall();
+                    }}
+                    onReject={closeModal}
+                />,
+                {
+                    sectionClassName: '!max-w-[500px]',
+                    hideButton: true,
+                },
+                { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+            );
+        });
     };
 
     const handleUninstall = async () => {

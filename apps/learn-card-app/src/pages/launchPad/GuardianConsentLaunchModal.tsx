@@ -16,10 +16,11 @@ import {
     useSyncConsentFlow,
     switchedProfileStore,
     UserProfilePicture,
+    useGuardianGate,
 } from 'learn-card-base';
 
 import useGetFamilyCredential from '../../hooks/useGetFamilyCredential';
-import usePin from '../../hooks/usePin';
+import { FamilyPinWrapper } from '../../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
 import AccountSwitcherModal from '../../components/learncard/AccountSwitcherModal';
 import FamilyCMS from '../../components/familyCMS/FamilyCMS';
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
@@ -54,7 +55,14 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
     const { familyCredential } = useGetFamilyCredential();
     const hasFamily = !!familyCredential || isSwitchedProfile;
 
-    const { handleVerifyParentPin } = usePin(closeModal);
+    // Guardian gate for child profiles - unified guardian verification
+    const { guardedAction } = useGuardianGate({
+        onCancel: () => {
+            closeAllModals();
+            onCancel?.();
+        },
+        PinWrapper: FamilyPinWrapper,
+    });
     const { handleSwitchAccount } = useSwitchProfile();
 
     const [step, setStep] = useState<LaunchStep>(LaunchStep.loading);
@@ -80,11 +88,6 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
     // Determine initial step based on state
     useEffect(() => {
         const determineStep = async () => {
-            // If switched to a child profile, verify parent first
-            if (isSwitchedProfile) {
-                await handleVerifyParentPin();
-            }
-
             if (!isLoggedIn) {
                 // Not logged in - they need to log in first
                 // For now, just close and let them log in via normal flow
@@ -92,15 +95,18 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
                 return;
             }
 
-            if (!hasFamily) {
-                setStep(LaunchStep.createFamily);
-            } else {
-                setStep(LaunchStep.selectProfile);
-            }
+            // If switched to a child profile, verify guardian first using unified gate
+            await guardedAction(async () => {
+                if (!hasFamily) {
+                    setStep(LaunchStep.createFamily);
+                } else {
+                    setStep(LaunchStep.selectProfile);
+                }
+            });
         };
 
         determineStep();
-    }, [isLoggedIn, hasFamily, isSwitchedProfile]);
+    }, [isLoggedIn, hasFamily]);
 
     // Handle profile selection
     const handleProfileSelected = async (user: LCNProfile) => {
@@ -315,14 +321,13 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
 
                     {selectedUserHasConsented ? (
                         <p className="text-grayscale-600 text-center">
-                            <span className="font-medium">{selectedUser.displayName}</span>{' '}
-                            is already connected to {appName}.
+                            <span className="font-medium">{selectedUser.displayName}</span> is
+                            already connected to {appName}.
                         </p>
                     ) : (
                         <p className="text-grayscale-600 text-center">
-                            Allow{' '}
-                            <span className="font-medium">{selectedUser.displayName}</span>{' '}
-                            to use {appName}?
+                            Allow <span className="font-medium">{selectedUser.displayName}</span> to
+                            use {appName}?
                         </p>
                     )}
 

@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import queryString from 'query-string';
 import { useHistory, useLocation } from 'react-router-dom';
 import useGetFamilyCredential from 'apps/learn-card-app/src/hooks/useGetFamilyCredential';
-import usePin from 'apps/learn-card-app/src/hooks/usePin';
 
-import { useModal, useIsLoggedIn, switchedProfileStore } from 'learn-card-base';
+import { useModal, useIsLoggedIn, switchedProfileStore, useGuardianGate } from 'learn-card-base';
+import { FamilyPinWrapper } from '../../../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
 
 import GameLogin from './GameLogin';
 import AddGamePrompt from './AddGamePrompt';
@@ -53,6 +53,12 @@ const FullScreenGameFlow: React.FC<FullScreenGameFlowProps> = ({ contractDetails
     const { familyCredential } = useGetFamilyCredential();
     const hasFamily = !!familyCredential || isSwitchedProfile;
 
+    // Guardian gate for child profiles - unified guardian verification
+    const { guardedAction, isChildProfile } = useGuardianGate({
+        skip: isPreview,
+        PinWrapper: FamilyPinWrapper,
+    });
+
     useEffect(() => {
         // update url 'step' param every time step changes
         const searchParams = new URLSearchParams(window.location.search);
@@ -62,25 +68,20 @@ const FullScreenGameFlow: React.FC<FullScreenGameFlowProps> = ({ contractDetails
         });
     }, [step]);
 
-    const { handleVerifyParentPin } = usePin(closeModal);
-
     const handleImAnAdult = async () => {
-        if (isSwitchedProfile) {
-            // switchAccount to parent so we can see all available profiles
-            //   also, they did *just say* that they were the adult
-            await handleVerifyParentPin();
-        }
-
-        if (!isLoggedIn) {
-            // if NOT logged in, prompt the user to log in
-            setStep(GameFlowStep.login);
-        } else if (!hasFamily) {
-            // if the user is not part of a family, prompt the user to "Create a family"
-            setStep(GameFlowStep.createFamily);
-        } else {
-            // if the current user is logged in and part of a family prompt the user to select "Who's Playing?"
-            setStep(GameFlowStep.whosPlaying);
-        }
+        // Use unified guardian gate for verification when on a child profile
+        await guardedAction(async () => {
+            if (!isLoggedIn) {
+                // if NOT logged in, prompt the user to log in
+                setStep(GameFlowStep.login);
+            } else if (!hasFamily) {
+                // if the user is not part of a family, prompt the user to "Create a family"
+                setStep(GameFlowStep.createFamily);
+            } else {
+                // if the current user is logged in and part of a family prompt the user to select "Who's Playing?"
+                setStep(GameFlowStep.whosPlaying);
+            }
+        });
     };
 
     const handleBackToGame = () => {
