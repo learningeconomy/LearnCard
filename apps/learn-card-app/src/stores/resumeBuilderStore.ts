@@ -38,9 +38,16 @@ export type PersonalDetails = {
     summary: string;
 };
 
+export type ResolvedCredentialMeta = {
+    title: string;
+    issuer: string;
+    date: string;
+};
+
 export type ResumeBuilderState = {
     personalDetails: PersonalDetails;
     selectedCredentialUris: Partial<Record<ResumeSectionKey, string[]>>;
+    resolvedCredentials: Record<string, ResolvedCredentialMeta>;
     sectionOrder: ResumeSectionKey[];
 };
 
@@ -58,6 +65,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     {
         personalDetails: defaultPersonalDetails,
         selectedCredentialUris: {},
+        resolvedCredentials: {},
         sectionOrder: defaultSectionOrder,
     },
     { persist: { name: 'resumeBuilderStore', enabled: true } }
@@ -69,10 +77,12 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     toggleCredential: (section: ResumeSectionKey, uri: string) => {
         const prev = resumeBuilderStore.get.selectedCredentialUris();
         const current = prev[section] ?? [];
-        const next = current.includes(uri)
-            ? current.filter(u => u !== uri)
-            : [...current, uri];
+        const next = current.includes(uri) ? current.filter(u => u !== uri) : [...current, uri];
         set.selectedCredentialUris({ ...prev, [section]: next });
+    },
+    setResolvedCredential: (uri: string, meta: ResolvedCredentialMeta) => {
+        const prev = resumeBuilderStore.get.resolvedCredentials();
+        set.resolvedCredentials({ ...prev, [uri]: meta });
     },
     setSectionOrder: (order: ResumeSectionKey[]) => {
         set.sectionOrder(order);
@@ -80,6 +90,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     resetStore: () => {
         set.personalDetails(defaultPersonalDetails);
         set.selectedCredentialUris({});
+        set.resolvedCredentials({});
         set.sectionOrder(defaultSectionOrder);
     },
 }));
