@@ -30,6 +30,7 @@ import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData'
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 import AiTutorConnectedView from './AiTutorConnectedView';
 import { Settings } from 'lucide-react';
+import { useGuardianGate } from '../../hooks/useGuardianGate';
 
 // Extended type to include new fields (until types package is rebuilt)
 type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
@@ -75,7 +76,6 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
-    console.log(primaryColor);
 
     const { useInstallApp, useUninstallApp, useInstallCount, useIsAppInstalled } = useAppStore();
 
@@ -112,6 +112,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+
+    // Guardian gate for child profiles - verify before showing permissions modal
+    const { guardedAction } = useGuardianGate({ skip: isPreview });
     const [canExpand, setCanExpand] = useState(false);
     const textRef = useRef<HTMLParagraphElement>(null);
 
@@ -157,30 +160,33 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     };
 
     const handleInstall = () => {
-        // Get permissions from launch config
-        const permissions: string[] = launchConfig?.permissions || [];
-        const contractUri: string | undefined = launchConfig?.contractUri;
+        // Guardian verification before showing permissions modal
+        guardedAction(() => {
+            // Get permissions from launch config
+            const permissions: string[] = launchConfig?.permissions || [];
+            const contractUri: string | undefined = launchConfig?.contractUri;
 
-        // Show consent modal with permissions
-        newModal(
-            <AppInstallConsentModal
-                appName={listing.display_name}
-                appIcon={listing.icon_url}
-                permissions={permissions}
-                contractUri={contractUri}
-                isPreview={isPreview}
-                onAccept={() => {
-                    closeModal();
-                    doInstall();
-                }}
-                onReject={closeModal}
-            />,
-            {
-                sectionClassName: '!max-w-[500px]',
-                hideButton: true,
-            },
-            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
-        );
+            // Show consent modal with permissions
+            newModal(
+                <AppInstallConsentModal
+                    appName={listing.display_name}
+                    appIcon={listing.icon_url}
+                    permissions={permissions}
+                    contractUri={contractUri}
+                    isPreview={isPreview}
+                    onAccept={() => {
+                        closeModal();
+                        doInstall();
+                    }}
+                    onReject={closeModal}
+                />,
+                {
+                    sectionClassName: '!max-w-[500px]',
+                    hideButton: true,
+                },
+                { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+            );
+        });
     };
 
     const handleUninstall = async () => {

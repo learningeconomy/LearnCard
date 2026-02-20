@@ -20,6 +20,7 @@
 -   **Error handling**: Use try/catch with specific error types
 -   **Functions**: Prefer arrow functions with explicit return types
 -   **React**: Function components with hooks preferred over class components
+-   **React callbacks**: Use `onComplete`/`onSwitchComplete` callback props to let parent components control side effects after async actions complete, rather than hardcoding side effects in child components
 -   **Modules**: Keep files focused on single responsibility
 -   **Documentation**: Add JSDoc comments for public APIs and complex logic
 
@@ -413,26 +414,29 @@ Partner Connect example apps follow a consistent pattern:
 
 #### National Admin Troop View Access
 
-**Problem**: National admins saw "ID Revoked" or "Pending Acceptance" when viewing troops they managed but didn't own. This was because `useTroopIDStatus` checks if the *current user* is the recipient.
+**Problem**: National admins saw "ID Revoked" or "Pending Acceptance" when viewing troops they managed but didn't own. This was because `useTroopIDStatus` checks if the _current user_ is the recipient.
 
 **Workaround**: `TroopPage.tsx` uses `hasParentAdminAccess` to bypass the `isRevokedOrPending` check. If a user has `canEditChildren` permissions on the parent network boost, they see full troop details regardless of their personal credential status.
 
 **Implementation Details**:
-- **File**: `apps/scouts/src/pages/troop/TroopPage.tsx`
-- **Logic**: Checks if user has admin access to parent network before enforcing credential status checks
-- **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
+
+-   **File**: `apps/scouts/src/pages/troop/TroopPage.tsx`
+-   **Logic**: Checks if user has admin access to parent network before enforcing credential status checks
+-   **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
 
 #### Network Admin Scout ID Issuance
 
 **Requirement**: Network admins (Directors) must be able to issue Scout IDs for troops under their managed networks.
 
 **Implementation**:
-- **`troops.helpers.ts`**: `canIssueChildren` and `canRevokeChildren` for `network` and `global` roles set to `'*'` (previously excluded `scoutId`).
-- **`InviteSelectionModal.tsx`**: Allows selection between Leader ID and Scout ID for network admins with elevated permissions.
+
+-   **`troops.helpers.ts`**: `canIssueChildren` and `canRevokeChildren` for `network` and `global` roles set to `'*'` (previously excluded `scoutId`).
+-   **`InviteSelectionModal.tsx`**: Allows selection between Leader ID and Scout ID for network admins with elevated permissions.
 
 **Implementation Details**:
-- **Files**: 
-  - `apps/scouts/src/components/troopsCMS/troops.helpers.ts`
-  - `apps/scouts/src/pages/troop/InviteSelectionModal.tsx`
-- **Logic**: Network admins can issue both Leader IDs and Scout IDs to troops they manage
-- **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
+
+-   **Files**:
+    -   `apps/scouts/src/components/troopsCMS/troops.helpers.ts`
+    -   `apps/scouts/src/pages/troop/InviteSelectionModal.tsx`
+-   **Logic**: Network admins can issue both Leader IDs and Scout IDs to troops they manage
+-   **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)

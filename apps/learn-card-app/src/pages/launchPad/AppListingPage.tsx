@@ -26,6 +26,7 @@ import StaticStarRating from '../../components/ai-passport-apps/helpers/StaticSt
 import AiPassportAppProfileRatings from '../../components/ai-passport-apps/AiPassportAppProfileDetails/AiPassportAppProfileRatings';
 import Checkmark from '../../components/svgs/Checkmark';
 import { AppInstallConsentModal } from '../../components/credentials/AppInstallConsentModal';
+import { useGuardianGate } from '../../hooks/useGuardianGate';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData';
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
@@ -102,6 +103,9 @@ const AppListingPage: React.FC = () => {
     const { data: installCount } = useInstallCount(listingId);
 
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Guardian gate for child profiles - verify before showing permissions modal
+    const { guardedAction } = useGuardianGate();
 
     // Parse launch config
     const launchConfig = useMemo(() => {
@@ -195,27 +199,30 @@ const AppListingPage: React.FC = () => {
             return;
         }
 
-        const permissions: string[] = launchConfig?.permissions || [];
-        const contractUri: string | undefined = launchConfig?.contractUri;
+        // Guardian verification before showing permissions modal
+        guardedAction(() => {
+            const permissions: string[] = launchConfig?.permissions || [];
+            const contractUri: string | undefined = launchConfig?.contractUri;
 
-        newModal(
-            <AppInstallConsentModal
-                appName={listing.display_name}
-                appIcon={listing.icon_url}
-                permissions={permissions}
-                contractUri={contractUri}
-                onAccept={() => {
-                    closeModal();
-                    doInstall();
-                }}
-                onReject={closeModal}
-            />,
-            {
-                sectionClassName: '!max-w-[500px]',
-                hideButton: true,
-            },
-            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
-        );
+            newModal(
+                <AppInstallConsentModal
+                    appName={listing.display_name}
+                    appIcon={listing.icon_url}
+                    permissions={permissions}
+                    contractUri={contractUri}
+                    onAccept={() => {
+                        closeModal();
+                        doInstall();
+                    }}
+                    onReject={closeModal}
+                />,
+                {
+                    sectionClassName: '!max-w-[500px]',
+                    hideButton: true,
+                },
+                { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+            );
+        });
     };
 
     const handleUninstall = async () => {
