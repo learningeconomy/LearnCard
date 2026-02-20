@@ -16,24 +16,40 @@ const ResumePreview: React.FC = () => {
     );
     const resolvedResults = useGetResolvedCredentials(allUris);
     const resolvedMap = useMemo(() => {
-        const map: Record<string, { title: string; issuer: string; date: string }> = {};
-        allUris.forEach((uri, i) => {
-            const vc = resolvedResults[i]?.data;
-            if (vc) {
+        const map: Record<
+            string,
+            {
+                title: string;
+                issuer: string;
+                date: string;
+                description?: string;
+                narrative?: string;
+            }
+        > = {};
+        resolvedResults.forEach(result => {
+            const vc = result.data;
+            const uri = (result as any).uri;
+            if (vc && uri) {
                 const info = getInfoFromCredential(vc as any, 'MMM yyyy', { uppercaseDate: false });
-                const issuerStr =
+                const rawIssuer =
                     typeof vc.issuer === 'string'
                         ? vc.issuer
                         : (vc.issuer as any)?.name ?? (vc.issuer as any)?.id ?? '';
+                const issuerStr = rawIssuer.startsWith('did:') ? '' : rawIssuer;
+                const subject = Array.isArray(vc.credentialSubject)
+                    ? vc.credentialSubject[0]
+                    : vc.credentialSubject;
                 map[uri] = {
                     title: info.title ?? '',
                     issuer: issuerStr,
                     date: info.createdAt ?? '',
+                    description: (subject as any)?.achievement?.description,
+                    narrative: (subject as any)?.achievement?.criteria?.narrative,
                 };
             }
         });
         return map;
-    }, [allUris, resolvedResults]);
+    }, [resolvedResults]);
     const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
 
     const orderedSections = useMemo(() => {
@@ -122,6 +138,16 @@ const ResumePreview: React.FC = () => {
                                                     {[meta?.issuer, meta?.date]
                                                         .filter(Boolean)
                                                         .join(' · ')}
+                                                </p>
+                                            )}
+                                            {meta?.description && (
+                                                <p className="text-xs text-grayscale-600 mt-0.5">
+                                                    {meta.description}
+                                                </p>
+                                            )}
+                                            {meta?.narrative && (
+                                                <p className="text-xs text-grayscale-500 mt-0.5 italic">
+                                                    {meta.narrative}
                                                 </p>
                                             )}
                                         </div>
