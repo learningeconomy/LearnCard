@@ -17,20 +17,19 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from pydantic import BaseModel, ConfigDict
+from typing import Any, ClassVar, Dict, List
+from openapi_client.models.skills_semantic_search_skills200_response_records_inner import SkillsSemanticSearchSkills200ResponseRecordsInner
 from typing import Optional, Set
 from typing_extensions import Self
 
-class InboxClaimRequestConfiguration(BaseModel):
+class SkillsSemanticSearchSkills200Response(BaseModel):
     """
-    InboxClaimRequestConfiguration
+    SkillsSemanticSearchSkills200Response
     """ # noqa: E501
-    publishable_key: Optional[StrictStr] = Field(alias="publishableKey")
-    signing_authority_name: Optional[StrictStr] = Field(default=None, alias="signingAuthorityName")
-    listing_id: Optional[StrictStr] = Field(default=None, alias="listingId")
-    listing_slug: Optional[StrictStr] = Field(default=None, alias="listingSlug")
-    __properties: ClassVar[List[str]] = ["publishableKey", "signingAuthorityName", "listingId", "listingSlug"]
+    records: List[SkillsSemanticSearchSkills200ResponseRecordsInner]
+    additional_properties: Dict[str, Any] = {}
+    __properties: ClassVar[List[str]] = ["records"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -50,7 +49,7 @@ class InboxClaimRequestConfiguration(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of InboxClaimRequestConfiguration from a JSON string"""
+        """Create an instance of SkillsSemanticSearchSkills200Response from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -62,8 +61,10 @@ class InboxClaimRequestConfiguration(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -71,31 +72,23 @@ class InboxClaimRequestConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if publishable_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.publishable_key is None and "publishable_key" in self.model_fields_set:
-            _dict['publishableKey'] = None
-
-        # set to None if signing_authority_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.signing_authority_name is None and "signing_authority_name" in self.model_fields_set:
-            _dict['signingAuthorityName'] = None
-
-        # set to None if listing_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.listing_id is None and "listing_id" in self.model_fields_set:
-            _dict['listingId'] = None
-
-        # set to None if listing_slug (nullable) is None
-        # and model_fields_set contains the field
-        if self.listing_slug is None and "listing_slug" in self.model_fields_set:
-            _dict['listingSlug'] = None
+        # override the default output from pydantic by calling `to_dict()` of each item in records (list)
+        _items = []
+        if self.records:
+            for _item_records in self.records:
+                if _item_records:
+                    _items.append(_item_records.to_dict())
+            _dict['records'] = _items
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
 
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of InboxClaimRequestConfiguration from a dict"""
+        """Create an instance of SkillsSemanticSearchSkills200Response from a dict"""
         if obj is None:
             return None
 
@@ -103,11 +96,13 @@ class InboxClaimRequestConfiguration(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "publishableKey": obj.get("publishableKey"),
-            "signingAuthorityName": obj.get("signingAuthorityName"),
-            "listingId": obj.get("listingId"),
-            "listingSlug": obj.get("listingSlug")
+            "records": [SkillsSemanticSearchSkills200ResponseRecordsInner.from_dict(_item) for _item in obj["records"]] if obj.get("records") is not None else None
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

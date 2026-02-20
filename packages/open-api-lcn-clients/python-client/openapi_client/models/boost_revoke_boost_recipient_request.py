@@ -22,15 +22,13 @@ from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
-class InboxClaimRequestConfiguration(BaseModel):
+class BoostRevokeBoostRecipientRequest(BaseModel):
     """
-    InboxClaimRequestConfiguration
+    BoostRevokeBoostRecipientRequest
     """ # noqa: E501
-    publishable_key: Optional[StrictStr] = Field(alias="publishableKey")
-    signing_authority_name: Optional[StrictStr] = Field(default=None, alias="signingAuthorityName")
-    listing_id: Optional[StrictStr] = Field(default=None, alias="listingId")
-    listing_slug: Optional[StrictStr] = Field(default=None, alias="listingSlug")
-    __properties: ClassVar[List[str]] = ["publishableKey", "signingAuthorityName", "listingId", "listingSlug"]
+    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
+    recipient_profile_id: Optional[StrictStr] = Field(alias="recipientProfileId")
+    __properties: ClassVar[List[str]] = ["boostUri", "recipientProfileId"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -50,7 +48,7 @@ class InboxClaimRequestConfiguration(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of InboxClaimRequestConfiguration from a JSON string"""
+        """Create an instance of BoostRevokeBoostRecipientRequest from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -71,31 +69,21 @@ class InboxClaimRequestConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if publishable_key (nullable) is None
+        # set to None if boost_uri (nullable) is None
         # and model_fields_set contains the field
-        if self.publishable_key is None and "publishable_key" in self.model_fields_set:
-            _dict['publishableKey'] = None
+        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
+            _dict['boostUri'] = None
 
-        # set to None if signing_authority_name (nullable) is None
+        # set to None if recipient_profile_id (nullable) is None
         # and model_fields_set contains the field
-        if self.signing_authority_name is None and "signing_authority_name" in self.model_fields_set:
-            _dict['signingAuthorityName'] = None
-
-        # set to None if listing_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.listing_id is None and "listing_id" in self.model_fields_set:
-            _dict['listingId'] = None
-
-        # set to None if listing_slug (nullable) is None
-        # and model_fields_set contains the field
-        if self.listing_slug is None and "listing_slug" in self.model_fields_set:
-            _dict['listingSlug'] = None
+        if self.recipient_profile_id is None and "recipient_profile_id" in self.model_fields_set:
+            _dict['recipientProfileId'] = None
 
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of InboxClaimRequestConfiguration from a dict"""
+        """Create an instance of BoostRevokeBoostRecipientRequest from a dict"""
         if obj is None:
             return None
 
@@ -103,10 +91,8 @@ class InboxClaimRequestConfiguration(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "publishableKey": obj.get("publishableKey"),
-            "signingAuthorityName": obj.get("signingAuthorityName"),
-            "listingId": obj.get("listingId"),
-            "listingSlug": obj.get("listingSlug")
+            "boostUri": obj.get("boostUri"),
+            "recipientProfileId": obj.get("recipientProfileId")
         })
         return _obj
 

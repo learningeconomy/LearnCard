@@ -19,18 +19,18 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
 
-class InboxClaimRequestConfiguration(BaseModel):
+class SkillsSemanticSearchSkillsRequest(BaseModel):
     """
-    InboxClaimRequestConfiguration
+    SkillsSemanticSearchSkillsRequest
     """ # noqa: E501
-    publishable_key: Optional[StrictStr] = Field(alias="publishableKey")
-    signing_authority_name: Optional[StrictStr] = Field(default=None, alias="signingAuthorityName")
-    listing_id: Optional[StrictStr] = Field(default=None, alias="listingId")
-    listing_slug: Optional[StrictStr] = Field(default=None, alias="listingSlug")
-    __properties: ClassVar[List[str]] = ["publishableKey", "signingAuthorityName", "listingId", "listingSlug"]
+    text: Annotated[str, Field(min_length=1, strict=True)]
+    framework_id: Optional[StrictStr] = Field(default=None, alias="frameworkId")
+    limit: Optional[Annotated[int, Field(le=200, strict=True, ge=1)]] = 50
+    __properties: ClassVar[List[str]] = ["text", "frameworkId", "limit"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -50,7 +50,7 @@ class InboxClaimRequestConfiguration(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of InboxClaimRequestConfiguration from a JSON string"""
+        """Create an instance of SkillsSemanticSearchSkillsRequest from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -71,31 +71,16 @@ class InboxClaimRequestConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if publishable_key (nullable) is None
+        # set to None if framework_id (nullable) is None
         # and model_fields_set contains the field
-        if self.publishable_key is None and "publishable_key" in self.model_fields_set:
-            _dict['publishableKey'] = None
-
-        # set to None if signing_authority_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.signing_authority_name is None and "signing_authority_name" in self.model_fields_set:
-            _dict['signingAuthorityName'] = None
-
-        # set to None if listing_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.listing_id is None and "listing_id" in self.model_fields_set:
-            _dict['listingId'] = None
-
-        # set to None if listing_slug (nullable) is None
-        # and model_fields_set contains the field
-        if self.listing_slug is None and "listing_slug" in self.model_fields_set:
-            _dict['listingSlug'] = None
+        if self.framework_id is None and "framework_id" in self.model_fields_set:
+            _dict['frameworkId'] = None
 
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of InboxClaimRequestConfiguration from a dict"""
+        """Create an instance of SkillsSemanticSearchSkillsRequest from a dict"""
         if obj is None:
             return None
 
@@ -103,10 +88,9 @@ class InboxClaimRequestConfiguration(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "publishableKey": obj.get("publishableKey"),
-            "signingAuthorityName": obj.get("signingAuthorityName"),
-            "listingId": obj.get("listingId"),
-            "listingSlug": obj.get("listingSlug")
+            "text": obj.get("text"),
+            "frameworkId": obj.get("frameworkId"),
+            "limit": obj.get("limit") if obj.get("limit") is not None else 50
         })
         return _obj
 

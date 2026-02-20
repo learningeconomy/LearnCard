@@ -292,6 +292,13 @@ class TestBoostsApi(unittest.TestCase):
         """
         pass
 
+    def test_boost_revoke_boost_recipient(self) -> None:
+        """Test case for boost_revoke_boost_recipient
+
+        Revoke a boost recipient
+        """
+        pass
+
     def test_boost_search_skills_available_for_boost(self) -> None:
         """Test case for boost_search_skills_available_for_boost
 
