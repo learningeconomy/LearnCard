@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { cloneDeep } from 'lodash-es';
@@ -20,6 +20,8 @@ import FamilyCMSAppearanceForm from './FamilyCMSAppearanceForm/FamilyCMSAppearan
 import BoostLoader from '../boost/boostLoader/BoostLoader';
 import FamilyCMSTabs, { FamilyCMSTabsEnum } from './FamilyCMSTabs/FamilyCMSTabs';
 import FamilyPin from './FamilyBoostPreview/FamilyPin/FamilyPin';
+import RecoveryPrompt from '../common/RecoveryPrompt';
+import useAutosave from '../../hooks/useAutosave';
 
 import {
     FamilyChildAccount,
@@ -32,6 +34,7 @@ import {
 import {
     BoostCategoryOptionsEnum,
     getNotificationsEndpoint,
+    ModalTypes,
     switchedProfileStore,
     useCreateBoost,
     useCreatePin,
@@ -39,6 +42,7 @@ import {
     useEditBoostMeta,
     useGetCurrentLCNUser,
     useGetDidHasPin,
+    useModal,
     useWallet,
     useToast,
     ToastTypeEnum,
@@ -89,6 +93,20 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
 
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
+
+    // Autosave hook - only for create mode
+    const { hasRecoveredState, recoveredState, clearRecoveredState, saveToLocal, clearLocalSave } =
+        useAutosave<FamilyCMSState>({
+            storageKey: 'lc_family_cms_autosave',
+            enabled: editorMode === FamilyCMSEditorModeEnum.create,
+            hasContent: state => !!(state?.basicInfo?.name || state?.basicInfo?.description),
+        });
+
+    const hasShownRecoveryRef = useRef(false);
 
     const { data: hasPin, isLoading: hasPinLoading } = useGetDidHasPin();
     const { mutateAsync: createBoost } = useCreateBoost();
@@ -116,6 +134,48 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
             handlePresentJoinNetworkModal();
         }
     }, [currentLCNUser, currentLCNUserLoading]);
+
+    // Save to localStorage whenever state changes (create mode only)
+    useEffect(() => {
+        if (
+            editorMode === FamilyCMSEditorModeEnum.create &&
+            (state.basicInfo.name || state.basicInfo.description)
+        ) {
+            saveToLocal(state);
+        }
+    }, [state, saveToLocal, editorMode]);
+
+    // Show recovery prompt if we have recovered state
+    useEffect(() => {
+        if (hasRecoveredState && recoveredState && !hasShownRecoveryRef.current) {
+            hasShownRecoveryRef.current = true;
+
+            setTimeout(() => {
+                const handleRecover = () => {
+                    setState(recoveredState);
+                    clearRecoveredState();
+                    closeModal();
+                };
+
+                const handleDiscard = () => {
+                    clearRecoveredState(true);
+                    closeModal();
+                };
+
+                newModal(
+                    <RecoveryPrompt
+                        itemName={recoveredState?.basicInfo?.name || ''}
+                        itemType="family"
+                        onRecover={handleRecover}
+                        onDiscard={handleDiscard}
+                        discardButtonText="Create New Family"
+                    />,
+                    { sectionClassName: '!max-w-[400px]' },
+                    { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                );
+            }, 300);
+        }
+    }, [hasRecoveredState, recoveredState, clearRecoveredState, newModal, closeModal]);
 
     const validate = () => {
         const parsedData = StateValidator.safeParse({
@@ -398,6 +458,9 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                     query.queryKey[0] === 'getAvailableProfiles' &&
                     query.queryKey[1] === (switchedDid ?? ''),
             });
+
+            // Clear autosave on success
+            clearLocalSave();
 
             setIsPublishLoading(false);
             handleCloseModal?.();

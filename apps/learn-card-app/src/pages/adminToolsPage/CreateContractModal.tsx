@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import moment from 'moment';
 import { useImmer } from 'use-immer';
 import { cloneDeep } from 'lodash-es';
 import { curriedStateSlice } from '@learncard/helpers';
 import { createPortal } from 'react-dom';
+
+import useAutosave from '../../hooks/useAutosave';
+import RecoveryPrompt from '../../components/common/RecoveryPrompt';
 
 import { IonDatetime, IonInput, IonLabel, IonSpinner, IonTextarea, IonToggle } from '@ionic/react';
 import ContractTypeTabs from './ContractTypeTabs';
@@ -73,6 +76,23 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
     const [contractType, setContractType] = useState(ContractType.classic);
     const [autoBoostUris, setAutoBoostUris] = useState<string[]>([]);
     const [expiresAtError, setExpiresAtError] = useState('');
+
+    // Autosave hook
+    type ContractStateType = typeof contract;
+    const {
+        hasRecoveredState,
+        recoveredState,
+        recoveredExtra: recoveredAutoBoostUris,
+        clearRecoveredState,
+        saveToLocal,
+        clearLocalSave,
+        hasUnsavedChanges,
+    } = useAutosave<ContractStateType, string[]>({
+        storageKey: 'lc_contract_autosave',
+        hasContent: state => !!(state?.name || state?.description),
+    });
+
+    const hasShownRecoveryRef = useRef(false);
 
     const [autoBoostIssuers, setAutoBoostIssuers] = useState<Record<string, LCNProfile>>({});
 
@@ -214,6 +234,9 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
 
             onSuccess?.(contractUri);
 
+            // Clear autosave on success
+            clearLocalSave();
+
             presentToast(`Contract "${contract.name}" created successfully!`);
             closeModal();
         } catch (e) {
@@ -263,6 +286,55 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
             setError('');
         }
     }, [contract]);
+
+    // Save to localStorage whenever contract or autoBoostUris change
+    useEffect(() => {
+        if (contract.name || contract.description) {
+            saveToLocal(contract, autoBoostUris);
+        }
+    }, [contract, autoBoostUris, saveToLocal]);
+
+    // Show recovery prompt if we have recovered state
+    useEffect(() => {
+        if (hasRecoveredState && recoveredState && !hasShownRecoveryRef.current) {
+            hasShownRecoveryRef.current = true;
+
+            setTimeout(() => {
+                const handleRecover = () => {
+                    setContract(recoveredState as any);
+                    setAutoBoostUris(recoveredAutoBoostUris ?? []);
+                    clearRecoveredState();
+                    closeModal();
+                };
+
+                const handleDiscard = () => {
+                    clearRecoveredState(true); // Clear localStorage on discard
+                    closeModal();
+                };
+
+                newModal(
+                    <RecoveryPrompt
+                        itemName={recoveredState?.name || ''}
+                        itemType="contract"
+                        onRecover={handleRecover}
+                        onDiscard={handleDiscard}
+                        discardButtonText="Create New Contract"
+                    />,
+                    { sectionClassName: '!max-w-[400px]' },
+                    { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                );
+            }, 300);
+        }
+    }, [
+        hasRecoveredState,
+        recoveredState,
+        recoveredAutoBoostUris,
+        clearRecoveredState,
+        newModal,
+        closeModal,
+        setContract,
+        setAutoBoostUris,
+    ]);
 
     const handlePreview = () => {
         if (contract.frontDoorBoostUri) {

@@ -12,6 +12,8 @@ type BoostCMSConfirmationPromptProps = {
     currentStep: BoostCMSStepsEnum;
     isEditMode: boolean;
     isSaveLoading: boolean;
+    clearLocalSave?: () => void;
+    onIntentionalNavigation?: () => void;
 };
 
 export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProps> = ({
@@ -20,6 +22,8 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
     currentStep,
     isEditMode = false,
     isSaveLoading,
+    clearLocalSave,
+    onIntentionalNavigation,
 }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -28,6 +32,8 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
     const history = useHistory();
 
     const handleQuit = () => {
+        clearLocalSave?.();
+        onIntentionalNavigation?.();
         closeModal();
         history.goBack();
     };
