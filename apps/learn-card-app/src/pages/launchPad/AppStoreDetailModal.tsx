@@ -76,7 +76,6 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
-    console.log(primaryColor);
 
     const { useInstallApp, useUninstallApp, useInstallCount, useIsAppInstalled } = useAppStore();
 

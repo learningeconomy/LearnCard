@@ -124,9 +124,6 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
         await guardedAction(async () => {
             setIsProcessing(true);
 
-            console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
-            console.log('success!');
-
             try {
                 // Consent to contract for selected user
                 await consentToContract({
