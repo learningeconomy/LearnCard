@@ -1,6 +1,6 @@
 import { neogma } from '@instance';
 import { SkillFramework } from '@models';
-import { FlatSkillFrameworkType } from 'types/skill-framework';
+import type { FlatSkillFrameworkType } from 'types/skill-framework';
 import { v4 as uuid } from 'uuid';
 import type { Framework as ProviderFramework } from '@services/skills-provider/types';
 
@@ -55,12 +55,23 @@ export const upsertSkillFrameworkFromProvider = async (
         updatedAt: now,
     } as FlatSkillFrameworkType;
 
+    const params = {
+        id: data.id,
+        name: data.name,
+        description: data.description ?? null,
+        image: data.image ?? '',
+        sourceURI: data.sourceURI ?? null,
+        status: data.status,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+    };
+
     // Merge local representation
     await neogma.queryRunner.run(
         `MERGE (f:SkillFramework {id: $id})
          ON CREATE SET f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI, f.status = $status, f.createdAt = $createdAt, f.updatedAt = $updatedAt
          ON MATCH SET  f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI, f.updatedAt = $updatedAt`,
-        data as any
+        params
     );
 
     // Ensure MANAGES relationship

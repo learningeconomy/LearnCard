@@ -1,6 +1,6 @@
 import type { UnsignedVC, VC } from '@learncard/types';
 import type { BoostInstance } from '@models';
-import { getSkillsProvider } from './index';
+import { getSkillsProviderForFramework } from './index';
 import { getAlignedSkillsForBoost } from '@accesslayer/boost/relationships/read';
 import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import type { Obv3Alignment } from './types';
@@ -35,7 +35,6 @@ export async function injectObv3AlignmentsIntoCredentialForBoost(
             byFramework.set(fid, arr);
         }
 
-        const provider = getSkillsProvider();
         let alignments: any[] = [];
 
         // Get unique framework IDs from the aligned skills
@@ -50,6 +49,7 @@ export async function injectObv3AlignmentsIntoCredentialForBoost(
             const framework = await getSkillFrameworkById(fwId);
             if (!framework) continue;
 
+            const provider = getSkillsProviderForFramework(fwId, framework.sourceURI);
             const res = await provider.buildObv3Alignments(fwId, idsForFramework, domain);
             if (Array.isArray(res) && res.length > 0) alignments = alignments.concat(res);
         }
@@ -122,7 +122,6 @@ export async function buildObv3AlignmentsForBoost(
             byFramework.set(fid, arr);
         }
 
-        const provider = getSkillsProvider();
         let cleaned: Obv3Alignment[] = [];
 
         // Get unique framework IDs from the aligned skills
@@ -137,6 +136,7 @@ export async function buildObv3AlignmentsForBoost(
             const framework = await getSkillFrameworkById(fwId);
             if (!framework) continue;
 
+            const provider = getSkillsProviderForFramework(fwId, framework.sourceURI);
             const alignments = await provider.buildObv3Alignments(fwId, idsForFramework, domain);
             const cleanedPart = (alignments || []).map(a =>
                 Object.fromEntries(Object.entries(a).filter(([, v]) => v !== undefined))

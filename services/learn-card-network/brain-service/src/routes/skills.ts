@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { t, profileRoute } from '@routes';
-import { getSkillsProvider } from '@services/skills-provider';
+import { getSkillsProvider, getSkillsProviderForFramework } from '@services/skills-provider';
 import {
     doesProfileManageFramework,
     getSkillFrameworkById,
@@ -275,7 +275,8 @@ export const skillsRouter = t.router({
                     message: 'You do not manage this framework',
                 });
 
-            const provider = getSkillsProvider();
+            const localFramework = await getSkillFrameworkById(input.id);
+            const provider = getSkillsProviderForFramework(input.id, localFramework?.sourceURI);
             const providerFramework = await provider.getFrameworkById(input.id);
 
             if (providerFramework) {
@@ -298,7 +299,6 @@ export const skillsRouter = t.router({
                 }
             }
 
-            const localFramework = await getSkillFrameworkById(input.id);
             if (!localFramework)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Framework not found' });
 
