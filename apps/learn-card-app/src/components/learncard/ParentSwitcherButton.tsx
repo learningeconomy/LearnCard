@@ -19,17 +19,20 @@ type ParentSwitcherButtonProps = {
     isSwitching: boolean;
     onPlayerSwitch?: (user: LCNProfile) => void;
     handlePlayerSwitchOverride?: (user: LCNProfile) => void;
+    onSwitchComplete?: () => void;
 };
 
 const ParentSwitcherButton: React.FC<ParentSwitcherButtonProps> = ({
     isSwitching,
     onPlayerSwitch,
     handlePlayerSwitchOverride,
+    onSwitchComplete,
 }) => {
     const { closeModal } = useModal();
     const { handleVerifyParentPin, isSwitching: _isParentSwitching } = usePin(user => {
         onPlayerSwitch?.(user);
         closeModal();
+        onSwitchComplete?.();
     });
 
     let currentUser = currentUserStore.get.currentUser();

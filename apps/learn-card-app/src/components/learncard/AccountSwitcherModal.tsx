@@ -165,6 +165,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                             handlePlayerSwitchOverride={handlePlayerSwitchOverride}
                             onPlayerSwitch={onPlayerSwitch}
                             isSwitching={isSwitching}
+                            onSwitchComplete={closeModal}
                         />
                     )}
 
