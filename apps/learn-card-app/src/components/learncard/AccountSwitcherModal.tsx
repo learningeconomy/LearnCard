@@ -156,7 +156,10 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                     </h1>
                 )}
                 <div className="grid grid-cols-2 gap-[20px] justify-items-center ">
-                    <ActiveChildAccountButton />
+                    <ActiveChildAccountButton
+                        handlePlayerSwitchOverride={handlePlayerSwitchOverride}
+                        onPlayerSwitch={onPlayerSwitch}
+                    />
                     {!childOnly && (
                         <ParentSwitcherButton
                             handlePlayerSwitchOverride={handlePlayerSwitchOverride}

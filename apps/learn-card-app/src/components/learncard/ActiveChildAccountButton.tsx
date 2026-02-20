@@ -10,8 +10,17 @@ import {
 } from 'learn-card-base';
 
 import { getProfileTypeDisplayText } from '../../pages/adminToolsPage/AdminToolsAccountSwitcher/admin-tools-switcher.helpers';
+import { LCNProfile } from '@learncard/types';
 
-const ActiveChildAccountButton = () => {
+type ActiveChildAccountButtonProps = {
+    handlePlayerSwitchOverride?: (user: LCNProfile) => void;
+    onPlayerSwitch?: (user: LCNProfile) => void;
+};
+
+const ActiveChildAccountButton: React.FC<ActiveChildAccountButtonProps> = ({
+    handlePlayerSwitchOverride,
+    onPlayerSwitch,
+}) => {
     const currentUser = currentUserStore.get.currentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const profileType = switchedProfileStore.use.profileType();
@@ -25,8 +34,21 @@ const ActiveChildAccountButton = () => {
 
     const profileTypeDisplayText = getProfileTypeDisplayText(profileType);
 
+    const handleClick = () => {
+        if (!currentLCNUser) return;
+
+        const userToSwitch = {
+            ...currentLCNUser,
+            displayName: displayName || '',
+            image: image || '',
+        };
+
+        handlePlayerSwitchOverride?.(userToSwitch);
+        onPlayerSwitch?.(userToSwitch);
+    };
+
     return (
-        <button className="flex flex-col gap-[5px] items-center">
+        <button onClick={handleClick} className="flex flex-col gap-[5px] items-center">
             <UserProfilePicture
                 customContainerClass={`flex justify-center items-center w-[86px] h-[86px] max-w-[86px] max-h-[86px] rounded-full overflow-hidden text-white font-medium text-4xl shrink-0 ${
                     isSelected ? 'border-[3px] border-solid border-emerald-700' : ''
