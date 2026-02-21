@@ -6,7 +6,7 @@
  * - VITE_ prefix reading
  * - REACT_APP_ prefix fallback
  * - VITE_ takes precedence over REACT_APP_
- * - Helper functions: shouldUseSSS, isAuthMigrationEnabled
+ * - Helper functions: shouldUseSSS, isEmailBackupShareEnabled
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -14,7 +14,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     getAuthConfig,
     shouldUseSSS,
-    isAuthMigrationEnabled,
     isEmailBackupShareEnabled,
 } from '../authConfig';
 
@@ -38,8 +37,6 @@ const clearAuthEnvVars = () => {
         'KEY_DERIVATION',
         'KEY_DERIVATION_PROVIDER',
         'SSS_SERVER_URL',
-        'ENABLE_MIGRATION',
-        'ENABLE_SSS_MIGRATION',
         'ENABLE_EMAIL_BACKUP_SHARE',
     ];
 
@@ -70,7 +67,6 @@ describe('getAuthConfig', () => {
             expect(config.authProvider).toBe('firebase');
             expect(config.keyDerivation).toBe('sss');
             expect(config.serverUrl).toBe('http://localhost:5100/api');
-            expect(config.enableMigration).toBe(false);
             expect(config.enableEmailBackupShare).toBe(true);
         });
     });
@@ -98,14 +94,6 @@ describe('getAuthConfig', () => {
             const config = getAuthConfig();
 
             expect(config.serverUrl).toBe('https://custom.server/api');
-        });
-
-        it('reads VITE_ENABLE_MIGRATION=true', () => {
-            setEnv({ VITE_ENABLE_MIGRATION: 'true' });
-
-            const config = getAuthConfig();
-
-            expect(config.enableMigration).toBe(true);
         });
 
         it('reads VITE_ENABLE_EMAIL_BACKUP_SHARE=false', () => {
@@ -187,23 +175,6 @@ describe('getAuthConfig', () => {
     });
 
     describe('boolean parsing', () => {
-        it('enableMigration defaults to false', () => {
-            const config = getAuthConfig();
-
-            expect(config.enableMigration).toBe(false);
-        });
-
-        it('enableMigration is only true for "true"', () => {
-            setEnv({ VITE_ENABLE_MIGRATION: 'true' });
-            expect(getAuthConfig().enableMigration).toBe(true);
-
-            setEnv({ VITE_ENABLE_MIGRATION: '1' });
-            expect(getAuthConfig().enableMigration).toBe(false);
-
-            setEnv({ VITE_ENABLE_MIGRATION: 'yes' });
-            expect(getAuthConfig().enableMigration).toBe(false);
-        });
-
         it('enableEmailBackupShare defaults to true', () => {
             const config = getAuthConfig();
 
@@ -242,18 +213,6 @@ describe('helper functions', () => {
             setEnv({ VITE_KEY_DERIVATION: 'web3auth' });
 
             expect(shouldUseSSS()).toBe(false);
-        });
-    });
-
-    describe('isAuthMigrationEnabled', () => {
-        it('returns false by default', () => {
-            expect(isAuthMigrationEnabled()).toBe(false);
-        });
-
-        it('returns false when explicitly disabled', () => {
-            setEnv({ VITE_ENABLE_MIGRATION: 'false' });
-
-            expect(isAuthMigrationEnabled()).toBe(false);
         });
     });
 

@@ -31,7 +31,6 @@ const baseConfig: AuthConfig = {
     authProvider: 'firebase',
     keyDerivation: 'sss',
     serverUrl: 'http://localhost:5100/api',
-    enableMigration: true,
 };
 
 const createMockAuthProvider = (): AuthProvider => ({

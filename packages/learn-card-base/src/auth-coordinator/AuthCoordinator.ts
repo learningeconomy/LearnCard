@@ -88,6 +88,32 @@ export class AuthCoordinator {
                                 this.keyDerivation.setActiveUser(authUser.id);
                             }
 
+                            // If the strategy supports recovery (SSS) and we have an
+                            // auth session, verify the server has a record for this user.
+                            // A missing record means the key was created under a different
+                            // strategy (e.g. Web3Auth) and needs to be migrated to SSS
+                            // so it's protected by split shares + recovery methods.
+                            if (authUser && this.keyDerivation.capabilities?.recovery) {
+                                try {
+                                    const { token, providerType } = await this.getAuthCredentials();
+                                    const serverStatus = await this.keyDerivation.fetchServerKeyStatus(token, providerType);
+
+                                    if (!serverStatus.exists || serverStatus.needsMigration) {
+                                        this.setState({
+                                            status: 'needs_migration',
+                                            authUser,
+                                            migrationData: { web3AuthKey: cachedKey },
+                                        });
+
+                                        return this.state;
+                                    }
+                                } catch (e) {
+                                    // Server check failed — proceed to ready.
+                                    // Migration will be caught on the next full init.
+                                    console.warn('Server key verification failed on pk-first path, proceeding to ready', e);
+                                }
+                            }
+
                             this.setState({
                                 status: 'ready',
                                 authUser: authUser ?? undefined,

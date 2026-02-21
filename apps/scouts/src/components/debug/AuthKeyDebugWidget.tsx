@@ -682,7 +682,6 @@ export const AuthKeyDebugWidget: React.FC = () => {
                             <KVRow label="Auth Provider" value={authConfig.authProvider} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="Key Derivation" value={authConfig.keyDerivation} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="SSS Server URL" value={truncate(authConfig.serverUrl, 32)} copied={copied} onCopy={copyToClipboard} />
-                            <KVRow label="Migration Enabled" value={authConfig.enableMigration} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="Public Computer Mode" value={isPublicComputerMode()} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="Storage Backend" value={isPublicComputerMode() ? 'sessionStorage (ephemeral)' : 'IndexedDB (persistent)'} mono={false} copied={copied} onCopy={copyToClipboard} />
 

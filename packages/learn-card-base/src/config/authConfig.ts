@@ -10,7 +10,6 @@
  *   VITE_AUTH_PROVIDER / REACT_APP_AUTH_PROVIDER                   — 'firebase' (default)
  *   VITE_KEY_DERIVATION / REACT_APP_KEY_DERIVATION_PROVIDER        — 'sss' (default)
  *   VITE_SSS_SERVER_URL / REACT_APP_SSS_SERVER_URL                 — 'http://localhost:5100/api' (default)
- *   VITE_ENABLE_MIGRATION / REACT_APP_ENABLE_MIGRATION             — 'false' (default)
  *   VITE_ENABLE_EMAIL_BACKUP_SHARE / REACT_APP_ENABLE_EMAIL_BACKUP_SHARE — 'true' (default)
  *   VITE_WEB3AUTH_CLIENT_ID                                                 — Web3Auth client ID from dashboard
  *   VITE_WEB3AUTH_NETWORK                                                   — Web3Auth network (e.g. 'testnet', 'cyan', 'sapphire_mainnet')
@@ -33,9 +32,6 @@ export interface AuthConfig {
 
     /** Server URL for key share operations */
     serverUrl: string;
-
-    /** Whether migration from Web3Auth to SSS is enabled */
-    enableMigration: boolean;
 
     /** Whether to automatically send a backup share to the user's email during key setup */
     enableEmailBackupShare: boolean;
@@ -116,9 +112,6 @@ export const getAuthConfig = (): AuthConfig => {
     const serverUrl =
         readEnv('SSS_SERVER_URL', 'SSS_SERVER_URL') || 'http://localhost:5100/api';
 
-    const enableMigration =
-        readEnv('ENABLE_MIGRATION', 'ENABLE_MIGRATION') === 'true';
-
     const enableEmailBackupShare = readEnv('ENABLE_EMAIL_BACKUP_SHARE', 'ENABLE_EMAIL_BACKUP_SHARE') !== 'false';
 
     const web3AuthClientId =
@@ -137,7 +130,6 @@ export const getAuthConfig = (): AuthConfig => {
         authProvider,
         keyDerivation,
         serverUrl,
-        enableMigration,
         enableEmailBackupShare,
         web3AuthClientId,
         web3AuthNetwork,
@@ -179,13 +171,6 @@ export const getConfigCapabilities = (): import('@learncard/auth-types').KeyDeri
     const { keyDerivation } = getAuthConfig();
 
     return STRATEGY_CAPABILITIES[keyDerivation] ?? DEFAULT_CAPABILITIES;
-};
-
-/**
- * Check if migration from Web3Auth to SSS is enabled.
- */
-export const isAuthMigrationEnabled = (): boolean => {
-    return getAuthConfig().enableMigration;
 };
 
 /**

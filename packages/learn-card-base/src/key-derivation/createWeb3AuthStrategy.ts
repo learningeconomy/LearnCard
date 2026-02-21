@@ -9,7 +9,7 @@
  * This strategy enables a smooth rollout path:
  *   1. Deploy with VITE_KEY_DERIVATION=web3auth  (existing behavior)
  *   2. Test SSS in staging
- *   3. Flip to  VITE_KEY_DERIVATION=sss  with VITE_ENABLE_MIGRATION=true
+ *   3. Flip to  VITE_KEY_DERIVATION=sss  — migration is automatic
  *
  * Recovery is handled internally by Web3Auth's MPC network and is not
  * exposed through the KeyDerivationStrategy recovery interface.

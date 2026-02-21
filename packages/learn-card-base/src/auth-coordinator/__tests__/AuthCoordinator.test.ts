@@ -201,6 +201,120 @@ describe('AuthCoordinator', () => {
     });
 
     // -----------------------------------------------------------------------
+    // initialize() — pk-first path: server verification for recovery strategies
+    // -----------------------------------------------------------------------
+
+    describe('initialize() — pk-first server verification', () => {
+        it('transitions to needs_migration when strategy supports recovery but server has no record', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true },
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        exists: false,
+                        needsMigration: false,
+                        primaryDid: null,
+                        recoveryMethods: [],
+                        authShare: null,
+                        shareVersion: null,
+                    }),
+                },
+                config: {
+                    getCachedPrivateKey: vi.fn().mockResolvedValue('cached-pk'),
+                    didFromPrivateKey: vi.fn().mockResolvedValue('did:key:zCached'),
+                },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(result.status).toBe('needs_migration');
+
+            if (result.status === 'needs_migration') {
+                expect(result.migrationData?.web3AuthKey).toBe('cached-pk');
+            }
+        });
+
+        it('transitions to needs_migration when server says needsMigration', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true },
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        ...defaultServerStatus,
+                        needsMigration: true,
+                    }),
+                },
+                config: {
+                    getCachedPrivateKey: vi.fn().mockResolvedValue('cached-pk'),
+                    didFromPrivateKey: vi.fn().mockResolvedValue('did:key:zCached'),
+                },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(result.status).toBe('needs_migration');
+        });
+
+        it('proceeds to ready when server check fails (graceful fallback)', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true },
+                    fetchServerKeyStatus: vi.fn().mockRejectedValue(new Error('network error')),
+                },
+                config: {
+                    getCachedPrivateKey: vi.fn().mockResolvedValue('cached-pk'),
+                    didFromPrivateKey: vi.fn().mockResolvedValue('did:key:zCached'),
+                },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(result.status).toBe('ready');
+        });
+
+        it('skips server check when strategy does not support recovery', async () => {
+            const fetchServerKeyStatus = vi.fn();
+
+            const { coordinator } = setup({
+                keyDerivation: {
+                    capabilities: { recovery: false, deviceLinking: false, localKeyPersistence: false },
+                    fetchServerKeyStatus,
+                },
+                config: {
+                    getCachedPrivateKey: vi.fn().mockResolvedValue('cached-pk'),
+                    didFromPrivateKey: vi.fn().mockResolvedValue('did:key:zCached'),
+                },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(result.status).toBe('ready');
+            expect(fetchServerKeyStatus).not.toHaveBeenCalled();
+        });
+
+        it('skips server check when no auth session is available', async () => {
+            const fetchServerKeyStatus = vi.fn();
+
+            const { coordinator } = setup({
+                authProvider: {
+                    getCurrentUser: vi.fn().mockResolvedValue(null),
+                },
+                keyDerivation: {
+                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true },
+                    fetchServerKeyStatus,
+                },
+                config: {
+                    getCachedPrivateKey: vi.fn().mockResolvedValue('cached-pk'),
+                    didFromPrivateKey: vi.fn().mockResolvedValue('did:key:zCached'),
+                },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(result.status).toBe('ready');
+            expect(fetchServerKeyStatus).not.toHaveBeenCalled();
+        });
+    });
+
+    // -----------------------------------------------------------------------
     // initialize() — auth-provider-first path
     // -----------------------------------------------------------------------
 
