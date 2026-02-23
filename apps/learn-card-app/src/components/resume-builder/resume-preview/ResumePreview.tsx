@@ -1,6 +1,9 @@
 import React, { useMemo } from 'react';
 
+import ResumePreviewUserInfo from './ResumePreviewUserInfo';
+
 import { useGetResolvedCredentials } from 'learn-card-base';
+
 import { RESUME_SECTIONS } from '../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
@@ -88,28 +91,7 @@ const ResumePreview: React.FC = () => {
     return (
         <div className="w-full max-w-[760px] mx-auto bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-lg p-10 min-h-[1000px] font-sans">
             {/* Header */}
-            {(personalDetails.name ||
-                personalDetails.email ||
-                personalDetails.phone ||
-                personalDetails.location) && (
-                <div className="border-b border-grayscale-200 pb-6 mb-6">
-                    {personalDetails.name && (
-                        <h1 className="text-3xl font-bold text-grayscale-900 tracking-tight">
-                            {personalDetails.name}
-                        </h1>
-                    )}
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-grayscale-600">
-                        {personalDetails.email && <span>{personalDetails.email}</span>}
-                        {personalDetails.phone && <span>{personalDetails.phone}</span>}
-                        {personalDetails.location && <span>{personalDetails.location}</span>}
-                    </div>
-                    {personalDetails.summary && (
-                        <p className="mt-3 text-sm text-grayscale-700 leading-relaxed">
-                            {personalDetails.summary}
-                        </p>
-                    )}
-                </div>
-            )}
+            <ResumePreviewUserInfo />
 
             {/* Sections */}
             {orderedSections.map(section => {

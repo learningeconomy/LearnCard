@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import { IonIcon } from '@ionic/react';
 import { menuOutline } from 'ionicons/icons';
-import ResumePreview from './resume-config-panel/ResumePreview';
+import ResumePreview from './resume-preview/ResumePreview';
 import ResumeConfigPanelFAB from './resume-config-panel/ResumeConfigPanelFAB';
 import ResumeConfigOverlayPanel from './resume-config-panel/ResumeConfigOverlayPanel';
 import ResumeConfigDesktopSidePanel from './resume-config-panel/ResumeConfigDesktopSidePanel';
