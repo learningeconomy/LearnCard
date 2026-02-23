@@ -1,7 +1,7 @@
 import React from 'react';
 
-import ResumeConfigPanelHeader from './ResumeConfigPanelHeader';
 import ResumeConfigPanelOptions from './ResumeConfigPanelOptions';
+import ResumeConfigPanelHeader from './ResumeConfigPanelHeader';
 import ResumeDownloadButton from './ResumeDownloadButton';
 
 export const ResumeConfigDesktopSidePanel: React.FC<{

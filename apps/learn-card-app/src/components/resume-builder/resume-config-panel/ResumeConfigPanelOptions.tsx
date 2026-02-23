@@ -32,7 +32,8 @@ const ChevronIcon: React.FC<{ open: boolean }> = ({ open }) => (
 );
 
 const PersonalInfoSection: React.FC = () => {
-    const [open, setOpen] = useState(true);
+    const [open, setOpen] = useState<boolean>(true);
+
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const setPersonalDetails = resumeBuilderStore.set.setPersonalDetails;
 

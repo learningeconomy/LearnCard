@@ -1,8 +1,8 @@
 import React from 'react';
 
+import ResumeConfigPanelOptions from './ResumeConfigPanelOptions';
 import ResumeConfigPanelHeader from './ResumeConfigPanelHeader';
 import ResumeDownloadButton from './ResumeDownloadButton';
-import ResumeConfigPanel from './ResumeConfigPanelOptions';
 
 export const ResumeConfigOverlayPanel: React.FC<{
     drawerOpen: boolean;
@@ -20,7 +20,7 @@ export const ResumeConfigOverlayPanel: React.FC<{
 
                 {/* Scrollable sections */}
                 <div className="flex-1 overflow-y-auto">
-                    <ResumeConfigPanel />
+                    <ResumeConfigPanelOptions />
                 </div>
 
                 {/* Drawer footer */}
