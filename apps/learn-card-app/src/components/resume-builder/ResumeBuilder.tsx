@@ -36,29 +36,29 @@ export const ResumeBuilder: React.FC = () => {
                 <ResumePreview />
             </div>
 
-            {/* ── Desktop Layout ── */}
+            {/* ── Desktop side panel ── */}
             {!isMobile && (
                 <>
                     <ResumeConfigDesktopSidePanel
                         panelOpen={panelOpen}
                         setPanelOpen={setPanelOpen}
                     />
-
-                    {/* Toggle panel button when closed */}
-                    {!panelOpen && (
-                        <button
-                            onClick={() => openResumeConfigPanel()}
-                            className="absolute top-4 right-4 z-20 bg-white border border-grayscale-200 shadow-sm rounded-full p-2 h-[40px] w-[40px] text-grayscale-600 hover:text-grayscale-900"
-                        >
-                            <IonIcon icon={menuOutline} className="w-[20px] h-[20px]" />
-                        </button>
-                    )}
                 </>
             )}
 
-            {/* ── Mobile Layout ── */}
+            {/* ── Mobile FAB ── */}
             {isMobile && !drawerOpen && (
                 <ResumeConfigPanelFAB openResumeConfigPanel={openResumeConfigPanel} />
+            )}
+
+            {/* ── Desktop panel button when closed ── */}
+            {!isMobile && !panelOpen && (
+                <button
+                    onClick={() => openResumeConfigPanel()}
+                    className="absolute top-4 right-4 z-20 bg-white border border-grayscale-200 shadow-sm rounded-full p-2 h-[40px] w-[40px] text-grayscale-600 hover:text-grayscale-900"
+                >
+                    <IonIcon icon={menuOutline} className="w-[20px] h-[20px]" />
+                </button>
             )}
         </div>
     );

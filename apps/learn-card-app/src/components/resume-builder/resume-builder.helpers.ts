@@ -37,8 +37,28 @@ export type PersonalDetails = {
     summary: string;
 };
 
+export type ResumeUserInfo = {
+    key: keyof PersonalDetails;
+    label: string;
+    placeholder: string;
+    multiline?: boolean;
+};
+
 export type ResolvedCredentialMeta = {
     title: string;
     issuer: string;
     date: string;
 };
+
+export const resumeUserInfo: ResumeUserInfo[] = [
+    { key: 'name', label: 'Full Name', placeholder: 'Jane Doe' },
+    { key: 'email', label: 'Email', placeholder: 'jane@example.com' },
+    { key: 'phone', label: 'Phone', placeholder: '+1 (555) 000-0000' },
+    { key: 'location', label: 'Location', placeholder: 'San Francisco, CA' },
+    {
+        key: 'summary',
+        label: 'Summary',
+        placeholder: 'Brief professional summary...',
+        multiline: true,
+    },
+];
