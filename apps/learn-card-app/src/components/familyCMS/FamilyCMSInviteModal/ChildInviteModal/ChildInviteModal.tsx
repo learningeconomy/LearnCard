@@ -18,7 +18,18 @@ import LearnCardIDCMS from '../../../learncardID-CMS/LearnCardIDCMS';
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
 import X from '../../../svgs/X';
 
-import { ModalTypes, UploadRes, useFilestack, useModal, UserProfilePicture } from 'learn-card-base';
+import {
+    ModalTypes,
+    UploadRes,
+    useFilestack,
+    useModal,
+    UserProfilePicture,
+    useDeviceTypeByWidth,
+} from 'learn-card-base';
+import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
+import DatePickerInput from '../../../date-picker/DatePickerInput';
+import CountrySelectorModal from '../../../onboarding/onboardingNetworkForm/components/CountrySelectorModal';
+import countries from '../../../../constants/countries.json';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { FamilyChildAccount, FamilyCMSAppearance } from '../../familyCMSState';
 import { LearnCardIDCMSTabsEnum } from '../../../learncardID-CMS/LearnCardIDCMSTabs';
@@ -41,8 +52,23 @@ type ChildInviteModalProps = {
     handleDeleteUser?: (key: string, profileId: string) => void;
 };
 
+const COUNTRIES: Record<string, string> = countries as Record<string, string>;
+
 const StateValidator = z.object({
     name: z.string().min(1, 'Name is required!'),
+    dob: z
+        .string()
+        .min(1, 'Date of birth is required!')
+        .refine(dob => !Number.isNaN(calculateAge(dob)), {
+            message: 'Invalid date of birth.',
+        })
+        .refine(
+            dob => {
+                const age = calculateAge(dob);
+                return !Number.isNaN(age) && age < 18;
+            },
+            { message: 'Child must be under 18 years old.' }
+        ),
 });
 
 export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
@@ -55,6 +81,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     handleDeleteUser,
 }) => {
     const { newModal, closeModal } = useModal();
+    const { isMobile } = useDeviceTypeByWidth();
     const bottomBarRef = useRef<HTMLDivElement>();
     const isInEditMode = ChildInviteModalViewModeEnum.edit === viewMode;
 
@@ -71,6 +98,10 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
         isInEditMode
             ? existingChild?.learnCardID
             : getLearnCardIDStyleDefaults(LearnCardIDCMSTabsEnum.dark)
+    );
+    const [dob, setDob] = useState<string>(isInEditMode ? existingChild?.dob ?? '' : '');
+    const [country, setCountry] = useState<string | undefined>(
+        isInEditMode ? existingChild?.country : undefined
     );
 
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
@@ -90,6 +121,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     const validate = () => {
         const parsedData = StateValidator.safeParse({
             name: name,
+            dob: dob,
         });
 
         if (parsedData.success) {
@@ -104,6 +136,31 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
         return false;
     };
 
+    const handleDobChange = (date: string) => {
+        setDob(date);
+        setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors.dob;
+            return newErrors;
+        });
+    };
+
+    const handleCountrySelect = (code: string) => {
+        setCountry(code);
+        closeModal();
+    };
+
+    const presentCountrySelector = () => {
+        newModal(
+            <CountrySelectorModal selected={country} onSelect={handleCountrySelect} />,
+            {
+                disableCloseHandlers: true,
+                sectionClassName: '!bg-transparent !border-none !shadow-none !rounded-none',
+            },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+        );
+    };
+
     const handleSave = () => {
         if (validate()) {
             handleSaveChildAccount?.({
@@ -112,6 +169,8 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                 image: image ?? '',
                 profileId: uuidv4(),
                 learnCardID,
+                dob,
+                country,
             });
             handleCloseModal?.();
             return;
@@ -125,6 +184,8 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                 shortBio: shortBio ?? '',
                 image: image ?? '',
                 learnCardID,
+                dob,
+                country,
             });
             handleCloseModal?.();
             return;
@@ -228,7 +289,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                     onClick={() => {
                                         setName('');
                                     }}
-                                    className="absolute top-[35%] right-[3%] z-10 pl-2"
+                                    className="absolute top-[35%] right-[3%] z-10 ml-2"
                                 >
                                     <X className="text-grayscale-900 h-[20px] w-[20px]" />
                                 </button>
@@ -262,11 +323,42 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                     onClick={() => {
                                         setShortBio('');
                                     }}
-                                    className="absolute top-[35%] right-[3%] z-10 pl-2"
+                                    className="absolute top-[35%] right-[3%] z-10 ml-2"
                                 >
                                     <X className="text-grayscale-900 h-[20px] w-[20px]" />
                                 </button>
                             )}
+                        </div>
+
+                        <div className="w-full mb-2 mt-4">
+                            <label className="text-grayscale-500 text-xs font-poppins pl-4 mb-1 block">
+                                Date of Birth *
+                            </label>
+                            <DatePickerInput
+                                value={dob}
+                                onChange={handleDobChange}
+                                error={errors?.dob?.[0]}
+                                isMobile={isMobile}
+                                label="Date of Birth"
+                            />
+                            {errors?.dob && (
+                                <div className="text-red-400 text-sm font-medium pl-1 mt-1">
+                                    {errors?.dob}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="w-full mb-2 mt-2">
+                            <label className="text-grayscale-500 text-xs font-poppins pl-4 mb-1 block">
+                                Country (Optional)
+                            </label>
+                            <button
+                                type="button"
+                                onClick={presentCountrySelector}
+                                className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base`}
+                            >
+                                {country ? COUNTRIES[country] : 'Select Country'}
+                            </button>
                         </div>
 
                         <div className="w-full h-[2px] bg-grayscale-100 mt-2" />
