@@ -108,6 +108,8 @@ export const FamilyMemberActionMenu: React.FC<{
             icon: <ProfileIcon className="text-grayscale-900" />,
             onClick: () => {
                 // open LearnCardID Preview
+                closeModal();
+
                 newModal(
                     <MyLearnCardModal
                         branding={BrandingEnum.learncard}
@@ -131,7 +133,6 @@ export const FamilyMemberActionMenu: React.FC<{
                     {},
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                 );
-                closeModal();
             },
             type: MemberActionMenuEnum.viewProfile,
         },
