@@ -105,7 +105,7 @@ export const colorfulTheme: Theme = validateThemeData({
     sideMenuRootLinks: [
         {
             id: SideMenuLinksEnum.launchPad,
-            label: 'LaunchPad',
+            label: 'Apps',
             path: '/launchpad',
         },
         {
@@ -204,7 +204,7 @@ export const colorfulTheme: Theme = validateThemeData({
         },
         {
             id: MobileNavBarLinks.launchpad,
-            label: 'LaunchPad',
+            label: 'Apps',
             path: '/launchpad',
         },
     ],
