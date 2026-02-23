@@ -15,7 +15,9 @@ import {
     useToast,
     ToastTypeEnum,
     getCategoryForCredential,
+    useSyncAllCredentialsToContractsMutation,
 } from 'learn-card-base';
+import { useAiInsightCredentialMutation } from 'learn-card-base/hooks/useAiInsightCredential';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { useUploadVcFromText } from './useUploadVcFromText';
 
@@ -72,6 +74,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
     const queryClient = useQueryClient();
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const { presentToast } = useToast();
+    const syncAll = useSyncAllCredentialsToContractsMutation();
+    const aiInsightMutation = useAiInsightCredentialMutation();
 
     const { uploadVcFromText } = useUploadVcFromText();
 
@@ -354,6 +358,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             }
 
             await refetchCheckListStatus();
+            syncAll.mutate();
+            aiInsightMutation.mutate();
             checklistStore.set.updateIsParsing(fileType, false);
         } catch (error) {
             checklistStore.set.updateIsParsing(fileType, false);
@@ -429,6 +435,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             // Only update these if all files were processed
             await fetchNewContractCredentials();
             await refetchCheckListStatus();
+            syncAll.mutate();
+            aiInsightMutation.mutate();
         } catch (error) {
             console.error('Error in parseFiles:', error);
             checklistStore.set.updateIsParsing(fileType, false);
