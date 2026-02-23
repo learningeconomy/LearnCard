@@ -1,10 +1,12 @@
 import React, { useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 
-import BoostEarnedCard from '../../boost/boost-earned-card/BoostEarnedCard';
-import BoostEarnedIDCard from '../../boost/boost-earned-card/BoostEarnedIDCard';
-import SlimCaretLeft from '../../svgs/SlimCaretLeft';
-import SlimCaretRight from '../../svgs/SlimCaretRight';
+import BoostEarnedIDCard from '../../../boost/boost-earned-card/BoostEarnedIDCard';
+import BoostEarnedCard from '../../../boost/boost-earned-card/BoostEarnedCard';
+import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
+import SlimCaretLeft from '../../../svgs/SlimCaretLeft';
+import SlimCaretRight from '../../../svgs/SlimCaretRight';
+import { IonIcon } from '@ionic/react';
 
 import {
     useGetCredentialList,
@@ -12,93 +14,15 @@ import {
     categoryMetadata,
     CredentialCategoryEnum,
 } from 'learn-card-base';
-import { RESUME_SECTIONS, ResumeSectionKey, PersonalDetails } from '../resume-builder.helpers';
-import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
+import { ResumeSectionKey } from '../../resume-builder.helpers';
+import { resumeBuilderStore } from '../../../../stores/resumeBuilderStore';
 
 import 'swiper/css';
 
-const ChevronIcon: React.FC<{ open: boolean }> = ({ open }) => (
-    <svg
-        className={`w-4 h-4 text-grayscale-400 transition-transform duration-200 ${
-            open ? 'rotate-180' : ''
-        }`}
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-    >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-    </svg>
-);
-
-const PersonalInfoSection: React.FC = () => {
-    const [open, setOpen] = useState<boolean>(true);
-
-    const personalDetails = resumeBuilderStore.useTracked.personalDetails();
-    const setPersonalDetails = resumeBuilderStore.set.setPersonalDetails;
-
-    const fields: {
-        key: keyof PersonalDetails;
-        label: string;
-        placeholder: string;
-        multiline?: boolean;
-    }[] = [
-        { key: 'name', label: 'Full Name', placeholder: 'Jane Doe' },
-        { key: 'email', label: 'Email', placeholder: 'jane@example.com' },
-        { key: 'phone', label: 'Phone', placeholder: '+1 (555) 000-0000' },
-        { key: 'location', label: 'Location', placeholder: 'San Francisco, CA' },
-        {
-            key: 'summary',
-            label: 'Summary',
-            placeholder: 'Brief professional summary...',
-            multiline: true,
-        },
-    ];
-
-    return (
-        <div className="border-b border-grayscale-100">
-            <button
-                className="w-full flex items-center justify-between px-4 py-3 text-left"
-                onClick={() => setOpen(o => !o)}
-            >
-                <span className="text-sm font-semibold text-grayscale-800">Personal Info</span>
-                <ChevronIcon open={open} />
-            </button>
-            {open && (
-                <div className="px-4 pb-4 flex flex-col gap-3">
-                    {fields.map(({ key, label, placeholder, multiline }) => (
-                        <div key={key} className="flex flex-col gap-1">
-                            <label className="text-xs font-medium text-grayscale-500">
-                                {label}
-                            </label>
-                            {multiline ? (
-                                <textarea
-                                    rows={3}
-                                    className="w-full text-sm bg-grayscale-50 border border-grayscale-200 rounded-lg px-3 py-2 text-grayscale-800 placeholder-grayscale-300 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                                    placeholder={placeholder}
-                                    value={personalDetails[key]}
-                                    onChange={e => setPersonalDetails({ [key]: e.target.value })}
-                                />
-                            ) : (
-                                <input
-                                    type="text"
-                                    className="w-full text-sm bg-grayscale-50 border border-grayscale-200 rounded-lg px-3 py-2 text-grayscale-800 placeholder-grayscale-300 focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                                    placeholder={placeholder}
-                                    value={personalDetails[key]}
-                                    onChange={e => setPersonalDetails({ [key]: e.target.value })}
-                                />
-                            )}
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-};
-
-const CredentialSection: React.FC<{ sectionKey: ResumeSectionKey; label: string }> = ({
-    sectionKey,
-    label,
-}) => {
+export const ResumeConfigCredentialSelector: React.FC<{
+    sectionKey: ResumeSectionKey;
+    label: string;
+}> = ({ sectionKey, label }) => {
     const [open, setOpen] = useState(false);
     const swiperRef = useRef<any>(null);
     const [atBeginning, setAtBeginning] = useState(true);
@@ -134,7 +58,7 @@ const CredentialSection: React.FC<{ sectionKey: ResumeSectionKey; label: string 
                         </span>
                     )}
                 </div>
-                <ChevronIcon open={open} />
+                <IonIcon icon={open ? chevronDownOutline : chevronUpOutline} />
             </button>
             {open && (
                 <div className="pb-4">
@@ -249,21 +173,4 @@ const CredentialSection: React.FC<{ sectionKey: ResumeSectionKey; label: string 
     );
 };
 
-const ResumeConfigPanelOptions: React.FC = () => {
-    return (
-        <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto">
-                <PersonalInfoSection />
-                {RESUME_SECTIONS.map(section => (
-                    <CredentialSection
-                        key={section.key}
-                        sectionKey={section.key as ResumeSectionKey}
-                        label={section.label}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-};
-
-export default ResumeConfigPanelOptions;
+export default ResumeConfigCredentialSelector;

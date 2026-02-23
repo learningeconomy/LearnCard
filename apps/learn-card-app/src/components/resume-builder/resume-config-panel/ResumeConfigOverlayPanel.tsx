@@ -1,6 +1,6 @@
 import React from 'react';
 
-import ResumeConfigPanelOptions from './ResumeConfigPanelOptions';
+import ResumeConfigPanelOptions from './resume-config-panel-options/ResumeConfigPanelOptions';
 import ResumeConfigPanelHeader from './ResumeConfigPanelHeader';
 import ResumeDownloadButton from './ResumeDownloadButton';
 
