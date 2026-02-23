@@ -249,7 +249,7 @@ const CredentialSection: React.FC<{ sectionKey: ResumeSectionKey; label: string 
     );
 };
 
-const ResumeConfigPanel: React.FC = () => {
+const ResumeConfigPanelOptions: React.FC = () => {
     return (
         <div className="flex flex-col h-full">
             <div className="flex-1 overflow-y-auto">
@@ -266,4 +266,4 @@ const ResumeConfigPanel: React.FC = () => {
     );
 };
 
-export default ResumeConfigPanel;
+export default ResumeConfigPanelOptions;
