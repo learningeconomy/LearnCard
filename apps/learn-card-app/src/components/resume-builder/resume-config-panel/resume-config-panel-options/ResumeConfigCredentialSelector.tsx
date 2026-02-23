@@ -4,8 +4,8 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import BoostEarnedIDCard from '../../../boost/boost-earned-card/BoostEarnedIDCard';
 import BoostEarnedCard from '../../../boost/boost-earned-card/BoostEarnedCard';
 import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
-import SlimCaretLeft from '../../../svgs/SlimCaretLeft';
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
+import SlimCaretLeft from '../../../svgs/SlimCaretLeft';
 import { IonIcon } from '@ionic/react';
 
 import {
@@ -23,10 +23,12 @@ export const ResumeConfigCredentialSelector: React.FC<{
     sectionKey: ResumeSectionKey;
     label: string;
 }> = ({ sectionKey, label }) => {
-    const [open, setOpen] = useState(false);
     const swiperRef = useRef<any>(null);
-    const [atBeginning, setAtBeginning] = useState(true);
-    const [atEnd, setAtEnd] = useState(false);
+
+    const [open, setOpen] = useState<boolean>(false);
+
+    const [atBeginning, setAtBeginning] = useState<boolean>(true);
+    const [atEnd, setAtEnd] = useState<boolean>(false);
 
     const selectedCredentialUris = resumeBuilderStore.useTracked.selectedCredentialUris();
     const toggleCredential = resumeBuilderStore.set.toggleCredential;
@@ -61,7 +63,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
                 <IonIcon icon={open ? chevronDownOutline : chevronUpOutline} />
             </button>
             {open && (
-                <div className="pb-4">
+                <div className="pb-4 pl-4">
                     {isLoading && (
                         <p className="text-xs text-grayscale-400 px-4 mb-2">Loading credentials…</p>
                     )}
@@ -103,11 +105,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
                                         <SwiperSlide
                                             key={record.uri ?? index}
                                             style={{ width: 'auto' }}
-                                            className={`cursor-pointer transition-opacity ${
-                                                isSelected
-                                                    ? 'ring-2 ring-indigo-500 rounded-[20px]'
-                                                    : 'opacity-70 hover:opacity-100'
-                                            }`}
+                                            className={`cursor-pointer transition-opacity`}
                                         >
                                             {isID || isMembership ? (
                                                 <div className="mt-6">
