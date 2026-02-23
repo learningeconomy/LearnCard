@@ -46,9 +46,9 @@ export const FamilyBoostMembersListItem: React.FC<{
     };
 
     return (
-        <div
+        <button
             onClick={handleMemberActionMenu}
-            className="flex items-center justify-between w-full bg-white border-t-grayscale-100 border-t-solid border-t-[2px] pb-[12px] pt-[12px]"
+            className="flex items-center justify-between w-full bg-white border-t-grayscale-100 border-solid border-t-[2px] pb-[12px] pt-[12px]"
         >
             <div className="flex items-center justify-start w-full">
                 <div className="flex items-center justify-start">
@@ -72,11 +72,11 @@ export const FamilyBoostMembersListItem: React.FC<{
                     </p>
                 </div>
             </div>
-            <button className="flex items-center justify-center text-grayscale-600 font-poppins text-sm">
+            <div className="flex items-center justify-center text-grayscale-600 font-poppins text-sm">
                 {familyTitles?.singular}
                 <SlimCaretRight className="text-grayscale-400 w-[20px] h-auto" />
-            </button>
-        </div>
+            </div>
+        </button>
     );
 };
 
