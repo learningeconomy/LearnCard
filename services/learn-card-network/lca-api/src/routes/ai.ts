@@ -63,7 +63,7 @@ const AIResponseValidator = z.object({
     description: z.string(),
     category: BoostCategoryOptionsEnumValidator,
     type: BoostTypeOptionsEnumValidator,
-    narrative: z.string().optional(),
+    narrative: z.string(),
 });
 
 // Map of skill name => single unicode emoji character
@@ -122,15 +122,17 @@ export const aiRouter = t.router({
                     {
                         role: 'system',
                         content:
-                            'Generate a title using only letters A-Z with a maximum length of 24 characters and separate words with spaces if there is more than one, description, category, type, and narrative for a boost based on an arbitrary description. The narrative is no longer than 300 characters and answers the question "How do you earn this boost?',
+                            'Generate a title using only letters A-Z with a maximum length of 24 characters and separate words with spaces if there is more than one, description, category, type, and narrative for a boost based on an arbitrary description. The narrative is no longer than 300 characters and answers the question "How do you earn this boost?"\n\nStrict constraints:\n- category MUST be EXACTLY one of: "Social Badge", "Achievement", "Course", "ID", "Work History", "Learning History", "Accomplishment", "Accommodation". Use exact casing and spelling; do NOT invent other categories.\n- type MUST be EXACTLY one of: "Certificate", "Badge", "ID". Use exact casing and spelling; do NOT invent other types.\n\nOutput requirements:\n- Return ONLY a JSON object with the keys "title", "description", "category", "type", and optional "narrative".\n- Do not include explanations, markdown, or extra fields.\n- Ensure the JSON parses without code fences.',
                     },
                     { role: 'user', content: description },
                 ],
-                response_format: zodResponseFormat(AIResponseValidator, 'info'),
+                // response_format: zodResponseFormat(AIResponseValidator, 'info'),
+                response_format: { type: 'json_object' },
                 user: did,
             });
 
-            const response = JSON.parse(completion.choices[0]?.message.content ?? '');
+            const content = completion.choices[0]?.message.content ?? '';
+            const response = JSON.parse(content);
 
             return AIResponseValidator.parseAsync(response);
         }),

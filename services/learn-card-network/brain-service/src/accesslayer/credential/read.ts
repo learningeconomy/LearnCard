@@ -53,16 +53,17 @@ export const getReceivedCredentialsForProfile = async (
         ],
     });
 
-    const fromQuery =
-        from && from.length > 0
-            ? matchQuery.where(
-                new Where({ source: { profileId: { [Op.in]: from } } }, matchQuery.getBindParam())
-            )
-            : matchQuery;
+    const hasFromFilter = from && from.length > 0;
+
+    const fromQuery = hasFromFilter
+        ? matchQuery.where(
+            new Where({ source: { profileId: { [Op.in]: from } } }, matchQuery.getBindParam())
+        )
+        : matchQuery;
 
     // Filter out revoked credentials
     const query = fromQuery.raw(
-        'WHERE received.status IS NULL OR received.status <> "revoked"'
+        `${hasFromFilter ? 'AND' : 'WHERE'} (received.status IS NULL OR received.status <> "revoked")`
     );
 
     const results = convertQueryResultToPropertiesObjectArray<{

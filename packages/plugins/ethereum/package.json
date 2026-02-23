@@ -39,5 +39,6 @@
         "@learncard/core": "workspace:*",
         "@uniswap/default-token-list": "^4.1.0",
         "ethers": "^5.6.9"
-    }
+    },
+    "sideEffects": false
 }

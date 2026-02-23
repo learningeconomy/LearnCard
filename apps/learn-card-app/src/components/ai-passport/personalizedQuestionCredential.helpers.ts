@@ -3,7 +3,7 @@ import {
     PersonalizedAnswersState,
     PersonalizedQuestionEnum,
 } from './personalizedQuestions.helpers';
-import _ from 'lodash';
+import _ from 'lodash-es';
 
 export const DEFAULT_QA_CREDENTIAL_ID: string = '__qacredential__';
 

@@ -40,5 +40,6 @@
         "@learncard/crypto-plugin": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/types": "workspace:*"
-    }
+    },
+    "sideEffects": false
 }

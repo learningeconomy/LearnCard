@@ -45,5 +45,6 @@
         "@learncard/helpers": "workspace:*",
         "@learncard/network-brain-client": "workspace:*",
         "mustache": "^4.2.0"
-    }
+    },
+    "sideEffects": false
 }

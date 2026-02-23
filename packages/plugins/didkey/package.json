@@ -40,5 +40,6 @@
         "@learncard/core": "workspace:*",
         "@learncard/helpers": "workspace:^",
         "hex-lite": "^1.5.0"
-    }
+    },
+    "sideEffects": false
 }

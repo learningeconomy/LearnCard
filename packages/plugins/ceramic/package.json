@@ -50,5 +50,6 @@
         "key-did-provider-ed25519": "^2.0.0",
         "key-did-resolver": "2.3.0",
         "lodash": "^4.17.21"
-    }
+    },
+    "sideEffects": false
 }

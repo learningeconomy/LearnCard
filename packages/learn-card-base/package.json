@@ -71,5 +71,6 @@
     "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-base/README.md",
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"
-    }
+    },
+    "sideEffects": false
 }
