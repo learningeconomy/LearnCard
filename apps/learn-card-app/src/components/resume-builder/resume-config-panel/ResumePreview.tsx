@@ -1,10 +1,8 @@
 import React, { useMemo } from 'react';
-import {
-    resumeBuilderStore,
-    RESUME_SECTIONS,
-    ResumeSectionKey,
-} from '../../../stores/resumeBuilderStore';
+
 import { useGetResolvedCredentials } from 'learn-card-base';
+import { RESUME_SECTIONS } from '../resume-builder.helpers';
+import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 const ResumePreview: React.FC = () => {

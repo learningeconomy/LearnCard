@@ -1,22 +1,21 @@
 import React, { useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
+
+import BoostEarnedCard from '../../boost/boost-earned-card/BoostEarnedCard';
+import BoostEarnedIDCard from '../../boost/boost-earned-card/BoostEarnedIDCard';
+import SlimCaretLeft from '../../svgs/SlimCaretLeft';
+import SlimCaretRight from '../../svgs/SlimCaretRight';
+
 import {
     useGetCredentialList,
     BoostCategoryOptionsEnum,
     categoryMetadata,
     CredentialCategoryEnum,
 } from 'learn-card-base';
-import BoostEarnedCard from '../../boost/boost-earned-card/BoostEarnedCard';
-import BoostEarnedIDCard from '../../boost/boost-earned-card/BoostEarnedIDCard';
-import SlimCaretLeft from '../../svgs/SlimCaretLeft';
-import SlimCaretRight from '../../svgs/SlimCaretRight';
-import {
-    resumeBuilderStore,
-    RESUME_SECTIONS,
-    ResumeSectionKey,
-    PersonalDetails,
-} from '../../../stores/resumeBuilderStore';
+import { RESUME_SECTIONS, ResumeSectionKey, PersonalDetails } from '../resume-builder.helpers';
+import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
+
+import 'swiper/css';
 
 const ChevronIcon: React.FC<{ open: boolean }> = ({ open }) => (
     <svg
