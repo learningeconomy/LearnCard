@@ -1,6 +1,7 @@
 import React from 'react';
+
 import { IonContent, IonPage } from '@ionic/react';
-import ResumeBuilder from '../../components/resume-builder/ResumeBuilder/ResumeBuilder';
+import ResumeBuilder from '../../components/resume-builder/ResumeBuilder';
 
 const ResumeBuilderPage: React.FC = () => {
     return (
