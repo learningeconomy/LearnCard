@@ -51,6 +51,7 @@ interface PostTransferOptions extends CommonOptions {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const APPLE_MIGRATION_ENDPOINT = 'https://appleid.apple.com/auth/usermigrationinfo';
+const APPLE_TOKEN_ENDPOINT = 'https://appleid.apple.com/auth/token';
 const APPLE_TOKEN_AUDIENCE = 'https://appleid.apple.com';
 const CLIENT_SECRET_EXPIRY_SECONDS = 300; // 5 minutes
 const MAX_RETRIES = 3;
@@ -90,15 +91,47 @@ function generateAppleClientSecret(
     });
 }
 
+// ─── Apple Access Token ─────────────────────────────────────────────────────
+
+async function getAccessToken(clientId: string, clientSecret: string): Promise<string> {
+    const response = await fetch(APPLE_TOKEN_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            grant_type: 'client_credentials',
+            scope: 'user.migration',
+            client_id: clientId,
+            client_secret: clientSecret,
+        }),
+    });
+
+    if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`Failed to get access token: ${response.status} ${body}`);
+    }
+
+    const data = await response.json() as { access_token: string };
+
+    if (!data.access_token) {
+        throw new Error(`No access_token in response: ${JSON.stringify(data)}`);
+    }
+
+    return data.access_token;
+}
+
 // ─── Apple Migration API ─────────────────────────────────────────────────────
 
 async function callAppleMigrationApi(
     params: Record<string, string>,
+    accessToken: string,
     retryCount = 0
 ): Promise<Record<string, string>> {
     const response = await fetch(APPLE_MIGRATION_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Bearer ${accessToken}`,
+        },
         body: new URLSearchParams(params),
     });
 
@@ -109,7 +142,7 @@ async function callAppleMigrationApi(
 
         await sleep(delay);
 
-        return callAppleMigrationApi(params, retryCount + 1);
+        return callAppleMigrationApi(params, accessToken, retryCount + 1);
     }
 
     if (!response.ok) {
@@ -124,14 +157,15 @@ async function getTransferSub(
     oldSub: string,
     targetTeamId: string,
     clientId: string,
-    clientSecret: string
+    clientSecret: string,
+    accessToken: string
 ): Promise<string> {
     const result = await callAppleMigrationApi({
         sub: oldSub,
         target: targetTeamId,
         client_id: clientId,
         client_secret: clientSecret,
-    });
+    }, accessToken);
 
     const transferSub = result.transfer_sub;
 
@@ -146,14 +180,15 @@ async function exchangeTransferSub(
     transferSub: string,
     targetTeamId: string,
     clientId: string,
-    clientSecret: string
+    clientSecret: string,
+    accessToken: string
 ): Promise<string> {
     const result = await callAppleMigrationApi({
         transfer_sub: transferSub,
         target: targetTeamId,
         client_id: clientId,
         client_secret: clientSecret,
-    });
+    }, accessToken);
 
     const newSub = result.sub;
 
@@ -341,8 +376,15 @@ async function preTransfer(options: CommonOptions): Promise<void> {
         privateKey
     );
 
-    // 4. Get transfer identifiers
-    console.log('4. Fetching transfer identifiers from Apple...\n');
+    // 4. Get access token
+    console.log('4. Obtaining access token from Apple...\n');
+
+    const accessToken = await getAccessToken(appleClientId, clientSecret);
+
+    console.log('   Access token obtained.\n');
+
+    // 5. Get transfer identifiers
+    console.log('5. Fetching transfer identifiers from Apple...\n');
 
     const transferRecords: TransferIdRecord[] = [];
     let successCount = 0;
@@ -356,7 +398,8 @@ async function preTransfer(options: CommonOptions): Promise<void> {
                 user.oldAppleSub,
                 targetTeamId,
                 appleClientId,
-                clientSecret
+                clientSecret,
+                accessToken
             );
 
             transferRecords.push({
@@ -441,8 +484,15 @@ async function postTransfer(options: PostTransferOptions): Promise<void> {
         privateKey
     );
 
-    // 3. Exchange transfer_sub for new sub
-    console.log('3. Exchanging transfer identifiers for new subs...\n');
+    // 3. Get access token
+    console.log('3. Obtaining access token from Apple...\n');
+
+    const accessToken = await getAccessToken(appleClientId, clientSecret);
+
+    console.log('   Access token obtained.\n');
+
+    // 4. Exchange transfer_sub for new sub
+    console.log('4. Exchanging transfer identifiers for new subs...\n');
 
     const finalMapping: FinalMappingRecord[] = [];
     let exchangeSuccessCount = 0;
@@ -456,7 +506,8 @@ async function postTransfer(options: PostTransferOptions): Promise<void> {
                 record.transferSub,
                 targetTeamId,
                 appleClientId,
-                clientSecret
+                clientSecret,
+                accessToken
             );
 
             finalMapping.push({
