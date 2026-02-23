@@ -47,8 +47,15 @@ on:
                 required: false
                 default: false
                 type: boolean
+            skip-tests:
+                description: 'Skip tests (emergency deploys only)'
+                required: false
+                default: false
+                type: boolean
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}-${{ contains(github.event.head_commit.message, 'chore(release): version packages') && 'production' || github.event_name == 'workflow_dispatch' && 'manual' || 'staging' }}
+    cancel-in-progress: false
 
 env:
     CI: true
@@ -96,11 +103,17 @@ jobs:
               id: check_release
               if: github.event_name != 'workflow_dispatch'
               run: |
-                  if [[ "${{ github.event.head_commit.message }}" == *"chore(release):"* ]]; then
+                  COMMIT_MSG="${{ github.event.head_commit.message }}"
+                  COMMIT_AUTHOR="${{ github.event.head_commit.author.name }}"
+
+                  if [[ "$COMMIT_MSG" == "chore(release): version packages" && ("$COMMIT_AUTHOR" == "github-actions[bot]" || "$COMMIT_AUTHOR" == "learncard-e2e-runner[bot]") ]]; then
                     echo "is_release=true" >> $GITHUB_OUTPUT
-                    echo "This is a release commit"
+                    echo "This is a release commit (author: $COMMIT_AUTHOR)"
                   else
                     echo "is_release=false" >> $GITHUB_OUTPUT
+                    if [[ "$COMMIT_MSG" == *"chore(release):"* ]]; then
+                      echo "::notice::Commit message contains 'chore(release):' but author '$COMMIT_AUTHOR' is not a recognized bot — treating as non-release"
+                    fi
                   fi
 
             - name: Determine Deployment Environments
@@ -253,15 +266,16 @@ jobs:
                   retention-days: 1
 
     # ============================================================================
-    # TESTING (skip on production releases and manual deploys)
+    # TESTING (skip on production releases; runs for manual deploys unless skip-tests)
     # ============================================================================
     test-affected:
         name: Test Affected Projects
         needs: [determine-affected, build-native-plugin]
         if: |
-            needs.determine-affected.outputs.affected != '' &&
-            needs.determine-affected.outputs.is_release != 'true' &&
-            needs.determine-affected.outputs.is_manual != 'true'
+            (
+                (needs.determine-affected.outputs.affected != '' && needs.determine-affected.outputs.is_release != 'true' && needs.determine-affected.outputs.is_manual != 'true') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.skip-tests != 'true')
+            )
         runs-on: ubuntu-latest
         environment: ci-tests
         steps:
@@ -279,12 +293,24 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
-            - name: Run tests
+            - name: Run affected tests
+              if: needs.determine-affected.outputs.is_manual != 'true'
               uses: nick-fields/retry@v2
               with:
                   timeout_minutes: 10
                   max_attempts: 3
                   command: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
+              env:
+                  SEED: ${{ secrets.SEED }}
+                  LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+
+            - name: Run all tests (manual dispatch)
+              if: needs.determine-affected.outputs.is_manual == 'true'
+              uses: nick-fields/retry@v2
+              with:
+                  timeout_minutes: 15
+                  max_attempts: 3
+                  command: pnpm exec nx run-many --target=test --exclude docs --exclude didkit-plugin-node
               env:
                   SEED: ${{ secrets.SEED }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
@@ -302,8 +328,9 @@ jobs:
         if: |
             always() &&
             !cancelled() &&
+            needs.determine-affected.result == 'success' &&
             (
-              (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-brain-service == 'true') ||
+              (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-brain-service == 'true' && (github.event.inputs.skip-tests == 'true' || needs.test-affected.result == 'success')) ||
               (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.brain_service_changed == 'true') ||
               (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'network-brain-service'))
             )
@@ -406,8 +433,9 @@ jobs:
         if: |
             always() &&
             !cancelled() &&
+            needs.determine-affected.result == 'success' &&
             (
-                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-learn-cloud == 'true') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-learn-cloud == 'true' && (github.event.inputs.skip-tests == 'true' || needs.test-affected.result == 'success')) ||
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.learn_cloud_changed == 'true') ||
                 (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'learn-cloud-service'))
             )
@@ -497,8 +525,9 @@ jobs:
         if: |
             always() &&
             !cancelled() &&
+            needs.determine-affected.result == 'success' &&
             (
-                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-lca-api == 'true') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-lca-api == 'true' && (github.event.inputs.skip-tests == 'true' || needs.test-affected.result == 'success')) ||
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_api_changed == 'true') ||
                 (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'lca-api-service'))
             )
@@ -608,14 +637,15 @@ jobs:
     # ============================================================================
     deploy-frontend:
         name: Deploy Frontend
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
+        needs: [determine-affected, test-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
         if: |
             always() &&
             !cancelled() &&
+            needs.determine-affected.result == 'success' &&
             (
-                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-frontend == 'true') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-frontend == 'true' && (github.event.inputs.skip-tests == 'true' || needs.test-affected.result == 'success')) ||
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true') ||
-                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts')
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts' && (github.event.inputs.skip-tests == 'true' || needs.test-affected.result == 'success'))
             ) &&
             !contains(needs.deploy-brain-service.result, 'failure') &&
             !contains(needs.deploy-learn-cloud.result, 'failure') &&
@@ -706,12 +736,13 @@ jobs:
     # ============================================================================
     push-docker-images:
         name: Push Docker Images
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud]
+        needs: [determine-affected, test-affected, deploy-brain-service, deploy-learn-cloud]
         if: |
             always() &&
             !cancelled() &&
+            needs.determine-affected.result == 'success' &&
             (
-                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.push-docker == 'true') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.push-docker == 'true' && (github.event.inputs.skip-tests == 'true' || needs.test-affected.result == 'success')) ||
                 (needs.determine-affected.outputs.is_release == 'true' && (needs.determine-affected.outputs.brain_service_changed == 'true' || needs.determine-affected.outputs.learn_cloud_changed == 'true'))
             ) &&
             !contains(needs.deploy-brain-service.result, 'failure') &&
@@ -790,12 +821,13 @@ jobs:
     # ============================================================================
     publish-npm:
         name: Publish NPM Packages
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
+        needs: [determine-affected, test-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
         if: |
             always() &&
             !cancelled() &&
+            needs.determine-affected.result == 'success' &&
             (
-                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.publish-npm == 'true') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.publish-npm == 'true' && (github.event.inputs.skip-tests == 'true' || needs.test-affected.result == 'success')) ||
                 needs.determine-affected.outputs.is_release == 'true'
             ) &&
             !contains(needs.deploy-brain-service.result, 'failure') &&
