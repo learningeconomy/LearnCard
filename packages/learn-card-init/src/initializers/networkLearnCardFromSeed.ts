@@ -78,7 +78,9 @@ export const networkLearnCardFromSeed = async ({
 
     const expirationLc = await cloudLc.addPlugin(expirationPlugin(cloudLc));
 
-    const { getEthereumPlugin } = await import('@learncard/ethereum-plugin');
+    const ethMod = await import('@learncard/ethereum-plugin');
+    const getEthereumPlugin =
+        ethMod.getEthereumPlugin ?? (ethMod as unknown as { default: typeof ethMod }).default?.getEthereumPlugin;
     const ethLc = await expirationLc.addPlugin(getEthereumPlugin(expirationLc, ethereumConfig));
 
     const vpqrLc = await ethLc.addPlugin(getVpqrPlugin(ethLc));
