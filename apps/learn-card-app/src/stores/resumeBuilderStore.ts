@@ -5,6 +5,8 @@ import {
     RESUME_SECTIONS,
     ResumeSectionKey,
     ResolvedCredentialMeta,
+    ResumeField,
+    ResumeSelfAttestedFields,
 } from '../components/resume-builder/resume-builder.helpers';
 
 export type ResumeBuilderState = {
@@ -12,6 +14,7 @@ export type ResumeBuilderState = {
     selectedCredentialUris: Partial<Record<ResumeSectionKey, string[]>>;
     resolvedCredentials: Record<string, ResolvedCredentialMeta>;
     sectionOrder: ResumeSectionKey[];
+    selfAttested: Record<string, ResumeSelfAttestedFields>;
 };
 
 const defaultPersonalDetails: PersonalDetails = {
@@ -30,6 +33,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
         selectedCredentialUris: {},
         resolvedCredentials: {},
         sectionOrder: defaultSectionOrder,
+        selfAttested: {},
     },
     { persist: { name: 'resumeBuilderStore', enabled: true } }
 ).extendActions(set => ({
@@ -50,10 +54,36 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     setSectionOrder: (order: ResumeSectionKey[]) => {
         set.sectionOrder(order);
     },
+    setSelfAttestedDescription: (uri: string, field: ResumeField) => {
+        const prev = resumeBuilderStore.get.selfAttested();
+        const existing = prev[uri] ?? { additionalDetails: [] };
+        set.selfAttested({ ...prev, [uri]: { ...existing, description: field } });
+    },
+    addSelfAttestedDetail: (uri: string, field: ResumeField) => {
+        const prev = resumeBuilderStore.get.selfAttested();
+        const existing = prev[uri] ?? { additionalDetails: [] };
+        set.selfAttested({
+            ...prev,
+            [uri]: { ...existing, additionalDetails: [...existing.additionalDetails, field] },
+        });
+    },
+    updateSelfAttestedDetail: (uri: string, index: number, field: ResumeField) => {
+        const prev = resumeBuilderStore.get.selfAttested();
+        const existing = prev[uri] ?? { additionalDetails: [] };
+        const updated = existing.additionalDetails.map((d, i) => (i === index ? field : d));
+        set.selfAttested({ ...prev, [uri]: { ...existing, additionalDetails: updated } });
+    },
+    removeSelfAttestedDetail: (uri: string, index: number) => {
+        const prev = resumeBuilderStore.get.selfAttested();
+        const existing = prev[uri] ?? { additionalDetails: [] };
+        const updated = existing.additionalDetails.filter((_, i) => i !== index);
+        set.selfAttested({ ...prev, [uri]: { ...existing, additionalDetails: updated } });
+    },
     resetStore: () => {
         set.personalDetails(defaultPersonalDetails);
         set.selectedCredentialUris({});
         set.resolvedCredentials({});
         set.sectionOrder(defaultSectionOrder);
+        set.selfAttested({});
     },
 }));

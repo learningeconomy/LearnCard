@@ -50,6 +50,18 @@ export type ResolvedCredentialMeta = {
     date: string;
 };
 
+export type ResumeFieldSource = 'vc' | 'selfAttested';
+
+export type ResumeField = {
+    value: string;
+    source: ResumeFieldSource;
+};
+
+export type ResumeSelfAttestedFields = {
+    description?: ResumeField;
+    additionalDetails: ResumeField[];
+};
+
 export const resumeUserInfo: ResumeUserInfo[] = [
     { key: 'name', label: 'Full Name', placeholder: 'Jane Doe' },
     { key: 'email', label: 'Email', placeholder: 'jane@example.com' },
