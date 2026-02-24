@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
-import { ModalTypes, useModal, QRCodeScannerStore } from 'learn-card-base';
+import { ModalTypes, useModal, QRCodeScannerStore, useAiFeatureGate } from 'learn-card-base';
 import { ProfilePicture } from 'learn-card-base';
 import CheckListContainer from 'apps/learn-card-app/src/components/learncard/checklist/CheckListContainer';
 import AiPassportPersonalizationContainer from 'apps/learn-card-app/src/components/ai-passport/AiPassportPersonalizationContainer';
@@ -427,6 +427,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     const profileType = switchedProfileStore.use.profileType();
     const isChildProfile = profileType === 'child';
+    const { isAiEnabled } = useAiFeatureGate();
 
     const activeRole = (
         isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
@@ -507,6 +508,19 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     if (!Capacitor.isNativePlatform()) {
         actions = actions.map(a => (a === 'Claim Credential' ? 'Customize AI Sessions' : a));
+    }
+
+    const AI_ACTIONS = [
+        'New AI Tutoring Session',
+        'Customize AI Sessions',
+        'View Learner Insights',
+        'View Child Insights',
+        'Request Learner Insights',
+        'Share Insights with Teacher',
+    ];
+
+    if (!isAiEnabled) {
+        actions = actions.filter(a => !AI_ACTIONS.includes(a));
     }
 
     const bgColors = [

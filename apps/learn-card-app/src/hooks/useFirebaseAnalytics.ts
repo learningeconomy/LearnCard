@@ -33,9 +33,14 @@ export const useFirebaseAnalytics = () => {
         });
     };
 
+    const setAnalyticsEnabled = async (enabled: boolean) => {
+        await FirebaseAnalytics.setEnabled({ enabled });
+    };
+
     return {
         setUserId,
         setEnableAnalytics,
+        setAnalyticsEnabled,
         setCurrentScreen,
         logAnalyticsEvent,
     };

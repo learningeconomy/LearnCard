@@ -1,0 +1,143 @@
+import React, { useCallback } from 'react';
+
+import { IonContent, IonHeader, IonPage, IonToolbar, IonToggle } from '@ionic/react';
+import { useHistory } from 'react-router-dom';
+import CaretLeft from 'learn-card-base/svgs/CaretLeft';
+
+import { useGetPreferencesForDid, useUpdatePreferences } from 'learn-card-base';
+import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
+
+const PrivacySettingsPage: React.FC = () => {
+    const history = useHistory();
+    const { data: preferences } = useGetPreferencesForDid();
+    const { mutate: updatePreferences } = useUpdatePreferences();
+    const { setAnalyticsEnabled } = useFirebaseAnalytics();
+
+    const isMinor = preferences?.isMinor ?? false;
+
+    const aiEnabled = preferences?.aiEnabled ?? true;
+    const analyticsEnabled = preferences?.analyticsEnabled ?? true;
+    const bugReportsEnabled = preferences?.bugReportsEnabled ?? true;
+
+    const handleAiToggle = useCallback(
+        (enabled: boolean) => {
+            updatePreferences({ aiEnabled: enabled });
+        },
+        [updatePreferences]
+    );
+
+    const handleAnalyticsToggle = useCallback(
+        (enabled: boolean) => {
+            updatePreferences({ analyticsEnabled: enabled });
+            setAnalyticsEnabled(enabled);
+        },
+        [updatePreferences, setAnalyticsEnabled]
+    );
+
+    const handleBugReportsToggle = useCallback(
+        (enabled: boolean) => {
+            updatePreferences({ bugReportsEnabled: enabled });
+        },
+        [updatePreferences]
+    );
+
+    return (
+        <IonPage className="bg-grayscale-50">
+            <IonHeader className="ion-no-border">
+                <IonToolbar className="ion-no-border bg-white px-4 pt-[max(env(safe-area-inset-top),16px)]">
+                    <div className="flex items-center gap-3 py-3 px-4">
+                        <button
+                            onClick={() => history.goBack()}
+                            className="p-1 -ml-1"
+                            aria-label="Go back"
+                        >
+                            <CaretLeft className="h-auto w-3 text-grayscale-900" />
+                        </button>
+                        <h1 className="text-[17px] font-semibold text-grayscale-900">
+                            Privacy & Data
+                        </h1>
+                    </div>
+                </IonToolbar>
+            </IonHeader>
+
+            <IonContent className="ion-padding">
+                <div className="max-w-[600px] mx-auto flex flex-col gap-4 mt-4">
+                    {isMinor && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
+                            <p className="text-sm text-amber-800">
+                                Privacy settings are managed by your guardian. Some features are
+                                restricted for users under 18.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* AI Features */}
+                    <div className="bg-white rounded-[16px] overflow-hidden shadow-sm">
+                        <div className="flex items-center justify-between px-5 py-4">
+                            <div className="flex-1 pr-4">
+                                <p className="text-[15px] font-medium text-grayscale-900">
+                                    AI Features
+                                </p>
+                                <p className="text-sm text-grayscale-500 mt-0.5">
+                                    AI tutoring sessions, insights, and personalization
+                                </p>
+                            </div>
+                            <IonToggle
+                                checked={aiEnabled}
+                                disabled={isMinor}
+                                onIonChange={e => !isMinor && handleAiToggle(e.detail.checked)}
+                                aria-label="AI Features"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Analytics */}
+                    <div className="bg-white rounded-[16px] overflow-hidden shadow-sm">
+                        <div className="flex items-center justify-between px-5 py-4">
+                            <div className="flex-1 pr-4">
+                                <p className="text-[15px] font-medium text-grayscale-900">
+                                    Analytics & Insights
+                                </p>
+                                <p className="text-sm text-grayscale-500 mt-0.5">
+                                    Help improve LearnCard with anonymous usage data
+                                </p>
+                            </div>
+                            <IonToggle
+                                checked={analyticsEnabled}
+                                disabled={isMinor}
+                                onIonChange={e =>
+                                    !isMinor && handleAnalyticsToggle(e.detail.checked)
+                                }
+                                aria-label="Analytics & Insights"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Bug Reports */}
+                    <div className="bg-white rounded-[16px] overflow-hidden shadow-sm">
+                        <div className="flex items-center justify-between px-5 py-4">
+                            <div className="flex-1 pr-4">
+                                <p className="text-[15px] font-medium text-grayscale-900">
+                                    Bug Reports
+                                </p>
+                                <p className="text-sm text-grayscale-500 mt-0.5">
+                                    Automatically send crash reports to help fix issues
+                                </p>
+                            </div>
+                            <IonToggle
+                                checked={bugReportsEnabled}
+                                disabled={isMinor}
+                                onIonChange={e =>
+                                    !isMinor && handleBugReportsToggle(e.detail.checked)
+                                }
+                                aria-label="Bug Reports"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </IonContent>
+        </IonPage>
+    );
+};
+
+export default PrivacySettingsPage;

@@ -6,6 +6,7 @@ import useLaunchPadApps from './useLaunchPadApps';
 import {
     LaunchPadAppListItem as LaunchPadAppListItemType,
     LaunchPadAppType,
+    useAiFeatureGate,
 } from 'learn-card-base';
 import { UseQueryResult } from '@tanstack/react-query';
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -46,6 +47,7 @@ type LaunchPadItem = Partial<LaunchPadAppListItemType> &
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
+    const { isAiEnabled } = useAiFeatureGate();
     const history = useHistory();
     const { search } = useLocation();
     const { connectTo, challenge, uri, suppressContractModal, embedUrl, appName, appImage } =
@@ -146,7 +148,7 @@ const LaunchPad: React.FC = () => {
     const aiAppsAvailable = areAiPassportAppsAvailable();
 
     let aiApps: LaunchPadItem[] =
-        flags?.enableLaunchPadUpdates && aiAppsAvailable
+        flags?.enableLaunchPadUpdates && aiAppsAvailable && isAiEnabled
             ? (aiPassportApps as unknown as LaunchPadItem[])
             : [];
     let apps: LaunchPadItem[] = useLaunchPadApps() as unknown as LaunchPadItem[];

@@ -40,6 +40,7 @@ import {
     useToast,
     ToastTypeEnum,
     useDeviceTypeByWidth,
+    useUpdatePreferences,
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -52,7 +53,7 @@ import CountrySelectorModal from './components/CountrySelectorModal';
 import EUParentalConsentModalContent from './components/EUParentalConsentModalContent';
 import UnderageModalContent from './components/UnderageModalContent';
 import USConsentNoticeModalContent from './components/USConsentNoticeModalContent';
-import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
+import { requiresEUParentalConsent, isEUCountry, getGdprAgeLimit } from './helpers/gdpr';
 import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
 import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
@@ -98,6 +99,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
+    const { mutateAsync: updatePreferences } = useUpdatePreferences();
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
     const flags = useFlags();
     const schoolCodes = (flags?.underageSchoolCodes as string[]) || [];
@@ -288,6 +290,22 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 });
 
                 if (didWeb) {
+                    // Initialize privacy preferences based on age at signup
+                    const age = dob ? calculateAge(dob) : null;
+                    const limit = country ? getGdprAgeLimit(country) : 18;
+                    const isMinorUser = age !== null && !isNaN(age) && age < limit;
+
+                    await updatePreferences({
+                        aiEnabled: !isMinorUser,
+                        aiAutoDisabled: isMinorUser,
+                        analyticsEnabled: !isMinorUser,
+                        analyticsAutoDisabled: isMinorUser,
+                        bugReportsEnabled: !isMinorUser,
+                        isMinor: isMinorUser,
+                    }).catch(err => {
+                        console.error('Failed to initialize preferences (non-blocking):', err);
+                    });
+
                     await refetchIsCurrentUserLCNUser();
                     await wallet.invoke.resetLCAClient();
                     await queryClient.resetQueries();
