@@ -32,6 +32,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                 disabled={false}
                 // https://ionicframework.com/docs/api/reorder
                 onIonReorderEnd={(e: ReorderEndCustomEvent) => {
+                    e.stopPropagation();
                     const { from, to } = e.detail;
                     const reordered = [...entries];
                     const [moved] = reordered.splice(from, 1);

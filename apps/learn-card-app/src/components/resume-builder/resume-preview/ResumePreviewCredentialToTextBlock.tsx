@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { IonReorder, IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
 
 import ResumePreviewEditableTextBlock from './ResumePreviewEditableTextBlock';
 
@@ -73,36 +74,59 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                 </p>
 
                 {/* ── All fields (description + metadata) rendered uniformly ── */}
-                {fields.map(field => (
-                    <ResumePreviewEditableTextBlock
-                        key={field.id}
-                        value={field.value}
-                        placeholder={
-                            field.type === 'description' ? 'Add a description…' : 'Add detail…'
-                        }
-                        isEditing={isEditing}
-                        isSelfAttested={field.source === 'selfAttested'}
-                        multiline={field.type === 'description'}
-                        onChange={val => {
-                            let source: 'vc' | 'selfAttested';
-                            if (
-                                field.type === 'description' &&
-                                val === vcDescription &&
-                                vcDescription
-                            ) {
-                                source = 'vc';
-                            } else {
-                                source = 'selfAttested';
-                            }
-                            updateCredentialField(uri, section, field.id, val, source);
-                        }}
-                        onRemove={
-                            field.type === 'metadata'
-                                ? () => removeCredentialField(uri, section, field.id)
-                                : undefined
-                        }
-                    />
-                ))}
+                <IonReorderGroup
+                    disabled={!isEditing}
+                    onIonReorderEnd={(e: ReorderEndCustomEvent) => {
+                        e.stopPropagation();
+                        const { from, to } = e.detail;
+                        const reordered = [...fields];
+                        const [moved] = reordered.splice(from, 1);
+                        reordered.splice(to, 0, moved);
+                        resumeBuilderStore.set.reorderCredentialFields(
+                            uri,
+                            section,
+                            reordered.map(f => f.id)
+                        );
+                        e.detail.complete();
+                    }}
+                >
+                    {fields.map(field => (
+                        <div key={field.id} className="flex items-center gap-1">
+                            <div className="flex-1">
+                                <ResumePreviewEditableTextBlock
+                                    value={field.value}
+                                    placeholder={
+                                        field.type === 'description'
+                                            ? 'Add a description…'
+                                            : 'Add detail…'
+                                    }
+                                    isEditing={isEditing}
+                                    isSelfAttested={field.source === 'selfAttested'}
+                                    multiline={field.type === 'description'}
+                                    onChange={val => {
+                                        let source: 'vc' | 'selfAttested';
+                                        if (
+                                            field.type === 'description' &&
+                                            val === vcDescription &&
+                                            vcDescription
+                                        ) {
+                                            source = 'vc';
+                                        } else {
+                                            source = 'selfAttested';
+                                        }
+                                        updateCredentialField(uri, section, field.id, val, source);
+                                    }}
+                                    onRemove={
+                                        field.type === 'metadata'
+                                            ? () => removeCredentialField(uri, section, field.id)
+                                            : undefined
+                                    }
+                                />
+                            </div>
+                            {isEditing && <IonReorder />}
+                        </div>
+                    ))}
+                </IonReorderGroup>
 
                 {/* ── Add detail + Done buttons (edit mode only) ── */}
                 {isEditing && (
