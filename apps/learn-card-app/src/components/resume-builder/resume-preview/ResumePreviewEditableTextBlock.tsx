@@ -1,5 +1,8 @@
 import React, { useRef, useState } from 'react';
 
+import { IonIcon } from '@ionic/react';
+import { trashOutline } from 'ionicons/icons';
+
 type ResumePreviewEditableTextBlockProps = {
     value: string;
     placeholder: string;
@@ -42,24 +45,26 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                 onChange(e.target.value);
             },
             className:
-                'w-full text-xs text-grayscale-700 bg-indigo-50 border border-indigo-300 rounded px-2 py-1.5 outline-none resize-none leading-relaxed',
+                'w-full text-xs text-grayscale-700 bg-indigo-50 rounded-lg px-2 py-1.5 outline-none resize-none leading-relaxed',
         };
 
         return (
-            <div className="flex items-start gap-2 w-full">
+            <div className="flex items-start justify-center gap-2 w-full">
                 {multiline ? (
                     <textarea {...(sharedProps as any)} rows={3} />
                 ) : (
                     <input {...(sharedProps as any)} type="text" />
                 )}
                 {onRemove && (
-                    <button
-                        onClick={onRemove}
-                        className="shrink-0 text-grayscale-300 hover:text-red-400 text-sm mt-1.5 leading-none"
-                        title="Remove"
-                    >
-                        ✕
-                    </button>
+                    <div className="flex items-center justify-center h-full mt-[4px]">
+                        <button
+                            onClick={onRemove}
+                            className="shrink-0 text-grayscale-300 leading-none"
+                            title="Remove"
+                        >
+                            <IonIcon icon={trashOutline} className="w-[24px] h-[24px]" />
+                        </button>
+                    </div>
                 )}
             </div>
         );

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { IonReorderGroup, IonReorder, IonItem } from '@ionic/react';
+import { IonReorderGroup, IonReorder, IonItem, IonIcon } from '@ionic/react';
 import type { ItemReorderEventDetail } from '@ionic/react';
 
+import { reorderTwoOutline } from 'ionicons/icons';
 import ResumePreviewEditBlockButton from './ResumePreviewEditBlockButton';
 import ResumePreviewEditableTextBlock from './ResumePreviewEditableTextBlock';
 
@@ -97,6 +98,8 @@ const ResumePreviewCredentialToTextBlock: React.FC<{ uri: string }> = ({ uri }) 
                                 '--min-height': '0',
                                 '--border-width': '0',
                                 '--inner-border-width': '0',
+                                '--padding-top': isEditing ? '4px' : '0',
+                                '--padding-bottom': isEditing ? '4px' : '0',
                             } as any
                         }
                     >
@@ -108,7 +111,16 @@ const ResumePreviewCredentialToTextBlock: React.FC<{ uri: string }> = ({ uri }) 
                             onChange={handleDescriptionChange}
                             multiline
                         />
-                        {isEditing && <IonReorder slot="end" />}
+                        {isEditing && (
+                            <IonReorder slot="end">
+                                <span className="flex items-center gap-1 text-[10px] text-grayscale-400 select-none pr-1">
+                                    <IonIcon
+                                        icon={reorderTwoOutline}
+                                        className="w-[24px] h-[24px]"
+                                    />
+                                </span>
+                            </IonReorder>
+                        )}
                     </IonItem>
                     {selfAttestedFields.additionalDetails.map((detail, i) => (
                         <IonItem
@@ -123,6 +135,8 @@ const ResumePreviewCredentialToTextBlock: React.FC<{ uri: string }> = ({ uri }) 
                                     '--min-height': '0',
                                     '--border-width': '0',
                                     '--inner-border-width': '0',
+                                    '--padding-top': isEditing ? '4px' : '0',
+                                    '--padding-bottom': isEditing ? '4px' : '0',
                                 } as any
                             }
                         >
@@ -139,19 +153,28 @@ const ResumePreviewCredentialToTextBlock: React.FC<{ uri: string }> = ({ uri }) 
                                 }
                                 onRemove={() => removeSelfAttestedDetail(uri, i)}
                             />
-                            {isEditing && <IonReorder slot="end" />}
+                            {isEditing && (
+                                <IonReorder slot="end">
+                                    <span className="flex items-center gap-1 text-[10px] text-grayscale-400 select-none pr-1">
+                                        <IonIcon
+                                            icon={reorderTwoOutline}
+                                            className="w-[24px] h-[24px]"
+                                        />
+                                    </span>
+                                </IonReorder>
+                            )}
                         </IonItem>
                     ))}
                 </IonReorderGroup>
 
                 {/* ── Add detail + Done buttons (edit mode only) ── */}
                 {isEditing && (
-                    <div className="flex items-center gap-3 mt-1">
+                    <div className="flex items-center gap-1 mt-1">
                         <button
                             onClick={handleAddDetail}
-                            className="text-xs text-indigo-500 font-medium"
+                            className="text-xs border border-solid border-indigo-500 text-indigo-500 font-medium flex items-center px-2 py-1 rounded-lg"
                         >
-                            + Add detail
+                            Add
                         </button>
                         <button
                             onClick={() => setIsEditing(false)}
