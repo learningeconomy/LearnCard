@@ -30,9 +30,9 @@ export const ResumeConfigCredentialSelector: React.FC<{
     const [atBeginning, setAtBeginning] = useState<boolean>(true);
     const [atEnd, setAtEnd] = useState<boolean>(false);
 
-    const selectedCredentialUris = resumeBuilderStore.useTracked.selectedCredentialUris();
+    const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
     const toggleCredential = resumeBuilderStore.set.toggleCredential;
-    const selected = selectedCredentialUris[sectionKey] ?? [];
+    const selected = (credentialEntries[sectionKey] ?? []).map(e => e.uri);
 
     const { data: credentialPages, isLoading } = useGetCredentialList(sectionKey as any, open);
 

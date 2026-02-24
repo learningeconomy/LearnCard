@@ -4,13 +4,13 @@ import ResumePreviewUserInfo from './ResumePreviewUserInfo';
 import ResumePreviewCredentialToTextBlock from './ResumePreviewCredentialToTextBlock';
 import ResumePreviewEmptyPlaceholder from './ResumePreviewEmptyPlaceholder';
 
-import { RESUME_SECTIONS } from '../resume-builder.helpers';
+import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 
 const ResumePreview: React.FC = () => {
     const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
-    const selectedCredentialUris = resumeBuilderStore.useTracked.selectedCredentialUris();
+    const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
 
     const orderedSections = useMemo(() => {
         return sectionOrder
@@ -20,11 +20,9 @@ const ResumePreview: React.FC = () => {
 
     const hasAnyContent = useMemo(() => {
         const hasPersonal = Object.values(personalDetails).some(v => v.trim());
-        const hasCredentials = Object.values(selectedCredentialUris).some(
-            arr => arr && arr.length > 0
-        );
+        const hasCredentials = Object.values(credentialEntries).some(arr => arr && arr.length > 0);
         return hasPersonal || hasCredentials;
-    }, [personalDetails, selectedCredentialUris]);
+    }, [personalDetails, credentialEntries]);
 
     if (!hasAnyContent) {
         return <ResumePreviewEmptyPlaceholder />;
@@ -37,8 +35,11 @@ const ResumePreview: React.FC = () => {
 
             {/* Sections */}
             {orderedSections.map(section => {
-                const uris = selectedCredentialUris[section.key as ResumeSectionKey] ?? [];
-                if (!uris.length) return null;
+                const sectionKey = section.key as ResumeSectionKey;
+                const entries = [...(credentialEntries[sectionKey] ?? [])].sort(
+                    (a, b) => a.index - b.index
+                );
+                if (!entries.length) return null;
 
                 return (
                     <div key={section.key} className="mb-6">
@@ -47,8 +48,12 @@ const ResumePreview: React.FC = () => {
                         </h2>
                         {/* credentials selected converted to resume text block */}
                         <div className="flex flex-col gap-3">
-                            {uris.map((uri: string) => (
-                                <ResumePreviewCredentialToTextBlock key={uri} uri={uri} />
+                            {entries.map(entry => (
+                                <ResumePreviewCredentialToTextBlock
+                                    key={entry.uri}
+                                    uri={entry.uri}
+                                    section={sectionKey}
+                                />
                             ))}
                         </div>
                     </div>
