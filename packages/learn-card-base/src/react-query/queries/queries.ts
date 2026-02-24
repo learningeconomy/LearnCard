@@ -1045,7 +1045,7 @@ export const useSearchFrameworkSkills = (
 export const useSemanticSearchSkills = (
     text: string,
     frameworkId: string,
-    options?: { limit?: number }
+    options?: { limit?: number; excludeTiers?: boolean }
 ) => {
     const { initWallet } = useWallet();
 
@@ -1053,11 +1053,20 @@ export const useSemanticSearchSkills = (
         queryKey: ['semanticSearchSkills', text, frameworkId, options],
         queryFn: async () => {
             const wallet = await initWallet();
-            return wallet.invoke.semanticSearchSkills({
+            const rawResults = await wallet.invoke.semanticSearchSkills({
                 text,
                 limit: options?.limit ?? 50,
                 frameworkId,
             });
+
+            const results = rawResults;
+
+            const { excludeTiers = true } = options ?? {};
+            if (excludeTiers) {
+                results.records = results.records.filter(s => s.type !== 'container');
+            }
+
+            return results;
         },
         enabled: !!text?.trim() && !!frameworkId,
     });

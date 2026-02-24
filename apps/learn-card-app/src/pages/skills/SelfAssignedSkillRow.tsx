@@ -37,6 +37,11 @@ const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
         if (shouldCollapseOptions) setIsExpanded(false);
     }, [shouldCollapseOptions]);
 
+    // safeguard: tiers are not valid skills to select and won't appear in Skills Hub
+    if (skill.role === 'tier') {
+        return null;
+    }
+
     return (
         <div className="flex flex-col rounded-[15px] shadow-box-bottom">
             <div
