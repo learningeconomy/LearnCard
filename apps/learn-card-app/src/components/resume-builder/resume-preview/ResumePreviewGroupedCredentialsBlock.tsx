@@ -9,7 +9,11 @@ import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 
 const ResumePreviewGroupedCredentialsBlock: React.FC<{
     section: (typeof RESUME_SECTIONS)[number];
-}> = ({ section }) => {
+    /** When provided, only render these URIs (used for per-page slicing) */
+    filteredUris?: string[];
+    /** When true, render without interactive controls (used for hidden measurement) */
+    measureOnly?: boolean;
+}> = ({ section, filteredUris, measureOnly = false }) => {
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
     const [editingUris, setEditingUris] = useState<string[]>([]);
 
@@ -18,9 +22,34 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
     };
 
     const sectionKey = section.key as ResumeSectionKey;
-    const entries = [...(credentialEntries[sectionKey] ?? [])].sort((a, b) => a.index - b.index);
+    const allEntries = [...(credentialEntries[sectionKey] ?? [])].sort((a, b) => a.index - b.index);
+    const entries = filteredUris
+        ? allEntries.filter(e => filteredUris.includes(e.uri))
+        : allEntries;
 
     if (!entries.length) return null;
+
+    if (measureOnly) {
+        return (
+            <div className="mb-6">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 mb-3 border-b border-grayscale-100 pb-1">
+                    {section.label}
+                </h2>
+                {entries.map(entry => (
+                    <div key={entry.uri} className="flex items-start gap-2 py-1">
+                        <div className="flex-1">
+                            <ResumePreviewCredentialToTextBlock
+                                uri={entry.uri}
+                                section={sectionKey}
+                                isEditing={false}
+                                setIsEditing={() => {}}
+                            />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
 
     return (
         <div key={section.key} className="mb-6">
