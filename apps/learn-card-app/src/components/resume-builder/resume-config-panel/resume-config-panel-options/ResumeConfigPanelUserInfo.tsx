@@ -41,7 +41,10 @@ export const ResumeConfigPanelUserInfo: React.FC = () => {
                 onClick={() => setOpen(o => !o)}
             >
                 <span className="text-sm font-semibold text-grayscale-800">Personal Info</span>
-                <IonIcon icon={open ? chevronDownOutline : chevronUpOutline} />
+                <IonIcon
+                    color="grayscale-800"
+                    icon={open ? chevronDownOutline : chevronUpOutline}
+                />
             </button>
             {open && (
                 <div className="px-4 pb-4 flex flex-col gap-3">

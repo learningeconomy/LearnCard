@@ -66,7 +66,10 @@ export const ResumeConfigCredentialSelector: React.FC<{
                         </span>
                     )}
                 </div>
-                <IonIcon icon={open ? chevronDownOutline : chevronUpOutline} />
+                <IonIcon
+                    color="grayscale-800"
+                    icon={open ? chevronDownOutline : chevronUpOutline}
+                />
             </button>
             {open && (
                 <div className="pb-4 pl-4">
