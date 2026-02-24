@@ -8,27 +8,29 @@ import ResumePreviewGroupedCredentialsBlock from './ResumePreviewGroupedCredenti
 import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 
-const PAGE_PADDING_PX = 80; // p-10 = 40px top + 40px bottom
-const PAGE_HEIGHT_PX = 1056; // ~US Letter height at 96dpi
-const PAGE_CONTENT_HEIGHT = PAGE_HEIGHT_PX - PAGE_PADDING_PX;
-const HEADER_BOTTOM_MARGIN = 24; // mb-6 on header block
-const SECTION_BOTTOM_MARGIN = 24; // mb-6 on each section
+// US Letter at 96 dpi — both mobile and desktop use the same page height
+const DESKTOP_PAGE_HEIGHT_PX = 1056;
+const DESKTOP_PAGE_CONTENT_HEIGHT = DESKTOP_PAGE_HEIGHT_PX - 80; // p-10 = 40px top + 40px bottom
+const MOBILE_PAGE_CONTENT_HEIGHT = DESKTOP_PAGE_HEIGHT_PX - 48; // py-6 = 24+24
+
+const HEADER_BOTTOM_MARGIN = 24; // mb-6
+const SECTION_BOTTOM_MARGIN = 24; // mb-6
 
 type PageSlice =
     | { type: 'header' }
     | { type: 'section'; sectionKey: ResumeSectionKey; uris: string[] };
 
-const PAGE_CLASSES =
-    'w-full max-w-[760px] mx-auto bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-lg p-10 font-sans';
-
-const ResumePreview: React.FC = () => {
+const ResumePreview: React.FC<{ isMobile?: boolean }> = ({ isMobile = false }) => {
     const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
 
     const measureRef = useRef<HTMLDivElement>(null);
+    const wrapperRef = useRef<HTMLDivElement>(null);
     const [pages, setPages] = useState<PageSlice[][]>([]);
     const [measured, setMeasured] = useState(false);
+
+    const pageContentHeight = isMobile ? MOBILE_PAGE_CONTENT_HEIGHT : DESKTOP_PAGE_CONTENT_HEIGHT;
 
     const orderedSections = useMemo(() => {
         return sectionOrder
@@ -45,6 +47,12 @@ const ResumePreview: React.FC = () => {
     const buildPages = useCallback(() => {
         const container = measureRef.current;
         if (!container) return;
+
+        // Sync measurement container width to match actual card width
+        const wrapper = wrapperRef.current;
+        if (wrapper) {
+            container.style.width = `${wrapper.offsetWidth}px`;
+        }
 
         const headerEl = container.querySelector<HTMLElement>('[data-measure="header"]');
         const headerH = headerEl ? headerEl.offsetHeight + HEADER_BOTTOM_MARGIN : 0;
@@ -69,10 +77,10 @@ const ResumePreview: React.FC = () => {
             const sectionHeadingEl = container.querySelector<HTMLElement>(
                 `[data-measure="section-heading-${sectionKey}"]`
             );
-            // heading height + mb-3 (12px) + border-b pb-1 (already in offsetHeight)
+            // heading offsetHeight + mb-3 (12px)
             const headingH = sectionHeadingEl ? sectionHeadingEl.offsetHeight + 12 : 20;
 
-            // Measure each credential row (py-1 = 8px accounted for in wrapper)
+            // Measure each credential row; py-1 wrapper adds ~8px vertical space
             const credHeights: number[] = entries.map(entry => {
                 const el = container.querySelector<HTMLElement>(
                     `[data-measure="cred-${sectionKey}-${entry.uri}"]`
@@ -80,18 +88,17 @@ const ResumePreview: React.FC = () => {
                 return el ? el.offsetHeight + 8 : 40;
             });
 
-            // Try to fit the whole section on the current page first
             const totalSectionH =
                 headingH + credHeights.reduce((s, h) => s + h, 0) + SECTION_BOTTOM_MARGIN;
 
-            if (usedHeight + totalSectionH <= PAGE_CONTENT_HEIGHT) {
-                // Whole section fits on this page
+            if (usedHeight + totalSectionH <= pageContentHeight) {
+                // Whole section fits
                 currentPage.push({ type: 'section', sectionKey, uris: entries.map(e => e.uri) });
                 usedHeight += totalSectionH;
                 continue;
             }
 
-            // Section needs to be split across pages — walk credential by credential
+            // Split section across pages credential by credential
             let pendingUris: string[] = [];
             let pendingSectionH = headingH;
 
@@ -116,25 +123,21 @@ const ResumePreview: React.FC = () => {
                 const credH = credHeights[i];
                 const wouldUse = usedHeight + pendingSectionH + credH + SECTION_BOTTOM_MARGIN;
 
-                if (wouldUse > PAGE_CONTENT_HEIGHT) {
+                if (wouldUse > pageContentHeight) {
                     if (pendingUris.length > 0) {
-                        // Flush pending items onto current page, then break
                         breakPage();
                     } else if (currentPage.length > 0) {
-                        // Nothing pending for this section yet but current page has other content;
-                        // move to fresh page so this item starts with a heading
                         result.push(currentPage);
                         currentPage = [];
                         usedHeight = 0;
                     }
-                    // Now on a fresh page — add this item (even if it alone exceeds a page, unavoidable)
+                    // Place item on fresh page (even if alone it exceeds budget — unavoidable)
                 }
 
                 pendingUris.push(entries[i].uri);
                 pendingSectionH += credH;
             }
 
-            // Flush any remaining items
             flushSection();
         }
 
@@ -143,16 +146,39 @@ const ResumePreview: React.FC = () => {
 
         setPages(result);
         setMeasured(true);
-    }, [orderedSections, credentialEntries, personalDetails]);
+    }, [orderedSections, credentialEntries, personalDetails, pageContentHeight]);
 
-    // Re-measure whenever content changes
+    // Re-measure whenever content/device changes
     useLayoutEffect(() => {
         setMeasured(false);
-        // Give React one frame to paint the hidden measure container
-        const id = requestAnimationFrame(() => {
-            buildPages();
+        // Double rAF: first frame lets React commit new layout, second lets browser reflow
+        let id1: number;
+        const id0 = requestAnimationFrame(() => {
+            id1 = requestAnimationFrame(() => {
+                buildPages();
+            });
         });
-        return () => cancelAnimationFrame(id);
+        return () => {
+            cancelAnimationFrame(id0);
+            cancelAnimationFrame(id1);
+        };
+    }, [buildPages]);
+
+    // Also re-measure whenever the wrapper is resized (handles mobile↔desktop width changes)
+    useLayoutEffect(() => {
+        const wrapper = wrapperRef.current;
+        if (!wrapper) return;
+        let lastWidth = wrapper.offsetWidth;
+        const ro = new ResizeObserver(() => {
+            const newWidth = wrapper.offsetWidth;
+            if (newWidth !== lastWidth) {
+                lastWidth = newWidth;
+                setMeasured(false);
+                buildPages();
+            }
+        });
+        ro.observe(wrapper);
+        return () => ro.disconnect();
     }, [buildPages]);
 
     if (!hasAnyContent) {
@@ -166,14 +192,32 @@ const ResumePreview: React.FC = () => {
         >;
     }, []);
 
+    // Card styles differ between mobile and desktop
+    const measureClasses = isMobile
+        ? 'pointer-events-none opacity-0 w-full px-4 py-6 font-sans'
+        : 'pointer-events-none opacity-0 w-full max-w-[760px] p-10 font-sans';
+
+    const cardClasses = isMobile
+        ? 'w-full bg-white shadow-[0_2px_12px_rgba(0,0,0,0.08)] rounded-xl px-4 py-6 font-sans'
+        : 'w-full max-w-[760px] mx-auto bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-lg p-10 font-sans';
+
     return (
         <>
-            {/* ── Hidden measurement container ── */}
+            {/* ── Hidden measurement container — position:fixed so parent overflow:hidden doesn't clip it ── */}
             <div
                 ref={measureRef}
                 aria-hidden="true"
-                className="absolute pointer-events-none opacity-0 w-full max-w-[760px] p-10 font-sans"
-                style={{ top: 0, left: 0, zIndex: -1 }}
+                className={measureClasses}
+                style={
+                    {
+                        position: 'fixed',
+                        top: '-9999px',
+                        left: 0,
+                        zIndex: -1,
+                        WebkitTextSizeAdjust: '100%',
+                        textSizeAdjust: '100%',
+                    } as React.CSSProperties
+                }
             >
                 <div data-measure="header">
                     <ResumePreviewUserInfo />
@@ -212,22 +256,38 @@ const ResumePreview: React.FC = () => {
 
             {/* ── Paginated output ── */}
             <div
-                className={`flex flex-col gap-6 w-full items-center ${measured ? '' : 'invisible'}`}
+                ref={wrapperRef}
+                className={`flex flex-col w-full items-center ${isMobile ? 'gap-4' : 'gap-6'} ${
+                    measured ? '' : 'invisible'
+                }`}
             >
                 {pages.map((pageSlices, pageIdx) => (
                     <div
                         key={pageIdx}
-                        className="w-full max-w-[760px] flex flex-col items-center gap-2"
+                        className={`w-full ${
+                            isMobile ? '' : 'max-w-[760px]'
+                        } flex flex-col items-center gap-2`}
                     >
-                        {/* Page number label (shown between pages) */}
+                        {/* Page indicator — only shown when multiple pages */}
                         {pages.length > 1 && (
-                            <p className="text-xs text-grayscale-400 self-end pr-1">
+                            <p
+                                className={`text-xs text-grayscale-400 self-end ${
+                                    isMobile ? 'pr-0' : 'pr-1'
+                                }`}
+                            >
                                 Page {pageIdx + 1} of {pages.length}
                             </p>
                         )}
                         <div
-                            className={PAGE_CLASSES}
-                            style={{ height: `${PAGE_HEIGHT_PX}px`, overflow: 'hidden' }}
+                            className={cardClasses}
+                            style={
+                                {
+                                    WebkitTextSizeAdjust: '100%',
+                                    textSizeAdjust: '100%',
+                                    height: `${DESKTOP_PAGE_HEIGHT_PX}px`,
+                                    overflow: 'hidden',
+                                } as React.CSSProperties
+                            }
                         >
                             {pageSlices.map((slice, sliceIdx) => {
                                 if (slice.type === 'header') {

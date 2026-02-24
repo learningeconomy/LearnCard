@@ -27,13 +27,13 @@ export const ResumeBuilder: React.FC = () => {
     };
 
     const previewWrapperStyles = isMobile
-        ? 'flex-1 overflow-y-auto py-6 px-4 flex flex-col py-[100px]'
+        ? 'flex-1 overflow-y-auto py-6 px-3 flex flex-col pb-[100px]'
         : 'flex-1 overflow-y-auto py-10 px-6 flex justify-center';
 
     return (
         <div className="flex h-full w-full bg-grayscale-50 overflow-hidden relative">
             <div className={previewWrapperStyles}>
-                <ResumePreview />
+                <ResumePreview isMobile={isMobile} />
             </div>
 
             {/* ── Desktop side panel ── */}
