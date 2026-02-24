@@ -2,6 +2,7 @@ import React, {
     useMemo,
     useRef,
     useState,
+    useEffect,
     useLayoutEffect,
     useCallback,
     useImperativeHandle,
@@ -62,6 +63,13 @@ const ResumePreview = forwardRef<
         const hasCredentials = Object.values(credentialEntries).some(arr => arr && arr.length > 0);
         return hasPersonal || hasCredentials;
     }, [personalDetails, credentialEntries]);
+
+    const sectionByKey = useMemo(() => {
+        return Object.fromEntries(RESUME_SECTIONS.map(s => [s.key, s])) as Record<
+            ResumeSectionKey,
+            (typeof RESUME_SECTIONS)[number]
+        >;
+    }, []);
 
     const buildPages = useCallback(() => {
         const container = measureRef.current;
@@ -183,6 +191,14 @@ const ResumePreview = forwardRef<
         };
     }, [buildPages]);
 
+    // Fallback for native: if measureRef is mounted but measured is still false
+    // (happens when store hydrates async after the layout effect already fired with a null ref)
+    useEffect(() => {
+        if (!measured && measureRef.current) {
+            buildPages();
+        }
+    }, [measured, buildPages]);
+
     // Also re-measure whenever the wrapper is resized (handles mobile↔desktop width changes)
     useLayoutEffect(() => {
         const wrapper = wrapperRef.current;
@@ -283,13 +299,6 @@ const ResumePreview = forwardRef<
         return <ResumePreviewEmptyPlaceholder />;
     }
 
-    const sectionByKey = useMemo(() => {
-        return Object.fromEntries(RESUME_SECTIONS.map(s => [s.key, s])) as Record<
-            ResumeSectionKey,
-            (typeof RESUME_SECTIONS)[number]
-        >;
-    }, []);
-
     // Card styles differ between mobile and desktop
     const measureClasses = isMobile
         ? 'pointer-events-none opacity-0 w-full px-4 py-6 font-sans'
@@ -300,17 +309,18 @@ const ResumePreview = forwardRef<
         : 'w-full max-w-[760px] mx-auto bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-lg p-10 font-sans';
 
     return (
-        <>
-            {/* ── Hidden measurement container — position:fixed so parent overflow:hidden doesn't clip it ── */}
+        <div className="relative w-full">
+            {/* ── Hidden measurement container — position:absolute visibility:hidden so the browser lays it out and reports real offsetHeight (position:fixed top:-9999px returns 0 in WKWebView/Ionic) ── */}
             <div
                 ref={measureRef}
                 aria-hidden="true"
                 className={measureClasses}
                 style={
                     {
-                        position: 'fixed',
-                        top: '-9999px',
+                        position: 'absolute',
+                        top: 0,
                         left: 0,
+                        visibility: 'hidden',
                         zIndex: -1,
                         WebkitTextSizeAdjust: '100%',
                         textSizeAdjust: '100%',
@@ -409,7 +419,7 @@ const ResumePreview = forwardRef<
                     </div>
                 ))}
             </div>
-        </>
+        </div>
     );
 });
 
