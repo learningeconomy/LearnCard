@@ -87,7 +87,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                                     setIsEditing={val => toggleEditing(entry.uri, val)}
                                 />
                             </div>
-                            <div className="flex items-center gap-1 shrink-0 mt-1">
+                            <div data-pdf-hide className="flex items-center gap-1 shrink-0 mt-1">
                                 <ResumePreviewEditBlockButton
                                     isEditing={isEditing}
                                     setIsEditing={val => toggleEditing(entry.uri, val)}

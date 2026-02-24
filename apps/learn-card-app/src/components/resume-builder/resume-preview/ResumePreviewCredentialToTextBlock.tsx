@@ -116,7 +116,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
 
                 {/* ── Add detail + Done buttons (edit mode only) ── */}
                 {isEditing && (
-                    <div className="flex items-center gap-1 mt-1">
+                    <div data-pdf-hide className="flex items-center gap-1 mt-1">
                         <button
                             onClick={handleAddDetail}
                             className="text-xs border border-solid border-indigo-500/45 text-indigo-500 font-medium flex items-center px-2 py-1 rounded-lg"

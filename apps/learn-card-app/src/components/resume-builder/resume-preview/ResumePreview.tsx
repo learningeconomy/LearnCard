@@ -1,4 +1,12 @@
-import React, { useMemo, useRef, useState, useLayoutEffect, useCallback } from 'react';
+import React, {
+    useMemo,
+    useRef,
+    useState,
+    useLayoutEffect,
+    useCallback,
+    useImperativeHandle,
+    forwardRef,
+} from 'react';
 
 import ResumePreviewUserInfo from './ResumePreviewUserInfo';
 import ResumePreviewEmptyPlaceholder from './ResumePreviewEmptyPlaceholder';
@@ -20,16 +28,21 @@ type PageSlice =
     | { type: 'header' }
     | { type: 'section'; sectionKey: ResumeSectionKey; uris: string[] };
 
-const ResumePreview: React.FC<{ isMobile?: boolean; isPreviewing?: boolean }> = ({
-    isMobile = false,
-    isPreviewing = false,
-}) => {
+export type ResumePreviewHandle = {
+    generatePDF: () => Promise<void>;
+};
+
+const ResumePreview = forwardRef<
+    ResumePreviewHandle,
+    { isMobile?: boolean; isPreviewing?: boolean }
+>(function ResumePreview({ isMobile = false, isPreviewing = false }, ref) {
     const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
 
     const measureRef = useRef<HTMLDivElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const pageCardRefs = useRef<HTMLDivElement[]>([]);
     const [pages, setPages] = useState<PageSlice[][]>([]);
     const [measured, setMeasured] = useState(false);
 
@@ -184,6 +197,48 @@ const ResumePreview: React.FC<{ isMobile?: boolean; isPreviewing?: boolean }> = 
         return () => ro.disconnect();
     }, [buildPages]);
 
+    useImperativeHandle(ref, () => ({
+        generatePDF: async () => {
+            const cards = pageCardRefs.current.filter(Boolean);
+            if (!cards.length) return;
+
+            const [html2canvas, { jsPDF }] = await Promise.all([
+                import('html2canvas').then(m => m.default),
+                import('jspdf'),
+            ]);
+
+            // Inject a temporary stylesheet that hides all interactive UI during capture
+            const style = document.createElement('style');
+            style.id = '__pdf-capture-style__';
+            style.textContent = `
+                [data-pdf-card] [data-pdf-hide] { display: none !important; }
+            `;
+            document.head.appendChild(style);
+
+            try {
+                const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+                const pdfW = pdf.internal.pageSize.getWidth();
+                const pdfH = pdf.internal.pageSize.getHeight();
+
+                for (let i = 0; i < cards.length; i++) {
+                    const canvas = await html2canvas(cards[i], {
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#ffffff',
+                    });
+                    const imgData = canvas.toDataURL('image/png');
+                    if (i > 0) pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+                }
+
+                pdf.save('resume.pdf');
+            } finally {
+                document.getElementById('__pdf-capture-style__')?.remove();
+            }
+        },
+    }));
+
     if (!hasAnyContent) {
         return <ResumePreviewEmptyPlaceholder />;
     }
@@ -282,6 +337,10 @@ const ResumePreview: React.FC<{ isMobile?: boolean; isPreviewing?: boolean }> = 
                             </p>
                         )}
                         <div
+                            ref={el => {
+                                if (el) pageCardRefs.current[pageIdx] = el;
+                            }}
+                            data-pdf-card
                             className={cardClasses}
                             style={
                                 {
@@ -312,6 +371,6 @@ const ResumePreview: React.FC<{ isMobile?: boolean; isPreviewing?: boolean }> = 
             </div>
         </>
     );
-};
+});
 
 export default ResumePreview;

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 
 import { IonIcon, IonFab, IonFabButton } from '@ionic/react';
 import { menuOutline, eyeOutline, eyeOffOutline } from 'ionicons/icons';
-import ResumePreview from './resume-preview/ResumePreview';
+import ResumePreview, { ResumePreviewHandle } from './resume-preview/ResumePreview';
 import ResumeConfigPanelFAB from './resume-config-panel/ResumeConfigPanelFAB';
 import ResumeConfigOverlayPanel from './resume-config-panel/ResumeConfigOverlayPanel';
 import ResumeConfigDesktopSidePanel from './resume-config-panel/ResumeConfigDesktopSidePanel';
@@ -15,6 +15,8 @@ export const ResumeBuilder: React.FC = () => {
     const [panelOpen, setPanelOpen] = useState<boolean>(true);
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
     const [isPreviewing, setIsPreviewing] = useState<boolean>(false);
+    const resumePreviewRef = useRef<ResumePreviewHandle>(null);
+    const handleDownload = useCallback(() => resumePreviewRef.current?.generatePDF(), []);
 
     const openResumeConfigPanel = () => {
         if (isMobile) {
@@ -33,7 +35,11 @@ export const ResumeBuilder: React.FC = () => {
     return (
         <div className="flex h-full w-full bg-grayscale-50 overflow-hidden relative">
             <div className={previewWrapperStyles}>
-                <ResumePreview isMobile={isMobile} isPreviewing={isPreviewing} />
+                <ResumePreview
+                    ref={resumePreviewRef}
+                    isMobile={isMobile}
+                    isPreviewing={isPreviewing}
+                />
             </div>
 
             {/* ── Desktop side panel ── */}
@@ -43,6 +49,7 @@ export const ResumeBuilder: React.FC = () => {
                     setPanelOpen={setPanelOpen}
                     isPreviewing={isPreviewing}
                     setIsPreviewing={setIsPreviewing}
+                    onDownload={handleDownload}
                 />
             )}
 

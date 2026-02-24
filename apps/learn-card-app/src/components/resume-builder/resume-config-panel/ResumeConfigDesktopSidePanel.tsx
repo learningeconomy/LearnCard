@@ -9,7 +9,8 @@ export const ResumeConfigDesktopSidePanel: React.FC<{
     setPanelOpen: (panelOpen: boolean) => void;
     isPreviewing?: boolean;
     setIsPreviewing?: (val: boolean) => void;
-}> = ({ panelOpen, setPanelOpen, isPreviewing, setIsPreviewing }) => {
+    onDownload?: () => void;
+}> = ({ panelOpen, setPanelOpen, isPreviewing, setIsPreviewing, onDownload }) => {
     return (
         <div
             className={`shrink-0 h-full border-l border-grayscale-100 bg-white flex flex-col transition-all duration-300 overflow-hidden ${
@@ -32,7 +33,7 @@ export const ResumeConfigDesktopSidePanel: React.FC<{
                     </div>
 
                     {/* Panel footer */}
-                    <ResumeDownloadButton />
+                    <ResumeDownloadButton onDownload={onDownload} />
                 </>
             )}
         </div>
