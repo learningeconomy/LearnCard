@@ -13,6 +13,7 @@ import AiPassportAppProfileContainer from '../../components/ai-passport-apps/AiP
 import { LaunchPadFilterOptionsEnum } from './LaunchPadSearch/launchpad-search.helpers';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { ColorSetEnum } from '../../theme/colors';
 import { EmbedIframeModal } from './EmbedIframeModal';
 
@@ -41,6 +42,7 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
     const isConnected = app.contractUri ? hasConsented : app.isConnected;
     const isLoading = app.contractUri ? consentedContractLoading : app.isConnected === null;
 
+    const { track } = useAnalytics();
 
     const handleConnect = (appItem: LaunchPadAppListItemType) => {
         if (appItem.contractUri && !isConnected) {
@@ -49,6 +51,20 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
             newModal(<AiPassportAppProfileContainer app={{ ...appItem, isConnected }} />);
         } else {
             appItem.handleConnect();
+        }
+    };
+
+    const handleButtonClick = () => {
+        track(AnalyticsEvents.LAUNCHPAD_APP_CLICKED, {
+            appName: app.name,
+            appId: app.id,
+            action: isConnected && !isAiApp ? 'open' : 'connect',
+            appType: app.type,
+        });
+        if (isConnected && !isAiApp) {
+            app.handleView?.();
+        } else {
+            handleConnect(app);
         }
     };
 
@@ -105,11 +121,7 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
                             {isLoading && <button className={buttonClass}>Loading...</button>}
                             {!isLoading && (
                                 <button
-                                    onClick={
-                                        isConnected && !isAiApp
-                                            ? app.handleView
-                                            : () => handleConnect(app)
-                                    }
+                                    onClick={handleButtonClick}
                                     className={isConnected ? connectedButtonClass : buttonClass}
                                 >
                                     {isConnected ? 'Open' : 'Connect'}

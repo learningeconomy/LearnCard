@@ -26,6 +26,20 @@ export const AnalyticsEvents = {
 
     // Authentication
     LOGIN: 'login',
+
+    // AI Features
+    AI_CHAT_SESSION_STARTED: 'ai_chat_session_started',
+    AI_INSIGHTS_TAB_SWITCHED: 'ai_insights_tab_switched',
+
+    // Onboarding
+    ONBOARDING_COMPLETED: 'onboarding_completed',
+
+    // Consent Flow
+    CONSENT_FLOW_STARTED: 'consent_flow_started',
+    CONSENT_FLOW_ACCEPTED: 'consent_flow_accepted',
+
+    // LaunchPad
+    LAUNCHPAD_APP_CLICKED: 'launchpad_app_clicked',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -100,6 +114,37 @@ export interface AnalyticsEventPayloads {
 
     [AnalyticsEvents.LOGIN]: {
         method: string;
+    };
+
+    [AnalyticsEvents.AI_CHAT_SESSION_STARTED]: {
+        topic?: string;
+        appType: 'internal' | 'external';
+        appName?: string;
+    };
+
+    [AnalyticsEvents.AI_INSIGHTS_TAB_SWITCHED]: {
+        tab: string;
+    };
+
+    [AnalyticsEvents.ONBOARDING_COMPLETED]: {
+        role?: string;
+        country?: string;
+    };
+
+    [AnalyticsEvents.CONSENT_FLOW_STARTED]: {
+        contractName?: string;
+    };
+
+    [AnalyticsEvents.CONSENT_FLOW_ACCEPTED]: {
+        contractName?: string;
+        alreadyConsented: boolean;
+    };
+
+    [AnalyticsEvents.LAUNCHPAD_APP_CLICKED]: {
+        appName: string;
+        appId: string;
+        action: 'connect' | 'open';
+        appType?: string;
     };
 }
 

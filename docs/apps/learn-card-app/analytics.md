@@ -155,5 +155,11 @@ When LC-1594 (full privacy preferences system) ships, it will replace this hook 
 | `SEND_BOOST` | `send_boost` | User sends a boost to another user |
 | `SCREEN_VIEW` | `screen_view` | Manual screen view (auto-tracked via `page()`) |
 | `LOGIN` | `login` | User completes authentication |
+| `AI_CHAT_SESSION_STARTED` | `ai_chat_session_started` | User starts a new AI chat session (internal or external app) |
+| `AI_INSIGHTS_TAB_SWITCHED` | `ai_insights_tab_switched` | User switches tabs on the AI Insights page |
+| `ONBOARDING_COMPLETED` | `onboarding_completed` | New user completes onboarding and creates a profile |
+| `CONSENT_FLOW_STARTED` | `consent_flow_started` | User lands on a consent flow page |
+| `CONSENT_FLOW_ACCEPTED` | `consent_flow_accepted` | User clicks Continue on the consent flow landing page |
+| `LAUNCHPAD_APP_CLICKED` | `launchpad_app_clicked` | User clicks Connect or Open on a LaunchPad app card |
 
 For payload types, see `apps/learn-card-app/src/analytics/events.ts`.
