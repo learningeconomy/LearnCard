@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { IonIcon } from '@ionic/react';
 import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
@@ -6,11 +6,33 @@ import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
 import { resumeUserInfo } from '../../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../../stores/resumeBuilderStore';
 
+import { useCurrentUser, useGetCurrentLCNUser } from 'learn-card-base';
+
 export const ResumeConfigPanelUserInfo: React.FC = () => {
+    const currentUser = useCurrentUser();
+    const { currentLCNUser } = useGetCurrentLCNUser();
+
     const [open, setOpen] = useState<boolean>(true);
 
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const setPersonalDetails = resumeBuilderStore.set.setPersonalDetails;
+
+    const isEmpty = Object.values(personalDetails).every(v => !v);
+
+    // prefill user data
+    useEffect(() => {
+        if (!isEmpty) return;
+
+        if (currentLCNUser || currentUser) {
+            setPersonalDetails({
+                name: currentLCNUser?.displayName || currentUser?.name || '',
+                email: currentLCNUser?.email || currentUser?.email || '',
+                phone: currentUser?.phoneNumber || '',
+                location: '',
+                summary: currentLCNUser?.bio || '',
+            });
+        }
+    }, [currentLCNUser, currentUser]);
 
     return (
         <div className="border-b border-grayscale-100">
