@@ -2,15 +2,26 @@ import { Preferences } from '.';
 
 import { ThemeEnum } from '../../types/preferences';
 
-export const updatePreferences = async (did: string, theme: ThemeEnum): Promise<boolean> => {
+export type UpdatePreferencesInput = {
+    theme?: ThemeEnum;
+    aiEnabled?: boolean;
+    aiAutoDisabled?: boolean;
+    analyticsEnabled?: boolean;
+    analyticsAutoDisabled?: boolean;
+    bugReportsEnabled?: boolean;
+    isMinor?: boolean;
+};
+
+export const updatePreferences = async (
+    did: string,
+    input: UpdatePreferencesInput
+): Promise<boolean> => {
     try {
-        const res = await Preferences.updateOne(
+        await Preferences.updateOne(
             { did },
-            { $set: { theme, updatedAt: new Date() } },
-            { upsert: false }
+            { $set: { ...input, updatedAt: new Date() } },
+            { upsert: true }
         );
-        if (res.matchedCount === 0)
-            throw new Error('An unexpected error occured, unable to update preferences');
         return true;
     } catch (e) {
         console.error(e);

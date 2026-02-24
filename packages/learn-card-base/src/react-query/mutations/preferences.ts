@@ -8,7 +8,13 @@ export enum ThemeEnum {
 }
 
 export type PreferencesType = {
-    theme: ThemeEnum;
+    theme?: ThemeEnum;
+    aiEnabled?: boolean;
+    aiAutoDisabled?: boolean;
+    analyticsEnabled?: boolean;
+    analyticsAutoDisabled?: boolean;
+    bugReportsEnabled?: boolean;
+    isMinor?: boolean;
 };
 
 export const useUpdatePreferences = () => {
