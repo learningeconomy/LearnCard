@@ -13,6 +13,9 @@ import ResumePreviewEmptyPlaceholder from './ResumePreviewEmptyPlaceholder';
 import ResumePreviewCredentialToTextBlock from './ResumePreviewCredentialToTextBlock';
 import ResumePreviewGroupedCredentialsBlock from './ResumePreviewGroupedCredentialsBlock';
 
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+
 import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 
@@ -254,10 +257,21 @@ const ResumePreview = forwardRef<
                     pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
                 }
 
-                const a = document.createElement('a');
-                a.download = 'resume.pdf';
-                a.href = pdf.output('datauristring');
-                a.click();
+                if (Capacitor.isNativePlatform()) {
+                    const pdfData = pdf.output('datauristring').split(',')[1];
+                    const fileName = `resume_${Date.now()}.pdf`;
+                    await Filesystem.writeFile({
+                        path: fileName,
+                        data: pdfData,
+                        directory: Directory.Documents,
+                    });
+                    alert('Resume saved to Documents!');
+                } else {
+                    const a = document.createElement('a');
+                    a.download = 'resume.pdf';
+                    a.href = pdf.output('datauristring');
+                    a.click();
+                }
             } finally {
                 document.getElementById('__pdf-capture-style__')?.remove();
                 document.body.removeChild(offscreen);
