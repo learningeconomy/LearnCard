@@ -6,8 +6,8 @@ import type { Framework as ProviderFramework } from '@services/skills-provider/t
 
 export type CreateSkillFrameworkInput = Omit<
     FlatSkillFrameworkType,
-    'id' | 'status' | 'createdAt' | 'updatedAt'
-> & { id?: string; status?: FlatSkillFrameworkType['status'] };
+    'id' | 'status' | 'createdAt' | 'updatedAt' | 'isPublic'
+> & { id?: string; status?: FlatSkillFrameworkType['status']; isPublic?: boolean };
 
 export const createSkillFramework = async (
     actorProfileId: string,
@@ -20,6 +20,7 @@ export const createSkillFramework = async (
         description: input.description,
         image: input.image,
         sourceURI: input.sourceURI,
+        isPublic: input.isPublic ?? false,
         status: input.status ?? 'active',
         createdAt: now,
         updatedAt: now,
@@ -50,6 +51,7 @@ export const upsertSkillFrameworkFromProvider = async (
         description: framework.description,
         image: framework.image || '',
         sourceURI: framework.sourceURI,
+        isPublic: true,
         status: 'active',
         createdAt: now,
         updatedAt: now,
@@ -61,6 +63,7 @@ export const upsertSkillFrameworkFromProvider = async (
         description: data.description ?? null,
         image: data.image ?? '',
         sourceURI: data.sourceURI ?? null,
+        isPublic: data.isPublic ?? false,
         status: data.status,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
@@ -69,8 +72,8 @@ export const upsertSkillFrameworkFromProvider = async (
     // Merge local representation
     await neogma.queryRunner.run(
         `MERGE (f:SkillFramework {id: $id})
-         ON CREATE SET f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI, f.status = $status, f.createdAt = $createdAt, f.updatedAt = $updatedAt
-         ON MATCH SET  f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI, f.updatedAt = $updatedAt`,
+         ON CREATE SET f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI, f.isPublic = $isPublic, f.status = $status, f.createdAt = $createdAt, f.updatedAt = $updatedAt
+         ON MATCH SET  f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI, f.isPublic = $isPublic, f.updatedAt = $updatedAt`,
         params
     );
 

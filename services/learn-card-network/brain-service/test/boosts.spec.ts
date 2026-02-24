@@ -3,7 +3,16 @@ import { vi } from 'vitest';
 
 import { getClient, getUser } from './helpers/getClient';
 import { sendBoost, testUnsignedBoost, testVc } from './helpers/send';
-import { Profile, Credential, Boost, SigningAuthority, SkillFramework, Skill, InboxCredential, ContactMethod } from '@models';
+import {
+    Profile,
+    Credential,
+    Boost,
+    SigningAuthority,
+    SkillFramework,
+    Skill,
+    InboxCredential,
+    ContactMethod,
+} from '@models';
 import { getClaimLinkOptionsInfoForBoost, getTTLForClaimLink } from '@cache/claim-links';
 import { BoostStatus } from 'types/boost';
 import { adminRole, creatorRole, emptyRole } from './helpers/permissions';
@@ -577,7 +586,9 @@ describe('Boosts', () => {
             });
 
             expect(boosts.records).toHaveLength(2);
-            expect(boosts.records.every(b => ['listing-A', 'listing-B'].includes(b.meta?.appListingId))).toBe(true);
+            expect(
+                boosts.records.every(b => ['listing-A', 'listing-B'].includes(b.meta?.appListingId))
+            ).toBe(true);
         });
 
         it('should allow combining meta query with other filters', async () => {
@@ -598,11 +609,11 @@ describe('Boosts', () => {
             });
 
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({
-                query: { 
+                query: {
                     category: 'achievement',
-                    meta: { appListingId: 'listing-123' } 
+                    meta: { appListingId: 'listing-123' },
                 },
-            }); 
+            });
 
             expect(boosts.records).toHaveLength(1);
             expect(boosts.records[0]?.category).toEqual('achievement');

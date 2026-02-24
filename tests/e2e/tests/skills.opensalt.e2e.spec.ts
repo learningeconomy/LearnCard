@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import { unwrapBoostCredential } from '@learncard/helpers';
+import type { UnsignedVC } from '@learncard/types';
 
-import { getLearnCardForUser, type LearnCard, USERS } from './helpers/learncard.helpers';
+import { getLearnCardForUser, type LearnCard } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
 
 const DEFAULT_OPENSALT_FRAMEWORK_REF =
@@ -42,7 +43,53 @@ const flattenSkillTree = (skillsInput: SyncedSkillNode[]): SyncedSkillNode[] => 
     return collected;
 };
 
+const listAllAvailableFrameworkIds = async (learnCard: LearnCard): Promise<string[]> => {
+    const ids = new Set<string>();
+    let cursor: string | null | undefined = null;
+
+    for (let i = 0; i < 25; i++) {
+        const page = await learnCard.invoke.getAllAvailableFrameworks({
+            limit: 1,
+            cursor,
+        });
+
+        for (const framework of page.records) ids.add(framework.id);
+
+        if (!page.hasMore || !page.cursor) break;
+        cursor = page.cursor;
+    }
+
+    return [...ids];
+};
+
 describe('Skills OpenSALT E2E', () => {
+    test('shows public OpenSALT frameworks but not other users private frameworks', async ({
+        skip,
+    }) => {
+        if (process.env.E2E_REAL_OPENSALT !== 'true') {
+            skip();
+            return;
+        }
+
+        const a: LearnCard = await getLearnCardForUser('a');
+        const b: LearnCard = await getLearnCardForUser('b');
+
+        const frameworkRef =
+            process.env.E2E_OPENSALT_FRAMEWORK_ID || DEFAULT_OPENSALT_FRAMEWORK_REF;
+        const linked = await a.invoke.createSkillFramework({ frameworkId: frameworkRef });
+
+        const privateFrameworkId = `private-fw-${Date.now()}`;
+        await a.invoke.createManagedSkillFramework({
+            id: privateFrameworkId,
+            name: 'A Private Framework',
+        });
+
+        const availableToB = await listAllAvailableFrameworkIds(b);
+
+        expect(availableToB).toContain(linked.id);
+        expect(availableToB).not.toContain(privateFrameworkId);
+    }, 120000);
+
     test('links, syncs, aligns, issues, and verifies using real OpenSALT skills', async ({
         skip,
     }) => {
@@ -76,7 +123,12 @@ describe('Skills OpenSALT E2E', () => {
             flattened.find(skill => skill.type?.toLowerCase() !== 'container') || firstRealSkill;
         if (!skillToAlign?.id) throw new Error('No OpenSALT skill available for alignment');
 
-        const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
+        const unsignedBoost = {
+            ...testUnsignedBoost,
+            issuer: a.id.did('key'),
+        };
+
+        const boostUri = await a.invoke.createBoost(unsignedBoost, {
             skills: [{ frameworkId: linked.id, id: skillToAlign.id }],
         });
 
@@ -93,10 +145,8 @@ describe('Skills OpenSALT E2E', () => {
         const boostAlignmentNames = getAlignmentNames(boostSubject as SubjectLike | undefined);
         expect(boostAlignmentNames).toContain(skillToAlign.statement);
 
-        const credentialUri = await a.invoke.sendBoost(USERS.b.profileId, boostUri, {
-            encrypt: false,
-        });
-        const vc = unwrapBoostCredential(await a.invoke.resolveFromLCN(credentialUri));
+        const issued = await a.invoke.issueCredential(boostRecord.boost as UnsignedVC);
+        const vc = unwrapBoostCredential(issued);
 
         const issuedSubject = Array.isArray(vc.credentialSubject)
             ? vc.credentialSubject[0]

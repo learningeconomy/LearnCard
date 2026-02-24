@@ -130,9 +130,14 @@ export const getFrameworksForBoostPaged = async (
     const hasMore = all.length > limit;
     const page = all.slice(0, limit);
     const last = page[page.length - 1];
-    const nextCursor = hasMore && last
-        ? JSON.stringify({ n: (last.name || '').toLowerCase(), c: (last as any).createdAt || '', i: last.id })
-        : null;
+    const nextCursor =
+        hasMore && last
+            ? JSON.stringify({
+                  n: (last.name || '').toLowerCase(),
+                  c: (last as any).createdAt || '',
+                  i: last.id,
+              })
+            : null;
 
     return { records: page, hasMore, cursor: nextCursor };
 };
@@ -159,7 +164,9 @@ export const getFrameworkSkillsAvailableForBoost = async (
 
     return result.records
         .map(record => {
-            const frameworkNode = record.get('framework') as { properties?: Record<string, any> } | null;
+            const frameworkNode = record.get('framework') as {
+                properties?: Record<string, any>;
+            } | null;
             if (!frameworkNode?.properties) return null;
 
             const frameworkProps = frameworkNode.properties as FlatSkillFrameworkType;
@@ -298,8 +305,11 @@ export const getBoostRecipients = async (
     }
 ): Promise<Array<BoostRecipientInfo & { sent: string }>> => {
     const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
-    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('recipient', convertedQuery as any);
-    
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder(
+        'recipient',
+        convertedQuery as any
+    );
+
     const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             related: [
@@ -333,10 +343,13 @@ export const getBoostRecipients = async (
         })
         .with('sender, sent, received, recipient, credential')
         // Filter out revoked credentials using WITH barrier pattern
-        .where(`(received IS NULL OR coalesce(received.status, '') <> 'revoked')${whereClause ? ' AND ' + whereClause : ''}`);
+        .where(
+            `(received IS NULL OR coalesce(received.status, '') <> 'revoked')${
+                whereClause ? ' AND ' + whereClause : ''
+            }`
+        );
 
     const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
-
 
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: FlatProfileType;
@@ -893,8 +906,11 @@ export const getConnectedBoostRecipients = async (
     }
 ): Promise<Array<BoostRecipientInfo & { sent: string }>> => {
     const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
-    const { whereClause: recipientWhereClause, params: queryParams } = buildWhereForQueryBuilder('recipient', convertedQuery as any);
-    
+    const { whereClause: recipientWhereClause, params: queryParams } = buildWhereForQueryBuilder(
+        'recipient',
+        convertedQuery as any
+    );
+
     const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         // Build connection list
         .match({
@@ -1125,8 +1141,9 @@ export const countConnectedBoostRecipients = async (
     }: { includeUnacceptedBoosts?: boolean; query?: LCNProfileQuery }
 ): Promise<number> => {
     const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
-    const { whereClause: countRecipientWhereClause, params: countQueryParams } = buildWhereForQueryBuilder('recipient', convertedQuery as any);
-    
+    const { whereClause: countRecipientWhereClause, params: countQueryParams } =
+        buildWhereForQueryBuilder('recipient', convertedQuery as any);
+
     const countQuery = new QueryBuilder(new BindParam({ ...countQueryParams }))
         // Build connection list
         .match({
@@ -1343,12 +1360,16 @@ export const getBoostRecipientsWithChildren = async (
 ): Promise<Array<Omit<BoostRecipientInfo, 'uri'> & { boostUris: string[] }>> => {
     console.log('[AccessLayer] getBoostRecipientsWithChildren called');
     console.log('[AccessLayer] boostQuery:', JSON.stringify(boostQuery, null, 2));
-    
+
     // Convert queries for Neo4j compatibility
     const boostQuery_neo4j = convertObjectRegExpToNeo4j(boostQuery);
     const profileQuery_neo4j = convertObjectRegExpToNeo4j(profileQuery);
-    const { whereClause: boostWhereClause, params: boostQueryParams } = buildWhereForQueryBuilder('relevantBoost', boostQuery_neo4j as any);
-    const { whereClause: profileWhereClause, params: profileQueryParams } = buildWhereForQueryBuilder('recipient', profileQuery_neo4j as any);
+    const { whereClause: boostWhereClause, params: boostQueryParams } = buildWhereForQueryBuilder(
+        'relevantBoost',
+        boostQuery_neo4j as any
+    );
+    const { whereClause: profileWhereClause, params: profileQueryParams } =
+        buildWhereForQueryBuilder('recipient', profileQuery_neo4j as any);
 
     // Build the complete query that does everything in Neo4j
     const _query = new QueryBuilder(
@@ -1438,12 +1459,15 @@ export const getBoostRecipientsWithChildren = async (
     // Debug: log results with status info
     console.log('[getBoostRecipientsWithChildren] Total results before filter:', results.length);
     const revokedResults = results.filter(({ received }) => received?.status === 'revoked');
-    console.log('[getBoostRecipientsWithChildren] Revoked results:', revokedResults.map(r => ({ 
-        to: r.sent?.to, 
-        status: r.received?.status,
-        boostId: r.relevantBoost?.id 
-    })));
-    
+    console.log(
+        '[getBoostRecipientsWithChildren] Revoked results:',
+        revokedResults.map(r => ({
+            to: r.sent?.to,
+            status: r.received?.status,
+            boostId: r.relevantBoost?.id,
+        }))
+    );
+
     const resultsWithIds = results
         .filter(({ received }) => received?.status !== 'revoked')
         .map(({ relevantBoost, sender, sent, received, credential }) => {
@@ -1525,8 +1549,10 @@ export const countBoostRecipientsWithChildren = async (
 ): Promise<number> => {
     const boostQuery_neo4j = convertObjectRegExpToNeo4j(boostQuery);
     const profileQuery_neo4j = convertObjectRegExpToNeo4j(profileQuery);
-    const { whereClause: countBoostWhereClause, params: countBoostQueryParams } = buildWhereForQueryBuilder('relevantBoost', boostQuery_neo4j as any);
-    const { whereClause: countProfileWhereClause, params: countProfileQueryParams } = buildWhereForQueryBuilder('recipient', profileQuery_neo4j as any);
+    const { whereClause: countBoostWhereClause, params: countBoostQueryParams } =
+        buildWhereForQueryBuilder('relevantBoost', boostQuery_neo4j as any);
+    const { whereClause: countProfileWhereClause, params: countProfileQueryParams } =
+        buildWhereForQueryBuilder('recipient', profileQuery_neo4j as any);
 
     const _query = new QueryBuilder(
         new BindParam({ ...countBoostQueryParams, ...countProfileQueryParams })

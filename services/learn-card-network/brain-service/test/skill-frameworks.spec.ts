@@ -125,6 +125,69 @@ describe('Skill Frameworks (provider-based)', () => {
         expect(mineB.find(f => f.id === FW_ID)).toBeUndefined();
     });
 
+    it('lists frameworks available to profile (managed + public) with pagination', async () => {
+        await createProfileFor(userA, 'usera');
+        await createProfileFor(userB, 'userb');
+
+        const managedId = `fw-managed-${crypto.randomUUID().slice(0, 8)}`;
+        const publicId = `fw-public-${crypto.randomUUID().slice(0, 8)}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: managedId,
+            name: 'Managed Framework',
+        });
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: publicId,
+            name: 'Public Framework',
+        });
+
+        await neogma.queryRunner.run('MATCH (f:SkillFramework {id: $id}) SET f.isPublic = true', {
+            id: publicId,
+        });
+
+        const page1 = await userB.clients.fullAuth.skillFrameworks.getAllAvailableFrameworks({
+            limit: 1,
+        });
+        expect(page1.records).toHaveLength(1);
+        expect(page1.hasMore).toBe(false);
+        expect(page1.records[0]?.id).toBe(publicId);
+
+        const forOwner = await userA.clients.fullAuth.skillFrameworks.getAllAvailableFrameworks({
+            limit: 10,
+        });
+        const ids = forOwner.records.map(framework => framework.id);
+        expect(ids).toEqual(expect.arrayContaining([managedId, publicId]));
+    });
+
+    it('filters available frameworks by query', async () => {
+        await createProfileFor(userA, 'usera');
+        await createProfileFor(userB, 'userb');
+
+        const publicAlpha = `fw-public-alpha-${crypto.randomUUID().slice(0, 8)}`;
+        const publicBeta = `fw-public-beta-${crypto.randomUUID().slice(0, 8)}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: publicAlpha,
+            name: 'Alpha Public Framework',
+        });
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: publicBeta,
+            name: 'Beta Public Framework',
+        });
+
+        await neogma.queryRunner.run(
+            'UNWIND $ids AS id MATCH (f:SkillFramework {id: id}) SET f.isPublic = true',
+            { ids: [publicAlpha, publicBeta] }
+        );
+
+        const filtered = await userB.clients.fullAuth.skillFrameworks.getAllAvailableFrameworks({
+            limit: 10,
+            query: { name: { $regex: /alpha/i } },
+        });
+
+        expect(filtered.records.map(framework => framework.id)).toEqual([publicAlpha]);
+    });
+
     it('fetches the framework and its skills from the provider if I manage it', async () => {
         await createProfileFor(userA, 'usera');
         await userA.clients.fullAuth.skillFrameworks.create({ frameworkId: FW_ID });

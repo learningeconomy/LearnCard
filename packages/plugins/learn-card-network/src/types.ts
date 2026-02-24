@@ -616,6 +616,11 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<SkillFrameworkType[]>;
     createSkillFramework: (input: LinkProviderFrameworkInputType) => Promise<SkillFrameworkType>;
     listMySkillFrameworks: () => Promise<SkillFrameworkType[]>;
+    getAllAvailableFrameworks: (options?: {
+        limit?: number;
+        cursor?: string | null;
+        query?: SkillFrameworkQuery;
+    }) => Promise<PaginatedSkillFrameworksType>;
     getSkillFrameworkById: (
         id: string,
         options?: { limit?: number; childrenLimit?: number; cursor?: string | null }

@@ -94,12 +94,12 @@ export async function getLearnCardNetworkPlugin(
     const client = apiToken
         ? await getApiTokenClient(url, apiToken)
         : await getClient(url, async challenge => {
-              const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+            const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
-              if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+            if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-              return jwt;
-          });
+            return jwt;
+        });
 
     let userData: LCNProfile | undefined;
 
@@ -332,7 +332,7 @@ export async function getLearnCardNetworkPlugin(
             getProfile: async (_learnCard, profileId) => {
                 try {
                     await ensureUser();
-                } catch {}
+                } catch { }
 
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
@@ -938,10 +938,9 @@ export async function getLearnCardNetworkPlugin(
                         boost = JSON.parse(rendered);
                     } catch (error) {
                         throw new Error(
-                            `Template substitution failed: ${
-                                error instanceof Error ? error.message : 'Unknown error'
+                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'
                             }. ` +
-                                `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
                         );
                     }
                 }
@@ -1074,8 +1073,7 @@ export async function getLearnCardNetworkPlugin(
                                     boost = JSON.parse(rendered);
                                 } catch (error) {
                                     throw new Error(
-                                        `Failed to apply template data: ${
-                                            error instanceof Error ? error.message : 'Unknown error'
+                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'
                                         }`
                                     );
                                 }
@@ -1568,6 +1566,10 @@ export async function getLearnCardNetworkPlugin(
             listMySkillFrameworks: async _learnCard => {
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skillFrameworks.listMine.query();
+            },
+            getAllAvailableFrameworks: async (_learnCard, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.getAllAvailableFrameworks.query(options);
             },
             getSkillFrameworkById: async (_learnCard, id, options = {}) => {
                 if (!userData) throw new Error('Please make an account first!');

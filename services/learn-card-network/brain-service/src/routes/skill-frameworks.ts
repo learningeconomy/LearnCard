@@ -5,6 +5,8 @@ import { t, profileRoute } from '@routes';
 
 import {
     SkillFrameworkValidator,
+    PaginatedSkillFrameworksValidator,
+    SkillFrameworkQueryValidator,
     LinkProviderFrameworkInputValidator,
     CreateManagedFrameworkInputValidator,
     CreateManagedFrameworkBatchInputValidator,
@@ -26,6 +28,7 @@ import {
 import { getBoostsByUri } from '@accesslayer/boost/read';
 import {
     listSkillFrameworksManagedByProfile,
+    getAllAvailableSkillFrameworksForProfilePaged,
     doesProfileManageFramework,
     getSkillFrameworkById,
     getBoostsThatUseFramework,
@@ -368,6 +371,44 @@ export const skillFrameworksRouter = t.router({
         .query(async ({ ctx }): Promise<SkillFrameworkType[]> => {
             const profileId = ctx.user.profile.profileId;
             return listSkillFrameworksManagedByProfile(profileId);
+        }),
+
+    getAllAvailableFrameworks: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/skills/frameworks/available',
+                tags: ['Skills'],
+                summary: 'List all available frameworks',
+                description:
+                    'Returns frameworks that the caller manages or frameworks marked public. Supports pagination and optional query filters.',
+            },
+            requiredScope: 'skills:read',
+        })
+        .input(
+            z.object({
+                limit: z.number().int().min(1).max(200).default(50),
+                cursor: z.string().nullable().optional(),
+                query: SkillFrameworkQueryValidator.optional(),
+            })
+        )
+        .output(PaginatedSkillFrameworksValidator)
+        .query(async ({ ctx, input }) => {
+            const profileId = ctx.user.profile.profileId;
+            const page = await getAllAvailableSkillFrameworksForProfilePaged(
+                profileId,
+                input.query ?? null,
+                input.limit,
+                input.cursor ?? null
+            );
+
+            const base = {
+                records: page.records.map(formatFramework),
+                hasMore: page.hasMore,
+            };
+
+            return page.cursor ? { ...base, cursor: page.cursor } : base;
         }),
 
     getById: profileRoute
