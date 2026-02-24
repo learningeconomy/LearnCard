@@ -107,38 +107,20 @@ export const ResumeConfigCredentialSelector: React.FC<{
                                             style={{ width: 'auto' }}
                                             className={`cursor-pointer transition-opacity`}
                                         >
-                                            {isID || isMembership ? (
-                                                <div className="mt-6">
-                                                    <BoostEarnedIDCard
-                                                        record={record}
-                                                        categoryType={boostCategory}
-                                                        defaultImg={
-                                                            categoryMetadata[
-                                                                boostCategory as CredentialCategoryEnum
-                                                            ]?.defaultImageSrc ?? ''
-                                                        }
-                                                        showChecked
-                                                        initialCheckmarkState={isSelected}
-                                                        onCheckMarkClick={() =>
-                                                            toggleCredential(sectionKey, record.uri)
-                                                        }
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <BoostEarnedCard
-                                                    record={record}
-                                                    categoryType={boostCategory}
-                                                    sizeLg={12}
-                                                    sizeMd={12}
-                                                    sizeSm={12}
-                                                    showChecked
-                                                    initialCheckmarkState={isSelected}
-                                                    onCheckMarkClick={() =>
-                                                        toggleCredential(sectionKey, record.uri)
-                                                    }
-                                                    className="!min-h-[310px]"
-                                                />
-                                            )}
+                                            <BoostEarnedCard
+                                                record={record}
+                                                categoryType={boostCategory}
+                                                sizeLg={12}
+                                                sizeMd={12}
+                                                sizeSm={12}
+                                                showChecked
+                                                initialCheckmarkState={isSelected}
+                                                onCheckMarkClick={() =>
+                                                    toggleCredential(sectionKey, record.uri)
+                                                }
+                                                isInSkillsModal
+                                                className="!min-h-[310px]"
+                                            />
                                         </SwiperSlide>
                                     );
                                 })}
