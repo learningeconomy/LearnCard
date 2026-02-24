@@ -1,21 +1,24 @@
 import React, { useState, useRef, useCallback } from 'react';
 
-import { IonIcon, IonFab, IonFabButton } from '@ionic/react';
-import { menuOutline, eyeOutline, eyeOffOutline } from 'ionicons/icons';
-import ResumePreview, { ResumePreviewHandle } from './resume-preview/ResumePreview';
+import { IonIcon } from '@ionic/react';
+import { menuOutline } from 'ionicons/icons';
+import ResumePreviewFAB from './resume-preview/ResumePreviewFAB';
 import ResumeConfigPanelFAB from './resume-config-panel/ResumeConfigPanelFAB';
+import ResumePreview, { ResumePreviewHandle } from './resume-preview/ResumePreview';
 import ResumeConfigOverlayPanel from './resume-config-panel/ResumeConfigOverlayPanel';
 import ResumeConfigDesktopSidePanel from './resume-config-panel/ResumeConfigDesktopSidePanel';
+
 import { useDeviceTypeByWidth, useModal, ModalTypes } from 'learn-card-base';
 
 export const ResumeBuilder: React.FC = () => {
     const { newModal } = useModal({ mobile: ModalTypes.FullScreen });
+    const resumePreviewRef = useRef<ResumePreviewHandle>(null);
     const { isMobile } = useDeviceTypeByWidth();
 
-    const [panelOpen, setPanelOpen] = useState<boolean>(true);
-    const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+    const [panelOpen, setPanelOpen] = useState<boolean>(true); // Desktop side panel
+    const [drawerOpen, setDrawerOpen] = useState<boolean>(false); // Mobile drawer
     const [isPreviewing, setIsPreviewing] = useState<boolean>(false);
-    const resumePreviewRef = useRef<ResumePreviewHandle>(null);
+
     const handleDownload = useCallback(() => resumePreviewRef.current?.generatePDF(), []);
 
     const openResumeConfigPanel = () => {
@@ -61,16 +64,10 @@ export const ResumeBuilder: React.FC = () => {
             {isMobile && !drawerOpen && (
                 <>
                     {/* Preview toggle FAB — sits to the left of the edit FAB */}
-                    <IonFab
-                        slot="fixed"
-                        vertical="bottom"
-                        horizontal="end"
-                        style={{ marginRight: '72px' }}
-                    >
-                        <IonFabButton onClick={() => setIsPreviewing(p => !p)} color="light">
-                            <IonIcon icon={isPreviewing ? eyeOffOutline : eyeOutline} />
-                        </IonFabButton>
-                    </IonFab>
+                    <ResumePreviewFAB
+                        isPreviewing={isPreviewing}
+                        setIsPreviewing={setIsPreviewing}
+                    />
                     <ResumeConfigPanelFAB openResumeConfigPanel={openResumeConfigPanel} />
                 </>
             )}
