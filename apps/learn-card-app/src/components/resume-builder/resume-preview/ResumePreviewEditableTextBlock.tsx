@@ -46,7 +46,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
         };
 
         return (
-            <div className="flex items-start gap-2">
+            <div className="flex items-start gap-2 w-full">
                 {multiline ? (
                     <textarea {...(sharedProps as any)} rows={3} />
                 ) : (
@@ -68,7 +68,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
     if (!value) return null;
 
     return (
-        <div className="flex items-start gap-1">
+        <div className="flex items-start gap-1 w-full">
             <span
                 className={`text-xs leading-relaxed flex-1 ${
                     isSelfAttested ? 'text-grayscale-600' : 'text-grayscale-600'

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { IonReorderGroup, IonReorder, IonItem } from '@ionic/react';
+import type { ItemReorderEventDetail } from '@ionic/react';
 
 import ResumePreviewEditBlockButton from './ResumePreviewEditBlockButton';
 import ResumePreviewEditableTextBlock from './ResumePreviewEditableTextBlock';
@@ -18,6 +20,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{ uri: string }> = ({ uri }) 
     const addSelfAttestedDetail = resumeBuilderStore.set.addSelfAttestedDetail;
     const updateSelfAttestedDetail = resumeBuilderStore.set.updateSelfAttestedDetail;
     const removeSelfAttestedDetail = resumeBuilderStore.set.removeSelfAttestedDetail;
+    const reorderAllSelfAttestedFields = resumeBuilderStore.set.reorderAllSelfAttestedFields;
 
     const selfAttestedFields = selfAttested[uri] ?? { additionalDetails: [] };
 
@@ -68,30 +71,78 @@ const ResumePreviewCredentialToTextBlock: React.FC<{ uri: string }> = ({ uri }) 
                     )}
                 </p>
 
-                {/* ── Description / criteria ── */}
-                <ResumePreviewEditableTextBlock
-                    value={descriptionField.value}
-                    placeholder="Add a description…"
-                    isEditing={isEditing}
-                    isSelfAttested={descriptionField.source === 'selfAttested'}
-                    onChange={handleDescriptionChange}
-                    multiline
-                />
-
-                {/* ── User-added additional details ── */}
-                {selfAttestedFields.additionalDetails.map((detail, i) => (
-                    <ResumePreviewEditableTextBlock
-                        key={i}
-                        value={detail.value}
-                        placeholder="Add detail…"
-                        isEditing={isEditing}
-                        isSelfAttested
-                        onChange={val =>
-                            updateSelfAttestedDetail(uri, i, { value: val, source: 'selfAttested' })
+                {/* ── All fields: description + additional details, unified reorderable list ── */}
+                <IonReorderGroup
+                    disabled={!isEditing}
+                    onIonItemReorder={(e: CustomEvent<ItemReorderEventDetail>) => {
+                        const allFields = [
+                            descriptionField,
+                            ...selfAttestedFields.additionalDetails,
+                        ];
+                        const reordered = [...allFields];
+                        const [moved] = reordered.splice(e.detail.from, 1);
+                        reordered.splice(e.detail.to, 0, moved);
+                        reorderAllSelfAttestedFields(uri, reordered);
+                        e.detail.complete();
+                    }}
+                >
+                    <IonItem
+                        lines="none"
+                        className="w-full"
+                        style={
+                            {
+                                '--background': 'transparent',
+                                '--inner-padding-end': '0',
+                                '--padding-start': '0',
+                                '--min-height': '0',
+                                '--border-width': '0',
+                                '--inner-border-width': '0',
+                            } as any
                         }
-                        onRemove={() => removeSelfAttestedDetail(uri, i)}
-                    />
-                ))}
+                    >
+                        <ResumePreviewEditableTextBlock
+                            value={descriptionField.value}
+                            placeholder="Add a description…"
+                            isEditing={isEditing}
+                            isSelfAttested={descriptionField.source === 'selfAttested'}
+                            onChange={handleDescriptionChange}
+                            multiline
+                        />
+                        {isEditing && <IonReorder slot="end" />}
+                    </IonItem>
+                    {selfAttestedFields.additionalDetails.map((detail, i) => (
+                        <IonItem
+                            key={i}
+                            lines="none"
+                            className="w-full"
+                            style={
+                                {
+                                    '--background': 'transparent',
+                                    '--inner-padding-end': '0',
+                                    '--padding-start': '0',
+                                    '--min-height': '0',
+                                    '--border-width': '0',
+                                    '--inner-border-width': '0',
+                                } as any
+                            }
+                        >
+                            <ResumePreviewEditableTextBlock
+                                value={detail.value}
+                                placeholder="Add detail…"
+                                isEditing={isEditing}
+                                isSelfAttested
+                                onChange={val =>
+                                    updateSelfAttestedDetail(uri, i, {
+                                        value: val,
+                                        source: 'selfAttested',
+                                    })
+                                }
+                                onRemove={() => removeSelfAttestedDetail(uri, i)}
+                            />
+                            {isEditing && <IonReorder slot="end" />}
+                        </IonItem>
+                    ))}
+                </IonReorderGroup>
 
                 {/* ── Add detail + Done buttons (edit mode only) ── */}
                 {isEditing && (
