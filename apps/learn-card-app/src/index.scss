@@ -103,10 +103,6 @@ input[class*='border-gray']:-webkit-autofill:active {
     transition: background-color 5000s ease-in-out 0s;
 }
 
-.reorder-selected {
-    box-shadow: none !important;
-}
-
 textarea[class*='border-gray']:-webkit-autofill,
 textarea[class*='border-gray']:-webkit-autofill:hover,
 textarea[class*='border-gray']:-webkit-autofill:focus,

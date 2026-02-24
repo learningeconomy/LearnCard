@@ -79,23 +79,6 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
         const updated = existing.additionalDetails.filter((_, i) => i !== index);
         set.selfAttested({ ...prev, [uri]: { ...existing, additionalDetails: updated } });
     },
-    reorderSelfAttestedDetails: (uri: string, from: number, to: number) => {
-        const prev = resumeBuilderStore.get.selfAttested();
-        const existing = prev[uri] ?? { additionalDetails: [] };
-        const reordered = [...existing.additionalDetails];
-        const [moved] = reordered.splice(from, 1);
-        reordered.splice(to, 0, moved);
-        set.selfAttested({ ...prev, [uri]: { ...existing, additionalDetails: reordered } });
-    },
-    reorderAllSelfAttestedFields: (uri: string, reorderedFields: ResumeField[]) => {
-        const prev = resumeBuilderStore.get.selfAttested();
-        const existing = prev[uri] ?? { additionalDetails: [] };
-        const [first, ...rest] = reorderedFields;
-        set.selfAttested({
-            ...prev,
-            [uri]: { ...existing, description: first, additionalDetails: rest },
-        });
-    },
     resetStore: () => {
         set.personalDetails(defaultPersonalDetails);
         set.selectedCredentialUris({});
