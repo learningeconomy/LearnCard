@@ -40,6 +40,10 @@ body.scanner-active > * {
 @import './assets/sass/ai-pathways.scss';
 @import 'react-datepicker/dist/react-datepicker.css';
 
+.reorder-selected {
+    box-shadow: none !important;
+}
+
 .disable-scrollbars {
     scrollbar-width: none;
     /* Firefox */
