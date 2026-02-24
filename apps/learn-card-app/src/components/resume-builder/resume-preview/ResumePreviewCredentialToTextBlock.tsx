@@ -46,7 +46,6 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
 
     return (
         <div className="flex items-start gap-3">
-            <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
             <div className="flex flex-col gap-1 flex-1 min-w-0">
                 {/* ── Locked anchor: title · issuer · date ── */}
                 <p className="text-sm font-semibold text-grayscale-800">

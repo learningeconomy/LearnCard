@@ -74,8 +74,9 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
 
     return (
         <div className="flex items-start gap-1 w-full">
+            <span className="text-xs text-grayscale-600 leading-relaxed shrink-0">–</span>
             <span
-                className={`text-xs leading-relaxed flex-1 ${
+                className={`text-xs text-left leading-relaxed flex-1 ${
                     isSelfAttested ? 'text-grayscale-600' : 'text-grayscale-600'
                 }`}
             >
