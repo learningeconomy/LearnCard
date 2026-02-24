@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { IonReorder, IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
 
 import ResumePreviewCredentialToTextBlock from './ResumePreviewCredentialToTextBlock';
+import ResumePreviewEditBlockButton from './ResumePreviewEditBlockButton';
 
 import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
@@ -10,6 +11,16 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
     section: (typeof RESUME_SECTIONS)[number];
 }> = ({ section }) => {
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
+    const [editingUris, setEditingUris] = useState<Set<string>>(new Set());
+
+    const toggleEditing = (uri: string, val: boolean) => {
+        setEditingUris(prev => {
+            const next = new Set(prev);
+            if (val) next.add(uri);
+            else next.delete(uri);
+            return next;
+        });
+    };
 
     const sectionKey = section.key as ResumeSectionKey;
     const entries = [...(credentialEntries[sectionKey] ?? [])].sort((a, b) => a.index - b.index);
@@ -37,17 +48,28 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                     e.detail.complete();
                 }}
             >
-                {entries.map(entry => (
-                    <div key={entry.uri} className="flex items-center gap-2 py-1">
-                        <div className="flex-1">
-                            <ResumePreviewCredentialToTextBlock
-                                uri={entry.uri}
-                                section={sectionKey}
-                            />
+                {entries.map(entry => {
+                    const isEditing = editingUris.has(entry.uri);
+                    return (
+                        <div key={entry.uri} className="flex items-start gap-2 py-1">
+                            <div className="flex-1">
+                                <ResumePreviewCredentialToTextBlock
+                                    uri={entry.uri}
+                                    section={sectionKey}
+                                    isEditing={isEditing}
+                                    setIsEditing={val => toggleEditing(entry.uri, val)}
+                                />
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0 mt-1">
+                                <ResumePreviewEditBlockButton
+                                    isEditing={isEditing}
+                                    setIsEditing={val => toggleEditing(entry.uri, val)}
+                                />
+                                {!isEditing && <IonReorder />}
+                            </div>
                         </div>
-                        <IonReorder slot="end" />
-                    </div>
-                ))}
+                    );
+                })}
             </IonReorderGroup>
         </div>
     );

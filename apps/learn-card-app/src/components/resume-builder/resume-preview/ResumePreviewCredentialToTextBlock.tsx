@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
-import ResumePreviewEditBlockButton from './ResumePreviewEditBlockButton';
 import ResumePreviewEditableTextBlock from './ResumePreviewEditableTextBlock';
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
@@ -11,9 +10,9 @@ import { ResumeSectionKey } from '../resume-builder.helpers';
 const ResumePreviewCredentialToTextBlock: React.FC<{
     uri: string;
     section: ResumeSectionKey;
-}> = ({ uri, section }) => {
-    const [isEditing, setIsEditing] = useState<boolean>(false);
-
+    isEditing: boolean;
+    setIsEditing: (val: boolean) => void;
+}> = ({ uri, section, isEditing, setIsEditing }) => {
     const { data: vc } = useGetResolvedCredential(uri);
 
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
@@ -123,9 +122,6 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                     </div>
                 )}
             </div>
-
-            {/* ── Edit toggle button ── */}
-            <ResumePreviewEditBlockButton isEditing={isEditing} setIsEditing={setIsEditing} />
         </div>
     );
 };
