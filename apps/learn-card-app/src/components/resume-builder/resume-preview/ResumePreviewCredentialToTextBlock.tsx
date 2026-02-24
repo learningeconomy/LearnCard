@@ -5,7 +5,7 @@ import ResumePreviewEditableTextBlock from './ResumePreviewEditableTextBlock';
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
-import { useGetResolvedCredential } from 'learn-card-base';
+import { useGetResolvedCredential, useGetVCInfo } from 'learn-card-base';
 import { ResumeSectionKey } from '../resume-builder.helpers';
 
 const ResumePreviewCredentialToTextBlock: React.FC<{
@@ -15,6 +15,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     setIsEditing: (val: boolean) => void;
 }> = ({ uri, section, isEditing, setIsEditing }) => {
     const { data: vc } = useGetResolvedCredential(uri);
+    const { title, description: vcDescription } = useGetVCInfo(vc || {}, section);
 
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
     const initCredentialFields = resumeBuilderStore.set.initCredentialFields;
@@ -26,21 +27,6 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     const fields = [...(entry?.fields ?? [])].sort((a, b) => a.index - b.index);
 
     const info = vc ? getInfoFromCredential(vc as any, 'MMM yyyy', { uppercaseDate: false }) : null;
-    const rawIssuer =
-        vc && typeof vc.issuer === 'string'
-            ? vc.issuer
-            : (vc?.issuer as any)?.name ?? (vc?.issuer as any)?.id ?? '';
-    const issuerStr = rawIssuer.startsWith('did:') ? '' : rawIssuer;
-    const subject = vc
-        ? Array.isArray(vc.credentialSubject)
-            ? vc.credentialSubject[0]
-            : vc.credentialSubject
-        : null;
-
-    const vcDescription: string =
-        (subject as any)?.achievement?.description ||
-        (subject as any)?.achievement?.criteria?.narrative ||
-        '';
 
     useEffect(() => {
         if (!vc || !entry) return;
@@ -64,11 +50,11 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
             <div className="flex flex-col gap-1 flex-1 min-w-0">
                 {/* ── Locked anchor: title · issuer · date ── */}
                 <p className="text-sm font-semibold text-grayscale-800">
-                    {info?.title || 'Credential'}
-                    {(issuerStr || info?.createdAt) && (
+                    {title || 'Credential'}
+                    {info?.createdAt && (
                         <span className="font-normal text-grayscale-500">
                             {' · '}
-                            {[issuerStr, info?.createdAt].filter(Boolean).join(' · ')}
+                            {info?.createdAt}
                         </span>
                     )}
                 </p>
@@ -98,7 +84,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                     placeholder={
                                         field.type === 'description'
                                             ? 'Add a description…'
-                                            : 'Add detail…'
+                                            : 'Add more details…'
                                     }
                                     isEditing={isEditing}
                                     isSelfAttested={field.source === 'selfAttested'}
