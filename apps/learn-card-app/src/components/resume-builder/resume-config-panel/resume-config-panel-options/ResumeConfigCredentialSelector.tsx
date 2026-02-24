@@ -1,19 +1,13 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 
-import BoostEarnedIDCard from '../../../boost/boost-earned-card/BoostEarnedIDCard';
 import BoostEarnedCard from '../../../boost/boost-earned-card/BoostEarnedCard';
 import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
 import SlimCaretLeft from '../../../svgs/SlimCaretLeft';
 import { IonIcon } from '@ionic/react';
 
-import {
-    useGetCredentialList,
-    BoostCategoryOptionsEnum,
-    categoryMetadata,
-    CredentialCategoryEnum,
-} from 'learn-card-base';
+import { useGetCredentialList } from 'learn-card-base';
 import { ResumeSectionKey } from '../../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../../stores/resumeBuilderStore';
 
@@ -40,6 +34,18 @@ export const ResumeConfigCredentialSelector: React.FC<{
     const totalCount = records.length;
     const selectedCount = selected.length;
     const showNavigation = totalCount > 1;
+
+    const preselected = useRef(false);
+    useEffect(() => {
+        if (preselected.current) return;
+        if (isLoading || records.length === 0) return;
+        if (selected.length > 0) {
+            preselected.current = true;
+            return;
+        }
+        records.slice(0, 2).forEach(record => toggleCredential(sectionKey, record.uri));
+        preselected.current = true;
+    }, [isLoading, records]);
 
     const handleSwiperUpdate = (swiper: any) => {
         setAtBeginning(swiper.isBeginning);
@@ -97,9 +103,6 @@ export const ResumeConfigCredentialSelector: React.FC<{
                                 {records.map((record, index) => {
                                     const isSelected = selected.includes(record.uri);
                                     const boostCategory = record.category as any;
-                                    const isID = boostCategory === BoostCategoryOptionsEnum.id;
-                                    const isMembership =
-                                        boostCategory === BoostCategoryOptionsEnum.membership;
 
                                     return (
                                         <SwiperSlide
