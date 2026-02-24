@@ -13,7 +13,9 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
     filteredUris?: string[];
     /** When true, render without interactive controls (used for hidden measurement) */
     measureOnly?: boolean;
-}> = ({ section, filteredUris, measureOnly = false }) => {
+    /** When true, hide all editing UI for clean preview/PDF mode */
+    isPreviewing?: boolean;
+}> = ({ section, filteredUris, measureOnly = false, isPreviewing = false }) => {
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
     const [editingUris, setEditingUris] = useState<string[]>([]);
 
@@ -29,7 +31,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
 
     if (!entries.length) return null;
 
-    if (measureOnly) {
+    if (measureOnly || isPreviewing) {
         return (
             <div className="mb-6">
                 <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 mb-3 border-b border-grayscale-100 pb-1">
@@ -52,7 +54,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
     }
 
     return (
-        <div key={section.key} className="mb-6">
+        <div className="mb-6">
             <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 mb-3 border-b border-grayscale-100 pb-1">
                 {section.label}
             </h2>

@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { menuOutline } from 'ionicons/icons';
+import { IonIcon, IonFab, IonFabButton } from '@ionic/react';
+import { menuOutline, eyeOutline, eyeOffOutline } from 'ionicons/icons';
 import ResumePreview from './resume-preview/ResumePreview';
 import ResumeConfigPanelFAB from './resume-config-panel/ResumeConfigPanelFAB';
 import ResumeConfigOverlayPanel from './resume-config-panel/ResumeConfigOverlayPanel';
 import ResumeConfigDesktopSidePanel from './resume-config-panel/ResumeConfigDesktopSidePanel';
-
 import { useDeviceTypeByWidth, useModal, ModalTypes } from 'learn-card-base';
 
 export const ResumeBuilder: React.FC = () => {
@@ -15,6 +14,7 @@ export const ResumeBuilder: React.FC = () => {
 
     const [panelOpen, setPanelOpen] = useState<boolean>(true);
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+    const [isPreviewing, setIsPreviewing] = useState<boolean>(false);
 
     const openResumeConfigPanel = () => {
         if (isMobile) {
@@ -33,22 +33,35 @@ export const ResumeBuilder: React.FC = () => {
     return (
         <div className="flex h-full w-full bg-grayscale-50 overflow-hidden relative">
             <div className={previewWrapperStyles}>
-                <ResumePreview isMobile={isMobile} />
+                <ResumePreview isMobile={isMobile} isPreviewing={isPreviewing} />
             </div>
 
             {/* ── Desktop side panel ── */}
             {!isMobile && (
-                <>
-                    <ResumeConfigDesktopSidePanel
-                        panelOpen={panelOpen}
-                        setPanelOpen={setPanelOpen}
-                    />
-                </>
+                <ResumeConfigDesktopSidePanel
+                    panelOpen={panelOpen}
+                    setPanelOpen={setPanelOpen}
+                    isPreviewing={isPreviewing}
+                    setIsPreviewing={setIsPreviewing}
+                />
             )}
 
-            {/* ── Mobile FAB ── */}
+            {/* ── Mobile FABs ── */}
             {isMobile && !drawerOpen && (
-                <ResumeConfigPanelFAB openResumeConfigPanel={openResumeConfigPanel} />
+                <>
+                    {/* Preview toggle FAB — sits to the left of the edit FAB */}
+                    <IonFab
+                        slot="fixed"
+                        vertical="bottom"
+                        horizontal="end"
+                        style={{ marginRight: '72px' }}
+                    >
+                        <IonFabButton onClick={() => setIsPreviewing(p => !p)} color="light">
+                            <IonIcon icon={isPreviewing ? eyeOffOutline : eyeOutline} />
+                        </IonFabButton>
+                    </IonFab>
+                    <ResumeConfigPanelFAB openResumeConfigPanel={openResumeConfigPanel} />
+                </>
             )}
 
             {/* ── Desktop panel button when closed ── */}

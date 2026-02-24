@@ -7,7 +7,9 @@ import ResumeDownloadButton from './ResumeDownloadButton';
 export const ResumeConfigOverlayPanel: React.FC<{
     drawerOpen: boolean;
     setDrawerOpen: (drawerOpen: boolean) => void;
-}> = ({ drawerOpen, setDrawerOpen }) => {
+    isPreviewing?: boolean;
+    setIsPreviewing?: (val: boolean) => void;
+}> = ({ drawerOpen, setDrawerOpen, isPreviewing, setIsPreviewing }) => {
     return (
         <div className="fixed inset-0 z-40 flex">
             {/* Backdrop */}
@@ -16,7 +18,12 @@ export const ResumeConfigOverlayPanel: React.FC<{
             {/* Drawer panel */}
             <div className="w-full max-w-[420px] h-full bg-white flex flex-col shadow-2xl">
                 {/* Drawer header */}
-                <ResumeConfigPanelHeader panelOpen={drawerOpen} setPanelOpen={setDrawerOpen} />
+                <ResumeConfigPanelHeader
+                    panelOpen={drawerOpen}
+                    setPanelOpen={setDrawerOpen}
+                    isPreviewing={isPreviewing}
+                    setIsPreviewing={setIsPreviewing}
+                />
 
                 {/* Scrollable sections */}
                 <div className="flex-1 overflow-y-auto">

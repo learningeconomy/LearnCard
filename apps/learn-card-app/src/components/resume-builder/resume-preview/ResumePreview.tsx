@@ -20,7 +20,10 @@ type PageSlice =
     | { type: 'header' }
     | { type: 'section'; sectionKey: ResumeSectionKey; uris: string[] };
 
-const ResumePreview: React.FC<{ isMobile?: boolean }> = ({ isMobile = false }) => {
+const ResumePreview: React.FC<{ isMobile?: boolean; isPreviewing?: boolean }> = ({
+    isMobile = false,
+    isPreviewing = false,
+}) => {
     const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
@@ -299,6 +302,7 @@ const ResumePreview: React.FC<{ isMobile?: boolean }> = ({ isMobile = false }) =
                                         key={`${slice.sectionKey}-${sliceIdx}`}
                                         section={section}
                                         filteredUris={slice.uris}
+                                        isPreviewing={isPreviewing}
                                     />
                                 );
                             })}
