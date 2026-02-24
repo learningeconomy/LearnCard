@@ -49,7 +49,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
         };
 
         return (
-            <div className="flex items-start justify-center gap-2 w-full">
+            <div className="flex items-start justify-center gap-2 w-full my-1">
                 {multiline ? (
                     <textarea {...(sharedProps as any)} rows={3} />
                 ) : (
