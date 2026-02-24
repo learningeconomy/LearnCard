@@ -1,0 +1,5 @@
+node_modules/
+dist/
+migration-data/
+*.p8
+service-account.json
