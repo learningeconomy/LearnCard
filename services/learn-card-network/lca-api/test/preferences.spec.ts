@@ -86,7 +86,7 @@ describe('Preferences', () => {
             await createTestPreferences(ThemeEnum.Colorful);
             const newTheme = ThemeEnum.Formal;
 
-            const updateResult = await updatePreferences(did, newTheme);
+            const updateResult = await updatePreferences(did, { theme: newTheme });
             expect(updateResult).toBe(true);
 
             const result = await getPreferencesForDid(did);
@@ -94,10 +94,16 @@ describe('Preferences', () => {
             expect(result?.theme).toEqual(newTheme);
         });
 
-        it('should throw an error when updating non-existent preferences', async () => {
-            await expect(updatePreferences(nonExistentDid, ThemeEnum.Formal)).rejects.toThrow(
-                'An unexpected error occured, unable to update preferences'
-            );
+        it('should upsert preferences for a non-existent DID', async () => {
+            // updatePreferences now uses upsert: true, so it creates a document if none exists
+            const updateResult = await updatePreferences(nonExistentDid, {
+                theme: ThemeEnum.Formal,
+            });
+            expect(updateResult).toBe(true);
+
+            const result = await getPreferencesForDid(nonExistentDid);
+            expect(result).not.toBeNull();
+            expect(result?.theme).toEqual(ThemeEnum.Formal);
         });
     });
 });
