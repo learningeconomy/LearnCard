@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.89.21
+
+### Patch Changes
+
+-   [#1021](https://github.com/learningeconomy/LearnCard/pull/1021) [`49ec0cf1b1569c9bf94bdc0a7d34bf32f588f6ca`](https://github.com/learningeconomy/LearnCard/commit/49ec0cf1b1569c9bf94bdc0a7d34bf32f588f6ca) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1598 & LC-1593] Rename "Launchpad" to "Apps" and Remove feedback button entirely
+
+-   [#973](https://github.com/learningeconomy/LearnCard/pull/973) [`5b76830d328bd38b4f184458414ef478c9cc118a`](https://github.com/learningeconomy/LearnCard/commit/5b76830d328bd38b4f184458414ef478c9cc118a) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1510] [LC-1508] Replace temporary revoke for scouts with a more comprehensive solution
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.14
+    -   @learncard/react@2.9.13
+
 ## 1.89.20
 
 ### Patch Changes
