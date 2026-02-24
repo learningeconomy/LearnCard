@@ -62,6 +62,22 @@ export type ResumeSelfAttestedFields = {
     additionalDetails: ResumeField[];
 };
 
+export type ResumeFieldType = 'description' | 'metadata';
+
+export type ResumeFieldEntry = {
+    id: string;
+    value: string;
+    source: ResumeFieldSource;
+    type: ResumeFieldType;
+    index: number;
+};
+
+export type CredentialEntry = {
+    uri: string;
+    index: number;
+    fields: ResumeFieldEntry[];
+};
+
 export const resumeUserInfo: ResumeUserInfo[] = [
     { key: 'name', label: 'Full Name', placeholder: 'Jane Doe' },
     { key: 'email', label: 'Email', placeholder: 'jane@example.com' },
