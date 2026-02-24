@@ -617,11 +617,6 @@ export const useManageSelfAssignedSkillsBoost = () => {
 
             const unsignedCredential = wallet.invoke.newCredential(credentialPayload as any);
 
-            // console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
-            // console.log('unsignedCredential:', unsignedCredential);
-            // console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-            // console.log('skills:', skills);
-
             let boostUri;
 
             if (sasBoostExists) {
@@ -649,7 +644,6 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 });
             }
 
-            // TODO issue the credential
             const sentCredentialUri = await wallet?.invoke?.sendBoost(
                 profile?.profileId,
                 boostUri,
