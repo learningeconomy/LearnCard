@@ -11,15 +11,10 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
     section: (typeof RESUME_SECTIONS)[number];
 }> = ({ section }) => {
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
-    const [editingUris, setEditingUris] = useState<Set<string>>(new Set());
+    const [editingUris, setEditingUris] = useState<string[]>([]);
 
     const toggleEditing = (uri: string, val: boolean) => {
-        setEditingUris(prev => {
-            const next = new Set(prev);
-            if (val) next.add(uri);
-            else next.delete(uri);
-            return next;
-        });
+        setEditingUris(prev => (val ? [...prev, uri] : prev.filter(u => u !== uri)));
     };
 
     const sectionKey = section.key as ResumeSectionKey;
@@ -49,7 +44,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                 }}
             >
                 {entries.map(entry => {
-                    const isEditing = editingUris.has(entry.uri);
+                    const isEditing = editingUris.includes(entry.uri);
                     return (
                         <div key={entry.uri} className="flex items-start gap-2 py-1">
                             <div className="flex-1">
