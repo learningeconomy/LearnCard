@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.1.7
+
+### Patch Changes
+
+-   [#1022](https://github.com/learningeconomy/LearnCard/pull/1022) [`16e891c1da6128d54c9b8abc051ae11141a0b644`](https://github.com/learningeconomy/LearnCard/commit/16e891c1da6128d54c9b8abc051ae11141a0b644) Thanks [@Custard7](https://github.com/Custard7)! - fix: eth build plugin
+
 ## 1.1.6
 
 ### Patch Changes
