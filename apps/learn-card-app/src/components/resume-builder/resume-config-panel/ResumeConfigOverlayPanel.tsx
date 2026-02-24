@@ -13,11 +13,8 @@ export const ResumeConfigOverlayPanel: React.FC<{
 }> = ({ drawerOpen, setDrawerOpen, isPreviewing, setIsPreviewing, onDownload }) => {
     return (
         <div className="fixed inset-0 z-40 flex">
-            {/* Backdrop */}
-            <div className="flex-1 bg-black/40" onClick={() => setDrawerOpen(false)} />
-
             {/* Drawer panel */}
-            <div className="w-full max-w-[420px] h-full bg-white flex flex-col shadow-2xl">
+            <div className="w-full h-full bg-white flex flex-col shadow-2xl">
                 {/* Drawer header */}
                 <ResumeConfigPanelHeader
                     panelOpen={drawerOpen}
