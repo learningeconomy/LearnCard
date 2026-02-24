@@ -31,7 +31,7 @@ const ResumeBuilderPage: React.FC = () => {
                     </IonToolbar>
                 </IonHeader>
             )}
-            <IonContent fullscreen className="ion-no-padding">
+            <IonContent className="ion-no-padding">
                 <div className="h-full w-full">
                     <ResumeBuilder />
                 </div>
