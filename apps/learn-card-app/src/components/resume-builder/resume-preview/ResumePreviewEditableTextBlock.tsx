@@ -45,7 +45,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                 onChange(e.target.value);
             },
             className:
-                'w-full text-xs text-grayscale-700 bg-indigo-50 rounded-lg px-2 py-1.5 outline-none resize-none leading-relaxed',
+                'w-full text-xs text-grayscale-700 bg-indigo-50/45 rounded-lg px-2 py-1.5 outline-none resize-none leading-relaxed',
         };
 
         return (
