@@ -46,9 +46,12 @@ const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
             >
                 <>
                     {isNodeSelected ? (
-                        <CircleCheckmark className="w-[40px] h-[40px]" version="no-padding" />
+                        <CircleCheckmark
+                            className="w-[40px] h-[40px] shrink-0"
+                            version="no-padding"
+                        />
                     ) : (
-                        <div className="w-[40px] h-[40px] rounded-full bg-grayscale-300" />
+                        <div className="w-[40px] h-[40px] rounded-full bg-grayscale-300 shrink-0" />
                     )}
                 </>
 
