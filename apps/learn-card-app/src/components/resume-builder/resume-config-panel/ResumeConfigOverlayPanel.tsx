@@ -9,7 +9,8 @@ export const ResumeConfigOverlayPanel: React.FC<{
     setDrawerOpen: (drawerOpen: boolean) => void;
     isPreviewing?: boolean;
     setIsPreviewing?: (val: boolean) => void;
-}> = ({ drawerOpen, setDrawerOpen, isPreviewing, setIsPreviewing }) => {
+    onDownload?: () => void;
+}> = ({ drawerOpen, setDrawerOpen, isPreviewing, setIsPreviewing, onDownload }) => {
     return (
         <div className="fixed inset-0 z-40 flex">
             {/* Backdrop */}
@@ -31,7 +32,7 @@ export const ResumeConfigOverlayPanel: React.FC<{
                 </div>
 
                 {/* Drawer footer */}
-                <ResumeDownloadButton />
+                <ResumeDownloadButton onDownload={onDownload} />
             </div>
         </div>
     );

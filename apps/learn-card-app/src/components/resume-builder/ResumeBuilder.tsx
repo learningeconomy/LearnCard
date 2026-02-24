@@ -21,7 +21,11 @@ export const ResumeBuilder: React.FC = () => {
     const openResumeConfigPanel = () => {
         if (isMobile) {
             newModal(
-                <ResumeConfigOverlayPanel drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen} />
+                <ResumeConfigOverlayPanel
+                    drawerOpen={drawerOpen}
+                    setDrawerOpen={setDrawerOpen}
+                    onDownload={handleDownload}
+                />
             );
         } else {
             setPanelOpen(true);

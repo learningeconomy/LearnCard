@@ -215,26 +215,52 @@ const ResumePreview = forwardRef<
             `;
             document.head.appendChild(style);
 
+            // Off-screen container for fixed-width clones (ensures correct PDF dimensions on mobile)
+            const offscreen = document.createElement('div');
+            offscreen.style.cssText =
+                'position:fixed;top:-9999px;left:0;width:760px;pointer-events:none;z-index:-1;';
+            document.body.appendChild(offscreen);
+
             try {
                 const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
                 const pdfW = pdf.internal.pageSize.getWidth();
                 const pdfH = pdf.internal.pageSize.getHeight();
 
                 for (let i = 0; i < cards.length; i++) {
-                    const canvas = await html2canvas(cards[i], {
+                    // Clone at 760px so mobile narrow cards capture at desktop width
+                    const clone = cards[i].cloneNode(true) as HTMLElement;
+                    // Strip mobile padding classes and apply desktop equivalents inline
+                    clone.className = clone.className
+                        .replace(/\bpx-4\b/, 'px-10')
+                        .replace(/\bpy-6\b/, 'py-10')
+                        .replace(/\brounded-xl\b/, 'rounded-lg');
+                    clone.style.cssText =
+                        'width:760px;height:1056px;overflow:hidden;background:#fff;padding:40px;box-sizing:border-box;';
+                    offscreen.appendChild(clone);
+
+                    const canvas = await html2canvas(clone, {
                         scale: 2,
                         useCORS: true,
                         allowTaint: true,
                         backgroundColor: '#ffffff',
+                        width: 760,
+                        height: 1056,
                     });
+
+                    offscreen.removeChild(clone);
+
                     const imgData = canvas.toDataURL('image/png');
                     if (i > 0) pdf.addPage();
                     pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
                 }
 
-                pdf.save('resume.pdf');
+                const a = document.createElement('a');
+                a.download = 'resume.pdf';
+                a.href = pdf.output('datauristring');
+                a.click();
             } finally {
                 document.getElementById('__pdf-capture-style__')?.remove();
+                document.body.removeChild(offscreen);
             }
         },
     }));
