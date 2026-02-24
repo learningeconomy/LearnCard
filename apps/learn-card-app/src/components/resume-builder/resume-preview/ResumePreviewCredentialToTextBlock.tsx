@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import ResumePreviewEditBlockButton from './ResumePreviewEditBlockButton';
 import ResumePreviewEditableTextBlock from './ResumePreviewEditableTextBlock';
@@ -6,19 +6,24 @@ import ResumePreviewEditableTextBlock from './ResumePreviewEditableTextBlock';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 import { useGetResolvedCredential } from 'learn-card-base';
-import { ResumeField } from '../resume-builder.helpers';
+import { ResumeSectionKey } from '../resume-builder.helpers';
 
-const ResumePreviewCredentialToTextBlock: React.FC<{ uri: string }> = ({ uri }) => {
+const ResumePreviewCredentialToTextBlock: React.FC<{
+    uri: string;
+    section: ResumeSectionKey;
+}> = ({ uri, section }) => {
     const [isEditing, setIsEditing] = useState<boolean>(false);
 
     const { data: vc } = useGetResolvedCredential(uri);
 
-    const selfAttested = resumeBuilderStore.useTracked.selfAttested();
-    const setSelfAttestedDescription = resumeBuilderStore.set.setSelfAttestedDescription;
-    const addSelfAttestedDetail = resumeBuilderStore.set.addSelfAttestedDetail;
-    const updateSelfAttestedDetail = resumeBuilderStore.set.updateSelfAttestedDetail;
-    const removeSelfAttestedDetail = resumeBuilderStore.set.removeSelfAttestedDetail;
-    const selfAttestedFields = selfAttested[uri] ?? { additionalDetails: [] };
+    const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
+    const initCredentialFields = resumeBuilderStore.set.initCredentialFields;
+    const addCredentialField = resumeBuilderStore.set.addCredentialField;
+    const updateCredentialField = resumeBuilderStore.set.updateCredentialField;
+    const removeCredentialField = resumeBuilderStore.set.removeCredentialField;
+
+    const entry = (credentialEntries[section] ?? []).find(e => e.uri === uri);
+    const fields = [...(entry?.fields ?? [])].sort((a, b) => a.index - b.index);
 
     const info = vc ? getInfoFromCredential(vc as any, 'MMM yyyy', { uppercaseDate: false }) : null;
     const rawIssuer =
@@ -37,19 +42,20 @@ const ResumePreviewCredentialToTextBlock: React.FC<{ uri: string }> = ({ uri }) 
         (subject as any)?.achievement?.criteria?.narrative ||
         '';
 
-    const descriptionField: ResumeField = selfAttestedFields.description ?? {
-        value: vcDescription,
-        source: vcDescription ? 'vc' : 'selfAttested',
-    };
-
-    const handleDescriptionChange = (val: string) => {
-        const source: ResumeField['source'] =
-            val === vcDescription && vcDescription ? 'vc' : 'selfAttested';
-        setSelfAttestedDescription(uri, { value: val, source });
-    };
+    useEffect(() => {
+        if (!vc || !entry) return;
+        if (entry.fields.length > 0) return;
+        initCredentialFields(uri, section, [
+            {
+                value: vcDescription,
+                source: vcDescription ? 'vc' : 'selfAttested',
+                type: 'description',
+            },
+        ]);
+    }, [vc, entry?.fields.length]);
 
     const handleAddDetail = () => {
-        addSelfAttestedDetail(uri, { value: '', source: 'selfAttested' });
+        addCredentialField(uri, section, '', 'selfAttested', 'metadata');
     };
 
     return (
@@ -67,31 +73,35 @@ const ResumePreviewCredentialToTextBlock: React.FC<{ uri: string }> = ({ uri }) 
                     )}
                 </p>
 
-                {/* ── Description / criteria ── */}
-                <ResumePreviewEditableTextBlock
-                    value={descriptionField.value}
-                    placeholder="Add a description…"
-                    isEditing={isEditing}
-                    isSelfAttested={descriptionField.source === 'selfAttested'}
-                    onChange={handleDescriptionChange}
-                    multiline
-                />
-
-                {/* ── User-added additional details ── */}
-                {selfAttestedFields.additionalDetails.map((detail, i) => (
+                {/* ── All fields (description + metadata) rendered uniformly ── */}
+                {fields.map(field => (
                     <ResumePreviewEditableTextBlock
-                        key={i}
-                        value={detail.value}
-                        placeholder="Add detail…"
-                        isEditing={isEditing}
-                        isSelfAttested
-                        onChange={val =>
-                            updateSelfAttestedDetail(uri, i, {
-                                value: val,
-                                source: 'selfAttested',
-                            })
+                        key={field.id}
+                        value={field.value}
+                        placeholder={
+                            field.type === 'description' ? 'Add a description…' : 'Add detail…'
                         }
-                        onRemove={() => removeSelfAttestedDetail(uri, i)}
+                        isEditing={isEditing}
+                        isSelfAttested={field.source === 'selfAttested'}
+                        multiline={field.type === 'description'}
+                        onChange={val => {
+                            let source: 'vc' | 'selfAttested';
+                            if (
+                                field.type === 'description' &&
+                                val === vcDescription &&
+                                vcDescription
+                            ) {
+                                source = 'vc';
+                            } else {
+                                source = 'selfAttested';
+                            }
+                            updateCredentialField(uri, section, field.id, val, source);
+                        }}
+                        onRemove={
+                            field.type === 'metadata'
+                                ? () => removeCredentialField(uri, section, field.id)
+                                : undefined
+                        }
                     />
                 ))}
 
