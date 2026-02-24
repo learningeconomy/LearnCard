@@ -1,97 +1,14 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 
-import { useGetResolvedCredential } from 'learn-card-base';
+import ResumePreviewEditBlockButton from './ResumePreviewEditBlockButton';
+import ResumePreviewEditableTextBlock from './ResumePreviewEditableTextBlock';
+
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
+import { useGetResolvedCredential } from 'learn-card-base';
 import { ResumeField } from '../resume-builder.helpers';
 
-type ResumePreviewCredentialBlockProps = {
-    uri: string;
-};
-
-type EditableFieldProps = {
-    value: string;
-    placeholder: string;
-    isEditing: boolean;
-    isSelfAttested: boolean;
-    onChange: (val: string) => void;
-    onRemove?: () => void;
-    multiline?: boolean;
-};
-
-const EditableField: React.FC<EditableFieldProps> = ({
-    value,
-    placeholder,
-    isEditing,
-    isSelfAttested,
-    onChange,
-    onRemove,
-    multiline,
-}) => {
-    const [draft, setDraft] = useState(value);
-    const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
-
-    const commit = () => onChange(draft.trim());
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !multiline) {
-            e.preventDefault();
-            commit();
-        }
-    };
-
-    if (isEditing) {
-        const sharedProps = {
-            ref: inputRef as any,
-            value: draft,
-            placeholder,
-            onKeyDown: handleKeyDown,
-            onChange: (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-                setDraft(e.target.value);
-                onChange(e.target.value);
-            },
-            className:
-                'w-full text-xs text-grayscale-700 bg-indigo-50 border border-indigo-300 rounded px-2 py-1.5 outline-none resize-none leading-relaxed',
-        };
-
-        return (
-            <div className="flex items-start gap-2">
-                {multiline ? (
-                    <textarea {...(sharedProps as any)} rows={3} />
-                ) : (
-                    <input {...(sharedProps as any)} type="text" />
-                )}
-                {onRemove && (
-                    <button
-                        onClick={onRemove}
-                        className="shrink-0 text-grayscale-300 hover:text-red-400 text-sm mt-1.5 leading-none"
-                        title="Remove"
-                    >
-                        ✕
-                    </button>
-                )}
-            </div>
-        );
-    }
-
-    if (!value) return null;
-
-    return (
-        <div className="flex items-start gap-1">
-            <span
-                className={`text-xs leading-relaxed flex-1 ${
-                    isSelfAttested ? 'text-grayscale-600' : 'text-grayscale-600'
-                }`}
-            >
-                {value}
-            </span>
-        </div>
-    );
-};
-
-const ResumePreviewCredentialToTextBlock: React.FC<ResumePreviewCredentialBlockProps> = ({
-    uri,
-}) => {
+const ResumePreviewCredentialToTextBlock: React.FC<{ uri: string }> = ({ uri }) => {
     const [isEditing, setIsEditing] = useState<boolean>(false);
 
     const { data: vc } = useGetResolvedCredential(uri);
@@ -152,7 +69,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<ResumePreviewCredentialBlockP
                 </p>
 
                 {/* ── Description / criteria ── */}
-                <EditableField
+                <ResumePreviewEditableTextBlock
                     value={descriptionField.value}
                     placeholder="Add a description…"
                     isEditing={isEditing}
@@ -163,7 +80,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<ResumePreviewCredentialBlockP
 
                 {/* ── User-added additional details ── */}
                 {selfAttestedFields.additionalDetails.map((detail, i) => (
-                    <EditableField
+                    <ResumePreviewEditableTextBlock
                         key={i}
                         value={detail.value}
                         placeholder="Add detail…"
@@ -181,45 +98,22 @@ const ResumePreviewCredentialToTextBlock: React.FC<ResumePreviewCredentialBlockP
                     <div className="flex items-center gap-3 mt-1">
                         <button
                             onClick={handleAddDetail}
-                            className="text-xs text-indigo-500 hover:text-indigo-700 font-medium"
+                            className="text-xs text-indigo-500 font-medium"
                         >
                             + Add detail
                         </button>
                         <button
                             onClick={() => setIsEditing(false)}
-                            className="text-xs text-grayscale-400 hover:text-grayscale-600"
+                            className="text-xs bg-emerald-600 font-medium text-white px-2 py-1 rounded-lg"
                         >
-                            Done
+                            Save
                         </button>
                     </div>
                 )}
             </div>
 
             {/* ── Edit toggle button ── */}
-            <button
-                onClick={() => setIsEditing(e => !e)}
-                className={`shrink-0 mt-0.5 rounded-lg p-1.5 border transition-colors ${
-                    isEditing
-                        ? 'border-indigo-400 bg-indigo-50 text-indigo-500'
-                        : 'border-grayscale-200 bg-white text-grayscale-400 hover:border-indigo-300 hover:text-indigo-400'
-                }`}
-                title={isEditing ? 'Stop editing' : 'Edit'}
-            >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                >
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-            </button>
+            <ResumePreviewEditBlockButton isEditing={isEditing} setIsEditing={setIsEditing} />
         </div>
     );
 };
