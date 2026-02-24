@@ -17,10 +17,12 @@ export const RESUME_SECTIONS = [
         key: CredentialCategoryEnum.accomplishment,
         label: 'Accomplishments',
     },
-    {
-        key: CredentialCategoryEnum.skill,
-        label: 'Skills',
-    },
+    // TODO: Re-enable when skills are supported
+    // TODO: skills framework required?
+    // {
+    //     key: CredentialCategoryEnum.skill,
+    //     label: 'Skills',
+    // },
     {
         key: CredentialCategoryEnum.socialBadge,
         label: 'Badges & Certifications',
