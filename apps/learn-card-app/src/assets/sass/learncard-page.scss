@@ -86,6 +86,34 @@
     }
 }
 
-button, [type='button'], [type='reset'], [type='submit'] {
+.onboarding-swiper-pagination.swiper-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 0;
+    margin-bottom: 20px;
+
+    .swiper-pagination-bullet {
+        height: 8px;
+        width: 8px;
+        opacity: 1;
+        background-color: #6f7590;
+        border-radius: 5px;
+
+        transition: width 200ms ease-out;
+
+        &.swiper-pagination-bullet-active {
+            width: 15px !important;
+            height: 15px !important;
+            background-color: #353e64 !important;
+            border-radius: 100px;
+        }
+    }
+}
+
+button,
+[type='button'],
+[type='reset'],
+[type='submit'] {
     -webkit-appearance: none !important;
 }
