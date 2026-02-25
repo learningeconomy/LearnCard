@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { IonReorder, IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
+import { IonIcon, IonReorder, IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
+import { trashOutline } from 'ionicons/icons';
 
 import ResumePreviewCredentialToTextBlock from './ResumePreviewCredentialToTextBlock';
 import ResumePreviewEditBlockButton from './ResumePreviewEditBlockButton';
@@ -88,6 +89,21 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                                 />
                             </div>
                             <div data-pdf-hide className="flex items-center gap-1 shrink-0 mt-1">
+                                {!isEditing && (
+                                    <button
+                                        onClick={() =>
+                                            resumeBuilderStore.set.toggleCredential(
+                                                sectionKey,
+                                                entry.uri
+                                            )
+                                        }
+                                        className="shrink-0 text-grayscale-300 leading-none"
+                                        title="Deselect credential"
+                                        aria-label="Deselect credential"
+                                    >
+                                        <IonIcon icon={trashOutline} className="w-[24px] h-[24px]" />
+                                    </button>
+                                )}
                                 <ResumePreviewEditBlockButton
                                     isEditing={isEditing}
                                     setIsEditing={val => toggleEditing(entry.uri, val)}
