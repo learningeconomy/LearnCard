@@ -67,6 +67,10 @@ const StateValidator = z.object({
 
 const DobValidator = StateValidator.pick({ dob: true });
 
+const ChildDobValidator = z.object({
+    dob: z.string().optional(),
+});
+
 type UserProfileUpdateFormProps = {
     title?: string;
     handleCloseModal: () => void;
@@ -162,7 +166,12 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     });
 
     const validate = () => {
-        const Schema = lcNetworkProfile ? StateValidator : StateValidator.pick({ name: true });
+        let Schema;
+        if (hasParentSwitchedProfile && lcNetworkProfile) {
+            Schema = StateValidator.pick({ name: true }).merge(ChildDobValidator);
+        } else {
+            Schema = lcNetworkProfile ? StateValidator : StateValidator.pick({ name: true });
+        }
         const parsedData = Schema.safeParse(
             lcNetworkProfile
                 ? {
@@ -285,15 +294,18 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         // ! APPLE HOT FIX
         if (typeOfLogin === SocialLoginTypes.apple) {
             // Show modal if under 13 before running Zod, to ensure UX triggers
+            // Skip age check for child accounts (hasParentSwitchedProfile)
             const age = dob ? calculateAge(dob) : Number.NaN;
-            if (!Number.isNaN(age) && age < 13) {
+            if (!hasParentSwitchedProfile && !Number.isNaN(age) && age < 13) {
                 setErrors(prev => ({ ...prev, dob: [' You must be at least 13 years old.'] }));
                 presentUnderageModal();
                 return;
             }
 
             // Validate DOB even if name is not required per Apple guidelines
-            const dobCheck = DobValidator.safeParse({ dob });
+            const dobCheck = (
+                hasParentSwitchedProfile ? ChildDobValidator : DobValidator
+            ).safeParse({ dob });
             if (!dobCheck.success) {
                 setErrors(dobCheck.error.flatten().fieldErrors);
                 return;
@@ -314,7 +326,8 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             // ! APPLE HOT FIX
         } else {
             // If LCN profile exists, show modal when age < 13 regardless of Zod
-            if (lcNetworkProfile) {
+            // Skip age check for child accounts (hasParentSwitchedProfile)
+            if (lcNetworkProfile && !hasParentSwitchedProfile) {
                 const age = dob ? calculateAge(dob) : Number.NaN;
                 if (!Number.isNaN(age) && age < 13) {
                     setErrors(prev => ({ ...prev, dob: [' You must be at least 13 years old.'] }));
@@ -518,7 +531,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                     }}
                                     error={errors?.dob?.[0]}
                                     isMobile={!isDesktop}
-                                    label="Date of Birth"
+                                    label={`Date of Birth ${
+                                        hasParentSwitchedProfile ? '(disabled)' : ''
+                                    }`}
+                                    disabled={hasParentSwitchedProfile}
                                 />
 
                                 {dob && !Number.isNaN(calculateAge(dob)) && (
