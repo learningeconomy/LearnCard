@@ -245,7 +245,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
     const presentUnderageModal = () => {
         newModal(
-            <div className="flex flex-col gap-[12px] w-full max-w-[520px] h-full">
+            <div className="flex flex-col gap-[12px] w-full max-w-[520px] h-full relative mx-auto">
                 <div className="w-full bg-white rounded-[24px] px-[20px] py-[28px] shadow-3xl text-center">
                     <div className="mx-auto mb-4 h-[56px] w-[56px] rounded-full border border-indigo-200 flex items-center justify-center">
                         <div className="flex items-center justify-center h-[28px] w-[28px] text-indigo-600">
@@ -260,7 +260,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         join.
                     </p>
                 </div>
-                <div className="flex gap-3 w-full absolute bottom-0">
+                <div className="flex gap-3 w-full">
                     <button
                         type="button"
                         onClick={closeModal}
