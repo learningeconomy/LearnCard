@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 2.10.2
+
+### Patch Changes
+
+-   [#973](https://github.com/learningeconomy/LearnCard/pull/973) [`5b76830d328bd38b4f184458414ef478c9cc118a`](https://github.com/learningeconomy/LearnCard/commit/5b76830d328bd38b4f184458414ef478c9cc118a) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1510] [LC-1508] Replace temporary revoke for scouts with a more comprehensive solution
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.14
+
 ## 2.10.1
 
 ### Patch Changes
