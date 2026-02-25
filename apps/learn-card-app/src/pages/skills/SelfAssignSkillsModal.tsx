@@ -236,7 +236,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     const isReview = step === Step.Review;
     const noResults = !!searchInput && suggestedSkills.length === 0 && !searchLoading;
 
-    const errorLoadingFramework = !selfAssignedSkillFramework && selfAssignedSkillFrameworkLoading;
+    const errorLoadingFramework = !selfAssignedSkillFramework && !selfAssignedSkillFrameworkLoading;
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden">
