@@ -32,6 +32,7 @@ import {
 import { getProfileByDid } from '@accesslayer/profile/read';
 
 import { getBoostUri, isDraftBoost } from '@helpers/boost.helpers';
+import { BoostVisibility } from 'types/boost';
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
@@ -206,6 +207,13 @@ async function handleExchangeInitiation(
         });
     }
 
+    if (boost.visibility !== BoostVisibility.enum.PUBLIC) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'This boost is not currently viewable by claim link.',
+        });
+    }
+
     // Check if challenge is already in use (shouldn't happen with UUID but be safe)
     if (!await isClaimLinkAlreadySetForBoost(exchangeInfo.boostUri, exchangeInfo.challenge)) {
         throw new TRPCError({
@@ -276,6 +284,13 @@ async function handlePresentationForClaim(
     }
 
     if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+    if (boost.visibility !== BoostVisibility.enum.PUBLIC) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'This boost is not currently viewable by claim link.',
+        });
+    }
 
     const boostOwner = await getBoostOwner(boost);
     if (!boostOwner) {
