@@ -31,7 +31,11 @@ import {
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { logCredentialSent, logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
+import {
+    logCredentialSent,
+    logCredentialClaimed,
+    logCredentialFailed,
+} from '@helpers/activity.helpers';
 
 import { t, profileRoute } from '@routes';
 
@@ -67,6 +71,7 @@ import {
     canProfileEditBoost,
     canProfileCreateChildBoost,
     getBoostByUriWithDefaultClaimPermissions,
+    getBoostSkillsWithProficiency,
     getFrameworkSkillsAvailableForBoost,
     getFrameworksForBoostPaged,
     searchSkillsAvailableForBoost,
@@ -128,6 +133,7 @@ import {
     setProfileAsBoostAdmin,
     setBoostUsesFramework,
     addAlignedSkillsToBoost,
+    replaceAlignedSkillsForBoost,
 } from '@accesslayer/boost/relationships/create';
 import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import { neogma } from '@instance';
@@ -216,7 +222,8 @@ export const boostsRouter = t.router({
         })
         .input(z.object({ uri: z.string() }))
         .output(
-            z.object({
+            z
+                .object({
                     targetCode: z.string().optional(),
                     targetName: z.string().optional(),
                     targetDescription: z.string().optional(),
@@ -242,6 +249,54 @@ export const boostsRouter = t.router({
             }
 
             return buildObv3AlignmentsForBoost(boost, ctx.domain);
+        }),
+
+    getBoostSkills: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/skills',
+                tags: ['Boosts'],
+                summary: 'Get aligned skills for a boost',
+                description:
+                    'Returns skills aligned to a boost via ALIGNED_TO, including proficiencyLevel stored on the relationship.',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(z.array(SkillValidator.extend({ proficiencyLevel: z.number().optional() })))
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const decodedUri = decodeURIComponent(input.uri);
+            const boost = await getBoostByUri(decodedUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            // For now, require admin to view aligned skills (consistent with other boost-skill endpoints)
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
+            }
+
+            const skills = await getBoostSkillsWithProficiency(boost);
+
+            // Ensure we only return fields that match SkillValidator (+ proficiencyLevel)
+            return skills.map(skill => ({
+                id: skill.id,
+                statement: skill.statement,
+                description: skill.description ?? undefined,
+                code: skill.code ?? undefined,
+                icon: (skill as any).icon ?? undefined,
+                type: (skill as any).type ?? 'competency',
+                status: (skill as any).status ?? 'active',
+                createdAt: (skill as any).createdAt,
+                updatedAt: (skill as any).updatedAt,
+                frameworkId: (skill as any).frameworkId,
+                proficiencyLevel: (skill as any).proficiencyLevel,
+            }));
         }),
     attachFrameworkToBoost: profileRoute
         .meta({
@@ -332,7 +387,15 @@ export const boostsRouter = t.router({
         .input(
             z.object({
                 boostUri: z.string(),
-                skills: z.array(z.object({ frameworkId: z.string(), id: z.string() })).min(1),
+                skills: z
+                    .array(
+                        z.object({
+                            frameworkId: z.string(),
+                            id: z.string(),
+                            proficiencyLevel: z.number().optional(),
+                        })
+                    )
+                    .min(1),
             })
         )
         .output(z.boolean())
@@ -918,7 +981,13 @@ export const boostsRouter = t.router({
                     claimPermissions: BoostPermissionsValidator.partial().optional(),
                     defaultPermissions: BoostPermissionsValidator.partial().optional(),
                     skills: z
-                        .array(z.object({ frameworkId: z.string(), id: z.string() }))
+                        .array(
+                            z.object({
+                                frameworkId: z.string(),
+                                id: z.string(),
+                                proficiencyLevel: z.number().optional(),
+                            })
+                        )
                         .min(1)
                         .optional(),
                 })
@@ -974,8 +1043,13 @@ export const boostsRouter = t.router({
                         defaultPermissions: BoostPermissionsValidator.partial().optional(),
                     }),
                 skills: z
-                    .array(z.object({ frameworkId: z.string(), id: z.string() }))
-                    .min(1)
+                    .array(
+                        z.object({
+                            frameworkId: z.string(),
+                            id: z.string(),
+                            proficiencyLevel: z.number().optional(),
+                        })
+                    )
                     .optional(),
             })
         )
@@ -2024,13 +2098,22 @@ export const boostsRouter = t.router({
                         credential: VCValidator.or(UnsignedVCValidator).optional(),
                         defaultPermissions: BoostPermissionsValidator.partial().optional(),
                     }),
+                skills: z
+                    .array(
+                        z.object({
+                            frameworkId: z.string(),
+                            id: z.string(),
+                            proficiencyLevel: z.number().optional(),
+                        })
+                    )
+                    .optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
-            const { uri, updates } = input;
+            const { uri, updates, skills } = input;
             const { name, type, category, status, credential, meta, defaultPermissions } = updates;
 
             const decodedUri = decodeURIComponent(uri);
@@ -2091,6 +2174,11 @@ export const boostsRouter = t.router({
                     ...EMPTY_PERMISSIONS,
                     ...defaultPermissions,
                 });
+            }
+
+            // If skills provided (including empty array), replace aligned skills for this boost
+            if (Array.isArray(skills)) {
+                await replaceAlignedSkillsForBoost(boost, skills);
             }
 
             return result;
