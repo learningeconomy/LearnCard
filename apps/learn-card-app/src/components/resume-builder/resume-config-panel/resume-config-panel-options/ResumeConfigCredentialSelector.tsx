@@ -111,6 +111,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
                                                     toggleCredential(sectionKey, record.uri)
                                                 }
                                                 isInSkillsModal
+                                                hideOptionsMenu
                                                 className="!min-h-[310px]"
                                             />
                                         </SwiperSlide>

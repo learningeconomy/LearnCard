@@ -71,6 +71,7 @@ type BoostEarnedCardProps = {
     className?: string;
     loading?: boolean;
     isInSkillsModal?: boolean;
+    hideOptionsMenu?: boolean;
     textColor?: string;
 };
 
@@ -92,6 +93,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     boostPageViewMode = BoostPageViewMode.Card,
     loading,
     isInSkillsModal,
+    hideOptionsMenu = false,
     textColor,
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal({
@@ -234,7 +236,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             handleCloseModal: () => closeModal(),
             handleShareBoost: () => presentShareBoostLink(),
             onDotsClick: () => {
-                // closeModal();
+                if (hideOptionsMenu) return;
                 handleOptionsMenu();
             },
             subjectDID: idSubjectDID,
@@ -286,7 +288,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             subjectImageComponent: subjectProfileImageElement,
             issuerImageComponent: issuerProfileImageElement,
             onDotsClick: () => {
-                // closeModal();
+                if (hideOptionsMenu) return;
                 handleOptionsMenu();
             },
             customThumbComponent: (
@@ -368,7 +370,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     onCheckClick={onCheckMarkClick}
                     showChecked={showChecked}
                     checkStatus={initialCheckmarkState}
-                    optionsTriggerOnClick={handleOptionsMenu}
+                    optionsTriggerOnClick={hideOptionsMenu ? undefined : handleOptionsMenu}
                     className={`earned-small-card bg-white text-black z-[1000] mt-[15px] ${className}`}
                     customHeaderClass="boost-managed-card"
                     thumbImgSrc={badgeThumbnail}
@@ -506,7 +508,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     customHeaderClass="boost-managed-card"
                     thumbImgSrc={badgeThumbnail}
                     optionsTriggerOnClick={
-                        showSkeleton
+                        showSkeleton || hideOptionsMenu
                             ? undefined
                             : () => {
                                   handleOptionsMenu();
