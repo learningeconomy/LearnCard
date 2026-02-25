@@ -7,6 +7,8 @@ import OnboardingSlide from './OnboardingSlide';
 import { getSlideContent, roleSlideContent } from './onboardingSlideContent';
 
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
+import { useModal, ModalTypes } from 'learn-card-base';
+import LaunchPadActionModal from 'apps/learn-card-app/src/pages/launchPad/LaunchPadHeader/LaunchPadActionModal';
 
 import 'swiper/css';
 import 'swiper/css/keyboard';
@@ -17,12 +19,17 @@ import '../../../assets/sass/learncard-page.scss';
 
 type OnboardingSwiperForSlidesProps = {
     roleItem?: LearnCardRoleType | null;
+    dob?: string | null;
 };
 
-const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ roleItem }) => {
+const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ roleItem, dob }) => {
     const [slidesRef, setSlidesRef] = useState<SwiperInterface>();
     const [activeSlideIndex, setActiveSlideIndex] = useState(0);
-
+    const { newModal, closeAllModals } = useModal({
+        desktop: ModalTypes.Freeform,
+        mobile: ModalTypes.Freeform,
+    });
+    console.log('roleItem', roleItem);
     const roleType = roleItem?.type ?? LearnCardRolesEnum.learner;
     const slideConfig = roleSlideContent[roleType] ?? roleSlideContent[LearnCardRolesEnum.learner]!;
     const totalSlides = slideConfig.slides.length;
@@ -51,9 +58,23 @@ const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ r
         slidesRef?.slideNext();
     };
 
+    const handleGetStarted = () => {
+        closeAllModals();
+        setTimeout(() => {
+            newModal(<LaunchPadActionModal />, {
+                className:
+                    'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
+                sectionClassName: '!max-w-[500px] disable-scrollbars',
+            });
+        }, 500);
+    };
+
+    const isLastSlide = activeSlideIndex === totalSlides - 1;
+    const currentBgColor = getSlideContent(roleType, activeSlideIndex).bgColor;
+
     return (
-        <>
-            <div style={{ position: 'relative', height: '100%' }}>
+        <div className="relative h-full w-full flex flex-col">
+            <div className="flex-1 overflow-hidden">
                 <Swiper
                     modules={[Keyboard, Pagination, Scrollbar, IonicSlides, Navigation]}
                     keyboard={true}
@@ -75,20 +96,28 @@ const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ r
                                     bgColor={content.bgColor}
                                     boldText={content.boldText}
                                     regularText={content.regularText}
+                                    over13Text={content.over13Text}
                                     image={content.image}
                                     imageAlt={content.imageAlt}
                                     roleTitle={roleItem?.title}
-                                    handlePrevSlide={handlePrevSlide}
-                                    handleNextSlide={handleNextSlide}
-                                    isLastSlide={index === totalSlides - 1}
+                                    dob={dob}
                                 />
                             </SwiperSlide>
                         );
                     })}
                 </Swiper>
             </div>
-            <div className="swiper-pagination onboarding-swiper-pagination"></div>
-        </>
+
+            <div className={`w-full flex flex-col items-center ${currentBgColor}`}>
+                <button
+                    className="border-[1px] border-grayscale-800 border-solid bg-white max-w-[335px] w-full py-[10px] rounded-[40px] text-grayscale-800 font-poppins font-semibold text-[17px] mb-[10px]"
+                    onClick={isLastSlide ? handleGetStarted : handleNextSlide}
+                >
+                    {isLastSlide ? 'Get Started' : 'Next'}
+                </button>
+                <div className="swiper-pagination onboarding-swiper-pagination"></div>
+            </div>
+        </div>
     );
 };
 
