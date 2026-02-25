@@ -3,7 +3,7 @@ import { UnsignedVC, VC } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
 import { Boost, BoostInstance, Profile } from '@models';
-import { BoostStatus, BoostType } from 'types/boost';
+import { BoostStatus, BoostType, BoostVisibility } from 'types/boost';
 import { convertCredentialToBoostTemplateJSON } from '@helpers/boost.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getCreatorRole } from '@accesslayer/role/read';
@@ -21,7 +21,7 @@ export const createBoost = async (
 
     const role = await getCreatorRole(); // Ensure creator role exists
 
-    const { status = BoostStatus.enum.LIVE } = metadata;
+    const { status = BoostStatus.enum.LIVE, visibility = BoostVisibility.enum.PRIVATE } = metadata;
 
     const timestamp = new Date().toISOString();
 
@@ -34,6 +34,7 @@ export const createBoost = async (
                     getDidWeb(domain, creator.profileId)
                 ),
                 status,
+                visibility,
                 ...((flattenObject as any)(metadata) as any),
             },
             profileId: creator.profileId,
