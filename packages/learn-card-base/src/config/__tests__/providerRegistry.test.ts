@@ -42,6 +42,7 @@ const createMockAuthProvider = (): AuthProvider => ({
 
 const createMockKeyDerivation = (): KeyDerivationStrategy => ({
     name: 'test-sss',
+    capabilities: { recovery: false, deviceLinking: false, localKeyPersistence: false, contactMethodUpgrade: false },
     hasLocalKey: vi.fn().mockResolvedValue(false),
     getLocalKey: vi.fn().mockResolvedValue(null),
     storeLocalKey: vi.fn().mockResolvedValue(undefined),

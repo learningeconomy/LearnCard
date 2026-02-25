@@ -5,6 +5,7 @@
 
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
+import admin from 'firebase-admin';
 
 import { t, openRoute, didRoute } from '@routes';
 import { getDeliveryService } from '../services/delivery';
@@ -20,6 +21,7 @@ import {
     addRecoveryMethodToUserKey,
     setRecoveryEmail,
     markUserKeyMigrated,
+    upgradeContactMethod,
     deleteUserKey,
     ServerEncryptedShareValidator,
     EncryptedShareValidator,
@@ -546,6 +548,111 @@ export const keysRouter = t.router({
             }
 
             return { success: true };
+        }),
+
+    upgradeContactMethod: openRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/keys/upgrade-contact-method',
+                tags: ['Keys'],
+                summary: 'Verify email OTP, link email to auth account, and upgrade UserKey contact method',
+            },
+        })
+        .input(
+            AuthInputValidator.extend({
+                previousPhone: z.string().min(1),
+                email: z.string().email(),
+                code: z.string().length(6),
+            })
+        )
+        .output(z.object({
+            success: z.boolean(),
+            message: z.string().optional(),
+            customToken: z.string().optional(),
+        }))
+        .mutation(async ({ input }) => {
+            const user = await verifyAuthToken(input.authToken, input.providerType);
+            const email = input.email.toLowerCase();
+
+            // 1. Verify the OTP code (same Redis pattern as sendLoginVerificationCode)
+            const redisKey = `login-code:${email}:${input.code}`;
+            const cached = await cache.get(redisKey);
+
+            if (!cached) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Invalid or expired code. Please try again.',
+                });
+            }
+
+            // Consume the code to prevent reuse
+            await cache.delete([redisKey]);
+
+            // 2. Verify the old UserKey exists
+            const oldContactMethod: ContactMethod = { type: 'phone', value: input.previousPhone };
+            const existingKey = await findUserKeyByContactMethod(oldContactMethod);
+
+            if (!existingKey) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'No account found for the provided phone number.',
+                });
+            }
+
+            // 3. Verify the authenticated user owns this UserKey
+            const ownsKey = existingKey.authProviders.some(
+                (ap) => ap.type === input.providerType && ap.id === user.id
+            );
+
+            if (!ownsKey) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'You do not have permission to upgrade this account.',
+                });
+            }
+
+            // 4. Link the email to the auth account (passwordless, via Admin SDK)
+            //    This invalidates the client's existing session, so we issue a
+            //    fresh custom token for the client to re-authenticate with.
+            let customToken: string | undefined;
+
+            if (input.providerType === 'firebase') {
+                try {
+                    await admin.auth().updateUser(user.id, { email });
+
+                    customToken = await admin.auth().createCustomToken(user.id);
+                } catch (err) {
+                    const code = (err as { code?: string })?.code ?? '';
+
+                    if (code === 'auth/email-already-exists') {
+                        throw new TRPCError({
+                            code: 'CONFLICT',
+                            message: 'This email is already associated with another account.',
+                        });
+                    }
+
+                    console.error('Failed to update Firebase user email:', err);
+
+                    throw new TRPCError({
+                        code: 'INTERNAL_SERVER_ERROR',
+                        message: 'Failed to link email to your account. Please try again.',
+                    });
+                }
+            }
+
+            // 5. Atomically upgrade the UserKey contact method
+            const newContactMethod: ContactMethod = { type: 'email', value: email };
+            const upgraded = await upgradeContactMethod(oldContactMethod, newContactMethod);
+
+            if (!upgraded) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'This email is already associated with another account.',
+                });
+            }
+
+            return { success: true, customToken };
         }),
 
     deleteUserKey: didRoute

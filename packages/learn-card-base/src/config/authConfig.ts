@@ -11,6 +11,7 @@
  *   VITE_KEY_DERIVATION / REACT_APP_KEY_DERIVATION_PROVIDER        — 'sss' (default)
  *   VITE_SSS_SERVER_URL / REACT_APP_SSS_SERVER_URL                 — 'http://localhost:5100/api' (default)
  *   VITE_ENABLE_EMAIL_BACKUP_SHARE / REACT_APP_ENABLE_EMAIL_BACKUP_SHARE — 'true' (default)
+ *   VITE_REQUIRE_EMAIL_FOR_PHONE_USERS / REACT_APP_REQUIRE_EMAIL_FOR_PHONE_USERS — 'true' (default)
  *   VITE_WEB3AUTH_CLIENT_ID                                                 — Web3Auth client ID from dashboard
  *   VITE_WEB3AUTH_NETWORK                                                   — Web3Auth network (e.g. 'testnet', 'cyan', 'sapphire_mainnet')
  *   VITE_WEB3AUTH_VERIFIER_ID                                               — Web3Auth verifier name (e.g. 'learncardapp-firebase')
@@ -35,6 +36,17 @@ export interface AuthConfig {
 
     /** Whether to automatically send a backup share to the user's email during key setup */
     enableEmailBackupShare: boolean;
+
+    /**
+     * Whether phone-only users are required to link an email before proceeding.
+     * When true (default), users who authenticate via phone number will see a
+     * blocking overlay prompting them to add an email address. This ensures
+     * email-based recovery (backup share) is available.
+     *
+     * Set to false if your deployment intentionally supports phone-only accounts
+     * or uses a key derivation strategy that doesn't need email for recovery.
+     */
+    requireEmailForPhoneUsers: boolean;
 
     /** Web3Auth client ID from the Web3Auth dashboard */
     web3AuthClientId: string;
@@ -114,6 +126,8 @@ export const getAuthConfig = (): AuthConfig => {
 
     const enableEmailBackupShare = readEnv('ENABLE_EMAIL_BACKUP_SHARE', 'ENABLE_EMAIL_BACKUP_SHARE') !== 'false';
 
+    const requireEmailForPhoneUsers = readEnv('REQUIRE_EMAIL_FOR_PHONE_USERS', 'REQUIRE_EMAIL_FOR_PHONE_USERS') !== 'false';
+
     const web3AuthClientId =
         readEnv('WEB3AUTH_CLIENT_ID', 'WEB3AUTH_CLIENT_ID') || '';
 
@@ -131,6 +145,7 @@ export const getAuthConfig = (): AuthConfig => {
         keyDerivation,
         serverUrl,
         enableEmailBackupShare,
+        requireEmailForPhoneUsers,
         web3AuthClientId,
         web3AuthNetwork,
         web3AuthVerifierId,
@@ -153,14 +168,15 @@ export const shouldUseSSS = (): boolean => {
  * To add a future strategy, just add an entry here.
  */
 const STRATEGY_CAPABILITIES: Record<string, import('@learncard/auth-types').KeyDerivationCapabilities> = {
-    sss: { recovery: true, deviceLinking: true, localKeyPersistence: true },
-    web3auth: { recovery: false, deviceLinking: false, localKeyPersistence: false },
+    sss: { recovery: true, deviceLinking: true, localKeyPersistence: true, contactMethodUpgrade: true },
+    web3auth: { recovery: false, deviceLinking: false, localKeyPersistence: false, contactMethodUpgrade: false },
 };
 
 const DEFAULT_CAPABILITIES: import('@learncard/auth-types').KeyDerivationCapabilities = {
     recovery: false,
     deviceLinking: false,
     localKeyPersistence: false,
+    contactMethodUpgrade: false,
 };
 
 /**

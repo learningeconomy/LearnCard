@@ -26,7 +26,8 @@ export { useAuthCoordinatorAutoSetup } from './useAuthCoordinatorAutoSetup';
 export type { AutoSetupConfig } from './useAuthCoordinatorAutoSetup';
 
 // Shared overlay components for coordinator states
-export { Overlay, ErrorOverlay, StalledMigrationOverlay } from './components';
+export { Overlay, ErrorOverlay, StalledMigrationOverlay, EmailLinkOverlay } from './components';
+export type { EmailLinkOverlayProps } from './components';
 
 export type { FirebaseAuthConfig } from '../auth-providers';
 export type {

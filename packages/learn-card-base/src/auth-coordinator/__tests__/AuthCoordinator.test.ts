@@ -208,7 +208,7 @@ describe('AuthCoordinator', () => {
         it('transitions to needs_migration when strategy supports recovery but server has no record', async () => {
             const { coordinator } = setup({
                 keyDerivation: {
-                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true },
+                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true, contactMethodUpgrade: false },
                     fetchServerKeyStatus: vi.fn().mockResolvedValue({
                         exists: false,
                         needsMigration: false,
@@ -236,7 +236,7 @@ describe('AuthCoordinator', () => {
         it('transitions to needs_migration when server says needsMigration', async () => {
             const { coordinator } = setup({
                 keyDerivation: {
-                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true },
+                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true, contactMethodUpgrade: false },
                     fetchServerKeyStatus: vi.fn().mockResolvedValue({
                         ...defaultServerStatus,
                         needsMigration: true,
@@ -256,7 +256,7 @@ describe('AuthCoordinator', () => {
         it('proceeds to ready when server check fails (graceful fallback)', async () => {
             const { coordinator } = setup({
                 keyDerivation: {
-                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true },
+                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true, contactMethodUpgrade: false },
                     fetchServerKeyStatus: vi.fn().mockRejectedValue(new Error('network error')),
                 },
                 config: {
@@ -275,7 +275,7 @@ describe('AuthCoordinator', () => {
 
             const { coordinator } = setup({
                 keyDerivation: {
-                    capabilities: { recovery: false, deviceLinking: false, localKeyPersistence: false },
+                    capabilities: { recovery: false, deviceLinking: false, localKeyPersistence: false, contactMethodUpgrade: false },
                     fetchServerKeyStatus,
                 },
                 config: {
@@ -298,7 +298,7 @@ describe('AuthCoordinator', () => {
                     getCurrentUser: vi.fn().mockResolvedValue(null),
                 },
                 keyDerivation: {
-                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true },
+                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true, contactMethodUpgrade: false },
                     fetchServerKeyStatus,
                 },
                 config: {

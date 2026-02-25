@@ -9,3 +9,5 @@
 export { Overlay } from './Overlay';
 export { ErrorOverlay } from './ErrorOverlay';
 export { StalledMigrationOverlay } from './StalledMigrationOverlay';
+export { EmailLinkOverlay } from './EmailLinkOverlay';
+export type { EmailLinkOverlayProps } from './EmailLinkOverlay';

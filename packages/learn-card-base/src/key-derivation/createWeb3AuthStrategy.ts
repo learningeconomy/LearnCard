@@ -160,6 +160,7 @@ export const createWeb3AuthStrategy = (
             recovery: false,
             deviceLinking: false,
             localKeyPersistence: false,
+            contactMethodUpgrade: false,
         },
 
         // --- Key lifecycle ---

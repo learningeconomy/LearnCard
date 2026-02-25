@@ -72,6 +72,19 @@ export interface AuthProvider {
      * re-auth whenever the session expires.
      */
     refreshSession?(): Promise<boolean>;
+
+    /**
+     * Re-authenticate with a server-issued token (e.g., a Firebase custom
+     * token returned after a server-side account change that invalidates
+     * the current session).
+     *
+     * Returns the refreshed AuthUser read directly from the auth SDK
+     * (not from the app store, which may be stale).
+     *
+     * Optional — only needed by providers whose server-side account
+     * mutations invalidate the client session.
+     */
+    reauthenticateWithToken?(token: string): Promise<AuthUser | null>;
 }
 
 // ---------------------------------------------------------------------------
@@ -151,6 +164,13 @@ export interface KeyDerivationCapabilities {
      * When true, "public computer" / "forget device" features are relevant.
      */
     localKeyPersistence: boolean;
+
+    /**
+     * Strategy supports upgrading the user's contact method (e.g., phone → email).
+     * When true, the `upgradeContactMethod` method is available and the
+     * email-linking gate can be shown for phone-only users.
+     */
+    contactMethodUpgrade: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -255,6 +275,30 @@ export interface KeyDerivationStrategy<
 
     /** Get configured recovery methods for the authenticated user */
     getAvailableRecoveryMethods?(token: string, providerType: AuthProviderType): Promise<RecoveryMethodInfo[]>;
+
+    // --- Contact method management ---
+
+    /**
+     * Verify email ownership and upgrade the user's contact method on the
+     * server (e.g., phone → email). The server verifies the OTP code, links
+     * the email to the auth account (passwordless), and atomically updates
+     * the UserKey contact method.
+     *
+     * Strategies that don't manage server-side contact methods can omit this.
+     *
+     * @param token - Auth token for the current session
+     * @param providerType - Auth provider type
+     * @param previousPhone - The phone number being replaced
+     * @param email - The new email address (already OTP-verified client-side)
+     * @param code - The 6-digit verification code
+     */
+    upgradeContactMethod?(
+        token: string,
+        providerType: AuthProviderType,
+        previousPhone: string,
+        email: string,
+        code: string
+    ): Promise<{ customToken?: string } | void>;
 
     // --- Email backup ---
 

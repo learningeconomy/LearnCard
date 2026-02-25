@@ -12,7 +12,10 @@ export interface FirebaseAuthConfig {
     /** Function that returns the Firebase Auth instance */
     getAuth: () => {
         currentUser: {
-            getIdToken: () => Promise<string>;
+            uid: string;
+            email: string | null;
+            phoneNumber: string | null;
+            getIdToken: (forceRefresh?: boolean) => Promise<string>;
             metadata?: { creationTime?: string };
         } | null;
     };
@@ -26,6 +29,13 @@ export interface FirebaseAuthConfig {
 
     /** Optional sign out handler */
     onSignOut?: () => Promise<void>;
+
+    /**
+     * Re-authenticate with a server-issued token (e.g., Firebase custom token).
+     * Called by `reauthenticateWithToken()`. The implementation should call
+     * the provider-specific re-auth API (e.g., `signInWithCustomToken`).
+     */
+    onReauthenticate?: (token: string) => Promise<void>;
 }
 
 /**
@@ -103,6 +113,31 @@ export function createFirebaseAuthProvider(config: FirebaseAuthConfig): AuthProv
             } catch {
                 return false;
             }
+        },
+
+        async reauthenticateWithToken(token: string): Promise<AuthUser | null> {
+            if (!config.onReauthenticate) {
+                throw new Error('reauthenticateWithToken is not configured for this auth provider');
+            }
+
+            await config.onReauthenticate(token);
+
+            // Read the fresh user directly from the auth SDK (not the store,
+            // which may be stale until the next React render cycle).
+            const firebaseAuth = getAuth();
+            const cu = firebaseAuth.currentUser;
+
+            if (!cu) return null;
+
+            return {
+                id: cu.uid,
+                email: cu.email || undefined,
+                phone: cu.phoneNumber || undefined,
+                providerType: 'firebase' as AuthProviderType,
+                createdAt: cu.metadata?.creationTime
+                    ? new Date(cu.metadata.creationTime)
+                    : undefined,
+            };
         },
 
         async signOut(): Promise<void> {

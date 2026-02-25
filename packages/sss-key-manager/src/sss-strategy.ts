@@ -380,6 +380,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             recovery: true,
             deviceLinking: true,
             localKeyPersistence: true,
+            contactMethodUpgrade: true,
         },
 
         // --- User scoping ---
@@ -862,6 +863,39 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 console.error('Error getting recovery methods:', e);
                 return [];
             }
+        },
+
+        // --- Contact method management ---
+
+        async upgradeContactMethod(
+            token: string,
+            providerType: AuthProviderType,
+            previousPhone: string,
+            email: string,
+            code: string
+        ): Promise<{ customToken?: string }> {
+            const res = await fetch(`${serverUrl}/keys/upgrade-contact-method`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType,
+                    previousPhone,
+                    email,
+                    code,
+                }),
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                const message = data?.error?.message || data?.message || 'Failed to upgrade contact method.';
+
+                throw new Error(message);
+            }
+
+            const data = await res.json().catch(() => ({}));
+
+            return { customToken: data?.customToken };
         },
 
         // --- Email backup ---

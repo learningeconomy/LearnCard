@@ -353,6 +353,38 @@ export const setRecoveryEmail = async (
     );
 };
 
+export const upgradeContactMethod = async (
+    oldContactMethod: ContactMethod,
+    newContactMethod: ContactMethod
+): Promise<boolean> => {
+    const collection = getUserKeysCollection();
+
+    // Check that the new contact method isn't already in use by another UserKey
+    const conflict = await collection.findOne({
+        'contactMethod.type': newContactMethod.type,
+        'contactMethod.value': newContactMethod.value,
+    });
+
+    if (conflict) {
+        return false;
+    }
+
+    const result = await collection.updateOne(
+        {
+            'contactMethod.type': oldContactMethod.type,
+            'contactMethod.value': oldContactMethod.value,
+        },
+        {
+            $set: {
+                contactMethod: newContactMethod,
+                updatedAt: new Date(),
+            },
+        }
+    );
+
+    return result.modifiedCount > 0;
+};
+
 export const deleteUserKey = async (contactMethod: ContactMethod): Promise<void> => {
     const collection = getUserKeysCollection();
 

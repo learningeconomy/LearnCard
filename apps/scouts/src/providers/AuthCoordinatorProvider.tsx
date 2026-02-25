@@ -30,6 +30,7 @@ import {
     Overlay,
     ErrorOverlay,
     StalledMigrationOverlay,
+    EmailLinkOverlay,
     QrLoginApprover,
     firebaseAuthStore,
     authStore,
@@ -287,7 +288,7 @@ interface ScoutsAuthCoordinatorProviderProps {
  *
  * Provides the enriched AppAuthContext to all children.
  */
-const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: AuthProvider | null }> = ({ children, authProvider }) => {
     const coordinator = useBaseAuthCoordinator();
     const firebaseUser = firebaseAuthStore.use.currentUser();
     const authConfig = getAuthConfig();
@@ -336,6 +337,46 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // --- Recovery method count (null = not yet checked) ---
     const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
+
+    // --- Phone→email upgrade gate ---
+    // Phone-only users must link an email before proceeding, but only when:
+    //   - The config flag requireEmailForPhoneUsers is true
+    //   - Key derivation is SSS (Web3Auth doesn't need email for recovery)
+    //   - Email backup share is enabled (the reason email is needed)
+    //   - The coordinator has reached 'ready' (don't interfere with setup/migration)
+    const [showEmailLinkGate, setShowEmailLinkGate] = useState(false);
+    const emailLinkPhoneRef = useRef<string | null>(null);
+    const emailUpgradeCompletedRef = useRef(false);
+    const emailUpgradeCustomTokenRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (emailUpgradeCompletedRef.current) return;
+
+        if (coordinator.state.status !== 'ready') {
+            setShowEmailLinkGate(false);
+            return;
+        }
+
+        const { requireEmailForPhoneUsers, enableEmailBackupShare } = authConfig;
+
+        if (
+            !requireEmailForPhoneUsers ||
+            !enableEmailBackupShare ||
+            !keyDerivation.capabilities.contactMethodUpgrade
+        ) {
+            setShowEmailLinkGate(false);
+            return;
+        }
+
+        const authUser = coordinator.state.authUser;
+
+        if (authUser?.phone && !authUser?.email) {
+            emailLinkPhoneRef.current = authUser.phone;
+            setShowEmailLinkGate(true);
+        } else {
+            setShowEmailLinkGate(false);
+        }
+    }, [coordinator.state, authConfig]);
 
     // --- Device link modal ---
     const [deviceLinkVisible, setDeviceLinkVisible] = useState(false);
@@ -593,6 +634,9 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
     useEffect(() => {
         if (coordinator.state.status !== 'ready' || walletInitRef.current) return;
 
+        // Block wallet init until phone-only user has linked an email
+        if (showEmailLinkGate) return;
+
         const { privateKey, did } = coordinator.state;
 
         walletInitRef.current = true;
@@ -675,7 +719,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
         };
 
         initializeWallet();
-    }, [coordinator.state, recoveryAuthProvider, keyDerivation]);
+    }, [coordinator.state, recoveryAuthProvider, keyDerivation, showEmailLinkGate]);
 
     // --- Reset wallet when coordinator leaves 'ready' ---
     useEffect(() => {
@@ -856,6 +900,121 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
                         onCancel={handleLogout}
                     />
                 </Overlay>
+            )}
+
+            {/* ── Phone→email upgrade gate ─────────────────────── */}
+            {showEmailLinkGate && (
+                <EmailLinkOverlay
+                    onSendCode={async (email: string) => {
+                        const { serverUrl } = authConfig;
+
+                        const res = await fetch(`${serverUrl}/send-login-verification-code`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email }),
+                        });
+
+                        const data = await res.json().catch(() => ({}));
+
+                        if (!data.success) {
+                            throw new Error(data.error || 'Failed to send verification code. Please try again.');
+                        }
+                    }}
+                    onVerifyCode={async (email: string, code: string) => {
+                        if (!keyDerivation.upgradeContactMethod) {
+                            throw new Error('Contact method upgrade is not supported by the current key derivation strategy.');
+                        }
+
+                        if (!authProvider) {
+                            throw new Error('No auth provider available.');
+                        }
+
+                        const token = await authProvider.getIdToken();
+
+                        const result = await keyDerivation.upgradeContactMethod(
+                            token,
+                            authProvider.getProviderType(),
+                            emailLinkPhoneRef.current ?? '',
+                            email,
+                            code
+                        );
+
+                        // Server returns a custom token because updateUser()
+                        // invalidates the client session. Stash it so
+                        // onComplete can re-authenticate before proceeding.
+                        const customToken = result && typeof result === 'object'
+                            ? result.customToken
+                            : undefined;
+
+                        if (customToken) {
+                            emailUpgradeCustomTokenRef.current = customToken;
+                        }
+                    }}
+                    onComplete={async () => {
+                        emailUpgradeCompletedRef.current = true;
+
+                        // Re-authenticate with the custom token issued by the
+                        // server after the account change. This restores the
+                        // client session that was invalidated by the email update.
+                        const customToken = emailUpgradeCustomTokenRef.current;
+                        let freshUser = authProvider
+                            ? await authProvider.getCurrentUser()
+                            : null;
+
+                        if (customToken && authProvider?.reauthenticateWithToken) {
+                            freshUser = await authProvider.reauthenticateWithToken(customToken);
+
+                            emailUpgradeCustomTokenRef.current = null;
+                        }
+
+                        // Update the app-specific store with the refreshed user.
+                        if (freshUser) {
+                            firebaseAuthStore.set.setFirebaseCurrentUser({
+                                uid: freshUser.id,
+                                email: freshUser.email ?? null,
+                                phoneNumber: freshUser.phone ?? null,
+                                displayName: firebaseUser?.displayName ?? null,
+                                photoUrl: firebaseUser?.photoUrl ?? null,
+                            });
+                        }
+
+                        // Re-split the key so all three shares (device, auth,
+                        // email) come from the same polynomial. Then store the
+                        // new device + auth shares and send the email share.
+                        const newEmail = freshUser?.email;
+
+                        if (
+                            newEmail &&
+                            authProvider &&
+                            coordinator.state.status === 'ready' &&
+                            keyDerivation.sendEmailBackupShare
+                        ) {
+                            try {
+                                const freshToken = await authProvider.getIdToken();
+                                const pk = coordinator.state.privateKey;
+                                const did = coordinator.state.did;
+                                const vpJwt = await signDidAuthVp(pk);
+
+                                const { localKey, remoteKey } = await keyDerivation.splitKey(pk);
+
+                                await keyDerivation.storeLocalKey(localKey);
+
+                                await keyDerivation.storeAuthShare(
+                                    freshToken, authProvider.getProviderType(), remoteKey, did, vpJwt
+                                );
+
+                                await keyDerivation.sendEmailBackupShare(
+                                    freshToken, authProvider.getProviderType(), pk, newEmail
+                                );
+                            } catch (e) {
+                                console.warn('Email backup share after upgrade failed (non-fatal):', e);
+                            }
+                        }
+
+                        setShowEmailLinkGate(false);
+                    }}
+                    onLogout={handleLogout}
+                />
             )}
 
             {/* ── Stalled migration overlay ────────────────────── */}
@@ -1061,6 +1220,11 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
         return createFirebaseAuthProvider({
             getAuth: () => auth(),
             user: firebaseUser,
+            onReauthenticate: async (token: string) => {
+                const { signInWithCustomToken } = await import('firebase/auth');
+
+                await signInWithCustomToken(auth(), token);
+            },
             onSignOut: async () => {
                 // Sign out the web Firebase layer
                 const firebaseAuth = auth();
@@ -1163,7 +1327,7 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
             // Always enabled — switch backends via VITE_KEY_DERIVATION env var.
             enabled={true}
         >
-            <AuthSessionManager>
+            <AuthSessionManager authProvider={authProvider}>
                 {children}
             </AuthSessionManager>
         </BaseAuthCoordinatorProvider>
