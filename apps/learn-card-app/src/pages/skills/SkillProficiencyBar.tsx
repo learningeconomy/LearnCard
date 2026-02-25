@@ -200,7 +200,7 @@ const SkillProficiencyBar: React.FC<SkillProficiencyBarProps> = ({
     }, [currentIndex, isDragging, isDisplayMode]);
 
     useEffect(() => {
-        if (proficiencyLevel && proficiencyLevel !== skillLevel && !isDisplayMode) {
+        if (proficiencyLevel !== undefined && proficiencyLevel !== skillLevel && !isDisplayMode) {
             setSkillLevel(proficiencyLevel);
         }
     }, [proficiencyLevel, isDisplayMode]);
