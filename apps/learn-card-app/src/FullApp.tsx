@@ -1,10 +1,9 @@
-import React, { useRef, Suspense } from 'react';
+import React, { Suspense } from 'react';
 import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import useFeedbackWidget from './hooks/useFeedbackWidget';
 import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
@@ -146,10 +145,6 @@ const FullApp: React.FC = () => {
     useSQLiteInitWeb(); // initializes SQLite on web
     sqliteInit(); // initializes SQLite on native
     const showScannerOverlay = QRCodeScannerStore?.use?.showScanner();
-    const buttonRef = useRef(null);
-    const isSentryEnabled = SENTRY_ENV && SENTRY_ENV !== 'development';
-
-    useFeedbackWidget({ buttonRef });
 
     return (
         <PersistQueryClientProvider
@@ -175,14 +170,7 @@ const FullApp: React.FC = () => {
                                 <QRCodeScannerListener />
 
                                 {showScannerOverlay && <QRCodeScannerOverlay />}
-                                {isSentryEnabled && (
-                                    <button
-                                        className="sentry-feedback-widget-btn z-[99999999999999]"
-                                        ref={buttonRef}
-                                    >
-                                        <p>Feedback</p>
-                                    </button>
-                                )}
+                                
                                 <AuthKeyDebugWidget />
                             </IonApp>
                             </ModalsProvider>

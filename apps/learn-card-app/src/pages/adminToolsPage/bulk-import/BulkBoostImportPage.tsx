@@ -1,6 +1,5 @@
 import React, { useRef, useState, useMemo } from 'react';
 import Papa from 'papaparse';
-import JSZip from 'jszip';
 import { useHistory } from 'react-router-dom';
 import {
     useModal,
@@ -220,6 +219,7 @@ const BulkBoostImportPage: React.FC = () => {
 
         try {
             setIsLoading(true);
+            const JSZip = (await import('jszip')).default;
             const zip = new JSZip();
             const zipContents = await zip.loadAsync(file);
             const imageMap = new Map<string, Blob>();

@@ -25,7 +25,7 @@ import {
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 
-import HourGlass from '../../../assets/lotties/hourglass.json';
+const HourGlass = '/lotties/hourglass.json';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import BoostSelectCategoryMenu from './BoostSelectCategoryMenu';
 
@@ -234,7 +234,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                                 <div className="max-w-[150px] min-h-[150px]">
                                     <Lottie
                                         loop
-                                        animationData={HourGlass}
+                                        path={HourGlass}
                                         play
                                         style={{ width: '100%', height: '100%' }}
                                     />

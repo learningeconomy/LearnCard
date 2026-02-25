@@ -2,11 +2,11 @@ import React from 'react';
 import { useStore } from '@nanostores/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
 import { ProfilePicture } from 'learn-card-base';
 import MessageWithArtifact from './MessageWithArtifact';
 import { AiInsightsIconWithShape } from 'learn-card-base/svgs/wallet/AiInsightsIcon';
 import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
-import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/MarkdownRenderer';
 
 import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 import { isTyping } from 'learn-card-base/stores/nanoStores/chatStore';

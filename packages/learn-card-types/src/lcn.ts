@@ -360,7 +360,13 @@ const SendBoostTemplateValidator = BoostValidator.partial()
         credential: VCValidator.or(UnsignedVCValidator),
         claimPermissions: BoostPermissionsValidator.partial().optional(),
         skills: z
-            .array(z.object({ frameworkId: z.string(), id: z.string() }))
+            .array(
+                z.object({
+                    frameworkId: z.string(),
+                    id: z.string(),
+                    proficiencyLevel: z.number().optional(),
+                })
+            )
             .min(1)
             .optional(),
     });

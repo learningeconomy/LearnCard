@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { cloneDeep, isEqual } from 'lodash';
+import { cloneDeep, isEqual } from 'lodash-es';
 import { Updater, useImmer } from 'use-immer';
 
 import {

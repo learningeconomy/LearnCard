@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { IonRadio, IonRadioGroup, IonInput } from '@ionic/react';
 import { useQueryClient } from '@tanstack/react-query';
-import _ from 'lodash';
+import _ from 'lodash-es';
 
 import GenericLoader from '../../../components/generic/GenericLoader';
 import AdminToolsModalFooter from '../AdminToolsModal/AdminToolsModalFooter';

@@ -14,7 +14,7 @@ import {
 
 import { getUniqueId } from 'learn-card-base/helpers/credentials/ids';
 import Lottie from 'react-lottie-player';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+const HourGlass = '/lotties/hourglass.json';
 
 import { chapiStore, redirectStore } from 'learn-card-base';
 
@@ -221,7 +221,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                                 <div className="max-w-[500px]">
                                     <Lottie
                                         loop
-                                        animationData={HourGlass}
+                                        path={HourGlass}
                                         play
                                         style={{ width: '100%', height: '100%' }}
                                     />

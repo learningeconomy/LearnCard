@@ -1,8 +1,8 @@
 import ChatGPTAppBG from '../../assets/images/chatGpt-app-bg.png';
 
-import { LaunchPadAppListItem } from 'learn-card-base';
+import { LaunchPadAppListItem, LEARNCARD_AI_URL } from 'learn-card-base';
 import { isProductionNetwork } from 'learn-card-base/helpers/networkHelpers';
-import { LEARNCARD_NETWORK_URL, LEARNCARD_AI_URL } from 'learn-card-base/constants/Networks';
+import { LEARNCARD_NETWORK_URL } from 'learn-card-base/constants/Networks';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 // this is an internal app ranking

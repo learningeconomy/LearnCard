@@ -9,7 +9,7 @@ import { IonCol } from '@ionic/react';
 import Lottie from 'react-lottie-player';
 import { BoostSmallCard } from '@learncard/react';
 import { ErrorBoundary } from 'react-error-boundary';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+const HourGlass = '/lotties/hourglass.json';
 import FamilyCard from '../../familyCMS/FamilyCard/FamilyCard';
 import { BoostIssuanceLoading } from '../boostLoader/BoostLoader';
 import CustomManagedBoostButton from './helpers/CustomManagedBoostButton';
@@ -170,7 +170,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                 <div className="max-w-[50px]">
                     <Lottie
                         loop
-                        animationData={HourGlass}
+                        path={HourGlass}
                         play
                         style={{ width: '100%', height: '100%' }}
                     />

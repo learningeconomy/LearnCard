@@ -80,7 +80,7 @@ export const LoginContent: React.FC = () => {
     const isWeb = !Capacitor.isNativePlatform();
 
     const { mutateAsync: generatePinUpdateToken } = useGeneratePinUpdateToken();
-    const { data: preferences, refetch: refetchPreferences } = useGetPreferencesForDid();
+    const { data: preferences, refetch: refetchPreferences } = useGetPreferencesForDid(isLoggedIn);
 
     const fetchPreferences = useCallback(async () => {
         try {

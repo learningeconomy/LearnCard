@@ -1,4 +1,5 @@
 import React from 'react';
+import { useHistory } from 'react-router-dom';
 
 import { IonCol } from '@ionic/react';
 import SeedPhraseModal from './SeedPhraseModal';
@@ -17,6 +18,7 @@ import { ModalTypes, useModal } from 'learn-card-base';
 const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
     hideSelfCustodialLogin = false,
 }) => {
+    const history = useHistory();
     const { newModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.FullScreen,
@@ -71,6 +73,15 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                     >
                         Learn More
                     </a>
+                    <button
+                        onClick={e => {
+                            e.preventDefault();
+                            history.push('/ai/pathways/discovery');
+                        }}
+                        className="flex items-center text-emerald-100 font-bold text-xs hover:underline"
+                    >
+                        Explore Pathways
+                    </button>
                 </IonCol>
                 {!hideSelfCustodialLogin && (
                     <IonCol

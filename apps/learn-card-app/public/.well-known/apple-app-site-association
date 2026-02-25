@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "AW9L6U5B2L.com.learncard.app",
+        "appID": "5JB5D53PRR.com.learncard.app",
         "paths": ["*", "/uni/*"]
       }
     ]
