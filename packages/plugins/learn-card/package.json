@@ -40,5 +40,6 @@
         "@learncard/didkit-plugin": "workspace:^",
         "@learncard/types": "workspace:*",
         "date-fns": "^2.28.0"
-    }
+    },
+    "sideEffects": false
 }

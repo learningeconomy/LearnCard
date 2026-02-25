@@ -652,7 +652,7 @@ export const getAppSlugFromDidWeb = (did?: string) => {
 
 // Re-export isAppDidWeb from @learncard/helpers to maintain single source of truth
 export { isAppDidWeb } from '@learncard/helpers';
-const getFallBackImage = (credCategory: string) => {
+export const getFallBackImage = (credCategory: string) => {
     if (credCategory === 'Skill') return 'https://cdn.filestackcontent.com/pzfIWTKQTAuuzvLrySGX';
     if (credCategory === 'Experiences')
         return 'https://cdn.filestackcontent.com/5r2T383T0mic3wrSbi3W';

@@ -34,6 +34,7 @@ const SideMenuSecondaryLinks: React.FC<{
 
     const canCreateFamilies = hasFamilyID || flags?.canCreateFamilies;
     const showAiInsights = flags?.showAiInsights;
+    const hideAiPathways = flags?.hideAiPathways;
 
     const activeTextStyles = colors.linkActiveColor; // text colors
     const inactiveTextStyles = colors.linkInactiveColor;
@@ -95,6 +96,10 @@ const SideMenuSecondaryLinks: React.FC<{
 
         if (link?.path === '/ai/insights' && !showAiInsights)
             return <React.Fragment key={link.path}></React.Fragment>;
+
+        if (link?.path === '/ai/pathways' && hideAiPathways) {
+            return <React.Fragment key={link.path}></React.Fragment>;
+        }
 
         const IconComponent = iconSet[link.id as keyof typeof iconSet];
 

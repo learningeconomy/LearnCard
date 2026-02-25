@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { Capacitor } from '@capacitor/core';
 import { Media } from '@capacitor-community/media';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -94,6 +92,7 @@ const QrCodeUserCardShareOptions: React.FC<{
 
         try {
             setIsSavingPng(true);
+            const html2canvas = (await import('html2canvas')).default;
             const canvas = await html2canvas(element, {
                 scale: 2,
                 useCORS: true,
@@ -147,12 +146,14 @@ const QrCodeUserCardShareOptions: React.FC<{
 
         try {
             setIsSavingPdf(true);
+            const html2canvas = (await import('html2canvas')).default;
             const canvas = await html2canvas(element, {
                 useCORS: true,
             });
 
             const imgData = canvas.toDataURL('image/png');
 
+            const { jsPDF } = await import('jspdf');
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'mm',

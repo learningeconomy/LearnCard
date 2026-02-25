@@ -13,6 +13,7 @@
     "license": "MIT",
     "devDependencies": {
         "@esbuild-plugins/node-resolve": "^0.1.4",
+        "@learncard/lca-api-service": "workspace:*",
         "@learncard/types": "workspace:*",
         "dts-bundle-generator": "^6.10.0",
         "esbuild": "^0.27.1",
@@ -21,8 +22,7 @@
         "typescript": "^5.5.4"
     },
     "dependencies": {
-        "@trpc/client": "11.3.0",
-        "@learncard/lca-api-service": "workspace:*"
+        "@trpc/client": "11.3.0"
     },
     "repository": {
         "type": "git",
@@ -31,5 +31,6 @@
     "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/lca-api-client/README.md",
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"
-    }
+    },
+    "sideEffects": false
 }

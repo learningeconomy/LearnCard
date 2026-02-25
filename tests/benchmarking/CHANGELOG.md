@@ -1,5 +1,12 @@
 # @learncard/benchmarking
 
+## 1.0.5
+
+### Patch Changes
+
+-   Updated dependencies [[`f05491d71c2499f80ad20d75fccb60fc15eedb91`](https://github.com/learningeconomy/LearnCard/commit/f05491d71c2499f80ad20d75fccb60fc15eedb91)]:
+    -   @learncard/init@2.3.4
+
 ## 1.0.4
 
 ### Patch Changes

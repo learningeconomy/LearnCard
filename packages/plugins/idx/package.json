@@ -43,5 +43,6 @@
         "@learncard/ceramic-plugin": "workspace:^",
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*"
-    }
+    },
+    "sideEffects": false
 }

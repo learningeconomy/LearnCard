@@ -47,5 +47,6 @@
     "dependencies": {
         "@learncard/simple-signing-client": "workspace:*",
         "isomorphic-webcrypto": "^2.3.8"
-    }
+    },
+    "sideEffects": false
 }

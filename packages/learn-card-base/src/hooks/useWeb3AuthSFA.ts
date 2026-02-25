@@ -1,16 +1,13 @@
 import { useState } from 'react';
-import { Web3Auth } from '@web3auth/single-factor-auth';
+import type { Web3Auth } from '@web3auth/single-factor-auth';
 import { useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 
 import {
-    CHAIN_NAMESPACES,
-    ADAPTER_EVENTS,
-    CONNECTED_EVENT_DATA,
     IProvider,
     UserInfo,
 } from '@web3auth/base';
-import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
+import type { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 import { getWeb3AuthNetworkConfig } from 'learn-card-base/constants/web3AuthConfig';
 
 import useWallet from 'learn-card-base/hooks/useWallet';
@@ -53,8 +50,9 @@ export const useWeb3AuthSFA = () => {
         return privateKey as string;
     };
 
-    const subscribeAuthEvents = (web3auth: Web3Auth) => {
-        web3auth.on(ADAPTER_EVENTS.CONNECTED, async (_data: CONNECTED_EVENT_DATA) => {
+    const subscribeAuthEvents = async (web3auth: Web3Auth) => {
+        const { ADAPTER_EVENTS } = await import('@web3auth/base');
+        web3auth.on(ADAPTER_EVENTS.CONNECTED, async (_data) => {
             if (web3auth && !loggingOut) {
                 const user: Partial<UserInfo> = await web3auth.getUserInfo();
 
@@ -126,6 +124,10 @@ export const useWeb3AuthSFA = () => {
     };
 
     const web3AuthSFAInit = async (branding = BrandingEnum.learncard) => {
+        const { Web3Auth } = await import('@web3auth/single-factor-auth');
+        const { EthereumPrivateKeyProvider } = await import('@web3auth/ethereum-provider');
+        const { CHAIN_NAMESPACES } = await import('@web3auth/base');
+
         const web3AuthNetworkConfig = getWeb3AuthNetworkConfig(branding);
 
         // Initializing Ethereum Provider
@@ -151,7 +153,7 @@ export const useWeb3AuthSFA = () => {
             usePnPKey: true, // Setting this to true returns the same key as PnP Web SDK, By default, this SDK returns CoreKitKey.
         });
 
-        subscribeAuthEvents(web3authSfa);
+        await subscribeAuthEvents(web3authSfa);
         web3AuthStore.set.web3Auth(web3authSfa);
 
         await web3authSfa.init();

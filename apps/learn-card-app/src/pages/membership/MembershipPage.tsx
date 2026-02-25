@@ -7,7 +7,7 @@ import BoostErrorsDisplay, {
 
 import { IonContent, IonPage } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
-import HourGlass from '../../assets/lotties/hourglass.json';
+const HourGlass = '/lotties/hourglass.json';
 
 import { categoryMetadata, useGetBoosts, usePathQuery } from 'learn-card-base';
 import {
@@ -134,7 +134,7 @@ const MembershipPage: React.FC = () => {
                                     <div className="max-w-[280px] mt-[-40px]">
                                         <Lottie
                                             loop
-                                            animationData={HourGlass}
+                                            path={HourGlass}
                                             play
                                             style={{ width: '100%', height: '100%' }}
                                         />
@@ -170,7 +170,7 @@ const MembershipPage: React.FC = () => {
                                     <div className="max-w-[280px] mt-[-10px]">
                                         <Lottie
                                             loop
-                                            animationData={HourGlass}
+                                            path={HourGlass}
                                             play
                                             style={{ width: '100%', height: '100%' }}
                                         />

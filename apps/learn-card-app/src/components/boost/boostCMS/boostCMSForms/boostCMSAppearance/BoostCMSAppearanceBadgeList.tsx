@@ -14,7 +14,7 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 import { IonCol, IonGrid, IonRow, IonSpinner } from '@ionic/react';
 import TransparentGrid from 'learn-card-base/assets/images/transparent-grid.png';
 import Camera from 'learn-card-base/svgs/Camera';
-import HourGlass from '../../../../../assets/lotties/hourglass.json';
+const HourGlass = '/lotties/hourglass.json';
 import TrashBin from '../../../../svgs/TrashBin';
 import Lottie from 'react-lottie-player';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
@@ -330,7 +330,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                         <div className="max-w-[160px] m-auto flex justify-center">
                             <Lottie
                                 loop
-                                animationData={HourGlass}
+                                path={HourGlass}
                                 play
                                 style={{ width: '100%', height: '100%' }}
                             />
