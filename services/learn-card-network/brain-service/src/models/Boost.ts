@@ -4,7 +4,7 @@ import { BoostPermissions } from '@learncard/types';
 import { neogma } from '@instance';
 
 import { Profile, ProfileInstance } from './Profile';
-import { FlatBoostType, BoostStatus } from 'types/boost';
+import { FlatBoostType, BoostStatus, BoostVisibility } from 'types/boost';
 import { Role, RoleInstance } from './Role';
 import { SkillFramework, SkillFrameworkInstance } from './SkillFramework';
 import { Skill, SkillInstance } from './Skill';
@@ -53,6 +53,7 @@ export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
             autoConnectRecipients: { type: 'boolean', required: false },
             boost: { type: 'string', required: true },
             status: { type: 'string', enum: BoostStatus.options, required: false },
+            visibility: { type: 'string', enum: BoostVisibility.options, required: false },
             allowAnyoneToCreateChildren: { type: 'boolean', required: false },
         },
         primaryKeyField: 'id',

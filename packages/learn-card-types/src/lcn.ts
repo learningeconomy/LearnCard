@@ -241,12 +241,16 @@ export type PaginatedClaimHooksType = z.infer<typeof PaginatedClaimHooksValidato
 export const LCNBoostStatus = z.enum(['DRAFT', 'PROVISIONAL', 'LIVE']);
 export type LCNBoostStatusEnum = z.infer<typeof LCNBoostStatus>;
 
+export const LCNBoostVisibility = z.enum(['PRIVATE', 'PUBLIC']);
+export type LCNBoostVisibilityEnum = z.infer<typeof LCNBoostVisibility>;
+
 export const BoostValidator = z.object({
     uri: z.string(),
     name: z.string().optional(),
     type: z.string().optional(),
     category: z.string().optional(),
     status: LCNBoostStatus.optional(),
+    visibility: LCNBoostVisibility.optional(),
     autoConnectRecipients: z.boolean().optional(),
     meta: z.record(z.string(), z.any()).optional(),
     claimPermissions: BoostPermissionsValidator.optional(),
@@ -263,6 +267,7 @@ const BaseBoostQueryValidator = z
         category: StringQuery,
         meta: z.record(z.string(), StringQuery),
         status: LCNBoostStatus.or(z.object({ $in: LCNBoostStatus.array() })),
+        visibility: LCNBoostVisibility.or(z.object({ $in: LCNBoostVisibility.array() })),
         autoConnectRecipients: z.boolean(),
     })
     .partial();
