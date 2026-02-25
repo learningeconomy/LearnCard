@@ -31,10 +31,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
     const { data: credentialPages, isLoading } = useGetCredentialList(sectionKey as any);
 
     const records = credentialPages?.pages?.flatMap(page => page?.records ?? []) ?? [];
-    const totalCount = records.length;
     const selectedCount = selected.length;
-    const showNavigation = totalCount > 1;
-
     const handleSwiperUpdate = (swiper: any) => {
         setAtBeginning(swiper.isBeginning);
         setAtEnd(swiper.isEnd);
@@ -60,17 +57,17 @@ export const ResumeConfigCredentialSelector: React.FC<{
                 />
             </button>
             {open && (
-                <div className="pb-4 pl-4">
+                <div className="pb-4">
                     {isLoading && (
                         <p className="text-xs text-grayscale-400 px-4 mb-2">Loading credentials…</p>
                     )}
-                    {!isLoading && totalCount === 0 && (
+                    {!isLoading && records.length === 0 && (
                         <p className="text-xs text-grayscale-400 px-4 mb-2">
                             No credentials in this category.
                         </p>
                     )}
-                    {!isLoading && totalCount > 0 && (
-                        <div className="relative">
+                    {!isLoading && records.length > 0 && (
+                        <div className="relative px-4">
                             <Swiper
                                 onSwiper={swiper => {
                                     swiperRef.current = swiper;
@@ -90,6 +87,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
                                 grabCursor={true}
                                 preventClicks={false}
                                 preventClicksPropagation={false}
+                                style={{ overflow: 'visible' }}
                             >
                                 {records.map((record, index) => {
                                     const isSelected = selected.includes(record.uri);
@@ -120,21 +118,23 @@ export const ResumeConfigCredentialSelector: React.FC<{
                                 })}
                             </Swiper>
 
-                            {showNavigation && !atBeginning && (
+                            {!atBeginning && (
                                 <button
                                     onClick={() => swiperRef.current?.slidePrev()}
-                                    className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
-                                    style={{ opacity: 0.8 }}
+                                    aria-label="Previous credential"
+                                    className="absolute top-1/2 left-0 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-[1101] shadow-md hover:bg-gray-200 transition-all duration-200"
+                                    style={{ opacity: 0.85 }}
                                 >
                                     <SlimCaretLeft className="w-5 h-auto" />
                                 </button>
                             )}
 
-                            {showNavigation && !atEnd && (
+                            {(!atBeginning || records.length > 2) && (
                                 <button
                                     onClick={() => swiperRef.current?.slideNext()}
-                                    className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
-                                    style={{ opacity: 0.8 }}
+                                    aria-label="Next credential"
+                                    className="absolute top-1/2 right-0 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-[1101] shadow-md hover:bg-gray-200 transition-all duration-200"
+                                    style={{ opacity: atEnd ? 0.35 : 0.85 }}
                                 >
                                     <SlimCaretRight className="w-5 h-auto" />
                                 </button>
