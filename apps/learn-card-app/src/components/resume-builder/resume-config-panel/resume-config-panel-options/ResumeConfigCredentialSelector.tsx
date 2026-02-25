@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 
 import BoostEarnedCard from '../../../boost/boost-earned-card/BoostEarnedCard';
@@ -28,24 +28,12 @@ export const ResumeConfigCredentialSelector: React.FC<{
     const toggleCredential = resumeBuilderStore.set.toggleCredential;
     const selected = (credentialEntries[sectionKey] ?? []).map(e => e.uri);
 
-    const { data: credentialPages, isLoading } = useGetCredentialList(sectionKey as any, open);
+    const { data: credentialPages, isLoading } = useGetCredentialList(sectionKey as any);
 
     const records = credentialPages?.pages?.flatMap(page => page?.records ?? []) ?? [];
     const totalCount = records.length;
     const selectedCount = selected.length;
     const showNavigation = totalCount > 1;
-
-    const preselected = useRef(false);
-    useEffect(() => {
-        if (preselected.current) return;
-        if (isLoading || records.length === 0) return;
-        if (selected.length > 0) {
-            preselected.current = true;
-            return;
-        }
-        records.slice(0, 2).forEach(record => toggleCredential(sectionKey, record.uri));
-        preselected.current = true;
-    }, [isLoading, records]);
 
     const handleSwiperUpdate = (swiper: any) => {
         setAtBeginning(swiper.isBeginning);

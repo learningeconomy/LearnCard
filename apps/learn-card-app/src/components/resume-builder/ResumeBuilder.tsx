@@ -9,8 +9,11 @@ import ResumeConfigOverlayPanel from './resume-config-panel/ResumeConfigOverlayP
 import ResumeConfigDesktopSidePanel from './resume-config-panel/ResumeConfigDesktopSidePanel';
 
 import { useDeviceTypeByWidth, useModal, ModalTypes } from 'learn-card-base';
+import { useResumePreselection } from './useResumePreselection';
 
 export const ResumeBuilder: React.FC = () => {
+    useResumePreselection();
+
     const { newModal } = useModal({ mobile: ModalTypes.FullScreen });
     const resumePreviewRef = useRef<ResumePreviewHandle>(null);
     const { isMobile } = useDeviceTypeByWidth();
