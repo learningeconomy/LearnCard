@@ -61,14 +61,7 @@ const StateValidator = z.object({
         .min(1, 'Date of birth is required!')
         .refine(dob => !Number.isNaN(calculateAge(dob)), {
             message: 'Invalid date of birth.',
-        })
-        .refine(
-            dob => {
-                const age = calculateAge(dob);
-                return !Number.isNaN(age) && age < 18;
-            },
-            { message: 'Child must be under 18 years old.' }
-        ),
+        }),
 });
 
 export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
