@@ -1,6 +1,5 @@
 import React from 'react';
-import { Capacitor } from '@capacitor/core';
-import { useDeviceTypeByWidth } from 'learn-card-base';
+import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 
 export type OnboardingSlideProps = {
     icon: string;
@@ -8,12 +7,11 @@ export type OnboardingSlideProps = {
     bgColor: string;
     boldText: string;
     regularText: string;
+    over13Text?: string;
     image: string;
     imageAlt: string;
     roleTitle?: string;
-    handlePrevSlide: () => void;
-    handleNextSlide: () => void;
-    isLastSlide?: boolean;
+    dob?: string | null;
 };
 
 const OnboardingSlide: React.FC<OnboardingSlideProps> = ({
@@ -22,20 +20,20 @@ const OnboardingSlide: React.FC<OnboardingSlideProps> = ({
     bgColor,
     boldText,
     regularText,
+    over13Text,
     image,
     imageAlt,
     roleTitle,
-    handleNextSlide,
-    isLastSlide,
+    dob,
 }) => {
-    const isNativePlatform = Capacitor?.isNativePlatform();
-    const { isMobile } = useDeviceTypeByWidth();
+    const age = dob ? calculateAge(dob) : Number.NaN;
+
     return (
         <div
             className={`relative h-full w-full ${bgColor} flex flex-col items-center justify-center`}
         >
             <span
-                className="flex shrink-0 items-center justify-center h-[30px] w-[30px] rounded-full my-[10px]"
+                className="flex shrink-0 items-center justify-center h-[30px] w-[30px] rounded-full mb-[10px]"
                 style={{ backgroundColor: iconBgColor }}
             >
                 <img
@@ -49,25 +47,11 @@ const OnboardingSlide: React.FC<OnboardingSlideProps> = ({
                     }}
                 />
             </span>
-            <p className="font-poppins text-[17px] text-grayscale-900 mb-[10px]">
-                <span className="font-semibold">{boldText}</span> {regularText}
+            <p className="font-poppins text-[17px] text-grayscale-900 mb-[5px] mx-[5px]">
+                <span className="font-semibold">{boldText}</span>{' '}
+                {age >= 13 && over13Text ? over13Text : regularText}
             </p>
-            <img className="mb-[20px]" src={image} alt={imageAlt} />
-            {!isNativePlatform && !isMobile && (
-                <button
-                    className="mt-[20px] border-[1px] border-grayscale-800 border-solid bg-white w-[335px] py-[10px] rounded-[40px] text-grayscale-800 font-poppins font-semibold text-[17px]"
-                    onClick={handleNextSlide}
-                >
-                    {isLastSlide ? 'Get Started' : 'Next'}
-                </button>
-            )}
-            {isNativePlatform && (
-                <section className="absolute bottom-[50px]">
-                    <p className={`font-montserrat px-[15px] py-[8px] text-grayscale-900`}>
-                        Swipe to continue
-                    </p>
-                </section>
-            )}
+            <img className="!h-[400px] desktop:!h-[500px]" src={image} alt={imageAlt} />
         </div>
     );
 };
