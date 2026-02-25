@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 2.3.4
+
+### Patch Changes
+
+-   [#1023](https://github.com/learningeconomy/LearnCard/pull/1023) [`f05491d71c2499f80ad20d75fccb60fc15eedb91`](https://github.com/learningeconomy/LearnCard/commit/f05491d71c2499f80ad20d75fccb60fc15eedb91) Thanks [@Custard7](https://github.com/Custard7)! - fix: Eth dynamic import
+
+-   Updated dependencies [[`5b76830d328bd38b4f184458414ef478c9cc118a`](https://github.com/learningeconomy/LearnCard/commit/5b76830d328bd38b4f184458414ef478c9cc118a), [`16e891c1da6128d54c9b8abc051ae11141a0b644`](https://github.com/learningeconomy/LearnCard/commit/16e891c1da6128d54c9b8abc051ae11141a0b644)]:
+    -   @learncard/network-plugin@2.10.2
+    -   @learncard/ethereum-plugin@1.1.7
+
 ## 2.3.3
 
 ### Patch Changes

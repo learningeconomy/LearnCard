@@ -147,6 +147,14 @@ async function callAppleMigrationApi(
 
     if (!response.ok) {
         const body = await response.text();
+
+        if (retryCount === 0) {
+            console.error(`\n   DEBUG request params: ${JSON.stringify(Object.fromEntries(Object.entries(params).map(([k, v]) => [k, k === 'client_secret' ? v.slice(0, 30) + '...' : v])))}`);
+            console.error(`   DEBUG endpoint: ${APPLE_MIGRATION_ENDPOINT}`);
+            console.error(`   DEBUG status: ${response.status}`);
+            console.error(`   DEBUG body: ${body}\n`);
+        }
+
         throw new Error(`Apple API error ${response.status}: ${body}`);
     }
 
@@ -178,14 +186,12 @@ async function getTransferSub(
 
 async function exchangeTransferSub(
     transferSub: string,
-    targetTeamId: string,
     clientId: string,
     clientSecret: string,
     accessToken: string
 ): Promise<string> {
     const result = await callAppleMigrationApi({
         transfer_sub: transferSub,
-        target: targetTeamId,
         client_id: clientId,
         client_secret: clientSecret,
     }, accessToken);
@@ -484,6 +490,14 @@ async function postTransfer(options: PostTransferOptions): Promise<void> {
         privateKey
     );
 
+    // DEBUG: decode JWT to verify claims
+    const jwtParts = clientSecret.split('.');
+
+    if (jwtParts[1]) {
+        const decoded = JSON.parse(Buffer.from(jwtParts[1], 'base64url').toString());
+        console.log('   DEBUG JWT payload:', JSON.stringify(decoded, null, 2));
+    }
+
     // 3. Get access token
     console.log('3. Obtaining access token from Apple...\n');
 
@@ -504,7 +518,6 @@ async function postTransfer(options: PostTransferOptions): Promise<void> {
         try {
             const newAppleSub = await exchangeTransferSub(
                 record.transferSub,
-                targetTeamId,
                 appleClientId,
                 clientSecret,
                 accessToken
