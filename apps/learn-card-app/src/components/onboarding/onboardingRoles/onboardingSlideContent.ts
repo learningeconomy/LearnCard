@@ -34,6 +34,7 @@ import teacherSlide4 from './onboardingRolesSlidesImages/teacher-slide4.png';
 export type SlideContent = {
     boldText: string;
     regularText: string;
+    over13Text?: string;
     image: string;
     imageAlt: string;
 };
@@ -52,9 +53,9 @@ export const roleSlideContent: Partial<Record<LearnCardRolesEnum, RoleSlideConfi
         bgColor: 'bg-teal-50',
         slides: [
             {
-                // TODO: Add over13 text difference!!!
                 boldText: 'Capture',
                 regularText: 'your learning wherever it happens',
+                over13Text: 'your learning & work experiences',
                 image: learnerSlide1,
                 imageAlt: 'Achievement page with credentials',
             },
