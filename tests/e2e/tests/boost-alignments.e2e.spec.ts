@@ -299,6 +299,7 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
 
         // 3) Create a boost with skill attachments in a single call
         const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
+            visibility: 'PUBLIC',
             skills: [
                 { frameworkId: fwId, id: parentSkillIdSynced },
                 { frameworkId: fwId, id: childSkillIdSynced },

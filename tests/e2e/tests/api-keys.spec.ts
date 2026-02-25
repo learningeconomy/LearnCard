@@ -539,6 +539,7 @@ describe('API Key LearnCard Method Permissions', () => {
             name: 'claimable-boost',
             type: 'achievement',
             category: 'Achievement',
+            visibility: 'PUBLIC',
         });
 
         const sa = await seedA.invoke.createSigningAuthority('test-sa');
@@ -1193,6 +1194,7 @@ describe('API Key LearnCard Method Permissions', () => {
             name: 'claimable-boost',
             type: 'achievement',
             category: 'Achievement',
+            visibility: 'PUBLIC',
         });
 
         const claimLinkSA = { endpoint: 'https://test-sa.example.com', name: 'test-sa' };
