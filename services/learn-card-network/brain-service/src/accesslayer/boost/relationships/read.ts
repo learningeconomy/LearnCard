@@ -596,9 +596,10 @@ export const canProfileViewBoost = async (
         .with('COLLECT(parents) + COLLECT(target) AS boosts')
         .match({ identifier: 'profile', model: Profile, where: { profileId: profile.profileId } })
         .where(
-            `ANY(boost IN boosts WHERE EXISTS((profile)-[:${
-                Boost.getRelationshipByAlias('hasRole').name
-            }]-(boost)))`
+            `ANY(boost IN boosts WHERE
+                EXISTS((profile)-[:${Boost.getRelationshipByAlias('hasRole').name}]-(boost)) OR
+                EXISTS((boost)<-[:INSTANCE_OF]-(:Credential)-[:CREDENTIAL_RECEIVED]->(profile))
+            )`
         );
     const result = await query.return('count(profile) AS count, boosts').run();
 
