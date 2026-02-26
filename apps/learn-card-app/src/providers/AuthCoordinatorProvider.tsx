@@ -31,14 +31,21 @@ import {
     useAuthCoordinator as useBaseAuthCoordinator,
     useAuthCoordinatorAutoSetup,
     createFirebaseAuthProvider,
+    createFirebaseSignInAdapter,
     createWeb3AuthStrategy,
     registerKeyDerivationFactory,
+    registerAuthProviderFactory,
+    registerSignInAdapterFactory,
     resolveKeyDerivation,
+    resolveAuthProvider,
+    SignInAdapterProvider,
     firebaseAuthStore,
+    authUserStore,
     authStore,
     getAuthConfig,
     type AuthCoordinatorContextValue,
     type AuthProvider,
+    type AuthUser,
     type DebugEventLevel,
     type KeyDerivationStrategy,
 } from 'learn-card-base';
@@ -69,6 +76,7 @@ import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorag
 import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
 import { auth } from '../firebase/firebase';
+import { FIREBASE_REDIRECT_URL } from '../constants/web3AuthConfig';
 
 import {
     emitAuthDebugEvent,
@@ -222,6 +230,48 @@ registerKeyDerivationFactory('web3auth', () => {
     });
 });
 
+registerAuthProviderFactory('firebase', () =>
+    createFirebaseAuthProvider({
+        getAuth: () => auth(),
+        onReauthenticate: async (token: string) => {
+            const { signInWithCustomToken } = await import('firebase/auth');
+
+            await signInWithCustomToken(auth(), token);
+        },
+        onSignOut: async () => {
+            const firebaseAuth = auth();
+            await firebaseAuth.signOut();
+
+            if (Capacitor.isNativePlatform()) {
+                try {
+                    await FirebaseAuthentication.signOut();
+                } catch (e) {
+                    console.warn('Native FirebaseAuthentication.signOut failed', e);
+                }
+            }
+
+            firebaseAuthStore.set.firebaseAuth(null);
+            authUserStore.set.setUser(null);
+        },
+    })
+);
+
+registerSignInAdapterFactory('firebase', () =>
+    createFirebaseSignInAdapter({
+        getAuth: () => auth(),
+        getNativeAuth: () => FirebaseAuthentication,
+        isNativePlatform: () => Capacitor.isNativePlatform(),
+        emailLinkSettings: {
+            url: (typeof IS_PRODUCTION !== 'undefined' && IS_PRODUCTION)
+                ? `https://${FIREBASE_REDIRECT_URL}/login`
+                : 'http://localhost:3000/login',
+            iOS: { bundleId: 'com.learncard.app' },
+            android: { packageName: 'com.learncard.app', installApp: true, minimumVersion: '12' },
+            dynamicLinkDomain: 'learncard.app',
+        },
+    })
+);
+
 // ---------------------------------------------------------------------------
 // Enriched App Auth Context
 // ---------------------------------------------------------------------------
@@ -308,8 +358,6 @@ interface AppAuthCoordinatorProviderProps {
  */
 const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: AuthProvider | null }> = ({ children, authProvider }) => {
     const coordinator = useBaseAuthCoordinator();
-
-    const firebaseUser = firebaseAuthStore.use.currentUser();
     const authConfig = getAuthConfig();
 
     // --- Enriched state ---
@@ -351,7 +399,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
     const [showRecoverySetup, setShowRecoverySetup] = useState(false);
     const wasNewUserRef = useRef(false);
 
-    // --- Proactive auth session check state (effect is below, after recoveryAuthProvider) ---
+    // --- Proactive auth session check state (effect is below, after authProvider) ---
     const [recoverySessionValid, setRecoverySessionValid] = useState<boolean | null>(null);
 
     // --- Recovery method count (null = not yet checked) ---
@@ -483,22 +531,12 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
         }
     }, [coordinator.state.status]);
 
-    // --- Auth provider for recovery methods ---
-    const recoveryAuthProvider = useMemo(() => {
-        if (!firebaseUser) return null;
-
-        return createFirebaseAuthProvider({
-            getAuth: () => auth(),
-            user: firebaseUser,
-        });
-    }, [firebaseUser]);
-
     // --- Proactive auth session check for recovery setup ---
     // Before showing the recovery setup modal, verify the auth session is
     // still valid. Tries silent refresh (force-refreshes the JWT) first.
     // If that fails, shows the ReAuthOverlay for in-place re-auth.
     useEffect(() => {
-        if (!showRecoverySetup || !recoveryAuthProvider) {
+        if (!showRecoverySetup || !authProvider) {
             setRecoverySessionValid(null);
             return;
         }
@@ -516,7 +554,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
             } else {
                 // Fallback: try plain getIdToken (may still work if Firebase SDK has a valid session)
                 try {
-                    await recoveryAuthProvider.getIdToken();
+                    await authProvider.getIdToken();
 
                     if (!cancelled) setRecoverySessionValid(true);
                 } catch {
@@ -528,7 +566,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
         check();
 
         return () => { cancelled = true; };
-    }, [showRecoverySetup, recoveryAuthProvider, coordinator]);
+    }, [showRecoverySetup, authProvider, coordinator]);
 
     // --- DID derivation (shared between auto-setup and recovery) ---
     // Uses getSigningLearnCard (no network) so lc.id.did() returns did:key,
@@ -567,7 +605,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
     useEffect(() => {
         if (coordinator.state.status !== 'needs_migration' || migrationKeyFetchedRef.current) return;
-        if (!firebaseUser) return;
+        if (!authProvider) return;
 
         migrationKeyFetchedRef.current = true;
 
@@ -658,7 +696,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
         };
 
         extractAndInject();
-    }, [coordinator.state.status, firebaseUser, coordinator]);
+    }, [coordinator.state.status, authProvider, coordinator]);
 
     // Reset migration key ref when leaving needs_migration
     useEffect(() => {
@@ -741,13 +779,13 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
                 // Check recovery methods for all users; prompt new users to set up
                 // (only relevant for strategies that support recovery)
-                if (keyDerivation.capabilities.recovery && recoveryAuthProvider && keyDerivation.getAvailableRecoveryMethods) {
+                if (keyDerivation.capabilities.recovery && authProvider && keyDerivation.getAvailableRecoveryMethods) {
                     const isNewUser = wasNewUserRef.current;
                     wasNewUserRef.current = false;
 
                     try {
-                        const token = await recoveryAuthProvider.getIdToken();
-                        const providerType = recoveryAuthProvider.getProviderType();
+                        const token = await authProvider.getIdToken();
+                        const providerType = authProvider.getProviderType();
                         const methods = await keyDerivation.getAvailableRecoveryMethods(token, providerType);
 
                         // Only count user-configured methods (password, passkey, phrase, backup).
@@ -773,7 +811,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
         };
 
         initializeWallet();
-    }, [coordinator.state, recoveryAuthProvider, keyDerivation, showEmailLinkGate]);
+    }, [coordinator.state, authProvider, keyDerivation, showEmailLinkGate]);
 
     // --- Reset wallet when coordinator leaves 'ready' (e.g. on logout) ---
     useEffect(() => {
@@ -795,7 +833,8 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
     // to leave 'idle' (via the private-key-first path) before we wipe stores.
     useEffect(() => {
         if (coordinator.state.status !== 'idle') return;
-        if (!firebaseUser?.uid) return;
+        const authUser = authUserStore.get.currentUser();
+        if (!authUser?.id) return;
 
         const timer = setTimeout(() => {
             // Confirm the Firebase SDK truly has no active session
@@ -813,7 +852,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
         }, 1500);
 
         return () => clearTimeout(timer);
-    }, [coordinator.state.status, firebaseUser]);
+    }, [coordinator.state.status]);
 
     // --- LCN profile fetching when wallet is available ---
     const fetchLCNProfile = useCallback(async () => {
@@ -875,7 +914,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
     // --- Determine which overlay (if any) to show ---
     const { status } = coordinator.state;
 
-    const showRecovery = status === 'needs_recovery' && !!recoveryAuthProvider;
+    const showRecovery = status === 'needs_recovery' && !!authProvider;
 
     const showStalledMigration =
         migrationStallVisible &&
@@ -918,7 +957,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
         // Provider-agnostic auth provider (consumers should use this
         // instead of importing Firebase directly)
-        authProvider: recoveryAuthProvider,
+        authProvider: authProvider,
     }), [
         coordinator,
         wallet,
@@ -931,7 +970,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
         showDeviceLinkModal,
         deviceLinkVisible,
         recoveryMethodCount,
-        recoveryAuthProvider,
+        authProvider,
     ]);
 
     return (
@@ -939,7 +978,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
             {children}
 
             {/* ── Recovery overlay ─────────────────────────────── */}
-            {showRecovery && recoveryAuthProvider && (
+            {showRecovery && authProvider && (
                 <Overlay>
                     <RecoveryFlowModal
                         availableMethods={availableMethods}
@@ -1041,15 +1080,18 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                             emailUpgradeCustomTokenRef.current = null;
                         }
 
-                        // Update the app-specific store with the refreshed user.
+                        // Update both the legacy Firebase store and the
+                        // generic authUserStore with the refreshed user.
                         if (freshUser) {
                             firebaseAuthStore.set.setFirebaseCurrentUser({
                                 uid: freshUser.id,
                                 email: freshUser.email ?? null,
                                 phoneNumber: freshUser.phone ?? null,
-                                displayName: firebaseUser?.displayName ?? null,
-                                photoUrl: firebaseUser?.photoUrl ?? null,
+                                displayName: freshUser.displayName ?? null,
+                                photoUrl: freshUser.photoUrl ?? null,
                             });
+
+                            authUserStore.set.setUser(freshUser);
                         }
 
                         // Re-split the key so all three shares (device, auth,
@@ -1120,7 +1162,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
             )}
 
             {/* ── Recovery setup prompt (new users) ───────────── */}
-            {showRecoverySetup && recoveryAuthProvider && coordinator.state.status === 'ready' && keyDerivation.setupRecoveryMethod && (() => {
+            {showRecoverySetup && authProvider && coordinator.state.status === 'ready' && keyDerivation.setupRecoveryMethod && (() => {
                 // Session check still in progress — show loading
                 if (recoverySessionValid === null) {
                     return (
@@ -1155,12 +1197,12 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                     let token: string;
 
                     try {
-                        token = await recoveryAuthProvider.getIdToken();
+                        token = await authProvider.getIdToken();
                     } catch {
                         throw new Error('Your session has expired. Please close this dialog and sign in again.');
                     }
 
-                    const providerType = recoveryAuthProvider.getProviderType();
+                    const providerType = authProvider.getProviderType();
 
                     console.debug('[setupMethod] got token, providerType:', providerType, 'calling setupRecoveryMethod');
 
@@ -1175,8 +1217,8 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 };
 
                 const getTokenAndProvider = async () => {
-                    const token = await recoveryAuthProvider.getIdToken();
-                    const providerType = recoveryAuthProvider.getProviderType();
+                    const token = await authProvider.getIdToken();
+                    const providerType = authProvider.getProviderType();
                     return { token, providerType };
                 };
 
@@ -1195,7 +1237,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                             existingMethods={[]}
                             maskedRecoveryEmail={null}
                             onSetupPasskey={async () => {
-                                const authUser = await recoveryAuthProvider.getCurrentUser();
+                                const authUser = await authProvider.getCurrentUser();
                                 const result = await setupMethod({ method: 'passkey' }, authUser);
 
                                 setRecoveryMethodCount(prev => (prev ?? 0) + 1);
@@ -1203,12 +1245,12 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                                 return result.method === 'passkey' ? result.credentialId : '';
                             }}
                             onGeneratePhrase={async () => {
-                                const authUser = await recoveryAuthProvider.getCurrentUser();
+                                const authUser = await authProvider.getCurrentUser();
                                 const result = await setupMethod({ method: 'phrase' }, authUser);
                                 return result.method === 'phrase' ? result.phrase : '';
                             }}
                             onSetupBackup={async (backupPw: string) => {
-                                const authUser = await recoveryAuthProvider.getCurrentUser();
+                                const authUser = await authProvider.getCurrentUser();
                                 const did = coordinator.state.status === 'ready' ? coordinator.state.did : '';
                                 const result = await setupMethod({ method: 'backup', password: backupPw, did }, authUser);
 
@@ -1248,7 +1290,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                                 return res.json();
                             }}
                             onSetupEmailRecovery={async () => {
-                                const authUser = await recoveryAuthProvider.getCurrentUser();
+                                const authUser = await authProvider.getCurrentUser();
                                 await setupMethod({ method: 'email' }, authUser);
                                 setRecoveryMethodCount(prev => (prev ?? 0) + 1);
                             }}
@@ -1276,11 +1318,14 @@ const getCachedPrivateKey = async (): Promise<string | null> => {
 };
 
 export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> = ({ children }) => {
-    const firebaseUser = firebaseAuthStore.use.currentUser();
     const authConfig = getAuthConfig();
     const serverUrl = authConfig.serverUrl;
     const queryClient = useQueryClient();
     const { clearDB } = useSQLiteStorage();
+
+    // Phase 2: authUserStore is written by SignInAdapterProvider's subscribe(),
+    // so we just read the generic store — no bridge needed.
+    const authUser = authUserStore.use.currentUser();
 
     // Ref for clearDB — useSQLiteStorage() returns a new function identity
     // on every render (not memoized), which would cascade through
@@ -1289,35 +1334,11 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
     const clearDBRef = useRef(clearDB);
     clearDBRef.current = clearDB;
 
-    // Create Firebase auth provider
-    const authProvider = useMemo(() => {
-        return createFirebaseAuthProvider({
-            getAuth: () => auth(),
-            user: firebaseUser,
-            onReauthenticate: async (token: string) => {
-                const { signInWithCustomToken } = await import('firebase/auth');
-
-                await signInWithCustomToken(auth(), token);
-            },
-            onSignOut: async () => {
-                // Sign out the web Firebase layer
-                const firebaseAuth = auth();
-                await firebaseAuth.signOut();
-
-                // Also sign out the native Capacitor Firebase plugin (iOS/Android)
-                if (Capacitor.isNativePlatform()) {
-                    try {
-                        await FirebaseAuthentication.signOut();
-                    } catch (e) {
-                        console.warn('Native FirebaseAuthentication.signOut failed', e);
-                    }
-                }
-
-                firebaseAuthStore.set.firebaseAuth(null);
-                firebaseAuthStore.set.setFirebaseCurrentUser(null);
-            },
-        });
-    }, [firebaseUser]);
+    // Resolve auth provider from the registry (env-var driven via VITE_AUTH_PROVIDER)
+    const authProvider = useMemo(
+        () => authUser ? resolveAuthProvider(authConfig) : null,
+        [authUser, authConfig.authProvider],
+    );
 
     // DID derivation helper — uses getSigningLearnCard (no network) for deterministic did:key
     const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
@@ -1365,6 +1386,7 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         web3AuthStore.set.provider(null);
         redirectStore.set.lcnRedirect(null);
         firebaseAuthStore.set.firebaseAuth(null);
+        authUserStore.set.setUser(null);
         authStore.set.typeOfLogin(null);
         chapiStore.set.isChapiInteraction(null);
 
@@ -1391,26 +1413,28 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
     }, [queryClient, keyDerivation]);
 
     return (
-        <BaseAuthCoordinatorProvider
-            keyDerivation={keyDerivation}
-            authProvider={authProvider}
-            didFromPrivateKey={didFromPrivateKey}
-            signDidAuthVp={signDidAuthVp}
-            getCachedPrivateKey={getCachedPrivateKey}
-            onLogout={handleAppLogout}
-            onDebugEvent={handleDebugEvent}
-            legacyAccountThresholdMs={5 * 60 * 1000}
-            // The coordinator is always enabled. To switch key derivation
-            // backends, set VITE_KEY_DERIVATION=web3auth or VITE_KEY_DERIVATION=sss.
-            // The old `coordinatorEnabled` kill-switch has been removed because
-            // there is no legacy fallback path — disabling the coordinator
-            // would silently break the app.
-            enabled={true}
-        >
-            <AuthSessionManager authProvider={authProvider}>
-                {children}
-            </AuthSessionManager>
-        </BaseAuthCoordinatorProvider>
+        <SignInAdapterProvider>
+            <BaseAuthCoordinatorProvider
+                keyDerivation={keyDerivation}
+                authProvider={authProvider}
+                didFromPrivateKey={didFromPrivateKey}
+                signDidAuthVp={signDidAuthVp}
+                getCachedPrivateKey={getCachedPrivateKey}
+                onLogout={handleAppLogout}
+                onDebugEvent={handleDebugEvent}
+                legacyAccountThresholdMs={5 * 60 * 1000}
+                // The coordinator is always enabled. To switch key derivation
+                // backends, set VITE_KEY_DERIVATION=web3auth or VITE_KEY_DERIVATION=sss.
+                // The old `coordinatorEnabled` kill-switch has been removed because
+                // there is no legacy fallback path — disabling the coordinator
+                // would silently break the app.
+                enabled={true}
+            >
+                <AuthSessionManager authProvider={authProvider}>
+                    {children}
+                </AuthSessionManager>
+            </BaseAuthCoordinatorProvider>
+        </SignInAdapterProvider>
     );
 };
 

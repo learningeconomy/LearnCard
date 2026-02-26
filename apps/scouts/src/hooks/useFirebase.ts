@@ -85,7 +85,6 @@ export const useFirebase = () => {
 
                 authStore.set.typeOfLogin(SocialLoginTypes.google);
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-                firebaseAuthStore.set.setFirebaseCurrentUser({ ...user });
 
                 logAnalyticsEvent('login', { method: SocialLoginTypes.google });
 
@@ -240,7 +239,6 @@ export const useFirebase = () => {
                             localStorage.removeItem('emailForSignIn');
                             authStore.set.typeOfLogin(SocialLoginTypes.passwordless);
                             logAnalyticsEvent('login', { method: SocialLoginTypes.passwordless });
-                            firebaseAuthStore.set.setFirebaseCurrentUser(user);
                             firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
 
                             // AuthCoordinator auto-handles key derivation when firebaseUser changes
@@ -270,7 +268,6 @@ export const useFirebase = () => {
                     const token = await result.user.getIdToken(true);
                     const user = result?.user;
                     logAnalyticsEvent('login', { method: SocialLoginTypes.passwordless });
-                    firebaseAuthStore.set.setFirebaseCurrentUser({ ...user });
 
                     if (token) {
                         // AuthCoordinator auto-handles key derivation when firebaseUser changes
@@ -365,8 +362,7 @@ export const useFirebase = () => {
                     successCallback();
                     authStore.set.typeOfLogin(SocialLoginTypes.sms);
                     logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
-                    firebaseAuthStore.set.setFirebaseCurrentUser(user);
-                    // AuthCoordinator auto-handles key derivation when firebaseUser changes
+                    // AuthCoordinator auto-handles key derivation when authUser changes
                 }
             }
         } catch (error) {
@@ -386,7 +382,6 @@ export const useFirebase = () => {
             const token = await result?.user?.getIdToken(true);
             authStore.set.typeOfLogin(SocialLoginTypes.sms);
             logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
-            firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
             if (token) {
                 successCallback();
@@ -434,7 +429,6 @@ export const useFirebase = () => {
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
                 authStore.set.typeOfLogin(SocialLoginTypes.sms);
                 logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
-                firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                 if (token) {
                     successCallback();
@@ -490,7 +484,6 @@ export const useFirebase = () => {
                 // get current firebase user idToken
                 authStore.set.typeOfLogin(SocialLoginTypes.apple);
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-                firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                 const token = await user.getIdToken();
 
@@ -514,10 +507,9 @@ export const useFirebase = () => {
                     const token = await user.getIdToken(true);
                     authStore.set.typeOfLogin(SocialLoginTypes.apple);
                     logAnalyticsEvent('login', { method: SocialLoginTypes.apple });
-                    firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                     if (token) {
-                        // AuthCoordinator auto-handles key derivation when firebaseUser changes
+                        // AuthCoordinator auto-handles key derivation when authUser changes
                     }
                 }
             } catch (error) {
@@ -568,10 +560,9 @@ export const useFirebase = () => {
                     const token = await result.user.getIdToken(true);
                     authStore.set.typeOfLogin(SocialLoginTypes.apple);
                     logAnalyticsEvent('login', { method: SocialLoginTypes.apple });
-                    firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                     if (token) {
-                        // AuthCoordinator auto-handles key derivation when firebaseUser changes
+                        // AuthCoordinator auto-handles key derivation when authUser changes
                     }
                 }
             } catch (error) {
@@ -602,11 +593,10 @@ export const useFirebase = () => {
             if (token) {
                 authStore.set.typeOfLogin(SocialLoginTypes.scoutsSSO);
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-                firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                 logAnalyticsEvent('login', { method: SocialLoginTypes.scoutsSSO });
 
-                // AuthCoordinator auto-handles key derivation when firebaseUser changes
+                // AuthCoordinator auto-handles key derivation when authUser changes
             }
         } catch (error) {
             const errorCode = (error as any)?.code;
@@ -635,11 +625,10 @@ export const useFirebase = () => {
             if (idToken) {
                 authStore.set.typeOfLogin(SocialLoginTypes.scoutsSSO);
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-                firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                 logAnalyticsEvent('login', { method: SocialLoginTypes.scoutsSSO });
 
-                // AuthCoordinator auto-handles key derivation when firebaseUser changes
+                // AuthCoordinator auto-handles key derivation when authUser changes
             }
         } catch (error) {
             const errorCode = (error as any)?.code;

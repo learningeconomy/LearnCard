@@ -39,26 +39,49 @@ graph TD
 
 ## Step-by-Step Integration
 
-### 1. Create the auth provider
+### 1. Register factories and resolve the auth provider
 
 ```tsx
-import { createFirebaseAuthProvider, firebaseAuthStore } from 'learn-card-base';
+import {
+    createFirebaseAuthProvider,
+    createFirebaseSignInAdapter,
+    registerAuthProviderFactory,
+    registerSignInAdapterFactory,
+    resolveAuthProvider,
+    authUserStore,
+    getAuthConfig,
+    SignInAdapterProvider,
+} from 'learn-card-base';
 import { auth } from '../firebase/firebase';
 
-const firebaseUser = firebaseAuthStore.use.currentUser();
+// --- At module level (runs once) ---
 
-const authProvider = useMemo(() => {
-    return createFirebaseAuthProvider({
+registerAuthProviderFactory('firebase', () =>
+    createFirebaseAuthProvider({
         getAuth: () => auth(),
-        user: firebaseUser,
         onSignOut: async () => {
-            const firebaseAuth = auth();
-            await firebaseAuth.signOut();
-            firebaseAuthStore.set.firebaseAuth(null);
-            firebaseAuthStore.set.setFirebaseCurrentUser(null);
+            await auth().signOut();
         },
-    });
-}, [firebaseUser]);
+    })
+);
+
+registerSignInAdapterFactory('firebase', () =>
+    createFirebaseSignInAdapter({
+        getAuth: () => auth(),
+        isNativePlatform: () => Capacitor.isNativePlatform(),
+        emailLinkSettings: { url: 'https://app.example.com/login' },
+    })
+);
+
+// --- Inside the component ---
+
+const authUser = authUserStore.use.currentUser();
+const authConfig = getAuthConfig();
+
+const authProvider = useMemo(
+    () => authUser ? resolveAuthProvider(authConfig) : null,
+    [authUser, authConfig.authProvider],
+);
 ```
 
 ### 2. Create the key derivation strategy

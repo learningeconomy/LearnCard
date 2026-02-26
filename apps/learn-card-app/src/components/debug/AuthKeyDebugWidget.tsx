@@ -23,7 +23,7 @@ import {
 
 import {
     authStore,
-    firebaseAuthStore,
+    authUserStore,
     currentUserStore,
     getAuthConfig,
 } from 'learn-card-base';
@@ -255,7 +255,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
     const meta = getMeta(state.status);
 
     // --- Other stores (supplementary) ---
-    const firebaseUser = firebaseAuthStore.use.currentUser();
+    const authUser = authUserStore.use.currentUser();
     const currentUser = currentUserStore.use.currentUser();
     const typeOfLogin = authStore.use.typeOfLogin();
 
@@ -302,9 +302,9 @@ export const AuthKeyDebugWidget: React.FC = () => {
         return rows;
     }, [state, did, authSessionValid]);
 
-    // Derive the expected active storage key from the Firebase UID
-    const activeStorageId = firebaseUser?.uid
-        ? `sss-device-share:${firebaseUser.uid}`
+    // Derive the expected active storage key from the Auth ID
+    const activeStorageId = authUser?.id
+        ? `sss-device-share:${authUser.id}`
         : undefined;
 
     // --- Device share check ---
@@ -427,8 +427,8 @@ export const AuthKeyDebugWidget: React.FC = () => {
 
     // --- Fetch server state ---
     const fetchServerState = useCallback(async () => {
-        if (!firebaseUser) {
-            setServerError('No Firebase user — cannot fetch');
+        if (!authUser) {
+            setServerError('No Auth user — cannot fetch');
             return;
         }
 
@@ -441,15 +441,16 @@ export const AuthKeyDebugWidget: React.FC = () => {
         setServerError(null);
 
         try {
-            // Use the live Firebase SDK user (not the zustand store's plain object)
-            const { auth } = await import('../../firebase/firebase');
-            const liveUser = auth().currentUser;
+            // Get the token from the Firebase Auth SDK (authUser is a plain store object)
+            const { getIdToken } = await import('firebase/auth');
+            const firebaseAuth = (await import('../../firebase/firebase')).auth();
 
-            if (!liveUser) {
-                throw new Error('Firebase SDK has no current user (session may be expired)');
+            if (!firebaseAuth.currentUser) {
+                setServerError('No Firebase session — cannot fetch token');
+                return;
             }
 
-            const token = await liveUser.getIdToken();
+            const token = await getIdToken(firebaseAuth.currentUser);
 
             const response = await fetch(`${authConfig.serverUrl}/keys/auth-share`, {
                 method: 'POST',
@@ -488,7 +489,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
         } finally {
             setServerLoading(false);
         }
-    }, [firebaseUser, authConfig.serverUrl]);
+    }, [authUser, authConfig.serverUrl]);
 
     // --- Derive both DID formats for comparison ---
     useEffect(() => {
@@ -516,7 +517,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
     // --- Export events as JSON ---
     // --- Invalidate auth session (for testing) ---
     const handleInvalidateSession = useCallback(async () => {
-        if (!firebaseUser) return;
+        if (!authUser) return;
 
         try {
             // Sign out of Firebase to invalidate the session token.
@@ -527,17 +528,15 @@ export const AuthKeyDebugWidget: React.FC = () => {
             const firebaseAuth = (await import('../../firebase/firebase')).auth();
             await signOut(firebaseAuth);
 
-            // Clear just the Firebase store entry so the coordinator doesn't
-            // auto-detect user presence from the store
-            firebaseAuthStore.set.setFirebaseCurrentUser(null);
-            firebaseAuthStore.set.firebaseAuth(null);
+            // Clear the auth user store so the coordinator detects sign-out
+            authUserStore.set.setUser(null);
 
-            alert('Firebase session invalidated. Auth session is now expired.\nTry opening Account Recovery to see the re-auth gate.');
+            alert('Auth session invalidated. Auth session is now expired.\nTry opening Account Recovery to see the re-auth gate.');
         } catch (e) {
             console.error('[DebugWidget] invalidate session error:', e);
             alert(`Failed: ${e instanceof Error ? e.message : String(e)}`);
         }
-    }, [firebaseUser]);
+    }, [authUser]);
 
     const handleExportEvents = useCallback(async () => {
         const exportData = {
@@ -702,15 +701,15 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                 <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
                                     isLoggedIn ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-700 text-gray-500'
                                 }`}>
-                                    {isLoggedIn ? 'L0+L1+L2' : firebaseUser ? 'L1' : '—'}
+                                    {isLoggedIn ? 'L0+L1+L2' : authUser ? 'L1' : '—'}
                                 </span>
                             }
                         >
-                            {/* Layer 1: Firebase */}
-                            <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-1 mb-0.5">Layer 1 — Auth Provider (Firebase)</p>
-                            <KVRow label="UID" value={firebaseUser?.uid ?? '—'} copied={copied} onCopy={copyToClipboard} />
-                            <KVRow label="Email" value={firebaseUser?.email ?? '—'} copied={copied} onCopy={copyToClipboard} />
-                            <KVRow label="Phone" value={firebaseUser?.phoneNumber ?? '—'} copied={copied} onCopy={copyToClipboard} />
+                            {/* Layer 1: Auth */}
+                            <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-1 mb-0.5">Layer 1 — Auth Provider</p>
+                            <KVRow label="ID" value={authUser?.id ?? '—'} copied={copied} onCopy={copyToClipboard} />
+                            <KVRow label="Email" value={authUser?.email ?? '—'} copied={copied} onCopy={copyToClipboard} />
+                            <KVRow label="Phone" value={authUser?.phone ?? '—'} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="Login Type" value={typeOfLogin ?? '—'} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="JWT Present" value={!!authStore.get.jwt()} copied={copied} onCopy={copyToClipboard} />
 
@@ -784,7 +783,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                 <div className="text-center py-2 space-y-1">
                                     <button
                                         onClick={fetchServerState}
-                                        disabled={serverLoading || !firebaseUser}
+                                        disabled={serverLoading || !authUser}
                                         className="text-[10px] text-sky-400 hover:text-sky-300 disabled:text-gray-600"
                                     >
                                         {serverLoading ? 'Fetching...' : 'Click to fetch server state'}
@@ -1005,7 +1004,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                 <div>
                                     <button
                                         onClick={handleInvalidateSession}
-                                        disabled={!firebaseUser}
+                                        disabled={!authUser}
                                         className="w-full text-[10px] py-1.5 px-2 rounded-md bg-red-950/40 text-red-400 hover:bg-red-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-left"
                                     >
                                         Invalidate Auth Session

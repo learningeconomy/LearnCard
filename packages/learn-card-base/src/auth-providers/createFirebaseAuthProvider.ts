@@ -15,17 +15,12 @@ export interface FirebaseAuthConfig {
             uid: string;
             email: string | null;
             phoneNumber: string | null;
+            displayName: string | null;
+            photoURL: string | null;
             getIdToken: (forceRefresh?: boolean) => Promise<string>;
             metadata?: { creationTime?: string };
         } | null;
     };
-
-    /** Current user data from your app's auth store */
-    user: {
-        uid: string | null | undefined;
-        email?: string | null;
-        phoneNumber?: string | null;
-    } | null;
 
     /** Optional sign out handler */
     onSignOut?: () => Promise<void>;
@@ -38,58 +33,62 @@ export interface FirebaseAuthConfig {
     onReauthenticate?: (token: string) => Promise<void>;
 }
 
+/** Map a live Firebase currentUser to a generic AuthUser. */
+const firebaseUserToAuthUser = (cu: NonNullable<ReturnType<FirebaseAuthConfig['getAuth']>['currentUser']>): AuthUser => ({
+    id: cu.uid,
+    email: cu.email || undefined,
+    phone: cu.phoneNumber || undefined,
+    displayName: cu.displayName || undefined,
+    photoUrl: cu.photoURL || undefined,
+    providerType: 'firebase' as AuthProviderType,
+    createdAt: cu.metadata?.creationTime
+        ? new Date(cu.metadata.creationTime)
+        : undefined,
+});
+
 /**
  * Create an AuthProvider for Firebase Authentication.
- * 
+ *
+ * The provider reads from `getAuth().currentUser` on every call, so it
+ * does **not** depend on external reactive state. The caller is
+ * responsible for gating on "is there a user?" before passing this
+ * provider to the coordinator (pass `null` when unauthenticated).
+ *
  * @example
  * ```tsx
- * const authProvider = createFirebaseAuthProvider({
- *     getAuth: () => auth(),
- *     user: firebaseAuthStore.use.currentUser(),
- * });
+ * // Register once at module level
+ * registerAuthProviderFactory('firebase', () =>
+ *     createFirebaseAuthProvider({ getAuth: () => auth(), ... })
+ * );
+ *
+ * // In the component — gate on the generic authUserStore
+ * const authUser = authUserStore.use.currentUser();
+ * const authProvider = useMemo(
+ *     () => authUser ? resolveAuthProvider(authConfig) : null,
+ *     [authUser, authConfig.authProvider],
+ * );
  * ```
  */
-export function createFirebaseAuthProvider(config: FirebaseAuthConfig): AuthProvider | null {
-    const { getAuth, user, onSignOut } = config;
-
-    if (!user?.uid) {
-        return null;
-    }
+export function createFirebaseAuthProvider(config: FirebaseAuthConfig): AuthProvider {
+    const { getAuth, onSignOut } = config;
 
     return {
         async getIdToken(): Promise<string> {
-            const firebaseAuth = getAuth();
-            const currentUser = firebaseAuth.currentUser;
+            const cu = getAuth().currentUser;
 
-            if (!currentUser) {
+            if (!cu) {
                 throw new AuthSessionError('No Firebase user', 'no_session');
             }
 
-            return currentUser.getIdToken();
+            return cu.getIdToken();
         },
 
         async getCurrentUser(): Promise<AuthUser | null> {
-            if (!user?.uid) {
-                return null;
-            }
+            const cu = getAuth().currentUser;
 
-            // Verify the Firebase SDK session is actually active — the store
-            // may have a stale user from a previous session that wasn't cleared.
-            const firebaseAuth = getAuth();
+            if (!cu) return null;
 
-            if (!firebaseAuth.currentUser) {
-                return null;
-            }
-
-            const creationTime = firebaseAuth.currentUser?.metadata?.creationTime;
-
-            return {
-                id: user.uid,
-                email: user.email || undefined,
-                phone: user.phoneNumber || undefined,
-                providerType: 'firebase' as AuthProviderType,
-                createdAt: creationTime ? new Date(creationTime) : undefined,
-            };
+            return firebaseUserToAuthUser(cu);
         },
 
         getProviderType(): AuthProviderType {
@@ -98,16 +97,13 @@ export function createFirebaseAuthProvider(config: FirebaseAuthConfig): AuthProv
 
         async refreshSession(): Promise<boolean> {
             try {
-                const firebaseAuth = getAuth();
-                const currentUser = firebaseAuth.currentUser;
+                const cu = getAuth().currentUser;
 
-                if (!currentUser) {
-                    return false;
-                }
+                if (!cu) return false;
 
                 // Force refresh — Firebase uses its long-lived refresh token
                 // (~1 year) to mint a fresh JWT even if the current one expired.
-                await currentUser.getIdToken(true);
+                await cu.getIdToken(true);
 
                 return true;
             } catch {
@@ -124,20 +120,11 @@ export function createFirebaseAuthProvider(config: FirebaseAuthConfig): AuthProv
 
             // Read the fresh user directly from the auth SDK (not the store,
             // which may be stale until the next React render cycle).
-            const firebaseAuth = getAuth();
-            const cu = firebaseAuth.currentUser;
+            const cu = getAuth().currentUser;
 
             if (!cu) return null;
 
-            return {
-                id: cu.uid,
-                email: cu.email || undefined,
-                phone: cu.phoneNumber || undefined,
-                providerType: 'firebase' as AuthProviderType,
-                createdAt: cu.metadata?.creationTime
-                    ? new Date(cu.metadata.creationTime)
-                    : undefined,
-            };
+            return firebaseUserToAuthUser(cu);
         },
 
         async signOut(): Promise<void> {

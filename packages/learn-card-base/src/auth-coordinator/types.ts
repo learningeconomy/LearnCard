@@ -22,6 +22,8 @@ export type {
     AuthProviderType,
     RecoveryMethodInfo,
     RecoveryResult,
+    SignInAdapter,
+    PhoneVerificationHandle,
 } from '@learncard/auth-types';
 
 // --- SSS-specific (canonical source: @learncard/sss-key-manager) ---

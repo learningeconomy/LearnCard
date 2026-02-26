@@ -27,7 +27,7 @@
  * ```
  */
 
-import type { AuthProvider, KeyDerivationStrategy } from '../auth-coordinator/types';
+import type { AuthProvider, KeyDerivationStrategy, SignInAdapter } from '../auth-coordinator/types';
 import type { AuthConfig } from './authConfig';
 
 // ---------------------------------------------------------------------------
@@ -38,6 +38,8 @@ export type AuthProviderFactory = (config: AuthConfig) => AuthProvider | null;
 
 export type KeyDerivationFactory = (config: AuthConfig) => KeyDerivationStrategy;
 
+export type SignInAdapterFactory = (config: AuthConfig) => SignInAdapter;
+
 // ---------------------------------------------------------------------------
 // Registries (module-level singletons)
 // ---------------------------------------------------------------------------
@@ -45,6 +47,8 @@ export type KeyDerivationFactory = (config: AuthConfig) => KeyDerivationStrategy
 const authProviderFactories = new Map<string, AuthProviderFactory>();
 
 const keyDerivationFactories = new Map<string, KeyDerivationFactory>();
+
+const signInAdapterFactories = new Map<string, SignInAdapterFactory>();
 
 // ---------------------------------------------------------------------------
 // Registration
@@ -124,3 +128,44 @@ export const resolveKeyDerivation = (config: AuthConfig): KeyDerivationStrategy 
 export const getRegisteredAuthProviders = (): string[] => [...authProviderFactories.keys()];
 
 export const getRegisteredKeyDerivations = (): string[] => [...keyDerivationFactories.keys()];
+
+// ---------------------------------------------------------------------------
+// Sign-In Adapter Registration & Resolution
+// ---------------------------------------------------------------------------
+
+/**
+ * Register a factory that creates a SignInAdapter for the given provider name.
+ * Calling with the same name replaces any previously registered factory.
+ */
+export const registerSignInAdapterFactory = (
+    name: string,
+    factory: SignInAdapterFactory
+): void => {
+    signInAdapterFactories.set(name, factory);
+};
+
+/**
+ * Resolve the sign-in adapter using the registered factory for `config.authProvider`.
+ * Throws if no factory is registered for the configured provider name.
+ *
+ * **Note:** This calls the factory on every invocation. Callers should cache
+ * the result (e.g., via `useMemo` in `SignInAdapterProvider`) to avoid
+ * creating multiple adapter instances.
+ */
+export const resolveSignInAdapter = (config: AuthConfig): SignInAdapter => {
+    const factory = signInAdapterFactories.get(config.authProvider);
+
+    if (!factory) {
+        const registered = [...signInAdapterFactories.keys()].join(', ') || '(none)';
+
+        throw new Error(
+            `No sign-in adapter factory registered for "${config.authProvider}". ` +
+            `Registered: ${registered}. ` +
+            `Set VITE_AUTH_PROVIDER or register a factory with registerSignInAdapterFactory().`
+        );
+    }
+
+    return factory(config);
+};
+
+export const getRegisteredSignInAdapters = (): string[] => [...signInAdapterFactories.keys()];

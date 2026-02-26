@@ -104,7 +104,6 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
 
                     authStore.set.typeOfLogin(SocialLoginTypes.google);
                     firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-                    firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                     // Also sign in on the web layer
                     try {
@@ -125,7 +124,6 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                     newUid = result.user.uid;
 
                     authStore.set.typeOfLogin(SocialLoginTypes.google);
-                    firebaseAuthStore.set.setFirebaseCurrentUser(result.user);
                 }
             }
 
@@ -190,7 +188,6 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
 
                     authStore.set.typeOfLogin(SocialLoginTypes.apple);
                     firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-                    firebaseAuthStore.set.setFirebaseCurrentUser(user);
                 }
             } else {
                 const provider = new OAuthProvider('apple.com');
@@ -200,7 +197,6 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                     newUid = result.user.uid;
 
                     authStore.set.typeOfLogin(SocialLoginTypes.apple);
-                    firebaseAuthStore.set.setFirebaseCurrentUser(result.user);
                 }
             }
 

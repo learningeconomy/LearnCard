@@ -24,7 +24,6 @@ import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 
 import authStore from 'learn-card-base/stores/authStore';
-import firebaseAuthStore from 'learn-card-base/stores/firebaseAuthStore';
 
 import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
 import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
@@ -37,8 +36,6 @@ const QrCodeUserCard: React.FC<{
     const { logout: coordinatorLogout } = useAuthCoordinator();
     const { clearDB } = useSQLiteStorage();
     const currentUser = useCurrentUser();
-    const firebaseAuthentication = firebaseAuthStore.get.firebaseAuth();
-
     let brandingText: React.ReactNode | null = null;
 
     if (branding === BrandingEnum.learncard) {
@@ -107,16 +104,6 @@ const QrCodeUserCard: React.FC<{
 
                                     handleQRCodeCardModal();
 
-                                    if (
-                                        nativeSocialLogins.includes(typeOfLogin) &&
-                                        Capacitor.isNativePlatform()
-                                    ) {
-                                        try {
-                                            await firebaseAuthentication?.signOut?.();
-                                        } catch (e) {
-                                            console.log('firebase::signout::error', e);
-                                        }
-                                    }
                                     coordinatorLogout();
                                     await clearDB();
                                 }}

@@ -44,6 +44,8 @@ export interface AuthUser {
     id: string;
     email?: string;
     phone?: string;
+    displayName?: string;
+    photoUrl?: string;
     providerType: AuthProviderType;
 
     /** Account creation timestamp (when available from the auth provider) */
@@ -85,6 +87,108 @@ export interface AuthProvider {
      * mutations invalidate the client session.
      */
     reauthenticateWithToken?(token: string): Promise<AuthUser | null>;
+}
+
+// ---------------------------------------------------------------------------
+// Sign-In Adapter (Phase 2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Opaque handle returned by `sendPhoneOtp()`.
+ * On web this wraps a ConfirmationResult; on native it carries a verificationId.
+ * Consumers pass this back to `confirmPhoneOtp()` — never inspect internals.
+ */
+export interface PhoneVerificationHandle {
+    verificationId: string;
+
+    /** Platform-specific confirmation object (e.g. Firebase ConfirmationResult) */
+    _internal?: unknown;
+}
+
+/**
+ * Abstract sign-in adapter interface.
+ *
+ * Encapsulates **all** provider-specific sign-in logic (Firebase, Supertokens,
+ * Keycloak, …).  Apps register a concrete adapter at startup via
+ * `registerSignInAdapterFactory()` and resolve it through the provider registry.
+ *
+ * The `subscribe()` method is the **single source of truth** for auth state:
+ * `SignInAdapterProvider` calls it once and writes every state change to
+ * `authUserStore`, replacing the Phase 1 bridge.
+ *
+ * Individual sign-in methods return `Promise<AuthUser>` on success and throw
+ * on failure — the app-level hook (`useFirebase` / `useAuth`) handles UI
+ * feedback (toasts, modals, analytics).
+ */
+export interface SignInAdapter {
+    readonly providerType: AuthProviderType;
+
+    // --- Auth state ---
+
+    /**
+     * Subscribe to auth-state changes.  The callback fires immediately with
+     * the current state and again on every sign-in / sign-out.
+     *
+     * Returns an unsubscribe function.
+     */
+    subscribe(onUser: (user: AuthUser | null) => void): () => void;
+
+    /** Synchronous snapshot of the last user emitted by `subscribe()`. */
+    getCurrentUser(): AuthUser | null;
+
+    // --- Email link (passwordless) ---
+
+    sendEmailLink(email: string, redirectUrl?: string): Promise<void>;
+
+    verifyEmailLink(email: string, link: string): Promise<AuthUser>;
+
+    isEmailLink(link: string): boolean;
+
+    // --- Phone OTP ---
+
+    /**
+     * Send an SMS OTP to the given number.
+     * On web this sets up a RecaptchaVerifier transparently.
+     */
+    sendPhoneOtp(phoneNumber: string): Promise<PhoneVerificationHandle>;
+
+    /**
+     * Confirm a phone OTP using the handle returned by `sendPhoneOtp()`.
+     */
+    confirmPhoneOtp(handle: PhoneVerificationHandle, code: string | number): Promise<AuthUser>;
+
+    /**
+     * Confirm a phone OTP using a native verificationId (Capacitor auto-verify
+     * path).  Falls back to `confirmPhoneOtp` when not implemented.
+     */
+    confirmNativePhoneOtp?(verificationId: string, code: string | number): Promise<AuthUser>;
+
+    // --- OAuth ---
+
+    signInWithGoogle(): Promise<AuthUser>;
+
+    signInWithApple(): Promise<AuthUser>;
+
+    /** Check for a pending OAuth redirect result (e.g. Apple on web). */
+    checkRedirectResult?(): Promise<AuthUser | null>;
+
+    // --- Custom / SSO ---
+
+    signInWithCustomToken(token: string): Promise<AuthUser>;
+
+    /** Sign in with an OIDC credential (e.g. Keycloak World Scouts SSO). */
+    signInWithOidcCredential?(providerId: string, idToken: string): Promise<AuthUser>;
+
+    // --- Account management ---
+
+    deleteAccount(): Promise<void>;
+
+    signOut(): Promise<void>;
+
+    // --- Cleanup ---
+
+    /** Tear down any DOM elements created by the adapter (e.g. RecaptchaVerifier). */
+    cleanup?(): void;
 }
 
 // ---------------------------------------------------------------------------
