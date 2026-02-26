@@ -155,51 +155,45 @@ export const openRoute = t.procedure
         return next({ ctx });
     });
 
-export const didRoute = openRoute.use(async ({ ctx, next }) => {
-    if (!ctx.user?.did) {
-        throw new TRPCError({ code: 'UNAUTHORIZED' });
-    }
+export const resolveProfileFromContextDid = async (
+    didFromContext: string | undefined,
+    domain: string
+): Promise<ProfileType | null> => {
+    if (!didFromContext) return null;
 
-    const didParts = ctx.user.did.split(':');
+    const didParts = didFromContext.split(':');
+    let did = didFromContext;
 
-    let did = ctx.user.did;
-
-    // User authenticated with their did:web. Resolve it and use their controller did to find their
-    // profile
-    if (didParts[1] === 'web' && didParts[2] === ctx.domain) {
-        if (didParts[3] === 'manager') {
-            return next({
-                ctx: { ...ctx, user: { ...ctx.user, profile: null as ProfileType | null } },
-            });
-        }
+    // User authenticated with their did:web. Resolve it and use their controller did to find profile.
+    if (didParts[1] === 'web' && didParts[2] === domain) {
+        if (didParts[3] === 'manager') return null;
 
         const learnCard = await getEmptyLearnCard();
-
         const didDoc = await learnCard.invoke.resolveDid(
             did,
             process.env.IS_OFFLINE ? { noCache: true } : undefined
         );
 
-        if (!didDoc.controller) {
-            return next({
-                ctx: { ...ctx, user: { ...ctx.user, profile: null as ProfileType | null } },
-            });
-        }
+        if (!didDoc.controller) return null;
 
         const controller = Array.isArray(didDoc.controller)
             ? didDoc.controller.at(0)
             : didDoc.controller;
 
-        if (!controller) {
-            return next({
-                ctx: { ...ctx, user: { ...ctx.user, profile: null as ProfileType | null } },
-            });
-        }
+        if (!controller) return null;
 
         did = controller;
     }
 
-    const profile = await getProfileByDid(did);
+    return getProfileByDid(did);
+};
+
+export const didRoute = openRoute.use(async ({ ctx, next }) => {
+    if (!ctx.user?.did) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' });
+    }
+
+    const profile = await resolveProfileFromContextDid(ctx.user.did, ctx.domain);
 
     if (profile) Sentry.setUser({ id: profile.profileId, username: profile.displayName });
 
