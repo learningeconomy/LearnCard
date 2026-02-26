@@ -90,6 +90,9 @@ export type FamilyChildAccount = {
     profileId?: string;
 
     learnCardID?: FamilyCMSAppearance;
+
+    dob?: string; // ISO date string, required for new accounts (validated in UI)
+    country?: string; // ISO 3166-1 alpha-2, optional
 };
 
 export type FamilyCMSState = {

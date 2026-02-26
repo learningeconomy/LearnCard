@@ -15,7 +15,7 @@ const ManageSkillsCancelUpdateModal: React.FC<ManageSkillsCancelUpdateModalProps
     return (
         <div className="flex flex-col gap-[10px] px-[20px]">
             <div className="bg-white rounded-[15px] flex flex-col items-center gap-[10px] px-[20px] py-[30px]">
-                <TrashBin className="w-[60px] h-[60px] text-rose-600" version={2} />
+                <TrashBin className="w-[60px] h-[60px] text-rose-600" version="2" />
                 <h2 className="text-[22px] font-[600] font-poppins text-grayscale-900">
                     Cancel Update?
                 </h2>
