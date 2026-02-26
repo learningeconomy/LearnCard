@@ -87,7 +87,7 @@ import {
     issueClaimLinkBoost,
     isDraftBoost,
     isEditableBoost,
-    isBoostPublicOrLegacy,
+    isBoostViewableByClaimLink,
     convertCredentialToBoostTemplateJSON,
     isInboxRecipient,
     prepareCredentialFromBoost,
@@ -1012,12 +1012,10 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if (defaultPermissions) {
-                await addDefaultPermissionsForBoost(boost, {
-                    ...EMPTY_PERMISSIONS,
-                    ...defaultPermissions,
-                });
-            }
+            await addDefaultPermissionsForBoost(boost, {
+                ...EMPTY_PERMISSIONS,
+                ...defaultPermissions,
+            });
 
             return getBoostUri(boost.id, ctx.domain);
         }),
@@ -1097,12 +1095,10 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if (defaultPermissions) {
-                await addDefaultPermissionsForBoost(childBoost, {
-                    ...EMPTY_PERMISSIONS,
-                    ...defaultPermissions,
-                });
-            }
+            await addDefaultPermissionsForBoost(childBoost, {
+                ...EMPTY_PERMISSIONS,
+                ...defaultPermissions,
+            });
 
             return getBoostUri(childBoost.id, ctx.domain);
         }),
@@ -2124,7 +2120,7 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
 
             const { uri, updates, skills } = input;
-            const { name, type, category, status, visibility, credential, meta, defaultPermissions } =
+            const { name, type, category, status, credential, meta, defaultPermissions } =
                 updates;
 
             const decodedUri = decodeURIComponent(uri);
@@ -2148,7 +2144,6 @@ export const boostsRouter = t.router({
                 if (category) actualUpdates.category = category;
                 if (type) actualUpdates.type = type;
                 if (status) actualUpdates.status = status;
-                if (visibility) actualUpdates.visibility = visibility;
                 if (credential) {
                     // First normalize existing alignments in the credential
                     // (converts type: 'Alignment' to type: ['Alignment'] and constructs targetUrl)
@@ -2161,16 +2156,12 @@ export const boostsRouter = t.router({
                         getDidWeb(ctx.domain, profile.profileId)
                     );
                 }
-            } else if (!meta && !defaultPermissions && !visibility) {
+            } else if (!meta && !defaultPermissions) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message:
-                        'LIVE Boosts can only have their meta, defaultPermissions, or visibility updated. DRAFT and PROVISIONAL Boosts can update any field.',
+                        'LIVE Boosts can only have their meta or defaultPermissions updated. DRAFT and PROVISIONAL Boosts can update any field.',
                 });
-            }
-
-            if (!isEditableBoost(boost) && visibility) {
-                actualUpdates.visibility = visibility;
             }
 
             const togglingOff =
@@ -2695,11 +2686,11 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if (!isBoostPublicOrLegacy(boost)) {
+            if (!(await isBoostViewableByClaimLink(boost))) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message:
-                        'Boost visibility must not be PRIVATE before generating a claim link.',
+                        'Boost must be viewable by claim link before generating a claim link.',
                 });
             }
 
@@ -2746,7 +2737,7 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!isBoostPublicOrLegacy(boost)) {
+            if (!(await isBoostViewableByClaimLink(boost))) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message: 'This boost is not currently viewable by claim link.',

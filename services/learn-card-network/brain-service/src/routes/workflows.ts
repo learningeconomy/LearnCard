@@ -31,7 +31,7 @@ import {
 } from '@accesslayer/contact-method/read';
 import { getProfileByDid } from '@accesslayer/profile/read';
 
-import { getBoostUri, isBoostPublicOrLegacy, isDraftBoost } from '@helpers/boost.helpers';
+import { getBoostUri, isBoostViewableByClaimLink, isDraftBoost } from '@helpers/boost.helpers';
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
@@ -206,7 +206,7 @@ async function handleExchangeInitiation(
         });
     }
 
-    if (!isBoostPublicOrLegacy(boost)) {
+    if (!(await isBoostViewableByClaimLink(boost))) {
         throw new TRPCError({
             code: 'FORBIDDEN',
             message: 'This boost is not currently viewable by claim link.',
@@ -284,7 +284,7 @@ async function handlePresentationForClaim(
 
     if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-    if (!isBoostPublicOrLegacy(boost)) {
+    if (!(await isBoostViewableByClaimLink(boost))) {
         throw new TRPCError({
             code: 'FORBIDDEN',
             message: 'This boost is not currently viewable by claim link.',

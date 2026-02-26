@@ -25,7 +25,7 @@ import { acceptCredential, getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
-import { BoostStatus, BoostVisibility } from 'types/boost';
+import { BoostStatus } from 'types/boost';
 import { getDidWeb } from './did.helpers';
 import { DbTermsType } from 'types/consentflowcontract';
 
@@ -54,12 +54,17 @@ export const isEditableBoost = (boost: BoostInstance): boolean => {
 };
 
 /**
- * Legacy-friendly visibility check:
- * - Explicit PRIVATE => private
- * - PUBLIC or undefined/null => public
+ * Public claim-link visibility is controlled by defaultPermissions.canView.
+ * If unset (legacy records), treat as viewable.
  */
-export const isBoostPublicOrLegacy = (boost: { visibility?: string | null }): boolean => {
-    return boost.visibility !== BoostVisibility.enum.PRIVATE;
+export const isBoostViewableByClaimLink = async (boost: BoostInstance): Promise<boolean> => {
+    const defaultRoles = await boost.findRelationships({ alias: 'defaultRole' });
+    const defaultRole = defaultRoles[0]?.target as any;
+    const canView = defaultRole?.canView ?? defaultRole?.dataValues?.canView;
+
+    if (typeof canView === 'boolean') return canView;
+
+    return true;
 };
 
 export const convertCredentialToBoostTemplateJSON = (
