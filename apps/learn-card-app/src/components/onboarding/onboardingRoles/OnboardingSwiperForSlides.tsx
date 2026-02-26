@@ -29,7 +29,7 @@ const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ r
         desktop: ModalTypes.Freeform,
         mobile: ModalTypes.Freeform,
     });
-    console.log('roleItem', roleItem);
+
     const roleType = roleItem?.type ?? LearnCardRolesEnum.learner;
     const slideConfig = roleSlideContent[roleType] ?? roleSlideContent[LearnCardRolesEnum.learner]!;
     const totalSlides = slideConfig.slides.length;
