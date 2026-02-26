@@ -7,14 +7,10 @@ import {
     LCNBoostClaimLinkOptionsType,
     LCNBoostStatus,
     LCNBoostStatusEnum,
-    LCNBoostVisibility,
-    LCNBoostVisibilityEnum,
 } from '@learncard/types';
 
 export const BoostStatus = LCNBoostStatus;
 export type BoostStatusEnum = LCNBoostStatusEnum;
-export const BoostVisibility = LCNBoostVisibility;
-export type BoostVisibilityEnum = LCNBoostVisibilityEnum;
 
 export const BoostValidator = _BoostValidator
     .omit({ uri: true, claimPermissions: true })
