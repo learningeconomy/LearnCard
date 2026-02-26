@@ -12,7 +12,11 @@ const SimpleFrameworkAdminDisplay: React.FC<SimpleFrameworkAdminDisplayProps> = 
 
     return (
         <div className="flex items-center gap-[10px] w-full py-[10px]">
-            <UserProfilePicture user={profile} customContainerClass="w-[40px] h-[40px]" />
+            <UserProfilePicture
+                user={profile}
+                customContainerClass="w-[40px] h-[40px] shrink-0"
+                customImageClass="w-full h-full object-cover"
+            />
             <p className="text-grayscale-900 font-poppins text-[17px] line-clamp-1">
                 {profile?.displayName}
             </p>
