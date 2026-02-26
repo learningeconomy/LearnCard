@@ -194,20 +194,23 @@ export const storageRouter = t.router({
                         throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
                     }
 
-                    if (!(await isBoostViewableByClaimLink(boostInstance))) {
-                        const profile = await resolveProfileFromContextDid(ctx.user?.did, domain);
-                        const canView = profile && (await canProfileViewBoost(profile, boostInstance));
+                    const profile = await resolveProfileFromContextDid(ctx.user?.did, domain);
+                    const canView = Boolean(
+                        profile && (await canProfileViewBoost(profile, boostInstance))
+                    );
+                    const isViewableByClaimLink =
+                        await isBoostViewableByClaimLink(boostInstance);
 
-                        if (!canView) {
-                            throw new TRPCError({
-                                code: 'FORBIDDEN',
-                                message: 'Boost is not viewable by claim link.',
-                            });
-                        }
+                    if (!isViewableByClaimLink && !canView) {
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message: 'Boost is not viewable by claim link.',
+                        });
                     }
 
                     if (
-                        (await isBoostViewableByClaimLink(boostInstance)) &&
+                        isViewableByClaimLink &&
+                        !canView &&
                         (!challenge || !(await isClaimLinkAlreadySetForBoost(uri, challenge)))
                     ) {
                         throw new TRPCError({
@@ -259,20 +262,20 @@ export const storageRouter = t.router({
                     throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
                 }
 
-                if (!(await isBoostViewableByClaimLink(instance))) {
-                    const profile = await resolveProfileFromContextDid(ctx.user?.did, domain);
-                    const canView = profile && (await canProfileViewBoost(profile, instance));
+                const profile = await resolveProfileFromContextDid(ctx.user?.did, domain);
+                const canView = Boolean(profile && (await canProfileViewBoost(profile, instance)));
+                const isViewableByClaimLink = await isBoostViewableByClaimLink(instance);
 
-                    if (!canView) {
-                        throw new TRPCError({
-                            code: 'FORBIDDEN',
-                            message: 'Boost is not viewable by claim link.',
-                        });
-                    }
+                if (!isViewableByClaimLink && !canView) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: 'Boost is not viewable by claim link.',
+                    });
                 }
 
                 if (
-                    (await isBoostViewableByClaimLink(instance)) &&
+                    isViewableByClaimLink &&
+                    !canView &&
                     (!challenge || !(await isClaimLinkAlreadySetForBoost(uri, challenge)))
                 ) {
                     throw new TRPCError({
