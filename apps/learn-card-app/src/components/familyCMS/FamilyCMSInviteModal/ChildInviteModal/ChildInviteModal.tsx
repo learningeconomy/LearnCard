@@ -59,7 +59,7 @@ const StateValidator = z.object({
     dob: z
         .string()
         .min(1, 'Date of birth is required!')
-        .refine(dob => dob.length === 0 || !Number.isNaN(calculateAge(dob)), {
+        .refine(dob => !Number.isNaN(calculateAge(dob)), {
             message: 'Invalid date of birth.',
         }),
 });
