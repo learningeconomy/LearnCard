@@ -58,11 +58,7 @@ import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { checklistItems } from 'learn-card-base';
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
-
-export enum MyLearnCardModalViewModeEnum {
-    child = 'child',
-    guardian = 'guardian',
-}
+import { MyLearnCardModalViewModeEnum } from './MyLearnCardModal.types';
 
 type MyLearnCardModalProps = {
     branding: BrandingEnum;
