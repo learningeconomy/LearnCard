@@ -16,7 +16,7 @@ import { BoostVisibility } from 'types/boost';
 
 import { getCredentialUri } from '@helpers/credential.helpers';
 
-import { t, didAndChallengeRoute, openRoute } from '@routes';
+import { t, didAndChallengeRoute, openRoute, resolveProfileFromContextDid } from '@routes';
 import { storePresentation } from '@accesslayer/presentation/create';
 import { storeCredential } from '@accesslayer/credential/create';
 import { getCredentialById } from '@accesslayer/credential/read';
@@ -24,6 +24,7 @@ import { getPresentationById } from '@accesslayer/presentation/read';
 import { getUriParts } from '@helpers/uri.helpers';
 import { getPresentationUri } from '@helpers/presentation.helpers';
 import { getBoostById, getBoostByUri } from '@accesslayer/boost/read';
+import { canProfileViewBoost } from '@accesslayer/boost/relationships/read';
 import { getCachedStorageByUri, setStorageForUri } from '@cache/storage';
 import { isClaimLinkAlreadySetForBoost } from '@cache/claim-links';
 import { getContractById } from '@accesslayer/consentflowcontract/read';
@@ -194,13 +195,21 @@ export const storageRouter = t.router({
                     }
 
                     if (boostInstance.visibility !== BoostVisibility.enum.PUBLIC) {
-                        throw new TRPCError({
-                            code: 'FORBIDDEN',
-                            message: 'Boost is not viewable by claim link.',
-                        });
+                        const profile = await resolveProfileFromContextDid(ctx.user?.did, domain);
+                        const canView = profile && (await canProfileViewBoost(profile, boostInstance));
+
+                        if (!canView) {
+                            throw new TRPCError({
+                                code: 'FORBIDDEN',
+                                message: 'Boost is not viewable by claim link.',
+                            });
+                        }
                     }
 
-                    if (!challenge || !(await isClaimLinkAlreadySetForBoost(uri, challenge))) {
+                    if (
+                        boostInstance.visibility === BoostVisibility.enum.PUBLIC &&
+                        (!challenge || !(await isClaimLinkAlreadySetForBoost(uri, challenge)))
+                    ) {
                         throw new TRPCError({
                             code: 'FORBIDDEN',
                             message: 'A valid claim challenge is required to view this boost.',
@@ -251,13 +260,21 @@ export const storageRouter = t.router({
                 }
 
                 if (instance.visibility !== BoostVisibility.enum.PUBLIC) {
-                    throw new TRPCError({
-                        code: 'FORBIDDEN',
-                        message: 'Boost is not viewable by claim link.',
-                    });
+                    const profile = await resolveProfileFromContextDid(ctx.user?.did, domain);
+                    const canView = profile && (await canProfileViewBoost(profile, instance));
+
+                    if (!canView) {
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message: 'Boost is not viewable by claim link.',
+                        });
+                    }
                 }
 
-                if (!challenge || !(await isClaimLinkAlreadySetForBoost(uri, challenge))) {
+                if (
+                    instance.visibility === BoostVisibility.enum.PUBLIC &&
+                    (!challenge || !(await isClaimLinkAlreadySetForBoost(uri, challenge)))
+                ) {
                     throw new TRPCError({
                         code: 'FORBIDDEN',
                         message: 'A valid claim challenge is required to view this boost.',
