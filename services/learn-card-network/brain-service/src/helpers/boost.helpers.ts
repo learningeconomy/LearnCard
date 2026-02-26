@@ -25,7 +25,7 @@ import { acceptCredential, getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
-import { BoostStatus } from 'types/boost';
+import { BoostStatus, BoostVisibility } from 'types/boost';
 import { getDidWeb } from './did.helpers';
 import { DbTermsType } from 'types/consentflowcontract';
 
@@ -51,6 +51,15 @@ export const isProvisionalBoost = (boost: BoostInstance): boolean => {
 
 export const isEditableBoost = (boost: BoostInstance): boolean => {
     return isDraftBoost(boost) || isProvisionalBoost(boost);
+};
+
+/**
+ * Legacy-friendly visibility check:
+ * - Explicit PRIVATE => private
+ * - PUBLIC or undefined/null => public
+ */
+export const isBoostPublicOrLegacy = (boost: { visibility?: string | null }): boolean => {
+    return boost.visibility !== BoostVisibility.enum.PRIVATE;
 };
 
 export const convertCredentialToBoostTemplateJSON = (

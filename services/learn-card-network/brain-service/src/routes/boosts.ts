@@ -87,6 +87,7 @@ import {
     issueClaimLinkBoost,
     isDraftBoost,
     isEditableBoost,
+    isBoostPublicOrLegacy,
     convertCredentialToBoostTemplateJSON,
     isInboxRecipient,
     prepareCredentialFromBoost,
@@ -95,7 +96,6 @@ import {
     BoostValidator,
     BoostGenerateClaimLinkInput,
     BoostStatus,
-    BoostVisibility,
     BoostType,
     BoostWithClaimPermissionsValidator,
 } from 'types/boost';
@@ -2695,11 +2695,11 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if (boost.visibility !== BoostVisibility.enum.PUBLIC) {
+            if (!isBoostPublicOrLegacy(boost)) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message:
-                        'Boost visibility must be PUBLIC before generating a claim link.',
+                        'Boost visibility must not be PRIVATE before generating a claim link.',
                 });
             }
 
@@ -2746,7 +2746,7 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (boost.visibility !== BoostVisibility.enum.PUBLIC) {
+            if (!isBoostPublicOrLegacy(boost)) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message: 'This boost is not currently viewable by claim link.',

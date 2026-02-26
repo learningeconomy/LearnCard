@@ -12,9 +12,9 @@ import {
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
 } from '@learncard/types';
-import { BoostVisibility } from 'types/boost';
 
 import { getCredentialUri } from '@helpers/credential.helpers';
+import { isBoostPublicOrLegacy } from '@helpers/boost.helpers';
 
 import { t, didAndChallengeRoute, openRoute, resolveProfileFromContextDid } from '@routes';
 import { storePresentation } from '@accesslayer/presentation/create';
@@ -194,7 +194,7 @@ export const storageRouter = t.router({
                         throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
                     }
 
-                    if (boostInstance.visibility !== BoostVisibility.enum.PUBLIC) {
+                    if (!isBoostPublicOrLegacy(boostInstance)) {
                         const profile = await resolveProfileFromContextDid(ctx.user?.did, domain);
                         const canView = profile && (await canProfileViewBoost(profile, boostInstance));
 
@@ -207,7 +207,7 @@ export const storageRouter = t.router({
                     }
 
                     if (
-                        boostInstance.visibility === BoostVisibility.enum.PUBLIC &&
+                        isBoostPublicOrLegacy(boostInstance) &&
                         (!challenge || !(await isClaimLinkAlreadySetForBoost(uri, challenge)))
                     ) {
                         throw new TRPCError({
@@ -259,7 +259,7 @@ export const storageRouter = t.router({
                     throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
                 }
 
-                if (instance.visibility !== BoostVisibility.enum.PUBLIC) {
+                if (!isBoostPublicOrLegacy(instance)) {
                     const profile = await resolveProfileFromContextDid(ctx.user?.did, domain);
                     const canView = profile && (await canProfileViewBoost(profile, instance));
 
@@ -272,7 +272,7 @@ export const storageRouter = t.router({
                 }
 
                 if (
-                    instance.visibility === BoostVisibility.enum.PUBLIC &&
+                    isBoostPublicOrLegacy(instance) &&
                     (!challenge || !(await isClaimLinkAlreadySetForBoost(uri, challenge)))
                 ) {
                     throw new TRPCError({
