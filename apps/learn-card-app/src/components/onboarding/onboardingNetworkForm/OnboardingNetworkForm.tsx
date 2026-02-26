@@ -299,17 +299,17 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
 
                     setTimeout(async () => {
                         await onSuccess?.();
-                        newModal(
-                            <OnboardingSwiperForSlides
-                                roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
-                                dob={dob}
-                            />,
-                            {
-                                sectionClassName: '!max-w-full',
-                            },
-                            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-                        );
                     }, 1000);
+                    newModal(
+                        <OnboardingSwiperForSlides
+                            roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
+                            dob={dob}
+                        />,
+                        {
+                            sectionClassName: '!max-w-full',
+                        },
+                        { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                    );
                 }
 
                 if (role === LearnCardRolesEnum.teacher) {
