@@ -108,7 +108,7 @@ const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ r
                 </Swiper>
             </div>
 
-            <div className={`w-full flex flex-col items-center ${currentBgColor}`}>
+            <div className={`w-full flex flex-col items-center p-[10px] ${currentBgColor}`}>
                 <button
                     className="border-[1px] border-grayscale-800 border-solid bg-white max-w-[335px] w-full py-[10px] rounded-[40px] text-grayscale-800 font-poppins font-semibold text-[17px] mb-[10px]"
                     onClick={isLastSlide ? handleGetStarted : handleNextSlide}

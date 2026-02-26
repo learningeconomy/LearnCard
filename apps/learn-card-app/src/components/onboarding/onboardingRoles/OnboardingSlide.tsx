@@ -47,8 +47,8 @@ const OnboardingSlide: React.FC<OnboardingSlideProps> = ({
                     }}
                 />
             </span>
-            <p className="font-poppins text-[17px] text-grayscale-900 mb-[5px] mx-[5px]">
-                <span className="font-semibold">{boldText}</span>{' '}
+            <p className="font-poppins text-[17px] text-grayscale-900 mb-[15px] mx-[5px] max-w-[310px] w-full">
+                <span className="font-bold">{boldText}</span>{' '}
                 {age >= 13 && over13Text ? over13Text : regularText}
             </p>
             <img className="!h-[400px] desktop:!h-[500px]" src={image} alt={imageAlt} />

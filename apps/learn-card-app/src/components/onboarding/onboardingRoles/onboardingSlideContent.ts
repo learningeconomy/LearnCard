@@ -197,7 +197,7 @@ export const roleSlideContent: Partial<Record<LearnCardRolesEnum, RoleSlideConfi
             },
             {
                 boldText: 'Design',
-                regularText: 'Design custom, modular user experiences',
+                regularText: 'custom, modular user experiences',
                 image: developerSlide4,
                 imageAlt: 'Create your own app',
             },

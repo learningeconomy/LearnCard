@@ -90,11 +90,12 @@
     display: flex;
     justify-content: center;
     padding: 10px 0;
-    margin-bottom: 22px;
+    margin-bottom: 40px;
 
     .swiper-pagination-bullet {
-        height: 8px;
-        width: 8px;
+        height: 8px !important;
+        width: 8px !important;
+        margin-right: 8px !important;
         opacity: 1;
         background-color: #6f7590;
         border-radius: 5px;
@@ -102,8 +103,9 @@
         transition: width 200ms ease-out;
 
         &.swiper-pagination-bullet-active {
-            width: 15px !important;
-            height: 15px !important;
+            width: 13px !important;
+            height: 13px !important;
+            margin-right: 8px !important;
             background-color: #353e64 !important;
             border-radius: 100px;
         }
