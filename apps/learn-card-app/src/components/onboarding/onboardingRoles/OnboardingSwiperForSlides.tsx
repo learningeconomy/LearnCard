@@ -6,7 +6,6 @@ import { Keyboard, Navigation, Pagination, Scrollbar, Swiper as SwiperInterface 
 import OnboardingSlide from './OnboardingSlide';
 import { getSlideContent, roleSlideContent } from './onboardingSlideContent';
 
-import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import { useModal, ModalTypes } from 'learn-card-base';
 import LaunchPadActionModal from 'apps/learn-card-app/src/pages/launchPad/LaunchPadHeader/LaunchPadActionModal';
 
@@ -39,19 +38,8 @@ const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ r
         clickable: true,
     };
 
-    const slideReachEnd = () => {
-        slidesRef?.disable();
-        setTimeout(() => {
-            firstStartupStore.set.introSlidesCompleted(true);
-        }, 1500);
-    };
-
     const handleSlideChange = (swiper: any) => {
         setActiveSlideIndex(swiper.activeIndex);
-    };
-
-    const handlePrevSlide = () => {
-        slidesRef?.slidePrev();
     };
 
     const handleNextSlide = () => {
@@ -82,7 +70,6 @@ const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ r
                     grabCursor={true}
                     scrollbar={true}
                     className={'h-full'}
-                    onReachEnd={() => slideReachEnd()}
                     onSwiper={swiper => setSlidesRef(swiper)}
                     onSlideChange={handleSlideChange}
                 >
