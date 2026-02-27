@@ -182,19 +182,25 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         });
 
         await expect(b.invoke.attachFrameworkToBoost(boostUri, frameworkId)).rejects.toThrow();
-        await expect(b.invoke.alignBoostSkills(boostUri, [{ frameworkId, id: skillId }])).rejects.toThrow();
+        await expect(
+            b.invoke.alignBoostSkills(boostUri, [{ frameworkId, id: skillId }])
+        ).rejects.toThrow();
 
         await a.invoke.addBoostAdmin(boostUri, USERS.b.profileId);
 
         const attachResult = await b.invoke.attachFrameworkToBoost(boostUri, frameworkId);
         expect(attachResult).toBe(true);
 
-        const alignResult = await b.invoke.alignBoostSkills(boostUri, [{ frameworkId, id: skillId }]);
+        const alignResult = await b.invoke.alignBoostSkills(boostUri, [
+            { frameworkId, id: skillId },
+        ]);
         expect(alignResult).toBe(true);
 
         await a.invoke.removeBoostAdmin(boostUri, USERS.b.profileId);
 
-        await expect(b.invoke.alignBoostSkills(boostUri, [{ frameworkId, id: skillId }])).rejects.toThrow();
+        await expect(
+            b.invoke.alignBoostSkills(boostUri, [{ frameworkId, id: skillId }])
+        ).rejects.toThrow();
     });
 
     test('allows child boost admins to align skills from ancestor frameworks (explicit attach required for injection)', async () => {
@@ -299,11 +305,16 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
 
         // 3) Create a boost with skill attachments in a single call
         const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
-            visibility: 'PUBLIC',
             skills: [
                 { frameworkId: fwId, id: parentSkillIdSynced },
                 { frameworkId: fwId, id: childSkillIdSynced },
             ],
+        });
+
+        await a.invoke.updateBoost(boostUri, {
+            defaultPermissions: {
+                canView: true,
+            },
         });
 
         // Explicitly attach the framework to the boost to enable alignment injection

@@ -55,7 +55,11 @@ describe('Boosts', () => {
 
         await expect(a.invoke.generateClaimLink(boostUri, claimLinkSA)).rejects.toThrow();
 
-        await a.invoke.updateBoost(boostUri, { visibility: 'PUBLIC' });
+        await a.invoke.updateBoost(boostUri, {
+            defaultPermissions: {
+                canView: true,
+            },
+        });
 
         const claimLink = await a.invoke.generateClaimLink(boostUri, claimLinkSA);
         expect(claimLink.boostUri).toBe(boostUri);
