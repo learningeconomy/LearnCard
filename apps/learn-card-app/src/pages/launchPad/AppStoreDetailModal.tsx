@@ -13,6 +13,9 @@ import {
     useGetAppReviews,
     AppStoreAppMetadata,
     AppStoreAppReview,
+    switchedProfileStore,
+    useGetCurrentLCNUser,
+    calculateAge,
 } from 'learn-card-base';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
@@ -29,7 +32,7 @@ import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData';
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 import AiTutorConnectedView from './AiTutorConnectedView';
-import { Settings } from 'lucide-react';
+import { Settings, ShieldAlert } from 'lucide-react';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
 
 // Extended type to include new fields (until types package is rebuilt)
@@ -39,6 +42,16 @@ type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
     promo_video_url?: string;
     ios_app_store_id?: string;
     hero_background_color?: string;
+    min_age?: number;
+    age_rating?: '4+' | '9+' | '12+' | '17+';
+};
+
+// Map age_rating to numeric minimum age
+const AGE_RATING_TO_MIN_AGE: Record<string, number> = {
+    '4+': 4,
+    '9+': 9,
+    '12+': 12,
+    '17+': 17,
 };
 
 // Helper to convert YouTube/Vimeo URLs to embed URLs
@@ -146,6 +159,35 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
     const { initWallet } = useWallet();
 
+    // Get current user profile for age checking
+    const { currentLCNUser } = useGetCurrentLCNUser();
+    const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
+    const profileType = switchedProfileStore.use.profileType();
+    const isChildProfile = Boolean(isSwitchedProfile && profileType === 'child');
+
+    // Calculate the age floor for this listing
+    const ageFloor = useMemo(() => {
+        if (listing.min_age !== undefined) return listing.min_age;
+        if (listing.age_rating) return AGE_RATING_TO_MIN_AGE[listing.age_rating] ?? 0;
+        return 0; // No restriction
+    }, [listing.min_age, listing.age_rating]);
+
+    // Calculate user's age from DOB
+    const userAge = useMemo(() => {
+        if (!currentLCNUser?.dob) return null;
+        const age = calculateAge(currentLCNUser.dob);
+        return Number.isNaN(age) ? null : age;
+    }, [currentLCNUser?.dob]);
+
+    // Check if user is underage for this app
+    const isUnderage = userAge !== null && ageFloor > 0 && userAge < ageFloor;
+
+    // Check if listing has age restriction
+    const hasAgeRestriction = ageFloor > 0;
+
+    // Check if child profile is missing DOB
+    const childMissingDob = isChildProfile && !currentLCNUser?.dob;
+
     const doInstall = async () => {
         setIsProcessing(true);
 
@@ -159,33 +201,238 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         }
     };
 
-    const handleInstall = () => {
-        // Guardian verification before showing permissions modal
-        guardedAction(() => {
-            // Get permissions from launch config
-            const permissions: string[] = launchConfig?.permissions || [];
-            const contractUri: string | undefined = launchConfig?.contractUri;
+    // Show the consent modal and proceed with install
+    const showInstallConsentModal = () => {
+        const permissions: string[] = launchConfig?.permissions || [];
+        const consentContractUri: string | undefined = launchConfig?.contractUri;
 
-            // Show consent modal with permissions
-            newModal(
-                <AppInstallConsentModal
-                    appName={listing.display_name}
-                    appIcon={listing.icon_url}
-                    permissions={permissions}
-                    contractUri={contractUri}
-                    isPreview={isPreview}
-                    onAccept={() => {
-                        closeModal();
-                        doInstall();
+        newModal(
+            <AppInstallConsentModal
+                appName={listing.display_name}
+                appIcon={listing.icon_url}
+                permissions={permissions}
+                contractUri={consentContractUri}
+                isPreview={isPreview}
+                onAccept={() => {
+                    closeModal();
+                    doInstall();
+                }}
+                onReject={closeModal}
+            />,
+            {
+                sectionClassName: '!max-w-[500px]',
+                hideButton: true,
+            },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+        );
+    };
+
+    // Show age restriction blocked modal
+    const showAgeBlockedModal = () => {
+        newModal(
+            <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
+                <div
+                    className="border-b border-grayscale-200 p-6"
+                    style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+                >
+                    <h2 className="text-2xl font-bold text-grayscale-900 text-center">
+                        Age Restricted
+                    </h2>
+                </div>
+
+                <div className="flex-1 p-6 overflow-auto">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                        <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
+                            <ShieldAlert className="w-10 h-10 text-red-600" />
+                        </div>
+
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-grayscale-100 flex items-center justify-center shadow-md">
+                            <img
+                                src={listing.icon_url}
+                                alt={listing.display_name}
+                                className="w-full h-full object-cover"
+                                onError={e => {
+                                    (e.target as HTMLImageElement).src =
+                                        'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
+                                }}
+                            />
+                        </div>
+
+                        <div>
+                            <p className="text-lg font-semibold text-grayscale-900 mb-2">
+                                {listing.display_name}
+                            </p>
+
+                            <p className="text-sm text-grayscale-600">
+                                This app requires users to be <strong>{ageFloor}+</strong> years
+                                old.
+                            </p>
+                        </div>
+
+                        <div className="bg-red-50 border border-red-100 rounded-lg p-4 w-full text-left">
+                            <p className="text-sm text-red-800">
+                                Based on your profile's date of birth, you do not meet the minimum
+                                age requirement for this app.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
+                    style={{
+                        paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
                     }}
-                    onReject={closeModal}
-                />,
-                {
-                    sectionClassName: '!max-w-[500px]',
-                    hideButton: true,
-                },
-                { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
-            );
+                >
+                    <button
+                        onClick={closeModal}
+                        className="px-8 py-3 text-lg font-semibold text-white bg-grayscale-600 rounded-full hover:bg-grayscale-700 transition-colors"
+                    >
+                        OK
+                    </button>
+                </div>
+            </div>,
+            {
+                sectionClassName: '!max-w-[500px]',
+                hideButton: true,
+            },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+        );
+    };
+
+    // Show DOB entry modal for child profiles missing DOB
+    const showDobEntryModal = () => {
+        let enteredDob = '';
+
+        const handleDobSubmit = () => {
+            if (!enteredDob) return;
+
+            // Calculate age from entered DOB
+            const enteredAge = calculateAge(enteredDob);
+            if (Number.isNaN(enteredAge)) {
+                return; // Invalid date
+            }
+
+            closeModal();
+
+            // Check if entered age meets the requirement
+            if (enteredAge < ageFloor) {
+                // Child is underage - block installation
+                showAgeBlockedModal();
+            } else {
+                // Child meets age requirement - proceed to install
+                showInstallConsentModal();
+            }
+        };
+
+        newModal(
+            <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
+                <div
+                    className="border-b border-grayscale-200 p-6"
+                    style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+                >
+                    <h2 className="text-2xl font-bold text-grayscale-900 text-center">
+                        Date of Birth Required
+                    </h2>
+                </div>
+
+                <div className="flex-1 p-6 overflow-auto">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-grayscale-100 flex items-center justify-center shadow-md">
+                            <img
+                                src={listing.icon_url}
+                                alt={listing.display_name}
+                                className="w-full h-full object-cover"
+                                onError={e => {
+                                    (e.target as HTMLImageElement).src =
+                                        'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
+                                }}
+                            />
+                        </div>
+
+                        <div>
+                            <p className="text-lg font-semibold text-grayscale-900 mb-2">
+                                {listing.display_name}
+                            </p>
+
+                            <p className="text-sm text-grayscale-600 mb-4">
+                                This app has an age rating of{' '}
+                                <strong>{listing.age_rating || `${ageFloor}+`}</strong>.
+                                {listing.min_age !== undefined && (
+                                    <>
+                                        {' '}
+                                        Minimum age: <strong>{listing.min_age}+</strong>.
+                                    </>
+                                )}
+                            </p>
+                        </div>
+
+                        <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 w-full text-left">
+                            <p className="text-sm text-amber-800 mb-3">
+                                Please enter your child's date of birth to continue.
+                            </p>
+
+                            <input
+                                type="date"
+                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                onChange={e => {
+                                    enteredDob = e.target.value;
+                                }}
+                                max={new Date().toISOString().split('T')[0]}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
+                    style={{
+                        paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+                    }}
+                >
+                    <button
+                        onClick={closeModal}
+                        className="px-6 py-3 text-lg font-semibold text-grayscale-700 bg-grayscale-200 rounded-full hover:bg-grayscale-300 transition-colors"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        onClick={handleDobSubmit}
+                        className="px-6 py-3 text-lg font-semibold text-white bg-cyan-600 rounded-full hover:bg-cyan-700 transition-colors"
+                    >
+                        Continue
+                    </button>
+                </div>
+            </div>,
+            {
+                sectionClassName: '!max-w-[500px]',
+                hideButton: true,
+            },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+        );
+    };
+
+    const handleInstall = () => {
+        // Case 1: User has DOB and is underage - block completely
+        if (isUnderage) {
+            showAgeBlockedModal();
+            return;
+        }
+
+        // Case 2: Child profile missing DOB and app has age restriction
+        // Use guardian gate, then prompt for DOB entry
+        if (childMissingDob && hasAgeRestriction) {
+            guardedAction(() => {
+                showDobEntryModal();
+            });
+            return;
+        }
+
+        // Case 3: No age restriction or user is old enough
+        // Use guardian gate for child profiles, then proceed to install
+        guardedAction(() => {
+            showInstallConsentModal();
         });
     };
 
@@ -315,6 +562,20 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     };
 
     const handleLaunch = async () => {
+        // Check age restrictions before launch
+        if (isUnderage) {
+            showAgeBlockedModal();
+            return;
+        }
+
+        // Child profile missing DOB with age-restricted app - require guardian + DOB entry
+        if (childMissingDob && hasAgeRestriction) {
+            guardedAction(() => {
+                showDobEntryModal();
+            });
+            return;
+        }
+
         // For consent flow apps, redirect with did and delegate VP
         if (hasConsented && contract) {
             // Guardian consent apps need profile selection flow
@@ -450,11 +711,11 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                         </span>
                                     )}
 
-                                    {/* {installCount !== undefined && (
-                                <span className="text-xs text-grayscale-500">
-                                    {installCount.toLocaleString()} installs
-                                </span>
-                            )} */}
+                                    {listing.age_rating && (
+                                        <span className="inline-block px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
+                                            {listing.age_rating}
+                                        </span>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -484,7 +745,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 </p>
 
                                 <h6 className="text-grayscale-600 font-bold text-[17px] my-2 font-notoSans">
-                                    {iosMetadata.contentAdvisoryRating || '12+'}
+                                    {listing.age_rating ||
+                                        iosMetadata.contentAdvisoryRating ||
+                                        '4+'}
                                 </h6>
 
                                 <p className="text-xs text-grayscale-400 text-center font-notoSans uppercase">

@@ -99,12 +99,17 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                         <h4 className="font-medium text-gray-600 text-sm mb-2">Highlights</h4>
 
                         <ul className="space-y-1">
-                            {data.highlights.filter(h => h.trim()).map((highlight, index) => (
-                                <li key={index} className="flex items-start gap-2 text-sm text-gray-500">
-                                    <span className="text-emerald-500">•</span>
-                                    {highlight}
-                                </li>
-                            ))}
+                            {data.highlights
+                                .filter(h => h.trim())
+                                .map((highlight, index) => (
+                                    <li
+                                        key={index}
+                                        className="flex items-start gap-2 text-sm text-gray-500"
+                                    >
+                                        <span className="text-emerald-500">•</span>
+                                        {highlight}
+                                    </li>
+                                ))}
                         </ul>
                     </div>
                 )}

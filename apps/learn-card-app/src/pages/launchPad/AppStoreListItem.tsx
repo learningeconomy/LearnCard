@@ -2,7 +2,15 @@ import React, { useMemo } from 'react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
 import { IonItem, IonSpinner } from '@ionic/react';
-import { useModal, ModalTypes, useWallet } from 'learn-card-base';
+import {
+    useModal,
+    ModalTypes,
+    useWallet,
+    switchedProfileStore,
+    useGetCurrentLCNUser,
+    calculateAge,
+} from 'learn-card-base';
+import { ShieldAlert } from 'lucide-react';
 import { ThreeDotVertical } from '@learncard/react';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -12,6 +20,15 @@ import { EmbedIframeModal } from './EmbedIframeModal';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 import AiTutorConnectedView from './AiTutorConnectedView';
+import { useGuardianGate } from '../../hooks/useGuardianGate';
+
+// Map age_rating to numeric minimum age
+const AGE_RATING_TO_MIN_AGE: Record<string, number> = {
+    '4+': 4,
+    '9+': 9,
+    '12+': 12,
+    '17+': 17,
+};
 
 type AppStoreListItemProps = {
     listing: AppStoreListing | InstalledApp;
@@ -52,6 +69,112 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
 
     const { initWallet } = useWallet();
 
+    // Guardian gate for child profiles
+    const { guardedAction } = useGuardianGate();
+
+    // Get current user profile for age checking
+    const { currentLCNUser } = useGetCurrentLCNUser();
+    const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
+    const profileType = switchedProfileStore.use.profileType();
+    const isChildProfile = Boolean(isSwitchedProfile && profileType === 'child');
+
+    // Calculate the age floor for this listing
+    const ageFloor = useMemo(() => {
+        const listingAny = listing as any;
+        if (listingAny.min_age !== undefined) return listingAny.min_age;
+        if (listingAny.age_rating) return AGE_RATING_TO_MIN_AGE[listingAny.age_rating] ?? 0;
+        return 0; // No restriction
+    }, [(listing as any).min_age, (listing as any).age_rating]);
+
+    // Calculate user's age from DOB
+    const userAge = useMemo(() => {
+        if (!currentLCNUser?.dob) return null;
+        const age = calculateAge(currentLCNUser.dob);
+        return Number.isNaN(age) ? null : age;
+    }, [currentLCNUser?.dob]);
+
+    // Check if user is underage for this app
+    const isUnderage = userAge !== null && ageFloor > 0 && userAge < ageFloor;
+
+    // Check if listing has age restriction
+    const hasAgeRestriction = ageFloor > 0;
+
+    // Check if child profile is missing DOB
+    const childMissingDob = isChildProfile && !currentLCNUser?.dob;
+
+    // Show age restriction blocked modal
+    const showAgeBlockedModal = () => {
+        newModal(
+            <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
+                <div
+                    className="border-b border-grayscale-200 p-6"
+                    style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+                >
+                    <h2 className="text-2xl font-bold text-grayscale-900 text-center">
+                        Age Restricted
+                    </h2>
+                </div>
+
+                <div className="flex-1 p-6 overflow-auto">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                        <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
+                            <ShieldAlert className="w-10 h-10 text-red-600" />
+                        </div>
+
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-grayscale-100 flex items-center justify-center shadow-md">
+                            <img
+                                src={listing.icon_url}
+                                alt={listing.display_name}
+                                className="w-full h-full object-cover"
+                                onError={e => {
+                                    (e.target as HTMLImageElement).src =
+                                        'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
+                                }}
+                            />
+                        </div>
+
+                        <div>
+                            <p className="text-lg font-semibold text-grayscale-900 mb-2">
+                                {listing.display_name}
+                            </p>
+
+                            <p className="text-sm text-grayscale-600">
+                                This app requires users to be <strong>{ageFloor}+</strong> years
+                                old.
+                            </p>
+                        </div>
+
+                        <div className="bg-red-50 border border-red-100 rounded-lg p-4 w-full text-left">
+                            <p className="text-sm text-red-800">
+                                Based on your profile's date of birth, you do not meet the minimum
+                                age requirement for this app.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
+                    style={{
+                        paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+                    }}
+                >
+                    <button
+                        onClick={() => newModal(null)}
+                        className="px-8 py-3 text-lg font-semibold text-white bg-grayscale-600 rounded-full hover:bg-grayscale-700 transition-colors"
+                    >
+                        OK
+                    </button>
+                </div>
+            </div>,
+            {
+                sectionClassName: '!max-w-[500px]',
+                hideButton: true,
+            },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+        );
+    };
+
     const handleOpenDetail = () => {
         newModal(
             <AppStoreDetailModal
@@ -63,6 +186,18 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     };
 
     const handleLaunch = async () => {
+        // Check age restrictions before launch
+        if (isUnderage) {
+            showAgeBlockedModal();
+            return;
+        }
+
+        // Child profile missing DOB with age-restricted app - open detail modal for DOB entry flow
+        if (childMissingDob && hasAgeRestriction) {
+            handleOpenDetail();
+            return;
+        }
+
         // For consent flow apps, redirect with did and delegate VP
         if (hasConsented && contract) {
             // Guardian consent apps need profile selection flow
@@ -180,9 +315,17 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
 
                 <div className="right-side flex justify-between w-full">
                     <div className="flex flex-col items-start justify-center text-left flex-1 min-w-0">
-                        <p className="text-grayscale-900 font-medium line-clamp-1">
-                            {listing.display_name}
-                        </p>
+                        <div className="flex items-center gap-1.5">
+                            <p className="text-grayscale-900 font-medium line-clamp-1">
+                                {listing.display_name}
+                            </p>
+
+                            {(listing as any).age_rating && (
+                                <span className="inline-block px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-medium rounded-full shrink-0">
+                                    {(listing as any).age_rating}
+                                </span>
+                            )}
+                        </div>
 
                         <p className="text-grayscale-600 font-medium text-[12px] line-clamp-2 pr-1">
                             {listing.tagline}
