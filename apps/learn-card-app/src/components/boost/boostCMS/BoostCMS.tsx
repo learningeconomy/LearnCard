@@ -710,7 +710,11 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             const { boostUri } = await createBoost({
                 state: addFallbackNameToCMSState(state),
                 status: LCNBoostStatusEnum.draft,
-                defaultPermissions: { canView: Boolean(state.boostPermissions?.canView) },
+                defaultPermissions: {
+                    canView: Boolean(state.boostPermissions?.canView),
+                    canEdit: Boolean(state.boostPermissions?.canEdit),
+                    canIssue: Boolean(state.boostPermissions?.canIssue),
+                },
                 skillIds,
             });
 
@@ -771,7 +775,11 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             const { boostUri } = await createBoost({
                 state: addFallbackNameToCMSState(state),
                 status: LCNBoostStatusEnum.live,
-                defaultPermissions: { canView: Boolean(state.boostPermissions?.canView) },
+                defaultPermissions: {
+                    canView: Boolean(state.boostPermissions?.canView),
+                    canEdit: Boolean(state.boostPermissions?.canEdit),
+                    canIssue: Boolean(state.boostPermissions?.canIssue),
+                },
                 skillIds,
             });
 

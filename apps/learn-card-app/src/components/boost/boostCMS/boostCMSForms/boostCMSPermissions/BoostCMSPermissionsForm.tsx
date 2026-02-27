@@ -15,7 +15,7 @@ const BoostCMSPermissionsForm: React.FC<{
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
             <IonCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h1 className="font-poppins font-medium text-grayscale-900 text-lg p-0 m-0">
-                    Boost Permissions
+                    Default Permissions
                 </h1>
                 <button onClick={() => setShowPermissions(!showPermissions)}>
                     <CaretLeft
@@ -27,8 +27,20 @@ const BoostCMSPermissionsForm: React.FC<{
             </IonCol>
             {showPermissions && (
                 <IonCol size="12" className="w-full bg-white">
-                    <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                        <p className="text-grayscale-900 font-medium w-10/12">Visibility</p>
+                    <div className="pb-[12px]">
+                        <p className="text-grayscale-600 text-xs m-0">
+                            Configure what anyone can view, edit, or send by default for this
+                            credential template.
+                        </p>
+                    </div>
+
+                    <div className="w-full flex items-center justify-between py-[8px]">
+                        <div className="w-10/12">
+                            <p className="text-grayscale-900 font-medium m-0">View Template</p>
+                            <p className="text-grayscale-600 text-xs m-0">
+                                Anyone can view this credential template.
+                            </p>
+                        </div>
                         <IonToggle
                             mode="ios"
                             color="emerald-700"
@@ -41,6 +53,56 @@ const BoostCMSPermissionsForm: React.FC<{
                                     boostPermissions: {
                                         ...prevState.boostPermissions,
                                         canView,
+                                    },
+                                }));
+                            }}
+                        />
+                    </div>
+
+                    <div className="w-full flex items-center justify-between py-[8px]">
+                        <div className="w-10/12">
+                            <p className="text-grayscale-900 font-medium m-0">Edit Template</p>
+                            <p className="text-grayscale-600 text-xs m-0">
+                                Anyone can edit this credential template.
+                            </p>
+                        </div>
+                        <IonToggle
+                            mode="ios"
+                            color="emerald-700"
+                            checked={Boolean(state?.boostPermissions?.canEdit)}
+                            disabled={disabled}
+                            onIonChange={e => {
+                                const canEdit = Boolean(e.detail.checked);
+                                setState(prevState => ({
+                                    ...prevState,
+                                    boostPermissions: {
+                                        ...prevState.boostPermissions,
+                                        canEdit,
+                                    },
+                                }));
+                            }}
+                        />
+                    </div>
+
+                    <div className="w-full flex items-center justify-between py-[8px]">
+                        <div className="w-10/12">
+                            <p className="text-grayscale-900 font-medium m-0">Send Template</p>
+                            <p className="text-grayscale-600 text-xs m-0">
+                                Anyone can send this credential template.
+                            </p>
+                        </div>
+                        <IonToggle
+                            mode="ios"
+                            color="emerald-700"
+                            checked={Boolean(state?.boostPermissions?.canIssue)}
+                            disabled={disabled}
+                            onIonChange={e => {
+                                const canIssue = Boolean(e.detail.checked);
+                                setState(prevState => ({
+                                    ...prevState,
+                                    boostPermissions: {
+                                        ...prevState.boostPermissions,
+                                        canIssue,
                                     },
                                 }));
                             }}

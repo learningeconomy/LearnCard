@@ -249,6 +249,8 @@ export type BoostCMSState = {
     memberOptions: BoostCMSMemberOptions;
     boostPermissions: {
         canView: boolean;
+        canEdit: boolean;
+        canIssue: boolean;
     };
     alignments?: BoostCMSAlignment[];
 };
@@ -310,6 +312,8 @@ export const initialBoostCMSState: BoostCMSState = {
     },
     boostPermissions: {
         canView: false,
+        canEdit: true,
+        canIssue: true,
     },
 };
 
