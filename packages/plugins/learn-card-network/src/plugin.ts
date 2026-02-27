@@ -609,6 +609,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.boost.getBoost.query({ uri });
             },
+            getBoostSkills: async (_learnCard, uri) => {
+                await ensureUser();
+
+                return client.boost.getBoostSkills.query({ uri });
+            },
             getBoostFrameworks: async (_learnCard, uri, options = {}) => {
                 if (!userData) throw new Error('Please make an account first!');
 
@@ -813,10 +818,17 @@ export async function getLearnCardNetworkPlugin(
             updateBoost: async (_learnCard, uri, updates, credential) => {
                 await ensureUser();
 
-                return client.boost.updateBoost.mutate({
+                // Allow passing skills similar to createBoost; send them at top-level, not inside updates
+                const { skills, ...restUpdates } = (updates as any) ?? {};
+
+                const payload: any = {
                     uri,
-                    updates: { ...(credential && { credential }), ...updates },
-                });
+                    updates: { ...(credential && { credential }), ...restUpdates },
+                };
+
+                if (Array.isArray(skills) && skills.length > 0) payload.skills = skills;
+
+                return client.boost.updateBoost.mutate(payload);
             },
             attachFrameworkToBoost: async (_learnCard, boostUri, frameworkId) => {
                 if (!userData) throw new Error('Please make an account first!');
