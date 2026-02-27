@@ -22,6 +22,9 @@ const BoostAddressBook = lazyWithRetry(
 const BoostCMSBasicInfoForm = lazyWithRetry(
     () => import('./boostCMSForms/boostCMSBasicInfo/BoostCMSBasicInfoForm')
 );
+const BoostCMSPermissionsForm = lazyWithRetry(
+    () => import('./boostCMSForms/boostCMSPermissions/BoostCMSPermissionsForm')
+);
 const BoostCMSHeader = lazyWithRetry(() => import('./BoostCMSHeader/BoostCMSHeader'));
 const BoostCMSMediaForm = lazyWithRetry(
     () => import('./boostCMSForms/boostCMSMedia/BoostCMSMediaForm')
@@ -707,6 +710,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             const { boostUri } = await createBoost({
                 state: addFallbackNameToCMSState(state),
                 status: LCNBoostStatusEnum.draft,
+                defaultPermissions: { canView: Boolean(state.boostPermissions?.canView) },
                 skillIds,
             });
 
@@ -767,6 +771,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             const { boostUri } = await createBoost({
                 state: addFallbackNameToCMSState(state),
                 status: LCNBoostStatusEnum.live,
+                defaultPermissions: { canView: Boolean(state.boostPermissions?.canView) },
                 skillIds,
             });
 
@@ -987,6 +992,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 <BoostFrameworkSkillSelector state={state} setState={setState} />
                 <BoostCMSMediaForm state={state} setState={setState} />
                 <BoostCMSBasicInfoForm state={state} setState={setState} />
+                <BoostCMSPermissionsForm state={state} setState={setState} />
                 <BoostAddressBook
                     state={state}
                     setState={setState}
