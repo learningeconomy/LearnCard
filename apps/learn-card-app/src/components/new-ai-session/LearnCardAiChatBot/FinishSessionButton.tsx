@@ -90,7 +90,7 @@ const FinishSessionButton: React.FC = () => {
                         onClick={handleFinish}
                         className="w-[24px] h-[24px] flex items-center justify-center text-grayscale-600"
                     >
-                        <X />
+                        <X className="text-grayscale-800 w-[24px] h-[24px]" />
                     </button>
                 )}
             </div>
@@ -111,7 +111,7 @@ const FinishSessionButton: React.FC = () => {
                 onClick={handleFinish}
                 className="w-[24px] h-[24px] flex items-center justify-center text-grayscale-600"
             >
-                <X />
+                <X className="text-grayscale-800 w-[24px] h-[24px]" />
             </button>
         </div>
     );
