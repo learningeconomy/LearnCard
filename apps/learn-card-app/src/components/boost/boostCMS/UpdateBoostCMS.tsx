@@ -9,6 +9,7 @@ import BoostAddressBook, {
     BoostAddressBookViewMode,
 } from './boostCMSForms/boostCMSIssueTo/BoostAddressBook';
 import BoostCMSBasicInfoForm from './boostCMSForms/boostCMSBasicInfo/BoostCMSBasicInfoForm';
+import BoostCMSPermissionsForm from './boostCMSForms/boostCMSPermissions/BoostCMSPermissionsForm';
 import BoostCMSAppearanceController from './boostCMSForms/boostCMSAppearance/BoostCMSAppearanceController';
 import BoostCMSMediaForm from './boostCMSForms/boostCMSMedia/BoostCMSMediaForm';
 import BoostPreview from './BoostPreview/BoostPreview';
@@ -99,7 +100,9 @@ const UpdateBoostCMS: React.FC = () => {
         useLCAStylesPackRegistry();
     const { data: searchResults, isLoading: loading } = useGetSearchProfiles(search ?? '');
 
-    const { data: recipients, isLoading: recipientsLoading } = useGetBoostRecipients(_boostUri ?? null);
+    const { data: recipients, isLoading: recipientsLoading } = useGetBoostRecipients(
+        _boostUri ?? null
+    );
 
     const [state, setState] = useState<BoostCMSState>({
         ...initialBoostCMSState,
@@ -111,8 +114,7 @@ const UpdateBoostCMS: React.FC = () => {
         appearance: {
             ...initialBoostCMSState.appearance,
             badgeThumbnail: boostCategoryMetadata[_boostCategoryType].CategoryImage,
-            displayType:
-                getDefaultDisplayType(_boostCategoryType) || 'certificate',
+            displayType: getDefaultDisplayType(_boostCategoryType) || 'certificate',
         },
     });
     const [customTypes, setCustomTypes] = useState<any>(initialCustomBoostTypesState);
@@ -131,18 +133,23 @@ const UpdateBoostCMS: React.FC = () => {
             setIsBoostLoading(true);
             const wallet = await initWallet();
 
-            const boostVC = await wallet?.invoke?.resolveFromLCN(uri);
+            const [boostVC, admin, boostWrapper] = await Promise.all([
+                wallet?.invoke?.resolveFromLCN(uri),
+                getBoostAdmin(wallet, uri),
+                wallet?.invoke?.getBoost(uri),
+            ]);
             const _boostVC = unwrapBoostCredential(boostVC as any);
-            const admin = await getBoostAdmin(wallet, uri);
             const filteredAdmin = admin?.records?.filter(
                 record => record.profileId !== profile?.profileId
             );
             setAdmin(filteredAdmin);
 
-            const boostWrapper = await wallet?.invoke?.getBoost(uri);
             // disable editing boost based on boost status
             // DRAFT and PROVISIONAL boosts are editable, LIVE boosts are not
-            if (boostWrapper?.status === LCNBoostStatusEnum.draft || boostWrapper?.status === LCNBoostStatusEnum.provisional) {
+            if (
+                boostWrapper?.status === LCNBoostStatusEnum.draft ||
+                boostWrapper?.status === LCNBoostStatusEnum.provisional
+            ) {
                 setIsEditDisabled(false);
             } else if (boostWrapper?.status === LCNBoostStatusEnum.live) {
                 setIsEditDisabled(true);
@@ -211,6 +218,20 @@ const UpdateBoostCMS: React.FC = () => {
                     mediaAttachments: [...state?.mediaAttachments, ...boostVcAttachments],
                     skills: [...state.skills, ...(_boostVC?.skills ?? [])],
                     alignments: derivedAlignments,
+                    boostPermissions: {
+                        canView:
+                            typeof boostWrapper?.defaultPermissions?.canView === 'boolean'
+                                ? boostWrapper.defaultPermissions.canView
+                                : prevState.boostPermissions.canView,
+                        canEdit:
+                            typeof boostWrapper?.defaultPermissions?.canEdit === 'boolean'
+                                ? boostWrapper.defaultPermissions.canEdit
+                                : prevState.boostPermissions.canEdit,
+                        canIssue:
+                            typeof boostWrapper?.defaultPermissions?.canIssue === 'boolean'
+                                ? boostWrapper.defaultPermissions.canIssue
+                                : prevState.boostPermissions.canIssue,
+                    },
                 };
             });
 
@@ -694,6 +715,11 @@ const UpdateBoostCMS: React.FC = () => {
                 />
                 <BoostCMSMediaForm state={state} setState={setState} disabled={isEditDisabled} />
                 <BoostCMSBasicInfoForm
+                    state={state}
+                    setState={setState}
+                    disabled={isEditDisabled}
+                />
+                <BoostCMSPermissionsForm
                     state={state}
                     setState={setState}
                     disabled={isEditDisabled}

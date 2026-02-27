@@ -69,7 +69,11 @@ const BoostCMSPermissionsForm: React.FC<{
                         <IonToggle
                             mode="ios"
                             color="emerald-700"
-                            checked={Boolean(state?.boostPermissions?.canEdit)}
+                            checked={
+                                typeof state?.boostPermissions?.canEdit === 'boolean'
+                                    ? state.boostPermissions.canEdit
+                                    : true
+                            }
                             disabled={disabled}
                             onIonChange={e => {
                                 const canEdit = Boolean(e.detail.checked);
@@ -94,7 +98,11 @@ const BoostCMSPermissionsForm: React.FC<{
                         <IonToggle
                             mode="ios"
                             color="emerald-700"
-                            checked={Boolean(state?.boostPermissions?.canIssue)}
+                            checked={
+                                typeof state?.boostPermissions?.canIssue === 'boolean'
+                                    ? state.boostPermissions.canIssue
+                                    : true
+                            }
                             disabled={disabled}
                             onIonChange={e => {
                                 const canIssue = Boolean(e.detail.checked);

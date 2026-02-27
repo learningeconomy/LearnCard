@@ -711,9 +711,18 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 state: addFallbackNameToCMSState(state),
                 status: LCNBoostStatusEnum.draft,
                 defaultPermissions: {
-                    canView: Boolean(state.boostPermissions?.canView),
-                    canEdit: Boolean(state.boostPermissions?.canEdit),
-                    canIssue: Boolean(state.boostPermissions?.canIssue),
+                    canView:
+                        typeof state.boostPermissions?.canView === 'boolean'
+                            ? state.boostPermissions.canView
+                            : false,
+                    canEdit:
+                        typeof state.boostPermissions?.canEdit === 'boolean'
+                            ? state.boostPermissions.canEdit
+                            : true,
+                    canIssue:
+                        typeof state.boostPermissions?.canIssue === 'boolean'
+                            ? state.boostPermissions.canIssue
+                            : true,
                 },
                 skillIds,
             });
@@ -776,9 +785,18 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 state: addFallbackNameToCMSState(state),
                 status: LCNBoostStatusEnum.live,
                 defaultPermissions: {
-                    canView: Boolean(state.boostPermissions?.canView),
-                    canEdit: Boolean(state.boostPermissions?.canEdit),
-                    canIssue: Boolean(state.boostPermissions?.canIssue),
+                    canView:
+                        typeof state.boostPermissions?.canView === 'boolean'
+                            ? state.boostPermissions.canView
+                            : false,
+                    canEdit:
+                        typeof state.boostPermissions?.canEdit === 'boolean'
+                            ? state.boostPermissions.canEdit
+                            : true,
+                    canIssue:
+                        typeof state.boostPermissions?.canIssue === 'boolean'
+                            ? state.boostPermissions.canIssue
+                            : true,
                 },
                 skillIds,
             });
