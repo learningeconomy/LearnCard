@@ -77,7 +77,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
     const [claimLimitToggle, setClaimLimitToggle] = useState<boolean>(false);
     const [claimLimit, setClaimLimit] = useState<number | undefined>(undefined);
 
-    const [interoperableToggle, setInteroperableToggle] = useState<boolean>(false);
+    const [interoperableToggle] = useState<boolean>(true);
     const [isManuallyChangingParameters, setIsManuallyChangingParameters] =
         useState<boolean>(false);
     const [isLinkLoading, setIsLinkLoading] = useState<boolean>(false);
@@ -498,23 +498,6 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                                     </div>
                                                 </IonCol>
                                             </IonRow>
-                                            <div className="w-full flex flex-col  ">
-                                                <div className="flex w-full items-center justify-between">
-                                                    <p className="text-grayscale-900 font-medium w-10/12 text-left pr-2">
-                                                        Enable interoperable link and QR code?
-                                                    </p>
-                                                    <IonToggle
-                                                        mode="ios"
-                                                        color="emerald-700"
-                                                        onClick={() => {
-                                                            setInteroperableToggle(
-                                                                !interoperableToggle
-                                                            );
-                                                        }}
-                                                        checked={interoperableToggle}
-                                                    />
-                                                </div>
-                                            </div>
                                             <div className="w-full flex items-center justify-center">
                                                 <button
                                                     onClick={() => {
