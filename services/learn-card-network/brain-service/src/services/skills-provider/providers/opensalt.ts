@@ -14,6 +14,7 @@ type CfItem = {
     identifier?: string;
     uri?: string;
     fullStatement?: string;
+    abbreviatedStatement?: string;
     notes?: string;
     humanCodingScheme?: string;
     listEnumeration?: string;
@@ -56,6 +57,23 @@ const toType = (value?: string): string => {
     return 'skill';
 };
 
+const toItemStatement = (item: CfItem): string | undefined => {
+    const short = item.abbreviatedStatement?.trim();
+    if (short) return short;
+    return item.fullStatement?.trim();
+};
+
+const toItemDescription = (item: CfItem): string | undefined => {
+    const notes = item.notes?.trim();
+    if (notes) return notes;
+
+    const full = item.fullStatement?.trim();
+    const short = item.abbreviatedStatement?.trim();
+    if (short && full && full !== short) return full;
+
+    return undefined;
+};
+
 const normalizeFrameworkRef = (frameworkRef: string): string | null => {
     const trimmed = frameworkRef.trim();
     if (!trimmed) return null;
@@ -66,6 +84,13 @@ const normalizeFrameworkRef = (frameworkRef: string): string | null => {
 
     const cfDocumentsMatch = noTrailingSlash.match(/\/CFDocuments\/([^/?#]+)/i);
     if (cfDocumentsMatch?.[1]) return decodeURIComponent(cfDocumentsMatch[1]);
+
+    const cftreeDocMatch = noTrailingSlash.match(/\/cftree\/doc\/([^/?#]+)/i);
+    if (cftreeDocMatch?.[1]) return decodeURIComponent(cftreeDocMatch[1]);
+
+    const cfpackageDocMatch = noTrailingSlash.match(/\/cfpackage\/doc\/([^/?#]+)/i);
+    if (cfpackageDocMatch?.[1])
+        return decodeURIComponent(cfpackageDocMatch[1].replace(/\.json$/i, ''));
 
     const uriPackageMatch = noTrailingSlash.match(/\/uri\/p([^/?#]+)/i);
     if (uriPackageMatch?.[1]) return decodeURIComponent(uriPackageMatch[1]);
@@ -108,6 +133,11 @@ export function createOpenSaltProvider(options?: Options): SkillsProvider {
         );
         if (packageByUriPath?.CFDocument) return packageByUriPath;
 
+        const packageByDocPath = await fetchJson<CfPackage>(
+            `${baseUrl}/cfpackage/doc/${encodeURIComponent(frameworkId)}.json`
+        );
+        if (packageByDocPath?.CFDocument) return packageByDocPath;
+
         return null;
     };
 
@@ -142,11 +172,13 @@ export function createOpenSaltProvider(options?: Options): SkillsProvider {
 
         const skills: Skill[] = [];
         for (const item of packageData.CFItems || []) {
-            if (!item.identifier || !item.fullStatement) continue;
+            const statement = toItemStatement(item);
+            if (!item.identifier || !statement) continue;
+
             skills.push({
                 id: item.identifier,
-                statement: item.fullStatement,
-                description: item.notes,
+                statement,
+                description: toItemDescription(item),
                 code: item.humanCodingScheme ?? item.listEnumeration,
                 type: toType(item.CFItemType),
                 status: 'active',
@@ -183,16 +215,19 @@ export function createOpenSaltProvider(options?: Options): SkillsProvider {
 
         for (const id of skillIds) {
             const item = itemsById.get(id);
-            if (!item?.fullStatement) continue;
+            if (!item) continue;
+
+            const statement = toItemStatement(item);
+            if (!statement) continue;
 
             alignments.push({
                 type: ['Alignment'],
                 targetCode: item.humanCodingScheme ?? item.listEnumeration ?? item.identifier,
-                targetName: item.fullStatement,
-                targetDescription: item.notes,
+                targetName: statement,
+                targetDescription: toItemDescription(item),
                 targetFramework: document.title,
                 targetType: 'CFItem',
-                targetUrl: item.uri || `${baseUrl}/ims/case/v1p0/CFItems/${encodeURIComponent(id)}`,
+                targetUrl: `${baseUrl}/uri/${encodeURIComponent(id)}`,
             });
         }
 
