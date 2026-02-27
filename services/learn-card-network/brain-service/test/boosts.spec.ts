@@ -745,6 +745,77 @@ describe('Boosts', () => {
             expect(credentialUri).toBeDefined();
         });
 
+        it('should allow sending a boost to did:web', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            const userBProfile = (await userB.clients.fullAuth.profile.getProfile())!;
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userBProfile.did,
+                uri,
+                credential,
+            });
+            expect(credentialUri).toBeDefined();
+        });
+
+        it('should allow sending a boost to did:key', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userB.learnCard.id.did(),
+                uri,
+                credential,
+            });
+            expect(credentialUri).toBeDefined();
+        });
+
+        it('should return NOT_FOUND for unsupported did format', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.sendBoost({
+                    profileId: 'did:example:userb',
+                    uri,
+                    credential,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
         it('should allow admins to send a boost', async () => {
             await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
             const uri = await userA.clients.fullAuth.boost.createBoost({

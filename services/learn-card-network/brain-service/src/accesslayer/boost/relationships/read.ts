@@ -150,6 +150,34 @@ export const getAlignedSkillsForBoost = async (boost: BoostInstance): Promise<Sk
     return rels.map(r => r.target);
 };
 
+/**
+ * Returns aligned skills for a boost along with relationship-level proficiencyLevel.
+ */
+export const getBoostSkillsWithProficiency = async (
+    boost: BoostInstance
+): Promise<Array<FlatSkillType & { proficiencyLevel?: number }>> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (b:Boost { id: $boostId })-[r:ALIGNED_TO]->(s:Skill)
+         RETURN s AS skill, r.proficiencyLevel AS proficiencyLevel`,
+        { boostId: boost.id }
+    );
+
+    return result.records.map(record => {
+        const props = ((record.get('skill') as any)?.properties ?? {}) as Record<string, any>;
+        const proficiencyRaw = record.get('proficiencyLevel') as any;
+        const proficiencyLevel =
+            proficiencyRaw === null || typeof proficiencyRaw === 'undefined'
+                ? undefined
+                : Number(proficiencyRaw);
+
+        return {
+            ...(props as FlatSkillType),
+            type: props.type ?? 'skill',
+            ...(typeof proficiencyLevel !== 'undefined' ? { proficiencyLevel } : {}),
+        };
+    });
+};
+
 export const getFrameworkSkillsAvailableForBoost = async (
     boost: BoostInstance
 ): Promise<{ framework: FlatSkillFrameworkType; skills: FlatSkillType[] }[]> => {
