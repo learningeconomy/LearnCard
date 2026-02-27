@@ -58,7 +58,7 @@ export interface AuthUser {
  * and expose a uniform API to the coordinator.
  */
 export interface AuthProvider {
-    getIdToken(): Promise<string>;
+    getIdToken(forceRefresh?: boolean): Promise<string>;
     getCurrentUser(): Promise<AuthUser | null>;
     getProviderType(): AuthProviderType;
     signOut(): Promise<void>;

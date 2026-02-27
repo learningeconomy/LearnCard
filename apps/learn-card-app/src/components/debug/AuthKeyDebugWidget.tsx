@@ -31,6 +31,8 @@ import {
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { getSigningLearnCard, getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
+import { Capacitor } from '@capacitor/core';
+
 import {
     hasDeviceShare,
     getDeviceShare,
@@ -41,6 +43,9 @@ import {
     isPublicComputerMode,
 } from '@learncard/sss-key-manager';
 import type { DeviceShareEntry } from '@learncard/sss-key-manager';
+
+import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorage';
+import type { NativeShareEntry } from 'learn-card-base/security/nativeSSSStorage';
 
 import {
     type AuthDebugEvent,
@@ -225,7 +230,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
     const [refreshKey, setRefreshKey] = useState(0);
     const [deviceShareExists, setDeviceShareExists] = useState<boolean | null>(null);
     const [deviceSharePreview, setDeviceSharePreview] = useState<string | null>(null);
-    const [allShares, setAllShares] = useState<DeviceShareEntry[]>([]);
+    const [allShares, setAllShares] = useState<Array<DeviceShareEntry | NativeShareEntry>>([]);
     const [events, setEvents] = useState<AuthDebugEvent[]>([]);
     const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
     const [keyIntegrityResult, setKeyIntegrityResult] = useState<boolean | null>(null);
@@ -307,31 +312,61 @@ export const AuthKeyDebugWidget: React.FC = () => {
         ? `sss-device-share:${authUser.id}`
         : undefined;
 
+    const isNative = Capacitor.isNativePlatform();
+
     // --- Device share check ---
     const checkDeviceShare = useCallback(async () => {
         try {
-            const exists = await hasDeviceShare();
-            setDeviceShareExists(exists);
+            if (isNative) {
+                // On native, read from SQLite via createNativeSSSStorage
+                const nativeStorage = createNativeSSSStorage();
 
-            if (exists) {
-                const share = await getDeviceShare();
+                const exists = await nativeStorage.hasDeviceShare(activeStorageId);
+                setDeviceShareExists(exists);
 
-                if (share) {
-                    setDeviceSharePreview(share.substring(0, 8) + '...' + share.substring(share.length - 8));
+                if (exists) {
+                    const share = await nativeStorage.getDeviceShare(activeStorageId);
+
+                    if (share) {
+                        setDeviceSharePreview(share.substring(0, 8) + '...' + share.substring(share.length - 8));
+                    }
+                } else {
+                    setDeviceSharePreview(null);
+                }
+
+                const nativeEntries = await nativeStorage.listAllShares();
+                setAllShares(nativeEntries);
+
+                try {
+                    const version = await nativeStorage.getShareVersion(activeStorageId);
+                    setLocalShareVersion(version);
+                } catch {
+                    setLocalShareVersion(null);
                 }
             } else {
-                setDeviceSharePreview(null);
-            }
+                // On web, use the IndexedDB-backed functions
+                const exists = await hasDeviceShare();
+                setDeviceShareExists(exists);
 
-            const shares = await listAllDeviceShares();
-            setAllShares(shares);
+                if (exists) {
+                    const share = await getDeviceShare();
 
-            // Fetch the share version for the active storage ID
-            try {
-                const version = await getShareVersion(activeStorageId);
-                setLocalShareVersion(version);
-            } catch {
-                setLocalShareVersion(null);
+                    if (share) {
+                        setDeviceSharePreview(share.substring(0, 8) + '...' + share.substring(share.length - 8));
+                    }
+                } else {
+                    setDeviceSharePreview(null);
+                }
+
+                const shares = await listAllDeviceShares();
+                setAllShares(shares);
+
+                try {
+                    const version = await getShareVersion(activeStorageId);
+                    setLocalShareVersion(version);
+                } catch {
+                    setLocalShareVersion(null);
+                }
             }
         } catch {
             setDeviceShareExists(false);
@@ -339,7 +374,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
             setAllShares([]);
             setLocalShareVersion(null);
         }
-    }, [activeStorageId]);
+    }, [activeStorageId, isNative]);
 
     useEffect(() => {
         if (isOpen) {
@@ -375,24 +410,36 @@ export const AuthKeyDebugWidget: React.FC = () => {
     const handleClearDeviceShare = useCallback(async () => {
         if (confirm('Clear ALL device shares? You will need to recover your key to login again.')) {
             try {
-                await clearAllShares();
+                if (isNative) {
+                    const nativeStorage = createNativeSSSStorage();
+                    await nativeStorage.clearAllShares();
+                } else {
+                    await clearAllShares();
+                }
+
                 await checkDeviceShare();
             } catch (e) {
                 console.error('Failed to clear device share:', e);
             }
         }
-    }, [checkDeviceShare]);
+    }, [checkDeviceShare, isNative]);
 
     const handleDeleteSingleShare = useCallback(async (id: string) => {
         if (confirm(`Delete device share "${id}"?`)) {
             try {
-                await deleteDeviceShare(id);
+                if (isNative) {
+                    const nativeStorage = createNativeSSSStorage();
+                    await nativeStorage.deleteShare(id);
+                } else {
+                    await deleteDeviceShare(id);
+                }
+
                 await checkDeviceShare();
             } catch (e) {
                 console.error('Failed to delete device share:', e);
             }
         }
-    }, [checkDeviceShare]);
+    }, [checkDeviceShare, isNative]);
 
     const handleVerifyKeys = useCallback(async () => {
         setKeyIntegrityResult(null);
@@ -683,7 +730,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
                             <KVRow label="Key Derivation" value={authConfig.keyDerivation} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="SSS Server URL" value={truncate(authConfig.serverUrl, 32)} copied={copied} onCopy={copyToClipboard} />
                             <KVRow label="Public Computer Mode" value={isPublicComputerMode()} copied={copied} onCopy={copyToClipboard} />
-                            <KVRow label="Storage Backend" value={isPublicComputerMode() ? 'sessionStorage (ephemeral)' : 'IndexedDB (persistent)'} mono={false} copied={copied} onCopy={copyToClipboard} />
+                            <KVRow label="Storage Backend" value={isNative ? 'SQLite (native)' : isPublicComputerMode() ? 'sessionStorage (ephemeral)' : 'IndexedDB (persistent)'} mono={false} copied={copied} onCopy={copyToClipboard} />
 
                             <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2.5 mb-0.5">Web3Auth</p>
                             <KVRow label="Client ID" value={authConfig.web3AuthClientId ? truncate(authConfig.web3AuthClientId, 20) : '—'} copied={copied} onCopy={copyToClipboard} />
@@ -914,9 +961,11 @@ export const AuthKeyDebugWidget: React.FC = () => {
 
                             {allShares.length === 0 ? (
                                 <p className="text-[10px] text-gray-600 text-center py-2">
-                                    {isPublicComputerMode()
-                                        ? 'No device shares in sessionStorage (public mode)'
-                                        : 'No device shares in IndexedDB'}
+                                    {isNative
+                                        ? 'No device shares in SQLite'
+                                        : isPublicComputerMode()
+                                            ? 'No device shares in sessionStorage (public mode)'
+                                            : 'No device shares in IndexedDB'}
                                 </p>
                             ) : (
                                 <div className="mt-1.5 space-y-1">

@@ -216,10 +216,15 @@ export const useQrLoginRequester = (
         } catch (e) {
             if (timerRef.current) clearInterval(timerRef.current);
 
-            const message = e instanceof Error ? e.message : 'Unknown error';
+            let message = e instanceof Error ? e.message : 'Unknown error';
 
             // Don't overwrite state if we were cancelled
             if (message.includes('aborted')) return;
+
+            // Map technical crypto errors to user-friendly messages
+            if (message.includes('Web Crypto') || message.includes('crypto.subtle') || message.includes('secure context')) {
+                message = 'Secure connection required. Cross-device sign-in is not available over HTTP. Please use a production build or HTTPS.';
+            }
 
             setState(prev => ({
                 ...prev,

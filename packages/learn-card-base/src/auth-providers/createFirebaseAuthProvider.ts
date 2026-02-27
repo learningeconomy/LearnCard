@@ -31,6 +31,17 @@ export interface FirebaseAuthConfig {
      * the provider-specific re-auth API (e.g., `signInWithCustomToken`).
      */
     onReauthenticate?: (token: string) => Promise<void>;
+
+    /**
+     * Optional native token getter for Capacitor platforms.
+     *
+     * On iOS/Android the native Firebase SDK is the source of truth.
+     * The web SDK's cached token (set via signInWithCredential bridge) can
+     * differ in claims that downstream services (e.g. Web3Auth torus nodes)
+     * check. When provided, `getIdToken()` and `refreshSession()` prefer
+     * this over `getAuth().currentUser.getIdToken()`.
+     */
+    nativeGetIdToken?: (forceRefresh?: boolean) => Promise<string>;
 }
 
 /** Map a live Firebase currentUser to a generic AuthUser. */
@@ -73,14 +84,18 @@ export function createFirebaseAuthProvider(config: FirebaseAuthConfig): AuthProv
     const { getAuth, onSignOut } = config;
 
     return {
-        async getIdToken(): Promise<string> {
+        async getIdToken(forceRefresh?: boolean): Promise<string> {
+            if (config.nativeGetIdToken) {
+                return config.nativeGetIdToken(forceRefresh);
+            }
+
             const cu = getAuth().currentUser;
 
             if (!cu) {
                 throw new AuthSessionError('No Firebase user', 'no_session');
             }
 
-            return cu.getIdToken();
+            return cu.getIdToken(forceRefresh);
         },
 
         async getCurrentUser(): Promise<AuthUser | null> {
@@ -103,7 +118,11 @@ export function createFirebaseAuthProvider(config: FirebaseAuthConfig): AuthProv
 
                 // Force refresh — Firebase uses its long-lived refresh token
                 // (~1 year) to mint a fresh JWT even if the current one expired.
-                await cu.getIdToken(true);
+                if (config.nativeGetIdToken) {
+                    await config.nativeGetIdToken(true);
+                } else {
+                    await cu.getIdToken(true);
+                }
 
                 return true;
             } catch {

@@ -12,6 +12,8 @@ import {
 } from 'ionicons/icons';
 
 import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 
 export type RecoverySetupType = 'passkey' | 'phrase' | 'backup' | 'email';
@@ -173,21 +175,45 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         }
     };
 
-    const handleDownloadBackup = () => {
+    const handleDownloadBackup = async () => {
         if (!backupFileJson) return;
 
-        const blob = new Blob([backupFileJson], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
+        const fileName = `scoutpass-backup-${new Date().toISOString().slice(0, 10)}.json`;
 
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `scoutpass-backup-${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        if (Capacitor.isNativePlatform()) {
+            try {
+                const result = await Filesystem.writeFile({
+                    path: fileName,
+                    data: backupFileJson,
+                    directory: Directory.Cache,
+                    encoding: Encoding.UTF8,
+                });
 
-        URL.revokeObjectURL(url);
-        setBackupDownloaded(true);
+                await Share.share({
+                    title: 'ScoutPass Backup',
+                    url: result.uri,
+                    dialogTitle: 'Save your backup file',
+                });
+
+                setBackupDownloaded(true);
+            } catch (e) {
+                console.error('[RecoverySetupModal] Native file download failed:', e);
+                setError('Could not save the file. Please try again.');
+            }
+        } else {
+            const blob = new Blob([backupFileJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            URL.revokeObjectURL(url);
+            setBackupDownloaded(true);
+        }
     };
 
     const handleConfirmBackup = () => {

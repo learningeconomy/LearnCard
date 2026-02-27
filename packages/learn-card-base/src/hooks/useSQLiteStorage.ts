@@ -8,7 +8,10 @@ import { CurrentUser } from 'learn-card-base';
 
 import { sqliteStore } from '../stores/sqliteStore';
 import { markSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
+import { clearUserData } from '../SQL/clearUserData';
 // import { MIGRATIONS, performSqliteMigrations } from 'learn-card-base/SQL/migrations';
+
+export { clearUserData, PRESERVED_TABLES } from '../SQL/clearUserData';
 
 export const ensureUserTableExists = async (db: SQLiteDBConnection) => {
     await db.open();
@@ -476,38 +479,9 @@ export const useSQLiteStorage = () => {
     };
 
     const clearDB = async () => {
-        try {
-            if (db) {
-                await db.open();
-                await db.query('DELETE FROM users');
-                await db.query('DELETE FROM tokens');
-                
-                // ! hot fix - credentials remained cached & accessible
-                // ! to wrong logged in user after logout
-                // ! drop DB to ensure data is cleared on logout
-                try {
-                    await deleteDatabase(db);
-                } catch (dropErr) {
-                    console.warn('drop DB failed', dropErr);
-                    // If delete fails, at least close the db
-                    await db.close();
-                }
-
-                sqliteStore.set.sqlite(null);
-                sqliteStore.set.db(null);
-            }
-        } catch (e) {
-            console.warn('😵 useSQLiteStorage::clearDB', e);
-        } finally {
-            if (db && (await db?.isDBOpen())?.result) {
-                try {
-                    await db?.close();
-                } catch (closeErr) {
-                    console.warn('😵 useSQLiteStorage::clearDB close failed', closeErr);
-                }
-            }
+        if (db) {
+            await clearUserData(db);
         }
-        // }
     };
 
     return {

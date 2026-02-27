@@ -45,6 +45,13 @@ export interface EncryptedSharePayload {
  * The public key is shared via QR / short code; the private key stays in memory.
  */
 export const generateEphemeralKeypair = async (): Promise<EphemeralKeypair> => {
+    if (typeof crypto === 'undefined' || !crypto.subtle) {
+        throw new Error(
+            'Web Crypto API is not available. This feature requires a secure context (HTTPS). ' +
+            'If you are running a Capacitor dev server over HTTP, use a production build or configure HTTPS.'
+        );
+    }
+
     const keyPair = await crypto.subtle.generateKey(
         { name: 'X25519' },
         false,

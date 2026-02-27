@@ -42,6 +42,7 @@ import {
     firebaseAuthStore,
     authUserStore,
     authStore,
+    SocialLoginTypes,
     getAuthConfig,
     type AuthCoordinatorContextValue,
     type AuthProvider,
@@ -233,6 +234,39 @@ registerKeyDerivationFactory('web3auth', () => {
 registerAuthProviderFactory('firebase', () =>
     createFirebaseAuthProvider({
         getAuth: () => auth(),
+        nativeGetIdToken: Capacitor.isNativePlatform()
+            ? async (forceRefresh?: boolean) => {
+                // Only Google login signs in on the native Firebase layer.
+                // Apple uses skipNativeAuth:true, and email/phone sign in
+                // via the web SDK only.  For those methods the native plugin
+                // will never have a user, so skip the bridge call entirely
+                // to avoid a flood of unnecessary native round-trips.
+                const loginType = authStore.get.typeOfLogin();
+                const mayHaveNativeUser = loginType === SocialLoginTypes.google;
+
+                if (mayHaveNativeUser) {
+                    try {
+                        const { user } = await FirebaseAuthentication.getCurrentUser();
+
+                        if (user) {
+                            console.debug('[Auth] Native Firebase user found — using NATIVE token');
+                            const result = await FirebaseAuthentication.getIdToken({ forceRefresh: forceRefresh ?? false });
+                            return result.token;
+                        }
+                    } catch {
+                        // getCurrentUser can fail if the plugin isn't ready yet
+                    }
+                }
+
+                // Web SDK token — used for Apple, email, phone, and as
+                // fallback when native user isn't available yet for Google.
+                const cu = auth().currentUser;
+
+                if (!cu) throw new Error('No Firebase user available');
+
+                return cu.getIdToken(forceRefresh);
+            }
+            : undefined,
         onReauthenticate: async (token: string) => {
             const { signInWithCustomToken } = await import('firebase/auth');
 
@@ -644,31 +678,46 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 await web3auth.init();
                 emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: init() complete');
 
-                const firebaseAuth = auth();
-                const liveUser = firebaseAuth.currentUser;
-
-                if (!liveUser) {
-                    emitAuthError('web3auth:migration_key', 'No live Firebase user available — aborting extraction');
-                    return;
-                }
-
-                const token = await liveUser.getIdToken(false);
+                // Get a fresh token via the auth provider abstraction.
+                // On native, this uses the Capacitor plugin's token (configured
+                // via nativeGetIdToken); on web it uses the Firebase web SDK.
+                const token = await authProvider.getIdToken(true);
 
                 if (!token) {
                     emitAuthError('web3auth:migration_key', 'No Firebase ID token available — aborting extraction');
                     return;
                 }
 
+                // Decode JWT claims for diagnostics and to extract the uid
+                let jwtClaims: Record<string, unknown> = {};
+                try {
+                    const payload = token.split('.')[1] ?? '';
+                    jwtClaims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+                } catch { /* non-critical */ }
+
+                const uid = typeof jwtClaims.sub === 'string' ? jwtClaims.sub : '';
+
+                if (!uid) {
+                    emitAuthError('web3auth:migration_key', 'Could not extract uid from token — aborting extraction');
+                    return;
+                }
+
                 emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: calling connect()...', {
                     data: {
                         verifier: authConfig.web3AuthVerifierId,
-                        verifierId: liveUser.uid,
+                        verifierId: uid,
                         tokenLength: token.length,
+                        jwtSub: jwtClaims.sub,
+                        jwtAud: jwtClaims.aud,
+                        jwtIss: jwtClaims.iss,
+                        jwtIat: jwtClaims.iat,
+                        jwtExp: jwtClaims.exp,
+                        platform: Capacitor.isNativePlatform() ? 'native' : 'web',
                     },
                 });
                 await web3auth.connect({
                     verifier: authConfig.web3AuthVerifierId,
-                    verifierId: liveUser.uid,
+                    verifierId: uid,
                     idToken: token,
                 });
                 emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: connect() complete');
@@ -777,10 +826,9 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
                 emitAuthSuccess('auth:wallet_ready', `Wallet initialized — DID: ${did.slice(0, 30)}...`);
 
-                // Check recovery methods for all users; prompt new users to set up
+                // Check recovery methods for all users
                 // (only relevant for strategies that support recovery)
                 if (keyDerivation.capabilities.recovery && authProvider && keyDerivation.getAvailableRecoveryMethods) {
-                    const isNewUser = wasNewUserRef.current;
                     wasNewUserRef.current = false;
 
                     try {
@@ -795,9 +843,11 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
                         setRecoveryMethodCount(userConfiguredCount);
 
-                        // Show recovery setup for new users, or always in public
-                        // computer mode when no recovery methods exist.
-                        if (userConfiguredCount === 0 && (isNewUser || isPublicComputerMode())) {
+                        // Show recovery setup modal only on public computers
+                        // where no recovery methods exist. For new users on
+                        // personal devices, the RecoveryBanner on the LaunchPad
+                        // provides a non-blocking nudge instead.
+                        if (userConfiguredCount === 0 && isPublicComputerMode()) {
                             setShowRecoverySetup(true);
                         }
                     } catch {
@@ -915,6 +965,9 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
     const { status } = coordinator.state;
 
     const showRecovery = status === 'needs_recovery' && !!authProvider;
+
+    const showMigrationLoading =
+        status === 'needs_migration' && !migrationStallVisible;
 
     const showStalledMigration =
         migrationStallVisible &&
@@ -1131,6 +1184,25 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                     }}
                     onLogout={handleLogout}
                 />
+            )}
+
+            {/* ── Migration in-progress overlay ──────────────────── */}
+            {showMigrationLoading && (
+                <Overlay>
+                    <div className="p-8 text-center space-y-5">
+                        <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
+                            <div className="w-7 h-7 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+                        </div>
+
+                        <div className="space-y-2">
+                            <h2 className="text-xl font-semibold text-grayscale-900">Upgrading Account</h2>
+
+                            <p className="text-sm text-grayscale-600 leading-relaxed">
+                                We're upgrading your account security. This may take a moment.
+                            </p>
+                        </div>
+                    </div>
+                </Overlay>
             )}
 
             {/* ── Stalled migration overlay ────────────────────── */}

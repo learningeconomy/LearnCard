@@ -40,6 +40,7 @@ import {
     firebaseAuthStore,
     authUserStore,
     authStore,
+    SocialLoginTypes,
     getAuthConfig,
     type AuthCoordinatorContextValue,
     type AuthProvider,
@@ -249,6 +250,32 @@ registerKeyDerivationFactory('web3auth', () => {
 registerAuthProviderFactory('firebase', () =>
     createFirebaseAuthProvider({
         getAuth: () => auth(),
+        nativeGetIdToken: Capacitor.isNativePlatform()
+            ? async (forceRefresh?: boolean) => {
+                const loginType = authStore.get.typeOfLogin();
+                const mayHaveNativeUser = loginType === SocialLoginTypes.google;
+
+                if (mayHaveNativeUser) {
+                    try {
+                        const { user } = await FirebaseAuthentication.getCurrentUser();
+
+                        if (user) {
+                            console.debug('[Auth] Native Firebase user found — using NATIVE token');
+                            const result = await FirebaseAuthentication.getIdToken({ forceRefresh: forceRefresh ?? false });
+                            return result.token;
+                        }
+                    } catch {
+                        // getCurrentUser can fail if the plugin isn't ready yet
+                    }
+                }
+
+                const cu = auth().currentUser;
+
+                if (!cu) throw new Error('No Firebase user available');
+
+                return cu.getIdToken(forceRefresh);
+            }
+            : undefined,
         onReauthenticate: async (token: string) => {
             const { signInWithCustomToken } = await import('firebase/auth');
 
@@ -724,10 +751,9 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
                 emitAuthSuccess('auth:wallet_ready', `Wallet initialized — DID: ${did.slice(0, 30)}...`);
 
-                // Check recovery methods for all users; prompt new users to set up
+                // Check recovery methods for all users
                 // (only relevant for strategies that support recovery)
                 if (keyDerivation.capabilities.recovery && authProvider && keyDerivation.getAvailableRecoveryMethods) {
-                    const isNewUser = wasNewUserRef.current;
                     wasNewUserRef.current = false;
 
                     try {
@@ -742,9 +768,11 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
                         setRecoveryMethodCount(userConfiguredCount);
 
-                        // Show recovery setup for new users, or always in public
-                        // computer mode when no recovery methods exist.
-                        if (userConfiguredCount === 0 && (isNewUser || isPublicComputerMode())) {
+                        // Show recovery setup modal only on public computers
+                        // where no recovery methods exist. For new users on
+                        // personal devices, the RecoveryBanner on the LaunchPad
+                        // provides a non-blocking nudge instead.
+                        if (userConfiguredCount === 0 && isPublicComputerMode()) {
                             setShowRecoverySetup(true);
                         }
                     } catch {
@@ -856,6 +884,9 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
     const { status } = coordinator.state;
 
     const showRecovery = status === 'needs_recovery' && !!authProvider;
+
+    const showMigrationLoading =
+        status === 'needs_migration' && !migrationStallVisible;
 
     const showStalledMigration =
         migrationStallVisible &&
@@ -1058,6 +1089,25 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                     }}
                     onLogout={handleLogout}
                 />
+            )}
+
+            {/* ── Migration in-progress overlay ──────────────────── */}
+            {showMigrationLoading && (
+                <Overlay>
+                    <div className="p-8 text-center space-y-5">
+                        <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
+                            <div className="w-7 h-7 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+                        </div>
+
+                        <div className="space-y-2">
+                            <h2 className="text-xl font-semibold text-grayscale-900">Upgrading Account</h2>
+
+                            <p className="text-sm text-grayscale-600 leading-relaxed">
+                                We're upgrading your account security. This may take a moment.
+                            </p>
+                        </div>
+                    </div>
+                </Overlay>
             )}
 
             {/* ── Stalled migration overlay ────────────────────── */}

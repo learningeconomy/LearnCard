@@ -335,7 +335,7 @@ export const firebaseRouter = t.router({
                 await cache.delete([redisKey]);
 
                 // get or create the Firebase user
-                console.log('Getting or creating Firebase user...', email, code, app);
+                console.log('Getting or creating Firebase user...', email);
                 let user;
                 try {
                     user = await app?.auth().getUserByEmail(email);
