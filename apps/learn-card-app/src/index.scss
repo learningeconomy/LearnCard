@@ -40,6 +40,10 @@ body.scanner-active > * {
 @import './assets/sass/ai-pathways.scss';
 @import 'react-datepicker/dist/react-datepicker.css';
 
+.reorder-selected {
+    box-shadow: none !important;
+}
+
 .disable-scrollbars {
     scrollbar-width: none;
     /* Firefox */
@@ -96,7 +100,13 @@ textarea[class*='border-gray'] {
 input[class*='border-gray']:-webkit-autofill,
 input[class*='border-gray']:-webkit-autofill:hover,
 input[class*='border-gray']:-webkit-autofill:focus,
-input[class*='border-gray']:-webkit-autofill:active,
+input[class*='border-gray']:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+    -webkit-text-fill-color: #374151 !important;
+    caret-color: #374151 !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
 textarea[class*='border-gray']:-webkit-autofill,
 textarea[class*='border-gray']:-webkit-autofill:hover,
 textarea[class*='border-gray']:-webkit-autofill:focus,

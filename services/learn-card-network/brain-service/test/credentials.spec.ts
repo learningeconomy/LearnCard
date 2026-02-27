@@ -63,6 +63,35 @@ describe('Credentials', () => {
             ).resolves.not.toThrow();
         });
 
+        it('should allow sending a credential to did:web', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            await expect(
+                userA.clients.fullAuth.credential.sendCredential({
+                    profileId: userBProfile!.did,
+                    credential: testVc,
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('should allow sending a credential to did:key', async () => {
+            await expect(
+                userA.clients.fullAuth.credential.sendCredential({
+                    profileId: userB.learnCard.id.did(),
+                    credential: testVc,
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('should return NOT_FOUND for unsupported did format', async () => {
+            await expect(
+                userA.clients.fullAuth.credential.sendCredential({
+                    profileId: 'did:example:userb',
+                    credential: testVc,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
         it('should allow sending an encrypted credential', async () => {
             const encryptedVc = await userA.learnCard.invoke.createDagJwe(testVc, [
                 userA.learnCard.id.did(),
