@@ -50,6 +50,7 @@ type BrowseFrameworkPageProps = {
     handleClose: () => void;
     handleApproveOverride?: (skillTree: SkillFrameworkNode[]) => void;
     isViewOnly?: boolean;
+    onSkillTreeChange?: (skillTree: SkillFrameworkNode[]) => void;
 };
 
 const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
@@ -62,6 +63,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
     setSelectedSkills: _setSelectedSkills,
     handleApproveOverride,
     isViewOnly = false,
+    onSkillTreeChange,
 }) => {
     const { presentToast } = useToast();
     const { initWallet } = useWallet();
@@ -187,6 +189,51 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
         frameworkInfo.id,
         frameworkInfo.name,
     ]);
+
+    // Notify parent of skill tree changes during approve flow (for autosave)
+    useEffect(() => {
+        if (isApproveFlow && fullSkillTree && onSkillTreeChange) {
+            const hasChanges =
+                Object.keys(addedNodes).length > 0 ||
+                Object.keys(editedNodes).length > 0 ||
+                deletedNodes.length > 0;
+
+            if (hasChanges) {
+                const processNodes = (
+                    nodes: SkillFrameworkNode[],
+                    parentId: string | null = null
+                ): SkillFrameworkNode[] => {
+                    const filteredNodes = nodes.filter((node: SkillFrameworkNode) => {
+                        const isDeleted = deletedNodes.some(
+                            deletedNode => deletedNode.id === node.id
+                        );
+                        return !isDeleted;
+                    });
+
+                    const processedNodes = filteredNodes.map((node: SkillFrameworkNode) => {
+                        const editedNode = editedNodes[node.id!] || node;
+                        return {
+                            ...editedNode,
+                            subskills: processNodes(editedNode.subskills || [], node.id),
+                        };
+                    });
+
+                    const currentParentId = parentId === 'root' ? null : parentId;
+                    const directChildren = addedNodes[currentParentId ?? 'root'] || [];
+
+                    const processedAddedNodes = directChildren.map(node => ({
+                        ...node,
+                        subskills: processNodes(node.subskills || [], node.id),
+                    }));
+
+                    return [...processedNodes, ...processedAddedNodes];
+                };
+
+                const updatedFullSkillTree = processNodes(cloneDeep(fullSkillTree));
+                onSkillTreeChange(updatedFullSkillTree);
+            }
+        }
+    }, [addedNodes, editedNodes, deletedNodes, fullSkillTree, isApproveFlow, onSkillTreeChange]);
 
     const isFullSkillFramework = fullSkillTree !== undefined;
     const disableSave = initialSkills?.length === 0 && selectedSkills?.length === 0;
@@ -653,11 +700,11 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
             // account for edits, adds, and deletes in fullSkillTree
             let updatedFullSkillTree = cloneDeep(fullSkillTree);
             updatedFullSkillTree = updatedFullSkillTree
-                .filter(node => {
+                .filter((node: SkillFrameworkNode) => {
                     const isDeleted = deletedNodes.some(deletedNode => deletedNode.id === node.id);
                     return !isDeleted;
                 })
-                .map(node => {
+                .map((node: SkillFrameworkNode) => {
                     if (editedNodes[node.id!]) {
                         return editedNodes[node.id!];
                     }
