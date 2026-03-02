@@ -4,6 +4,7 @@ import { AiInsightsTabsEnum, aiInsightsTabs } from './ai-insights-tabs.helpers';
 
 import { useGetCurrentUserRole, useContractSentRequests, useGetContracts } from 'learn-card-base';
 import { LearnCardRolesEnum } from 'apps/learn-card-app/src/components/onboarding/onboarding.helpers';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 export const AiInsightsTabs: React.FC<{
     className?: string;
@@ -28,7 +29,10 @@ export const AiInsightsTabs: React.FC<{
 
     const newInsightsCount = requests.filter(r => r.readStatus === 'unseen').length ?? 0;
 
+    const { track } = useAnalytics();
+
     const handleSetSelectedTab = (tab: AiInsightsTabsEnum) => {
+        track(AnalyticsEvents.AI_INSIGHTS_TAB_SWITCHED, { tab });
         setSelectedTab?.(tab);
     };
 
