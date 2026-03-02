@@ -6,16 +6,16 @@ import { Profile, ProfileInstance } from './Profile';
 import { Boost, BoostInstance } from './Boost';
 import { AppStoreListing, AppStoreListingInstance } from './AppStoreListing';
 
-export type CredentialActivityEventType = 
+export type CredentialActivityEventType =
     | 'CREATED'
-    | 'DELIVERED' 
+    | 'DELIVERED'
     | 'CLAIMED'
     | 'EXPIRED'
     | 'FAILED';
 
 export type CredentialActivityRecipientType = 'profile' | 'email' | 'phone';
 
-export type CredentialActivitySourceType = 
+export type CredentialActivitySourceType =
     | 'send'
     | 'sendBoost'
     | 'sendCredential'
@@ -23,7 +23,8 @@ export type CredentialActivitySourceType =
     | 'claim'
     | 'inbox'
     | 'claimLink'
-    | 'acceptCredential';
+    | 'acceptCredential'
+    | 'appEvent';
 
 export type CredentialActivityType = {
     id: string;
@@ -82,7 +83,17 @@ export const CredentialActivity = ModelFactory<
             source: {
                 type: 'string',
                 required: true,
-                enum: ['send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential'],
+                enum: [
+                    'send',
+                    'sendBoost',
+                    'sendCredential',
+                    'contract',
+                    'claim',
+                    'inbox',
+                    'claimLink',
+                    'acceptCredential',
+                    'appEvent',
+                ],
             },
             metadata: { type: 'string', required: false },
         },
