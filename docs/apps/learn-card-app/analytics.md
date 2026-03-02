@@ -162,5 +162,6 @@ When LC-1594 (full privacy preferences system) ships, it will replace this hook 
 | `CONSENT_FLOW_ACCEPTED` | `consent_flow_accepted` | User clicks Continue on the consent flow landing page |
 | `LAUNCHPAD_APP_CLICKED` | `launchpad_app_clicked` | User clicks Connect or Open on a LaunchPad app card |
 | `LAUNCHPAD_QUICKNAV_ACTION_CLICKED` | `launchpad_quicknav_action_clicked` | User clicks an action button in the LaunchPad quick navigation modal |
+| `LAUNCHPAD_APP_INSTALLED` | `launchpad_app_installed` | User installs an app from the App Store detail page |
 
 For payload types, see `apps/learn-card-app/src/analytics/events.ts`.
