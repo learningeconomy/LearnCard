@@ -128,7 +128,7 @@ const SideMenuSecondaryLinks: React.FC<{
                     const msg =
                         reason === 'disabled_minor'
                             ? 'AI features are not available for users under 18.'
-                            : 'AI features are currently disabled. You can enable them in Privacy & Data settings.';
+                            : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
                     presentToast(msg, { type: ToastTypeEnum.Error });
                 }}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} opacity-50`}

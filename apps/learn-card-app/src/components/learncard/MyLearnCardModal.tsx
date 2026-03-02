@@ -31,6 +31,7 @@ import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersona
 import ManageDataSharingModal from '../data-sharing/ManageDataSharingModal';
 import DataSharingIcon from 'learn-card-base/svgs/DataSharingIcon';
 import PrivacyLock from 'learn-card-base/svgs/PrivacyLock';
+import PrivacySettingsModal from '../../pages/privacy-settings/PrivacySettingsModal';
 import LearnCardIDCMS, { LearnCardIdCMSEditorModeEnum } from '../learncardID-CMS/LearnCardIDCMS';
 
 import {
@@ -333,8 +334,11 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 Icon: PrivacyLock,
                 caretText: '',
                 onClick: () => {
-                    closeModal();
-                    history.push('/privacy-and-data');
+                    newModal(
+                        <PrivacySettingsModal />,
+                        { sectionClassName: '!bg-transparent !shadow-none' },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                    );
                 },
             },
             {
