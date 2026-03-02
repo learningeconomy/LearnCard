@@ -46,9 +46,8 @@ export function useAiFeatureGate(): {
 
     // Default true for existing users who have no stored aiEnabled field
     const aiEnabled = preferences?.aiEnabled ?? true;
-    const isMinor = preferences?.isMinor ?? false;
 
-    if (!aiEnabled && isMinor) {
+    if (!aiEnabled && isMinorByAge) {
         return { isAiEnabled: false, isLoading: false, reason: 'disabled_minor' };
     }
 
