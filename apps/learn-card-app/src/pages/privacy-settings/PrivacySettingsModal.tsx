@@ -1,17 +1,20 @@
 import React, { useCallback } from 'react';
 
 import { IonToggle } from '@ionic/react';
+import { ChevronLeft } from 'lucide-react';
 
 import {
     useGetPreferencesForDid,
     useUpdatePreferences,
     useGetCurrentLCNUser,
+    useModal,
 } from 'learn-card-base';
 import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
 
 const PrivacySettingsModal: React.FC = () => {
+    const { closeModal } = useModal();
     const { data: preferences } = useGetPreferencesForDid();
     const { mutate: updatePreferences } = useUpdatePreferences();
     const { setAnalyticsEnabled } = useFirebaseAnalytics();
@@ -51,12 +54,15 @@ const PrivacySettingsModal: React.FC = () => {
     );
 
     return (
-        <div className="h-full overflow-y-auto bg-grayscale-50 safe-area-top-margin">
-            <div className="px-5 py-4">
-                <h1 className="text-[17px] font-semibold text-grayscale-900">Privacy & Data</h1>
+        <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[450px] max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center gap-3 mb-4">
+                <button onClick={() => closeModal()} className="p-1 -ml-1">
+                    <ChevronLeft className="w-6 h-6 text-grayscale-700" />
+                </button>
+                <h1 className="text-xl font-semibold text-grayscale-900">Privacy & Data</h1>
             </div>
 
-            <div className="max-w-[600px] mx-auto flex flex-col gap-4 px-4 pb-8">
+            <div className="flex flex-col gap-4">
                 {isMinor && (
                     <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
                         <p className="text-sm text-amber-800">
@@ -134,3 +140,4 @@ const PrivacySettingsModal: React.FC = () => {
 };
 
 export default PrivacySettingsModal;
+
