@@ -438,6 +438,7 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     experiences,
                     accommodations,
                     ids,
+                    skills,
                 ] = await Promise.all([
                     await wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.learningHistory,
@@ -460,6 +461,9 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     await wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.id,
                     }),
+                    await wallet.index.LearnCloud.get({
+                        category: CredentialCategoryEnum.skill,
+                    }),
                 ]);
 
                 // combine all creds
@@ -471,6 +475,7 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     ...experiences,
                     ...accommodations,
                     ...ids,
+                    ...skills,
                 ];
 
                 // resolve all creds

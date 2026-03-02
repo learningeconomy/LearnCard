@@ -11,6 +11,7 @@ import { ProfilePicture } from 'learn-card-base/components/profilePicture/Profil
 import OnboardingRoleItem from '../onboardingRoles/OnboardingRoleItem';
 import OnboardingHeader from '../onboardingHeader/OnboardingHeader';
 import OnboardingFooter from '../onboardingFooter/OnboardingFooter';
+import OnboardingSwiperForSlides from '../onboardingRoles/OnboardingSwiperForSlides';
 import ErrorLogout from '../../network-prompts/ErrorLogout';
 import HandleIcon from 'learn-card-base/svgs/HandleIcon';
 import { Checkmark } from '@learncard/react';
@@ -305,6 +306,16 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     setTimeout(async () => {
                         await onSuccess?.();
                     }, 1000);
+                    newModal(
+                        <OnboardingSwiperForSlides
+                            roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
+                            dob={dob}
+                        />,
+                        {
+                            sectionClassName: '!max-w-full',
+                        },
+                        { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                    );
                 }
 
                 if (role === LearnCardRolesEnum.teacher) {
