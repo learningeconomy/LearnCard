@@ -35,8 +35,8 @@ jobs:
           max_attempts: 3
           command: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
         env:
-          SEED: ${{ secrets.SEED }}
-          LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+          SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+          LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
 
   # Run E2E tests on changeset release PRs or manual trigger
   # SSHs into EC2 to run Playwright tests against the branch
