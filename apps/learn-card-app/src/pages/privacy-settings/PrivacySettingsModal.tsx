@@ -28,7 +28,7 @@ const PrivacySettingsModal: React.FC = () => {
     const age = dob ? calculateAge(dob) : null;
     const threshold = getMinorAgeThreshold(currentLCNUser?.country);
     const isMinorByAge = profileType === 'child' || (age !== null && !isNaN(age) && age < threshold);
-    const isMinor = isMinorByAge || (preferences?.isMinor ?? false);
+    const isMinor = isMinorByAge;
 
     const aiEnabled = isMinor ? false : (preferences?.aiEnabled ?? true);
     const analyticsEnabled = isMinor ? false : (preferences?.analyticsEnabled ?? true);
