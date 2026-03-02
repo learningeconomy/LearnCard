@@ -512,6 +512,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     const AI_ACTIONS = [
         'New AI Tutoring Session',
+        'Understand My Skills',
         'Customize AI Sessions',
         'View Learner Insights',
         'View Child Insights',
