@@ -15,7 +15,7 @@ const MINIMUM_AGE = 18;
  * Logic:
  * - If profileType === 'child' → disable (no DOB needed)
  * - If DOB is present and age < 18 → disable
- * - If DOB is absent (older accounts) → no-op (safe fallback, matches original behavior)
+ * - If DOB is absent (older accounts) → enable (safe fallback for adult profiles)
  * - If age >= 18 → ensure enabled
  */
 export function useAnalyticsAgeGate() {
@@ -34,7 +34,8 @@ export function useAnalyticsAgeGate() {
         const dob = currentLCNUser?.dob;
 
         if (!dob) {
-            // No DOB on record — safe fallback, leave analytics as-is
+            // No DOB on record — safe fallback, enable analytics for adult profiles
+            setEnabled(true);
             return;
         }
 
