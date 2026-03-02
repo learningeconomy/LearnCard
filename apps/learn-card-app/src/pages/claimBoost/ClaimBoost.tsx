@@ -132,7 +132,8 @@ const ClaimBoost: React.FC<{
     const { uploadVcFromTextAndAddToWallet } = useUploadVcFromText();
     const { gate } = useLCNGatedAction();
 
-    const boostUri = (query.get('boostUri') || uri)?.replace('localhost:', 'localhost%3A');
+    const rawBoostUri = query.get('boostUri') || uri;
+    const boostUri = rawBoostUri ? decodeURIComponent(rawBoostUri) : rawBoostUri;
     const challenge = query.get('challenge') || claimChallenge;
 
     const [loading, setLoading] = useState<boolean>(false);
@@ -143,10 +144,12 @@ const ClaimBoost: React.FC<{
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const { presentToast } = useToast();
 
-    const { credentialWithEdits } = useGetCredentialWithEdits(boost, boostUri);
+    const { credentialWithEdits } = useGetCredentialWithEdits(boost);
 
     const handleRedirectTo = () => {
-        const redirectTo = `/claim/boost?boostUri=${boostUri}&challenge=${challenge}`;
+        const redirectTo = `/claim/boost?boostUri=${encodeURIComponent(
+            boostUri
+        )}&challenge=${challenge}`;
         redirectStore.set.lcnRedirect(redirectTo);
         dismissClaimModal?.();
         dismissModal();
@@ -173,7 +176,9 @@ const ClaimBoost: React.FC<{
             setLoading(true);
 
             const result = await fetch(
-                `${LEARNCARD_NETWORK_API_URL}/storage/resolve?uri=${boostUri}`
+                `${LEARNCARD_NETWORK_API_URL}/storage/resolve?uri=${encodeURIComponent(boostUri)}${
+                    challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
+                }`
             );
 
             if (result.status !== 200) throw new Error('Error resolving boost');
