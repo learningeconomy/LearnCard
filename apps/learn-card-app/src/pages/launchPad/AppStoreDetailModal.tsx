@@ -710,10 +710,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                             {listing.category}
                                         </span>
                                     )}
-
                                     {listing.age_rating && (
-                                        <span className="inline-block px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                                            {listing.age_rating}
+                                        <span className="inline-block px-2 py-0.5 bg-grayscale-100 text-grayscale-700 text-xs font-medium rounded-full">
+                                            Age {listing.age_rating}
                                         </span>
                                     )}
                                 </div>

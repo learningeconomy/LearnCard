@@ -125,6 +125,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                 </h2>
                                 <p className="text-gray-500 text-xs mt-0.5 line-clamp-1">
                                     {listing.tagline}
+                                    {listing.age_rating ? ` · Age: ${listing.age_rating}` : ''}
                                 </p>
                             </div>
 
@@ -208,6 +209,16 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                 </li>
                             ))}
                         </ul>
+                    </div>
+                )}
+
+                {/* Minimum Age */}
+                {listing.min_age && (
+                    <div>
+                        <h3 className="text-sm font-medium text-gray-600 mb-1">Minimum Age</h3>
+                        <p className="text-sm text-gray-500 whitespace-pre-wrap">
+                            {listing.min_age}
+                        </p>
                     </div>
                 )}
 

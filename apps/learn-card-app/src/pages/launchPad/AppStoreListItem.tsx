@@ -320,9 +320,9 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                                 {listing.display_name}
                             </p>
 
-                            {(listing as any).age_rating && (
-                                <span className="inline-block px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-medium rounded-full shrink-0">
-                                    {(listing as any).age_rating}
+                            {listing.age_rating && (
+                                <span className="inline-block px-1.5 py-0.5 bg-grayscale-100 text-grayscale-700 text-[10px] font-medium rounded-full shrink-0">
+                                    {listing.age_rating}
                                 </span>
                             )}
                         </div>

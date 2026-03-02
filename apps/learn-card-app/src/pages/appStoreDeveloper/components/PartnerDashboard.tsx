@@ -389,7 +389,12 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                     />
                                 </div>
 
-                                <p className="text-sm text-gray-500">{selectedListing.tagline}</p>
+                                <p className="text-sm text-gray-500">
+                                    {selectedListing.tagline}
+                                    {selectedListing.age_rating
+                                        ? ` · Age: ${selectedListing.age_rating}`
+                                        : ''}
+                                </p>
                             </div>
                         </div>
 
@@ -427,6 +432,18 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                     </div>
                                 )}
                             </div>
+
+                            {selectedListing.min_age && (
+                                <div>
+                                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                                        Minimum Age
+                                    </label>
+
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        {selectedListing.min_age}
+                                    </p>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">

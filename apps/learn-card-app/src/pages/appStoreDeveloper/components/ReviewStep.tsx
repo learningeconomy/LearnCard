@@ -61,6 +61,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
 
                         <p className="text-gray-500 text-sm mt-0.5 line-clamp-2">
                             {data.tagline || 'No tagline provided'}
+                            {data.age_rating ? ` · Age: ${data.age_rating}` : ''}
                         </p>
 
                         <div className="flex items-center gap-2 mt-2">
@@ -145,6 +146,20 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                         ))}
                     </div>
                 </div>
+
+                {data.min_age && (
+                    <div className="bg-white rounded-xl border border-gray-200 p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            {/* <Link2 className="w-4 h-4 text-gray-400" /> */}
+
+                            <h4 className="font-medium text-gray-600 text-sm">Minimum Age</h4>
+                        </div>
+
+                        <p className="text-sm text-gray-500 whitespace-pre-wrap">
+                            {data.min_age} years - the app will be hidden from users under this age
+                        </p>
+                    </div>
+                )}
 
                 {/* Additional Links */}
                 {(data.privacy_policy_url || data.terms_url) && (
