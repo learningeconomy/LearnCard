@@ -43,6 +43,29 @@ describe('Boosts', () => {
         expect(receivedBoost).toBeDefined();
     });
 
+    test('Boosts are private by default and claim links require public visibility', async () => {
+        const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+
+        await expect(b.invoke.getBoost(boostUri)).rejects.toThrow();
+
+        const claimLinkSA = {
+            endpoint: 'https://test-sa.example.com',
+            name: 'test-sa',
+        };
+
+        await expect(a.invoke.generateClaimLink(boostUri, claimLinkSA)).rejects.toThrow();
+
+        await a.invoke.updateBoost(boostUri, {
+            defaultPermissions: {
+                canView: true,
+            },
+        });
+
+        const claimLink = await a.invoke.generateClaimLink(boostUri, claimLinkSA);
+        expect(claimLink.boostUri).toBe(boostUri);
+        expect(typeof claimLink.challenge).toBe('string');
+    });
+
     test('Users can delete a published boost', async () => {
         // Create a boost
         const boostUri = await a.invoke.createBoost(testUnsignedBoost);

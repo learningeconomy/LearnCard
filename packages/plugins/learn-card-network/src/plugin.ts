@@ -147,6 +147,21 @@ export async function getLearnCardNetworkPlugin(
         return userData;
     };
 
+    // Prefer authenticated boost retrieval for issuance flows.
+    // Falls back to storage resolve for backwards compatibility.
+    const getBoostTemplateForIssuance = async (_learnCard: any, boostUri: string) => {
+        try {
+            const boostRecord = await client.boost.getBoost.query({ uri: boostUri });
+            return boostRecord.boost;
+        } catch (error) {
+            learnCard?.debug?.(
+                'LCN: getBoost failed for template retrieval, falling back to resolveFromLCN',
+                error
+            );
+            return _learnCard.invoke.resolveFromLCN(boostUri);
+        }
+    };
+
     return {
         name: 'LearnCard Network',
         displayName: 'LearnCard Network',
@@ -908,7 +923,7 @@ export async function getLearnCardNetworkPlugin(
             ) => {
                 await ensureUser();
 
-                const result = await _learnCard.invoke.resolveFromLCN(boostUri);
+                const result = await getBoostTemplateForIssuance(_learnCard, boostUri);
                 const data = await UnsignedVCValidator.spa(result);
 
                 if (!data.success) throw new Error('Did not get a valid boost from URI');
@@ -1057,7 +1072,10 @@ export async function getLearnCardNetworkPlugin(
                     const isDirectRecipient = isDid || (!isEmail && !isPhone);
 
                     if (canIssueLocally && isDirectRecipient && input.templateUri) {
-                        const result = await _learnCard.invoke.resolveFromLCN(input.templateUri);
+                        const result = await getBoostTemplateForIssuance(
+                            _learnCard,
+                            input.templateUri
+                        );
                         const data = await UnsignedVCValidator.spa(result);
 
                         if (data.success) {
