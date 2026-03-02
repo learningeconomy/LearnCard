@@ -54,7 +54,8 @@ import CountrySelectorModal from './components/CountrySelectorModal';
 import EUParentalConsentModalContent from './components/EUParentalConsentModalContent';
 import UnderageModalContent from './components/UnderageModalContent';
 import USConsentNoticeModalContent from './components/USConsentNoticeModalContent';
-import { requiresEUParentalConsent, isEUCountry, getGdprAgeLimit } from './helpers/gdpr';
+import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
+import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
 import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
 import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
@@ -293,7 +294,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 if (didWeb) {
                     // Initialize privacy preferences based on age at signup
                     const age = dob ? calculateAge(dob) : null;
-                    const limit = country ? getGdprAgeLimit(country) : 18;
+                    const limit = getMinorAgeThreshold(country);
                     const isMinorUser = age !== null && !isNaN(age) && age < limit;
 
                     await updatePreferences({
