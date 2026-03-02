@@ -77,8 +77,7 @@ const PrivacySettingsPage: React.FC = () => {
                     {isMinor && (
                         <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
                             <p className="text-sm text-amber-800">
-                                Privacy settings are managed by your guardian. Some features are
-                                restricted for users under 18.
+                                Some features are restricted for users under 18.
                             </p>
                         </div>
                     )}

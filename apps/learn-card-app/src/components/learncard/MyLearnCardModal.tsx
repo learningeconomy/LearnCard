@@ -30,6 +30,7 @@ import { WrenchColorFillIcon } from 'learn-card-base/svgs/WrenchIcon';
 import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';
 import ManageDataSharingModal from '../data-sharing/ManageDataSharingModal';
 import DataSharingIcon from 'learn-card-base/svgs/DataSharingIcon';
+import PrivacyLock from 'learn-card-base/svgs/PrivacyLock';
 import LearnCardIDCMS, { LearnCardIdCMSEditorModeEnum } from '../learncardID-CMS/LearnCardIDCMS';
 
 import {
@@ -325,6 +326,15 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         { sectionClassName: '!bg-transparent !shadow-none' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
+                },
+            },
+            {
+                title: 'Privacy & Data',
+                Icon: PrivacyLock,
+                caretText: '',
+                onClick: () => {
+                    closeModal();
+                    history.push('/privacy-and-data');
                 },
             },
             {

@@ -192,30 +192,9 @@ const SideMenuSecondaryLinks: React.FC<{
         );
     });
 
-    const isPrivacyActive = activeTab === '/privacy-and-data';
-
-    const privacyLink = (
-        <IonMenuToggle key="/privacy-and-data" autoHide={false} className="relative w-full">
-            <li
-                onClick={() => setActiveTab('/privacy-and-data')}
-                className="flex items-center justify-center px-2 py-0"
-            >
-                <Link
-                    to="/privacy-and-data"
-                    className={`learn-card-side-menu-secondary-list-item-link ${
-                        isPrivacyActive ? activeLinkBackgroundStyles : inactiveLinkBackgroundStyles
-                    } ${isPrivacyActive ? activeTextStyles : inactiveTextStyles}`}
-                >
-                    🔒 Privacy & Data
-                </Link>
-            </li>
-        </IonMenuToggle>
-    );
-
     return (
         <IonList className="m-4 rounded-2xl h-auto pt-4 pb-4">
             {secondaryLinks}
-            {privacyLink}
         </IonList>
     );
 };
