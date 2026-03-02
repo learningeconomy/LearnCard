@@ -208,6 +208,8 @@ const AppStoreListingBaseSchema = z.object({
             message: 'Must be a valid hex color (e.g., #FF5733)',
         })
         .optional(),
+    min_age: z.number().optional(),
+    age_rating: z.string().optional(),
 });
 
 // Iframe URL validation refinement (applied to schemas that include launch_type)
