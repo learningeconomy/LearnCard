@@ -475,9 +475,9 @@ const LaunchPad: React.FC = () => {
                                             AI Apps Unavailable
                                         </p>
                                         <p className="text-sm text-amber-800">
-                                            AI features are disabled for users under 18.
-                                            Adults can enable AI features in Privacy &
-                                            Data settings.
+                                            {reason === 'disabled_minor'
+                                                ? 'AI features are disabled for users under 18.'
+                                                : 'AI features are currently disabled. Adults can enable AI features in Privacy & Data settings.'}
                                         </p>
                                     </div>
                                 </div>
