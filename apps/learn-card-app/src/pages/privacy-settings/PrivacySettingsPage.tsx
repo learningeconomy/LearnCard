@@ -4,7 +4,13 @@ import { IonContent, IonHeader, IonPage, IonToolbar, IonToggle } from '@ionic/re
 import { useHistory } from 'react-router-dom';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
-import { useGetPreferencesForDid, useUpdatePreferences } from 'learn-card-base';
+import {
+    useGetPreferencesForDid,
+    useUpdatePreferences,
+    useGetCurrentLCNUser,
+} from 'learn-card-base';
+import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
+import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
 
 const PrivacySettingsPage: React.FC = () => {
@@ -12,12 +18,18 @@ const PrivacySettingsPage: React.FC = () => {
     const { data: preferences } = useGetPreferencesForDid();
     const { mutate: updatePreferences } = useUpdatePreferences();
     const { setAnalyticsEnabled } = useFirebaseAnalytics();
+    const { currentLCNUser } = useGetCurrentLCNUser();
+    const profileType = switchedProfileStore.use.profileType();
 
-    const isMinor = preferences?.isMinor ?? false;
+    // Local DOB fallback so minor banner/locks work even without stored preferences
+    const dob = currentLCNUser?.dob;
+    const age = dob ? calculateAge(dob) : null;
+    const isMinorByAge = profileType === 'child' || (age !== null && !isNaN(age) && age < 18);
+    const isMinor = isMinorByAge || (preferences?.isMinor ?? false);
 
-    const aiEnabled = preferences?.aiEnabled ?? true;
-    const analyticsEnabled = preferences?.analyticsEnabled ?? true;
-    const bugReportsEnabled = preferences?.bugReportsEnabled ?? true;
+    const aiEnabled = isMinor ? false : (preferences?.aiEnabled ?? true);
+    const analyticsEnabled = isMinor ? false : (preferences?.analyticsEnabled ?? true);
+    const bugReportsEnabled = isMinor ? false : (preferences?.bugReportsEnabled ?? true);
 
     const handleAiToggle = useCallback(
         (enabled: boolean) => {

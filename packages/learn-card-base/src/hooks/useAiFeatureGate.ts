@@ -1,5 +1,7 @@
 import { switchedProfileStore } from '../stores/walletStore';
 import { useGetPreferencesForDid } from '../react-query/queries/preferences';
+import { useGetCurrentLCNUser } from './useGetCurrentLCNUser';
+import { calculateAge } from '../helpers/dateHelpers';
 
 export type AiFeatureGateReason =
     | 'enabled'
@@ -9,7 +11,8 @@ export type AiFeatureGateReason =
 
 /**
  * Returns whether AI features are currently enabled for the current user.
- * Defaults to enabled for existing users who have no stored preference.
+ * Uses stored preferences when available, with a local DOB/age fallback
+ * so minors are gated even if preferences haven't been persisted yet.
  */
 export function useAiFeatureGate(): {
     isAiEnabled: boolean;
@@ -18,9 +21,19 @@ export function useAiFeatureGate(): {
 } {
     const { data: preferences, isLoading } = useGetPreferencesForDid();
     const profileType = switchedProfileStore.use.profileType();
+    const { currentLCNUser } = useGetCurrentLCNUser();
 
     // Always block AI for child profiles regardless of stored preferences
     if (profileType === 'child') {
+        return { isAiEnabled: false, isLoading: false, reason: 'disabled_minor' };
+    }
+
+    // Local DOB fallback: gate minors even when preferences haven't been written yet
+    const dob = currentLCNUser?.dob;
+    const age = dob ? calculateAge(dob) : null;
+    const isMinorByAge = age !== null && !isNaN(age) && age < 18;
+
+    if (isMinorByAge) {
         return { isAiEnabled: false, isLoading: false, reason: 'disabled_minor' };
     }
 
