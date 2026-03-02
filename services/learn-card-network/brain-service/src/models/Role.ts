@@ -13,6 +13,7 @@ export const Role = ModelFactory<RoleType, RoleRelationships>(
         schema: {
             id: { type: 'string', required: true, uniqueItems: true },
             role: { type: 'string', required: false },
+            canView: { type: 'boolean', required: false },
             canEdit: { type: 'boolean', required: false },
             canIssue: { type: 'boolean', required: false },
             canRevoke: { type: 'boolean', required: false },
