@@ -468,7 +468,20 @@ const LaunchPad: React.FC = () => {
                             </div>
                         </LaunchPadHeader>
                         <div className="flex-grow flex flex-col items-center justify-start w-full pb-8 px-4 bg-grayscale-100">
-                            {searchInput.length > 0 ? (
+                            {tab === LaunchPadTabEnum.ai && !isAiEnabled ? (
+                                <div className="w-full max-w-[600px] flex flex-col items-center justify-center text-center px-6 py-12">
+                                    <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-6 max-w-[450px]">
+                                        <p className="text-[15px] font-semibold text-amber-900 mb-2">
+                                            AI Apps Unavailable
+                                        </p>
+                                        <p className="text-sm text-amber-800">
+                                            AI features are disabled for users under 18.
+                                            Adults can enable AI features in Privacy &
+                                            Data settings.
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : searchInput.length > 0 ? (
                                 <>
                                     <IonList
                                         lines="none"
