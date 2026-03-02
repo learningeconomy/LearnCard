@@ -10,6 +10,7 @@ import {
     useGetCurrentLCNUser,
 } from 'learn-card-base';
 import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
+import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
 
@@ -21,10 +22,12 @@ const PrivacySettingsPage: React.FC = () => {
     const { currentLCNUser } = useGetCurrentLCNUser();
     const profileType = switchedProfileStore.use.profileType();
 
-    // Local DOB fallback so minor banner/locks work even without stored preferences
+    // Local DOB fallback so minor banner/locks work even without stored preferences.
+    // Uses GDPR country-specific thresholds for EU users, 18 for everyone else.
     const dob = currentLCNUser?.dob;
     const age = dob ? calculateAge(dob) : null;
-    const isMinorByAge = profileType === 'child' || (age !== null && !isNaN(age) && age < 18);
+    const threshold = getMinorAgeThreshold(currentLCNUser?.country);
+    const isMinorByAge = profileType === 'child' || (age !== null && !isNaN(age) && age < threshold);
     const isMinor = isMinorByAge || (preferences?.isMinor ?? false);
 
     const aiEnabled = isMinor ? false : (preferences?.aiEnabled ?? true);

@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { useGetCurrentLCNUser } from './useGetCurrentLCNUser';
 import { switchedProfileStore } from '../stores/walletStore';
 import { calculateAge } from '../helpers/dateHelpers';
+import { getMinorAgeThreshold } from '../constants/gdprAgeLimits';
 import { useGetPreferencesForDid } from '../react-query/queries/preferences';
 import { useUpdatePreferences } from '../react-query/mutations/preferences';
 
@@ -34,7 +35,8 @@ export function usePrivacyGate({ onAnalyticsChange }: UsePrivacyGateOptions = {}
     const isChildProfile = profileType === 'child';
     const dob = currentLCNUser?.dob;
     const age = dob ? calculateAge(dob) : null;
-    const isMinor = isChildProfile || (age !== null && !isNaN(age) && age < 18);
+    const threshold = getMinorAgeThreshold(currentLCNUser?.country);
+    const isMinor = isChildProfile || (age !== null && !isNaN(age) && age < threshold);
 
     // First-run: auto-set preferences when the privacy flags have never been written
     useEffect(() => {

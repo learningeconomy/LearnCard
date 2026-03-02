@@ -2,6 +2,7 @@ import { switchedProfileStore } from '../stores/walletStore';
 import { useGetPreferencesForDid } from '../react-query/queries/preferences';
 import { useGetCurrentLCNUser } from './useGetCurrentLCNUser';
 import { calculateAge } from '../helpers/dateHelpers';
+import { getMinorAgeThreshold } from '../constants/gdprAgeLimits';
 
 export type AiFeatureGateReason =
     | 'enabled'
@@ -28,10 +29,12 @@ export function useAiFeatureGate(): {
         return { isAiEnabled: false, isLoading: false, reason: 'disabled_minor' };
     }
 
-    // Local DOB fallback: gate minors even when preferences haven't been written yet
+    // Local DOB fallback: gate minors even when preferences haven't been written yet.
+    // Uses GDPR country-specific thresholds for EU users, 18 for everyone else.
     const dob = currentLCNUser?.dob;
     const age = dob ? calculateAge(dob) : null;
-    const isMinorByAge = age !== null && !isNaN(age) && age < 18;
+    const threshold = getMinorAgeThreshold(currentLCNUser?.country);
+    const isMinorByAge = age !== null && !isNaN(age) && age < threshold;
 
     if (isMinorByAge) {
         return { isAiEnabled: false, isLoading: false, reason: 'disabled_minor' };
