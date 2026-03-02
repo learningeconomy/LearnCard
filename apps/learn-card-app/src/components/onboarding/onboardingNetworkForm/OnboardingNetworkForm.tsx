@@ -57,6 +57,7 @@ import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
 import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
 import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
@@ -96,6 +97,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
 }) => {
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
+    const { track } = useAnalytics();
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
@@ -289,6 +291,10 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 });
 
                 if (didWeb) {
+                    track(AnalyticsEvents.ONBOARDING_COMPLETED, {
+                        role: role ?? undefined,
+                        country: country ?? undefined,
+                    });
                     await refetchIsCurrentUserLCNUser();
                     await wallet.invoke.resetLCAClient();
                     await queryClient.resetQueries();

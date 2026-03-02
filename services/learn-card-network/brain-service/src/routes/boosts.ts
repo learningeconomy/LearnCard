@@ -70,6 +70,7 @@ import {
     canProfileIssueBoost,
     canProfileEditBoost,
     canProfileCreateChildBoost,
+    canProfileViewBoost,
     getBoostByUriWithDefaultClaimPermissions,
     getBoostSkillsWithProficiency,
     getFrameworkSkillsAvailableForBoost,
@@ -86,6 +87,7 @@ import {
     issueClaimLinkBoost,
     isDraftBoost,
     isEditableBoost,
+    isBoostViewableByClaimLink,
     convertCredentialToBoostTemplateJSON,
     isInboxRecipient,
     prepareCredentialFromBoost,
@@ -1060,12 +1062,10 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if (defaultPermissions) {
-                await addDefaultPermissionsForBoost(boost, {
-                    ...EMPTY_PERMISSIONS,
-                    ...defaultPermissions,
-                });
-            }
+            await addDefaultPermissionsForBoost(boost, {
+                ...EMPTY_PERMISSIONS,
+                ...defaultPermissions,
+            });
 
             return getBoostUri(boost.id, ctx.domain);
         }),
@@ -1145,12 +1145,10 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if (defaultPermissions) {
-                await addDefaultPermissionsForBoost(childBoost, {
-                    ...EMPTY_PERMISSIONS,
-                    ...defaultPermissions,
-                });
-            }
+            await addDefaultPermissionsForBoost(childBoost, {
+                ...EMPTY_PERMISSIONS,
+                ...defaultPermissions,
+            });
 
             return getBoostUri(childBoost.id, ctx.domain);
         }),
@@ -1175,6 +1173,7 @@ export const boostsRouter = t.router({
             })
         )
         .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
             const { uri } = input;
 
             const decodedUri = decodeURIComponent(uri);
@@ -1185,6 +1184,13 @@ export const boostsRouter = t.router({
 
             if (!boost || !boostInstance)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await canProfileViewBoost(profile, boostInstance))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permission to view this boost',
+                });
+            }
 
             const { id, boost: _boost, ...remaining } = boost;
             const parsedBoost = JSON.parse(_boost);
@@ -2179,7 +2185,8 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
 
             const { uri, updates, skills } = input;
-            const { name, type, category, status, credential, meta, defaultPermissions } = updates;
+            const { name, type, category, status, credential, meta, defaultPermissions } =
+                updates;
 
             const decodedUri = decodeURIComponent(uri);
             const boost = await getBoostByUri(decodedUri);
@@ -2764,6 +2771,14 @@ export const boostsRouter = t.router({
                 });
             }
 
+            if (!(await isBoostViewableByClaimLink(boost))) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message:
+                        'Boost must be viewable by claim link before generating a claim link.',
+                });
+            }
+
             if (await isClaimLinkAlreadySetForBoost(boostUri, challenge)) {
                 throw new TRPCError({
                     code: 'CONFLICT',
@@ -2806,6 +2821,13 @@ export const boostsRouter = t.router({
             }
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isBoostViewableByClaimLink(boost))) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'This boost is not currently viewable by claim link.',
+                });
+            }
 
             const boostOwner = await getBoostOwner(boost);
 

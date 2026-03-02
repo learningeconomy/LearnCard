@@ -18,7 +18,7 @@ import {
 } from 'firebase/auth';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
-import useFirebaseAnalytics from './useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { useIonAlert } from '@ionic/react';
 
 import {
@@ -52,7 +52,7 @@ export const useFirebase = () => {
     const { web3AuthInit } = useWeb3Auth();
     const { presentToast } = useToast();
     const [presentAlert] = useIonAlert();
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
 
     const setInitLoading = authStore.set.initLoading;
 
@@ -171,7 +171,7 @@ export const useFirebase = () => {
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
                 firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
-                logAnalyticsEvent('login', { method: SocialLoginTypes.google });
+                track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.google });
 
                 // sign in on web-layer
                 if (Capacitor.isNativePlatform()) {
@@ -339,7 +339,7 @@ export const useFirebase = () => {
                             // Clear email from storage.
                             localStorage.removeItem('emailForSignIn');
                             authStore.set.typeOfLogin(SocialLoginTypes.passwordless);
-                            logAnalyticsEvent('login', { method: SocialLoginTypes.passwordless });
+                            track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.passwordless });
                             firebaseAuthStore.set.setFirebaseCurrentUser(user);
                             firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
 
@@ -378,7 +378,7 @@ export const useFirebase = () => {
                     const token = await result.user.getIdToken(true);
                     const user = result?.user;
                     authStore.set.typeOfLogin(SocialLoginTypes.passwordless);
-                    logAnalyticsEvent('login', { method: SocialLoginTypes.passwordless });
+                    track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.passwordless });
                     firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                     if (token) {
@@ -484,7 +484,7 @@ export const useFirebase = () => {
                     setInitLoading(true);
                     successCallback();
                     authStore.set.typeOfLogin(SocialLoginTypes.sms);
-                    logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
+                    track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.sms });
                     firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                     if (token) {
@@ -517,7 +517,7 @@ export const useFirebase = () => {
             const user = result?.user;
             const token = await result?.user?.getIdToken(true);
             authStore.set.typeOfLogin(SocialLoginTypes.sms);
-            logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
+            track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.sms });
             firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
             if (token) {
@@ -571,7 +571,7 @@ export const useFirebase = () => {
                 const token = await res.user.getIdToken();
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
                 authStore.set.typeOfLogin(SocialLoginTypes.sms);
-                logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
+                track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.sms });
                 firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                 if (token) {
@@ -640,7 +640,7 @@ export const useFirebase = () => {
                 // get current firebase user idToken
                 const token = await firebaseAuth.currentUser.getIdToken();
                 authStore.set.typeOfLogin(SocialLoginTypes.apple);
-                logAnalyticsEvent('login', { method: SocialLoginTypes.apple });
+                track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.apple });
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
                 firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
@@ -671,7 +671,7 @@ export const useFirebase = () => {
                 if (credential && user) {
                     const token = await user.getIdToken(true);
                     authStore.set.typeOfLogin(SocialLoginTypes.apple);
-                    logAnalyticsEvent('login', { method: SocialLoginTypes.apple });
+                    track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.apple });
                     firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                     if (token) {
@@ -735,7 +735,7 @@ export const useFirebase = () => {
                 if (credential) {
                     const token = await result.user.getIdToken(true);
                     authStore.set.typeOfLogin(SocialLoginTypes.apple);
-                    logAnalyticsEvent('login', { method: SocialLoginTypes.apple });
+                    track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.apple });
                     firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                     if (token) {
@@ -782,7 +782,7 @@ export const useFirebase = () => {
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
                 firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
-                logAnalyticsEvent('login', { method: SocialLoginTypes.passwordless });
+                track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.passwordless });
 
                 try {
                     await web3AuthSfaFirebaseLogin(
