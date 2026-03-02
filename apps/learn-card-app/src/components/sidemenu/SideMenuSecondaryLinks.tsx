@@ -8,6 +8,9 @@ import { IonMenuToggle, IonList } from '@ionic/react';
 import {
     CredentialCategoryEnum,
     useGetCredentialList,
+    useAiFeatureGate,
+    useToast,
+    ToastTypeEnum,
     walletStore,
     WalletSyncState,
 } from 'learn-card-base';
@@ -28,6 +31,11 @@ const SideMenuSecondaryLinks: React.FC<{
 
     const flags = useFlags();
     const isWalletSyncing = walletStore.useTracked.syncState();
+    const { isAiEnabled, reason } = useAiFeatureGate();
+    const { presentToast } = useToast();
+
+    const AI_ROUTES = ['/ai/topics', '/ai/insights', '/ai/pathways'];
+    const isAiRoute = (path: string) => AI_ROUTES.includes(path);
 
     const { data: records } = useGetCredentialList(CredentialCategoryEnum.family);
     const hasFamilyID = records?.pages?.[0]?.records?.length > 0 ?? false;
@@ -110,7 +118,24 @@ const SideMenuSecondaryLinks: React.FC<{
         const textStyles = getTextStyles(linkPath);
         const linkBackgroundStyles = getLinkBackgroundStyles(linkPath);
 
-        let linkEl = (
+        const isGatedAiRoute = isAiRoute(linkPath) && !isAiEnabled;
+
+        let linkEl = isGatedAiRoute ? (
+            <button
+                type="button"
+                onClick={e => {
+                    e.preventDefault();
+                    const msg =
+                        reason === 'disabled_minor'
+                            ? 'AI features are not available for users under 18.'
+                            : 'AI features are currently disabled. You can enable them in Privacy & Data settings.';
+                    presentToast(msg, { type: ToastTypeEnum.Error });
+                }}
+                className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} opacity-50`}
+            >
+                <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} /> {link.label}
+            </button>
+        ) : (
             <Link
                 to={linkPath}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}

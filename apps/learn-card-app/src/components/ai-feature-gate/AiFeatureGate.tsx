@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
 
 import { useAiFeatureGate, AiFeatureGateReason } from 'learn-card-base';
 
@@ -13,9 +13,10 @@ const REASON_MESSAGES: Record<AiFeatureGateReason, string | null> = {
 const AiFeatureDisabledCard: React.FC<{ reason: AiFeatureGateReason }> = ({ reason }) => {
     const message = REASON_MESSAGES[reason];
     const isMinor = reason === 'disabled_minor';
+    const history = useHistory();
 
     return (
-        <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+        <div className="flex flex-col items-center justify-center gap-4 p-8 text-center min-h-[300px]">
             <div className="text-4xl">🔒</div>
             <p className="text-grayscale-600 text-sm max-w-[280px]">{message}</p>
             {!isMinor && (
@@ -26,6 +27,12 @@ const AiFeatureDisabledCard: React.FC<{ reason: AiFeatureGateReason }> = ({ reas
                     Manage privacy settings
                 </Link>
             )}
+            <button
+                onClick={() => history.push('/home')}
+                className="text-sm text-grayscale-500 underline mt-2"
+            >
+                Back to Home
+            </button>
         </div>
     );
 };
