@@ -119,7 +119,6 @@ export function getActivityError(record: CredentialActivityRecord): string | und
  * Format source for display
  */
 export function formatActivitySource(source: string): string {
-    console.log('source', source);
     switch (source) {
         case 'send':
             return 'API Send';
