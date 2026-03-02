@@ -58,6 +58,7 @@ import {
     LaunchType,
     PromotionLevel,
     AppStoreListingValidator,
+    AgeRating,
 } from 'types/app-store-listing';
 import type {
     AppStoreListingCreateType,
@@ -209,7 +210,7 @@ const AppStoreListingBaseSchema = z.object({
         })
         .optional(),
     min_age: z.number().optional(),
-    age_rating: z.string().optional(),
+    age_rating: AgeRating.optional(),
 });
 
 // Iframe URL validation refinement (applied to schemas that include launch_type)
