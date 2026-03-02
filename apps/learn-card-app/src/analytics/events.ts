@@ -40,6 +40,7 @@ export const AnalyticsEvents = {
 
     // LaunchPad
     LAUNCHPAD_APP_CLICKED: 'launchpad_app_clicked',
+    LAUNCHPAD_QUICKNAV_ACTION_CLICKED: 'launchpad_quicknav_action_clicked',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -145,6 +146,11 @@ export interface AnalyticsEventPayloads {
         appId: string;
         action: 'connect' | 'open';
         appType?: string;
+    };
+
+    [AnalyticsEvents.LAUNCHPAD_QUICKNAV_ACTION_CLICKED]: {
+        action: string;
+        role: string;
     };
 }
 

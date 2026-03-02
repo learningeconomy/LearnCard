@@ -63,6 +63,7 @@ import {
     LearnCardRolesEnum,
     LearnCardRoles,
 } from '../../../components/onboarding/onboarding.helpers';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import {
     useWallet,
     useGetProfile,
@@ -163,7 +164,8 @@ const ActionButton: React.FC<{
     bg: string;
     to?: string;
     onClick?: () => void;
-}> = ({ label, bg, to, onClick }) => {
+    role?: string;
+}> = ({ label, bg, to, onClick, role }) => {
     const history = useHistory();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { handlePresentBoostModal } = useBoostModal(undefined, undefined, true, true);
@@ -171,8 +173,14 @@ const ActionButton: React.FC<{
     const buildMyLCIcon = theme?.defaults?.buildMyLCIcon;
     const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
     const AiInsightsIcon = sideMenuIcons[CredentialCategoryEnum.aiInsight];
+    const { track } = useAnalytics();
 
     const handleClick = () => {
+        track(AnalyticsEvents.LAUNCHPAD_QUICKNAV_ACTION_CLICKED, {
+            action: label,
+            role: role ?? 'unknown',
+        });
+
         if (onClick) {
             onClick();
             return;
@@ -711,6 +719,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                         key={`${label}-${i}`}
                         label={label}
                         bg={colorByLabel[label] ?? bgColors[i % bgColors.length]}
+                        role={activeRole}
                         onClick={
                             label === 'View Family' && familyUri
                                 ? () => {
