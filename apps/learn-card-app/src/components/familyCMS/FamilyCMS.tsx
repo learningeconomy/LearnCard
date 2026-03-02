@@ -293,6 +293,8 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                             bio: '',
                             shortBio: '',
                             notificationsWebhook: getNotificationsEndpoint(),
+                            dob: dependent?.dob ?? '',
+                            country: dependent?.country ?? '',
                             display: {
                                 // container styles
                                 backgroundColor:

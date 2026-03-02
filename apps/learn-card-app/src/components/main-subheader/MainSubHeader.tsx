@@ -7,7 +7,6 @@ import useBoostModal from '../boost/hooks/useBoostModal';
 import ShareCredentialsModal from '../../../../../packages/learn-card-base/src/components/sharecreds/ShareCredentialsModal';
 import PlusButtonModalContent from '../../../../../packages/learn-card-base/src/components/plusButton/PlusButtonModalContent';
 import CategoryDescriptorModal from '../category-descriptor/CategoryDescriptorModal';
-import CenteredSubHeader from '../../pages/skills/CenteredSubHeader';
 import DotIcon from 'learn-card-base/svgs/DotIcon';
 import Plus from 'learn-card-base/svgs/Plus';
 
@@ -91,42 +90,38 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
 
     return (
         <IonRow className="max-w-[700px] mx-auto">
-            {subheaderType === SubheaderTypeEnum.Skill ? (
-                <CenteredSubHeader subheaderType={subheaderType} />
-            ) : (
-                <IonCol size={'9'} className="flex items-center justify-start gap-[10px]">
-                    {Icon && (
-                        <Icon
-                            className={`h-[60px] w-[60px] shrink-0 ${
-                                iconPadding || 'p-0'
-                            } ${headerTextColor}`}
-                        />
-                    )}
-                    <h2
-                        className={`select-none whitespace-nowrap flex flex-col gap-[4px] ${headerTextColor}`}
-                    >
-                        <span className="font-poppins text-[22px] leading-[100%] flex items-center">
-                            {countLoading && (
-                                <IonSpinner
-                                    name="crescent"
-                                    className="text-white w-[20px] h-[20px] mr-[5px]"
-                                />
-                            )}{' '}
-                            {titleDisplay}
-                            {newCredsCountDisplay}
-                        </span>
-                        <span className="font-poppins text-[12px]">
-                            <span>{helperText}</span>{' '}
-                            <button
-                                className="font-[600] underline"
-                                onClick={() => presentCategoryDescriptorModal()}
-                            >
-                                {helperTextClickable}.
-                            </button>
-                        </span>
-                    </h2>
-                </IonCol>
-            )}
+            <IonCol size={'9'} className="flex items-center justify-start gap-[10px]">
+                {Icon && (
+                    <Icon
+                        className={`h-[60px] w-[60px] shrink-0 ${
+                            iconPadding || 'p-0'
+                        } ${headerTextColor}`}
+                    />
+                )}
+                <h2
+                    className={`select-none whitespace-nowrap flex flex-col gap-[4px] ${headerTextColor}`}
+                >
+                    <span className="font-poppins text-[22px] leading-[100%] flex items-center">
+                        {countLoading && (
+                            <IonSpinner
+                                name="crescent"
+                                className="text-white w-[20px] h-[20px] mr-[5px]"
+                            />
+                        )}{' '}
+                        {titleDisplay}
+                        {newCredsCountDisplay}
+                    </span>
+                    <span className="font-poppins text-[12px]">
+                        <span>{helperText}</span>{' '}
+                        <button
+                            className="font-[600] underline"
+                            onClick={() => presentCategoryDescriptorModal()}
+                        >
+                            {helperTextClickable}.
+                        </button>
+                    </span>
+                </h2>
+            </IonCol>
 
             <IonCol size="3" className="flex items-center justify-end">
                 {plusButtonOverride}

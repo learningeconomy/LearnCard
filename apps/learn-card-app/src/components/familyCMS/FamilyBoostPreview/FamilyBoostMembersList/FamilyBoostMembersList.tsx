@@ -175,7 +175,7 @@ export const FamilyBoostMembersList: React.FC<{
                         return (
                             <FamilyBoostMembersListItem
                                 credential={credential}
-                                key={user?.profileId}
+                                key={user?.did}
                                 user={user}
                                 currentUser={currentLCNUser}
                                 familyTitles={_familyTitles}

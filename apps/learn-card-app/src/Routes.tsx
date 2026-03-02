@@ -42,9 +42,13 @@ const BoostCMS = lazyWithRetry(() => import('./components/boost/boostCMS/BoostCM
 const UpdateBoostCMS = lazyWithRetry(() => import('./components/boost/boostCMS/UpdateBoostCMS'));
 const SkillsPage = lazyWithRetry(() => import('./pages/skills/SkillsPage'));
 const AiInsights = lazyWithRetry(() => import('./pages/ai-insights/AiInsights'));
+<<<<<<< HEAD
 const PrivacySettingsPage = lazyWithRetry(
     () => import('./pages/privacy-settings/PrivacySettingsPage')
 );
+=======
+const ResumeBuilderPage = lazyWithRetry(() => import('./pages/resume-builder/ResumeBuilderPage'));
+>>>>>>> origin/main
 const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
 const ViewSharedBoost = lazyWithRetry(() => import('./components/creds-bundle/ViewSharedBoost'));
@@ -234,6 +238,7 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/skills" component={SkillsPage} />
                         <PrivateRoute exact path="/ai/insights" component={AiInsights} />
                         <PrivateRoute exact path="/privacy-and-data" component={PrivacySettingsPage} />
+                        <PrivateRoute exact path="/resume-builder" component={ResumeBuilderPage} />
                         <PrivateRoute exact path="/ai/pathways" component={AiPathways} />
                         <Route
                             exact
