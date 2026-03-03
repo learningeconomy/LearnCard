@@ -7,7 +7,9 @@ export const isValidUrl = (str: string): boolean => {
     }
 };
 
-export const getMediaBaseUrl = (url: string) => {
+export const getMediaBaseUrl = (url: string | null | undefined): string => {
+    if (!url) return '';
+
     return url.replace(/(https?:\/\/(www\.)?)/, '').split('/')[0];
 };
 
