@@ -368,7 +368,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                 <>
                     <div
                         ref={chatContainerRef}
-                        className="flex-1 pt-[100px] sm:pt-0 overflow-y-auto flex flex-col px-4 relative"
+                        className="flex-1 pt-[150px] sm:pt-0 overflow-y-auto flex flex-col px-4 relative"
                     >
                         <div
                             ref={chatInnerScrollRef}

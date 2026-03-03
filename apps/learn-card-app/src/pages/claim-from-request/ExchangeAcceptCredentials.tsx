@@ -15,7 +15,7 @@ import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayC
 import X from 'learn-card-base/svgs/X';
 
 import { useWallet, useToast, ToastTypeEnum, BoostPageViewMode } from 'learn-card-base';
-import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 import {
     getAchievementType,
@@ -76,7 +76,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     const history = useHistory();
     const { presentToast } = useToast();
     const { storeAndAddVCToWallet } = useWallet();
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
 
     const handleClaim = async () => {
         if (selectedCredentials.length === 0) {
@@ -95,7 +95,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                     const category = getDefaultCategoryForCredential(credential);
                     const achievementType = getAchievementType(credential);
 
-                    logAnalyticsEvent('claim_boost', {
+                    track(AnalyticsEvents.CLAIM_BOOST, {
                         category: category,
                         boostType: achievementType,
                         method: 'VC-API Request',

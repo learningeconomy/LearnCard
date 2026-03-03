@@ -53,6 +53,20 @@ export const isEditableBoost = (boost: BoostInstance): boolean => {
     return isDraftBoost(boost) || isProvisionalBoost(boost);
 };
 
+/**
+ * Public claim-link visibility is controlled by defaultPermissions.canView.
+ * If unset (legacy records), treat as viewable.
+ */
+export const isBoostViewableByClaimLink = async (boost: BoostInstance): Promise<boolean> => {
+    const defaultRoles = await boost.findRelationships({ alias: 'defaultRole' });
+    const defaultRole = defaultRoles[0]?.target as any;
+    const canView = defaultRole?.canView ?? defaultRole?.dataValues?.canView;
+
+    if (typeof canView === 'boolean') return canView;
+
+    return true;
+};
+
 export const convertCredentialToBoostTemplateJSON = (
     credential: VC | UnsignedVC,
     defaultIssuerDid?: string
