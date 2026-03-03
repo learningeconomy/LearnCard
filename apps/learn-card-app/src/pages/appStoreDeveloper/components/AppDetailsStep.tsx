@@ -212,8 +212,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 </div>
 
                 <p className="text-xs text-gray-400 mb-3">
-                    Set age requirements for your app. Users under the minimum age will be blocked
-                    from installing or opening this app.
+                    Set age requirements for your app. Age Rating will display in the UI and
+                    requires guardian approval for underage child profiles. Minimum Age is a hard
+                    block that hides the app entirely.
                 </p>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -269,14 +270,21 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 </div>
 
                 {(data.age_rating || data.min_age !== undefined) && (
-                    <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded-lg">
-                        <p className="text-xs text-amber-700">
-                            Users under age{' '}
-                            {data.min_age ??
-                                AGE_RATING_OPTIONS.find(o => o.value === data.age_rating)?.minAge ??
-                                0}
-                            + will be blocked from installing or opening this app.
-                        </p>
+                    <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded-lg space-y-1">
+                        {data.min_age !== undefined && (
+                            <p className="text-xs text-red-700">
+                                <strong>Hard block:</strong> Users under {data.min_age} will not see
+                                this app at all.
+                            </p>
+                        )}
+                        {data.age_rating && (
+                            <p className="text-xs text-amber-700">
+                                <strong>Soft block:</strong> Child profiles under{' '}
+                                {AGE_RATING_OPTIONS.find(o => o.value === data.age_rating)
+                                    ?.minAge ?? 0}{' '}
+                                will need guardian approval to install.
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
