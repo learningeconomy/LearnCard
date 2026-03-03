@@ -146,7 +146,11 @@ import {
 } from '@accesslayer/boost/relationships/delete';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
-import { EMPTY_PERMISSIONS, QUERYABLE_PERMISSIONS } from 'src/constants/permissions';
+import {
+    EMPTY_PERMISSIONS,
+    DEFAULT_BOOST_PERMISSIONS,
+    QUERYABLE_PERMISSIONS,
+} from 'src/constants/permissions';
 import { updateBoost } from '@accesslayer/boost/update';
 import {
     addClaimPermissionsForBoost,
@@ -1064,6 +1068,7 @@ export const boostsRouter = t.router({
 
             await addDefaultPermissionsForBoost(boost, {
                 ...EMPTY_PERMISSIONS,
+                ...DEFAULT_BOOST_PERMISSIONS,
                 ...defaultPermissions,
             });
 
@@ -1147,6 +1152,7 @@ export const boostsRouter = t.router({
 
             await addDefaultPermissionsForBoost(childBoost, {
                 ...EMPTY_PERMISSIONS,
+                ...DEFAULT_BOOST_PERMISSIONS,
                 ...defaultPermissions,
             });
 
@@ -2185,8 +2191,7 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
 
             const { uri, updates, skills } = input;
-            const { name, type, category, status, credential, meta, defaultPermissions } =
-                updates;
+            const { name, type, category, status, credential, meta, defaultPermissions } = updates;
 
             const decodedUri = decodeURIComponent(uri);
             const boost = await getBoostByUri(decodedUri);
@@ -2774,8 +2779,7 @@ export const boostsRouter = t.router({
             if (!(await isBoostViewableByClaimLink(boost))) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
-                    message:
-                        'Boost must be viewable by claim link before generating a claim link.',
+                    message: 'Boost must be viewable by claim link before generating a claim link.',
                 });
             }
 

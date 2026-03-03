@@ -382,10 +382,13 @@ export const getBoostRecipients = async (
         })
         .with('sender, sent, received, recipient, credential')
         // Filter out revoked credentials using WITH barrier pattern
-        .where(`(received IS NULL OR coalesce(received.status, '') <> 'revoked')${whereClause ? ' AND ' + whereClause : ''}`);
+        .where(
+            `(received IS NULL OR coalesce(received.status, '') <> 'revoked')${
+                whereClause ? ' AND ' + whereClause : ''
+            }`
+        );
 
     const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
-
 
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: FlatProfileType;
@@ -593,6 +596,28 @@ export const canProfileViewBoost = async (
     profile: ProfileType,
     boost: BoostInstance | BoostType
 ) => {
+    // First check if the boost has defaultRole.canView = true (public viewing)
+    const defaultRoleQuery = new QueryBuilder()
+        .match({ model: Boost, identifier: 'boost', where: { id: boost.id } })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'boost' },
+                Boost.getRelationshipByAlias('defaultRole'),
+                { model: Role, identifier: 'defaultRole' },
+            ],
+        })
+        .return('defaultRole');
+
+    const defaultRoleResult = await defaultRoleQuery.run();
+    const defaultRole = defaultRoleResult.records[0]?.get('defaultRole');
+    const canView = defaultRole?.properties?.canView ?? true; // Default to true for legacy boosts
+
+    if (canView === true) {
+        return true;
+    }
+
+    // If not publicly viewable, check if profile has role or received credential
     const query = new QueryBuilder()
         .match({ model: Boost, identifier: 'target', where: { id: boost.id } })
         .with('target')
@@ -1397,7 +1422,7 @@ export const getBoostRecipientsWithChildren = async (
 ): Promise<Array<Omit<BoostRecipientInfo, 'uri'> & { boostUris: string[] }>> => {
     console.log('[AccessLayer] getBoostRecipientsWithChildren called');
     console.log('[AccessLayer] boostQuery:', JSON.stringify(boostQuery, null, 2));
-    
+
     // Convert queries for Neo4j compatibility
     const boostQuery_neo4j = convertObjectRegExpToNeo4j(boostQuery);
     const profileQuery_neo4j = convertObjectRegExpToNeo4j(profileQuery);
@@ -1496,12 +1521,15 @@ export const getBoostRecipientsWithChildren = async (
     // Debug: log results with status info
     console.log('[getBoostRecipientsWithChildren] Total results before filter:', results.length);
     const revokedResults = results.filter(({ received }) => received?.status === 'revoked');
-    console.log('[getBoostRecipientsWithChildren] Revoked results:', revokedResults.map(r => ({ 
-        to: r.sent?.to, 
-        status: r.received?.status,
-        boostId: r.relevantBoost?.id 
-    })));
-    
+    console.log(
+        '[getBoostRecipientsWithChildren] Revoked results:',
+        revokedResults.map(r => ({
+            to: r.sent?.to,
+            status: r.received?.status,
+            boostId: r.relevantBoost?.id,
+        }))
+    );
+
     const resultsWithIds = results
         .filter(({ received }) => received?.status !== 'revoked')
         .map(({ relevantBoost, sender, sent, received, credential }) => {
