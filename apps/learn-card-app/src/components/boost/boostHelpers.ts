@@ -268,6 +268,20 @@ export const updateBoost = async (
         category: vcInput?.basicInfo?.type,
         status: boostStatus,
         credential: updatedCredential,
+        defaultPermissions: {
+            canView:
+                typeof vcInput?.boostPermissions?.canView === 'boolean'
+                    ? vcInput.boostPermissions.canView
+                    : false,
+            canEdit:
+                typeof vcInput?.boostPermissions?.canEdit === 'boolean'
+                    ? vcInput.boostPermissions.canEdit
+                    : true,
+            canIssue:
+                typeof vcInput?.boostPermissions?.canIssue === 'boolean'
+                    ? vcInput.boostPermissions.canIssue
+                    : true,
+        },
     });
 
     return updatedBoost;

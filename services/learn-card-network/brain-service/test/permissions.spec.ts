@@ -3459,6 +3459,7 @@ describe('Permissions', () => {
         it('should allow any combination of permissions', async () => {
             const role: BoostPermissions = {
                 role: 'nice',
+                canView: true,
                 canEdit: true,
                 canIssue: false,
                 canRevoke: true,

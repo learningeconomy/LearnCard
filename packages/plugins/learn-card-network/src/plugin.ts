@@ -147,6 +147,21 @@ export async function getLearnCardNetworkPlugin(
         return userData;
     };
 
+    // Prefer authenticated boost retrieval for issuance flows.
+    // Falls back to storage resolve for backwards compatibility.
+    const getBoostTemplateForIssuance = async (_learnCard: any, boostUri: string) => {
+        try {
+            const boostRecord = await client.boost.getBoost.query({ uri: boostUri });
+            return boostRecord.boost;
+        } catch (error) {
+            learnCard?.debug?.(
+                'LCN: getBoost failed for template retrieval, falling back to resolveFromLCN',
+                error
+            );
+            return _learnCard.invoke.resolveFromLCN(boostUri);
+        }
+    };
+
     return {
         name: 'LearnCard Network',
         displayName: 'LearnCard Network',
@@ -609,6 +624,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.boost.getBoost.query({ uri });
             },
+            getBoostSkills: async (_learnCard, uri) => {
+                await ensureUser();
+
+                return client.boost.getBoostSkills.query({ uri });
+            },
             getBoostFrameworks: async (_learnCard, uri, options = {}) => {
                 if (!userData) throw new Error('Please make an account first!');
 
@@ -813,10 +833,17 @@ export async function getLearnCardNetworkPlugin(
             updateBoost: async (_learnCard, uri, updates, credential) => {
                 await ensureUser();
 
-                return client.boost.updateBoost.mutate({
+                // Allow passing skills similar to createBoost; send them at top-level, not inside updates
+                const { skills, ...restUpdates } = (updates as any) ?? {};
+
+                const payload: any = {
                     uri,
-                    updates: { ...(credential && { credential }), ...updates },
-                });
+                    updates: { ...(credential && { credential }), ...restUpdates },
+                };
+
+                if (Array.isArray(skills) && skills.length > 0) payload.skills = skills;
+
+                return client.boost.updateBoost.mutate(payload);
             },
             attachFrameworkToBoost: async (_learnCard, boostUri, frameworkId) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -896,7 +923,7 @@ export async function getLearnCardNetworkPlugin(
             ) => {
                 await ensureUser();
 
-                const result = await _learnCard.invoke.resolveFromLCN(boostUri);
+                const result = await getBoostTemplateForIssuance(_learnCard, boostUri);
                 const data = await UnsignedVCValidator.spa(result);
 
                 if (!data.success) throw new Error('Did not get a valid boost from URI');
@@ -1045,7 +1072,10 @@ export async function getLearnCardNetworkPlugin(
                     const isDirectRecipient = isDid || (!isEmail && !isPhone);
 
                     if (canIssueLocally && isDirectRecipient && input.templateUri) {
-                        const result = await _learnCard.invoke.resolveFromLCN(input.templateUri);
+                        const result = await getBoostTemplateForIssuance(
+                            _learnCard,
+                            input.templateUri
+                        );
                         const data = await UnsignedVCValidator.spa(result);
 
                         if (data.success) {

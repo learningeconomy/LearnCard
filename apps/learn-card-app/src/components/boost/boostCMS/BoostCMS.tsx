@@ -22,6 +22,9 @@ const BoostAddressBook = lazyWithRetry(
 const BoostCMSBasicInfoForm = lazyWithRetry(
     () => import('./boostCMSForms/boostCMSBasicInfo/BoostCMSBasicInfoForm')
 );
+const BoostCMSPermissionsForm = lazyWithRetry(
+    () => import('./boostCMSForms/boostCMSPermissions/BoostCMSPermissionsForm')
+);
 const BoostCMSHeader = lazyWithRetry(() => import('./BoostCMSHeader/BoostCMSHeader'));
 const BoostCMSMediaForm = lazyWithRetry(
     () => import('./boostCMSForms/boostCMSMedia/BoostCMSMediaForm')
@@ -108,7 +111,7 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
-import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { useAddCredentialToWallet } from '../mutations';
 import useWallet from 'learn-card-base/hooks/useWallet';
 import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
@@ -157,7 +160,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     const queryClient = useQueryClient();
     const { isDesktop } = useDeviceTypeByWidth();
 
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
 
     const { newModal, closeModal } = useModal();
     const { mutateAsync: createBoost } = useCreateBoost();
@@ -609,19 +612,19 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
             closeModal();
             setCurrentStep(BoostCMSStepsEnum.publish);
-            logAnalyticsEvent('boostCMS_publish', {
+            track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
                 timestamp: Date.now(),
                 action: 'publish',
-                boostType: state?.basicInfo?.achievementType,
+                boostType: state?.basicInfo?.achievementType ?? undefined,
                 category: state?.basicInfo?.type,
             });
         } else if (currentStep === BoostCMSStepsEnum.publish) {
             closeModal();
             setCurrentStep(BoostCMSStepsEnum.issueTo);
-            logAnalyticsEvent('boostCMS_issue_to', {
+            track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
                 timestamp: Date.now(),
                 action: 'issue_to',
-                boostType: state?.basicInfo?.achievementType,
+                boostType: state?.basicInfo?.achievementType ?? undefined,
                 category: state?.basicInfo?.type,
             });
         }
@@ -707,6 +710,20 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             const { boostUri } = await createBoost({
                 state: addFallbackNameToCMSState(state),
                 status: LCNBoostStatusEnum.draft,
+                defaultPermissions: {
+                    canView:
+                        typeof state.boostPermissions?.canView === 'boolean'
+                            ? state.boostPermissions.canView
+                            : false,
+                    canEdit:
+                        typeof state.boostPermissions?.canEdit === 'boolean'
+                            ? state.boostPermissions.canEdit
+                            : true,
+                    canIssue:
+                        typeof state.boostPermissions?.canIssue === 'boolean'
+                            ? state.boostPermissions.canIssue
+                            : true,
+                },
                 skillIds,
             });
 
@@ -726,10 +743,10 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     type: ToastTypeEnum.Success,
                 });
 
-                logAnalyticsEvent('boostCMS_publish_draft', {
+                track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
                     timestamp: Date.now(),
                     action: 'publish_draft',
-                    boostType: state?.basicInfo?.achievementType,
+                    boostType: state?.basicInfo?.achievementType ?? undefined,
                     category: state?.basicInfo?.type,
                 });
 
@@ -767,18 +784,29 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             const { boostUri } = await createBoost({
                 state: addFallbackNameToCMSState(state),
                 status: LCNBoostStatusEnum.live,
+                defaultPermissions: {
+                    canView:
+                        typeof state.boostPermissions?.canView === 'boolean'
+                            ? state.boostPermissions.canView
+                            : false,
+                    canEdit:
+                        typeof state.boostPermissions?.canEdit === 'boolean'
+                            ? state.boostPermissions.canEdit
+                            : true,
+                    canIssue:
+                        typeof state.boostPermissions?.canIssue === 'boolean'
+                            ? state.boostPermissions.canIssue
+                            : true,
+                },
                 skillIds,
             });
 
             setIsPublishLoading(false);
             if (boostUri) {
-                // Clear autosave since we successfully published
-                clearLocalSave();
-
-                logAnalyticsEvent('boostCMS_publish_live', {
+                track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
                     timestamp: Date.now(),
                     action: 'publish_live',
-                    boostType: state?.basicInfo?.achievementType,
+                    boostType: state?.basicInfo?.achievementType ?? undefined,
                     category: state?.basicInfo?.type,
                 });
 
@@ -987,6 +1015,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 <BoostFrameworkSkillSelector state={state} setState={setState} />
                 <BoostCMSMediaForm state={state} setState={setState} />
                 <BoostCMSBasicInfoForm state={state} setState={setState} />
+                <BoostCMSPermissionsForm state={state} setState={setState} />
                 <BoostAddressBook
                     state={state}
                     setState={setState}

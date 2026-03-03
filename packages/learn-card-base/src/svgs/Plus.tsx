@@ -1,19 +1,22 @@
 import React from 'react';
 
-const Plus: React.FC<{ className?: string }> = ({ className }) => {
+const Plus: React.FC<{ className?: string; strokeWidth?: string }> = ({
+    className,
+    strokeWidth = '3',
+}) => {
     return (
         <svg viewBox="0 0 31 30" fill="none" className={className} aria-label="Plus">
             <path
                 d="M5.1875 15H25.8125"
                 stroke="currentColor"
-                strokeWidth="3"
+                strokeWidth={strokeWidth}
                 strokeLinecap="round"
                 strokeLinejoin="round"
             />
             <path
                 d="M15.5 4.6875V25.3125"
                 stroke="currentColor"
-                strokeWidth="3"
+                strokeWidth={strokeWidth}
                 strokeLinecap="round"
                 strokeLinejoin="round"
             />

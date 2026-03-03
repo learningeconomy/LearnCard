@@ -179,7 +179,9 @@ export const ClaimBoostModal: React.FC<{
             setLoading(true);
 
             const result = await fetch(
-                `${SCOUTPASS_NETWORK_API_URL}/storage/resolve?uri=${boostUri}`
+                `${SCOUTPASS_NETWORK_API_URL}/storage/resolve?uri=${boostUri}${
+                    challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
+                }`
             );
 
             if (result.status !== 200) throw new Error('Error resolving boost');

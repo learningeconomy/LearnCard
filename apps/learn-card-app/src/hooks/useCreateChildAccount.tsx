@@ -44,6 +44,8 @@ export const useCreateChildAccount = () => {
                     shortBio: '',
                     role: LearnCardRolesEnum.learner,
                     notificationsWebhook: getNotificationsEndpoint(),
+                    dob: childAccount?.dob ?? '',
+                    country: childAccount?.country ?? '',
                     display: {
                         // container styles
                         backgroundColor:
