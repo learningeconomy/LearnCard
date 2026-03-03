@@ -680,6 +680,8 @@ jobs:
                   VITE_WEB3AUTH_NETWORK: ${{ vars.VITE_WEB3AUTH_NETWORK }}
                   VITE_WEB3AUTH_VERIFIER_ID: ${{ vars.VITE_WEB3AUTH_VERIFIER_ID }}
                   VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
+                  VITE_ANALYTICS_PROVIDER: ${{ vars.VITE_ANALYTICS_PROVIDER }}
+                  VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
 
             # Deploy OTA update to CapGo
             - name: Upload to CapGo

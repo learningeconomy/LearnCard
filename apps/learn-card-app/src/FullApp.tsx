@@ -25,6 +25,7 @@ import NetworkListener from './components/network-listener/NetworkListener';
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
 
+import { AnalyticsContextProvider } from '@analytics';
 import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator';
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
 import AuthKeyDebugWidget from './components/debug/AuthKeyDebugWidget';
@@ -151,33 +152,35 @@ const FullApp: React.FC = () => {
             client={client}
             persistOptions={{ persister, maxAge: CACHE_TTL }}
         >
-            <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
-            {/* <ReactQueryDevtools /> */}
-            <IonReactRouter history={history}>
-                <Suspense fallback={<LoadingPageDumb />}>
-                    <AuthCoordinatorProvider>
-                        <ExternalAuthServiceProvider>
-                            <ModalsProvider>
-                                <IonApp>
-                                <div id="modal-mid-root"></div>
-                                <Toast />
-                                <SdkActivityIndicator />
-                                <NetworkListener />
-                                <AppUrlListener />
-                                <PushNotificationListener />
-                                <PresentVcModalListener />
-                                <AppRouter />
-                                <QRCodeScannerListener />
+            <AnalyticsContextProvider>
+                <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
+                {/* <ReactQueryDevtools /> */}
+                <IonReactRouter history={history}>
+                    <Suspense fallback={<LoadingPageDumb />}>
+                        <AuthCoordinatorProvider>
+                            <ExternalAuthServiceProvider>
+                                <ModalsProvider>
+                                    <IonApp>
+                                        <div id="modal-mid-root"></div>
+                                        <Toast />
+                                        <SdkActivityIndicator />
+                                        <NetworkListener />
+                                        <AppUrlListener />
+                                        <PushNotificationListener />
+                                        <PresentVcModalListener />
+                                        <AppRouter />
+                                        <QRCodeScannerListener />
 
-                                {showScannerOverlay && <QRCodeScannerOverlay />}
-                                
-                                <AuthKeyDebugWidget />
-                            </IonApp>
-                            </ModalsProvider>
-                        </ExternalAuthServiceProvider>
-                    </AuthCoordinatorProvider>
-                </Suspense>
-            </IonReactRouter>
+                                        {showScannerOverlay && <QRCodeScannerOverlay />}
+
+                                        <AuthKeyDebugWidget />
+                                    </IonApp>
+                                </ModalsProvider>
+                            </ExternalAuthServiceProvider>
+                        </AuthCoordinatorProvider>
+                    </Suspense>
+                </IonReactRouter>
+            </AnalyticsContextProvider>
         </PersistQueryClientProvider>
     );
 };

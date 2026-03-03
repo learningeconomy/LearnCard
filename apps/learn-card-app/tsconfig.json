@@ -1,6 +1,11 @@
 {
     "extends": "../../tsconfig.json",
     "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "@analytics": ["src/analytics"],
+            "@analytics/*": ["src/analytics/*"]
+        },
         "target": "esnext",
         "lib": [
             "dom",

@@ -33,6 +33,7 @@ import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContrac
 import ConsentFlowError from './ConsentFlowError';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 enum Step {
     landing,
@@ -52,6 +53,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     const { initWallet } = useWallet();
     const { logout: coordinatorLogout } = useAuthCoordinator();
     const { clearDB } = useSQLiteStorage();
+    const { track } = useAnalytics();
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -88,6 +90,14 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
             newModal(<ConsentFlowError errorType={errorType} uri={uri} />);
         }
     }, [error]);
+
+    useEffect(() => {
+        if (contractDetails) {
+            track(AnalyticsEvents.CONSENT_FLOW_STARTED, {
+                contractName: contractDetails.name,
+            });
+        }
+    }, [contractDetails?.name]);
 
     // Handle navigation after user clicks Continue AND consent query completes
     useEffect(() => {
@@ -265,7 +275,13 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                         <button
                             type="button"
                             disabled={consentedContractLoading}
-                            onClick={() => setUserClickedContinue(true)}
+                            onClick={() => {
+                                track(AnalyticsEvents.CONSENT_FLOW_ACCEPTED, {
+                                    contractName: contractDetails?.name,
+                                    alreadyConsented: !!consentedContract,
+                                });
+                                setUserClickedContinue(true);
+                            }}
                             className={`bg-emerald-700 text-grayscale-50 text-[16px] font-semibold font-poppins normal w-full py-[12px] px-[10px] rounded-[40px] shadow-bottom ${
                                 consentedContractLoading ? 'opacity-50 cursor-not-allowed' : ''
                             }`}

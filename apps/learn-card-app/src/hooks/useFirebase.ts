@@ -17,7 +17,7 @@ import {
 } from 'firebase/auth';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
-import useFirebaseAnalytics from './useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import {
     emitAuthDebugEvent,
     emitAuthSuccess,
@@ -51,7 +51,7 @@ export const useFirebase = () => {
     });
     const { presentToast } = useToast();
     const [presentAlert] = useIonAlert();
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
 
     const presentGoogleHelpModal = (message?: string) => {
         newModal(React.createElement(GoogleLoginHelpModal, { message }), {
@@ -101,7 +101,7 @@ export const useFirebase = () => {
                     data: { uid: user?.uid, email: user?.email },
                 });
 
-                logAnalyticsEvent('login', { method: SocialLoginTypes.google });
+                track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.google });
 
                 // sign in on web-layer
                 if (Capacitor.isNativePlatform()) {
@@ -266,7 +266,7 @@ export const useFirebase = () => {
                             // Clear email from storage.
                             localStorage.removeItem('emailForSignIn');
                             authStore.set.typeOfLogin(SocialLoginTypes.passwordless);
-                            logAnalyticsEvent('login', { method: SocialLoginTypes.passwordless });
+                            track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.passwordless });
                             firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
 
                             emitAuthSuccess('firebase:auth_state_change', 'Email link auth successful', {
@@ -302,7 +302,7 @@ export const useFirebase = () => {
                     const token = await result.user.getIdToken(true);
                     const user = result?.user;
                     authStore.set.typeOfLogin(SocialLoginTypes.passwordless);
-                    logAnalyticsEvent('login', { method: SocialLoginTypes.passwordless });
+                    track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.passwordless });
 
                     if (token) {
                         // AuthCoordinator auto-handles key derivation when firebaseUser changes
@@ -402,7 +402,7 @@ export const useFirebase = () => {
                 if (token) {
                     successCallback();
                     authStore.set.typeOfLogin(SocialLoginTypes.sms);
-                    logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
+                    track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.sms });
 
                     // AuthCoordinator auto-handles key derivation when authUser changes
                 }
@@ -429,7 +429,7 @@ export const useFirebase = () => {
             emitAuthSuccess('firebase:auth_state_change', 'SMS verification successful', {
                 data: { uid: user?.uid },
             });
-            logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
+            track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.sms });
 
             if (token) {
                 successCallback();
@@ -476,7 +476,7 @@ export const useFirebase = () => {
                 const token = await res.user.getIdToken();
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
                 authStore.set.typeOfLogin(SocialLoginTypes.sms);
-                logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
+                track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.sms });
 
                 if (token) {
                     successCallback();
@@ -533,7 +533,7 @@ export const useFirebase = () => {
                 // get current firebase user idToken
                 const token = await firebaseAuth.currentUser.getIdToken();
                 authStore.set.typeOfLogin(SocialLoginTypes.apple);
-                logAnalyticsEvent('login', { method: SocialLoginTypes.apple });
+                track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.apple });
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
 
                 emitAuthSuccess('firebase:auth_state_change', 'Firebase Apple auth successful (native)', {
@@ -558,7 +558,7 @@ export const useFirebase = () => {
                 if (credential && user) {
                     const token = await user.getIdToken(true);
                     authStore.set.typeOfLogin(SocialLoginTypes.apple);
-                    logAnalyticsEvent('login', { method: SocialLoginTypes.apple });
+                    track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.apple });
 
                     emitAuthSuccess('firebase:auth_state_change', 'Firebase Apple auth successful (web)', {
                         data: { uid: user?.uid },
@@ -617,7 +617,7 @@ export const useFirebase = () => {
                 if (credential) {
                     const token = await result.user.getIdToken(true);
                     authStore.set.typeOfLogin(SocialLoginTypes.apple);
-                    logAnalyticsEvent('login', { method: SocialLoginTypes.apple });
+                    track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.apple });
 
                     if (token) {
                         // AuthCoordinator auto-handles key derivation when authUser changes
@@ -652,7 +652,7 @@ export const useFirebase = () => {
                 authStore.set.typeOfLogin(SocialLoginTypes.passwordless);
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
 
-                logAnalyticsEvent('login', { method: SocialLoginTypes.passwordless });
+                track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.passwordless });
 
                 // AuthCoordinator auto-handles key derivation when firebaseUser changes
             }

@@ -78,6 +78,7 @@ export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
                 properties: {
                     roleId: { property: 'roleId', schema: { type: 'string', required: true } },
                     role: { property: 'role', schema: { type: 'string', required: false } },
+                    canView: { property: 'canView', schema: { type: 'boolean', required: false } },
                     canEdit: { property: 'canEdit', schema: { type: 'boolean', required: false } },
                     canIssue: {
                         property: 'canIssue',
