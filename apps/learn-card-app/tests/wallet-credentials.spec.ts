@@ -1,8 +1,12 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
-import { issueBoostToSelf } from './test.helpers';
+import { issueBoostToSelf, waitForAuthenticatedState } from './test.helpers';
 
 test.describe('Wallet Credentials', () => {
+    test.beforeEach(async ({ page }) => {
+        await waitForAuthenticatedState(page);
+    });
+
     test('View issued credential in wallet', async ({ page }) => {
         // 1. Issue a boost to self — creates a "Charmer" Social Badge
         try {
