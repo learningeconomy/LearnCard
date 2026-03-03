@@ -19,7 +19,6 @@ import CreateFrameworkModal from './CreateFrameworkModal';
 import SkillsAdminPanelFramework from '../skills/SkillsAdminPanelFramework';
 import { IonInput, IonSpinner } from '@ionic/react';
 import type { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
-import type { SkillFramework } from '../../components/boost/boost';
 import {
     isFrameworkAllowedByOpenSaltAllowlist,
     isOpenSaltFramework,
@@ -148,14 +147,6 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
         }
     };
 
-    const toDisplayFramework = (framework: ApiFrameworkInfo): SkillFramework => ({
-        id: framework.id,
-        name: framework.name,
-        image: framework.image || '',
-        description: framework.description || '',
-        skills: [],
-    });
-
     const handleImportOpenSaltFramework = async () => {
         const ref = openSaltRef.trim();
         if (!isOpenSaltRef(ref)) {
@@ -227,7 +218,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                     <div key={framework.id} className="flex items-center gap-[5px]">
                         <div className="flex-1">
                             <SkillsAdminPanelFramework
-                                framework={toDisplayFramework(framework)}
+                                framework={framework}
                                 buttonClassName="flex gap-[10px] py-[15px] bg-white items-center text-left w-full"
                                 onClick={() => handleFrameworkSelect(framework)}
                             />
@@ -274,7 +265,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                         {openSaltFrameworks.map(framework => (
                             <SkillsAdminPanelFramework
                                 key={`opensalt-${framework.id}`}
-                                framework={toDisplayFramework(framework)}
+                                framework={framework}
                                 buttonClassName="flex gap-[10px] py-[15px] bg-white items-center text-left w-full"
                                 onClick={() => handleFrameworkSelect(framework)}
                             />
