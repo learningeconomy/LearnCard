@@ -61,17 +61,21 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
 
                         <p className="text-gray-500 text-sm mt-0.5 line-clamp-2">
                             {data.tagline || 'No tagline provided'}
-                            {data.age_rating ? ` · Age: ${data.age_rating}` : ''}
                         </p>
 
                         <div className="flex items-center gap-2 mt-2">
-                            <span className="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium text-gray-500">
+                            <span className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
                                 {getCategoryLabel(data.category)}
                             </span>
 
                             {launchTypeInfo && (
                                 <span className="px-2 py-0.5 bg-cyan-100 rounded-full text-xs font-medium text-cyan-700">
                                     {launchTypeInfo.label}
+                                </span>
+                            )}
+                            {data.age_rating && (
+                                <span className="inline-block px-2 py-0.5 bg-grayscale-100 text-grayscale-700 text-xs font-medium rounded-full">
+                                    Age {data.age_rating}
                                 </span>
                             )}
                         </div>
