@@ -32,9 +32,9 @@ export const adminRole: BoostPermissions = {
     canViewAnalytics: true,
 };
 
-// @ts-expect-error canView is not required
 export const emptyRole: BoostPermissions = {
     role: 'empty',
+    canView: true,
     canEdit: false,
     canIssue: false,
     canRevoke: false,
