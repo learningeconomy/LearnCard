@@ -190,49 +190,63 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
         frameworkInfo.name,
     ]);
 
-    // Notify parent of skill tree changes during approve flow (for autosave)
+    // Notify parent of skill tree changes during approve flow (for autosave).
+    // Track a change key to avoid re-processing when fullSkillTree updates from the
+    // parent (which would cause an infinite loop and duplicate added nodes).
+    const lastSyncedChangeKeyRef = useRef<string>('');
+
     useEffect(() => {
-        if (isApproveFlow && fullSkillTree && onSkillTreeChange) {
-            const hasChanges =
-                Object.keys(addedNodes).length > 0 ||
-                Object.keys(editedNodes).length > 0 ||
-                deletedNodes.length > 0;
+        if (!isApproveFlow || !fullSkillTree || !onSkillTreeChange) return;
 
-            if (hasChanges) {
-                const processNodes = (
-                    nodes: SkillFrameworkNode[],
-                    parentId: string | null = null
-                ): SkillFrameworkNode[] => {
-                    const filteredNodes = nodes.filter((node: SkillFrameworkNode) => {
-                        const isDeleted = deletedNodes.some(
-                            deletedNode => deletedNode.id === node.id
-                        );
-                        return !isDeleted;
-                    });
+        const changeKey = JSON.stringify({
+            added: Object.keys(addedNodes).sort(),
+            edited: Object.keys(editedNodes).sort(),
+            deleted: deletedNodes.map(n => n.id).sort(),
+        });
 
-                    const processedNodes = filteredNodes.map((node: SkillFrameworkNode) => {
-                        const editedNode = editedNodes[node.id!] || node;
-                        return {
-                            ...editedNode,
-                            subskills: processNodes(editedNode.subskills || [], node.id),
-                        };
-                    });
+        if (changeKey === lastSyncedChangeKeyRef.current) return;
 
-                    const currentParentId = parentId === 'root' ? null : parentId;
-                    const directChildren = addedNodes[currentParentId ?? 'root'] || [];
+        const hasChanges =
+            Object.keys(addedNodes).length > 0 ||
+            Object.keys(editedNodes).length > 0 ||
+            deletedNodes.length > 0;
 
-                    const processedAddedNodes = directChildren.map(node => ({
-                        ...node,
-                        subskills: processNodes(node.subskills || [], node.id),
-                    }));
+        if (!hasChanges) return;
 
-                    return [...processedNodes, ...processedAddedNodes];
+        lastSyncedChangeKeyRef.current = changeKey;
+
+        const processNodes = (
+            nodes: SkillFrameworkNode[],
+            parentId: string | null = null
+        ): SkillFrameworkNode[] => {
+            const filteredNodes = nodes.filter((node: SkillFrameworkNode) => {
+                const isDeleted = deletedNodes.some(
+                    deletedNode => deletedNode.id === node.id
+                );
+                return !isDeleted;
+            });
+
+            const processedNodes = filteredNodes.map((node: SkillFrameworkNode) => {
+                const editedNode = editedNodes[node.id!] || node;
+                return {
+                    ...editedNode,
+                    subskills: processNodes(editedNode.subskills || [], node.id),
                 };
+            });
 
-                const updatedFullSkillTree = processNodes(cloneDeep(fullSkillTree));
-                onSkillTreeChange(updatedFullSkillTree);
-            }
-        }
+            const currentParentId = parentId === 'root' ? null : parentId;
+            const directChildren = addedNodes[currentParentId ?? 'root'] || [];
+
+            const processedAddedNodes = directChildren.map(node => ({
+                ...node,
+                subskills: processNodes(node.subskills || [], node.id),
+            }));
+
+            return [...processedNodes, ...processedAddedNodes];
+        };
+
+        const updatedFullSkillTree = processNodes(cloneDeep(fullSkillTree));
+        onSkillTreeChange(updatedFullSkillTree);
     }, [addedNodes, editedNodes, deletedNodes, fullSkillTree, isApproveFlow, onSkillTreeChange]);
 
     const isFullSkillFramework = fullSkillTree !== undefined;
