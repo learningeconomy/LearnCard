@@ -286,6 +286,16 @@ export const addRecoveryMethodToUserKey = async (
     // Atomic: pull any existing method of the same type, then push the new one.
     // Uses bulkWrite so both ops execute in a single server round-trip / batch,
     // preventing a crash between $pull and $push from losing the method.
+    //
+    // For passkeys, scope the $pull by credentialId so multiple passkeys
+    // (each with a unique credentialId) can coexist. For other types
+    // (backup, phrase, email) there is at most one per type.
+    const pullFilter: Record<string, unknown> = { type: recoveryMethod.type };
+
+    if (recoveryMethod.type === 'passkey') {
+        pullFilter.credentialId = recoveryMethod.credentialId ?? null;
+    }
+
     await collection.bulkWrite([
         {
             updateOne: {
@@ -294,7 +304,7 @@ export const addRecoveryMethodToUserKey = async (
                     'contactMethod.value': contactMethod.value,
                 },
                 update: {
-                    $pull: { recoveryMethods: { type: recoveryMethod.type } as Record<string, unknown> },
+                    $pull: { recoveryMethods: pullFilter },
                 },
             },
         },

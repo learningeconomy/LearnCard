@@ -163,6 +163,7 @@ export const keysRouter = t.router({
                 authShare: ServerEncryptedShareValidator,
                 primaryDid: z.string(),
                 securityLevel: z.enum(['basic', 'enhanced', 'advanced']).optional(),
+                keyProvider: z.enum(['web3auth', 'sss']).optional(),
             })
         )
         .output(z.object({ success: z.boolean(), shareVersion: z.number() }))
@@ -197,7 +198,7 @@ export const keysRouter = t.router({
                 authShare: authShareToStore,
                 primaryDid: authenticatedDid,
                 securityLevel: input.securityLevel ?? 'basic',
-                keyProvider: 'sss',
+                keyProvider: input.keyProvider ?? 'sss',
                 authProviders: [{ type: input.providerType, id: user.id }],
             });
 
