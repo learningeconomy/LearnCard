@@ -8,6 +8,9 @@ const NEO4J_PASSWORD = 'this-is-the-password';
 
 const EMBED_URL = 'https://test-embed-app.example.com';
 
+// did:key generated from seed 'a'.repeat(64) — the test user in waitForAuthenticatedState
+const TEST_USER_DID_KEY = 'did:key:z6Mkv1o2GEgtXjFdEMfLtupcKhGRydM8V7VHzii7Uh4aHoqH';
+
 const MOCK_EMBED_HTML = `
 <!DOCTYPE html>
 <html>
@@ -78,33 +81,26 @@ export const seedAppListing = async (): Promise<SeededListing> => {
 };
 
 /**
- * Ensures the test user's Profile node exists in Neo4j.
- * The installApp mutation calls ensureUser which checks for a brain-service profile.
+ * Ensures the test user's Profile node exists in Neo4j with the correct did:key.
+ * The installApp mutation calls ensureUser → getProfileByDid(did:key) to find the profile.
  * Without this, install fails with "Please make an account first".
  */
-export const ensureTestProfile = async (profileId: string): Promise<void> => {
+export const ensureTestProfile = async (
+    profileId: string,
+    did: string = TEST_USER_DID_KEY
+): Promise<void> => {
     const driver = neo4j.driver(NEO4J_URI, neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD));
     const session = driver.session();
 
     try {
-        // Check if profile already exists
-        const existing = await session.run(
-            `MATCH (p:Profile {profileId: $profileId}) RETURN p.profileId AS id, p.did AS did`,
-            { profileId }
-        );
-
-        if (existing.records.length > 0) {
-            console.log(`[ensureTestProfile] Profile "${profileId}" already exists (did: ${existing.records[0]?.get('did')})`);
-            return;
-        }
-
-        // Create it — the DID format matches brain-service convention
-        const did = `did:web:localhost%3A4000:users:${profileId}`;
+        // MERGE by profileId, always set the did:key so brain-service can look it up
         await session.run(
-            `CREATE (p:Profile {profileId: $profileId, did: $did, displayName: $displayName})`,
+            `MERGE (p:Profile {profileId: $profileId})
+             ON CREATE SET p.did = $did, p.displayName = $displayName
+             ON MATCH SET p.did = $did`,
             { profileId, did, displayName: profileId }
         );
-        console.log(`[ensureTestProfile] Created profile "${profileId}" with did: ${did}`);
+        console.log(`[ensureTestProfile] Ensured profile "${profileId}" with did: ${did}`);
     } finally {
         await session.close();
         await driver.close();
