@@ -12,13 +12,13 @@ import {
 import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
-import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
+import { useAnalytics } from '../../analytics';
 
 const PrivacySettingsModal: React.FC = () => {
     const { closeModal } = useModal();
     const { data: preferences } = useGetPreferencesForDid();
     const { mutate: updatePreferences } = useUpdatePreferences();
-    const { setAnalyticsEnabled } = useFirebaseAnalytics();
+    const { setEnabled: setAnalyticsEnabled } = useAnalytics();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const profileType = switchedProfileStore.use.profileType();
 
