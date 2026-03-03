@@ -331,6 +331,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             {isTopLevel && 'Framework • '}
                             <FrameworkSkillsCount
                                 frameworkId={frameworkInfo?.id}
+                                sourceURI={frameworkInfo?.sourceURI}
                                 skillId={columnNode?.id}
                                 includeSkillWord
                                 className="!text-grayscale-800"
