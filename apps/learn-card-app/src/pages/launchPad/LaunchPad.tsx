@@ -47,7 +47,7 @@ type LaunchPadItem = Partial<LaunchPadAppListItemType> &
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
-    const { isAiEnabled } = useAiFeatureGate();
+    const { isAiEnabled, reason } = useAiFeatureGate();
     const history = useHistory();
     const { search } = useLocation();
     const { connectTo, challenge, uri, suppressContractModal, embedUrl, appName, appImage } =
