@@ -24,6 +24,7 @@ import { Profile, Credential, Boost, ClaimHook, Role } from '@models';
 
 // Permission constants matching PermissionsByRole in troops.helpers.ts
 const GLOBAL_ADMIN_PERMISSIONS = {
+    canView: true,
     canEdit: true,
     canIssue: true,
     canRevoke: true,
@@ -37,6 +38,7 @@ const GLOBAL_ADMIN_PERMISSIONS = {
 };
 
 const DIRECTOR_PERMISSIONS = {
+    canView: true,
     canEdit: false,
     canIssue: false,
     canRevoke: false,
@@ -50,6 +52,7 @@ const DIRECTOR_PERMISSIONS = {
 };
 
 const LEADER_PERMISSIONS = {
+    canView: true,
     canEdit: false,
     canIssue: false,
     canRevoke: false,
@@ -63,6 +66,7 @@ const LEADER_PERMISSIONS = {
 };
 
 const SCOUT_PERMISSIONS = {
+    canView: true,
     canEdit: false,
     canIssue: false,
     canRevoke: false,
@@ -324,7 +328,7 @@ describe('Scouts Hierarchy - Full Chain with Role-Based Permissions', () => {
         });
 
         // Set up claim hooks matching the role-based permission model:
-        
+
         // Claiming networkUri → Director gets permissions on troopUri
         await globalAdmin.clients.fullAuth.claimHook.createClaimHook({
             hook: {
@@ -431,9 +435,10 @@ describe('Scouts Hierarchy - Full Chain with Role-Based Permissions', () => {
         );
 
         // Verify both scouts are in recipients list
-        const recipientsBefore = await troopLeader.clients.fullAuth.boost.getPaginatedBoostRecipients({
-            uri: scoutUri,
-        });
+        const recipientsBefore =
+            await troopLeader.clients.fullAuth.boost.getPaginatedBoostRecipients({
+                uri: scoutUri,
+            });
         expect(recipientsBefore.records.length).toBe(2);
 
         // Revoke scout1's credential (troop leader has canRevokeChildren:'*')
@@ -444,9 +449,10 @@ describe('Scouts Hierarchy - Full Chain with Role-Based Permissions', () => {
         expect(revokeResult).toBe(true);
 
         // Verify scout1 is no longer in recipients list
-        const recipientsAfter = await troopLeader.clients.fullAuth.boost.getPaginatedBoostRecipients({
-            uri: scoutUri,
-        });
+        const recipientsAfter =
+            await troopLeader.clients.fullAuth.boost.getPaginatedBoostRecipients({
+                uri: scoutUri,
+            });
         expect(recipientsAfter.records.length).toBe(1);
         expect(recipientsAfter.records[0]?.to?.profileId).toBe('scout2');
     });

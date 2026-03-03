@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.12.1
+
+### Patch Changes
+
+-   [#1006](https://github.com/learningeconomy/LearnCard/pull/1006) [`caf231b53707174ea49f0eb2b65885a36b3e7228`](https://github.com/learningeconomy/LearnCard/commit/caf231b53707174ea49f0eb2b65885a36b3e7228) Thanks [@smurflo2](https://github.com/smurflo2)! - Add Self-Assigned Skills including optional proficiency level field on Boost -> Skill relationship
+
 ## 5.12.0
 
 ### Minor Changes
