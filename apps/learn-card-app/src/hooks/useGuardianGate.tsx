@@ -102,6 +102,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
 
             // If already verified within TTL, execute immediately
             if (isGuardianVerified()) {
+                onVerified?.(); // fix for an edge case where the original source modal was closed quickly after entering PIN
                 await action();
                 return;
             }
