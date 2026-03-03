@@ -1,9 +1,15 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
 import { MOCK_APP_LISTING, mockAppStoreRoutes } from './app-store.helpers';
+import { waitForAuthenticatedState } from './test.helpers';
 
 test.describe('App Store', () => {
     test.beforeEach(async ({ page }) => {
+        // Log in via seed to get a proper session with privateKey
+        // (storage state alone doesn't persist the privateKey)
+        await waitForAuthenticatedState(page);
+
+        // Set up route mocks after auth is established
         await mockAppStoreRoutes(page);
     });
 

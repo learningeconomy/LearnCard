@@ -32,102 +32,95 @@ const MOCK_EMBED_HTML = `
 /**
  * Sets up route interception for app store tRPC endpoints.
  *
- * Mocks the following routes:
- * - browseListedApps: Returns the mock app listing
- * - getInstalledApps: Returns empty initially, includes the mock app after install
- * - isAppInstalled: Returns false initially, true after install
- * - installApp: Returns true (success)
- * - getPublicListing: Returns the mock app listing
- * - getListingInstallCount: Returns a count
+ * Handles both individual and batched tRPC requests. tRPC v10 batches
+ * multiple calls into a single HTTP request with comma-separated procedure
+ * names in the URL path and expects an array of responses.
  *
  * Also intercepts the embed URL to serve a simple HTML page.
  */
 export const mockAppStoreRoutes = async (page: Page) => {
     let isInstalled = false;
 
-    // Mock tRPC batch endpoint — tRPC batches all calls to a single URL
-    // We need to intercept the batch and respond per-procedure
+    /** Returns a mock response for a single tRPC procedure */
+    const getResponseForProcedure = (procedure: string): object | null => {
+        if (procedure.includes('browseListedApps') || procedure.includes('browseAppStore')) {
+            return {
+                result: {
+                    data: {
+                        hasMore: false,
+                        records: [MOCK_APP_LISTING],
+                    },
+                },
+            };
+        }
+        if (procedure.includes('getInstalledApps')) {
+            return {
+                result: {
+                    data: {
+                        hasMore: false,
+                        records: isInstalled
+                            ? [{ ...MOCK_APP_LISTING, installed_at: new Date().toISOString() }]
+                            : [],
+                    },
+                },
+            };
+        }
+        if (procedure.includes('isAppInstalled')) {
+            return { result: { data: isInstalled } };
+        }
+        if (procedure.includes('installApp')) {
+            isInstalled = true;
+            return { result: { data: true } };
+        }
+        if (procedure.includes('uninstallApp')) {
+            isInstalled = false;
+            return { result: { data: true } };
+        }
+        if (procedure.includes('getPublicListing') || procedure.includes('getPublicAppStoreListing')) {
+            return { result: { data: MOCK_APP_LISTING } };
+        }
+        if (procedure.includes('getListingInstallCount') || procedure.includes('getAppStoreListingInstallCount')) {
+            return { result: { data: 42 } };
+        }
+        return null;
+    };
+
     await page.route('**/trpc/**appStore**', async (route, request) => {
         const url = new URL(request.url());
         const pathname = url.pathname;
 
-        // tRPC uses query params for batched queries and POST body for mutations
-        const method = request.method();
+        // Extract the procedure portion from the pathname (after /trpc/)
+        const trpcPath = pathname.split('/trpc/').pop() ?? '';
+        const procedures = trpcPath.split(',');
+        const isBatch = url.searchParams.has('batch') || procedures.length > 1;
 
-        // Handle individual procedure paths
-        if (pathname.includes('appStore.browseListedApps')) {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    result: {
-                        data: {
-                            hasMore: false,
-                            records: [MOCK_APP_LISTING],
-                        },
-                    },
-                }),
+        if (isBatch) {
+            // Build a response for each procedure in the batch
+            const responses = procedures.map(proc => {
+                const response = getResponseForProcedure(proc);
+                // For procedures we don't mock, return a null/error placeholder
+                // This shouldn't happen if our glob only matches appStore routes
+                return response ?? { result: { data: null } };
             });
-        } else if (pathname.includes('appStore.getInstalledApps')) {
+
             await route.fulfill({
                 status: 200,
                 contentType: 'application/json',
-                body: JSON.stringify({
-                    result: {
-                        data: {
-                            hasMore: false,
-                            records: isInstalled
-                                ? [{ ...MOCK_APP_LISTING, installed_at: new Date().toISOString() }]
-                                : [],
-                        },
-                    },
-                }),
-            });
-        } else if (pathname.includes('appStore.isAppInstalled')) {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    result: { data: isInstalled },
-                }),
-            });
-        } else if (pathname.includes('appStore.installApp')) {
-            isInstalled = true;
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    result: { data: true },
-                }),
-            });
-        } else if (pathname.includes('appStore.uninstallApp')) {
-            isInstalled = false;
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    result: { data: true },
-                }),
-            });
-        } else if (pathname.includes('appStore.getPublicListing')) {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    result: { data: MOCK_APP_LISTING },
-                }),
-            });
-        } else if (pathname.includes('appStore.getListingInstallCount')) {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    result: { data: 42 },
-                }),
+                body: JSON.stringify(responses),
             });
         } else {
-            // Let other tRPC calls pass through
-            await route.continue();
+            // Single (non-batched) request
+            const response = getResponseForProcedure(trpcPath);
+
+            if (response) {
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify(response),
+                });
+            } else {
+                await route.continue();
+            }
         }
     });
 
