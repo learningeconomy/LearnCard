@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { Clipboard } from '@capacitor/clipboard';
 
 import useDebounce from 'apps/learn-card-app/src/hooks/useDebounce';
-import useFirebaseAnalytics from 'apps/learn-card-app/src/hooks/useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 import {
     IonRow,
@@ -67,7 +67,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
 }) => {
     const { newModal, closeModal } = useModal();
     const { initWallet } = useWallet();
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
     const { getRegisteredSigningAuthority, getRegisteredSigningAuthorities } =
         useSigningAuthority();
 
@@ -77,13 +77,21 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
     const [claimLimitToggle, setClaimLimitToggle] = useState<boolean>(false);
     const [claimLimit, setClaimLimit] = useState<number | undefined>(undefined);
 
-    const [interoperableToggle, setInteroperableToggle] = useState<boolean>(false);
+    const [interoperableToggle] = useState<boolean>(true);
     const [isManuallyChangingParameters, setIsManuallyChangingParameters] =
         useState<boolean>(false);
     const [isLinkLoading, setIsLinkLoading] = useState<boolean>(false);
     const [generateClaimLink, setGenerateClaimLink] = useState<boolean>(false);
     const [boostClaimLink, setBoostClaimLink] = useState<string>('');
     const [interoperableClaimLink, setInteroperableClaimLink] = useState<string>('');
+    const [isPermissionsLoading, setIsPermissionsLoading] = useState<boolean>(true);
+    const [isUpdatingPermissions, setIsUpdatingPermissions] = useState<boolean>(false);
+    const [canViewEnabled, setCanViewEnabled] = useState<boolean>(true);
+    const [templateDefaultPermissions, setTemplateDefaultPermissions] = useState<{
+        canView?: boolean;
+        canEdit?: boolean;
+        canIssue?: boolean;
+    }>({});
 
     const { presentToast } = useToast();
 
@@ -139,6 +147,10 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
     };
 
     const generateBoostClaimLink = useDebounce(async () => {
+        if (!canViewEnabled) {
+            setIsLinkLoading(false);
+            return;
+        }
         if (isLinkLoading) return;
         if (generateClaimLink) setIsLinkLoading(true);
 
@@ -181,7 +193,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                             _boostClaimLink?.challenge
                         )
                     );
-                    logAnalyticsEvent('generate_claim_link', {
+                    track(AnalyticsEvents.GENERATE_CLAIM_LINK, {
                         category: state?.basicInfo?.type,
                         boostType: state?.basicInfo?.achievementType,
                         method: 'Claim Link',
@@ -222,7 +234,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                 _boostClaimLink?.challenge
                             )
                         );
-                        logAnalyticsEvent('generate_claim_link', {
+                        track(AnalyticsEvents.GENERATE_CLAIM_LINK, {
                             category: state?.basicInfo?.type,
                             boostType: state?.basicInfo?.achievementType,
                             method: 'Claim Link',
@@ -254,9 +266,42 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
     };
 
     useEffect(() => {
+        const loadTemplatePermissions = async () => {
+            if (!boostUri) return;
+
+            setIsPermissionsLoading(true);
+            try {
+                const wallet = await initWallet();
+                const boost = (await wallet?.invoke?.getBoost(boostUri)) as any;
+                const defaultPermissions = boost?.defaultPermissions ?? {};
+                setTemplateDefaultPermissions(defaultPermissions);
+
+                // Legacy boosts may not have canView set; treat as viewable
+                if (typeof defaultPermissions?.canView === 'boolean') {
+                    setCanViewEnabled(defaultPermissions.canView);
+                } else {
+                    setCanViewEnabled(true);
+                }
+            } catch (error) {
+                console.error('Failed to load boost permissions for claim links', error);
+                setCanViewEnabled(true);
+            } finally {
+                setIsPermissionsLoading(false);
+            }
+        };
+
+        loadTemplatePermissions();
+    }, [boostUri]);
+
+    useEffect(() => {
         // registers signing authority on initial toggle
         if (toggle) {
-            generateBoostClaimLink(false);
+            if (canViewEnabled) {
+                generateBoostClaimLink(false);
+            } else {
+                setGenerateClaimLink(false);
+                clearBoostLink();
+            }
         } else {
             // clears state on toggle off
             setClaimLimit(undefined);
@@ -268,17 +313,65 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
 
     useEffect(() => {
         if (autoGenerateLinkOnOpen) {
+            if (!canViewEnabled) return;
             setGenerateClaimLink(true);
             getCurrentClaimLink();
             generateBoostClaimLink();
         }
-    }, [autoGenerateLinkOnOpen]);
+    }, [autoGenerateLinkOnOpen, canViewEnabled]);
 
     const generateLinkDisabled = (claimLimitToggle && !claimLimit) || isLinkLoading;
     const handleGenerateLink = () => {
+        if (!canViewEnabled) {
+            presentToast(
+                'Claim links are disabled because viewing is not enabled for this template.',
+                {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                }
+            );
+            return;
+        }
         setGenerateClaimLink(true);
         setIsManuallyChangingParameters(false);
         generateBoostClaimLink();
+    };
+
+    const handleCanViewToggle = async (checked: boolean) => {
+        if (!checked) return;
+        if (isUpdatingPermissions) return;
+
+        setIsUpdatingPermissions(true);
+        try {
+            const wallet = await initWallet();
+            await wallet?.invoke?.updateBoost(boostUri, {
+                defaultPermissions: {
+                    canView: true,
+                    canEdit:
+                        typeof templateDefaultPermissions?.canEdit === 'boolean'
+                            ? templateDefaultPermissions.canEdit
+                            : true,
+                    canIssue:
+                        typeof templateDefaultPermissions?.canIssue === 'boolean'
+                            ? templateDefaultPermissions.canIssue
+                            : true,
+                },
+            });
+
+            setTemplateDefaultPermissions(prev => ({ ...prev, canView: true }));
+            setCanViewEnabled(true);
+            presentToast('Viewing enabled. You can now generate claim links.', {
+                hasDismissButton: true,
+            });
+        } catch (error) {
+            console.error('Failed to update boost canView permission', error);
+            presentToast('Unable to update permissions. Please try again.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        } finally {
+            setIsUpdatingPermissions(false);
+        }
     };
 
     const handleCloseModal = () => {
@@ -328,217 +421,255 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
 
                 {toggle && (
                     <>
-                        <div className="flex flex-col gap-[10px] w-full pb-[20px] border-b-[1px] border-grayscale-200 border-solid">
-                            {((!isManuallyChangingParameters && autoGenerateLinkOnOpen) ||
-                                getCurrentClaimLink()) && (
-                                <>
-                                    {/* <div className="flex items-center justify-center w-full divider-with-text" /> */}
-
-                                    <IonRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px]">
-                                        <IonCol className="w-full flex items-center justify-between px-4 py-3 rounded-2xl">
-                                            <div className="w-[80%] flex justify-start items-center text-left">
-                                                {isLinkLoading ||
-                                                getCurrentClaimLink().length === 0 ? (
-                                                    <>
-                                                        <IonSpinner
-                                                            name="crescent"
-                                                            color="dark"
-                                                            className="scale-[1] mr-1"
-                                                        />{' '}
-                                                        <p className="flex items-center justify-center text-left text-grayscale-500 font-medium text-sm line-clamp-1 ml-2">
-                                                            {getCurrentClaimLink()
-                                                                ? 'Updating Link...'
-                                                                : 'Generating Link...'}
-                                                        </p>
-                                                    </>
-                                                ) : (
-                                                    <p className="w-full flex items-center justify-start text-left text-grayscale-500 font-medium text-sm line-clamp-1 whitespace-nowrap text-ellipsis">
-                                                        {getCurrentClaimLink()}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div
-                                                onClick={() => copyBoostLinkToClipBoard()}
-                                                className="w-[20%] flex items-center justify-end"
-                                            >
-                                                <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
-                                            </div>
-                                        </IonCol>
-                                    </IonRow>
-                                    <div className="w-full flex flex-col  ">
-                                        <div className="flex w-full items-center justify-between">
-                                            <p className="text-grayscale-900 font-medium w-10/12 text-left pr-2">
-                                                Enable interoperable link and QR code?
-                                            </p>
-                                            <IonToggle
-                                                mode="ios"
-                                                color="emerald-700"
-                                                onClick={() => {
-                                                    setInteroperableToggle(!interoperableToggle);
-                                                }}
-                                                checked={interoperableToggle}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="w-full flex items-center justify-center">
-                                        <button
-                                            onClick={() => {
-                                                newModal(
-                                                    <BoostShareableQRCode
-                                                        state={state}
-                                                        showEditButton
-                                                        boostClaimLink={getCurrentClaimLink()}
-                                                    />,
-                                                    {
-                                                        sectionClassName:
-                                                            '!bg-transparent !shadow-none !w-[400px] !max-h-[725px]',
-                                                    },
-                                                    {
-                                                        mobile: ModalTypes.Cancel,
-                                                        desktop: ModalTypes.Cancel,
-                                                    }
-                                                );
-                                            }}
-                                            className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg  normal tracking-wide"
-                                        >
-                                            <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2 " />{' '}
-                                            Show Code
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-                            <span className="text-grayscale-900 font-poppins text-[17px] font-[600]">
-                                Expiration Date
-                            </span>
-                            <button
-                                className="w-full flex gap-[10px] items-center justify-between bg-grayscale-100 rounded-[15px] p-[15px] text-grayscale-500  font-notoSans text-[17px]"
-                                onClick={() => {
-                                    if (useIonModalDatePicker) {
-                                        presentDatePicker({
-                                            backdropDismiss: true,
-                                            showBackdrop: false,
-                                            cssClass: 'flex items-center justify-center',
-                                        });
-                                    } else {
-                                        newModal(
-                                            <div className="w-full h-full transparent flex items-center justify-center">
-                                                <IonDatetime
-                                                    onIonChange={e => {
-                                                        clearBoostLink();
-                                                        setExpirationDate(
-                                                            moment(e.detail.value).toISOString()
-                                                        );
-                                                        setIsManuallyChangingParameters(true);
-                                                        closeModal();
-                                                    }}
-                                                    onIonCancel={() => {
-                                                        closeModal();
-                                                    }}
-                                                    value={
-                                                        expirationDate
-                                                            ? moment(expirationDate).format(
-                                                                  'YYYY-MM-DDTHH:mm'
-                                                              )
-                                                            : undefined
-                                                    }
-                                                    id="datetime"
-                                                    presentation="date-time"
-                                                    className="bg-white text-black rounded-[20px] z-50"
-                                                    showDefaultButtons
-                                                    showDefaultTimeLabel
-                                                    color={primaryColor}
-                                                    max="2050-12-31T23:59"
-                                                    min={moment().format('YYYY-MM-DDTHH:mm')}
-                                                />
-                                            </div>,
-                                            { sectionClassName: '!w-fit' },
-                                            {
-                                                mobile: ModalTypes.Center,
-                                                desktop: ModalTypes.Center,
-                                            }
-                                        );
-                                    }
-                                }}
-                            >
-                                {expirationDate
-                                    ? moment(expirationDate).format('MMMM Do, YYYY - hh:mm A')
-                                    : 'Optional...'}
-                                <Calendar
-                                    className="w-[30px] text-grayscale-700"
-                                    version="filled-top"
-                                />
-                            </button>
-                        </div>
-
-                        <div className="w-full flex flex-col gap-[10px]">
-                            <div className="flex w-full items-center justify-between">
-                                <p className="text-grayscale-900 font-poppins text-[17px] font-[600]">
-                                    Unlimited Claims
+                        {isPermissionsLoading && (
+                            <IonRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px] p-4 mb-2">
+                                <IonSpinner name="crescent" color="dark" className="mr-2" />
+                                <p className="text-grayscale-700 font-medium text-sm m-0">
+                                    Checking template permissions...
                                 </p>
-                                <IonToggle
-                                    mode="ios"
-                                    color="emerald-700"
-                                    onClick={() => {
-                                        setClaimLimit(undefined);
-                                        setIsManuallyChangingParameters(true);
-                                        setClaimLimitToggle(!claimLimitToggle);
-                                    }}
-                                    checked={!claimLimitToggle}
-                                />
-                            </div>
+                            </IonRow>
+                        )}
 
-                            {claimLimitToggle && (
-                                <div className="flex flex-col gap-[10px]">
-                                    <p className="text-grayscale-900 font-poppins text-[17px] font-[600]">
-                                        Set Claim Limit
+                        {!isPermissionsLoading && !canViewEnabled && (
+                            <div className="w-full flex flex-col gap-[12px] bg-amber-50 border border-amber-200 rounded-[15px] p-[14px] mb-2">
+                                <p className="text-amber-900 font-poppins text-[16px] font-[600] m-0">
+                                    Claim links are unavailable
+                                </p>
+                                <p className="text-amber-800 text-sm m-0">
+                                    This template cannot generate claim links because view
+                                    permission are disabled.
+                                </p>
+                                <p className="text-amber-800 text-sm m-0">
+                                    Enable viewing to continue with claim link generation.
+                                </p>
+                                <div className="w-full flex items-center justify-between pt-1">
+                                    <p className="text-amber-900 font-medium w-10/12 m-0">
+                                        Anyone can view this credential template
                                     </p>
-                                    <IonInput
-                                        autocapitalize="on"
-                                        className={`bg-grayscale-100 text-grayscale-500 rounded-[15px] !px-[15px] !py-[6px] font-notoSans text-[17px]`}
-                                        placeholder="How many claims?"
-                                        type="number"
-                                        min={0}
-                                        value={claimLimit}
-                                        onIonInput={e => {
-                                            clearBoostLink();
-                                            setClaimLimit(e.detail.value);
-                                        }}
-                                        onKeyDown={e => {
-                                            // Allow only numbers
-                                            if (
-                                                !/[0-9]/.test(e.key) &&
-                                                e.key !== 'Backspace' &&
-                                                e.key !== 'Delete'
-                                            ) {
-                                                e.preventDefault();
-                                            }
-                                        }}
-                                        onPaste={e => {
-                                            e.preventDefault();
-                                            // Get the pasted text and remove any non-numeric characters
-                                            const pastedText = (
-                                                e.clipboardData || window.Clipboard
-                                            ).getData('text');
-                                            const numericText = pastedText.replace(/\D/g, '');
-                                            if (numericText) {
-                                                setClaimLimit(numericText);
-                                            }
-                                        }}
+                                    <IonToggle
+                                        mode="ios"
+                                        color="emerald-700"
+                                        checked={canViewEnabled}
+                                        disabled={isUpdatingPermissions}
+                                        onIonChange={e =>
+                                            handleCanViewToggle(Boolean(e.detail.checked))
+                                        }
                                     />
                                 </div>
-                            )}
-                        </div>
-
-                        {!useExternalButtonForModal && (
-                            <div className="w-full flex items-center justify-center mb-4 mt-4">
-                                <button
-                                    onClick={handleGenerateLink}
-                                    className="flex items-center justify-center bg-grayscale-900 disabled:bg-grayscale-400 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg  normal tracking-wide"
-                                    disabled={generateLinkDisabled}
-                                >
-                                    {isLinkLoading ? 'Generating Link...' : 'Generate Link'}
-                                </button>
                             </div>
+                        )}
+
+                        {!isPermissionsLoading && canViewEnabled && (
+                            <>
+                                <div className="flex flex-col gap-[10px] w-full pb-[20px] border-b-[1px] border-grayscale-200 border-solid">
+                                    {((!isManuallyChangingParameters && autoGenerateLinkOnOpen) ||
+                                        getCurrentClaimLink()) && (
+                                        <>
+                                            {/* <div className="flex items-center justify-center w-full divider-with-text" /> */}
+
+                                            <IonRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px]">
+                                                <IonCol className="w-full flex items-center justify-between px-4 py-3 rounded-2xl">
+                                                    <div className="w-[80%] flex justify-start items-center text-left">
+                                                        {isLinkLoading ||
+                                                        getCurrentClaimLink().length === 0 ? (
+                                                            <>
+                                                                <IonSpinner
+                                                                    name="crescent"
+                                                                    color="dark"
+                                                                    className="scale-[1] mr-1"
+                                                                />{' '}
+                                                                <p className="flex items-center justify-center text-left text-grayscale-500 font-medium text-sm line-clamp-1 ml-2">
+                                                                    {getCurrentClaimLink()
+                                                                        ? 'Updating Link...'
+                                                                        : 'Generating Link...'}
+                                                                </p>
+                                                            </>
+                                                        ) : (
+                                                            <p className="w-full flex items-center justify-start text-left text-grayscale-500 font-medium text-sm line-clamp-1 whitespace-nowrap text-ellipsis">
+                                                                {getCurrentClaimLink()}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div
+                                                        onClick={() => copyBoostLinkToClipBoard()}
+                                                        className="w-[20%] flex items-center justify-end"
+                                                    >
+                                                        <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
+                                                    </div>
+                                                </IonCol>
+                                            </IonRow>
+                                            <div className="w-full flex items-center justify-center">
+                                                <button
+                                                    onClick={() => {
+                                                        newModal(
+                                                            <BoostShareableQRCode
+                                                                state={state}
+                                                                showEditButton
+                                                                boostClaimLink={getCurrentClaimLink()}
+                                                            />,
+                                                            {
+                                                                sectionClassName:
+                                                                    '!bg-transparent !shadow-none !w-[400px] !max-h-[725px]',
+                                                            },
+                                                            {
+                                                                mobile: ModalTypes.Cancel,
+                                                                desktop: ModalTypes.Cancel,
+                                                            }
+                                                        );
+                                                    }}
+                                                    className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg  normal tracking-wide"
+                                                >
+                                                    <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2 " />{' '}
+                                                    Show Code
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+                                    <span className="text-grayscale-900 font-poppins text-[17px] font-[600]">
+                                        Expiration Date
+                                    </span>
+                                    <button
+                                        className="w-full flex gap-[10px] items-center justify-between bg-grayscale-100 rounded-[15px] p-[15px] text-grayscale-500  font-notoSans text-[17px]"
+                                        onClick={() => {
+                                            if (useIonModalDatePicker) {
+                                                presentDatePicker({
+                                                    backdropDismiss: true,
+                                                    showBackdrop: false,
+                                                    cssClass: 'flex items-center justify-center',
+                                                });
+                                            } else {
+                                                newModal(
+                                                    <div className="w-full h-full transparent flex items-center justify-center">
+                                                        <IonDatetime
+                                                            onIonChange={e => {
+                                                                clearBoostLink();
+                                                                setExpirationDate(
+                                                                    moment(
+                                                                        e.detail.value
+                                                                    ).toISOString()
+                                                                );
+                                                                setIsManuallyChangingParameters(
+                                                                    true
+                                                                );
+                                                                closeModal();
+                                                            }}
+                                                            onIonCancel={() => {
+                                                                closeModal();
+                                                            }}
+                                                            value={
+                                                                expirationDate
+                                                                    ? moment(expirationDate).format(
+                                                                          'YYYY-MM-DDTHH:mm'
+                                                                      )
+                                                                    : undefined
+                                                            }
+                                                            id="datetime"
+                                                            presentation="date-time"
+                                                            className="bg-white text-black rounded-[20px] z-50"
+                                                            showDefaultButtons
+                                                            showDefaultTimeLabel
+                                                            color={primaryColor}
+                                                            max="2050-12-31T23:59"
+                                                            min={moment().format(
+                                                                'YYYY-MM-DDTHH:mm'
+                                                            )}
+                                                        />
+                                                    </div>,
+                                                    { sectionClassName: '!w-fit' },
+                                                    {
+                                                        mobile: ModalTypes.Center,
+                                                        desktop: ModalTypes.Center,
+                                                    }
+                                                );
+                                            }
+                                        }}
+                                    >
+                                        {expirationDate
+                                            ? moment(expirationDate).format(
+                                                  'MMMM Do, YYYY - hh:mm A'
+                                              )
+                                            : 'Optional...'}
+                                        <Calendar
+                                            className="w-[30px] text-grayscale-700"
+                                            version="filled-top"
+                                        />
+                                    </button>
+                                </div>
+
+                                <div className="w-full flex flex-col gap-[10px]">
+                                    <div className="flex w-full items-center justify-between">
+                                        <p className="text-grayscale-900 font-poppins text-[17px] font-[600]">
+                                            Unlimited Claims
+                                        </p>
+                                        <IonToggle
+                                            mode="ios"
+                                            color="emerald-700"
+                                            onClick={() => {
+                                                setClaimLimit(undefined);
+                                                setIsManuallyChangingParameters(true);
+                                                setClaimLimitToggle(!claimLimitToggle);
+                                            }}
+                                            checked={!claimLimitToggle}
+                                        />
+                                    </div>
+
+                                    {claimLimitToggle && (
+                                        <div className="flex flex-col gap-[10px]">
+                                            <p className="text-grayscale-900 font-poppins text-[17px] font-[600]">
+                                                Set Claim Limit
+                                            </p>
+                                            <IonInput
+                                                autocapitalize="on"
+                                                className={`bg-grayscale-100 text-grayscale-500 rounded-[15px] !px-[15px] !py-[6px] font-notoSans text-[17px]`}
+                                                placeholder="How many claims?"
+                                                type="number"
+                                                min={0}
+                                                value={claimLimit}
+                                                onIonInput={e => {
+                                                    clearBoostLink();
+                                                    setClaimLimit(e.detail.value);
+                                                }}
+                                                onKeyDown={e => {
+                                                    // Allow only numbers
+                                                    if (
+                                                        !/[0-9]/.test(e.key) &&
+                                                        e.key !== 'Backspace' &&
+                                                        e.key !== 'Delete'
+                                                    ) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
+                                                onPaste={e => {
+                                                    e.preventDefault();
+                                                    // Get the pasted text and remove any non-numeric characters
+                                                    const pastedText = (
+                                                        e.clipboardData || window.Clipboard
+                                                    ).getData('text');
+                                                    const numericText = pastedText.replace(
+                                                        /\D/g,
+                                                        ''
+                                                    );
+                                                    if (numericText) {
+                                                        setClaimLimit(numericText);
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {!useExternalButtonForModal && (
+                                    <div className="w-full flex items-center justify-center mb-4 mt-4">
+                                        <button
+                                            onClick={handleGenerateLink}
+                                            className="flex items-center justify-center bg-grayscale-900 disabled:bg-grayscale-400 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg  normal tracking-wide"
+                                            disabled={generateLinkDisabled}
+                                        >
+                                            {isLinkLoading ? 'Generating Link...' : 'Generate Link'}
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </>
                 )}

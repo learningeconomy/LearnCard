@@ -14,8 +14,9 @@ import {
 } from '@learncard/types';
 
 import { getCredentialUri } from '@helpers/credential.helpers';
+import { isBoostViewableByClaimLink } from '@helpers/boost.helpers';
 
-import { t, didAndChallengeRoute, openRoute } from '@routes';
+import { t, didAndChallengeRoute, openRoute, resolveProfileFromContextDid } from '@routes';
 import { storePresentation } from '@accesslayer/presentation/create';
 import { storeCredential } from '@accesslayer/credential/create';
 import { getCredentialById } from '@accesslayer/credential/read';
@@ -23,7 +24,9 @@ import { getPresentationById } from '@accesslayer/presentation/read';
 import { getUriParts } from '@helpers/uri.helpers';
 import { getPresentationUri } from '@helpers/presentation.helpers';
 import { getBoostById, getBoostByUri } from '@accesslayer/boost/read';
+import { canProfileViewBoost } from '@accesslayer/boost/relationships/read';
 import { getCachedStorageByUri, setStorageForUri } from '@cache/storage';
+import { isClaimLinkAlreadySetForBoost } from '@cache/claim-links';
 import { getContractById } from '@accesslayer/consentflowcontract/read';
 import { getContractTermsById } from '@accesslayer/consentflowcontract/relationships/read';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
@@ -140,7 +143,7 @@ export const storageRouter = t.router({
             },
             requiredScope: 'storage:read',
         })
-        .input(z.object({ uri: z.string() }))
+        .input(z.object({ uri: z.string(), challenge: z.string().optional() }))
         .output(
             UnsignedVCValidator.or(VCValidator)
                 .or(VPValidator)
@@ -149,7 +152,7 @@ export const storageRouter = t.router({
                 .or(ConsentFlowTermsValidator)
         )
         .query(async ({ input, ctx }) => {
-            const { uri } = input;
+            const { uri, challenge } = input;
             const { domain } = ctx;
 
             const { id, type } = getUriParts(uri);
@@ -182,6 +185,38 @@ export const storageRouter = t.router({
                             (await ensureAlignmentsForBoostCredential(cachedResponse, domain, {
                                 boostInstance,
                             })) || mutated;
+                    }
+                }
+
+                if (type === 'boost') {
+                    const boostInstance = await getBoostById(id);
+                    if (!boostInstance) {
+                        throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+                    }
+
+                    const profile = await resolveProfileFromContextDid(ctx.user?.did, domain);
+                    const canView = Boolean(
+                        profile && (await canProfileViewBoost(profile, boostInstance))
+                    );
+                    const isViewableByClaimLink =
+                        await isBoostViewableByClaimLink(boostInstance);
+
+                    if (!isViewableByClaimLink && !canView) {
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message: 'Boost is not viewable by claim link.',
+                        });
+                    }
+
+                    if (
+                        isViewableByClaimLink &&
+                        !canView &&
+                        (!challenge || !(await isClaimLinkAlreadySetForBoost(uri, challenge)))
+                    ) {
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message: 'A valid claim challenge is required to view this boost.',
+                        });
                     }
                 }
 
@@ -225,6 +260,28 @@ export const storageRouter = t.router({
 
                 if (!instance) {
                     throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+                }
+
+                const profile = await resolveProfileFromContextDid(ctx.user?.did, domain);
+                const canView = Boolean(profile && (await canProfileViewBoost(profile, instance)));
+                const isViewableByClaimLink = await isBoostViewableByClaimLink(instance);
+
+                if (!isViewableByClaimLink && !canView) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: 'Boost is not viewable by claim link.',
+                    });
+                }
+
+                if (
+                    isViewableByClaimLink &&
+                    !canView &&
+                    (!challenge || !(await isClaimLinkAlreadySetForBoost(uri, challenge)))
+                ) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: 'A valid claim challenge is required to view this boost.',
+                    });
                 }
 
                 const boost = JSON.parse(instance.boost);

@@ -32,7 +32,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
-import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
@@ -125,14 +125,15 @@ const ClaimBoost: React.FC<{
     const isLoggedIn = useIsLoggedIn();
     const { initWallet, addVCtoWallet } = useWallet();
     const [presentAlert, dismissAlert] = useIonAlert();
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
 
     const { uploadVcFromTextAndAddToWallet } = useUploadVcFromText();
     const { gate } = useLCNGatedAction();
 
-    const boostUri = (query.get('boostUri') || uri)?.replace('localhost:', 'localhost%3A');
+    const rawBoostUri = query.get('boostUri') || uri;
+    const boostUri = rawBoostUri ? decodeURIComponent(rawBoostUri) : rawBoostUri;
     const challenge = query.get('challenge') || claimChallenge;
 
     const [loading, setLoading] = useState<boolean>(false);
@@ -143,10 +144,12 @@ const ClaimBoost: React.FC<{
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const { presentToast } = useToast();
 
-    const { credentialWithEdits } = useGetCredentialWithEdits(boost, boostUri);
+    const { credentialWithEdits } = useGetCredentialWithEdits(boost);
 
     const handleRedirectTo = () => {
-        const redirectTo = `/claim/boost?boostUri=${boostUri}&challenge=${challenge}`;
+        const redirectTo = `/claim/boost?boostUri=${encodeURIComponent(
+            boostUri
+        )}&challenge=${challenge}`;
         redirectStore.set.lcnRedirect(redirectTo);
         dismissClaimModal?.();
         dismissModal();
@@ -173,7 +176,9 @@ const ClaimBoost: React.FC<{
             setLoading(true);
 
             const result = await fetch(
-                `${LEARNCARD_NETWORK_API_URL}/storage/resolve?uri=${boostUri}`
+                `${LEARNCARD_NETWORK_API_URL}/storage/resolve?uri=${encodeURIComponent(boostUri)}${
+                    challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
+                }`
             );
 
             if (result.status !== 200) throw new Error('Error resolving boost');
@@ -211,7 +216,7 @@ const ClaimBoost: React.FC<{
             const achievementType = getAchievementType(boost);
 
             if (boost) {
-                logAnalyticsEvent('claim_boost', {
+                track(AnalyticsEvents.CLAIM_BOOST, {
                     boostType: category,
                     achievementType,
                     method: 'Claim Modal',

@@ -1,5 +1,30 @@
 # @learncard/network-brain-service
 
+## 3.11.3
+
+### Patch Changes
+
+-   [#1015](https://github.com/learningeconomy/LearnCard/pull/1015) [`f5a9c0bdd87a073f3e9ac575538cdbdcaa48e58e`](https://github.com/learningeconomy/LearnCard/commit/f5a9c0bdd87a073f3e9ac575538cdbdcaa48e58e) Thanks [@Computer8004](https://github.com/Computer8004)! - feat: allow profileId routes to accept DID or profileId
+
+    Updates 19 routes across the brain service to accept either a profileId OR a DID (did:web or did:key) for the profileId parameter. Uses the existing `getProfileIdFromString` helper to resolve identifiers, enabling more flexible API usage.
+
+-   [#1006](https://github.com/learningeconomy/LearnCard/pull/1006) [`caf231b53707174ea49f0eb2b65885a36b3e7228`](https://github.com/learningeconomy/LearnCard/commit/caf231b53707174ea49f0eb2b65885a36b3e7228) Thanks [@smurflo2](https://github.com/smurflo2)! - Add Self-Assigned Skills including optional proficiency level field on Boost -> Skill relationship
+
+-   Updated dependencies [[`caf231b53707174ea49f0eb2b65885a36b3e7228`](https://github.com/learningeconomy/LearnCard/commit/caf231b53707174ea49f0eb2b65885a36b3e7228)]:
+    -   @learncard/types@5.12.1
+    -   @learncard/core@9.4.7
+    -   @learncard/helpers@1.2.7
+    -   @learncard/did-web-plugin@1.1.7
+    -   @learncard/didkey-plugin@1.1.7
+    -   @learncard/didkit-plugin@1.7.3
+    -   @learncard/didkit-plugin-node@0.2.3
+    -   @learncard/encryption-plugin@1.1.7
+    -   @learncard/learn-card-plugin@1.2.7
+    -   @learncard/vc-plugin@1.4.3
+    -   @learncard/vc-templates-plugin@1.1.7
+    -   @learncard/crypto-plugin@1.1.7
+    -   @learncard/expiration-plugin@1.2.7
+
 ## 3.11.2
 
 ### Patch Changes
