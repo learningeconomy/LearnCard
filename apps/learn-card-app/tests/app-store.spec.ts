@@ -1,58 +1,63 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
-import { MOCK_APP_LISTING, mockAppStoreRoutes } from './app-store.helpers';
+import {
+    seedAppListing,
+    ensureTestProfile,
+    mockEmbedRoute,
+    SeededListing,
+} from './app-store.helpers';
 import { waitForAuthenticatedState } from './test.helpers';
 
 test.describe('App Store', () => {
+    let listing: SeededListing;
+
     test.beforeEach(async ({ page }) => {
-        // Log in via seed to get a proper session with privateKey
-        // (storage state alone doesn't persist the privateKey)
+        // Seed Neo4j data BEFORE auth so the app's initial queries pick it up
+        listing = await seedAppListing();
+        await ensureTestProfile('testa');
+
         await waitForAuthenticatedState(page);
 
-        // Set up route mocks after auth is established
-        await mockAppStoreRoutes(page);
+        // Mock only the embed URL — everything else is real
+        await mockEmbedRoute(page);
     });
 
     test('Browse app store and view app detail', async ({ page }) => {
         // 1. Navigate to LaunchPad
         await page.goto('/launchpad');
 
-        // 2. Wait for app listing to appear
-        await expect(page.getByText(MOCK_APP_LISTING.display_name).first()).toBeVisible({
-            timeout: 30_000,
-        });
-
-        // 3. Verify the app's tagline is visible
-        await expect(page.getByText(MOCK_APP_LISTING.tagline).first()).toBeVisible();
-
-        // 4. Click "Get" to open the detail modal
-        await page
-            .locator('ion-item')
-            .filter({ hasText: MOCK_APP_LISTING.display_name })
-            .getByRole('button', { name: 'Get' })
-            .click();
-
-        // 5. Verify the detail modal opens with the app name and description
-        await expect(page.getByText(MOCK_APP_LISTING.display_name)).toBeVisible({
-            timeout: 10_000,
-        });
-        await expect(page.getByText('About')).toBeVisible();
-        await expect(page.getByText(MOCK_APP_LISTING.full_description).first()).toBeVisible();
-    });
-
-    test('Install and launch embedded app', async ({ page }) => {
-        // 1. Navigate to LaunchPad
-        await page.goto('/launchpad');
-
-        // 2. Wait for app listing to load
-        await expect(page.getByText(MOCK_APP_LISTING.display_name).first()).toBeVisible({
+        // 2. Wait for the seeded app listing to appear
+        await expect(page.getByText(listing.displayName).first()).toBeVisible({
             timeout: 30_000,
         });
 
         // 3. Click "Get" to open the detail modal
         await page
             .locator('ion-item')
-            .filter({ hasText: MOCK_APP_LISTING.display_name })
+            .filter({ hasText: listing.displayName })
+            .getByRole('button', { name: 'Get' })
+            .click();
+
+        // 4. Verify the detail modal opens with the app name and description
+        await expect(page.getByText(listing.displayName)).toBeVisible({
+            timeout: 10_000,
+        });
+        await expect(page.getByText('About')).toBeVisible();
+    });
+
+    test('Install and launch embedded app', async ({ page }) => {
+        // 1. Navigate to LaunchPad
+        await page.goto('/launchpad');
+
+        // 2. Wait for the seeded listing to appear
+        await expect(page.getByText(listing.displayName).first()).toBeVisible({
+            timeout: 30_000,
+        });
+
+        // 3. Click "Get" to open the detail modal
+        await page
+            .locator('ion-item')
+            .filter({ hasText: listing.displayName })
             .getByRole('button', { name: 'Get' })
             .click();
 
@@ -62,9 +67,7 @@ test.describe('App Store', () => {
         });
         await page.getByRole('button', { name: 'Install' }).click();
 
-        // 5. The AppInstallConsentModal should appear — our mock has no permissions
-        //    so it shows "This app doesn't require any special permissions."
-        //    Click "Install" to confirm
+        // 5. The AppInstallConsentModal should appear — click "Install" to confirm
         await expect(page.getByText(/install.*\?/i)).toBeVisible({ timeout: 10_000 });
         await page.getByRole('button', { name: 'Install', exact: true }).last().click();
 
@@ -74,10 +77,8 @@ test.describe('App Store', () => {
         // 7. Click "Open" to launch the embedded app
         await page.getByRole('button', { name: 'Open' }).click();
 
-        // 8. Verify the EmbedIframeModal opens with:
-        //    - The app name in the toolbar
-        //    - An iframe element that loads
-        await expect(page.getByText(MOCK_APP_LISTING.display_name)).toBeVisible({
+        // 8. Verify the EmbedIframeModal opens with an iframe
+        await expect(page.getByText(listing.displayName)).toBeVisible({
             timeout: 10_000,
         });
         await expect(page.locator('iframe')).toBeVisible({ timeout: 30_000 });

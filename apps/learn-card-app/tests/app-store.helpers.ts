@@ -1,22 +1,12 @@
 import { Page } from '@playwright/test';
+import neo4j from 'neo4j-driver';
+import { randomUUID } from 'crypto';
 
-export const MOCK_APP_LISTING = {
-    listing_id: 'test-app-listing-001',
-    slug: 'test-embed-app',
-    display_name: 'Test Embed App',
-    tagline: 'A test embedded application',
-    full_description: 'This is a test embedded application used for Playwright E2E testing.',
-    icon_url: 'https://placehold.co/100x100/4A90D9/ffffff?text=T',
-    app_listing_status: 'LISTED',
-    launch_type: 'EMBEDDED_IFRAME',
-    launch_config_json: JSON.stringify({
-        url: 'https://test-embed-app.example.com',
-    }),
-    category: 'Tools',
-    promotion_level: 'STANDARD',
-    highlights: ['Easy to use', 'Fast'],
-    screenshots: [],
-};
+const NEO4J_URI = 'bolt://localhost:7687';
+const NEO4J_USER = 'neo4j';
+const NEO4J_PASSWORD = 'this-is-the-password';
+
+const EMBED_URL = 'https://test-embed-app.example.com';
 
 const MOCK_EMBED_HTML = `
 <!DOCTYPE html>
@@ -29,103 +19,104 @@ const MOCK_EMBED_HTML = `
 </html>
 `;
 
+export interface SeededListing {
+    listingId: string;
+    displayName: string;
+}
+
 /**
- * Sets up route interception for app store tRPC endpoints.
- *
- * Handles both individual and batched tRPC requests. tRPC v10 batches
- * multiple calls into a single HTTP request with comma-separated procedure
- * names in the URL path and expects an array of responses.
- *
- * Also intercepts the embed URL to serve a simple HTML page.
+ * Seeds an app store listing directly in Neo4j with LISTED status.
+ * Uses CURATED_LIST promotion level so it appears in the default LaunchPad view
+ * (non-promoted STANDARD apps only show when the user is searching).
  */
-export const mockAppStoreRoutes = async (page: Page) => {
-    let isInstalled = false;
+export const seedAppListing = async (): Promise<SeededListing> => {
+    const listingId = randomUUID();
+    const displayName = `Test Embed App ${Date.now()}`;
+    const slug = `test-embed-app-${Date.now()}`;
 
-    /** Returns a mock response for a single tRPC procedure */
-    const getResponseForProcedure = (procedure: string): object | null => {
-        if (procedure.includes('browseListedApps') || procedure.includes('browseAppStore')) {
-            return {
-                result: {
-                    data: {
-                        hasMore: false,
-                        records: [MOCK_APP_LISTING],
-                    },
-                },
-            };
-        }
-        if (procedure.includes('getInstalledApps')) {
-            return {
-                result: {
-                    data: {
-                        hasMore: false,
-                        records: isInstalled
-                            ? [{ ...MOCK_APP_LISTING, installed_at: new Date().toISOString() }]
-                            : [],
-                    },
-                },
-            };
-        }
-        if (procedure.includes('isAppInstalled')) {
-            return { result: { data: isInstalled } };
-        }
-        if (procedure.includes('installApp')) {
-            isInstalled = true;
-            return { result: { data: true } };
-        }
-        if (procedure.includes('uninstallApp')) {
-            isInstalled = false;
-            return { result: { data: true } };
-        }
-        if (procedure.includes('getPublicListing') || procedure.includes('getPublicAppStoreListing')) {
-            return { result: { data: MOCK_APP_LISTING } };
-        }
-        if (procedure.includes('getListingInstallCount') || procedure.includes('getAppStoreListingInstallCount')) {
-            return { result: { data: 42 } };
-        }
-        return null;
-    };
+    console.log(`[seedAppListing] Connecting to Neo4j at ${NEO4J_URI}...`);
+    const driver = neo4j.driver(NEO4J_URI, neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD));
+    const session = driver.session();
 
-    await page.route('**/trpc/**appStore**', async (route, request) => {
-        const url = new URL(request.url());
-        const pathname = url.pathname;
-
-        // Extract the procedure portion from the pathname (after /trpc/)
-        const trpcPath = pathname.split('/trpc/').pop() ?? '';
-        const procedures = trpcPath.split(',');
-        const isBatch = url.searchParams.has('batch') || procedures.length > 1;
-
-        if (isBatch) {
-            // Build a response for each procedure in the batch
-            const responses = procedures.map(proc => {
-                const response = getResponseForProcedure(proc);
-                // For procedures we don't mock, return a null/error placeholder
-                // This shouldn't happen if our glob only matches appStore routes
-                return response ?? { result: { data: null } };
-            });
-
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify(responses),
-            });
-        } else {
-            // Single (non-batched) request
-            const response = getResponseForProcedure(trpcPath);
-
-            if (response) {
-                await route.fulfill({
-                    status: 200,
-                    contentType: 'application/json',
-                    body: JSON.stringify(response),
-                });
-            } else {
-                await route.continue();
+    try {
+        await session.run(
+            `
+            CREATE (i:Integration {id: $integrationId, name: 'Playwright Test Integration'})
+            CREATE (l:AppStoreListing {
+                listing_id: $listingId,
+                display_name: $displayName,
+                tagline: 'A test embedded application',
+                full_description: 'This is a test embedded application used for Playwright E2E testing.',
+                icon_url: 'https://example.com/icon.png',
+                app_listing_status: 'LISTED',
+                launch_type: 'EMBEDDED_IFRAME',
+                launch_config_json: $launchConfigJson,
+                category: 'tools',
+                slug: $slug,
+                promotion_level: 'CURATED_LIST',
+                highlights_json: $highlightsJson,
+                screenshots_json: '[]'
+            })
+            CREATE (i)-[:PUBLISHES_LISTING]->(l)
+            `,
+            {
+                integrationId: randomUUID(),
+                listingId,
+                displayName,
+                slug,
+                launchConfigJson: JSON.stringify({ url: EMBED_URL }),
+                highlightsJson: JSON.stringify(['Easy to use', 'Fast']),
             }
-        }
-    });
+        );
+        console.log(`[seedAppListing] Created listing: ${displayName} (${listingId})`);
+    } finally {
+        await session.close();
+        await driver.close();
+    }
 
-    // Serve mock HTML for the embedded app iframe
-    await page.route('https://test-embed-app.example.com/**', async route => {
+    return { listingId, displayName };
+};
+
+/**
+ * Ensures the test user's Profile node exists in Neo4j.
+ * The installApp mutation calls ensureUser which checks for a brain-service profile.
+ * Without this, install fails with "Please make an account first".
+ */
+export const ensureTestProfile = async (profileId: string): Promise<void> => {
+    const driver = neo4j.driver(NEO4J_URI, neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD));
+    const session = driver.session();
+
+    try {
+        // Check if profile already exists
+        const existing = await session.run(
+            `MATCH (p:Profile {profileId: $profileId}) RETURN p.profileId AS id, p.did AS did`,
+            { profileId }
+        );
+
+        if (existing.records.length > 0) {
+            console.log(`[ensureTestProfile] Profile "${profileId}" already exists (did: ${existing.records[0]?.get('did')})`);
+            return;
+        }
+
+        // Create it — the DID format matches brain-service convention
+        const did = `did:web:localhost%3A4000:users:${profileId}`;
+        await session.run(
+            `CREATE (p:Profile {profileId: $profileId, did: $did, displayName: $displayName})`,
+            { profileId, did, displayName: profileId }
+        );
+        console.log(`[ensureTestProfile] Created profile "${profileId}" with did: ${did}`);
+    } finally {
+        await session.close();
+        await driver.close();
+    }
+};
+
+/**
+ * Intercepts the embed URL so the iframe loads a simple test page
+ * instead of making a real network request.
+ */
+export const mockEmbedRoute = async (page: Page) => {
+    await page.route(`${EMBED_URL}/**`, async route => {
         await route.fulfill({
             status: 200,
             contentType: 'text/html',
