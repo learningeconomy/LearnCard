@@ -2,6 +2,7 @@ import { BoostPermissions } from '@learncard/types';
 
 export const creatorRole: BoostPermissions = {
     role: 'creator',
+    canView: true,
     canEdit: true,
     canIssue: true,
     canRevoke: true,
@@ -17,6 +18,7 @@ export const creatorRole: BoostPermissions = {
 
 export const adminRole: BoostPermissions = {
     role: 'admin',
+    canView: true,
     canEdit: true,
     canIssue: true,
     canRevoke: true,
@@ -30,6 +32,7 @@ export const adminRole: BoostPermissions = {
     canViewAnalytics: true,
 };
 
+// @ts-expect-error canView is not required
 export const emptyRole: BoostPermissions = {
     role: 'empty',
     canEdit: false,
