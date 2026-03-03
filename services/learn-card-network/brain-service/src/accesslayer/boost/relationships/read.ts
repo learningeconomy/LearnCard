@@ -596,6 +596,28 @@ export const canProfileViewBoost = async (
     profile: ProfileType,
     boost: BoostInstance | BoostType
 ) => {
+    // First check if the boost has defaultRole.canView = true (public viewing)
+    const defaultRoleQuery = new QueryBuilder()
+        .match({ model: Boost, identifier: 'boost', where: { id: boost.id } })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'boost' },
+                Boost.getRelationshipByAlias('defaultRole'),
+                { model: Role, identifier: 'defaultRole' },
+            ],
+        })
+        .return('defaultRole');
+
+    const defaultRoleResult = await defaultRoleQuery.run();
+    const defaultRole = defaultRoleResult.records[0]?.get('defaultRole');
+    const canView = defaultRole?.properties?.canView ?? true; // Default to true for legacy boosts
+
+    if (canView === true) {
+        return true;
+    }
+
+    // If not publicly viewable, check if profile has role or received credential
     const query = new QueryBuilder()
         .match({ model: Boost, identifier: 'target', where: { id: boost.id } })
         .with('target')
