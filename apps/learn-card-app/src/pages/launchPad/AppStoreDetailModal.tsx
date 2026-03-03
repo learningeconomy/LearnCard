@@ -16,6 +16,7 @@ import {
     switchedProfileStore,
     useGetCurrentLCNUser,
     calculateAge,
+    useDeviceTypeByWidth,
 } from 'learn-card-base';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
@@ -34,6 +35,7 @@ import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 import AiTutorConnectedView from './AiTutorConnectedView';
 import { Settings, ShieldAlert } from 'lucide-react';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
+import DatePickerInput from '../../components/date-picker/DatePickerInput';
 
 // Extended type to include new fields (until types package is rebuilt)
 type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
@@ -90,6 +92,8 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
+    const { isMobile } = useDeviceTypeByWidth();
+
     const { useInstallApp, useUninstallApp, useInstallCount, useIsAppInstalled } = useAppStore();
 
     const installMutation = useInstallApp();
@@ -127,7 +131,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const [isExpanded, setIsExpanded] = useState(false);
 
     // Guardian gate for child profiles - verify before showing permissions modal
-    const { guardedAction } = useGuardianGate({ skip: isPreview });
+    const { guardedAction, clearVerification: clearGuardianVerification } = useGuardianGate({
+        skip: isPreview,
+    });
     const [canExpand, setCanExpand] = useState(false);
     const textRef = useRef<HTMLParagraphElement>(null);
 
@@ -165,12 +171,10 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const profileType = switchedProfileStore.use.profileType();
     const isChildProfile = Boolean(isSwitchedProfile && profileType === 'child');
 
-    // Calculate the age floor for this listing
-    const ageFloor = useMemo(() => {
-        if (listing.min_age !== undefined) return listing.min_age;
-        if (listing.age_rating) return AGE_RATING_TO_MIN_AGE[listing.age_rating] ?? 0;
-        return 0; // No restriction
-    }, [listing.min_age, listing.age_rating]);
+    // Separate min_age (hard block) from age_rating (soft block with guardian approval)
+    const minAge: number | undefined = listing.min_age;
+    const ageRating: string | undefined = listing.age_rating;
+    const ageRatingMinAge = ageRating ? AGE_RATING_TO_MIN_AGE[ageRating] ?? 0 : 0;
 
     // Calculate user's age from DOB
     const userAge = useMemo(() => {
@@ -179,14 +183,24 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         return Number.isNaN(age) ? null : age;
     }, [currentLCNUser?.dob]);
 
-    // Check if user is underage for this app
-    const isUnderage = userAge !== null && ageFloor > 0 && userAge < ageFloor;
+    // Hard block: min_age violation (block installation entirely)
+    // Only applies when userAge is known
+    const isHardBlocked =
+        userAge !== null && minAge !== undefined && minAge > 0 && userAge < minAge;
 
-    // Check if listing has age restriction
-    const hasAgeRestriction = ageFloor > 0;
+    // Soft block: age_rating violation (child can install with guardian approval)
+    // Only applies when userAge is known
+    const isAgeRatingRestricted =
+        userAge !== null && ageRatingMinAge > 0 && userAge < ageRatingMinAge;
 
     // Check if child profile is missing DOB
     const childMissingDob = isChildProfile && !currentLCNUser?.dob;
+
+    // Check if listing has any age restriction (for DOB entry flow)
+    const hasAgeRestriction = (minAge !== undefined && minAge > 0) || ageRatingMinAge > 0;
+
+    // Combined age floor for display purposes
+    const ageFloor = minAge !== undefined ? minAge : ageRatingMinAge;
 
     const doInstall = async () => {
         setIsProcessing(true);
@@ -302,109 +316,116 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
     // Show DOB entry modal for child profiles missing DOB
     const showDobEntryModal = () => {
-        let enteredDob = '';
+        const DobEntryModal: React.FC = () => {
+            const [enteredDob, setEnteredDob] = useState('');
 
-        const handleDobSubmit = () => {
-            if (!enteredDob) return;
+            const handleDobSubmit = () => {
+                if (!enteredDob) return;
 
-            // Calculate age from entered DOB
-            const enteredAge = calculateAge(enteredDob);
-            if (Number.isNaN(enteredAge)) {
-                return; // Invalid date
-            }
+                // Calculate age from entered DOB
+                const enteredAge = calculateAge(enteredDob);
+                if (Number.isNaN(enteredAge)) {
+                    return; // Invalid date
+                }
 
-            closeModal();
+                closeModal();
 
-            // Check if entered age meets the requirement
-            if (enteredAge < ageFloor) {
-                // Child is underage - block installation
-                showAgeBlockedModal();
-            } else {
-                // Child meets age requirement - proceed to install
-                showInstallConsentModal();
-            }
+                // Check if entered age meets the requirement
+                if (enteredAge < ageFloor) {
+                    // Child is underage - block installation
+                    showAgeBlockedModal();
+                    clearGuardianVerification(); // so the child can't just click Install again without a guardian verification
+                } else {
+                    // Child meets age requirement - proceed to install
+                    showInstallConsentModal();
+                }
+            };
+
+            return (
+                <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
+                    <div
+                        className="border-b border-grayscale-200 p-6"
+                        style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+                    >
+                        <h2 className="text-2xl font-bold text-grayscale-900 text-center">
+                            Date of Birth Required
+                        </h2>
+                    </div>
+
+                    <div className="flex-1 p-6 overflow-auto">
+                        <div className="flex flex-col items-center text-center space-y-4">
+                            <div className="w-16 h-16 rounded-2xl overflow-hidden bg-grayscale-100 flex items-center justify-center shadow-md">
+                                <img
+                                    src={listing.icon_url}
+                                    alt={listing.display_name}
+                                    className="w-full h-full object-cover"
+                                    onError={e => {
+                                        (e.target as HTMLImageElement).src =
+                                            'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
+                                    }}
+                                />
+                            </div>
+
+                            <div>
+                                <p className="text-lg font-semibold text-grayscale-900 mb-2">
+                                    {listing.display_name}
+                                </p>
+
+                                <p className="text-sm text-grayscale-600 mb-4">
+                                    This app has an age rating of{' '}
+                                    <strong>{listing.age_rating || `${ageFloor}+`}</strong>.
+                                    {listing.min_age !== undefined && (
+                                        <>
+                                            {' '}
+                                            Minimum age: <strong>{listing.min_age}+</strong>.
+                                        </>
+                                    )}
+                                </p>
+                            </div>
+
+                            <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 w-full text-left">
+                                <p className="text-sm text-amber-800 mb-3">
+                                    Please enter your child's date of birth to continue.
+                                </p>
+
+                                <DatePickerInput
+                                    value={enteredDob}
+                                    onChange={date => {
+                                        setEnteredDob(date);
+                                    }}
+                                    isMobile={isMobile}
+                                    label="Date of Birth"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
+                        style={{
+                            paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+                        }}
+                    >
+                        <button
+                            onClick={closeModal}
+                            className="px-6 py-3 text-lg font-semibold text-grayscale-700 bg-grayscale-200 rounded-full hover:bg-grayscale-300 transition-colors"
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            onClick={handleDobSubmit}
+                            className="px-6 py-3 text-lg font-semibold text-white bg-cyan-600 rounded-full hover:bg-cyan-700 transition-colors"
+                        >
+                            Continue
+                        </button>
+                    </div>
+                </div>
+            );
         };
 
         newModal(
-            <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
-                <div
-                    className="border-b border-grayscale-200 p-6"
-                    style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
-                >
-                    <h2 className="text-2xl font-bold text-grayscale-900 text-center">
-                        Date of Birth Required
-                    </h2>
-                </div>
-
-                <div className="flex-1 p-6 overflow-auto">
-                    <div className="flex flex-col items-center text-center space-y-4">
-                        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-grayscale-100 flex items-center justify-center shadow-md">
-                            <img
-                                src={listing.icon_url}
-                                alt={listing.display_name}
-                                className="w-full h-full object-cover"
-                                onError={e => {
-                                    (e.target as HTMLImageElement).src =
-                                        'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
-                                }}
-                            />
-                        </div>
-
-                        <div>
-                            <p className="text-lg font-semibold text-grayscale-900 mb-2">
-                                {listing.display_name}
-                            </p>
-
-                            <p className="text-sm text-grayscale-600 mb-4">
-                                This app has an age rating of{' '}
-                                <strong>{listing.age_rating || `${ageFloor}+`}</strong>.
-                                {listing.min_age !== undefined && (
-                                    <>
-                                        {' '}
-                                        Minimum age: <strong>{listing.min_age}+</strong>.
-                                    </>
-                                )}
-                            </p>
-                        </div>
-
-                        <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 w-full text-left">
-                            <p className="text-sm text-amber-800 mb-3">
-                                Please enter your child's date of birth to continue.
-                            </p>
-
-                            <input
-                                type="date"
-                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                                onChange={e => {
-                                    enteredDob = e.target.value;
-                                }}
-                                max={new Date().toISOString().split('T')[0]}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div
-                    className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
-                    style={{
-                        paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
-                    }}
-                >
-                    <button
-                        onClick={closeModal}
-                        className="px-6 py-3 text-lg font-semibold text-grayscale-700 bg-grayscale-200 rounded-full hover:bg-grayscale-300 transition-colors"
-                    >
-                        Cancel
-                    </button>
-
-                    <button
-                        onClick={handleDobSubmit}
-                        className="px-6 py-3 text-lg font-semibold text-white bg-cyan-600 rounded-full hover:bg-cyan-700 transition-colors"
-                    >
-                        Continue
-                    </button>
-                </div>
-            </div>,
+            <DobEntryModal />,
             {
                 sectionClassName: '!max-w-[500px]',
                 hideButton: true,
@@ -414,8 +435,8 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     };
 
     const handleInstall = () => {
-        // Case 1: User has DOB and is underage - block completely
-        if (isUnderage) {
+        // Case 1: Hard block - min_age violation (block completely)
+        if (isHardBlocked) {
             showAgeBlockedModal();
             return;
         }
@@ -429,11 +450,17 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             return;
         }
 
-        // Case 3: No age restriction or user is old enough
-        // Use guardian gate for child profiles, then proceed to install
-        guardedAction(() => {
-            showInstallConsentModal();
-        });
+        // Case 3: Soft block - age_rating violation for child profiles
+        // Require guardian approval but allow installation
+        if (isAgeRatingRestricted && isChildProfile) {
+            guardedAction(() => {
+                showInstallConsentModal();
+            });
+            return;
+        }
+
+        // Case 4: No age restriction or user is old enough - proceed directly
+        showInstallConsentModal();
     };
 
     const handleUninstall = async () => {
@@ -562,8 +589,8 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     };
 
     const handleLaunch = async () => {
-        // Check age restrictions before launch
-        if (isUnderage) {
+        // Hard block: min_age violation - show blocked modal
+        if (isHardBlocked) {
             showAgeBlockedModal();
             return;
         }
@@ -576,6 +603,18 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             return;
         }
 
+        // Soft block: age_rating violation for child profiles - require guardian approval
+        if (isAgeRatingRestricted && isChildProfile) {
+            guardedAction(async () => {
+                await proceedWithLaunch();
+            });
+            return;
+        }
+
+        await proceedWithLaunch();
+    };
+
+    const proceedWithLaunch = async () => {
         // For consent flow apps, redirect with did and delegate VP
         if (hasConsented && contract) {
             // Guardian consent apps need profile selection flow
@@ -706,7 +745,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             {!iosMetadata && (
                                 <div className="flex items-center gap-2 mt-2">
                                     {listing.category && (
-                                        <span className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
+                                        <span className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full capitalize">
                                             {listing.category}
                                         </span>
                                     )}

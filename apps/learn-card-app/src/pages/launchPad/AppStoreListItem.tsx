@@ -8,7 +8,6 @@ import {
     useWallet,
     switchedProfileStore,
     useGetCurrentLCNUser,
-    calculateAge,
 } from 'learn-card-base';
 import { ShieldAlert } from 'lucide-react';
 import { ThreeDotVertical } from '@learncard/react';
@@ -46,7 +45,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     const { getColorSet } = useTheme();
     const colors = getColorSet(ColorSetEnum.launchPad);
 
-    const { newModal, replaceModal } = useModal({
+    const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Right,
         mobile: ModalTypes.Right,
     });
@@ -70,7 +69,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     const { initWallet } = useWallet();
 
     // Guardian gate for child profiles
-    const { guardedAction } = useGuardianGate();
+    const { guardedAction, userAge } = useGuardianGate();
 
     // Get current user profile for age checking
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -78,29 +77,30 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     const profileType = switchedProfileStore.use.profileType();
     const isChildProfile = Boolean(isSwitchedProfile && profileType === 'child');
 
-    // Calculate the age floor for this listing
-    const ageFloor = useMemo(() => {
-        const listingAny = listing as any;
-        if (listingAny.min_age !== undefined) return listingAny.min_age;
-        if (listingAny.age_rating) return AGE_RATING_TO_MIN_AGE[listingAny.age_rating] ?? 0;
-        return 0; // No restriction
-    }, [(listing as any).min_age, (listing as any).age_rating]);
+    // Separate min_age (hard block) from age_rating (soft block with guardian approval)
+    const listingAny = listing as any;
+    const minAge: number | undefined = listingAny.min_age;
+    const ageRating: string | undefined = listingAny.age_rating;
+    const ageRatingMinAge = ageRating ? AGE_RATING_TO_MIN_AGE[ageRating] ?? 0 : 0;
 
-    // Calculate user's age from DOB
-    const userAge = useMemo(() => {
-        if (!currentLCNUser?.dob) return null;
-        const age = calculateAge(currentLCNUser.dob);
-        return Number.isNaN(age) ? null : age;
-    }, [currentLCNUser?.dob]);
+    // Hard block: min_age violation (hide app entirely, block installation)
+    // Only applies when userAge is known
+    const isHardBlocked =
+        userAge !== null && minAge !== undefined && minAge > 0 && userAge < minAge;
 
-    // Check if user is underage for this app
-    const isUnderage = userAge !== null && ageFloor > 0 && userAge < ageFloor;
-
-    // Check if listing has age restriction
-    const hasAgeRestriction = ageFloor > 0;
+    // Soft block: age_rating violation (child can install with guardian approval)
+    // Only applies when userAge is known
+    const isAgeRatingRestricted =
+        userAge !== null && ageRatingMinAge > 0 && userAge < ageRatingMinAge;
 
     // Check if child profile is missing DOB
     const childMissingDob = isChildProfile && !currentLCNUser?.dob;
+
+    // Check if listing has any age restriction (for DOB entry flow)
+    const hasAgeRestriction = (minAge !== undefined && minAge > 0) || ageRatingMinAge > 0;
+
+    // Combined age floor for display purposes
+    const ageFloor = minAge !== undefined ? minAge : ageRatingMinAge;
 
     // Show age restriction blocked modal
     const showAgeBlockedModal = () => {
@@ -160,7 +160,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                     }}
                 >
                     <button
-                        onClick={() => newModal(null)}
+                        onClick={closeModal}
                         className="px-8 py-3 text-lg font-semibold text-white bg-grayscale-600 rounded-full hover:bg-grayscale-700 transition-colors"
                     >
                         OK
@@ -186,18 +186,30 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     };
 
     const handleLaunch = async () => {
-        // Check age restrictions before launch
-        if (isUnderage) {
+        // Hard block: min_age violation - show blocked modal
+        if (isHardBlocked) {
             showAgeBlockedModal();
             return;
         }
 
         // Child profile missing DOB with age-restricted app - open detail modal for DOB entry flow
         if (childMissingDob && hasAgeRestriction) {
-            handleOpenDetail();
+            guardedAction(() => handleOpenDetail());
             return;
         }
 
+        // Soft block: age_rating violation for child profiles - require guardian approval
+        if (isAgeRatingRestricted && isChildProfile) {
+            guardedAction(async () => {
+                await proceedWithLaunch();
+            });
+            return;
+        }
+
+        await proceedWithLaunch();
+    };
+
+    const proceedWithLaunch = async () => {
         // For consent flow apps, redirect with did and delegate VP
         if (hasConsented && contract) {
             // Guardian consent apps need profile selection flow
@@ -295,6 +307,11 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     // Check if this is an InstalledApp (has installed_at property)
     const installedAt = 'installed_at' in listing ? listing.installed_at : null;
 
+    // Hide app entirely if user is hard-blocked by min_age
+    if (isHardBlocked) {
+        return null;
+    }
+
     return (
         <IonItem
             lines="none"
@@ -352,7 +369,17 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                                 </button>
                             </>
                         ) : (
-                            <button onClick={handleOpenDetail} className={buttonClass}>
+                            <button
+                                onClick={() => {
+                                    // Hard block check (defensive - should be hidden but user might navigate directly)
+                                    if (isHardBlocked) {
+                                        showAgeBlockedModal();
+                                        return;
+                                    }
+                                    handleOpenDetail();
+                                }}
+                                className={buttonClass}
+                            >
                                 Get
                             </button>
                         )}

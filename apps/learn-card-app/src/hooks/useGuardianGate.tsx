@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import {
     switchedProfileStore,
@@ -6,6 +6,8 @@ import {
     useWallet,
     ModalTypes,
     currentUserStore,
+    useGetCurrentLCNUser,
+    calculateAge,
 } from 'learn-card-base';
 
 import { FamilyPinWrapper } from '../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
@@ -43,6 +45,8 @@ export type GuardianGateResult = {
     isGuardianVerified: boolean;
     /** Force clear the verification cache */
     clearVerification: () => void;
+    /** Current user age */
+    userAge: number | null;
 };
 
 export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianGateResult => {
@@ -55,6 +59,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
 
     const { newModal, closeModal } = useModal();
     const { initWallet } = useWallet();
+    const { currentLCNUser } = useGetCurrentLCNUser();
 
     const isSwitchedProfile = switchedProfileStore?.use?.isSwitchedProfile();
     const profileType = switchedProfileStore?.use?.profileType();
@@ -62,6 +67,14 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
 
     // Determine if we're operating as a child profile
     const isChildProfile = Boolean(isSwitchedProfile && profileType === 'child');
+
+    // Calculate user age from date of birth
+    const userAge = useMemo(() => {
+        const userDob = currentLCNUser?.dob; // form: "YYYY-MM-DD"
+        if (!userDob) return null;
+        const age = calculateAge(userDob);
+        return Number.isNaN(age) ? null : age;
+    }, [currentLCNUser?.dob]);
 
     // Check if verification is still valid within TTL
     const isGuardianVerified = useCallback((): boolean => {
@@ -178,6 +191,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
         isChildProfile,
         isGuardianVerified: isGuardianVerified(),
         clearVerification,
+        userAge,
     };
 };
 
