@@ -125,7 +125,6 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                 </h2>
                                 <p className="text-gray-500 text-xs mt-0.5 line-clamp-1">
                                     {listing.tagline}
-                                    {listing.age_rating ? ` · Age: ${listing.age_rating}` : ''}
                                 </p>
                             </div>
 
@@ -182,6 +181,11 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                 {launchTypeInfo?.label}
                             </span>
                             <StatusBadge status={listing.app_listing_status as AppListingStatus} />
+                            {listing.age_rating && (
+                                <span className="inline-block px-2 py-0.5 bg-grayscale-100 text-grayscale-700 text-xs font-medium rounded-full">
+                                    Age {listing.age_rating}
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>

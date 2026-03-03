@@ -389,12 +389,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                     />
                                 </div>
 
-                                <p className="text-sm text-gray-500">
-                                    {selectedListing.tagline}
-                                    {selectedListing.age_rating
-                                        ? ` · Age: ${selectedListing.age_rating}`
-                                        : ''}
-                                </p>
+                                <p className="text-sm text-gray-500">{selectedListing.tagline}</p>
                             </div>
                         </div>
 
@@ -433,17 +428,30 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                 )}
                             </div>
 
-                            {selectedListing.min_age && (
-                                <div>
-                                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                                        Minimum Age
-                                    </label>
+                            <div className="grid grid-cols-2 gap-4">
+                                {selectedListing.age_rating && (
+                                    <div>
+                                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                                            Age Rating
+                                        </label>
 
-                                    <p className="text-sm text-gray-600 mt-1">
-                                        {selectedListing.min_age}
-                                    </p>
-                                </div>
-                            )}
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            {selectedListing.age_rating}
+                                        </p>
+                                    </div>
+                                )}
+                                {selectedListing.min_age && (
+                                    <div>
+                                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                                            Minimum Age
+                                        </label>
+
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            {selectedListing.min_age}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
 
                             <div>
                                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
