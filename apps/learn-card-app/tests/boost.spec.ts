@@ -1,23 +1,11 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
+import { issueBoostToSelf } from './test.helpers';
 
 test.describe('Boosting', () => {
     test('Boosting yourself', async ({ page }) => {
-        await page.goto('/');
-
-        await page.getByRole('button', { name: 'Boost' }).click();
-        await page.getByRole('button', { name: 'New Boost' }).click();
-        await page.getByRole('button', { name: 'Social Badge', exact: true }).click();
-        await page.getByRole('button', { name: 'Charmer' }).click();
-        await page.getByRole('button', { name: 'Next' }).click();
-        await page.getByRole('button', { name: 'Publish & Issue' }).click();
-        await page.locator('ion-col').filter({ hasText: 'Issue To' }).getByRole('button').click();
-        await page.getByRole('button', { name: 'Boost Myself' }).click();
-
-        await page.getByRole('button', { name: 'Save' }).click();
-
         try {
-            await page.waitForURL('/wallet');
+            await issueBoostToSelf(page);
         } catch (error) {
             console.error('The page often crashes here when trying to issue the VC =(', error);
             return;

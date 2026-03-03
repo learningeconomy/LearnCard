@@ -19,6 +19,28 @@ export const loginTestAccount = async (page: Page) => {
 };
 
 /**
+ * Issues a Social Badge (Charmer) boost to the current user.
+ * Navigates through the boost creation flow, publishes, and issues to self.
+ * Waits for redirect to /wallet after issuance completes.
+ *
+ * Note: The VC issuance step has a known intermittent crash. This helper
+ * will throw if the page fails to redirect to /wallet within the timeout.
+ */
+export const issueBoostToSelf = async (page: Page, timeout = 60_000) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Boost' }).click();
+    await page.getByRole('button', { name: 'New Boost' }).click();
+    await page.getByRole('button', { name: 'Social Badge', exact: true }).click();
+    await page.getByRole('button', { name: 'Charmer' }).click();
+    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('button', { name: 'Publish & Issue' }).click();
+    await page.locator('ion-col').filter({ hasText: 'Issue To' }).getByRole('button').click();
+    await page.getByRole('button', { name: 'Boost Myself' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
+    await page.waitForURL('/wallet', { timeout });
+};
+
+/**
  * Logs in via seed phrase and navigates to the specified path.
  *
  * NOTE: Storage state-based authentication doesn't work because the app requires
