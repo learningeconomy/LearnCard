@@ -58,3 +58,38 @@ export const isVC2Format = (credential: UnsignedVC | VC): boolean => {
 
     return credential['@context'].includes('https://www.w3.org/ns/credentials/v2');
 };
+
+/** Unwraps a boost credential from a CertifiedBoostCredential, if it is one */
+export const unwrapBoostCredential = (vc?: VC | UnsignedVC) => {
+    if (vc?.type?.includes('CertifiedBoostCredential') && vc?.boostCredential) {
+        return vc.boostCredential;
+    } else {
+        return vc;
+    }
+};
+
+// Export helpers from shared-helpers migration
+export * from './images';
+export * from './arrays';
+export * from './types';
+export * from './strings';
+export * from './numbers';
+export * from './state';
+
+// Export utilities from shared-types migration
+export * from './Utilities';
+
+/**
+ * Checks if a DID is an app-specific did:web
+ *
+ * App did:webs follow the pattern: did:web:learncard.app:app:<slug>
+ *
+ * @param did - The DID to check
+ * @returns true if the DID is an app did:web, false otherwise
+ */
+export const isAppDidWeb = (did?: string): boolean => {
+    if (!did) return false;
+    // Matches did:web:<slug>:app:<slug> pattern
+    const LCN_APP_DID_WEB_REGEX = /^did:web:.*:app:([^:]+)$/;
+    return LCN_APP_DID_WEB_REGEX.test(did);
+};

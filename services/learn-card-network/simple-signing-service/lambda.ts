@@ -1,9 +1,10 @@
 import serverlessHttp from 'serverless-http';
 import type { Context, APIGatewayProxyResultV2, APIGatewayProxyEventV2 } from 'aws-lambda';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
-import { createOpenApiAwsLambdaHandler } from 'trpc-openapi';
 import * as Sentry from '@sentry/serverless';
-import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-openapi/dist/adapters/node-http/errors';
+
+import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
+import { handleTrpcError, sentryBeforeSend, getTracesSampleRate } from './src/helpers/sentry.helpers';
 
 import app from './src/openapi';
 import didWebApp from './src/dids';
@@ -16,7 +17,8 @@ Sentry.AWSLambda.init({
     dsn: process.env.SENTRY_DSN,
     environment: process.env.SENTRY_ENV,
     enabled: Boolean(process.env.SENTRY_DSN),
-    tracesSampleRate: 1.0,
+    tracesSampleRate: getTracesSampleRate(),
+    beforeSend: sentryBeforeSend,
     integrations: [
         new Sentry.Integrations.Console(),
         new Sentry.Integrations.Http({ tracing: true }),
@@ -30,26 +32,23 @@ export const didWebHandler = serverlessHttp(didWebApp);
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,
-    createContext,
-    onError: ({ error, ctx, path }) => {
-        error.stack = error.stack?.replace('Mr: ', '');
-        error.name = error.message;
-
-        Sentry.captureException(error, { extra: { ctx, path } });
-        Sentry.getActiveTransaction()?.setHttpStatus(TRPC_ERROR_CODE_HTTP_STATUS[error.code]);
+    responseMeta: () => {
+        return {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+            },
+        };
     },
+    createContext,
+    onError: handleTrpcError,
 });
 
 export const _trpcHandler = awsLambdaRequestHandler({
     router: appRouter,
     createContext,
-    onError: ({ error, ctx, path }) => {
-        error.stack = error.stack?.replace('Mr: ', '');
-        error.name = error.message;
-
-        Sentry.captureException(error, { extra: { ctx, path } });
-        Sentry.getActiveTransaction()?.setHttpStatus(TRPC_ERROR_CODE_HTTP_STATUS[error.code]);
-    },
+    onError: handleTrpcError,
     responseMeta: () => {
         return {
             headers: {

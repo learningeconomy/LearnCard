@@ -8,33 +8,46 @@ const parseRegexString = (regexStr: string) => {
 };
 
 // TRPC validator that converts Regex strings into RegExps
-export const RegExpValidator = z.instanceof(RegExp).or(
-    z
-        .string()
-        .refine(
-            str => {
-                try {
-                    parseRegexString(str);
-                    return true;
-                } catch {
-                    return false;
-                }
-            },
-            {
-                message: "Invalid RegExp string format. Must be in format '/pattern/flags'",
-            }
-        )
-        .transform(str => {
-            const { pattern, flags } = parseRegexString(str);
+const RegExpStringValidator = z
+    .string()
+    .refine(
+        str => {
             try {
-                return new RegExp(pattern, flags);
-            } catch (error) {
-                throw new Error(`Invalid RegExp: ${(error as Error).message}`);
+                parseRegexString(str);
+                return true;
+            } catch {
+                return false;
             }
-        })
-);
+        },
+        {
+            message: "Invalid RegExp string format. Must be in format '/pattern/flags'",
+        }
+    )
+    .transform(str => {
+        const { pattern, flags } = parseRegexString(str);
 
-export const StringQuery = z
+        try {
+            return new RegExp(pattern, flags);
+        } catch (error) {
+            throw new Error(`Invalid RegExp: ${(error as Error).message}`);
+        }
+    })
+    .meta({ override: { type: 'string' } });
+
+export const RegExpValidator = z
+    .instanceof(RegExp)
+    .meta({ override: { type: 'string' } })
+    .or(RegExpStringValidator)
+    .meta({ override: { type: 'string' } });
+
+const BaseStringQuery = z
     .string()
     .or(z.object({ $in: z.string().array() }))
-    .or(z.object({ $regex: RegExpValidator }));
+    .or(z.object({ $regex: RegExpValidator.meta({ override: { type: 'string' } }) }));
+
+export const StringQuery = z.union([
+    BaseStringQuery,
+    z.object({
+        $or: BaseStringQuery.array(),
+    }),
+]);

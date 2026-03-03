@@ -15,6 +15,7 @@ import {
     getCategoryLightColor,
     getCategoryDarkColor,
 } from '../../helpers/credential.helpers';
+import { isAppDidWeb } from '@learncard/helpers';
 
 import { VC, Profile } from '@learncard/types';
 import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
@@ -38,6 +39,10 @@ type MeritBadgeFrontFaceProps = {
     handleViewBackFace?: () => void;
     showDetailsBtn?: boolean;
     formattedDisplayType?: string;
+    customBodyContentSlot?: React.ReactNode;
+    unknownVerifierTitle?: string;
+    hideAwardedTo?: boolean;
+    hideFrontFaceDetails?: boolean;
 };
 
 export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
@@ -54,6 +59,10 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     handleViewBackFace,
     showDetailsBtn = false,
     formattedDisplayType,
+    customBodyContentSlot,
+    unknownVerifierTitle,
+    hideAwardedTo: hideAwardedToProp,
+    hideFrontFaceDetails,
 }) => {
     const {
         title = '',
@@ -103,21 +112,31 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
 
     const issuerDid =
         typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
+    const isAppIssuerDid = isAppDidWeb(issuerDid);
 
     let verifierState: VerifierState;
+    const hideAwardedTo =
+        hideAwardedToProp ??
+        (issueeName?.includes('did:key') || issueeName?.includes('did:example:123'));
     if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {
         // the extra "&& issuerDid" is so that the credential preview doesn't say "Self Verified"
         // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
         verifierState = VERIFIER_STATES.selfVerified;
+    } else if (unknownVerifierTitle) {
+        verifierState = VERIFIER_STATES.trustedVerifier;
     } else {
         if (knownDIDRegistry?.source === 'trusted') {
             verifierState = VERIFIER_STATES.trustedVerifier;
         } else if (knownDIDRegistry?.source === 'untrusted') {
             verifierState = VERIFIER_STATES.untrustedVerifier;
         } else if (knownDIDRegistry?.source === 'unknown') {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuerDid
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         } else {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuerDid
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         }
     }
     const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
@@ -140,7 +159,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
             <div
                 className={`flex flex-col gap-[15px] items-center px-[20px] pt-[92px] pb-[19px] border-solid border-[4px] ${borderColor} rounded-[30px]`}
             >
-                <div className="flex flex-col gap-[5px]">
+                <div className="flex flex-col gap-[5px] w-full">
                     <div className="flex flex-col items-center text-grayscale-900">
                         <span className="text-[16px] leading-[150%] font-jacques">
                             {issueeName || <Line width="60" />}
@@ -150,7 +169,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         </span>
                     </div>
                     <div className="flex flex-col items-center">
-                        <h1 className="text-grayscale-900 text-center text-[25px] font-jacques">
+                        <h1 className="text-grayscale-900 text-center text-[25px] font-jacques w-full">
                             {title}
                         </h1>
                         <div
@@ -160,7 +179,6 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         </div>
                     </div>
                 </div>
-
                 {customBodyCardComponent}
                 {issueeImageExists && !customBodyCardComponent && (
                     <MeritBadgeProfileImageDisplay
@@ -174,7 +192,6 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         <Smiley />
                     </div>
                 )}
-
                 <div className="flex flex-col w-full">
                     <div className="text-[14px] text-grayscale-900 flex flex-col items-center w-full mb-[10px]">
                         <span className="font-jacques flex gap-[5px] items-center w-full overflow-ellipsis whitespace-nowrap overflow-hidden justify-center">
@@ -214,14 +231,15 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         </div> */}
                     </div>
                 </div>
-
                 <MeritBadgeProfileImageDisplay
                     imageUrl={issuerImage}
+                    userName={issuerName}
                     imageComponent={issuerImageComponent}
                     className={`w-[calc(100%-26px)] flex justify-center items-center ${textLightColor}`}
                     size="small"
                     showSeal
                 />
+                {customBodyContentSlot && customBodyContentSlot}
                 <div className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}>
                     {categoryTitle}
                 </div>
@@ -239,6 +257,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
             <div className="absolute bottom-0 w-[calc(100%-26px)] flex justify-center">
                 <VerifierStateBadgeAndText
                     verifierState={verifierState}
+                    unknownVerifierTitle={unknownVerifierTitle}
                     className="bg-white px-[5px] pb-[5px]"
                 />
             </div>

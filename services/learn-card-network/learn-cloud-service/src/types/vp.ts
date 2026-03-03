@@ -4,4 +4,5 @@ export type DidAuthVP = {
     iss: string;
     vp: UnsignedVP;
     nonce?: string;
+    contractUri?: string;
 };

@@ -1,0 +1,15 @@
+{
+    "watch": [
+        "src",
+        "../../../packages/learn-card-types/dist",
+        "../../../packages/learn-card-core/dist",
+        "../../../packages/learn-card-init/dist",
+        "../../../packages/plugins/didkit/dist",
+        "../../../packages/plugins/did-web-plugin/dist"
+    ],
+    "ext": "ts,js,cjs,mjs,json",
+    "ignore": ["**/*.d.ts", "**/node_modules/**", "**/coverage/**", "**/*.test.ts", "**/*.spec.ts"],
+    "exec": "pnpm build:docker && node dist/docker-entry.js",
+    "delay": "500",
+    "verbose": true
+}

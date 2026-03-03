@@ -1,13 +1,13 @@
 import path from 'path';
 
 import esbuild from 'esbuild';
-import rimraf from 'rimraf';
+import fs from 'fs/promises';
 
 const buildOptions = {
     // target: 'es6',
     target: 'es2020',
     sourcemap: true,
-    external: ['isomorphic-fetch', 'isomorphic-webcrypto'],
+    external: ['isomorphic-fetch', 'isomorphic-webcrypto', '@learncard/core'],
 };
 
 const configurations = [
@@ -15,32 +15,29 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [],
         entryPoints: ['src/index.ts'],
         format: 'cjs',
-        outfile: 'dist/ethereum-plugin.cjs.development.js',
+        outfile: 'dist/ethereum-plugin.cjs.development.cjs',
         ...buildOptions,
     },
     {
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [],
         entryPoints: ['src/index.ts'],
         minify: true,
         format: 'cjs',
-        outfile: 'dist/ethereum-plugin.cjs.production.min.js',
+        outfile: 'dist/ethereum-plugin.cjs.production.min.cjs',
         ...buildOptions,
     },
     {
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [],
         entryPoints: ['src/index.ts'],
@@ -50,16 +47,8 @@ const configurations = [
     },
 ];
 
-function asyncRimraf(path) {
-    return new Promise((resolve, reject) => {
-        rimraf(path, err => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
-    });
+function asyncRimraf(dirPath) {
+    return fs.rm(dirPath, { recursive: true, force: true });
 }
 
 await Promise.all(

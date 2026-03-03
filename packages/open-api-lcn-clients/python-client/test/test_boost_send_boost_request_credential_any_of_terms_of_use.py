@@ -35,8 +35,8 @@ class TestBoostSendBoostRequestCredentialAnyOfTermsOfUse(unittest.TestCase):
         model = BoostSendBoostRequestCredentialAnyOfTermsOfUse()
         if include_optional:
             return BoostSendBoostRequestCredentialAnyOfTermsOfUse(
-                type = '',
-                id = ''
+                id = '',
+                type = ''
             )
         else:
             return BoostSendBoostRequestCredentialAnyOfTermsOfUse(

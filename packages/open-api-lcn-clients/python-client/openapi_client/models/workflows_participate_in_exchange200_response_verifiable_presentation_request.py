@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.workflows_participate_in_exchange200_response_verifiable_presentation_request_query_inner import WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,8 +28,9 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest(Bas
     WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest
     """ # noqa: E501
     query: List[WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner]
-    challenge: StrictStr
-    domain: StrictStr
+    challenge: Optional[StrictStr]
+    domain: Optional[StrictStr]
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["query", "challenge", "domain"]
 
     model_config = ConfigDict(
@@ -62,8 +63,10 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest(Bas
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -78,6 +81,21 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest(Bas
                 if _item_query:
                     _items.append(_item_query.to_dict())
             _dict['query'] = _items
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if challenge (nullable) is None
+        # and model_fields_set contains the field
+        if self.challenge is None and "challenge" in self.model_fields_set:
+            _dict['challenge'] = None
+
+        # set to None if domain (nullable) is None
+        # and model_fields_set contains the field
+        if self.domain is None and "domain" in self.model_fields_set:
+            _dict['domain'] = None
+
         return _dict
 
     @classmethod
@@ -94,6 +112,11 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest(Bas
             "challenge": obj.get("challenge"),
             "domain": obj.get("domain")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

@@ -1,0 +1,94 @@
+.feature-slider-wrapper {
+    .feature-slider {
+        margin-top: 30px;
+    }
+
+    .coming-soon-feature {
+        color: #18224e;
+        font-weight: 600;
+        height: 300px;
+
+        .feature-title {
+            padding: 0 0px;
+            font-size: 1.1rem;
+            line-height: 125%;
+            font-weight: 700;
+            margin-bottom: 26px;
+        }
+
+        .feature-description {
+            font-size: 16px;
+            font-weight: 500;
+            padding: 0px 0px;
+            line-height: 190%;
+            letter-spacing: normal;
+
+            @media (max-width: 479px) {
+                font-size: 14px;
+                padding: 0px 20px;
+            }
+        }
+    }
+
+    .swiper-pagination {
+        .swiper-pagination-bullet {
+            height: 10px;
+            width: 10px;
+            opacity: 1;
+            background-color: white;
+
+            transition: width 200ms ease-out;
+
+            &.swiper-pagination-bullet-active {
+                width: 40px;
+                background-color: #41cef2;
+                border-radius: 5px;
+            }
+        }
+    }
+
+    .page-number {
+        font-family: 'Noto Sans';
+        font-weight: 600;
+        font-size: 16px;
+        letter-spacing: 0.75px;
+        color: #18224e;
+        z-index: 100;
+        position: relative;
+        height: fit-content;
+        width: 32px;
+    }
+
+    .slider-button {
+        height: 35px;
+        width: 35px;
+        border-radius: 100%;
+
+        background-color: white;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 20px;
+
+        transition: opacity 0.15s ease;
+
+        &:disabled {
+            opacity: 0;
+        }
+
+        &.next-button {
+            margin-left: 20px;
+            background-image: url('/src/assets/images/dark-right-arrow.svg');
+        }
+        &.prev-button {
+            margin-right: 20px;
+            background-image: url('/src/assets/images/dark-left-arrow.svg');
+        }
+    }
+}
+
+button,
+[type='button'],
+[type='reset'],
+[type='submit'] {
+    -webkit-appearance: none !important;
+}

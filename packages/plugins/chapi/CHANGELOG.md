@@ -1,5 +1,161 @@
 # learn-card-core
 
+## 1.1.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.7
+    -   @learncard/didkit-plugin@1.7.3
+
+## 1.1.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.6
+    -   @learncard/didkit-plugin@1.7.2
+
+## 1.1.5
+
+### Patch Changes
+
+-   [#968](https://github.com/learningeconomy/LearnCard/pull/968) [`01572c1731b01c60926e1e1ff4db95ddf08e6e9e`](https://github.com/learningeconomy/LearnCard/commit/01572c1731b01c60926e1e1ff4db95ddf08e6e9e) Thanks [@Custard7](https://github.com/Custard7)! - chore: Silence and Fix Warnings/Errors
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.5
+    -   @learncard/didkit-plugin@1.7.1
+
+## 1.1.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.4
+    -   @learncard/didkit-plugin@1.6.4
+
+## 1.1.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.3
+    -   @learncard/didkit-plugin@1.6.3
+
+## 1.1.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.2
+    -   @learncard/didkit-plugin@1.6.2
+
+## 1.1.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.1
+    -   @learncard/didkit-plugin@1.6.1
+
+## 1.1.0
+
+### Minor Changes
+
+-   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
+
+    This includes follow-up fixes for Zod v4 behavior and typing changes:
+
+    -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
+    -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
+    -   Allow `Infinity` for generational query inputs in brain-service routes.
+    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+
+### Patch Changes
+
+-   Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
+    -   @learncard/core@9.4.0
+    -   @learncard/didkit-plugin@1.6.0
+
+## 1.0.79
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.44
+    -   @learncard/didkit-plugin@1.5.37
+
+## 1.0.78
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.43
+    -   @learncard/didkit-plugin@1.5.36
+
+## 1.0.77
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.42
+    -   @learncard/didkit-plugin@1.5.35
+
+## 1.0.76
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.41
+    -   @learncard/didkit-plugin@1.5.34
+
+## 1.0.75
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.40
+    -   @learncard/didkit-plugin@1.5.33
+
+## 1.0.74
+
+### Patch Changes
+
+-   Updated dependencies [[`fdc014b626700cc1ad85a6cdf809b9066d05f8a3`](https://github.com/learningeconomy/LearnCard/commit/fdc014b626700cc1ad85a6cdf809b9066d05f8a3)]:
+    -   @learncard/didkit-plugin@1.5.32
+
+## 1.0.73
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.39
+    -   @learncard/didkit-plugin@1.5.31
+
+## 1.0.72
+
+### Patch Changes
+
+-   Updated dependencies [[`f61e75a7a1de5913e4a7a2b381aa9815e726cec3`](https://github.com/learningeconomy/LearnCard/commit/f61e75a7a1de5913e4a7a2b381aa9815e726cec3)]:
+    -   @learncard/didkit-plugin@1.5.30
+    -   @learncard/core@9.3.38
+
+## 1.0.71
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.37
+    -   @learncard/didkit-plugin@1.5.29
+
+## 1.0.70
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.36
+    -   @learncard/didkit-plugin@1.5.28
+
 ## 1.0.69
 
 ### Patch Changes

@@ -1,7 +1,15 @@
 import { vi } from 'vitest';
 import { getClient, getUser } from './helpers/getClient';
-import { testVc, sendCredential } from './helpers/send';
+import { testVc, sendBoost, sendCredential, testUnsignedBoost } from './helpers/send';
 import { Profile, Credential } from '@models';
+import * as Notifications from '@helpers/notifications.helpers';
+import { addNotificationToQueueSpy } from './helpers/spies';
+import {
+    getDidDocForProfile,
+    getDidDocForProfileManager,
+    setDidDocForProfile,
+    setDidDocForProfileManager,
+} from '@cache/did-docs';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -13,6 +21,10 @@ describe('Credentials', () => {
         userA = await getUser();
         userB = await getUser('b'.repeat(64));
         userC = await getUser('c'.repeat(64));
+
+        vi.spyOn(Notifications, 'addNotificationToQueue').mockImplementation(
+            addNotificationToQueueSpy
+        );
     });
 
     describe('sendCredential', () => {
@@ -21,6 +33,8 @@ describe('Credentials', () => {
             await Credential.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            addNotificationToQueueSpy.mockReset();
         });
 
         afterAll(async () => {
@@ -49,6 +63,35 @@ describe('Credentials', () => {
             ).resolves.not.toThrow();
         });
 
+        it('should allow sending a credential to did:web', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            await expect(
+                userA.clients.fullAuth.credential.sendCredential({
+                    profileId: userBProfile!.did,
+                    credential: testVc,
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('should allow sending a credential to did:key', async () => {
+            await expect(
+                userA.clients.fullAuth.credential.sendCredential({
+                    profileId: userB.learnCard.id.did(),
+                    credential: testVc,
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('should return NOT_FOUND for unsupported did format', async () => {
+            await expect(
+                userA.clients.fullAuth.credential.sendCredential({
+                    profileId: 'did:example:userb',
+                    credential: testVc,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
         it('should allow sending an encrypted credential', async () => {
             const encryptedVc = await userA.learnCard.invoke.createDagJwe(testVc, [
                 userA.learnCard.id.did(),
@@ -61,6 +104,49 @@ describe('Credentials', () => {
                     credential: encryptedVc,
                 })
             ).resolves.not.toThrow();
+        });
+
+        it('should persist metadata on credential relationships', async () => {
+            const metadata = { some: 'value', nested: { answer: 42 } };
+
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+                metadata,
+            });
+
+            await userB.clients.fullAuth.credential.acceptCredential({ uri });
+
+            const received = await userB.clients.fullAuth.credential.receivedCredentials();
+
+            expect(received).toHaveLength(1);
+            expect(received[0]?.metadata).toEqual(metadata);
+
+            const sent = await userA.clients.fullAuth.credential.sentCredentials();
+
+            expect(sent).toHaveLength(1);
+            expect(sent[0]?.metadata).toEqual(metadata);
+
+            const incoming = await userB.clients.fullAuth.credential.incomingCredentials();
+            expect(incoming).toHaveLength(0);
+        });
+
+        it('should include metadata in credential notifications', async () => {
+            addNotificationToQueueSpy.mockResolvedValueOnce(undefined);
+
+            const metadata = { reason: 'test', values: { score: 99 } };
+
+            await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+                metadata,
+            });
+
+            expect(addNotificationToQueueSpy).toHaveBeenCalled();
+
+            const notificationCall = addNotificationToQueueSpy.mock.calls.pop();
+
+            expect(notificationCall?.[0]?.data?.metadata).toEqual(metadata);
         });
     });
 
@@ -121,6 +207,47 @@ describe('Credentials', () => {
                 code: 'BAD_REQUEST',
                 message: expect.stringContaining('already been received'),
             });
+        });
+
+        it('should clear did:web cache for managed profiles when accepting a boost that grants canManageChildrenProfiles', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                claimPermissions: { canManageChildrenProfiles: true },
+            });
+
+            const managerDid =
+                await userA.clients.fullAuth.profileManager.createChildProfileManager({
+                    parentUri: boostUri,
+                    profile: {},
+                });
+
+            const managerId = managerDid.split(':')[4]!;
+
+            const managerClient = getClient({ did: managerDid, isChallengeValid: true });
+
+            const managedProfileId = 'managed-profile';
+
+            await managerClient.profileManager.createManagedProfile({
+                profileId: managedProfileId,
+            });
+
+            await setDidDocForProfileManager(managerId, { id: managerDid } as any);
+            await setDidDocForProfile(managedProfileId, { id: managedProfileId } as any);
+
+            expect(await getDidDocForProfileManager(managerId)).toBeTruthy();
+            expect(await getDidDocForProfile(managedProfileId)).toBeTruthy();
+
+            const credentialUri = await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                boostUri,
+                false
+            );
+
+            await userB.clients.fullAuth.credential.acceptCredential({ uri: credentialUri });
+
+            expect(await getDidDocForProfileManager(managerId)).toBeFalsy();
+            expect(await getDidDocForProfile(managedProfileId)).toBeFalsy();
         });
     });
 

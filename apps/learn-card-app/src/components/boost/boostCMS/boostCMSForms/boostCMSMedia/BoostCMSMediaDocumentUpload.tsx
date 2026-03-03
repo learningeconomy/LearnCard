@@ -1,0 +1,171 @@
+import React, { useState } from 'react';
+import { Keyboard } from '@capacitor/keyboard';
+import { createPortal } from 'react-dom';
+import { Updater } from 'use-immer';
+import { produce } from 'immer';
+
+import { IonCol, IonRow, IonInput } from '@ionic/react';
+import FileIcon from 'learn-card-base/svgs/FileIcon';
+
+import useTheme from '../../../../../theme/hooks/useTheme';
+import { useFilestack, UploadRes } from 'learn-card-base';
+
+import { VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
+import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
+import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
+
+type BoostCMSMediaDocumentUploadProps = {
+    state: BoostCMSMediaState;
+    setState: Updater<BoostCMSMediaAttachment[]>;
+    activeMediaType: BoostMediaOptionsEnum | null;
+    setActiveMediaType: React.Dispatch<React.SetStateAction<BoostMediaOptionsEnum | null>>;
+    setUploadedPhotos: React.Dispatch<React.SetStateAction<BoostCMSMediaAttachment[]>>;
+    handleSave: () => void;
+    hideBackButton?: boolean;
+    handleCloseModal?: () => void;
+    setShowCloseButtonState?: React.Dispatch<React.SetStateAction<boolean>>;
+    createMode?: boolean;
+};
+
+const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = ({
+    state,
+    setState,
+    activeMediaType,
+    setActiveMediaType,
+    handleSave,
+    hideBackButton,
+    handleCloseModal,
+    setShowCloseButtonState,
+    createMode,
+}) => {
+    const sectionPortal = document.getElementById('section-cancel-portal');
+
+    const { colors } = useTheme();
+    const primaryColor = colors?.defaults?.primaryColor;
+
+    const { title, Icon } = boostMediaOptions.find(({ type }) => type === activeMediaType);
+
+    const [currentIndex, setCurrentIndex] = useState<number>(0);
+    const [uploadProgress, setUploadProgress] = useState<number | boolean>(false);
+
+    const onUpload = (data: UploadRes) => {
+        setUploadProgress(false);
+        // setNewPhotoUrl(data?.url);
+        setState(
+            produce(state.documents, draft => {
+                draft[currentIndex].url = data?.url;
+                draft[currentIndex].title = data?.filename;
+            })
+        );
+    };
+    const { handleFileSelect: handleDocumentSelect, isLoading: uploadLoading } = useFilestack({
+        fileType: VIEWER_MIME_TYPES,
+        onUpload: (_url, _file, data) => onUpload(data),
+        options: { onProgress: event => setUploadProgress(event.totalPercent) },
+    });
+
+    const documentSrc = state?.documents?.[currentIndex]?.url;
+
+    return (
+        <>
+            <IonRow className="flex flex-col pb-4">
+                <IonCol className="w-full flex items-center justify-between mt-8 mb-2">
+                    <Icon
+                        version="outlined"
+                        className={`text-grayscale-800 h-[40px] max-h-[40px] max-w-[40px] mr-2`}
+                    />
+                    <h6 className="flex items-center justify-center font-medium text-grayscale-800 font-poppins text-xl tracking-wide">
+                        {title}
+                    </h6>
+                </IonCol>
+            </IonRow>
+            <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px]">
+                <IonInput
+                    autocapitalize="on"
+                    className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
+                    placeholder="Title"
+                    type="text"
+                    value={state?.documents?.[currentIndex]?.title}
+                    onIonInput={e => {
+                        let stateCopy = structuredClone(state.documents);
+                        if (stateCopy[currentIndex]) {
+                            stateCopy[currentIndex].title = e.detail.value as string;
+                            setState(stateCopy);
+                        }
+                    }}
+                    onKeyDown={e => {
+                        if (e.key === 'Enter') Keyboard.hide();
+                    }}
+                />
+            </div>
+
+            <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px] pb-[20px]">
+                <div className="flex items-center justify-start w-full py-[8px] px-[20px] bg-grayscale-100 rounded-[20px]">
+                    {documentSrc && uploadProgress === false && (
+                        <>
+                            <FileIcon className="text-[#FF3636] h-[40px] min-h-[40px] min-w-[40px] w-[40px] mr-2" />
+                            <a
+                                className={`line-clamp-1 text-${primaryColor} text-base font-semibold`}
+                                target="_blank"
+                                rel="noreferrer"
+                                href={documentSrc}
+                            >
+                                {documentSrc}
+                            </a>
+                        </>
+                    )}
+
+                    {uploadProgress !== false && (
+                        <p className="font-medium text-[#FF3636]">
+                            {uploadProgress?.toString?.()}% uploaded
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            {sectionPortal &&
+                createPortal(
+                    <div className="w-full flex flex-col items-center justify-center">
+                        <div className="flex justify-center gap-[10px] items-center relative !border-none w-full max-w-[500px]">
+                            <button
+                                onClick={() => {
+                                    handleSave();
+                                }}
+                                className={`flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide`}
+                            >
+                                Save
+                            </button>
+
+                            {documentSrc && (
+                                <button
+                                    onClick={handleDocumentSelect}
+                                    className="flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide"
+                                >
+                                    Change Doc
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col justify-center items-center relative !border-none w-full max-w-[500px]">
+                            <button
+                                onClick={() => {
+                                    if (createMode) {
+                                        setActiveMediaType(null);
+                                        setShowCloseButtonState?.(true);
+                                    } else {
+                                        handleCloseModal?.();
+                                    }
+                                }}
+                                className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
+                            >
+                                Back
+                            </button>
+                        </div>
+                    </div>,
+                    sectionPortal
+                )}
+        </>
+    );
+};
+
+export default BoostCMSMediaDocumentUpload;

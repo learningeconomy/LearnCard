@@ -1,5 +1,415 @@
 # @welibraryos/react-learn-card
 
+## 2.9.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.5
+
+## 2.9.13
+
+### Patch Changes
+
+-   Updated dependencies [[`f05491d71c2499f80ad20d75fccb60fc15eedb91`](https://github.com/learningeconomy/LearnCard/commit/f05491d71c2499f80ad20d75fccb60fc15eedb91)]:
+    -   @learncard/init@2.3.4
+
+## 2.9.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.3
+
+## 2.9.11
+
+### Patch Changes
+
+-   [#987](https://github.com/learningeconomy/LearnCard/pull/987) [`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1578] Optimize skill framework uploads (aka fix timeout error)
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.2
+
+## 2.9.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.1
+
+## 2.9.9
+
+### Patch Changes
+
+-   [#969](https://github.com/learningeconomy/LearnCard/pull/969) [`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Resolve app DIDs in credential UI and show app issuer details.
+
+    Credentials issued by App Store listings now map app did:web values to
+    app names/icons (with a link back to the app), and display the "App Issuer"
+    verification state where appropriate.
+
+## 2.9.8
+
+### Patch Changes
+
+-   Updated dependencies [[`7e30fc7116411ba19a4889cfbf9fc71dd725c309`](https://github.com/learningeconomy/LearnCard/commit/7e30fc7116411ba19a4889cfbf9fc71dd725c309)]:
+    -   @learncard/init@2.3.0
+
+## 2.9.7
+
+### Patch Changes
+
+-   [#933](https://github.com/learningeconomy/LearnCard/pull/933) [`1247b3b2b372626b06d6193b5c9227504c23a3be`](https://github.com/learningeconomy/LearnCard/commit/1247b3b2b372626b06d6193b5c9227504c23a3be) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1511] Override unknown issuer verifier state text and use roles in Scouts app
+
+-   [#933](https://github.com/learningeconomy/LearnCard/pull/933) [`1247b3b2b372626b06d6193b5c9227504c23a3be`](https://github.com/learningeconomy/LearnCard/commit/1247b3b2b372626b06d6193b5c9227504c23a3be) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1511] Override unknown issuer verifier state text and use roles in Scouts app
+
+## 2.9.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.2.6
+
+## 2.9.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.2.5
+
+## 2.9.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.2.4
+
+## 2.9.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.2.3
+
+## 2.9.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.2.2
+
+## 2.9.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.2.1
+
+## 2.9.0
+
+### Minor Changes
+
+-   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
+
+    This includes follow-up fixes for Zod v4 behavior and typing changes:
+
+    -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
+    -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
+    -   Allow `Infinity` for generational query inputs in brain-service routes.
+    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+
+### Patch Changes
+
+-   Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
+    -   @learncard/init@2.2.0
+
+## 2.8.62
+
+### Patch Changes
+
+-   [#878](https://github.com/learningeconomy/LearnCard/pull/878) [`4b833c0e2e1e2be48488f265c4b98f17f1260b44`](https://github.com/learningeconomy/LearnCard/commit/4b833c0e2e1e2be48488f265c4b98f17f1260b44) Thanks [@smurflo2](https://github.com/smurflo2)! - Update style for alignments on BoostGenericCard
+
+## 2.8.61
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.16
+
+## 2.8.60
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.15
+
+## 2.8.59
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.14
+
+## 2.8.58
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.13
+
+## 2.8.57
+
+### Patch Changes
+
+-   [#848](https://github.com/learningeconomy/LearnCard/pull/848) [`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add comprehensive Skills & Skill Frameworks system to LearnCard Network
+
+    This introduces a complete skill taxonomy system spanning the LearnCard Network plugin, brain service, and shared types. Organizations can now create custom skill frameworks, organize skills hierarchically, attach frameworks to Boosts, and align specific skills to credentials.
+
+    ## Core Features
+
+    ### Skill Framework Management
+
+    -   **Create Managed Frameworks**: Users can create skill frameworks with metadata (name, description, status)
+    -   **Framework Ownership**: Frameworks are linked to profiles via `MANAGES` relationship for access control
+    -   **Framework Queries**: List, search, and filter frameworks by various criteria
+    -   **External Provider Sync**: Optional integration with external skills services
+
+    ### Hierarchical Skill Organization
+
+    -   **Create Skills**: Add individual skills with statement, description, and code to frameworks
+    -   **Parent-Child Relationships**: Build skill hierarchies using `IS_CHILD_OF` relationships
+    -   **Framework Containment**: Skills linked to frameworks via `CONTAINS` relationships
+    -   **Bulk Operations**: Support for creating multiple skills and frameworks efficiently
+
+    ### Boost Integration
+
+    -   **Attach Frameworks**: Link skill frameworks to Boosts using `USES_FRAMEWORK` relationships
+    -   **Skill Alignment**: Align specific skills to Boosts via `ALIGNED_TO` relationships
+    -   **Ancestor Traversal**: Query skills from frameworks attached to a boost or its ancestors
+    -   **Permission Checks**: Validates boost admin rights before allowing framework/skill operations
+
+    ## API Methods Added
+
+    ### Plugin Methods
+
+    -   `createManagedSkillFramework()` - Create a new skill framework
+    -   `createManagedSkillFrameworks()` - Bulk create frameworks
+    -   `createSkill()` - Add a skill to a framework
+    -   `createSkills()` - Bulk create skills
+    -   `attachFrameworkToBoost()` - Link framework to boost
+    -   `detachFrameworkFromBoost()` - Remove framework from boost
+    -   `alignBoostSkills()` - Align specific skills to boost
+    -   `getSkillsAvailableForBoost()` - Query alignable skills
+    -   `searchSkillsAvailableForBoost()` - Search skills for boost
+    -   `getBoostFrameworks()` - List frameworks attached to boost
+
+    ### Brain Service Routes
+
+    -   `skillFrameworks.createManaged` - Create framework with MANAGES relationship
+    -   `skillFrameworks.listMine` - Query user's managed frameworks
+    -   `skillFrameworks.update` - Update framework metadata
+    -   `skills.create` - Create skills with hierarchy support
+    -   `skills.update` - Update skill metadata
+    -   `skills.searchFrameworkSkills` - Search within framework
+    -   `boost.attachFrameworkToBoost` - Establish USES_FRAMEWORK relationship
+    -   `boost.alignBoostSkills` - Create ALIGNED_TO relationships
+    -   `boost.getSkillsAvailableForBoost` - Graph traversal for available skills
+
+    ## Type System
+
+    ### New Types & Validators
+
+    -   `SkillFrameworkValidator` / `SkillFrameworkType` - Framework structure
+    -   `SkillValidator` / `SkillType` - Individual skill structure
+    -   `SkillFrameworkStatus` - Framework lifecycle states
+    -   `CreateManagedSkillFrameworkInput` - Framework creation params
+    -   `SkillFrameworkQuery` - Framework search parameters
+
+    ## Graph Database Schema
+
+    ### New Relationships
+
+    -   `(Profile)-[:MANAGES]->(SkillFramework)` - Framework ownership
+    -   `(SkillFramework)-[:CONTAINS]->(Skill)` - Framework-skill membership
+    -   `(Skill)-[:IS_CHILD_OF]->(Skill)` - Hierarchical skill organization
+    -   `(Boost)-[:USES_FRAMEWORK]->(SkillFramework)` - Framework attachment
+    -   `(Boost)-[:ALIGNED_TO]->(Skill)` - Skill alignment for credentials
+
+    ### Access Layer Methods
+
+    -   `createSkillFrameworkNode()` - Persist framework with MANAGES relationship
+    -   `createSkill()` - Create skill with CONTAINS and optional IS_CHILD_OF relationships
+    -   `setBoostUsesFramework()` - Establish framework attachment
+    -   `addAlignedSkillsToBoost()` - Batch create ALIGNED_TO relationships
+    -   `getFrameworkSkillsAvailableForBoost()` - Traverse graph for available skills
+
+    This system enables rich skill-based credential metadata, allowing organizations to categorize and align credentials with industry-standard or custom skill taxonomies.
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.12
+
+## 2.8.56
+
+### Patch Changes
+
+-   [#814](https://github.com/learningeconomy/LearnCard/pull/814) [`ff96c92a9066be7d292b7206d3b4285e8612486a`](https://github.com/learningeconomy/LearnCard/commit/ff96c92a9066be7d292b7206d3b4285e8612486a) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1365 - Update verification expiration response
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.11
+
+## 2.8.55
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.10
+
+## 2.8.54
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.9
+
+## 2.8.53
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.8
+
+## 2.8.52
+
+### Patch Changes
+
+-   [#834](https://github.com/learningeconomy/LearnCard/pull/834) [`56e2abeb9038f5f40b402691492973f32b44ca5e`](https://github.com/learningeconomy/LearnCard/commit/56e2abeb9038f5f40b402691492973f32b44ca5e) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1400] Fix long title for merit badge from running off screen
+
+## 2.8.51
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.7
+
+## 2.8.50
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.6
+
+## 2.8.49
+
+### Patch Changes
+
+-   [#827](https://github.com/learningeconomy/LearnCard/pull/827) [`55689b35362e4835a2e48059f2c7a594e070d006`](https://github.com/learningeconomy/LearnCard/commit/55689b35362e4835a2e48059f2c7a594e070d006) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1387] Broken image when previewing merit badge
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.5
+
+## 2.8.48
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.4
+
+## 2.8.47
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.3
+
+## 2.8.46
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.2
+
+## 2.8.45
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.1
+
+## 2.8.44
+
+### Patch Changes
+
+-   [#815](https://github.com/learningeconomy/LearnCard/pull/815) [`133d455b26d30d9d4e09745d4fb128e4a596a80b`](https://github.com/learningeconomy/LearnCard/commit/133d455b26d30d9d4e09745d4fb128e4a596a80b) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1357] Broken video attachment and make skill button clickable
+
+## 2.8.43
+
+### Patch Changes
+
+-   [#810](https://github.com/learningeconomy/LearnCard/pull/810) [`16e9f31e765b7c3c5782ee6313e5b4e2704e5b01`](https://github.com/learningeconomy/LearnCard/commit/16e9f31e765b7c3c5782ee6313e5b4e2704e5b01) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1333] Hide awarded to for claimable credentials
+
+-   [#812](https://github.com/learningeconomy/LearnCard/pull/812) [`5d4320f157ac8be2832564a0f7bb2341f9c45361`](https://github.com/learningeconomy/LearnCard/commit/5d4320f157ac8be2832564a0f7bb2341f9c45361) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1369 - update lightbox props
+
+## 2.8.42
+
+### Patch Changes
+
+-   Updated dependencies [[`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298)]:
+    -   @learncard/init@2.1.0
+
+## 2.8.41
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.47
+
+## 2.8.40
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.46
+
+## 2.8.39
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.45
+
+## 2.8.38
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.44
+
+## 2.8.37
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.43
+
+## 2.8.36
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.42
+
+## 2.8.35
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.41
+
+## 2.8.34
+
+### Patch Changes
+
+-   [#782](https://github.com/learningeconomy/LearnCard/pull/782) [`877dd2e4b95fe78ac656a5098cc3b22b591bcf35`](https://github.com/learningeconomy/LearnCard/commit/877dd2e4b95fe78ac656a5098cc3b22b591bcf35) Thanks [@rhen92](https://github.com/rhen92)! - [LC-1248] & [LC-1254] fix long pdf names
+
 ## 2.8.33
 
 ### Patch Changes

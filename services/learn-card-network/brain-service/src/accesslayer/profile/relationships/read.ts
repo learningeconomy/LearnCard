@@ -2,7 +2,7 @@ import { BindParam, Op, QueryBuilder, Where } from 'neogma';
 import {
     convertObjectRegExpToNeo4j,
     convertQueryResultToPropertiesObjectArray,
-    getMatchQueryWhere,
+    buildWhereForQueryBuilder,
 } from '@helpers/neo4j.helpers';
 import { Boost, Profile, ProfileManager } from '@models';
 import { FlatProfileType, ProfileType } from 'types/profile';
@@ -102,9 +102,10 @@ export const getProfilesThatAProfileManages = async (
         query: matchQuery = {},
     }: { limit: number; cursor?: string; query?: LCNProfileQuery }
 ): Promise<{ profile: ProfileType; manager?: ProfileManagerType }[]> => {
-    const _query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('managed', convertedQuery as any);
+    
+    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             optional: true,
             related: [
@@ -151,7 +152,7 @@ implicitlyManaged = directlyManaged OR
         .with(
             'DISTINCT COALESCE(implicitlyManaged, directlyManaged, managed) AS managed, COALESCE(implicitManager, manager) AS manager'
         )
-        .where(getMatchQueryWhere('managed'));
+        .where(whereClause);
 
     const query = cursor ? _query.raw('AND managed.profileId > $cursor') : _query;
 

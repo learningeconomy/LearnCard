@@ -37,22 +37,22 @@ class TestContractsAddAutoBoostsToContractRequest(unittest.TestCase):
             return ContractsAddAutoBoostsToContractRequest(
                 contract_uri = '',
                 autoboosts = [
-                    openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner.contracts_createConsentFlowContract_request_autoboosts_inner(
+                    openapi_client.models.contracts_add_auto_boosts_to_contract_request_autoboosts_inner.contracts_addAutoBoostsToContract_request_autoboosts_inner(
                         boost_uri = '', 
                         signing_authority = openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner_signing_authority.contracts_createConsentFlowContract_request_autoboosts_inner_signingAuthority(
-                            endpoint = '', 
-                            name = '', ), )
+                            name = '', 
+                            endpoint = '', ), )
                     ]
             )
         else:
             return ContractsAddAutoBoostsToContractRequest(
                 contract_uri = '',
                 autoboosts = [
-                    openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner.contracts_createConsentFlowContract_request_autoboosts_inner(
+                    openapi_client.models.contracts_add_auto_boosts_to_contract_request_autoboosts_inner.contracts_addAutoBoostsToContract_request_autoboosts_inner(
                         boost_uri = '', 
                         signing_authority = openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner_signing_authority.contracts_createConsentFlowContract_request_autoboosts_inner_signingAuthority(
-                            endpoint = '', 
-                            name = '', ), )
+                            name = '', 
+                            endpoint = '', ), )
                     ],
         )
         """

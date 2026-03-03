@@ -1,4 +1,4 @@
-import { QueryBuilder } from 'neogma';
+import { QueryBuilder, BindParam } from 'neogma';
 import { v4 as uuid } from 'uuid';
 
 import {
@@ -9,33 +9,116 @@ import {
     Profile,
     ConsentFlowTerms,
     ConsentFlowTransaction,
+    AppStoreListing,
 } from '@models';
+import { flattenObject } from '@helpers/objects.helpers';
 import { ProfileType } from 'types/profile';
 import { clearDidWebCacheForChildProfileManagers } from '@accesslayer/boost/relationships/update';
+import { getBoostIdForCredentialInstance } from '@accesslayer/credential/relationships/read';
 import { DbTermsType } from 'types/consentflowcontract';
 
 export const createSentCredentialRelationship = async (
     from: ProfileType,
     to: ProfileType,
-    credential: CredentialInstance
+    credential: CredentialInstance,
+    metadata?: Record<string, unknown>,
+    activityId?: string,
+    integrationId?: string
 ): Promise<void> => {
-    await Profile.relateTo({
-        alias: 'credentialSent',
-        where: { source: { profileId: from.profileId }, target: { id: credential.id } },
-        properties: { to: to.profileId, date: new Date().toISOString() },
+    const properties = flattenObject({
+        to: to.profileId,
+        date: new Date().toISOString(),
+        ...(metadata ? { metadata } : {}),
+        ...(activityId ? { activityId } : {}),
+        ...(integrationId ? { integrationId } : {}),
     });
+
+    await new QueryBuilder(new BindParam({ params: properties }))
+        .match({
+            related: [
+                { model: Profile, where: { profileId: from.profileId }, identifier: 'profile' },
+            ],
+        })
+        .match({
+            related: [
+                { model: Credential, where: { id: credential.id }, identifier: 'credential' },
+            ],
+        })
+        .create(
+            `(profile)-[r:${Profile.getRelationshipByAlias('credentialSent').name}]->(credential)`
+        )
+        .set('r = $params')
+        .run();
+};
+
+export const createListingSentCredentialRelationship = async (
+    listingId: string,
+    to: ProfileType,
+    credential: CredentialInstance,
+    metadata?: Record<string, unknown>,
+    activityId?: string,
+    integrationId?: string
+): Promise<void> => {
+    const properties = flattenObject({
+        to: to.profileId,
+        date: new Date().toISOString(),
+        ...(metadata ? { metadata } : {}),
+        ...(activityId ? { activityId } : {}),
+        ...(integrationId ? { integrationId } : {}),
+    });
+
+    await new QueryBuilder(new BindParam({ params: properties }))
+        .match({
+            related: [
+                {
+                    model: AppStoreListing,
+                    where: { listing_id: listingId },
+                    identifier: 'listing',
+                },
+            ],
+        })
+        .match({
+            related: [
+                { model: Credential, where: { id: credential.id }, identifier: 'credential' },
+            ],
+        })
+        .create(
+            `(listing)-[r:${AppStoreListing.getRelationshipByAlias('credentialSent').name}]->(credential)`
+        )
+        .set('r = $params')
+        .run();
 };
 
 export const createReceivedCredentialRelationship = async (
     to: ProfileType,
     from: ProfileType,
-    credential: CredentialInstance
+    credential: CredentialInstance,
+    metadata?: Record<string, unknown>
 ): Promise<void> => {
-    await credential.relateTo({
-        alias: 'credentialReceived',
-        where: { profileId: to.profileId },
-        properties: { from: from.profileId, date: new Date().toISOString() },
+    const properties = flattenObject({
+        from: from.profileId,
+        date: new Date().toISOString(),
+        ...(metadata ? { metadata } : {}),
     });
+
+    await new QueryBuilder(new BindParam({ params: properties }))
+        .match({
+            related: [
+                { model: Credential, where: { id: credential.id }, identifier: 'credential' },
+            ],
+        })
+        .match({
+            related: [
+                { model: Profile, where: { profileId: to.profileId }, identifier: 'profile' },
+            ],
+        })
+        .create(
+            `(credential)-[r:${
+                Credential.getRelationshipByAlias('credentialReceived').name
+            }]->(profile)`
+        )
+        .set('r = $params')
+        .run();
 };
 
 export const setDefaultClaimedRole = async (
@@ -59,7 +142,8 @@ export const setDefaultClaimedRole = async (
         .with('boost, role')
         .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
         .where(
-            `NOT EXISTS { MATCH (profile)-[:${Boost.getRelationshipByAlias('hasRole').name
+            `NOT EXISTS { MATCH (profile)-[:${
+                Boost.getRelationshipByAlias('hasRole').name
             }]-(boost)}`
         )
         .create({
@@ -72,11 +156,11 @@ export const setDefaultClaimedRole = async (
         .run();
 
     try {
-        const vc = JSON.parse(credential.credential);
+        const boostId = await getBoostIdForCredentialInstance(credential);
 
-        if (vc.boostId) await clearDidWebCacheForChildProfileManagers(vc.boostId);
+        if (boostId) await clearDidWebCacheForChildProfileManagers(boostId);
     } catch (error) {
-        console.error('Invalid credential JSON?', error);
+        console.error('Could not clear did:web cache for accepted boost credential', error);
     }
 };
 

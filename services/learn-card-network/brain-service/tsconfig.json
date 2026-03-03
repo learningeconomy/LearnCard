@@ -57,6 +57,9 @@
             ],
             "@services/*": [
                 "src/services/*"
+            ],
+            "@tracing": [
+                "src/tracing/index.ts"
             ]
         },
         "esModuleInterop": true,

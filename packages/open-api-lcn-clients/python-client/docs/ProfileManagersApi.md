@@ -344,7 +344,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_get_managed_profiles**
-> BoostGetBoostAdmins200Response profile_manager_get_managed_profiles(profile_get_available_profiles_request=profile_get_available_profiles_request)
+> BoostGetBoostAdmins200Response profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
 
 Managed Profiles
 
@@ -357,7 +357,7 @@ This route gets all of your managed profiles
 ```python
 import openapi_client
 from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoostAdmins200Response
-from openapi_client.models.profile_get_available_profiles_request import ProfileGetAvailableProfilesRequest
+from openapi_client.models.profile_manager_get_managed_profiles_request import ProfileManagerGetManagedProfilesRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -381,11 +381,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfileManagersApi(api_client)
-    profile_get_available_profiles_request = openapi_client.ProfileGetAvailableProfilesRequest() # ProfileGetAvailableProfilesRequest |  (optional)
+    profile_manager_get_managed_profiles_request = openapi_client.ProfileManagerGetManagedProfilesRequest() # ProfileManagerGetManagedProfilesRequest |  (optional)
 
     try:
         # Managed Profiles
-        api_response = api_instance.profile_manager_get_managed_profiles(profile_get_available_profiles_request=profile_get_available_profiles_request)
+        api_response = api_instance.profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
         print("The response of ProfileManagersApi->profile_manager_get_managed_profiles:\n")
         pprint(api_response)
     except Exception as e:
@@ -399,7 +399,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **profile_get_available_profiles_request** | [**ProfileGetAvailableProfilesRequest**](ProfileGetAvailableProfilesRequest.md)|  | [optional] 
+ **profile_manager_get_managed_profiles_request** | [**ProfileManagerGetManagedProfilesRequest**](ProfileManagerGetManagedProfilesRequest.md)|  | [optional] 
 
 ### Return type
 
@@ -427,7 +427,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_get_other_profile_manager**
-> BoostGetChildrenProfileManagers200ResponseRecordsInner profile_manager_get_other_profile_manager(id)
+> ProfileGetAvailableProfiles200ResponseRecordsInnerManager profile_manager_get_other_profile_manager(id)
 
 Get profile manager information
 
@@ -439,7 +439,7 @@ This route grabs the profile information of any profile manager, using their id
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_children_profile_managers200_response_records_inner import BoostGetChildrenProfileManagers200ResponseRecordsInner
+from openapi_client.models.profile_get_available_profiles200_response_records_inner_manager import ProfileGetAvailableProfiles200ResponseRecordsInnerManager
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -485,7 +485,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**BoostGetChildrenProfileManagers200ResponseRecordsInner**](BoostGetChildrenProfileManagers200ResponseRecordsInner.md)
+[**ProfileGetAvailableProfiles200ResponseRecordsInnerManager**](ProfileGetAvailableProfiles200ResponseRecordsInnerManager.md)
 
 ### Authorization
 
@@ -510,7 +510,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_get_profile_manager**
-> BoostGetChildrenProfileManagers200ResponseRecordsInner profile_manager_get_profile_manager()
+> ProfileGetAvailableProfiles200ResponseRecordsInnerManager profile_manager_get_profile_manager()
 
 Get your profile manager profile information
 
@@ -522,7 +522,7 @@ This route uses the request header to grab the profile manager profile of the cu
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_children_profile_managers200_response_records_inner import BoostGetChildrenProfileManagers200ResponseRecordsInner
+from openapi_client.models.profile_get_available_profiles200_response_records_inner_manager import ProfileGetAvailableProfiles200ResponseRecordsInnerManager
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -564,7 +564,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**BoostGetChildrenProfileManagers200ResponseRecordsInner**](BoostGetChildrenProfileManagers200ResponseRecordsInner.md)
+[**ProfileGetAvailableProfiles200ResponseRecordsInnerManager**](ProfileGetAvailableProfiles200ResponseRecordsInnerManager.md)
 
 ### Authorization
 
@@ -587,7 +587,7 @@ This endpoint does not need any parameter.
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_update_profile_manager**
-> bool profile_manager_update_profile_manager(profile_manager_create_profile_manager_request)
+> bool profile_manager_update_profile_manager(profile_manager_create_child_profile_manager_request_profile)
 
 Update the profile of your Profile Manager
 
@@ -599,7 +599,7 @@ This route updates the profile of the current profile manager
 
 ```python
 import openapi_client
-from openapi_client.models.profile_manager_create_profile_manager_request import ProfileManagerCreateProfileManagerRequest
+from openapi_client.models.profile_manager_create_child_profile_manager_request_profile import ProfileManagerCreateChildProfileManagerRequestProfile
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -623,11 +623,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfileManagersApi(api_client)
-    profile_manager_create_profile_manager_request = openapi_client.ProfileManagerCreateProfileManagerRequest() # ProfileManagerCreateProfileManagerRequest | 
+    profile_manager_create_child_profile_manager_request_profile = openapi_client.ProfileManagerCreateChildProfileManagerRequestProfile() # ProfileManagerCreateChildProfileManagerRequestProfile | 
 
     try:
         # Update the profile of your Profile Manager
-        api_response = api_instance.profile_manager_update_profile_manager(profile_manager_create_profile_manager_request)
+        api_response = api_instance.profile_manager_update_profile_manager(profile_manager_create_child_profile_manager_request_profile)
         print("The response of ProfileManagersApi->profile_manager_update_profile_manager:\n")
         pprint(api_response)
     except Exception as e:
@@ -641,7 +641,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **profile_manager_create_profile_manager_request** | [**ProfileManagerCreateProfileManagerRequest**](ProfileManagerCreateProfileManagerRequest.md)|  | 
+ **profile_manager_create_child_profile_manager_request_profile** | [**ProfileManagerCreateChildProfileManagerRequestProfile**](ProfileManagerCreateChildProfileManagerRequestProfile.md)|  | 
 
 ### Return type
 

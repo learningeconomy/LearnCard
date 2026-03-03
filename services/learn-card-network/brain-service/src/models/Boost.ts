@@ -6,6 +6,8 @@ import { neogma } from '@instance';
 import { Profile, ProfileInstance } from './Profile';
 import { FlatBoostType, BoostStatus } from 'types/boost';
 import { Role, RoleInstance } from './Role';
+import { SkillFramework, SkillFrameworkInstance } from './SkillFramework';
+import { Skill, SkillInstance } from './Skill';
 
 export type BoostRelationships = {
     createdBy: ModelRelatedNodesI<
@@ -15,6 +17,7 @@ export type BoostRelationships = {
         { date: string }
     >;
     parentOf: ModelRelatedNodesI<typeof Boost, BoostInstance>;
+    autoConnectRecipient: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     hasRole: ModelRelatedNodesI<
         typeof Profile,
         ProfileInstance,
@@ -22,6 +25,19 @@ export type BoostRelationships = {
         Partial<BoostPermissions> & { roleId: string }
     >;
     claimRole: ModelRelatedNodesI<typeof Role, RoleInstance>;
+    defaultRole: ModelRelatedNodesI<typeof Role, RoleInstance>;
+    usesFramework: ModelRelatedNodesI<
+        typeof SkillFramework,
+        SkillFrameworkInstance,
+        { createdAt: string },
+        { createdAt: string }
+    >;
+    alignedTo: ModelRelatedNodesI<
+        typeof Skill,
+        SkillInstance,
+        { proficiencyLevel?: number },
+        { proficiencyLevel?: number }
+    >;
 };
 
 export type BoostInstance = NeogmaInstance<FlatBoostType, BoostRelationships>;
@@ -50,6 +66,11 @@ export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
                 },
             },
             parentOf: { model: 'self', direction: 'out', name: 'PARENT_OF' },
+            autoConnectRecipient: {
+                model: Profile,
+                direction: 'out',
+                name: 'AUTO_CONNECT_RECIPIENT',
+            },
             hasRole: {
                 model: Profile,
                 direction: 'in',
@@ -57,6 +78,7 @@ export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
                 properties: {
                     roleId: { property: 'roleId', schema: { type: 'string', required: true } },
                     role: { property: 'role', schema: { type: 'string', required: false } },
+                    canView: { property: 'canView', schema: { type: 'boolean', required: false } },
                     canEdit: { property: 'canEdit', schema: { type: 'boolean', required: false } },
                     canIssue: {
                         property: 'canIssue',
@@ -101,6 +123,19 @@ export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
                 },
             },
             claimRole: { model: Role, direction: 'out', name: 'CLAIM_ROLE' },
+            defaultRole: { model: Role, direction: 'out', name: 'DEFAULT_ROLE' },
+            usesFramework: { model: SkillFramework, direction: 'out', name: 'USES_FRAMEWORK' },
+            alignedTo: {
+                model: Skill,
+                direction: 'out',
+                name: 'ALIGNED_TO',
+                properties: {
+                    proficiencyLevel: {
+                        property: 'proficiencyLevel',
+                        schema: { type: 'number', required: false },
+                    },
+                },
+            },
         },
     },
     neogma

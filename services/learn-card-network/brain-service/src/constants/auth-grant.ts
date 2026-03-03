@@ -33,6 +33,7 @@
  * - Multiple scopes: Space-separated list of scopes
  *   e.g., "authGrants:read contracts:write didMetadata:read"
  * - No access: "".
+ *
  */
 
 // Common scope bundles

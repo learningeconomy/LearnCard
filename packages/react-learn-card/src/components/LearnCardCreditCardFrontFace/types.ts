@@ -37,4 +37,6 @@ export type LearnCardCreditCardFrontFaceProps = {
      * @type {function}
      */
     onClick?: () => void;
+
+    children?: React.ReactNode;
 };

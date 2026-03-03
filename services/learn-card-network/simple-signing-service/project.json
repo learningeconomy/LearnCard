@@ -1,6 +1,6 @@
 {
     "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-    "name": "simple-signing-service",
+    "name": "simple-signing-service-app",
     "sourceRoot": "services/learn-card-network/simple-signing-service/src",
     "projectType": "application",
     "root": "services/learn-card-network/simple-signing-service",

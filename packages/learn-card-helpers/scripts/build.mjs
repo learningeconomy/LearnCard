@@ -3,11 +3,15 @@ import fs from 'fs/promises';
 
 import esbuild from 'esbuild';
 import { NodeResolvePlugin } from '@esbuild-plugins/node-resolve';
-import rimraf from 'rimraf';
+
 
 const nodeResolveExternal = NodeResolvePlugin({
     extensions: ['.ts', '.js', '.tsx', '.jsx', '.cjs', '.mjs'],
-    onResolved: (resolved) => {
+    onResolved: resolved => {
+        // Bundle query-string into the helpers build so it works in browser
+        // environments instead of relying on a dynamic require.
+        if (resolved.includes('node_modules/query-string')) return resolved;
+
         if (resolved.includes('node_modules')) {
             return {
                 external: true,
@@ -22,7 +26,6 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
@@ -33,7 +36,6 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
@@ -45,7 +47,6 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
@@ -55,32 +56,22 @@ const configurations = [
 ];
 
 function asyncRimraf(path) {
-    return new Promise((resolve, reject) => {
-        rimraf(path, (err) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
-    });
+    return fs.rm(path, { recursive: true, force: true });
 }
 
 await Promise.all(
-    configurations.map(async (config) => {
+    configurations.map(async config => {
         var dir = config.outdir || path.dirname(config.outfile);
         await asyncRimraf(dir).catch(() => {
             console.log('Unable to delete directory', dir);
         });
-    }),
+    })
 );
 
-await Promise.all(configurations.map((config) => esbuild.build(config))).catch(
-    (err) => {
-        console.error('❌ Build failed');
-        process.exit(1);
-    },
-);
+await Promise.all(configurations.map(config => esbuild.build(config))).catch(err => {
+    console.error('❌ Build failed');
+    process.exit(1);
+});
 
 console.log('✔ Build successful');
 process.exit(0);

@@ -9,17 +9,21 @@ import { OpenApiMeta } from 'trpc-to-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
 import { AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
+import { ContactMethodType } from '@learncard/types';
 
 import { RegExpTransformer } from '@learncard/helpers';
 
 import { getProfileByDid } from '@accesslayer/profile/read';
-import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
+import { getEmptyLearnCard, isServersDidWebDID } from '@helpers/learnCard.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
 import { ProfileType } from 'types/profile';
 import { getProfileManagerById } from '@accesslayer/profile-manager/read';
 import { isAuthGrantChallengeValidForDID } from '@accesslayer/auth-grant/read';
 import { AUTH_GRANT_FULL_ACCESS_SCOPE, AUTH_GRANT_NO_ACCESS_SCOPE } from 'src/constants/auth-grant';
 import { userHasRequiredScopes } from '@helpers/auth-grant.helpers';
+import { getContactMethodById } from '@accesslayer/contact-method/read';
+import { VC } from '@learncard/types';
+import { CONTACT_METHOD_SESSION_PREFIX } from '@helpers/contact-method.helpers';
 
 export type DidAuthVP = {
     iss: string;
@@ -27,6 +31,7 @@ export type DidAuthVP = {
         '@context': string[];
         type: string[];
         holder: string;
+        verifiableCredential?: VC[];
     };
     nonce?: string;
 };
@@ -37,6 +42,7 @@ export type Context = {
         isChallengeValid: boolean;
         scope?: string;
     };
+    contactMethod?: ContactMethodType;
     domain: string;
 };
 
@@ -101,12 +107,28 @@ export const createContext = async (
 
                 let isChallengeValid = false;
                 let scope = AUTH_GRANT_FULL_ACCESS_SCOPE;
-                if (challenge?.includes(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX)) {
+
+                // If the user is using a provisional auth token for a contact method:
+                if (challenge?.includes(CONTACT_METHOD_SESSION_PREFIX)) {
+                    if (isServersDidWebDID(did)) {
+                        const contactMethodId = challenge.split(':')[1];
+                        if (!contactMethodId) throw new TRPCError({ code: 'NOT_FOUND' });
+
+                        const contactMethod = await getContactMethodById(contactMethodId);
+                        if (!contactMethod) throw new TRPCError({ code: 'NOT_FOUND' });
+                        return {
+                            contactMethod,
+                            domain,
+                        };
+                    }
+                    // If the user is using a real auth grant i.e. an API Token.
+                } else if (challenge?.includes(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX)) {
                     const { isChallengeValid: _isChallengeValid, scope: _scope } =
                         await isAuthGrantChallengeValidForDID(challenge, did);
 
                     isChallengeValid = _isChallengeValid;
                     scope = _scope;
+                    // If the user is using a real challenge signed by their private key.
                 } else {
                     const cacheResponse = await isChallengeValidForDid(did, challenge);
                     await invalidateChallengeForDid(did, challenge);
@@ -133,41 +155,45 @@ export const openRoute = t.procedure
         return next({ ctx });
     });
 
-export const didRoute = openRoute.use(async ({ ctx, next }) => {
-    if (!ctx.user?.did) {
-        throw new TRPCError({ code: 'UNAUTHORIZED' });
-    }
+export const resolveProfileFromContextDid = async (
+    didFromContext: string | undefined,
+    domain: string
+): Promise<ProfileType | null> => {
+    if (!didFromContext) return null;
 
-    const didParts = ctx.user.did.split(':');
+    const didParts = didFromContext.split(':');
+    let did = didFromContext;
 
-    let did = ctx.user.did;
-
-    // User authenticated with their did:web. Resolve it and use their controller did to find their
-    // profile
-    if (didParts[1] === 'web' && didParts[2] === ctx.domain) {
-        if (didParts[3] === 'manager') {
-            return next({
-                ctx: { ...ctx, user: { ...ctx.user, profile: null as ProfileType | null } },
-            });
-        }
+    // User authenticated with their did:web. Resolve it and use their controller did to find profile.
+    if (didParts[1] === 'web' && didParts[2] === domain) {
+        if (didParts[3] === 'manager') return null;
 
         const learnCard = await getEmptyLearnCard();
-
         const didDoc = await learnCard.invoke.resolveDid(
             did,
             process.env.IS_OFFLINE ? { noCache: true } : undefined
         );
 
-        if (!didDoc.controller) {
-            return next({
-                ctx: { ...ctx, user: { ...ctx.user, profile: null as ProfileType | null } },
-            });
-        }
+        if (!didDoc.controller) return null;
 
-        did = Array.isArray(didDoc.controller) ? didDoc.controller[0] : didDoc.controller;
+        const controller = Array.isArray(didDoc.controller)
+            ? didDoc.controller.at(0)
+            : didDoc.controller;
+
+        if (!controller) return null;
+
+        did = controller;
     }
 
-    const profile = await getProfileByDid(did);
+    return getProfileByDid(did);
+};
+
+export const didRoute = openRoute.use(async ({ ctx, next }) => {
+    if (!ctx.user?.did) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' });
+    }
+
+    const profile = await resolveProfileFromContextDid(ctx.user.did, ctx.domain);
 
     if (profile) Sentry.setUser({ id: profile.profileId, username: profile.displayName });
 
@@ -279,4 +305,10 @@ export const profileManagerRoute = openProfileManagerRoute.use(async ({ ctx, nex
     }
 
     return next({ ctx: { ...ctx, user: { ...ctx.user, manager } } });
+});
+
+export const verifiedContactRoute = openRoute.use(async ({ ctx, next }) => {
+    if (!ctx.contactMethod) throw new TRPCError({ code: 'UNAUTHORIZED' });
+
+    return next({ ctx: { ...ctx, contactMethod: ctx.contactMethod } });
 });

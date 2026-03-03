@@ -1,0 +1,38 @@
+.family-cms-placeholder {
+    font-family: 'Poppins', sans-serif;
+
+    ::placeholder {
+        font-family: 'Poppins', sans-serif !important;
+        font-weight: 400 !important;
+        font-size: 14px !important;
+    }
+}
+
+ion-toggle.family-cms-toggle-disabled {
+    --track-background: #a8acbd !important;
+    --track-background-checked: #a8acbd !important;
+    opacity: 1;
+}
+
+ion-toggle.family-cms-toggle {
+    --track-background: #52597a !important;
+    --track-background-checked: #00ba88 !important;
+}
+
+@media only screen and (max-width: 375px) {
+    .pin-container {
+        margin-top: 20px;
+    }
+
+    .pin-number-btn {
+        height: 50px !important;
+        width: 50px !important;
+        margin-right: 16px;
+        margin-left: 16px;
+        font-size: 24px;
+    }
+
+    .forgot-pin-btn {
+        font-size: 14px;
+    }
+}

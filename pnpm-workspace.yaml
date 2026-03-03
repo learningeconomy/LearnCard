@@ -1,6 +1,8 @@
 packages:
-  - 'docs'
+  - 'apps/*'
+  - 'reference'
   - 'examples/*'
+  - 'examples/app-store-apps/*'
   - 'packages/*'
   - 'packages/learn-card-network/*'
   - 'packages/plugins/*'

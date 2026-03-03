@@ -3,7 +3,7 @@ import { Boost, Profile, ProfileManager } from '@models';
 import {
     convertObjectRegExpToNeo4j,
     convertQueryResultToPropertiesObjectArray,
-    getMatchQueryWhere,
+    buildWhereForQueryBuilder,
 } from '@helpers/neo4j.helpers';
 import { ProfileType, FlatProfileType } from 'types/profile';
 import { ProfileManagerType } from 'types/profile-manager';
@@ -66,9 +66,10 @@ export const getManagedProfiles = async (
         query?: LCNProfileQuery;
     }
 ): Promise<ProfileType[]> => {
-    const _query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('profile', convertedQuery as any);
+    
+    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             related: [
                 { model: ProfileManager, where: { id: manager.id } },
@@ -76,7 +77,7 @@ export const getManagedProfiles = async (
                 { model: Profile, identifier: 'profile' },
             ],
         })
-        .where(getMatchQueryWhere('profile'));
+        .where(whereClause);
 
     const query = cursor ? _query.raw('AND profile.profileId > $cursor') : _query;
 

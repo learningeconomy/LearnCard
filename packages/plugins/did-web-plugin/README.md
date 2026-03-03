@@ -15,13 +15,13 @@ https://docs.learncard.com
 ## Install
 
 ```bash
-pnpm i @learncard/core @learncard/did-web-plugin
+pnpm i @learncard/init @learncard/did-web-plugin
 ```
 
 ## Usage
 
 ```ts
-import { initLearnCard } from '@learncard/core';
+import { initLearnCard } from '@learncard/init';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
 
 const emptyLearnCard = await initLearnCard();

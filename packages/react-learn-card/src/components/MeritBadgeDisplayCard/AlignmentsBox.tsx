@@ -24,20 +24,20 @@ const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
 
     const alignments = Array.isArray(alignment)
         ? alignment.map((object, index) => (
-            <AlignmentRow
-                key={index}
-                url={object.targetUrl}
-                name={object.targetName}
-                framework={object.targetFramework}
-            />
-        ))
+              <AlignmentRow
+                  key={index}
+                  url={object.targetUrl}
+                  name={object.targetName}
+                  framework={object.targetFramework}
+              />
+          ))
         : alignment && (
-            <AlignmentRow
-                url={alignment.targetUrl}
-                name={alignment.targetName}
-                framework={alignment.targetFramework}
-            />
-        );
+              <AlignmentRow
+                  url={alignment.targetUrl}
+                  name={alignment.targetName}
+                  framework={alignment.targetFramework}
+              />
+          );
 
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom p-[15px] w-full">
@@ -51,7 +51,13 @@ const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
                 >
                     Alignments
                 </h3>
-                <button className="ml-auto" onClick={() => setShowInfo(!showInfo)}>
+                <button
+                    className="ml-auto"
+                    onClick={e => {
+                        e.stopPropagation();
+                        setShowInfo(!showInfo);
+                    }}
+                >
                     <InfoIcon color={showInfo ? '#6366F1' : undefined} />
                 </button>
             </div>

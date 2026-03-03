@@ -1,0 +1,17 @@
+.swiper-pagination {
+    bottom: 35px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+.swiper-pagination-bullet {
+    width: 10px !important;
+    height: 10px !important;
+    margin-right: 10px !important;
+}
+
+.swiper-pagination-bullet-active {
+    width: 15px !important;
+    height: 15px !important;
+    background: #ffffff !important;
+}

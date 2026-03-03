@@ -37,6 +37,7 @@ class BoostGetBoostRecipients200ResponseInnerToDisplay(BaseModel):
     fade_id_background_image: Optional[StrictBool] = Field(default=None, alias="fadeIdBackgroundImage")
     id_background_color: Optional[StrictStr] = Field(default=None, alias="idBackgroundColor")
     repeat_id_background_image: Optional[StrictBool] = Field(default=None, alias="repeatIdBackgroundImage")
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["backgroundColor", "backgroundImage", "fadeBackgroundImage", "repeatBackgroundImage", "fontColor", "accentColor", "accentFontColor", "idBackgroundImage", "fadeIdBackgroundImage", "idBackgroundColor", "repeatIdBackgroundImage"]
 
     model_config = ConfigDict(
@@ -69,8 +70,10 @@ class BoostGetBoostRecipients200ResponseInnerToDisplay(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -78,6 +81,46 @@ class BoostGetBoostRecipients200ResponseInnerToDisplay(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if background_color (nullable) is None
+        # and model_fields_set contains the field
+        if self.background_color is None and "background_color" in self.model_fields_set:
+            _dict['backgroundColor'] = None
+
+        # set to None if background_image (nullable) is None
+        # and model_fields_set contains the field
+        if self.background_image is None and "background_image" in self.model_fields_set:
+            _dict['backgroundImage'] = None
+
+        # set to None if font_color (nullable) is None
+        # and model_fields_set contains the field
+        if self.font_color is None and "font_color" in self.model_fields_set:
+            _dict['fontColor'] = None
+
+        # set to None if accent_color (nullable) is None
+        # and model_fields_set contains the field
+        if self.accent_color is None and "accent_color" in self.model_fields_set:
+            _dict['accentColor'] = None
+
+        # set to None if accent_font_color (nullable) is None
+        # and model_fields_set contains the field
+        if self.accent_font_color is None and "accent_font_color" in self.model_fields_set:
+            _dict['accentFontColor'] = None
+
+        # set to None if id_background_image (nullable) is None
+        # and model_fields_set contains the field
+        if self.id_background_image is None and "id_background_image" in self.model_fields_set:
+            _dict['idBackgroundImage'] = None
+
+        # set to None if id_background_color (nullable) is None
+        # and model_fields_set contains the field
+        if self.id_background_color is None and "id_background_color" in self.model_fields_set:
+            _dict['idBackgroundColor'] = None
+
         return _dict
 
     @classmethod
@@ -102,6 +145,11 @@ class BoostGetBoostRecipients200ResponseInnerToDisplay(BaseModel):
             "idBackgroundColor": obj.get("idBackgroundColor"),
             "repeatIdBackgroundImage": obj.get("repeatIdBackgroundImage")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

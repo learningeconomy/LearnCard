@@ -39,6 +39,10 @@ type CertificateDisplayCardProps = {
     showDetailsBtn?: boolean;
     formattedDisplayType?: string;
     customLinkedCredentialsComponent?: React.ReactNode;
+    customBodyContentSlot?: React.ReactNode;
+    unknownVerifierTitle?: string;
+    hideAwardedTo?: boolean;
+    hideFrontFaceDetails?: boolean;
 };
 
 export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
@@ -68,6 +72,10 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     showDetailsBtn = false,
     formattedDisplayType,
     customLinkedCredentialsComponent,
+    customBodyContentSlot,
+    unknownVerifierTitle,
+    hideAwardedTo,
+    hideFrontFaceDetails,
 }) => {
     const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
 
@@ -92,6 +100,10 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                         isFront={isFront}
                         showDetailsBtn={showDetailsBtn}
                         formattedDisplayType={formattedDisplayType}
+                        customBodyContentSlot={customBodyContentSlot}
+                        unknownVerifierTitle={unknownVerifierTitle}
+                        hideAwardedTo={hideAwardedTo}
+                        hideFrontFaceDetails={hideFrontFaceDetails}
                     />
                 )}
 

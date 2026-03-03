@@ -6,7 +6,7 @@ import { inflateObject } from '@helpers/objects.helpers';
 import { getProfileIdFromDid } from '@helpers/did.helpers';
 import {
     convertObjectRegExpToNeo4j,
-    getMatchQueryWhere,
+    buildWhereForQueryBuilder,
     convertQueryResultToPropertiesObjectArray,
 } from '@helpers/neo4j.helpers';
 import { AUTH_GRANT_NO_ACCESS_SCOPE } from 'src/constants/auth-grant';
@@ -37,9 +37,13 @@ export const getAuthGrantsForProfile = async (
         query: matchQuery = {},
     }: { limit: number; cursor?: string; query?: AuthGrantQuery }
 ): Promise<Array<AuthGrantType & { created: string }>> => {
-    const _query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder(
+        'authGrant',
+        convertedQuery as any
+    );
+
+    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             related: [
                 { identifier: 'authGrant', model: AuthGrant },
@@ -47,18 +51,18 @@ export const getAuthGrantsForProfile = async (
                 { model: Profile, where: { profileId: profile.profileId } },
             ],
         })
-        .where(getMatchQueryWhere('authGrant'));
+        .where(whereClause);
 
     const query = cursor ? _query.raw('AND authGrant.createdAt < $cursor') : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{
         authGrant: AuthGrantType;
     }>(
-        await query
+        (await query
             .return('DISTINCT authGrant')
             .orderBy('authGrant.createdAt DESC')
             .limit(limit)
-            .run()
+            .run()) as any
     );
 
     return results.map(result => ({
@@ -104,7 +108,7 @@ export const isAuthGrantChallengeValidForDID = async (
         .match({
             model: AuthGrant,
             identifier: 'authGrant',
-            where: { challenge, status: AuthGrantStatusValidator.Values.active },
+            where: { challenge, status: AuthGrantStatusValidator.enum.active },
         })
         .raw(`WHERE (authGrant.expiresAt IS NULL OR authGrant.expiresAt >= '${currentTime}')`)
         .match({

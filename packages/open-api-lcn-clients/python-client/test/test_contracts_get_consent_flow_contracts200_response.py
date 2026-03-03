@@ -39,20 +39,22 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                 has_more = True,
                 records = [
                     openapi_client.models.contracts_get_consent_flow_contracts_200_response_records_inner.contracts_getConsentFlowContracts_200_response_records_inner(
-                        contract = openapi_client.models.storage_resolve_200_response_any_of_any_of.storage_resolve_200_response_anyOf_anyOf(
-                            read = openapi_client.models.storage_resolve_200_response_any_of_any_of_read.storage_resolve_200_response_anyOf_anyOf_read(
+                        contract = openapi_client.models.contracts_get_consent_flow_contract_200_response_contract.contracts_getConsentFlowContract_200_response_contract(
+                            read = openapi_client.models.contracts_get_consent_flow_contract_200_response_contract_read.contracts_getConsentFlowContract_200_response_contract_read(
                                 anonymize = True, 
-                                credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials.storage_resolve_200_response_anyOf_anyOf_read_credentials(
+                                credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
                                     categories = {
-                                        'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                                            required = True, )
+                                        'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                                            required = True, 
+                                            default_enabled = True, )
                                         }, ), 
                                 personal = {
-                                    'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                                        required = True, )
+                                    'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                                        required = True, 
+                                        default_enabled = True, )
                                     }, ), 
-                            write = openapi_client.models.storage_resolve_200_response_any_of_any_of_write.storage_resolve_200_response_anyOf_anyOf_write(
-                                credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials.storage_resolve_200_response_anyOf_anyOf_read_credentials(
+                            write = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write.storage_resolve_200_response_anyOf_anyOf_1_write(
+                                credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
                                     categories = {
                                         'key' : 
                                         }, ), 
@@ -75,7 +77,7 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                             ''
                             ], 
                         writers = [
-                            openapi_client.models.boost_get_boost_recipients_200_response_inner_to.boost_getBoostRecipients_200_response_inner_to(
+                            openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to.boost_getPaginatedBoostRecipients_200_response_records_inner_to(
                                 profile_id = '012', 
                                 display_name = '', 
                                 short_bio = '', 
@@ -88,8 +90,8 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                                 website_link = '', 
                                 is_service_profile = True, 
                                 type = '', 
-                                notifications_webhook = 'http', 
-                                display = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_display.boost_getBoostRecipients_200_response_inner_to_display(
+                                notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj', 
+                                display = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to_display.boost_getPaginatedBoostRecipients_200_response_records_inner_to_display(
                                     background_color = '', 
                                     background_image = '', 
                                     fade_background_image = True, 
@@ -101,8 +103,13 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                                     fade_id_background_image = True, 
                                     id_background_color = '', 
                                     repeat_id_background_image = True, ), 
+                                highlighted_credentials = [
+                                    ''
+                                    ], 
                                 role = '', 
-                                dob = '', )
+                                dob = '', 
+                                country = '', 
+                                approved = True, )
                             ], )
                     ]
             )
@@ -111,20 +118,22 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                 has_more = True,
                 records = [
                     openapi_client.models.contracts_get_consent_flow_contracts_200_response_records_inner.contracts_getConsentFlowContracts_200_response_records_inner(
-                        contract = openapi_client.models.storage_resolve_200_response_any_of_any_of.storage_resolve_200_response_anyOf_anyOf(
-                            read = openapi_client.models.storage_resolve_200_response_any_of_any_of_read.storage_resolve_200_response_anyOf_anyOf_read(
+                        contract = openapi_client.models.contracts_get_consent_flow_contract_200_response_contract.contracts_getConsentFlowContract_200_response_contract(
+                            read = openapi_client.models.contracts_get_consent_flow_contract_200_response_contract_read.contracts_getConsentFlowContract_200_response_contract_read(
                                 anonymize = True, 
-                                credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials.storage_resolve_200_response_anyOf_anyOf_read_credentials(
+                                credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
                                     categories = {
-                                        'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                                            required = True, )
+                                        'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                                            required = True, 
+                                            default_enabled = True, )
                                         }, ), 
                                 personal = {
-                                    'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                                        required = True, )
+                                    'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                                        required = True, 
+                                        default_enabled = True, )
                                     }, ), 
-                            write = openapi_client.models.storage_resolve_200_response_any_of_any_of_write.storage_resolve_200_response_anyOf_anyOf_write(
-                                credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials.storage_resolve_200_response_anyOf_anyOf_read_credentials(
+                            write = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write.storage_resolve_200_response_anyOf_anyOf_1_write(
+                                credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
                                     categories = {
                                         'key' : 
                                         }, ), 
@@ -147,7 +156,7 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                             ''
                             ], 
                         writers = [
-                            openapi_client.models.boost_get_boost_recipients_200_response_inner_to.boost_getBoostRecipients_200_response_inner_to(
+                            openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to.boost_getPaginatedBoostRecipients_200_response_records_inner_to(
                                 profile_id = '012', 
                                 display_name = '', 
                                 short_bio = '', 
@@ -160,8 +169,8 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                                 website_link = '', 
                                 is_service_profile = True, 
                                 type = '', 
-                                notifications_webhook = 'http', 
-                                display = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_display.boost_getBoostRecipients_200_response_inner_to_display(
+                                notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj', 
+                                display = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to_display.boost_getPaginatedBoostRecipients_200_response_records_inner_to_display(
                                     background_color = '', 
                                     background_image = '', 
                                     fade_background_image = True, 
@@ -173,8 +182,13 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                                     fade_id_background_image = True, 
                                     id_background_color = '', 
                                     repeat_id_background_image = True, ), 
+                                highlighted_credentials = [
+                                    ''
+                                    ], 
                                 role = '', 
-                                dob = '', )
+                                dob = '', 
+                                country = '', 
+                                approved = True, )
                             ], )
                     ],
         )

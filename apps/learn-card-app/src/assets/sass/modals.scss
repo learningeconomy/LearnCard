@@ -1,0 +1,275 @@
+:root {
+    // in-house variables for setting custom styles on a modal
+    --modal-bg: rgb(73, 85, 109, 0.4) !important;
+    --modal-backdrop-opacity: 0.25; // modal opacity, by default is 0.25
+}
+
+.modal-wrapper,
+.show-modal {
+    // ionic styles for modals
+    --background-color: transparent;
+    --background: transparent !important;
+    --backdrop-opacity: var(--modal-backdrop-opacity);
+    --height: 100% !important;
+    --width: 100% !important;
+
+    // generic in-house modal styles
+    backdrop-filter: blur(10px);
+
+    // in-house styles for setting a modal's background image
+    background: var(--modal-bg) !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-size: cover !important;
+}
+
+.qr-code-user-card-modal {
+    --background: rgb(255, 255, 255, 0.5) !important;
+}
+
+.modal-wrapper,
+.modal-shadow {
+    height: 100%;
+    box-shadow: none !important;
+}
+
+.transparent-modal-backdrop {
+    --background: transparent;
+}
+
+ion-modal.generic-modal {
+    background: rgba(0, 0, 0, 0.1) !important;
+}
+
+ion-modal.center-modal {
+    --max-height: 500px;
+    --max-width: 500px;
+    --height: auto;
+
+    &::part(content) {
+        border-radius: 24px; // modal border radius
+    }
+}
+
+ion-modal.mobile-modal {
+    &::part(content) {
+        border-top-right-radius: 24px;
+        border-top-left-radius: 24px;
+    }
+}
+
+.modal-btn-mobile {
+    display: flex;
+    @media (min-width: 992px) {
+        display: none;
+    }
+}
+
+.modal-btn-desktop {
+    display: none;
+    @media (min-width: 992px) {
+        display: flex;
+    }
+}
+
+// override global modal styles here
+.show-modal.user-options-modal {
+    background: rgba(0, 0, 0, 0.1) !important;
+}
+
+.show-modal.boost-cms-appearance-modal {
+    background: rgba(0, 0, 0, 0.1) !important;
+
+    --max-height: 700px;
+    --height: auto;
+}
+
+ion-modal.user-profile-modal {
+    background: rgba(0, 0, 0, 0.1) !important;
+    --max-height: 700px;
+}
+
+ion-modal.delete-user-modal {
+    --max-height: 650px;
+    --max-width: 500px;
+    --height: auto;
+}
+
+ion-modal.add-contact-modal {
+    --max-height: 425px;
+    --max-width: 325px;
+    --height: auto;
+    background: rgba(0, 0, 0, 0.1) !important;
+
+    &::part(content) {
+        border-radius: 24px; // modal border radius
+    }
+}
+
+ion-modal.boost-confirmation-prompt {
+    --max-height: 475px;
+    --max-width: 325px;
+    --height: auto;
+    background: rgba(0, 0, 0, 0.1) !important;
+
+    &::part(content) {
+        border-radius: 24px; // modal border radius
+    }
+}
+
+ion-modal.boost-logged-out-confirmation-prompt {
+    --max-height: 375px;
+    --max-width: 325px;
+    --height: auto;
+    background: rgba(0, 0, 0, 0.1) !important;
+
+    &::part(content) {
+        border-radius: 24px; // modal border radius
+    }
+}
+
+ion-modal.user-qrcode-modal {
+    background: rgba(0, 0, 0, 0.1) !important;
+    --max-height: 725px;
+}
+
+.user-qr-code-modal-qr-wrap {
+    @media (min-width: 992px) {
+        max-width: 50%;
+    }
+
+    @media (min-width: 768px) {
+        max-width: 60%;
+    }
+}
+
+ion-modal.network-accept-modal {
+    background: rgba(0, 0, 0, 0.1) !important;
+    --max-height: 750px;
+    --max-width: 500px;
+    padding-left: 25px;
+    padding-right: 25px;
+    --height: auto;
+}
+
+ion-modal.network-reject-modal {
+    background: rgba(0, 0, 0, 0.1) !important;
+    --max-height: 550px;
+    --max-width: 500px;
+    --height: auto;
+}
+
+ion-modal.push-notification-prompt-modal {
+    background: rgba(0, 0, 0, 0.1) !important;
+    --max-height: 550px;
+    --max-width: 500px;
+    --height: auto;
+}
+
+ion-modal.location-search-modal {
+    background: rgba(0, 0, 0, 0.1) !important;
+    --max-height: 550px;
+    --max-width: 600px;
+    padding-left: 25px;
+    padding-right: 25px;
+    width: 100%;
+    --height: auto;
+
+    &::part(content) {
+        border-radius: 24px; // modal border radius
+    }
+}
+
+.divider-with-text {
+    width: 100%;
+    text-align: center;
+    border-bottom: 1px solid #e3e5e8;
+    line-height: 0.1em;
+    margin: 10px 0 20px;
+
+    & > span {
+        background: #fff;
+        padding: 0 10px;
+    }
+}
+
+.divider-with-text-dynamic {
+    width: 100%;
+    text-align: center;
+    line-height: 0.1em;
+    margin: 10px 0 20px;
+
+    & > span {
+        padding: 0 10px;
+    }
+}
+
+ion-modal.center-modal.smart-resume-prompt-modal {
+    & > .ion-page {
+        height: 700px;
+        margin-top: auto;
+        margin-bottom: auto;
+    }
+}
+
+.vc-preview-modal-safe-area {
+    padding-top: calc(constant(safe-area-inset-top) + 0px);
+    padding-top: calc(env(safe-area-inset-top) + 0px);
+}
+
+.safe-area-top-margin {
+    margin-top: calc(env(safe-area-inset-top) + 0px);
+}
+
+.app-bar-top {
+    height: calc(env(safe-area-inset-top) + 0px);
+}
+
+/*sentry userfeedback*/
+.sentry-feedback-widget-btn {
+    position: fixed;
+    bottom: 50%;
+    right: 0px;
+    transform-origin: 100% 100%;
+    font-size: 0.875rem;
+    padding: 10px 10px 30px 10px;
+    font-weight: 600;
+    height: 1.875rem;
+    box-shadow: rgba(0, 0, 0, 0.1) -4px -12px 25px 0px;
+    border-radius: 20px 20px 0px 0px;
+    transform: rotateZ(-90deg) translateX(50%) translateY(0px);
+    background: #6366f1;
+    color: rgb(255, 255, 255);
+    font-family: Inter, Helvetica, Arial, sans-serif;
+    transition: transform 400ms;
+}
+
+// #modal-mid-root {
+//     z-index: 10;
+// }
+
+// fix ionModal z-index
+ion-datetime {
+    --z-index: 100001 !important;
+    z-index: 100001 !important;
+}
+
+// ion-modal {
+//     --z-index: 100001 !important;
+//     z-index: 100001 !important;
+// }
+
+ion-popover {
+    --z-index: 100002 !important;
+    z-index: 100002 !important;
+}
+
+ion-picker {
+    --z-index: 100002 !important;
+    z-index: 100002 !important;
+}
+
+ion-picker-column {
+    --z-index: 100002 !important;
+    z-index: 100002 !important;
+}

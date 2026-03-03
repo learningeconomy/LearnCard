@@ -158,7 +158,7 @@ export const profileManagersRouter = t.router({
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 query: LCNProfileQueryValidator.optional(),
-            }).default({})
+            }).default({ limit: 25 })
         )
         .output(PaginatedLCNProfilesValidator)
         .query(async ({ ctx, input }) => {

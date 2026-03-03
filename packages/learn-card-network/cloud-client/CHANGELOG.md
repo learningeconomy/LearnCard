@@ -1,5 +1,208 @@
 # @learncard/network-brain-client
 
+## 1.6.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.5.4
+
+## 1.6.10
+
+### Patch Changes
+
+-   Updated dependencies [[`50e72d3dd3abc9a8d4309ce1b3c1637f1baf6dbe`](https://github.com/learningeconomy/LearnCard/commit/50e72d3dd3abc9a8d4309ce1b3c1637f1baf6dbe)]:
+    -   @learncard/learn-cloud-service@2.5.3
+
+## 1.6.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.5.2
+
+## 1.6.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.5.1
+
+## 1.6.7
+
+### Patch Changes
+
+-   Updated dependencies [[`7e30fc7116411ba19a4889cfbf9fc71dd725c309`](https://github.com/learningeconomy/LearnCard/commit/7e30fc7116411ba19a4889cfbf9fc71dd725c309)]:
+    -   @learncard/learn-cloud-service@2.5.0
+
+## 1.6.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.4.6
+
+## 1.6.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.4.5
+
+## 1.6.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.4.4
+
+## 1.6.3
+
+### Patch Changes
+
+-   Updated dependencies [[`605f098e7c3ded38e236981dd3b3927860cb5869`](https://github.com/learningeconomy/LearnCard/commit/605f098e7c3ded38e236981dd3b3927860cb5869)]:
+    -   @learncard/learn-cloud-service@2.4.3
+
+## 1.6.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.4.2
+
+## 1.6.1
+
+### Patch Changes
+
+-   Updated dependencies [[`4b1d40356ffd974915396fbee05d656f6c16f9c0`](https://github.com/learningeconomy/LearnCard/commit/4b1d40356ffd974915396fbee05d656f6c16f9c0)]:
+    -   @learncard/learn-cloud-service@2.4.1
+
+## 1.6.0
+
+### Minor Changes
+
+-   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
+
+    This includes follow-up fixes for Zod v4 behavior and typing changes:
+
+    -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
+    -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
+    -   Allow `Infinity` for generational query inputs in brain-service routes.
+    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+
+### Patch Changes
+
+-   Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9), [`bc81280ae6423a19c39f3596f3d88142b8fe0732`](https://github.com/learningeconomy/LearnCard/commit/bc81280ae6423a19c39f3596f3d88142b8fe0732)]:
+    -   @learncard/learn-cloud-service@2.4.0
+
+## 1.5.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.3.29
+
+## 1.5.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.3.28
+
+## 1.5.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.3.27
+
+## 1.5.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.3.26
+
+## 1.5.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.3.25
+
+## 1.5.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.3.24
+
+## 1.5.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.3.23
+
+## 1.5.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.3.22
+
+## 1.5.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.3.21
+
+## 1.5.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.3.20
+
+## 1.5.0
+
+### Minor Changes
+
+-   [#807](https://github.com/learningeconomy/LearnCard/pull/807) [`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add initFromApiKey support
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.3.19
+
+## 1.4.19
+
+### Patch Changes
+
+-   Updated dependencies [[`f61e75a7a1de5913e4a7a2b381aa9815e726cec3`](https://github.com/learningeconomy/LearnCard/commit/f61e75a7a1de5913e4a7a2b381aa9815e726cec3), [`3627c858a339630e4cf033b64cb04564ff78040c`](https://github.com/learningeconomy/LearnCard/commit/3627c858a339630e4cf033b64cb04564ff78040c)]:
+    -   @learncard/learn-cloud-service@2.3.18
+
+## 1.4.18
+
+### Patch Changes
+
+-   [#801](https://github.com/learningeconomy/LearnCard/pull/801) [`53da9a38a1cc07d2c4c5721dd3a9d9ddc4ecb316`](https://github.com/learningeconomy/LearnCard/commit/53da9a38a1cc07d2c4c5721dd3a9d9ddc4ecb316) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Lower the `maxItems` in the tRPC client to 50 to prevent AWS payload response limits
+
+## 1.4.17
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.3.17
+
+## 1.4.16
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.3.16
+
 ## 1.4.15
 
 ### Patch Changes

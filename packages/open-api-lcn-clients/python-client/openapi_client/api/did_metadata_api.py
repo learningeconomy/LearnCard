@@ -19,6 +19,7 @@ from typing_extensions import Annotated
 from pydantic import StrictBool, StrictStr
 from typing import List
 from openapi_client.models.did_metadata_add_did_metadata_request import DidMetadataAddDidMetadataRequest
+from openapi_client.models.did_metadata_get_did_metadata200_response import DidMetadataGetDidMetadata200Response
 from openapi_client.models.did_metadata_get_my_did_metadata200_response_inner import DidMetadataGetMyDidMetadata200ResponseInner
 from openapi_client.models.did_metadata_update_did_metadata_request import DidMetadataUpdateDidMetadataRequest
 
@@ -618,7 +619,7 @@ class DIDMetadataApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> DidMetadataAddDidMetadataRequest:
+    ) -> DidMetadataGetDidMetadata200Response:
         """Get DID Metadata
 
         Get DID Metadata
@@ -656,7 +657,7 @@ class DIDMetadataApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "DidMetadataAddDidMetadataRequest",
+            '200': "DidMetadataGetDidMetadata200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -690,7 +691,7 @@ class DIDMetadataApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ApiResponse[DidMetadataAddDidMetadataRequest]:
+    ) -> ApiResponse[DidMetadataGetDidMetadata200Response]:
         """Get DID Metadata
 
         Get DID Metadata
@@ -728,7 +729,7 @@ class DIDMetadataApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "DidMetadataAddDidMetadataRequest",
+            '200': "DidMetadataGetDidMetadata200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -800,7 +801,7 @@ class DIDMetadataApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "DidMetadataAddDidMetadataRequest",
+            '200': "DidMetadataGetDidMetadata200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",

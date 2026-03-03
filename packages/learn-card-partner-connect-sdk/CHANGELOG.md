@@ -1,0 +1,70 @@
+# @learncard/partner-connect
+
+## 0.2.6
+
+### Patch Changes
+
+-   Updated dependencies [[`caf231b53707174ea49f0eb2b65885a36b3e7228`](https://github.com/learningeconomy/LearnCard/commit/caf231b53707174ea49f0eb2b65885a36b3e7228)]:
+    -   @learncard/types@5.12.1
+
+## 0.2.5
+
+### Patch Changes
+
+-   Updated dependencies [[`32e5cfacf499e9a68700170298040f3d313b38da`](https://github.com/learningeconomy/LearnCard/commit/32e5cfacf499e9a68700170298040f3d313b38da)]:
+    -   @learncard/types@5.12.0
+
+## 0.2.4
+
+### Patch Changes
+
+-   Updated dependencies [[`d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9`](https://github.com/learningeconomy/LearnCard/commit/d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9)]:
+    -   @learncard/types@5.11.4
+
+## 0.2.3
+
+### Patch Changes
+
+-   [#949](https://github.com/learningeconomy/LearnCard/pull/949) [`f797ad95a9324dd56bc3d22e4e2b07caa0c53d94`](https://github.com/learningeconomy/LearnCard/commit/f797ad95a9324dd56bc3d22e4e2b07caa0c53d94) Thanks [@Custard7](https://github.com/Custard7)! - feat: Enhance Partner Connect
+
+## 0.2.2
+
+### Patch Changes
+
+-   [#931](https://github.com/learningeconomy/LearnCard/pull/931) [`016b7edc231273aab962b89b4351a3e229fca025`](https://github.com/learningeconomy/LearnCard/commit/016b7edc231273aab962b89b4351a3e229fca025) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - ## App Store Credential Issuance
+
+    Embedded apps in the LearnCard App Store can now issue credentials directly to users via the `sendAppEvent` postMessage API.
+
+    ### Features
+
+    -   **New `send-credential` app event**: Embedded apps can call `sendAppEvent({ type: 'send-credential', boostId, templateData })` to issue credentials from pre-configured boost templates
+    -   **Credential Claim Modal**: When a credential is issued, users see a claim modal with a preview of the credential and can accept it into their wallet
+    -   **Notification Integration**: Credentials create notifications that can be claimed later if dismissed, and are marked as completed when claimed
+    -   **Auto Signing Authority Setup**: When adding a boost to an app listing, the backend automatically configures the signing authority using the developer's primary SA
+    -   **Credentials Step in App Submission**: Developers can now add credential templates (boosts) to their app listings during the submission wizard
+
+    ### API
+
+    ```typescript
+    // From an embedded app
+    const result = await learnCard.sendAppEvent({
+        type: 'send-credential',
+        boostId: 'course-completion', // Boost ID configured in app listing
+        templateData: {
+            /* optional dynamic data */
+        },
+    });
+    // Returns: { credentialUri, boostUri }
+    ```
+
+    ### Documentation
+
+    Added new guide: "Connect an Embedded App" in How-To Guides > Connect Systems
+
+## 0.2.1
+
+### Patch Changes
+
+-   [#847](https://github.com/learningeconomy/LearnCard/pull/847) [`69418464bb357d05e7d1cd76828222c7ed96745f`](https://github.com/learningeconomy/LearnCard/commit/69418464bb357d05e7d1cd76828222c7ed96745f) Thanks [@Custard7](https://github.com/Custard7)! - feat [LC-1451]: Add partner connect SDK and example app
+
+-   [#847](https://github.com/learningeconomy/LearnCard/pull/847) [`69418464bb357d05e7d1cd76828222c7ed96745f`](https://github.com/learningeconomy/LearnCard/commit/69418464bb357d05e7d1cd76828222c7ed96745f) Thanks [@Custard7](https://github.com/Custard7)! - feat [LC-1451]: Add partner connect SDK and example app

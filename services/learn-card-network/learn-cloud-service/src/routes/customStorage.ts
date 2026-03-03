@@ -126,10 +126,10 @@ export const customStorageRouter = t.router({
         .input(
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
-                query: z.record(z.any()).or(JWEValidator).optional(),
+                query: z.record(z.string(), z.any()).or(JWEValidator).optional(),
                 encrypt: z.boolean().default(true),
                 includeAssociatedDids: z.boolean().default(true),
-            }).default({})
+            }).default({ limit: 25, encrypt: true, includeAssociatedDids: true })
         )
         .output(PaginatedEncryptedRecordsValidator.or(JWEValidator))
         .query(async ({ ctx, input }) => {
@@ -189,12 +189,15 @@ export const customStorageRouter = t.router({
             z
                 .object({
                     query: z
-                        .custom<Filter<MongoCustomDocumentType>>(z.record(z.any()).parse)
+                        .custom<Filter<MongoCustomDocumentType>>(
+                            z.record(z.string(), z.any()).parse
+                        )
+                        .meta({ override: { type: 'object' } })
                         .or(JWEValidator)
                         .optional(),
                     includeAssociatedDids: z.boolean().default(true),
                 })
-                .default({})
+                .default({ includeAssociatedDids: true })
         )
         .output(z.number())
         .query(async ({ ctx, input }) => {
@@ -220,14 +223,19 @@ export const customStorageRouter = t.router({
             },
         })
         .input(
-            z.object({
-                query: z
-                    .custom<Filter<MongoCustomDocumentType>>(z.record(z.any()).parse)
-                    .or(JWEValidator)
-                    .optional(),
-                update: EncryptedRecordValidator.partial().or(JWEValidator),
-                includeAssociatedDids: z.boolean().default(true),
-            })
+            z
+                .object({
+                    query: z
+                        .custom<Filter<MongoCustomDocumentType>>(
+                            z.record(z.string(), z.any()).parse
+                        )
+                        .meta({ override: { type: 'object' } })
+                        .or(JWEValidator)
+                        .optional(),
+                    update: EncryptedRecordValidator.partial().or(JWEValidator),
+                    includeAssociatedDids: z.boolean().default(true),
+                })
+                .default({ query: {}, update: {}, includeAssociatedDids: true })
         )
         .output(z.number())
         .mutation(async ({ ctx, input }) => {
@@ -277,12 +285,15 @@ export const customStorageRouter = t.router({
             z
                 .object({
                     query: z
-                        .custom<Filter<MongoCustomDocumentType>>(z.record(z.any()).parse)
+                        .custom<Filter<MongoCustomDocumentType>>(
+                            z.record(z.string(), z.any()).parse
+                        )
+                        .meta({ override: { type: 'object' } })
                         .or(JWEValidator)
                         .optional(),
                     includeAssociatedDids: z.boolean().default(true),
                 })
-                .default({})
+                .default({ query: {}, includeAssociatedDids: true })
         )
         .output(z.number().or(z.literal(false)))
         .mutation(async ({ ctx, input }) => {

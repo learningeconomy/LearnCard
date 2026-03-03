@@ -336,8 +336,9 @@ export const getLearnCloudPlugin = async (
                     const fullUrl = (
                         uriUrl.startsWith('http')
                             ? uriUrl
-                            : `http${uriUrl.includes('http') || uriUrl.includes('localhost') ? '' : 's'
-                            }://${uriUrl}`
+                            : `http${
+                                  uriUrl.includes('http') || uriUrl.includes('localhost') ? '' : 's'
+                              }://${uriUrl}`
                     ).replaceAll('%3A', ':');
 
                     learnCard.debug?.('LearnCloud read.get different LearnCloud!', {

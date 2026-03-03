@@ -19,19 +19,26 @@ const sqs = new SQSClient({
 });
 
 export async function addNotificationToQueue(notification: LCNNotification) {
-    if (!!process.env.IS_E2E_TEST) {
-        /** 
+    if (process.env.IS_E2E_TEST) {
+        /**
          * For end-to-end tests, store the last delivery in cache
          */
         await cache.set(`e2e:notification-queue:${randomUUID()}`, JSON.stringify(notification));
     }
 
-    if (
-        process.env.NODE_ENV === 'test' ||
-        process.env.IS_OFFLINE ||
-        !process.env.NOTIFICATIONS_QUEUE_URL
-    ) {
-        return; // Can not use SQS in test environment or locally
+    // If running unit tests, do not attempt to deliver (keep legacy behavior for tests)
+    if (process.env.NODE_ENV === 'test') {
+        return;
+    }
+
+    // In local development (offline or missing SQS URL), deliver directly via webhook
+    if (process.env.IS_OFFLINE || !process.env.NOTIFICATIONS_QUEUE_URL) {
+        if (process.env.NODE_ENV !== 'test') {
+            console.log(
+                'Notifications Helpers - Local dev fallback: sending directly via sendNotification'
+            );
+        }
+        return sendNotification(notification);
     }
 
     const command = new SendMessageCommand({
@@ -65,18 +72,11 @@ export async function sendNotification(notification: LCNNotification) {
             notification.sent = new Date().toISOString();
         }
         // If webhookUrl is provided, use it instead of the default. It takes precedence over the default and 'to' default.
-        if(typeof notification.webhookUrl === 'string') {
+        if (typeof notification.webhookUrl === 'string') {
             notificationsWebhook = notification.webhookUrl;
         }
 
         if (typeof notificationsWebhook === 'string' && notificationsWebhook?.startsWith('http')) {
-            if (process.env.NODE_ENV !== 'test') {
-                console.log(
-                    'Sending notification!',
-                    notificationsWebhook,
-                    JSON.stringify(notification)
-                );
-            }
 
             const learnCard = await getDidWebLearnCard();
 
@@ -109,9 +109,8 @@ export async function sendNotification(notification: LCNNotification) {
 
             if (!validationResult.success) {
                 throw new Error('Notifications Endpoint returned a malformed result');
-                
-            } 
-            
+            }
+
             try {
                 if (notification?.data?.inbox?.issuanceId) {
                     await createWebhookSentRelationship(
@@ -123,7 +122,10 @@ export async function sendNotification(notification: LCNNotification) {
                     );
                 }
             } catch (error) {
-                console.error('Notifications Helpers - Error While Creating Webhook Sent Relationship:', error);
+                console.error(
+                    'Notifications Helpers - Error While Creating Webhook Sent Relationship:',
+                    error
+                );
             }
 
             return validationResult.data;

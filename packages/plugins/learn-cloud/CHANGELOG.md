@@ -1,5 +1,264 @@
 # learn-card-core
 
+## 2.3.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.7
+    -   @learncard/helpers@1.2.7
+    -   @learncard/learn-cloud-client@1.6.11
+    -   @learncard/didkit-plugin@1.7.3
+
+## 2.3.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-client@1.6.10
+
+## 2.3.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.6
+    -   @learncard/helpers@1.2.6
+    -   @learncard/learn-cloud-client@1.6.9
+    -   @learncard/didkit-plugin@1.7.2
+
+## 2.3.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.5
+    -   @learncard/helpers@1.2.5
+    -   @learncard/learn-cloud-client@1.6.8
+    -   @learncard/didkit-plugin@1.7.1
+
+## 2.3.7
+
+### Patch Changes
+
+-   Updated dependencies [[`7e30fc7116411ba19a4889cfbf9fc71dd725c309`](https://github.com/learningeconomy/LearnCard/commit/7e30fc7116411ba19a4889cfbf9fc71dd725c309)]:
+    -   @learncard/didkit-plugin@1.7.0
+    -   @learncard/learn-cloud-client@1.6.7
+
+## 2.3.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.4
+    -   @learncard/helpers@1.2.4
+    -   @learncard/learn-cloud-client@1.6.6
+    -   @learncard/didkit-plugin@1.6.4
+
+## 2.3.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.3
+    -   @learncard/helpers@1.2.3
+    -   @learncard/learn-cloud-client@1.6.5
+    -   @learncard/didkit-plugin@1.6.3
+
+## 2.3.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.2
+    -   @learncard/helpers@1.2.2
+    -   @learncard/learn-cloud-client@1.6.4
+    -   @learncard/didkit-plugin@1.6.2
+
+## 2.3.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-client@1.6.3
+
+## 2.3.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.1
+    -   @learncard/helpers@1.2.1
+    -   @learncard/learn-cloud-client@1.6.2
+    -   @learncard/didkit-plugin@1.6.1
+
+## 2.3.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-client@1.6.1
+
+## 2.3.0
+
+### Minor Changes
+
+-   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
+
+    This includes follow-up fixes for Zod v4 behavior and typing changes:
+
+    -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
+    -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
+    -   Allow `Infinity` for generational query inputs in brain-service routes.
+    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+
+### Patch Changes
+
+-   Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
+    -   @learncard/learn-cloud-client@1.6.0
+    -   @learncard/helpers@1.2.0
+    -   @learncard/core@9.4.0
+    -   @learncard/didkit-plugin@1.6.0
+
+## 2.2.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.44
+    -   @learncard/helpers@1.1.32
+    -   @learncard/learn-cloud-client@1.5.10
+    -   @learncard/didkit-plugin@1.5.37
+
+## 2.2.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.43
+    -   @learncard/helpers@1.1.31
+    -   @learncard/learn-cloud-client@1.5.9
+    -   @learncard/didkit-plugin@1.5.36
+
+## 2.2.8
+
+### Patch Changes
+
+-   Updated dependencies [[`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357)]:
+    -   @learncard/helpers@1.1.30
+    -   @learncard/core@9.3.42
+    -   @learncard/learn-cloud-client@1.5.8
+    -   @learncard/didkit-plugin@1.5.35
+
+## 2.2.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-client@1.5.7
+
+## 2.2.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-client@1.5.6
+
+## 2.2.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.41
+    -   @learncard/helpers@1.1.29
+    -   @learncard/learn-cloud-client@1.5.5
+    -   @learncard/didkit-plugin@1.5.34
+
+## 2.2.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.40
+    -   @learncard/helpers@1.1.28
+    -   @learncard/learn-cloud-client@1.5.4
+    -   @learncard/didkit-plugin@1.5.33
+
+## 2.2.3
+
+### Patch Changes
+
+-   Updated dependencies [[`fdc014b626700cc1ad85a6cdf809b9066d05f8a3`](https://github.com/learningeconomy/LearnCard/commit/fdc014b626700cc1ad85a6cdf809b9066d05f8a3)]:
+    -   @learncard/didkit-plugin@1.5.32
+    -   @learncard/learn-cloud-client@1.5.3
+
+## 2.2.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.39
+    -   @learncard/helpers@1.1.27
+    -   @learncard/learn-cloud-client@1.5.2
+    -   @learncard/didkit-plugin@1.5.31
+
+## 2.2.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-client@1.5.1
+
+## 2.2.0
+
+### Minor Changes
+
+-   [#807](https://github.com/learningeconomy/LearnCard/pull/807) [`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add initFromApiKey support
+
+### Patch Changes
+
+-   Updated dependencies [[`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298)]:
+    -   @learncard/learn-cloud-client@1.5.0
+
+## 2.1.44
+
+### Patch Changes
+
+-   Updated dependencies [[`f61e75a7a1de5913e4a7a2b381aa9815e726cec3`](https://github.com/learningeconomy/LearnCard/commit/f61e75a7a1de5913e4a7a2b381aa9815e726cec3)]:
+    -   @learncard/didkit-plugin@1.5.30
+    -   @learncard/core@9.3.38
+    -   @learncard/helpers@1.1.26
+    -   @learncard/learn-cloud-client@1.4.19
+
+## 2.1.43
+
+### Patch Changes
+
+-   [#801](https://github.com/learningeconomy/LearnCard/pull/801) [`53da9a38a1cc07d2c4c5721dd3a9d9ddc4ecb316`](https://github.com/learningeconomy/LearnCard/commit/53da9a38a1cc07d2c4c5721dd3a9d9ddc4ecb316) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Lower the `maxItems` in the tRPC client to 50 to prevent AWS payload response limits
+
+-   Updated dependencies [[`53da9a38a1cc07d2c4c5721dd3a9d9ddc4ecb316`](https://github.com/learningeconomy/LearnCard/commit/53da9a38a1cc07d2c4c5721dd3a9d9ddc4ecb316)]:
+    -   @learncard/learn-cloud-client@1.4.18
+
+## 2.1.42
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.37
+    -   @learncard/helpers@1.1.25
+    -   @learncard/learn-cloud-client@1.4.17
+    -   @learncard/didkit-plugin@1.5.29
+
+## 2.1.41
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.36
+    -   @learncard/helpers@1.1.24
+    -   @learncard/learn-cloud-client@1.4.16
+    -   @learncard/didkit-plugin@1.5.28
+
 ## 2.1.40
 
 ### Patch Changes

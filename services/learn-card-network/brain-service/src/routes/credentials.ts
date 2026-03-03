@@ -14,6 +14,7 @@ import {
     getIncomingCredentialsForProfile,
     getReceivedCredentialsForProfile,
     getSentCredentialsForProfile,
+    getRevokedCredentialUrisForProfile,
 } from '@accesslayer/credential/read';
 
 import { deleteStorageForUri } from '@cache/storage';
@@ -23,6 +24,8 @@ import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getCredentialOwner } from '@accesslayer/credential/relationships/read';
 import { deleteCredential } from '@accesslayer/credential/delete';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
+import { logCredentialSent } from '@helpers/activity.helpers';
+import { getProfileIdFromString } from '@helpers/did.helpers';
 
 export const credentialsRouter = t.router({
     sendCredential: profileRoute
@@ -41,14 +44,20 @@ export const credentialsRouter = t.router({
             z.object({
                 profileId: z.string(),
                 credential: UnsignedVCValidator.or(VCValidator).or(JWEValidator),
+                metadata: z.record(z.string(), z.unknown()).optional(),
             })
         )
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { profileId, credential } = input;
+            const { profileId, credential, metadata } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             const isBlocked = await isRelationshipBlocked(profile, targetProfile);
             if (!targetProfile || isBlocked) {
@@ -58,7 +67,19 @@ export const credentialsRouter = t.router({
                 });
             }
 
-            return sendCredential(profile, targetProfile, credential, ctx.domain);
+            // Log credential activity FIRST to get activityId
+            const activityId = await logCredentialSent({
+                actorProfileId: profile.profileId,
+                recipientType: 'profile',
+                recipientIdentifier: targetProfile.profileId,
+                recipientProfileId: targetProfile.profileId,
+                source: 'sendCredential',
+                metadata,
+            });
+
+            const credentialUri = await sendCredential(profile, targetProfile, credential, ctx.domain, metadata, activityId);
+
+            return credentialUri;
         }),
 
     acceptCredential: profileRoute
@@ -79,6 +100,7 @@ export const credentialsRouter = t.router({
                 options: z
                     .object({
                         skipNotification: z.boolean().default(false).optional(),
+                        metadata: z.record(z.string(), z.unknown()).optional(),
                     })
                     .optional(),
             })
@@ -109,7 +131,7 @@ export const credentialsRouter = t.router({
                     limit: z.number().int().positive().lt(100).default(25),
                     from: z.string().optional(),
                 })
-                .default({})
+                .default({ limit: 25 })
         )
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit, from }, ctx }) => {
@@ -137,7 +159,7 @@ export const credentialsRouter = t.router({
                     limit: z.number().int().positive().lt(100).default(25),
                     to: z.string().optional(),
                 })
-                .default({})
+                .default({ limit: 25 })
         )
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit, to }, ctx }) => {
@@ -165,7 +187,7 @@ export const credentialsRouter = t.router({
                     limit: z.number().int().positive().lt(100).default(25),
                     from: z.string().optional(),
                 })
-                .default({})
+                .default({ limit: 25 })
         )
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit, from }, ctx }) => {
@@ -208,6 +230,28 @@ export const credentialsRouter = t.router({
             await Promise.all([deleteCredential(credential), deleteStorageForUri(uri)]);
 
             return true;
+        }),
+
+    /**
+     * Get credentials that have been revoked for the current user.
+     * This allows the frontend to sync and remove revoked credentials from their index.
+     */
+    getRevokedCredentials: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/credentials/revoked',
+                tags: ['Credentials'],
+                summary: 'Get revoked credentials',
+                description: "This endpoint returns credential URIs that have been revoked for the current user",
+            },
+            requiredScope: 'credentials:read',
+        })
+        .input(z.object({}).default({}))
+        .output(z.array(z.string()))
+        .query(async ({ ctx }) => {
+            return getRevokedCredentialUrisForProfile(ctx.domain, ctx.user.profile);
         }),
 });
 export type CredentialsRouter = typeof credentialsRouter;

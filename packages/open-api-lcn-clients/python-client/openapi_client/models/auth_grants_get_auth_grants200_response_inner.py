@@ -28,21 +28,22 @@ class AuthGrantsGetAuthGrants200ResponseInner(BaseModel):
     """
     AuthGrantsGetAuthGrants200ResponseInner
     """ # noqa: E501
-    id: StrictStr
-    name: StrictStr
+    id: Optional[StrictStr]
+    name: Optional[StrictStr]
     description: Optional[StrictStr] = None
     challenge: Annotated[str, Field(min_length=10, strict=True, max_length=100)]
     status: StrictStr
-    scope: StrictStr
-    created_at: datetime = Field(alias="createdAt")
+    scope: Optional[StrictStr]
+    created_at: Optional[datetime] = Field(alias="createdAt")
     expires_at: Optional[datetime] = Field(default=None, alias="expiresAt")
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["id", "name", "description", "challenge", "status", "scope", "createdAt", "expiresAt"]
 
     @field_validator('challenge')
     def challenge_validate_regular_expression(cls, value):
         """Validates the regular expression"""
-        if not re.match(r"^auth-grant:", value):
-            raise ValueError(r"must validate the regular expression /^auth-grant:/")
+        if not re.match(r"^auth-grant:.*", value):
+            raise ValueError(r"must validate the regular expression /^auth-grant:.*/")
         return value
 
     @field_validator('status')
@@ -50,6 +51,26 @@ class AuthGrantsGetAuthGrants200ResponseInner(BaseModel):
         """Validates the enum"""
         if value not in set(['revoked', 'active']):
             raise ValueError("must be one of enum values ('revoked', 'active')")
+        return value
+
+    @field_validator('created_at')
+    def created_at_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$", value):
+            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/")
+        return value
+
+    @field_validator('expires_at')
+    def expires_at_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$", value):
+            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/")
         return value
 
     model_config = ConfigDict(
@@ -82,8 +103,10 @@ class AuthGrantsGetAuthGrants200ResponseInner(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -91,6 +114,36 @@ class AuthGrantsGetAuthGrants200ResponseInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if id (nullable) is None
+        # and model_fields_set contains the field
+        if self.id is None and "id" in self.model_fields_set:
+            _dict['id'] = None
+
+        # set to None if name (nullable) is None
+        # and model_fields_set contains the field
+        if self.name is None and "name" in self.model_fields_set:
+            _dict['name'] = None
+
+        # set to None if description (nullable) is None
+        # and model_fields_set contains the field
+        if self.description is None and "description" in self.model_fields_set:
+            _dict['description'] = None
+
+        # set to None if scope (nullable) is None
+        # and model_fields_set contains the field
+        if self.scope is None and "scope" in self.model_fields_set:
+            _dict['scope'] = None
+
+        # set to None if created_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.created_at is None and "created_at" in self.model_fields_set:
+            _dict['createdAt'] = None
+
         # set to None if expires_at (nullable) is None
         # and model_fields_set contains the field
         if self.expires_at is None and "expires_at" in self.model_fields_set:
@@ -117,6 +170,11 @@ class AuthGrantsGetAuthGrants200ResponseInner(BaseModel):
             "createdAt": obj.get("createdAt"),
             "expiresAt": obj.get("expiresAt")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

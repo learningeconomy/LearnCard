@@ -14,6 +14,7 @@ import {
     getCategoryLightColor,
     getCategoryDarkColor,
 } from '../../helpers/credential.helpers';
+import { isAppDidWeb } from '@learncard/helpers';
 
 import { VC, Profile } from '@learncard/types';
 import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
@@ -37,6 +38,10 @@ type CertificateFrontFaceProps = {
     handleViewBackFace?: () => void;
     showDetailsBtn?: boolean;
     formattedDisplayType?: string;
+    customBodyContentSlot?: React.ReactNode;
+    unknownVerifierTitle?: string;
+    hideAwardedTo?: boolean;
+    hideFrontFaceDetails?: boolean;
 };
 
 export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
@@ -53,6 +58,10 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     handleViewBackFace,
     showDetailsBtn = false,
     formattedDisplayType,
+    customBodyContentSlot,
+    unknownVerifierTitle,
+    hideAwardedTo: hideAwardedToProp,
+    hideFrontFaceDetails,
 }) => {
     const {
         title = '',
@@ -102,26 +111,37 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
     const issuerDid =
         typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
+    const isAppIssuerDid = isAppDidWeb(issuerDid);
 
     let verifierState: VerifierState;
     if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {
         // the extra "&& issuerDid" is so that the credential preview doesn't say "Self Verified"
         // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
         verifierState = VERIFIER_STATES.selfVerified;
+    } else if (unknownVerifierTitle) {
+        verifierState = VERIFIER_STATES.trustedVerifier;
     } else {
         if (knownDIDRegistry?.source === 'trusted') {
             verifierState = VERIFIER_STATES.trustedVerifier;
         } else if (knownDIDRegistry?.source === 'untrusted') {
             verifierState = VERIFIER_STATES.untrustedVerifier;
         } else if (knownDIDRegistry?.source === 'unknown') {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuerDid
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         } else {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuerDid
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         }
     }
     const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
 
     const issueeImageExists = issueeImage || subjectImageComponent;
+
+    const hideAwardedTo =
+        hideAwardedToProp ??
+        (issueeName?.includes('did:key') || issueeName?.includes('did:example:123'));
 
     return (
         <section
@@ -165,11 +185,14 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                 )}
 
                 <div className="text-[14px] text-grayscale-800 flex flex-col items-center w-full">
-                    <span className="font-jacques flex gap-[5px] items-center w-full justify-center text-center">
+                    <span className="font-jacques flex gap-[5px] items-center w-full justify-center text-center break-all">
                         {issueeName === '0 person' ? (
                             'Not yet awarded'
                         ) : (
-                            <>Awarded to {issueeName || <Line width="60" />}</>
+                            <>
+                                Awarded{' '}
+                                {!hideAwardedTo && <>to {issueeName || <Line width="60" />}</>}
+                            </>
                         )}
                     </span>
                     {!hideIssueDate && <span className="font-jacques">on {createdAt}</span>}
@@ -206,8 +229,12 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         {issuerName}
                     </span>
 
-                    <VerifierStateBadgeAndText verifierState={verifierState} />
+                    <VerifierStateBadgeAndText
+                        verifierState={verifierState}
+                        unknownVerifierTitle={unknownVerifierTitle}
+                    />
                 </div>
+                {customBodyContentSlot && customBodyContentSlot}
                 <div className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}>
                     {categoryTitle}
                 </div>

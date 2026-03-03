@@ -1,20 +1,19 @@
-import http from 'node:http';
-
 import serverlessHttp from 'serverless-http';
 import type { Context, APIGatewayProxyResultV2, APIGatewayProxyEventV2 } from 'aws-lambda';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
-import { createOpenApiHttpHandler } from 'trpc-to-openapi';
-import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-openapi/dist/adapters/node-http/errors';
 import * as Sentry from '@sentry/serverless';
 
 import app from './src/openapi';
 import { appRouter, createContext } from './src/app';
+import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
+import { handleTrpcError, sentryBeforeSend, getTracesSampleRate } from './src/helpers/sentry.helpers';
 
 Sentry.AWSLambda.init({
     dsn: process.env.SENTRY_DSN,
     environment: process.env.SENTRY_ENV,
     enabled: Boolean(process.env.SENTRY_DSN),
-    tracesSampleRate: 1.0,
+    tracesSampleRate: getTracesSampleRate(),
+    beforeSend: sentryBeforeSend,
     integrations: [
         new Sentry.Integrations.Console(),
         new Sentry.Integrations.Http({ tracing: true }),
@@ -25,44 +24,26 @@ Sentry.AWSLambda.init({
 
 export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
 
-export const _openApiHandler = serverlessHttp(
-    http.createServer(
-        createOpenApiHttpHandler({
-            router: appRouter,
-            createContext,
-            responseMeta: undefined,
-            maxBodySize: undefined,
-            onError: ({ error, ctx, path }) => {
-                error.stack = error.stack?.replace('Mr: ', '');
-                error.name = error.message;
-
-                // We want to ignore invalid challenge errors because they are normal
-                if (!(error.code === 'UNAUTHORIZED' && !ctx?.user?.isChallengeValid)) {
-                    Sentry.captureException(error, { extra: { ctx, path } });
-                    Sentry.getActiveTransaction()?.setHttpStatus(
-                        TRPC_ERROR_CODE_HTTP_STATUS[error.code]
-                    );
-                }
+export const _openApiHandler = createOpenApiAwsLambdaHandler({
+    router: appRouter,
+    responseMeta: () => {
+        return {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Authorization, Content-Type',
             },
-        })
-    ),
-    { basePath: '/api' }
-);
+        };
+    },
+    createContext,
+    onError: handleTrpcError,
+});
 
 export const _trpcHandler = awsLambdaRequestHandler({
     allowMethodOverride: true,
     router: appRouter,
     createContext,
-    onError: ({ error, ctx, path }) => {
-        error.stack = error.stack?.replace('Mr: ', '');
-        error.name = error.message;
-
-        // We want to ignore invalid challenge errors because they are normal
-        if (!(error.code === 'UNAUTHORIZED' && !ctx?.user?.isChallengeValid)) {
-            Sentry.captureException(error, { extra: { ctx, path } });
-            Sentry.getActiveTransaction()?.setHttpStatus(TRPC_ERROR_CODE_HTTP_STATUS[error.code]);
-        }
-    },
+    onError: handleTrpcError,
     responseMeta: () => {
         return {
             headers: {

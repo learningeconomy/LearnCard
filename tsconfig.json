@@ -1,1 +1,10 @@
-{}
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "resolveJsonModule": true,
+        "paths": {
+            "learn-card-base": ["packages/learn-card-base/src/index.ts"],
+            "learn-card-base/*": ["packages/learn-card-base/src/*"]
+        }
+    }
+}

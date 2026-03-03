@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 import { LCNProfileConnectionStatusEnum } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, SigningAuthority, Credential, Boost } from '@models';
+import { Profile, SigningAuthority, Credential, Boost, ClaimHook } from '@models';
 import cache from '@cache';
 import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
 
@@ -197,6 +197,36 @@ describe('Profiles', () => {
             const profile = await userA.clients.fullAuth.profile.getProfile();
 
             expect(profile?.dob).toEqual('2000-01-01');
+        });
+        it('should allow setting highlightedCredentials on create', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                highlightedCredentials: ['cred1', 'cred2', 'cred3'],
+            });
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.highlightedCredentials).toEqual(['cred1', 'cred2', 'cred3']);
+        });
+        it('should allow setting your country', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                country: 'US',
+            });
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.country).toEqual('US');
+        });
+
+        it('should allow setting approved on create', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                approved: true,
+            });
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.approved).toBeTruthy();
         });
     });
 
@@ -438,6 +468,14 @@ describe('Profiles', () => {
             expect(userBProfile?.email).toEqual('userB@test.com');
             expect(userBProfile?.bio).toEqual('I am user B');
         });
+
+        it('should include country in your profile when set', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({ country: 'US' });
+
+            const userAProfile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAProfile?.country).toEqual('US');
+        });
     });
 
     describe('getOtherProfile', () => {
@@ -489,6 +527,40 @@ describe('Profiles', () => {
             expect(userBProfile?.displayName).toEqual('B');
             expect(userBProfile?.email).toEqual('userB@test.com');
             expect(userBProfile?.bio).toEqual('I am user B');
+        });
+
+        it('should include country when viewing other profiles', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({ country: 'US' });
+
+            const userBView = await userB.clients.fullAuth.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+
+            expect(userBView?.country).toEqual('US');
+        });
+
+        it('should allow getting another profile by did:web', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            const userBView = await userA.clients.fullAuth.profile.getOtherProfile({
+                profileId: userBProfile!.did,
+            });
+
+            expect(userBView?.profileId).toEqual('userb');
+        });
+
+        it('should allow getting another profile by did:key', async () => {
+            const userBView = await userA.clients.fullAuth.profile.getOtherProfile({
+                profileId: userB.learnCard.id.did(),
+            });
+
+            expect(userBView?.profileId).toEqual('userb');
+        });
+
+        it('should return NOT_FOUND for unsupported did format', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.getOtherProfile({ profileId: 'did:example:userb' })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
         });
     });
 
@@ -857,6 +929,62 @@ describe('Profiles', () => {
 
             expect(userAResult?.isPrivate).toBeTruthy();
         });
+
+        it('should allow updating highlightedCredentials', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({
+                    highlightedCredentials: ['credA', 'credB'],
+                })
+            ).resolves.not.toThrow();
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.highlightedCredentials).toEqual(['credA', 'credB']);
+        });
+
+        it('should allow you to update your country', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({ country: 'US' })
+            ).resolves.not.toThrow();
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.country).toEqual('US');
+        });
+
+        it('should allow you to change your country', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({ country: 'US' });
+
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({ country: 'CA' })
+            ).resolves.not.toThrow();
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.country).toEqual('CA');
+        });
+
+        it('should allow updating approved', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({ approved: true })
+            ).resolves.not.toThrow();
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.approved).toBeTruthy();
+        });
+
+        it('should allow toggling approved', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({ approved: true });
+
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({ approved: false })
+            ).resolves.not.toThrow();
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.approved).toBeFalsy();
+        });
     });
 
     describe('deleteProfile', () => {
@@ -944,6 +1072,26 @@ describe('Profiles', () => {
             ).toHaveLength(1);
         });
 
+        it('allows users to connect with did:web', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            await expect(
+                userA.clients.fullAuth.profile.connectWith({ profileId: userBProfile!.did })
+            ).resolves.not.toThrow();
+        });
+
+        it('allows users to connect with did:key', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.connectWith({ profileId: userB.learnCard.id.did() })
+            ).resolves.not.toThrow();
+        });
+
+        it('returns NOT_FOUND for unsupported did format', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.connectWith({ profileId: 'did:example:userb' })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
         it('does not allow users to resend a connection request', async () => {
             await userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' });
             await expect(
@@ -1004,6 +1152,36 @@ describe('Profiles', () => {
             ).toHaveLength(0);
         });
 
+        it('allows users to cancel a connection request with did:web', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            await userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' });
+
+            await expect(
+                userA.clients.fullAuth.profile.cancelConnectionRequest({
+                    profileId: userBProfile!.did,
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('allows users to cancel a connection request with did:key', async () => {
+            await userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' });
+
+            await expect(
+                userA.clients.fullAuth.profile.cancelConnectionRequest({
+                    profileId: userB.learnCard.id.did(),
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('returns NOT_FOUND for unsupported did format', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.cancelConnectionRequest({
+                    profileId: 'did:example:userb',
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
         it("does not allow users to cancel a connection request that doesn't exist", async () => {
             await expect(
                 userA.clients.fullAuth.profile.cancelConnectionRequest({ profileId: 'userb' })
@@ -1053,6 +1231,40 @@ describe('Profiles', () => {
             expect(oneConnection.records[0]!.profileId).toEqual('userb');
         });
 
+        it('allows users to connect via invite challenge with did:web', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+            const { challenge } = await userB.clients.fullAuth.profile.generateInvite();
+
+            await expect(
+                userA.clients.fullAuth.profile.connectWithInvite({
+                    profileId: userBProfile!.did,
+                    challenge,
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('allows users to connect via invite challenge with did:key', async () => {
+            const { challenge } = await userB.clients.fullAuth.profile.generateInvite();
+
+            await expect(
+                userA.clients.fullAuth.profile.connectWithInvite({
+                    profileId: userB.learnCard.id.did(),
+                    challenge,
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('returns NOT_FOUND for unsupported did format', async () => {
+            const { challenge } = await userB.clients.fullAuth.profile.generateInvite();
+
+            await expect(
+                userA.clients.fullAuth.profile.connectWithInvite({
+                    profileId: 'did:example:userb',
+                    challenge,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
         it('does not allow users to connect with an invalid challenge', async () => {
             await expect(
                 userA.clients.fullAuth.profile.connectWithInvite({
@@ -1071,6 +1283,44 @@ describe('Profiles', () => {
                 userA.clients.fullAuth.profile.connectWithInvite({
                     profileId: 'userb',
                     challenge,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+    });
+
+    describe('connectWithExpiredInvite', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('allows users to connect with expired invite route using did:web', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            await expect(
+                userA.clients.fullAuth.profile.connectWithExpiredInvite({
+                    profileId: userBProfile!.did,
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('allows users to connect with expired invite route using did:key', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.connectWithExpiredInvite({
+                    profileId: userB.learnCard.id.did(),
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('returns NOT_FOUND for unsupported did format', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.connectWithExpiredInvite({
+                    profileId: 'did:example:userb',
                 })
             ).rejects.toMatchObject({ code: 'NOT_FOUND' });
         });
@@ -1109,6 +1359,28 @@ describe('Profiles', () => {
             ).toHaveLength(0);
         });
 
+        it('allows users to disconnect with did:web', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            await expect(
+                userA.clients.fullAuth.profile.disconnectWith({ profileId: userBProfile!.did })
+            ).resolves.not.toThrow();
+        });
+
+        it('allows users to disconnect with did:key', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.disconnectWith({
+                    profileId: userB.learnCard.id.did(),
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('returns NOT_FOUND for unsupported did format', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.disconnectWith({ profileId: 'did:example:userb' })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
         it('errors when users are not connected', async () => {
             await userA.clients.fullAuth.profile.disconnectWith({ profileId: 'userb' });
 
@@ -1144,6 +1416,32 @@ describe('Profiles', () => {
             await expect(
                 userA.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'userb' })
             ).resolves.not.toThrow();
+        });
+
+        it('allows users to accept connection requests with did:web', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            await expect(
+                userA.clients.fullAuth.profile.acceptConnectionRequest({
+                    profileId: userBProfile!.did,
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('allows users to accept connection requests with did:key', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.acceptConnectionRequest({
+                    profileId: userB.learnCard.id.did(),
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('returns NOT_FOUND for unsupported did format', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.acceptConnectionRequest({
+                    profileId: 'did:example:userb',
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
         });
 
         it('errors when accepting a request that does not exist', async () => {
@@ -1390,6 +1688,191 @@ describe('Profiles', () => {
             expect(secondPage.hasMore).toBeFalsy();
 
             expect([...firstPage.records, ...secondPage.records]).toEqual(connections.records);
+        });
+
+        it('should include explicit auto-connect recipients in paginated connections', async () => {
+            // Clean up any existing graph artifacts
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await ClaimHook.delete({ detach: true, where: {} });
+
+            const claimUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const targetUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.claimHook.createClaimHook({
+                hook: {
+                    type: 'AUTO_CONNECT',
+                    data: { claimUri, targetUri },
+                },
+            });
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                claimUri,
+                true
+            );
+
+            const connections = await userA.clients.fullAuth.profile.paginatedConnections();
+
+            expect(connections.records).toHaveLength(1);
+            expect(connections.records[0]?.profileId).toEqual('userb');
+        });
+
+        it("should include creator of explicit auto-connect boost in recipient's paginated connections", async () => {
+            // Clean up any existing graph artifacts
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await ClaimHook.delete({ detach: true, where: {} });
+
+            const claimUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const targetUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.claimHook.createClaimHook({
+                hook: {
+                    type: 'AUTO_CONNECT',
+                    data: { claimUri, targetUri },
+                },
+            });
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                claimUri,
+                true
+            );
+
+            const connections = await userB.clients.fullAuth.profile.paginatedConnections();
+
+            expect(connections.records).toHaveLength(1);
+            expect(connections.records[0]?.profileId).toEqual('usera');
+        });
+
+        it('should paginate explicit auto-connect connections for multiple recipients', async () => {
+            // Clean up any existing graph artifacts
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await ClaimHook.delete({ detach: true, where: {} });
+
+            const claimUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const targetUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.claimHook.createClaimHook({
+                hook: {
+                    type: 'AUTO_CONNECT',
+                    data: { claimUri, targetUri },
+                },
+            });
+
+            // Send the claim boost to two recipients; accepting should create explicit edges for both
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                claimUri,
+                true
+            );
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                claimUri,
+                true
+            );
+
+            const firstPage = await userA.clients.fullAuth.profile.paginatedConnections({
+                limit: 1,
+            });
+
+            expect(firstPage.records).toHaveLength(1);
+            expect(firstPage.hasMore).toBeTruthy();
+            expect(firstPage.cursor).toBeDefined();
+
+            const secondPage = await userA.clients.fullAuth.profile.paginatedConnections({
+                limit: 1,
+                cursor: firstPage.cursor,
+            });
+
+            expect(secondPage.records).toHaveLength(1);
+            expect(secondPage.hasMore).toBeFalsy();
+
+            const combined = [...firstPage.records, ...secondPage.records].map(r => r.profileId);
+            expect(combined.sort()).toEqual(['userb', 'userc']);
+        });
+
+        it('should include target-only recipients when only some claim the explicit auto-connect hook', async () => {
+            // Clean up any existing graph artifacts
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await ClaimHook.delete({ detach: true, where: {} });
+
+            const claimUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const targetUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                autoConnectRecipients: true,
+            });
+
+            await userA.clients.fullAuth.claimHook.createClaimHook({
+                hook: {
+                    type: 'AUTO_CONNECT',
+                    data: { claimUri, targetUri },
+                },
+            });
+
+            // userb claims the claim boost, creating an explicit auto-connect edge on the target boost
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                claimUri,
+                true
+            );
+
+            // userc only receives the target boost; no claim of the claim boost occurs
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                targetUri,
+                true
+            );
+
+            const ownerConnections = await userA.clients.fullAuth.profile.paginatedConnections();
+
+            // Expect both the claimant (userb) and the target-only recipient (userc) to be connected
+            expect(ownerConnections.records.map(r => r.profileId).sort()).toEqual([
+                'userb',
+                'userc',
+            ]);
+
+            const userBConnections = await userB.clients.fullAuth.profile.paginatedConnections();
+            expect(userBConnections.records).toHaveLength(2);
+            expect(userBConnections.records.map(r => r.profileId).sort()).toEqual([
+                'usera',
+                'userc',
+            ]);
+
+            const userCConnections = await userC.clients.fullAuth.profile.paginatedConnections();
+            expect(userCConnections.records).toHaveLength(2);
+            expect(userCConnections.records.map(r => r.profileId).sort()).toEqual([
+                'usera',
+                'userb',
+            ]);
         });
     });
 
@@ -1650,6 +2133,40 @@ describe('Profiles', () => {
             expect(blockedProfilesAfterUnblock).toHaveLength(0);
         });
 
+        it('allows users to block and unblock with did:web', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            await expect(
+                userA.clients.fullAuth.profile.blockProfile({ profileId: userBProfile!.did })
+            ).resolves.not.toThrow();
+
+            await expect(
+                userA.clients.fullAuth.profile.unblockProfile({ profileId: userBProfile!.did })
+            ).resolves.not.toThrow();
+        });
+
+        it('allows users to block and unblock with did:key', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.blockProfile({ profileId: userB.learnCard.id.did() })
+            ).resolves.not.toThrow();
+
+            await expect(
+                userA.clients.fullAuth.profile.unblockProfile({
+                    profileId: userB.learnCard.id.did(),
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('returns NOT_FOUND for unsupported did format', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.blockProfile({ profileId: 'did:example:userb' })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+            await expect(
+                userA.clients.fullAuth.profile.unblockProfile({ profileId: 'did:example:userb' })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
         it('blocking a user should prevent receiving connection requests, VCs, VPs, and Boosts', async () => {
             await userA.clients.fullAuth.profile.blockProfile({ profileId: 'userb' });
 
@@ -1751,7 +2268,9 @@ describe('Profiles', () => {
         });
 
         it('should set the first signing authority registered as primary', async () => {
-            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toBeUndefined();
+            await expect(
+                userA.clients.fullAuth.profile.primarySigningAuthority()
+            ).resolves.toBeUndefined();
             await expect(
                 userA.clients.fullAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:4000',
@@ -1759,7 +2278,9 @@ describe('Profiles', () => {
                     did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
-            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toMatchObject({
+            await expect(
+                userA.clients.fullAuth.profile.primarySigningAuthority()
+            ).resolves.toMatchObject({
                 signingAuthority: {
                     endpoint: 'http://localhost:4000',
                 },
@@ -1771,7 +2292,9 @@ describe('Profiles', () => {
         });
 
         it('should allow setting a signing authority as primary', async () => {
-            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toBeUndefined();
+            await expect(
+                userA.clients.fullAuth.profile.primarySigningAuthority()
+            ).resolves.toBeUndefined();
             await expect(
                 userA.clients.fullAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:4000',
@@ -1779,7 +2302,9 @@ describe('Profiles', () => {
                     did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
-            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toMatchObject({
+            await expect(
+                userA.clients.fullAuth.profile.primarySigningAuthority()
+            ).resolves.toMatchObject({
                 signingAuthority: {
                     endpoint: 'http://localhost:4000',
                 },
@@ -1797,7 +2322,9 @@ describe('Profiles', () => {
                 })
             ).resolves.not.toThrow();
 
-            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toMatchObject({
+            await expect(
+                userA.clients.fullAuth.profile.primarySigningAuthority()
+            ).resolves.toMatchObject({
                 signingAuthority: {
                     endpoint: 'http://localhost:4000',
                 },
@@ -1813,7 +2340,9 @@ describe('Profiles', () => {
                     name: 'mysa2',
                 })
             ).resolves.not.toThrow();
-            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toMatchObject({
+            await expect(
+                userA.clients.fullAuth.profile.primarySigningAuthority()
+            ).resolves.toMatchObject({
                 signingAuthority: {
                     endpoint: 'http://localhost:5000',
                 },
@@ -2137,6 +2666,136 @@ describe('Profiles', () => {
                     code: 'NOT_FOUND',
                     message: 'Invite not found or has expired',
                 });
+            });
+        });
+
+        describe('listInvites', () => {
+            it('lists invites with usage info and updates after consumption', async () => {
+                // Create profiles
+                const gen = await userB.clients.fullAuth.profile.generateInvite({
+                    maxUses: 2,
+                    expiration: 10,
+                });
+
+                // Initially: one invite with 2 uses remaining
+                const before = await userB.clients.fullAuth.profile.listInvites();
+
+                expect(before.length).toBe(1);
+                expect(before[0]!.challenge).toBe(gen.challenge);
+                expect(before[0]!.maxUses).toBe(2);
+                expect(before[0]!.usesRemaining).toBe(2);
+                expect(
+                    typeof before[0]!.expiresIn === 'number' || before[0]!.expiresIn === null
+                ).toBeTruthy();
+
+                // Consume once
+                await userA.clients.fullAuth.profile.connectWithInvite({
+                    profileId: 'userb',
+                    challenge: gen.challenge,
+                });
+
+                const afterOne = await userB.clients.fullAuth.profile.listInvites();
+                expect(afterOne.length).toBe(1);
+                expect(afterOne[0]!.usesRemaining).toBe(1);
+
+                // Consume second time (by a different user)
+                await userC.clients.fullAuth.profile.connectWithInvite({
+                    profileId: 'userb',
+                    challenge: gen.challenge,
+                });
+
+                // Exhausted invites should no longer be listed
+                const afterTwo = await userB.clients.fullAuth.profile.listInvites();
+                expect(afterTwo.length).toBe(0);
+            });
+        });
+
+        describe('usage limits', () => {
+            it('supports multi-use invites until exhausted', async () => {
+                const { challenge } = await userB.clients.fullAuth.profile.generateInvite({
+                    maxUses: 2,
+                });
+
+                // First user connects
+                await expect(
+                    userA.clients.fullAuth.profile.connectWithInvite({
+                        profileId: 'userb',
+                        challenge,
+                    })
+                ).resolves.toBe(true);
+
+                // Second user connects
+                await expect(
+                    userC.clients.fullAuth.profile.connectWithInvite({
+                        profileId: 'userb',
+                        challenge,
+                    })
+                ).resolves.toBe(true);
+
+                // Third distinct user should fail (invite exhausted)
+                const userD = await getUser('d'.repeat(64));
+                await userD.clients.fullAuth.profile.createProfile({ profileId: 'userd' });
+
+                await expect(
+                    userD.clients.fullAuth.profile.connectWithInvite({
+                        profileId: 'userb',
+                        challenge,
+                    })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            });
+
+            it('supports unlimited invites (maxUses: 0)', async () => {
+                const { challenge } = await userB.clients.fullAuth.profile.generateInvite({
+                    maxUses: 0,
+                    expiration: 10,
+                });
+
+                // Listed with unlimited usage
+                const listed = await userB.clients.fullAuth.profile.listInvites();
+                expect(listed.length).toBe(1);
+                expect(listed[0]!.challenge).toBe(challenge);
+                expect(listed[0]!.maxUses).toBeNull();
+                expect(listed[0]!.usesRemaining).toBeNull();
+
+                // Multiple connections succeed
+                await expect(
+                    userA.clients.fullAuth.profile.connectWithInvite({
+                        profileId: 'userb',
+                        challenge,
+                    })
+                ).resolves.toBe(true);
+                await expect(
+                    userC.clients.fullAuth.profile.connectWithInvite({
+                        profileId: 'userb',
+                        challenge,
+                    })
+                ).resolves.toBe(true);
+
+                // Still listed as unlimited
+                const after = await userB.clients.fullAuth.profile.listInvites();
+                expect(after.length).toBe(1);
+                expect(after[0]!.usesRemaining).toBeNull();
+            });
+        });
+
+        describe('invalidateInvite route', () => {
+            it('invalidates a specific invite and prevents future use', async () => {
+                const { challenge } = await userB.clients.fullAuth.profile.generateInvite({
+                    maxUses: 0,
+                });
+
+                // Owner invalidates invite
+                await expect(
+                    userB.clients.fullAuth.profile.invalidateInvite({ challenge })
+                ).resolves.toBe(true);
+
+                // Attempting to use now fails
+                await expect(
+                    userA.clients.fullAuth.profile.connectWithInvite({
+                        profileId: 'userb',
+                        challenge,
+                    })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
             });
         });
     });

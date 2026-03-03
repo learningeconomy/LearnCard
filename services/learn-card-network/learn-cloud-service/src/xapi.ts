@@ -10,7 +10,7 @@ import { createXapiFetchOptions } from '@helpers/request.helpers';
 import { XAPI_ENDPOINT } from './constants/xapi';
 import type { XAPIRequest } from 'types/xapi';
 import { verifyDelegateCredential } from '@helpers/credential.helpers';
-import { verifyVoidStatement } from '@helpers/xapi.helpers';
+import { injectContractUriIntoStatement, verifyVoidStatement } from '@helpers/xapi.helpers';
 import { generateToken } from '@helpers/auth.helpers';
 
 export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
@@ -39,6 +39,9 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
 
             const decodedJwt = jwtDecode<DidAuthVP>(vp);
             let did = decodedJwt.vp.holder;
+
+            // Contract URI can come from the VP object or the JWT payload (for backwards compatibility)
+            const contractUri = (decodedJwt.vp as any).contractUri ?? decodedJwt.contractUri;
 
             if (!did) return reply.status(400).send('No valid holder DID Found in X-VP JWT');
 
@@ -117,9 +120,15 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
                 }
             }
 
+            // If there's a contractUri and this is a write request with a body, inject it
+            const modifiedBody =
+                contractUri && request.body && !isReadRequest
+                    ? injectContractUriIntoStatement(request.body, contractUri)
+                    : request.body;
+
             const response = await fetch(
                 targetUrl,
-                createXapiFetchOptions(request, targetUrl, auth)
+                createXapiFetchOptions(request, targetUrl, auth, modifiedBody)
             );
 
             reply.code(response.status);

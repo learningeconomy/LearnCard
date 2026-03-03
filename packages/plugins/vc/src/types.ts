@@ -12,8 +12,6 @@ import { ProofOptions, InputMetadata } from '@learncard/didkit-plugin';
 
 /** @group VC Plugin */
 export type VCPluginDependentMethods = {
-    getSubjectDid: (type: 'key') => string;
-    getSubjectKeypair: () => JWKWithPrivateKey;
     keyToVerificationMethod: (type: string, keypair: JWKWithPrivateKey) => Promise<string>;
     didToVerificationMethod: (did: string) => Promise<string>;
     issueCredential: (
@@ -58,7 +56,7 @@ export type VCPluginMethods = {
 };
 
 /** @group VC Plugin */
-export type VCDependentLearnCard = LearnCard<any, 'id', VCPluginDependentMethods>;
+export type VCDependentLearnCard = LearnCard<any, any, VCPluginDependentMethods>;
 
 /** @group VC Plugin */
 export type VCImplicitLearnCard = LearnCard<any, 'id', VCPluginMethods & VCPluginDependentMethods>;

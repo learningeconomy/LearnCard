@@ -152,6 +152,55 @@ export const claimHooksRouter = t.router({
                 return claimHook.id;
             }
 
+            if (hook.type === 'AUTO_CONNECT') {
+                const {
+                    data: { claimUri, targetUri },
+                    type,
+                } = hook;
+
+                const claimBoost = await getBoostByUri(claimUri);
+                const targetBoost = await getBoostByUri(targetUri);
+
+                if (!claimBoost) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Could not find claim boost',
+                    });
+                }
+
+                if (!targetBoost) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Could not find target boost',
+                    });
+                }
+
+                if (!(await isProfileBoostAdmin(profile, claimBoost))) {
+                    throw new TRPCError({
+                        code: 'UNAUTHORIZED',
+                        message: 'Profile does not have admin rights over claim boost',
+                    });
+                }
+
+                const permissions = await getBoostPermissions(targetBoost, profile);
+
+                if (!permissions.canManagePermissions) {
+                    throw new TRPCError({
+                        code: 'UNAUTHORIZED',
+                        message: 'Profile does not have permission to create this Claim Hook',
+                    });
+                }
+
+                const claimHook = await createClaimHook({ type });
+
+                await Promise.all([
+                    addClaimHookForBoost(claimBoost, claimHook),
+                    addClaimHookTarget(targetBoost, claimHook),
+                ]);
+
+                return claimHook.id;
+            }
+
             throw new TRPCError({
                 code: 'BAD_REQUEST',
                 message: `Unknown Claim Hook Type: ${(hook as any).type}`,

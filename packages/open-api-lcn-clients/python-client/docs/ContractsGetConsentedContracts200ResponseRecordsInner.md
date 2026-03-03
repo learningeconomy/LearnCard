@@ -7,10 +7,10 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **expires_at** | **str** |  | [optional] 
 **one_time** | **bool** |  | [optional] 
-**terms** | [**StorageResolve200ResponseAnyOf1**](StorageResolve200ResponseAnyOf1.md) |  | 
+**terms** | [**ContractsGetConsentedContracts200ResponseRecordsInnerTerms**](ContractsGetConsentedContracts200ResponseRecordsInnerTerms.md) |  | 
 **contract** | [**ContractsGetConsentFlowContract200Response**](ContractsGetConsentFlowContract200Response.md) |  | 
 **uri** | **str** |  | 
-**consenter** | [**BoostGetBoostRecipients200ResponseInnerTo**](BoostGetBoostRecipients200ResponseInnerTo.md) |  | 
+**consenter** | [**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | 
 **status** | **str** |  | 
 
 ## Example

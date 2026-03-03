@@ -1,0 +1,19 @@
+# Use an official Node runtime as the base image
+ARG BASE_IMAGE=learncard-monorepo-local
+
+FROM ${BASE_IMAGE}
+
+# Skip native DIDKit build (local dev uses WASM fallback)
+ENV SKIP_DIDKIT_NAPI=1
+
+WORKDIR /app
+
+# Install build dependencies and pnpm in one layer
+
+# Copy root workspace files
+
+# Expose common ports used by server
+EXPOSE 3000
+EXPOSE 4200
+
+CMD ["sh", "-c", "cd services/learn-card-network/lca-api && pnpm dev"]

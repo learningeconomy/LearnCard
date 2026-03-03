@@ -9,6 +9,7 @@ import { getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
 import { getLearnCloudPlugin } from '@learncard/learn-cloud-plugin';
 import { expirationPlugin } from '@learncard/expiration-plugin';
 import { getEthereumPlugin } from '@learncard/ethereum-plugin';
+
 import { getVpqrPlugin } from '@learncard/vpqr-plugin';
 import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
@@ -39,7 +40,17 @@ export const learnCardFromSeed = async ({
 
     const cryptoLc = await dynamicLc.addPlugin(CryptoPlugin);
 
-    const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(didkit, allowRemoteContexts));
+    const getDidkit = async (): Promise<typeof getDidKitPlugin> => {
+        if (didkit === 'node') {
+            const mod = await import('@learncard/didkit-plugin-node');
+            return mod.getDidKitPlugin as typeof getDidKitPlugin;
+        }
+        return getDidKitPlugin;
+    };
+
+    const didkitLc = await cryptoLc.addPlugin(
+        await (await getDidkit())(didkit === 'node' ? undefined : didkit, allowRemoteContexts)
+    );
 
     const didkeyLc = await didkitLc.addPlugin(
         await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')

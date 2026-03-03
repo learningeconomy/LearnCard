@@ -3,6 +3,7 @@ import cache from '@cache';
 import { z } from 'zod';
 import { NotificationSchema } from '../services/delivery/delivery.service';
 import { LCNNotificationValidator } from '@learncard/types';
+import { __skillsProviderTestUtils } from '@services/skills-provider';
 
 export const testRouter = t.router({
     lastDelivery: openRoute
@@ -66,6 +67,67 @@ export const testRouter = t.router({
 
             return notifications.filter((notification): notification is NonNullable<typeof notification> => notification !== null);
         }),
+
+    // E2E-only: Seed dummy skills provider framework
+    seedSkillsProviderFramework: openRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/test/skills-provider/framework',
+                tags: ['Test'],
+                summary: 'Seed dummy skills provider framework',
+                description: 'Seeds a framework into the in-memory dummy skills provider (E2E only).',
+            },
+        })
+        .input(
+            z.object({
+                id: z.string(),
+                name: z.string(),
+                description: z.string().optional(),
+                sourceURI: z.string().url().optional(),
+            })
+        )
+        .output(z.object({ success: z.literal(true) }))
+        .mutation(async ({ input }) => {
+            const framework: Parameters<typeof __skillsProviderTestUtils.seedFramework>[0] = input;
+            __skillsProviderTestUtils.seedFramework(framework);
+            return { success: true } as const;
+        }),
+
+    // E2E-only: Seed dummy skills provider skills
+    seedSkillsProviderSkills: openRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/test/skills-provider/skills',
+                tags: ['Test'],
+                summary: 'Seed dummy skills for framework',
+                description: 'Seeds skills for a framework into the in-memory dummy skills provider (E2E only).',
+            },
+        })
+        .input(
+            z.object({
+                frameworkId: z.string(),
+                skills: z.array(
+                    z.object({
+                        id: z.string(),
+                        statement: z.string(),
+                        description: z.string().optional(),
+                        code: z.string().optional(),
+                        type: z.string().optional(),
+                        status: z.string().optional(),
+                        parentId: z.string().nullable().optional(),
+                    })
+                ),
+            })
+        )
+        .output(z.object({ success: z.literal(true) }))
+        .mutation(async ({ input }) => {
+            const skills: Parameters<typeof __skillsProviderTestUtils.seedSkills>[1] = input.skills;
+            __skillsProviderTestUtils.seedSkills(input.frameworkId, skills);
+            return { success: true } as const;
+        }),
+
 });
 
 export type TestRouter = typeof testRouter;

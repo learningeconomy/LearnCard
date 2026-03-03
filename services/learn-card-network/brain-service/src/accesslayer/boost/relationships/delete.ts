@@ -25,3 +25,37 @@ export const removeBoostAsParent = async (
         })
     );
 };
+
+/** Remove a single explicit auto-connect recipient relationship for a boost */
+export const removeAutoConnectRecipientRelationship = async (
+    boost: BoostInstance,
+    recipient: ProfileType
+): Promise<void> => {
+    await Boost.deleteRelationships({
+        alias: 'autoConnectRecipient',
+        where: { source: { id: boost.id }, target: { profileId: recipient.profileId } },
+    });
+};
+
+/** Remove all explicit auto-connect recipient relationships for a boost */
+export const removeAutoConnectRecipientRelationshipsForBoost = async (
+    boost: BoostInstance
+): Promise<void> => {
+    await Boost.deleteRelationships({
+        alias: 'autoConnectRecipient',
+        where: { source: { id: boost.id } },
+    });
+};
+
+/** Remove a USES_FRAMEWORK relationship between a boost and a skill framework */
+export const removeBoostUsesFramework = async (
+    boost: BoostInstance,
+    frameworkId: string
+): Promise<boolean> => {
+    return Boolean(
+        await Boost.deleteRelationships({
+            alias: 'usesFramework',
+            where: { source: { id: boost.id }, target: { id: frameworkId } },
+        })
+    );
+};

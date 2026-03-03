@@ -10,10 +10,13 @@ export type InboxCredentialType = {
     credential: string; // JSON - signed or unsigned credential
     isSigned: boolean;
     currentStatus: 'PENDING' | 'CLAIMED' | 'EXPIRED' | 'DELIVERED';
+    isAccepted?: boolean;
     expiresAt: string;
     createdAt: string;
     issuerDid: string;
     webhookUrl?: string;
+    boostUri?: string; // URI of the boost this credential is an instance of
+    activityId?: string; // Links to CredentialActivity for lifecycle tracking
     'signingAuthority.endpoint'?: string;
     'signingAuthority.name'?: string;
 };
@@ -70,12 +73,15 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
             currentStatus: { 
                 type: 'string', 
                 required: true, 
-                enum: ['PENDING', 'CLAIMED', 'EXPIRED', 'DELIVERED'] 
+                enum: ['PENDING', 'ISSUED', 'EXPIRED', /* DEPRECATED — use ISSUED */'DELIVERED', /* DEPRECATED — use ISSUED */'CLAIMED'] 
             },
+            isAccepted: { type: 'boolean', required: false, default: false },
             expiresAt: { type: 'string', required: true },
             createdAt: { type: 'string', required: true },
             issuerDid: { type: 'string', required: true },
             webhookUrl: { type: 'string', required: false },
+            boostUri: { type: 'string', required: false },
+            activityId: { type: 'string', required: false },
             'signingAuthority.endpoint': { type: 'string', required: false },
             'signingAuthority.name': { type: 'string', required: false },
         },

@@ -1,9 +1,31 @@
+import crypto from 'crypto';
+import { vi } from 'vitest';
+
 import { getClient, getUser } from './helpers/getClient';
 import { sendBoost, testUnsignedBoost, testVc } from './helpers/send';
-import { Profile, Credential, Boost, SigningAuthority } from '@models';
+import {
+    Profile,
+    Credential,
+    Boost,
+    SigningAuthority,
+    SkillFramework,
+    Skill,
+    InboxCredential,
+    ContactMethod,
+} from '@models';
 import { getClaimLinkOptionsInfoForBoost, getTTLForClaimLink } from '@cache/claim-links';
 import { BoostStatus } from 'types/boost';
 import { adminRole, creatorRole, emptyRole } from './helpers/permissions';
+import { neogma } from '@instance';
+import { getIdFromUri } from '@helpers/uri.helpers';
+import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
+import * as notifications from '@helpers/notifications.helpers';
+
+// Mock delivery service for inbox routing tests
+const deliverySendSpy = vi.fn().mockResolvedValue(undefined);
+vi.mock('@services/delivery/delivery.factory', () => ({
+    getDeliveryService: () => ({ send: deliverySendSpy }),
+}));
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -28,6 +50,79 @@ describe('Boosts', () => {
             await Boost.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        it('paginates and filters frameworks used by a boost via route', async () => {
+            const fw1 = `fw-${crypto.randomUUID()}`;
+            const fw2 = `fw-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({ id: fw1, name: 'One' });
+            await userA.clients.fullAuth.skillFrameworks.createManaged({ id: fw2, name: 'Two' });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId: fw1,
+            });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId: fw2,
+            });
+
+            // Filter by id using $in
+            const page1 = await userA.clients.fullAuth.boost.getBoostFrameworks({
+                uri: boostUri,
+                limit: 1,
+                query: { id: { $in: [fw1] } },
+            });
+            expect(page1.hasMore === false || page1.hasMore === true).toBe(true);
+            expect((page1.records as Array<{ id: string }>).map(f => f.id)).toEqual([fw1]);
+
+            // Filter by name using $regex
+            const page2 = await userA.clients.fullAuth.boost.getBoostFrameworks({
+                uri: boostUri,
+                limit: 10,
+                query: { name: { $regex: /Two/i } },
+            });
+            const ids2 = (page2.records as Array<{ id: string }>).map(f => f.id).sort();
+            expect(ids2).toEqual([fw2]);
+        });
+
+        it('returns all frameworks used by a boost via route', async () => {
+            const fw1 = `fw-${crypto.randomUUID()}`;
+            const fw2 = `fw-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: fw1,
+                name: 'Framework One',
+            });
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: fw2,
+                name: 'Framework Two',
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId: fw1,
+            });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId: fw2,
+            });
+
+            const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({
+                uri: boostUri,
+                limit: 10,
+            });
+            const ids = (frameworks.records as Array<{ id: string }>).map(f => f.id).sort();
+            expect(ids).toEqual([fw1, fw2].sort());
         });
 
         afterAll(async () => {
@@ -421,6 +516,110 @@ describe('Boosts', () => {
             expect(boosts.records[1]?.category).not.toEqual('C');
         });
 
+        it('should allow querying by meta fields', async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-123' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-456' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { integrationId: 'int-789' },
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.getPaginatedBoosts({
+                    query: { meta: { appListingId: 'listing-123' } },
+                })
+            ).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({
+                query: { meta: { appListingId: 'listing-123' } },
+            });
+
+            expect(boosts.records).toHaveLength(1);
+            expect(boosts.records[0]?.meta?.appListingId).toEqual('listing-123');
+        });
+
+        it('should allow querying by multiple meta fields', async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-123', integrationId: 'int-A' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-123', integrationId: 'int-B' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-456', integrationId: 'int-A' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({
+                query: { meta: { appListingId: 'listing-123', integrationId: 'int-A' } },
+            });
+
+            expect(boosts.records).toHaveLength(1);
+            expect(boosts.records[0]?.meta?.appListingId).toEqual('listing-123');
+            expect(boosts.records[0]?.meta?.integrationId).toEqual('int-A');
+        });
+
+        it('should allow querying meta with $in operator', async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-A' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-B' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-C' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({
+                query: { meta: { appListingId: { $in: ['listing-A', 'listing-B'] } } },
+            });
+
+            expect(boosts.records).toHaveLength(2);
+            expect(
+                boosts.records.every(b => ['listing-A', 'listing-B'].includes(b.meta?.appListingId))
+            ).toBe(true);
+        });
+
+        it('should allow combining meta query with other filters', async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'achievement',
+                meta: { appListingId: 'listing-123' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'membership',
+                meta: { appListingId: 'listing-123' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'achievement',
+                meta: { appListingId: 'listing-456' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({
+                query: {
+                    category: 'achievement',
+                    meta: { appListingId: 'listing-123' },
+                },
+            });
+
+            expect(boosts.records).toHaveLength(1);
+            expect(boosts.records[0]?.category).toEqual('achievement');
+            expect(boosts.records[0]?.meta?.appListingId).toEqual('listing-123');
+        });
+
         it('should paginate correctly', async () => {
             for (let index = 0; index < 10; index += 1) {
                 await userA.clients.fullAuth.boost.createBoost({
@@ -546,6 +745,77 @@ describe('Boosts', () => {
             expect(credentialUri).toBeDefined();
         });
 
+        it('should allow sending a boost to did:web', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            const userBProfile = (await userB.clients.fullAuth.profile.getProfile())!;
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userBProfile.did,
+                uri,
+                credential,
+            });
+            expect(credentialUri).toBeDefined();
+        });
+
+        it('should allow sending a boost to did:key', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userB.learnCard.id.did(),
+                uri,
+                credential,
+            });
+            expect(credentialUri).toBeDefined();
+        });
+
+        it('should return NOT_FOUND for unsupported did format', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.sendBoost({
+                    profileId: 'did:example:userb',
+                    uri,
+                    credential,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
         it('should allow admins to send a boost', async () => {
             await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
             const uri = await userA.clients.fullAuth.boost.createBoost({
@@ -637,6 +907,376 @@ describe('Boosts', () => {
                     from: userAProfile.profileId,
                 })
             ).toHaveLength(1);
+        });
+    });
+
+    describe('send', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'ergonomic-sa',
+                did: userA.learnCard.id.did(),
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+        });
+
+        it('should allow sending a boost with an existing boostUri', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                templateUri: boostUri,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBe(boostUri);
+        });
+
+        it('should allow sending a boost by creating a new boost', async () => {
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                template: {
+                    credential: testUnsignedBoost,
+                },
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBeDefined();
+        });
+
+        it('should allow sending a boost using did instead of profileId', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: userBProfile!.did,
+                templateUri: boostUri,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBe(boostUri);
+        });
+
+        it('should reject if neither profileId nor did is provided', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    templateUri: boostUri,
+                } as any)
+            ).rejects.toThrow();
+        });
+
+        it('should reject if neither boostUri nor boost is provided', async () => {
+            await expect(
+                userA.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: 'userb',
+                } as any)
+            ).rejects.toThrow();
+        });
+
+        it('should not allow non-admins to send a boost', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await expect(
+                userB.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: 'usera',
+                    templateUri: boostUri,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should not allow sending a draft boost', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                status: 'DRAFT',
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: 'userb',
+                    templateUri: boostUri,
+                })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        });
+
+        it('should allow sending a provisional boost', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                status: 'PROVISIONAL',
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: 'userb',
+                    templateUri: boostUri,
+                })
+            ).resolves.not.toThrow();
+        });
+    });
+
+    describe('send to email/phone (inbox routing)', () => {
+        beforeEach(async () => {
+            sendSpy.mockClear();
+            vi.spyOn(notifications, 'addNotificationToQueue').mockImplementation(
+                addNotificationToQueueSpy
+            );
+            addNotificationToQueueSpy.mockClear();
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+            await InboxCredential.delete({ detach: true, where: {} });
+            await ContactMethod.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'inbox-sa',
+                did: userA.learnCard.id.did(),
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+            await InboxCredential.delete({ detach: true, where: {} });
+            await ContactMethod.delete({ detach: true, where: {} });
+        });
+
+        it('should route to inbox when recipient is an email address', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'test-inbox@example.com',
+                templateUri: boostUri,
+            });
+
+            expect(result.type).toBe('boost');
+            expect(result.uri).toBe(boostUri);
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
+            expect(result.inbox?.status).toBe('PENDING');
+        });
+
+        it('should route to inbox with on-the-fly template creation', async () => {
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'onthefly@example.com',
+                template: {
+                    credential: testUnsignedBoost,
+                    name: 'On-the-fly Boost',
+                    category: 'Achievement',
+                },
+            });
+
+            expect(result.type).toBe('boost');
+            expect(result.uri).toBeDefined();
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
+            expect(result.inbox?.status).toBe('PENDING');
+        });
+
+        it('should apply templateData when sending to email', async () => {
+            const templateBoost = {
+                ...testUnsignedBoost,
+                name: 'Certificate for {{recipientName}}',
+            };
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: templateBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'template-data@example.com',
+                templateUri: boostUri,
+                templateData: {
+                    recipientName: 'John Doe',
+                },
+            });
+
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
+        });
+
+        it('should pass branding options to inbox configuration', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'branding@example.com',
+                templateUri: boostUri,
+                options: {
+                    branding: {
+                        issuerName: 'Test Organization',
+                        issuerLogoUrl: 'https://example.com/logo.png',
+                        credentialName: 'Achievement Badge',
+                        recipientName: 'Jane Doe',
+                    },
+                },
+            });
+
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
+        });
+
+        it('should return claimUrl when suppressDelivery is true', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'suppress@example.com',
+                templateUri: boostUri,
+                options: {
+                    suppressDelivery: true,
+                },
+            });
+
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.claimUrl).toBeDefined();
+            expect(result.inbox?.claimUrl).toContain('interactions');
+        });
+
+        it('should pass webhookUrl to inbox configuration', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'webhook@example.com',
+                templateUri: boostUri,
+                options: {
+                    webhookUrl: 'https://example.com/webhook',
+                },
+            });
+
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
+        });
+
+        it('should use signedCredential when provided for inbox path', async () => {
+            testUnsignedBoost.issuer = userA.learnCard.id.did();
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const signedVc = await userA.learnCard.invoke.issueCredential(testUnsignedBoost);
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'signed@example.com',
+                templateUri: boostUri,
+                signedCredential: signedVc,
+            });
+
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
+        });
+
+        it('should auto-deliver when email belongs to existing verified user', async () => {
+            // Create a contact method for userB and mark it as verified
+            const now = new Date().toISOString();
+            const cm = await ContactMethod.createOne({
+                id: `cm-${Date.now()}`,
+                type: 'email',
+                value: 'verified-user@example.com',
+                isVerified: true,
+                verifiedAt: now,
+                isPrimary: true,
+                createdAt: now,
+            });
+
+            // Link the contact method to userB's profile
+            const userBProfile = await Profile.findOne({ where: { profileId: 'userb' } });
+            if (userBProfile && cm) {
+                await userBProfile.relateTo({ alias: 'hasContactMethod', where: { id: cm.id } });
+            }
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'verified-user@example.com',
+                templateUri: boostUri,
+            });
+
+            expect(result.inbox).toBeDefined();
+            // When user exists, status should be 'ISSUED' (auto-delivered)
+            expect(result.inbox?.status).toBe('ISSUED');
+        });
+
+        it('should not route to inbox for profileId recipient', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                templateUri: boostUri,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.inbox).toBeUndefined();
+        });
+
+        it('should not route to inbox for DID recipient', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: userBProfile!.did,
+                templateUri: boostUri,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.inbox).toBeUndefined();
         });
     });
 
@@ -1087,6 +1727,28 @@ describe('Boosts', () => {
             expect(newBoost.name).toEqual('nice');
         });
 
+        it('should allow you to update a provisional boosts name', async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                status: BoostStatus.enum.PROVISIONAL,
+            });
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const boost = boosts.records[0]!;
+            const uri = boost.uri;
+
+            expect(boost.status).toBe(BoostStatus.enum.PROVISIONAL);
+            expect(boost.name).toBeUndefined();
+
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { name: 'nice' } })
+            ).resolves.not.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const newBoost = newBoosts.records[0]!;
+
+            expect(newBoost.name).toEqual('nice');
+        });
+
         it('should prevent you from updating a published boosts category', async () => {
             await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
@@ -1197,6 +1859,35 @@ describe('Boosts', () => {
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
+
+            const beforeUpdateBoostCredential = await userA.clients.fullAuth.storage.resolve({
+                uri,
+            });
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({
+                    uri,
+                    updates: { credential: testUnsignedBoost },
+                })
+            ).resolves.not.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const newBoost = newBoosts.records[0]!;
+
+            expect(
+                await userA.clients.fullAuth.storage.resolve({ uri: newBoost.uri })
+            ).not.toMatchObject(beforeUpdateBoostCredential);
+        });
+
+        it('should allow you to update provisional boost credential', async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                status: BoostStatus.enum.PROVISIONAL,
+            });
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const boost = boosts.records[0]!;
+            const uri = boost.uri;
+
+            expect(boost.status).toBe(BoostStatus.enum.PROVISIONAL);
 
             const beforeUpdateBoostCredential = await userA.clients.fullAuth.storage.resolve({
                 uri,
@@ -1368,6 +2059,80 @@ describe('Boosts', () => {
             expect(
                 await userA.clients.fullAuth.storage.resolve({ uri: newBoost.uri })
             ).toMatchObject(beforeUpdateBoostCredential);
+        });
+
+        it('should normalize alignment type and construct targetUrl when updating credential with alignments', async () => {
+            const frameworkId = `fw-alignment-${crypto.randomUUID()}`;
+            const skillId = `${frameworkId}-skill`;
+
+            // Create a draft boost (no need for framework/skill setup as we're testing credential alignments)
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                status: BoostStatus.enum.DRAFT,
+            });
+
+            // Create a credential with an alignment that has:
+            // - type: 'Alignment' (string, not array) - needs normalization
+            // - frameworkId and id present but missing targetUrl - needs to be constructed
+            // This mimics what the frontend sends when a user adds a new alignment
+            const credentialWithAlignment = {
+                ...testUnsignedBoost,
+                credentialSubject: {
+                    ...(testUnsignedBoost.credentialSubject as any),
+                    achievement: {
+                        ...(testUnsignedBoost.credentialSubject as any).achievement,
+                        alignment: [
+                            {
+                                id: skillId,
+                                targetName: 'Alignment Test Skill',
+                                targetCode: 'ATS001',
+                                targetDescription: 'A test skill for alignment normalization',
+                                targetFramework: frameworkId,
+                                frameworkId: frameworkId, // Used to construct targetUrl
+                                icon: '🧪',
+                                type: 'Alignment', // STRING - should be normalized to ['Alignment']
+                                // Note: targetUrl is intentionally missing
+                            },
+                        ],
+                    },
+                },
+            };
+
+            // Update the boost with the credential containing the malformed alignment
+            await userA.clients.fullAuth.boost.updateBoost({
+                uri,
+                updates: { credential: credentialWithAlignment as any },
+            });
+
+            // Resolve the updated credential and check the alignments
+            const resolvedCredential = await userA.clients.fullAuth.storage.resolve({ uri });
+
+            // Check that alignments exist and have proper format
+            const credentialSubject = resolvedCredential.credentialSubject;
+            const achievement = Array.isArray(credentialSubject)
+                ? credentialSubject[0]?.achievement
+                : (credentialSubject as any)?.achievement;
+
+            expect(achievement).toBeDefined();
+            expect(achievement.alignment).toBeDefined();
+            expect(Array.isArray(achievement.alignment)).toBe(true);
+            expect(achievement.alignment.length).toBeGreaterThan(0);
+
+            // Find our alignment
+            const alignment = achievement.alignment.find(
+                (a: any) => a.id === skillId || a.targetCode === 'ATS001'
+            );
+            expect(alignment).toBeDefined();
+
+            // Verify the alignment type was normalized from string to array
+            expect(Array.isArray(alignment.type)).toBe(true);
+            expect(alignment.type).toContain('Alignment');
+
+            // Verify targetUrl was constructed from frameworkId and id
+            expect(typeof alignment.targetUrl).toBe('string');
+            expect(alignment.targetUrl.length).toBeGreaterThan(0);
+            expect(alignment.targetUrl).toContain(frameworkId);
+            expect(alignment.targetUrl).toContain(skillId);
         });
     });
 
@@ -1908,6 +2673,32 @@ describe('Boosts', () => {
                     userA.clients.fullAuth.boost.generateClaimLink({ boostUri: uri, claimLinkSA })
                 ).rejects.toMatchObject({
                     code: 'FORBIDDEN',
+                });
+            } else {
+                expect(sa).toBeDefined();
+            }
+        });
+
+        it('should allow generating a claim boost link for a provisional boost', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                status: BoostStatus.enum.PROVISIONAL,
+            });
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            if (sa) {
+                const claimLinkSA = {
+                    endpoint: sa.signingAuthority.endpoint,
+                    name: sa.relationship.name,
+                };
+
+                await expect(
+                    userA.clients.fullAuth.boost.generateClaimLink({ boostUri: uri, claimLinkSA })
+                ).resolves.toMatchObject({
+                    boostUri: uri,
                 });
             } else {
                 expect(sa).toBeDefined();
@@ -6018,6 +6809,772 @@ describe('Boosts', () => {
             expect(result2Gen.records).toHaveLength(3); // All users
             const profileIds2Gen = result2Gen.records.map(r => r.to.profileId).sort();
             expect(profileIds2Gen).toEqual(['userb', 'userc', 'userd']);
+        });
+    });
+
+    describe('boost framework and alignment permissions', () => {
+        const cleanupGraph = async () => {
+            await Skill.delete({ detach: true, where: {} });
+            await SkillFramework.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+        };
+
+        beforeEach(async () => {
+            await cleanupGraph();
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+            await userD.clients.fullAuth.profile.createProfile({ profileId: 'userd' });
+        });
+
+        afterAll(async () => {
+            await cleanupGraph();
+        });
+
+        it('requires boost admin to attach frameworks and fetch framework data', async () => {
+            const frameworkId = `fw-${crypto.randomUUID()}`;
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Boost Permissions Framework',
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await expect(
+                userB.clients.fullAuth.boost.attachFrameworkToBoost({
+                    boostUri,
+                    frameworkId,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            await expect(
+                userB.clients.fullAuth.boost.getBoostFrameworks({ uri: boostUri })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({
+                uri: boostUri,
+                profileId: 'userb',
+            });
+
+            await expect(
+                userB.clients.fullAuth.boost.attachFrameworkToBoost({
+                    boostUri,
+                    frameworkId,
+                })
+            ).resolves.toBe(true);
+
+            const frameworks = await userB.clients.fullAuth.boost.getBoostFrameworks({
+                uri: boostUri,
+                limit: 10,
+            });
+
+            expect(frameworks.records.map(framework => framework.id)).toContain(frameworkId);
+
+            const boostId = getIdFromUri(boostUri);
+            const relationships = await neogma.queryRunner.run(
+                `MATCH (:Boost { id: $boostId })-[:USES_FRAMEWORK]->(f:SkillFramework { id: $frameworkId })
+                 RETURN count(f) AS c`,
+                { boostId, frameworkId }
+            );
+
+            expect(Number(relationships.records[0]?.get('c') ?? 0)).toBe(1);
+        });
+
+        it('allows detaching a framework from a boost', async () => {
+            const frameworkId = `fw-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Detach Framework Test',
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            // Attach framework
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId,
+            });
+
+            // Verify it's attached
+            const frameworksBefore = await userA.clients.fullAuth.boost.getBoostFrameworks({
+                uri: boostUri,
+                limit: 10,
+            });
+            expect((frameworksBefore.records as Array<{ id: string }>).map(f => f.id)).toContain(
+                frameworkId
+            );
+
+            // Detach framework
+            const result = await userA.clients.fullAuth.boost.detachFrameworkFromBoost({
+                boostUri,
+                frameworkId,
+            });
+            expect(result).toBe(true);
+
+            // Verify it's removed
+            const frameworksAfter = await userA.clients.fullAuth.boost.getBoostFrameworks({
+                uri: boostUri,
+                limit: 10,
+            });
+            expect((frameworksAfter.records as Array<{ id: string }>).map(f => f.id)).not.toContain(
+                frameworkId
+            );
+
+            // Verify Neo4j relationship is removed
+            const boostId = getIdFromUri(boostUri);
+            const relationships = await neogma.queryRunner.run(
+                `MATCH (:Boost { id: $boostId })-[:USES_FRAMEWORK]->(f:SkillFramework { id: $frameworkId })
+                 RETURN count(f) AS c`,
+                { boostId, frameworkId }
+            );
+
+            expect(Number(relationships.records[0]?.get('c') ?? 0)).toBe(0);
+        });
+
+        it('enforces boost admin permissions when detaching frameworks', async () => {
+            const frameworkId = `fw-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Detach Permissions Framework',
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId,
+            });
+
+            // User B should not be able to detach
+            await expect(
+                userB.clients.fullAuth.boost.detachFrameworkFromBoost({
+                    boostUri,
+                    frameworkId,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            // Add user B as admin
+            await userA.clients.fullAuth.boost.addBoostAdmin({
+                uri: boostUri,
+                profileId: 'userb',
+            });
+
+            // Now user B should be able to detach
+            await expect(
+                userB.clients.fullAuth.boost.detachFrameworkFromBoost({
+                    boostUri,
+                    frameworkId,
+                })
+            ).resolves.toBe(true);
+        });
+
+        it('returns false when detaching a framework that is not attached', async () => {
+            const frameworkId = `fw-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Not Attached Framework',
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            // Try to detach a framework that was never attached
+            const result = await userA.clients.fullAuth.boost.detachFrameworkFromBoost({
+                boostUri,
+                frameworkId,
+            });
+            expect(result).toBe(false);
+        });
+
+        it('enforces boost admin permissions when aligning skills', async () => {
+            const frameworkId = `fw-${crypto.randomUUID()}`;
+            const skillId = `${frameworkId}-skill`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Alignment Framework',
+                skills: [
+                    {
+                        id: skillId,
+                        statement: 'Alignment Skill',
+                    },
+                ],
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId,
+            });
+
+            await expect(
+                userB.clients.fullAuth.boost.alignBoostSkills({
+                    boostUri,
+                    skills: [{ frameworkId, id: skillId }],
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({
+                uri: boostUri,
+                profileId: 'userb',
+            });
+
+            await expect(
+                userB.clients.fullAuth.boost.alignBoostSkills({
+                    boostUri,
+                    skills: [{ frameworkId, id: skillId }],
+                })
+            ).resolves.toBe(true);
+
+            const boostId = getIdFromUri(boostUri);
+            const alignments = await neogma.queryRunner.run(
+                `MATCH (:Boost { id: $boostId })-[:ALIGNED_TO]->(s:Skill { id: $skillId })
+                 RETURN count(s) AS c`,
+                { boostId, skillId }
+            );
+
+            expect(Number(alignments.records[0]?.get('c') ?? 0)).toBe(1);
+        });
+
+        it('allows child boost admins to align skills from ancestor frameworks without framework access', async () => {
+            const frameworkId = `fw-${crypto.randomUUID()}`;
+            const skillId = `${frameworkId}-skill`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Ancestor Framework',
+                skills: [
+                    {
+                        id: skillId,
+                        statement: 'Ancestor Skill',
+                    },
+                ],
+            });
+
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: parentUri,
+                frameworkId,
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost },
+            });
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({
+                uri: childUri,
+                profileId: 'userb',
+            });
+
+            await expect(
+                userB.clients.fullAuth.skillFrameworks.listFrameworkAdmins({ frameworkId })
+            ).rejects.toMatchObject({ message: 'Profile does not manage this framework' });
+
+            const aligned = await userB.clients.fullAuth.boost.alignBoostSkills({
+                boostUri: childUri,
+                skills: [{ frameworkId, id: skillId }],
+            });
+            expect(aligned).toBe(true);
+
+            // Verify frameworks via route (no auto-attach from align)
+            const frameworksForChild = await userB.clients.fullAuth.boost.getBoostFrameworks({
+                uri: childUri,
+                limit: 10,
+            });
+            expect(frameworksForChild.records.length).toBe(0);
+
+            const childBoostId = getIdFromUri(childUri);
+            const alignment = await neogma.queryRunner.run(
+                `MATCH (:Boost { id: $boostId })-[:ALIGNED_TO]->(:Skill { id: $skillId })
+                 RETURN count(*) AS c`,
+                { boostId: childBoostId, skillId }
+            );
+
+            expect(Number(alignment.records[0]?.get('c') ?? 0)).toBe(1);
+        });
+
+        it('searches skills available for a boost with regex pattern', async () => {
+            const frameworkId = `fw-search-${crypto.randomUUID()}`;
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Search Framework',
+                skills: [
+                    {
+                        id: `${frameworkId}-react`,
+                        statement: 'React Development',
+                        code: 'REACT101',
+                        description: 'Learn React fundamentals',
+                    },
+                    {
+                        id: `${frameworkId}-vue`,
+                        statement: 'Vue.js Development',
+                        code: 'VUE101',
+                        description: 'Learn Vue.js basics',
+                    },
+                    {
+                        id: `${frameworkId}-angular`,
+                        statement: 'Angular Development',
+                        code: 'ANG101',
+                        description: 'Learn Angular framework',
+                    },
+                ],
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId,
+            });
+
+            // Search by statement with case-insensitive regex
+            const reactResults = await userA.clients.fullAuth.boost.searchSkillsAvailableForBoost({
+                uri: boostUri,
+                query: { statement: { $regex: /react/i } },
+                limit: 10,
+            });
+            expect(reactResults.records.length).toBe(1);
+            expect(reactResults.records[0]?.id).toBe(`${frameworkId}-react`);
+            expect(reactResults.hasMore).toBe(false);
+
+            // Search across all skills
+            const allResults = await userA.clients.fullAuth.boost.searchSkillsAvailableForBoost({
+                uri: boostUri,
+                query: { statement: { $regex: /.*/ } },
+                limit: 10,
+            });
+            expect(allResults.records.length).toBe(3);
+            expect(allResults.hasMore).toBe(false);
+
+            // Search with pagination
+            const page1 = await userA.clients.fullAuth.boost.searchSkillsAvailableForBoost({
+                uri: boostUri,
+                query: { statement: { $regex: /.*/ } },
+                limit: 2,
+            });
+            expect(page1.records.length).toBe(2);
+            expect(page1.hasMore).toBe(true);
+            expect(page1.cursor).toBeTruthy();
+
+            const page2 = await userA.clients.fullAuth.boost.searchSkillsAvailableForBoost({
+                uri: boostUri,
+                query: { statement: { $regex: /.*/ } },
+                limit: 2,
+                cursor: page1.cursor,
+            });
+            expect(page2.records.length).toBe(1);
+            expect(page2.hasMore).toBe(false);
+        });
+
+        it('searches skills from parent boost frameworks', async () => {
+            const parentFrameworkId = `fw-parent-${crypto.randomUUID()}`;
+            const childFrameworkId = `fw-child-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: parentFrameworkId,
+                name: 'Parent Framework',
+                skills: [
+                    {
+                        id: `${parentFrameworkId}-parent-skill`,
+                        statement: 'Parent Skill',
+                        code: 'P101',
+                    },
+                ],
+            });
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: childFrameworkId,
+                name: 'Child Framework',
+                skills: [
+                    {
+                        id: `${childFrameworkId}-child-skill`,
+                        statement: 'Child Skill',
+                        code: 'C101',
+                    },
+                ],
+            });
+
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: parentUri,
+                frameworkId: parentFrameworkId,
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost },
+            });
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                childUri
+            );
+
+            const count = await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                uri: parentUri,
+            });
+
+            expect(count).toBe(2);
+        });
+
+        it('should count distinct recipients once when they receive multiple boosts', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Parent',
+            });
+
+            const childUri1 = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost, category: 'Child1' },
+            });
+            const childUri2 = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost, category: 'Child2' },
+            });
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                childUri1
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                childUri2
+            );
+
+            const count = await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                uri: parentUri,
+            });
+
+            expect(count).toBe(1);
+        });
+
+        it('should respect numberOfGenerations parameter', async () => {
+            // 3-level hierarchy: parent -> child -> grandchild
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Parent',
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost, category: 'Child' },
+            });
+
+            const grandchildUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testUnsignedBoost, category: 'Grandchild' },
+            });
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                childUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userd', user: userD },
+                grandchildUri
+            );
+
+            // Only parent + 1 level (default = 1)
+            const count1 = await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                uri: parentUri,
+                numberOfGenerations: 1,
+            });
+            expect(count1).toBe(2);
+
+            // Include grandchild (2 levels)
+            const count2 = await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                uri: parentUri,
+                numberOfGenerations: 2,
+            });
+            expect(count2).toBe(3);
+        });
+
+        it('should include or exclude unaccepted boosts based on includeUnacceptedBoosts option', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Test',
+            });
+
+            // Send but do not accept
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri,
+                false
+            );
+
+            const includeCount =
+                await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                    uri,
+                    includeUnacceptedBoosts: true,
+                });
+            expect(includeCount).toBe(1);
+
+            const excludeCount =
+                await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                    uri,
+                    includeUnacceptedBoosts: false,
+                });
+            expect(excludeCount).toBe(0);
+        });
+
+        it('should support filtering by boost query', async () => {
+            // Create parent and child with different categories
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost, category: 'Badge' },
+            });
+
+            // Send both boosts
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                childUri
+            );
+
+            const achCount = await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount(
+                {
+                    uri: parentUri,
+                    boostQuery: { category: 'Achievement' },
+                }
+            );
+            expect(achCount).toBe(1);
+
+            const badgeCount =
+                await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                    uri: parentUri,
+                    boostQuery: { category: 'Badge' },
+                });
+            expect(badgeCount).toBe(1);
+        });
+
+        it('should support filtering by profile query', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Test',
+            });
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                uri
+            );
+
+            const onlyUserB =
+                await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                    uri,
+                    // Use $in single value to exercise typed map path reliably
+                    profileQuery: { profileId: { $in: ['userb'] } },
+                } as any);
+            expect(onlyUserB).toBe(1);
+
+            const inQuery = await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                uri,
+                profileQuery: { profileId: { $in: ['userb', 'userd'] } },
+            } as any);
+            expect(inQuery).toBe(1);
+        });
+
+        it('should support filtering by profile query with regex', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Test',
+            });
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                uri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userd', user: userD },
+                uri
+            );
+
+            const regexCount =
+                await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                    uri,
+                    // Provide regex pattern. The server supports
+                    // string-form '/pattern/flags' for convenience.
+                    profileQuery: { profileId: { $regex: '/userb/i' } },
+                } as any);
+
+            expect(regexCount).toBe(1);
+        });
+    });
+
+    describe('searches skills from parent boost frameworks', () => {
+        const cleanupGraph = async () => {
+            await Skill.delete({ detach: true, where: {} });
+            await SkillFramework.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+        };
+
+        beforeEach(async () => {
+            await cleanupGraph();
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await cleanupGraph();
+        });
+
+        it('searches skills from parent boost frameworks', async () => {
+            const parentFrameworkId = `fw-parent-${crypto.randomUUID()}`;
+            const childFrameworkId = `fw-child-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: parentFrameworkId,
+                name: 'Parent Framework',
+                skills: [
+                    {
+                        id: `${parentFrameworkId}-parent-skill`,
+                        statement: 'Parent Skill',
+                        code: 'P101',
+                    },
+                ],
+            });
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: childFrameworkId,
+                name: 'Child Framework',
+                skills: [
+                    {
+                        id: `${childFrameworkId}-child-skill`,
+                        statement: 'Child Skill',
+                        code: 'C101',
+                    },
+                ],
+            });
+
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: parentUri,
+                frameworkId: parentFrameworkId,
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost },
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: childUri,
+                frameworkId: childFrameworkId,
+            });
+
+            // Child boost can search skills from both frameworks
+            const results = await userA.clients.fullAuth.boost.searchSkillsAvailableForBoost({
+                uri: childUri,
+                query: { statement: { $regex: /.*/ } },
+                limit: 10,
+            });
+
+            expect(results.records.length).toBe(2);
+            expect(results.records.map(s => s.id)).toEqual(
+                expect.arrayContaining([
+                    `${parentFrameworkId}-parent-skill`,
+                    `${childFrameworkId}-child-skill`,
+                ])
+            );
+        });
+
+        it('enforces boost admin permissions for skill search', async () => {
+            const frameworkId = `fw-${crypto.randomUUID()}`;
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Search Framework',
+                skills: [{ id: `${frameworkId}-skill`, statement: 'Test Skill' }],
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId,
+            });
+
+            // User B is not a boost admin, should be unauthorized
+            await expect(
+                userB.clients.fullAuth.boost.searchSkillsAvailableForBoost({
+                    uri: boostUri,
+                    query: { statement: { $regex: /.*/ } },
+                    limit: 10,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
     });
 });

@@ -1,0 +1,188 @@
+export type UseCaseId = 
+    | 'issue-credentials'
+    | 'embed-claim'
+    | 'embed-app'
+    | 'consent-flow'
+    | 'verify-credentials'
+    | 'server-webhooks'
+    | 'course-catalog';
+
+export interface UseCaseConfig {
+    id: UseCaseId;
+    title: string;
+    subtitle: string;
+    description: string;
+    icon: string;
+    color: string;
+    bgColor: string;
+    steps: GuideStep[];
+    comingSoon?: boolean;
+}
+
+export interface GuideStep {
+    id: string;
+    title: string;
+    description: string;
+    component: string;
+}
+
+export interface GuideState {
+    currentStep: number;
+    completedSteps: string[];
+    config: Record<string, unknown>;
+}
+
+// ============================================================
+// EMBED APP GUIDE - Persisted Configuration
+// ============================================================
+// This interface defines all user selections that should be 
+// persisted across page refreshes and navigation
+
+export interface EmbedAppFeatureConfig {
+    'issue-credentials'?: {
+        mode: 'prompt-claim' | 'sync-wallet';
+        credentialName?: string;
+        credentialData?: Record<string, unknown>;
+        contractUri?: string;
+    };
+
+    'peer-badges'?: {
+        templateUris: string[];
+    };
+
+    'request-credentials'?: {
+        mode: 'query' | 'specific';
+        queryTitle?: string;
+        queryReason?: string;
+    };
+
+    'request-data-consent'?: {
+        contractUri: string;
+    };
+
+    'launch-feature'?: {
+        selectedFeatureIds: string[];
+        featureParams: Record<string, string>;
+    };
+}
+
+export interface EmbedAppGuideConfig {
+    // Step 0: Getting Started
+    selectedListingId: string | null;
+
+    // Step 1: Choose Features
+    selectedFeatures: string[];
+
+    // Step 2: Feature Setup - Per-feature configuration
+    featureConfig: EmbedAppFeatureConfig;
+}
+
+// ============================================================
+// LLM Integration Metadata
+// ============================================================
+// Structured output for LLM consumption
+
+export interface TemplateMetadata {
+    uri: string;
+    name: string;
+    description?: string;
+    type?: string;
+}
+
+export interface ContractMetadata {
+    uri: string;
+    type: 'data-consent' | 'issue-credentials';
+    name?: string;
+}
+
+export interface LLMIntegrationMetadata {
+    app: {
+        name: string;
+        listingId: string;
+        integrationId: string;
+    };
+
+    features: string[];
+
+    templates: {
+        peerBadges: TemplateMetadata[];
+        issueCredentials: TemplateMetadata[];
+    };
+
+    contracts: {
+        dataConsent: string | null;
+        issueCredentials: string | null;
+    };
+
+    permissions: string[];
+
+    generatedAt: string;
+}
+
+export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
+    'issue-credentials': {
+        id: 'issue-credentials',
+        title: 'Issue Credentials',
+        subtitle: 'Give badges to users',
+        description: 'Issue verifiable credentials like badges, certificates, or achievements to your users.',
+        icon: 'award',
+        color: 'text-violet-600',
+        bgColor: 'bg-violet-100',
+    },
+    'embed-claim': {
+        id: 'embed-claim',
+        title: 'Embed Claim Button',
+        subtitle: 'Issue from your site',
+        description: 'Add a "Claim Credential" button to your website so users can claim badges without leaving your page.',
+        icon: 'mouse-pointer-click',
+        color: 'text-pink-600',
+        bgColor: 'bg-pink-100',
+    },
+    'embed-app': {
+        id: 'embed-app',
+        title: 'Embed Your App',
+        subtitle: 'Run inside LearnCard',
+        description: 'Build an app that runs inside the LearnCard wallet with access to user identity and credentials.',
+        icon: 'layout',
+        color: 'text-cyan-600',
+        bgColor: 'bg-cyan-100',
+    },
+    'consent-flow': {
+        id: 'consent-flow',
+        title: 'Connect Website',
+        subtitle: 'Connect your website to LearnCard',
+        description: 'Set up a consent flow to send and access user data and credentials with their permission.',
+        icon: 'shield-check',
+        color: 'text-emerald-600',
+        bgColor: 'bg-emerald-100',
+    },
+    'course-catalog': {
+        id: 'course-catalog',
+        title: 'Connect Course Catalog',
+        subtitle: 'Enterprise LMS integration',
+        description: 'Full guided setup for LMS partners. Configure webhooks, build credential templates, map your data, and go live with automatic credential issuance.',
+        icon: 'rocket',
+        color: 'text-violet-600',
+        bgColor: 'bg-violet-100',
+    },
+    'verify-credentials': {
+        id: 'verify-credentials',
+        title: 'Verify Credentials',
+        subtitle: 'Accept VCs from users',
+        description: 'Accept and verify credentials presented by users to prove their achievements or identity.',
+        icon: 'check-circle',
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-100',
+        comingSoon: true,
+    },
+    'server-webhooks': {
+        id: 'server-webhooks',
+        title: 'Server Webhooks',
+        subtitle: 'Backend events',
+        description: 'Receive real-time notifications when events happen in LearnCard via webhooks.',
+        icon: 'webhook',
+        color: 'text-orange-600',
+        bgColor: 'bg-orange-100',
+        comingSoon: true,
+    }
+};

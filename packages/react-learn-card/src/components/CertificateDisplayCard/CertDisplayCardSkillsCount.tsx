@@ -29,7 +29,7 @@ export const CertDisplayCardSkillsCount: React.FC<{
 
     const total: any = totalSkills + totalSubskills;
 
-    const text: string = skillsCount === 1 ? 'Skill' : 'Skills';
+    const text: string = total !== 1 ? 'Skills' : 'Skill';
 
     return (
         <div

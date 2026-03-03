@@ -48,12 +48,13 @@ export const getSimpleSigningPlugin = async (
         displayName: 'Simple Signing Authority Plugin',
         description: 'Lets you create and use Signing Authorities',
         methods: {
-            createSigningAuthority: async (_learnCard, name) => {
+            createSigningAuthority: async (_learnCard, name, ownerDid) => {
                 await initialized;
                 await updateLearnCard(_learnCard);
 
                 return client.signingAuthority.createSigningAuthority.mutate({
                     name,
+                    ownerDid,
                 });
             },
             getSigningAuthorities: async _learnCard => {

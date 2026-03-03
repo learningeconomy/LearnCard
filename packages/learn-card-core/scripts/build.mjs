@@ -1,7 +1,7 @@
 import path from 'path';
 
 import esbuild from 'esbuild';
-import rimraf from 'rimraf';
+import fs from 'fs/promises';
 
 const buildOptions = {
     // target: 'es6',
@@ -25,7 +25,6 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [],
         entryPoints: ['src/index.ts'],
@@ -37,7 +36,6 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [],
         entryPoints: ['src/index.ts'],
@@ -50,7 +48,6 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [],
         entryPoints: ['src/index.ts'],
@@ -61,15 +58,7 @@ const configurations = [
 ];
 
 function asyncRimraf(path) {
-    return new Promise((resolve, reject) => {
-        rimraf(path, err => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
-    });
+    return fs.rm(path, { recursive: true, force: true });
 }
 
 await Promise.all(

@@ -14,6 +14,19 @@ export type ConsentFlowRelationships = {
         { signingAuthorityEndpoint: string; signingAuthorityName: string; issuer?: string }
     >;
     canWrite: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
+    relatedTo: ModelRelatedNodesI<typeof Boost, BoostInstance>;
+    requestedFor: ModelRelatedNodesI<
+        typeof Profile,
+        ProfileInstance,
+        {
+            status: 'pending' | 'accepted' | 'denied';
+            readStatus?: 'unseen' | 'seen' | null;
+        },
+        {
+            status: 'pending' | 'accepted' | 'denied';
+            readStatus?: 'unseen' | 'seen' | null;
+        }
+    >;
 };
 
 export type ConsentFlowInstance = NeogmaInstance<FlatDbContractType, ConsentFlowRelationships>;
@@ -57,6 +70,30 @@ export const ConsentFlowContract = ModelFactory<FlatDbContractType, ConsentFlowR
                 },
             },
             canWrite: { model: Profile, direction: 'out', name: 'CAN_WRITE' },
+            relatedTo: { model: Boost, direction: 'out', name: 'RELATED_TO' },
+            requestedFor: {
+                model: Profile,
+                direction: 'out',
+                name: 'REQUESTED_FOR',
+                properties: {
+                    status: {
+                        property: 'status',
+                        schema: {
+                            type: 'string',
+                            enum: ['pending', 'accepted', 'denied'],
+                            required: false,
+                        },
+                    },
+                    readStatus: {
+                        property: 'readStatus',
+                        schema: {
+                            type: 'string',
+                            enum: ['unseen', 'seen'],
+                            required: false, // when undefined = null
+                        },
+                    },
+                },
+            },
         },
         primaryKeyField: 'id',
     },

@@ -8,11 +8,14 @@ useDotenv: true
 
 plugins:
     - serverless-esbuild
-    - serverless-offline
     - serverless-domain-manager
     - serverless-certificate-creator
+    - serverless-prune-plugin
 
 custom:
+    prune:
+        automatic: true
+        number: 3
     config:
         CACHE_INSTANCE_SIZE: ${env:SERVERLESS_CACHE_INSTANCE_SIZE, 'cache.t2.micro'}
     esbuild:
@@ -20,7 +23,7 @@ custom:
         plugins: esbuildPlugins.cjs
         bundle: true
         # minify: true
-        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
+        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '*.node']
         sourcemap: external
         target: 'node16'
         watch:
@@ -76,6 +79,9 @@ package:
   patterns: 
     - '!node_modules/**'
     - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+    - 'node_modules/@learncard/didkit-plugin-node/*.node'
+    - 'node_modules/@learncard/didkit-plugin-node/package.json'
+    - 'node_modules/@learncard/didkit-plugin-node/dist/**'
 
 provider:
     name: aws

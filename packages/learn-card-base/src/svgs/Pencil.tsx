@@ -1,0 +1,29 @@
+import React from 'react';
+
+const Pencil: React.FC<{ className?: string }> = ({ className = '' }) => {
+    return (
+        <svg
+            
+            viewBox="0 0 33 32"
+            fill="none"
+            className={className}
+        >
+            <path
+                d="M12.5 26.9998H6.5C6.23478 26.9998 5.98043 26.8945 5.79289 26.707C5.60536 26.5194 5.5 26.2651 5.5 25.9998V20.4141C5.5 20.2827 5.52587 20.1527 5.57612 20.0314C5.62638 19.9101 5.70004 19.7998 5.79289 19.707L20.7929 4.70695C20.9804 4.51942 21.2348 4.41406 21.5 4.41406C21.7652 4.41406 22.0196 4.51942 22.2071 4.70695L27.7929 10.2927C27.9804 10.4803 28.0858 10.7346 28.0858 10.9998C28.0858 11.2651 27.9804 11.5194 27.7929 11.707L12.5 26.9998Z"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M17.5 8L24.5 15"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+};
+
+export default Pencil;

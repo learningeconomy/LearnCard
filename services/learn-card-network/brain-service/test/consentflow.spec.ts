@@ -37,6 +37,60 @@ describe('Consent Flow Contracts', () => {
         userD = await getUser('d'.repeat(64));
     });
 
+    describe('writeCredentialToContractViaSigningAuthority', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        it('should accept mixed-case signingAuthority.name when writing via signing authority', async () => {
+            // Register SA with lowercase name
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            // Create a boost with a category allowed by normalFullTerms
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'SA Boost',
+            });
+
+            // Create a contract and have userB consent with write permissions for Achievement
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Case Test Contract',
+            });
+
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalFullTerms,
+            });
+
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            const result =
+                await userA.clients.fullAuth.contracts.writeCredentialToContractViaSigningAuthority(
+                    {
+                        did: userBProfile!.did,
+                        contractUri,
+                        boostUri,
+                        signingAuthority: { endpoint: 'http://localhost:5000/api', name: 'MySA' },
+                    }
+                );
+
+            expect(result).toBeDefined();
+            expect(typeof result).toBe('string');
+        });
+    });
+
     describe('createConsentFlowContract', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
@@ -281,24 +335,24 @@ describe('Consent Flow Contracts', () => {
         it('should allow setting and retrieving the defaultEnabled field for contract categories', async () => {
             const contractWithDefaults: ConsentFlowContract = {
                 read: {
-                    personal: { 
+                    personal: {
                         name: { required: false, defaultEnabled: true },
-                        email: { required: true, defaultEnabled: false }
+                        email: { required: true, defaultEnabled: false },
                     },
                     credentials: {
                         categories: {
                             Achievement: { required: false, defaultEnabled: true },
-                            ID: { required: false, defaultEnabled: false }
+                            ID: { required: false, defaultEnabled: false },
                         },
                     },
                 },
                 write: {
                     personal: {
-                        name: { required: false, defaultEnabled: true }
+                        name: { required: false, defaultEnabled: true },
                     },
                     credentials: {
                         categories: {
-                            Achievement: { required: true, defaultEnabled: false }
+                            Achievement: { required: true, defaultEnabled: false },
                         },
                     },
                 },
@@ -317,10 +371,14 @@ describe('Consent Flow Contracts', () => {
             // Verifying the defaultEnabled fields are preserved
             expect(contract.contract.read.personal.name.defaultEnabled).toBe(true);
             expect(contract.contract.read.personal.email.defaultEnabled).toBe(false);
-            expect(contract.contract.read.credentials.categories.Achievement.defaultEnabled).toBe(true);
+            expect(contract.contract.read.credentials.categories.Achievement.defaultEnabled).toBe(
+                true
+            );
             expect(contract.contract.read.credentials.categories.ID.defaultEnabled).toBe(false);
             expect(contract.contract.write.personal.name.defaultEnabled).toBe(true);
-            expect(contract.contract.write.credentials.categories.Achievement.defaultEnabled).toBe(false);
+            expect(contract.contract.write.credentials.categories.Achievement.defaultEnabled).toBe(
+                false
+            );
         });
     });
 
@@ -3505,7 +3563,7 @@ describe('Consent Flow Contracts', () => {
                 ...thirdPageMedium.records,
             ];
             expect(combinedRecords.length).toEqual(allResults.records.length);
-        });
+        }, 30000); // Increased timeout: creates 15 credentials with signing overhead
 
         it('should handle edge cases with uneven page divisions', async () => {
             // Create 10 credentials for pagination testing
@@ -3588,7 +3646,7 @@ describe('Consent Flow Contracts', () => {
                 ...thirdPage.records,
                 ...fourthPage.records,
             ]);
-        });
+        }, 20000); // Increased timeout: creates 10 credentials with signing overhead
 
         it('should maintain cursor consistency across requests', async () => {
             // Add a set of credentials
@@ -3648,7 +3706,7 @@ describe('Consent Flow Contracts', () => {
             // Results should be identical
             expect(secondPageA.records).toEqual(secondPageB.records);
             expect(secondPageA.cursor).toEqual(secondPageB.cursor);
-        });
+        }, 20000); // Increased timeout: creates 10 credentials with signing overhead
     });
 
     describe('syncCredentialsToContract', () => {
@@ -4005,7 +4063,7 @@ describe('Consent Flow Contracts', () => {
                 boostUri: boost2,
                 credential: credential2,
             });
-        });
+        }, 15000); // Increased hook timeout: sets up complex contract state with credential signing
 
         afterEach(async () => {
             await Profile.delete({ detach: true, where: {} });
@@ -4132,7 +4190,7 @@ describe('Consent Flow Contracts', () => {
             expect(
                 [...firstPage.records, ...secondPage.records, ...thirdPage.records].length
             ).toEqual(allResults.records.length);
-        });
+        }, 20000); // Increased timeout: creates 10 additional credentials with signing overhead
 
         it('should respect the includeReceived parameter', async () => {
             // Get all credentials
@@ -4457,6 +4515,179 @@ describe('Consent Flow Contracts', () => {
                 expect(contract.autoBoosts?.length).toBe(1);
                 expect(contract.autoBoosts).toEqual(expect.arrayContaining([boost2Uri]));
             });
+        });
+    });
+
+    describe('send with Contracts', () => {
+        let contractUri: string;
+        let boostUri: string;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'ergonomic-sa',
+                did: userA.learnCard.id.did(),
+            });
+
+            contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: {
+                    read: { anonymize: false },
+                    write: { credentials: { categories: { TestBoosts: { required: false } } } },
+                },
+                name: 'Ergonomic Send Test Contract',
+                writers: ['usera'],
+            });
+
+            boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'TestBoosts',
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+        });
+
+        it('should send boost through contract when recipient has consented', async () => {
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: {
+                    read: { anonymize: false },
+                    write: { credentials: { categories: { TestBoosts: true } } },
+                },
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                templateUri: boostUri,
+                contractUri,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBe(boostUri);
+        });
+
+        it('should fall back to normal send when recipient has not consented', async () => {
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                templateUri: boostUri,
+                contractUri,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBe(boostUri);
+        });
+
+        it('should create RELATED_TO relationship when creating a new boost with contractUri', async () => {
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: {
+                    read: { anonymize: false },
+                    write: { credentials: { categories: { TestBoosts: true } } },
+                },
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                contractUri,
+                template: {
+                    credential: testUnsignedBoost,
+                    category: 'TestBoosts',
+                },
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBeDefined();
+            expect(result.uri).not.toBe(boostUri);
+        });
+
+        it('should not create RELATED_TO relationship when using existing boostUri', async () => {
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: {
+                    read: { anonymize: false },
+                    write: { credentials: { categories: { TestBoosts: true } } },
+                },
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                templateUri: boostUri,
+                contractUri,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBe(boostUri);
+        });
+
+        it('should fall back when caller is not an authorized writer', async () => {
+            const contractWithNoWriters =
+                await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                    contract: {
+                        read: { anonymize: false },
+                        write: { credentials: { categories: { TestBoosts: { required: false } } } },
+                    },
+                    name: 'No Writers Contract',
+                });
+
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri: contractWithNoWriters,
+                terms: {
+                    read: { anonymize: false },
+                    write: { credentials: { categories: { TestBoosts: true } } },
+                },
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                templateUri: boostUri,
+                contractUri: contractWithNoWriters,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+        });
+
+        it('should fall back when boost category is not allowed by contract terms', async () => {
+            // User B consents to TestBoosts (which the contract allows)
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: {
+                    read: { anonymize: false },
+                    write: { credentials: { categories: { TestBoosts: true } } },
+                },
+            });
+
+            // Create a boost with a different category that user hasn't consented to
+            const otherBoostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'OtherCategory',
+            });
+
+            // Should fall back because boost category doesn't match user's consent
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                templateUri: otherBoostUri,
+                contractUri,
+            });
+
+            expect(result.credentialUri).toBeDefined();
         });
     });
 });

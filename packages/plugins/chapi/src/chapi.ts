@@ -30,10 +30,32 @@ export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
         };
     }
 
-    try {
-        await loadOnce();
-    } catch (error) {
-        console.error('Error loading CHAPI polyfill!', error);
+    const canSafelyPatchNavigatorCredentials = (() => {
+        try {
+            const credentials = window.navigator?.credentials;
+            if (!credentials) return true;
+
+            const proto = Object.getPrototypeOf(credentials);
+            const descriptor =
+                Object.getOwnPropertyDescriptor(credentials, 'get') ??
+                (proto ? Object.getOwnPropertyDescriptor(proto, 'get') : undefined);
+
+            if (!descriptor) return true;
+
+            if (descriptor.writable) return true;
+
+            return Boolean(descriptor.set);
+        } catch {
+            return true;
+        }
+    })();
+
+    if (canSafelyPatchNavigatorCredentials) {
+        try {
+            await loadOnce();
+        } catch {
+            // non-blocking
+        }
     }
 
     return {

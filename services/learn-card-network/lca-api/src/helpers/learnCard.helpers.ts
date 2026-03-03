@@ -1,0 +1,170 @@
+import { readFile } from 'node:fs/promises';
+
+import { initLearnCard } from '@learncard/init';
+import type { EmptyLearnCard, LearnCardFromSeed, DidWebLearnCardFromSeed } from '@learncard/init';
+
+import { getSigningAuthorityForDid } from '@accesslayer/signing-authority/read';
+import { getLRUCache } from '@cache/in-memory-lru';
+
+const cloud = process.env.LEARN_CLOUD_URL
+    ? { url: process.env.LEARN_CLOUD_URL }
+    : { url: 'https://cloud.learncard.com/trpc' };
+
+let emptyLearnCard: EmptyLearnCard['returnValue'];
+let learnCard: LearnCardFromSeed['returnValue'];
+
+const saCardsCache = getLRUCache<
+    LearnCardFromSeed['returnValue'] | DidWebLearnCardFromSeed['returnValue']
+>();
+const didWebCardsCache = getLRUCache<DidWebLearnCardFromSeed['returnValue']>();
+const ephemeralCardsCache = getLRUCache<LearnCardFromSeed['returnValue']>();
+
+// Try native plugin first, fall back to WASM
+let didKitInitPromise: Promise<'node' | Buffer> | null = null;
+
+const resolveDidKitPluginFactory = (
+    module: Record<string, unknown>
+): (() => Promise<unknown>) => {
+    const factory =
+        (module as { getDidKitPlugin?: unknown }).getDidKitPlugin ??
+        (module as { default?: { getDidKitPlugin?: unknown } }).default?.getDidKitPlugin;
+
+    if (typeof factory !== 'function') {
+        throw new Error('DIDKit plugin factory not found in module exports');
+    }
+
+    return factory as () => Promise<unknown>;
+};
+
+const getDidKitInit = async (): Promise<'node' | Buffer> => {
+    if (didKitInitPromise) return didKitInitPromise;
+
+    didKitInitPromise = (async () => {
+        try {
+            // Check if native plugin is available by trying to load it
+            const didkitModule = await import('@learncard/didkit-plugin-node');
+            const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
+
+            // Test that it actually works
+            await getNativePlugin();
+            return 'node' as const;
+        } catch (e) {
+            console.log('Native DIDKit plugin not available, falling back to WASM');
+
+            // Return the WASM buffer for initLearnCard to use
+            const wasmBuffer = await readFile(
+                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
+            );
+
+            return wasmBuffer;
+        }
+    })();
+
+    return didKitInitPromise;
+};
+
+export const getEmptyLearnCard = async (): Promise<EmptyLearnCard['returnValue']> => {
+    if (!emptyLearnCard)
+        emptyLearnCard = await initLearnCard({
+            didkit: await getDidKitInit(),
+        });
+
+    return emptyLearnCard;
+};
+
+export const getLearnCard = async (): Promise<LearnCardFromSeed['returnValue']> => {
+    const seed = process.env.SEED;
+
+    if (!seed) throw new Error('No seed set!');
+
+    if (!learnCard)
+        learnCard = await initLearnCard({
+            didkit: await getDidKitInit(),
+            seed,
+            cloud,
+        });
+
+    return learnCard;
+};
+
+export const getSigningAuthorityLearnCard = async (
+    ownerDID: string,
+    name: string
+): Promise<DidWebLearnCardFromSeed['returnValue'] | LearnCardFromSeed['returnValue']> => {
+    const seed = (await getSigningAuthorityForDid(ownerDID, name))?.seed;
+
+    if (!seed) throw new Error('No seed set for SA!');
+
+    const cachedValue = saCardsCache.get(seed);
+
+    if (cachedValue) return cachedValue;
+
+    const saLearnCard = ownerDID.startsWith('did:web:')
+        ? await initLearnCard({
+              didkit: await getDidKitInit(),
+              seed,
+              didWeb: ownerDID,
+              cloud,
+          })
+        : await initLearnCard({
+              didkit: await getDidKitInit(),
+              seed,
+              cloud,
+          });
+
+    saCardsCache.add(seed, saLearnCard);
+
+    return saLearnCard;
+};
+
+export const getServerDidWebDID = (): string => {
+    const domainName = process.env.DOMAIN_NAME;
+    const domain =
+        !domainName || process.env.IS_OFFLINE
+            ? `localhost%3A${process.env.PORT || 3000}`
+            : domainName.replace(/:/g, '%3A');
+    return `did:web:${domain}`;
+};
+
+export const getDidWebLearnCard = async (
+    seed?: string,
+    didWeb?: string
+): Promise<DidWebLearnCardFromSeed['returnValue']> => {
+    const _seed = seed || process.env.SEED;
+    const _didWeb = didWeb || getServerDidWebDID();
+    if (!_seed) throw new Error('No seed set!');
+    if (!_didWeb) throw new Error('No didWeb set!');
+
+    const cachedValue = didWebCardsCache.get(`${_seed}|${_didWeb}`);
+
+    if (cachedValue) return cachedValue;
+
+    const didWebLearnCard = await initLearnCard({
+        didkit: await getDidKitInit(),
+        seed: _seed,
+        didWeb: _didWeb,
+        cloud,
+    });
+
+    didWebCardsCache.add(`${_seed}|${_didWeb}`, didWebLearnCard);
+
+    return didWebLearnCard;
+};
+
+export const getEphemeralLearnCard = async (
+    seed: string
+): Promise<LearnCardFromSeed['returnValue']> => {
+    const cachedValue = ephemeralCardsCache.get(seed);
+
+    if (cachedValue) return cachedValue;
+
+    const ephemeralLearnCard = await initLearnCard({
+        didkit: await getDidKitInit(),
+        seed,
+        cloud,
+    });
+
+    ephemeralCardsCache.add(seed, ephemeralLearnCard);
+
+    return ephemeralLearnCard;
+};

@@ -1,5 +1,219 @@
 # @learncard/helpers
 
+## 1.2.7
+
+### Patch Changes
+
+-   Updated dependencies [[`caf231b53707174ea49f0eb2b65885a36b3e7228`](https://github.com/learningeconomy/LearnCard/commit/caf231b53707174ea49f0eb2b65885a36b3e7228)]:
+    -   @learncard/types@5.12.1
+
+## 1.2.6
+
+### Patch Changes
+
+-   Updated dependencies [[`32e5cfacf499e9a68700170298040f3d313b38da`](https://github.com/learningeconomy/LearnCard/commit/32e5cfacf499e9a68700170298040f3d313b38da)]:
+    -   @learncard/types@5.12.0
+
+## 1.2.5
+
+### Patch Changes
+
+-   Updated dependencies [[`d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9`](https://github.com/learningeconomy/LearnCard/commit/d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9)]:
+    -   @learncard/types@5.11.4
+
+## 1.2.4
+
+### Patch Changes
+
+-   Updated dependencies [[`016b7edc231273aab962b89b4351a3e229fca025`](https://github.com/learningeconomy/LearnCard/commit/016b7edc231273aab962b89b4351a3e229fca025)]:
+    -   @learncard/types@5.11.3
+
+## 1.2.3
+
+### Patch Changes
+
+-   Updated dependencies [[`73865cc62ea292badb99fe41ca8b0f484a12728f`](https://github.com/learningeconomy/LearnCard/commit/73865cc62ea292badb99fe41ca8b0f484a12728f)]:
+    -   @learncard/types@5.11.2
+
+## 1.2.2
+
+### Patch Changes
+
+-   Updated dependencies [[`f8e50b1e3ceafccde28bef859b2c8b220acb2b7d`](https://github.com/learningeconomy/LearnCard/commit/f8e50b1e3ceafccde28bef859b2c8b220acb2b7d)]:
+    -   @learncard/types@5.11.1
+
+## 1.2.1
+
+### Patch Changes
+
+-   Updated dependencies [[`3727c732ad54b4a8ccb89c6354291799e953c8ab`](https://github.com/learningeconomy/LearnCard/commit/3727c732ad54b4a8ccb89c6354291799e953c8ab), [`bb6749d4cd123ca1fcee8d6f657861ae77a614a2`](https://github.com/learningeconomy/LearnCard/commit/bb6749d4cd123ca1fcee8d6f657861ae77a614a2)]:
+    -   @learncard/types@5.11.0
+
+## 1.2.0
+
+### Minor Changes
+
+-   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
+
+    This includes follow-up fixes for Zod v4 behavior and typing changes:
+
+    -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
+    -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
+    -   Allow `Infinity` for generational query inputs in brain-service routes.
+    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+
+### Patch Changes
+
+-   Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9), [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
+    -   @learncard/types@5.10.0
+
+## 1.1.32
+
+### Patch Changes
+
+-   Updated dependencies [[`cb518c2f15b8257eb07fa2c606f52dd3304bc9ea`](https://github.com/learningeconomy/LearnCard/commit/cb518c2f15b8257eb07fa2c606f52dd3304bc9ea)]:
+    -   @learncard/types@5.9.2
+
+## 1.1.31
+
+### Patch Changes
+
+-   Updated dependencies [[`a8ba030d48e75094fd64cd3da0725c3c0f468cf2`](https://github.com/learningeconomy/LearnCard/commit/a8ba030d48e75094fd64cd3da0725c3c0f468cf2)]:
+    -   @learncard/types@5.9.1
+
+## 1.1.30
+
+### Patch Changes
+
+-   [#848](https://github.com/learningeconomy/LearnCard/pull/848) [`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add comprehensive Skills & Skill Frameworks system to LearnCard Network
+
+    This introduces a complete skill taxonomy system spanning the LearnCard Network plugin, brain service, and shared types. Organizations can now create custom skill frameworks, organize skills hierarchically, attach frameworks to Boosts, and align specific skills to credentials.
+
+    ## Core Features
+
+    ### Skill Framework Management
+
+    -   **Create Managed Frameworks**: Users can create skill frameworks with metadata (name, description, status)
+    -   **Framework Ownership**: Frameworks are linked to profiles via `MANAGES` relationship for access control
+    -   **Framework Queries**: List, search, and filter frameworks by various criteria
+    -   **External Provider Sync**: Optional integration with external skills services
+
+    ### Hierarchical Skill Organization
+
+    -   **Create Skills**: Add individual skills with statement, description, and code to frameworks
+    -   **Parent-Child Relationships**: Build skill hierarchies using `IS_CHILD_OF` relationships
+    -   **Framework Containment**: Skills linked to frameworks via `CONTAINS` relationships
+    -   **Bulk Operations**: Support for creating multiple skills and frameworks efficiently
+
+    ### Boost Integration
+
+    -   **Attach Frameworks**: Link skill frameworks to Boosts using `USES_FRAMEWORK` relationships
+    -   **Skill Alignment**: Align specific skills to Boosts via `ALIGNED_TO` relationships
+    -   **Ancestor Traversal**: Query skills from frameworks attached to a boost or its ancestors
+    -   **Permission Checks**: Validates boost admin rights before allowing framework/skill operations
+
+    ## API Methods Added
+
+    ### Plugin Methods
+
+    -   `createManagedSkillFramework()` - Create a new skill framework
+    -   `createManagedSkillFrameworks()` - Bulk create frameworks
+    -   `createSkill()` - Add a skill to a framework
+    -   `createSkills()` - Bulk create skills
+    -   `attachFrameworkToBoost()` - Link framework to boost
+    -   `detachFrameworkFromBoost()` - Remove framework from boost
+    -   `alignBoostSkills()` - Align specific skills to boost
+    -   `getSkillsAvailableForBoost()` - Query alignable skills
+    -   `searchSkillsAvailableForBoost()` - Search skills for boost
+    -   `getBoostFrameworks()` - List frameworks attached to boost
+
+    ### Brain Service Routes
+
+    -   `skillFrameworks.createManaged` - Create framework with MANAGES relationship
+    -   `skillFrameworks.listMine` - Query user's managed frameworks
+    -   `skillFrameworks.update` - Update framework metadata
+    -   `skills.create` - Create skills with hierarchy support
+    -   `skills.update` - Update skill metadata
+    -   `skills.searchFrameworkSkills` - Search within framework
+    -   `boost.attachFrameworkToBoost` - Establish USES_FRAMEWORK relationship
+    -   `boost.alignBoostSkills` - Create ALIGNED_TO relationships
+    -   `boost.getSkillsAvailableForBoost` - Graph traversal for available skills
+
+    ## Type System
+
+    ### New Types & Validators
+
+    -   `SkillFrameworkValidator` / `SkillFrameworkType` - Framework structure
+    -   `SkillValidator` / `SkillType` - Individual skill structure
+    -   `SkillFrameworkStatus` - Framework lifecycle states
+    -   `CreateManagedSkillFrameworkInput` - Framework creation params
+    -   `SkillFrameworkQuery` - Framework search parameters
+
+    ## Graph Database Schema
+
+    ### New Relationships
+
+    -   `(Profile)-[:MANAGES]->(SkillFramework)` - Framework ownership
+    -   `(SkillFramework)-[:CONTAINS]->(Skill)` - Framework-skill membership
+    -   `(Skill)-[:IS_CHILD_OF]->(Skill)` - Hierarchical skill organization
+    -   `(Boost)-[:USES_FRAMEWORK]->(SkillFramework)` - Framework attachment
+    -   `(Boost)-[:ALIGNED_TO]->(Skill)` - Skill alignment for credentials
+
+    ### Access Layer Methods
+
+    -   `createSkillFrameworkNode()` - Persist framework with MANAGES relationship
+    -   `createSkill()` - Create skill with CONTAINS and optional IS_CHILD_OF relationships
+    -   `setBoostUsesFramework()` - Establish framework attachment
+    -   `addAlignedSkillsToBoost()` - Batch create ALIGNED_TO relationships
+    -   `getFrameworkSkillsAvailableForBoost()` - Traverse graph for available skills
+
+    This system enables rich skill-based credential metadata, allowing organizations to categorize and align credentials with industry-standard or custom skill taxonomies.
+
+-   Updated dependencies [[`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357)]:
+    -   @learncard/types@5.9.0
+
+## 1.1.29
+
+### Patch Changes
+
+-   Updated dependencies [[`5fbc434308423d97db4fc8cf63898ed8f8980959`](https://github.com/learningeconomy/LearnCard/commit/5fbc434308423d97db4fc8cf63898ed8f8980959)]:
+    -   @learncard/types@5.8.11
+
+## 1.1.28
+
+### Patch Changes
+
+-   Updated dependencies [[`9d8e71a4e4ca97c004d0d639fcc2869bc008b67e`](https://github.com/learningeconomy/LearnCard/commit/9d8e71a4e4ca97c004d0d639fcc2869bc008b67e)]:
+    -   @learncard/types@5.8.9
+
+## 1.1.27
+
+### Patch Changes
+
+-   Updated dependencies [[`8c3f9ad3846c57b0442b5a09c74ee63323e47c34`](https://github.com/learningeconomy/LearnCard/commit/8c3f9ad3846c57b0442b5a09c74ee63323e47c34)]:
+    -   @learncard/types@5.8.7
+
+## 1.1.26
+
+### Patch Changes
+
+-   Updated dependencies [[`f61e75a7a1de5913e4a7a2b381aa9815e726cec3`](https://github.com/learningeconomy/LearnCard/commit/f61e75a7a1de5913e4a7a2b381aa9815e726cec3), [`beb9c54789a2f48b06e1f82082e1dd51eab6b51d`](https://github.com/learningeconomy/LearnCard/commit/beb9c54789a2f48b06e1f82082e1dd51eab6b51d)]:
+    -   @learncard/types@5.8.6
+
+## 1.1.25
+
+### Patch Changes
+
+-   Updated dependencies [[`00c5403c2932185290ae4e226ca4bf446a1d636c`](https://github.com/learningeconomy/LearnCard/commit/00c5403c2932185290ae4e226ca4bf446a1d636c)]:
+    -   @learncard/types@5.8.5
+
+## 1.1.24
+
+### Patch Changes
+
+-   Updated dependencies [[`3707252bea0526aed3c17f0501ec3275e162f6bb`](https://github.com/learningeconomy/LearnCard/commit/3707252bea0526aed3c17f0501ec3275e162f6bb)]:
+    -   @learncard/types@5.8.4
+
 ## 1.1.23
 
 ### Patch Changes

@@ -26,15 +26,16 @@ class BoostGetChildrenProfileManagers200ResponseRecordsInner(BaseModel):
     """
     BoostGetChildrenProfileManagers200ResponseRecordsInner
     """ # noqa: E501
-    id: StrictStr
-    created: StrictStr
+    id: Optional[StrictStr]
+    created: Optional[StrictStr]
     display_name: Optional[StrictStr] = Field(default='', alias="displayName")
     short_bio: Optional[StrictStr] = Field(default='', alias="shortBio")
     bio: Optional[StrictStr] = ''
     email: Optional[StrictStr] = None
     image: Optional[StrictStr] = None
     hero_image: Optional[StrictStr] = Field(default=None, alias="heroImage")
-    did: StrictStr
+    did: Optional[StrictStr]
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["id", "created", "displayName", "shortBio", "bio", "email", "image", "heroImage", "did"]
 
     model_config = ConfigDict(
@@ -67,8 +68,10 @@ class BoostGetChildrenProfileManagers200ResponseRecordsInner(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -76,6 +79,41 @@ class BoostGetChildrenProfileManagers200ResponseRecordsInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if id (nullable) is None
+        # and model_fields_set contains the field
+        if self.id is None and "id" in self.model_fields_set:
+            _dict['id'] = None
+
+        # set to None if created (nullable) is None
+        # and model_fields_set contains the field
+        if self.created is None and "created" in self.model_fields_set:
+            _dict['created'] = None
+
+        # set to None if email (nullable) is None
+        # and model_fields_set contains the field
+        if self.email is None and "email" in self.model_fields_set:
+            _dict['email'] = None
+
+        # set to None if image (nullable) is None
+        # and model_fields_set contains the field
+        if self.image is None and "image" in self.model_fields_set:
+            _dict['image'] = None
+
+        # set to None if hero_image (nullable) is None
+        # and model_fields_set contains the field
+        if self.hero_image is None and "hero_image" in self.model_fields_set:
+            _dict['heroImage'] = None
+
+        # set to None if did (nullable) is None
+        # and model_fields_set contains the field
+        if self.did is None and "did" in self.model_fields_set:
+            _dict['did'] = None
+
         return _dict
 
     @classmethod
@@ -98,6 +136,11 @@ class BoostGetChildrenProfileManagers200ResponseRecordsInner(BaseModel):
             "heroImage": obj.get("heroImage"),
             "did": obj.get("did")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

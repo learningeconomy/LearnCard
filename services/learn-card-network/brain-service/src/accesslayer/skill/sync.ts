@@ -1,0 +1,98 @@
+import { neogma } from '@instance';
+import type { Skill as ProviderSkill } from '@services/skills-provider/types';
+import type { FlatSkillType } from 'types/skill';
+
+/**
+ * Upsert a batch of provider skills into the local graph and connect them to the framework.
+ *
+ * - Merges Skill nodes by id, updating minimal fields
+ * - Ensures (framework)-[:CONTAINS]->(skill)
+ * - Ensures (child)-[:IS_CHILD_OF]->(parent) when parentId present
+ */
+export const upsertSkillsIntoFramework = async (
+    frameworkId: string,
+    skills: ProviderSkill[]
+): Promise<FlatSkillType[]> => {
+    if (skills.length === 0) return [];
+
+    const skillParams = skills.map(s => ({
+        id: s.id,
+        statement: s.statement,
+        description: s.description ?? null,
+        code: s.code ?? null,
+        icon: s.icon ?? null,
+        type: s.type ?? 'skill',
+        status: s.status ?? 'active',
+        parentId: s.parentId ?? null,
+    }));
+
+    // 1) Merge/Update Skill nodes scoped by (id, frameworkId) and connect to this framework
+    await neogma.queryRunner.run(
+        `UNWIND $skills AS sk
+         MERGE (s:Skill { id: sk.id, frameworkId: $frameworkId })
+         ON CREATE SET s.statement = sk.statement,
+                       s.description = sk.description,
+                       s.code = sk.code,
+                       s.icon = sk.icon,
+                       s.type = sk.type,
+                       s.status = sk.status,
+                       s.frameworkId = $frameworkId
+         ON MATCH SET  s.statement = sk.statement,
+                       s.description = sk.description,
+                       s.code = sk.code,
+                       s.icon = sk.icon,
+                       s.type = sk.type,
+                       s.status = sk.status
+         WITH s
+         MATCH (f:SkillFramework { id: $frameworkId })
+         MERGE (f)-[:CONTAINS]->(s)`,
+        { frameworkId, skills: skillParams }
+    );
+
+    // 2) Create parent relationships scoped to the same framework
+    await neogma.queryRunner.run(
+        `UNWIND $skills AS sk
+         WITH sk WHERE sk.parentId IS NOT NULL
+         MATCH (f:SkillFramework { id: $frameworkId })
+         MATCH (f)-[:CONTAINS]->(child:Skill { id: sk.id })
+         MATCH (f)-[:CONTAINS]->(parent:Skill { id: sk.parentId })
+         MERGE (child)-[:IS_CHILD_OF]->(parent)`,
+        { frameworkId, skills: skillParams }
+    );
+
+    // 3) Remove parent relationships and property when provider indicates root
+    await neogma.queryRunner.run(
+        `UNWIND $skills AS sk
+         WITH sk WHERE sk.parentId IS NULL
+         MATCH (:SkillFramework { id: $frameworkId })-[:CONTAINS]->(child:Skill { id: sk.id })
+         OPTIONAL MATCH (child)-[rel:IS_CHILD_OF]->(:Skill)
+         DELETE rel`,
+        { frameworkId, skills: skillParams }
+    );
+
+    await neogma.queryRunner.run(
+        `UNWIND $skills AS sk
+         WITH sk WHERE sk.parentId IS NULL
+         MATCH (:SkillFramework { id: $frameworkId })-[:CONTAINS]->(root:Skill { id: sk.id })
+         REMOVE root.parentId`,
+        { frameworkId, skills: skillParams }
+    );
+
+    // Return local snapshot of the skills for the framework
+    const result = await neogma.queryRunner.run(
+        `MATCH (:SkillFramework { id: $frameworkId })-[:CONTAINS]->(s:Skill)
+         RETURN s AS s`,
+        { frameworkId }
+    );
+
+    return result.records.map(r => {
+        const props = ((r.get('s') as any)?.properties ?? {}) as Record<string, any>;
+        const normalizedParentId = typeof props.parentId === 'string' ? props.parentId : undefined;
+        const { parentId: _unusedParent, ...rest } = props;
+        return {
+            ...rest,
+            ...(normalizedParentId ? { parentId: normalizedParentId } : {}),
+            type: props.type ?? 'skill',
+        } as FlatSkillType;
+    });
+};

@@ -122,7 +122,7 @@ describe('Auth Grants', () => {
             });
 
             expect(authGrant).toBeDefined();
-            expect(authGrant?.status).toEqual(AuthGrantStatusValidator.Values.active);
+            expect(authGrant?.status).toEqual(AuthGrantStatusValidator.enum.active);
             expect(authGrant?.challenge).toContain(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX);
             const { isChallengeValid, scope } = await isAuthGrantChallengeValidForDID(
                 authGrant?.challenge as string,
@@ -511,7 +511,7 @@ describe('Auth Grants', () => {
                 id: authGrantId,
             });
 
-            expect((authGrant as any).status).toEqual(AuthGrantStatusValidator.Values.revoked);
+            expect((authGrant as any).status).toEqual(AuthGrantStatusValidator.enum.revoked);
         });
 
         // it('should not allow you to revoke an auth grant for a scoped user profile', async () => {
@@ -552,7 +552,7 @@ describe('Auth Grants', () => {
                 id: authGrantId,
             });
 
-            expect((authGrant as any).status).toEqual(AuthGrantStatusValidator.Values.revoked);
+            expect((authGrant as any).status).toEqual(AuthGrantStatusValidator.enum.revoked);
         });
 
         it("should not allow you to revoke someone else's auth grant", async () => {

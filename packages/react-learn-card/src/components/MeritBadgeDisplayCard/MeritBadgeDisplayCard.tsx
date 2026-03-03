@@ -39,6 +39,10 @@ type MeritBadgeDisplayCardProps = {
     showDetailsBtn?: boolean;
     formattedDisplayType?: string;
     customLinkedCredentialsComponent?: React.ReactNode;
+    customBodyContentSlot?: React.ReactNode;
+    unknownVerifierTitle?: string;
+    hideAwardedTo?: boolean;
+    hideFrontFaceDetails?: boolean;
 };
 
 export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
@@ -68,6 +72,10 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
     showDetailsBtn = false,
     formattedDisplayType,
     customLinkedCredentialsComponent,
+    customBodyContentSlot,
+    unknownVerifierTitle,
+    hideAwardedTo,
+    hideFrontFaceDetails,
 }) => {
     const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
 
@@ -92,6 +100,10 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
                         isFront={isFront}
                         showDetailsBtn={showDetailsBtn}
                         formattedDisplayType={formattedDisplayType}
+                        customBodyContentSlot={customBodyContentSlot}
+                        unknownVerifierTitle={unknownVerifierTitle}
+                        hideAwardedTo={hideAwardedTo}
+                        hideFrontFaceDetails={hideFrontFaceDetails}
                     />
                 )}
 

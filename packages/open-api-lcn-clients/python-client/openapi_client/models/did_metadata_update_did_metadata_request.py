@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List
-from openapi_client.models.did_metadata_add_did_metadata_request import DidMetadataAddDidMetadataRequest
+from openapi_client.models.did_metadata_update_did_metadata_request_updates import DidMetadataUpdateDidMetadataRequestUpdates
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -27,7 +27,7 @@ class DidMetadataUpdateDidMetadataRequest(BaseModel):
     """
     DidMetadataUpdateDidMetadataRequest
     """ # noqa: E501
-    updates: DidMetadataAddDidMetadataRequest
+    updates: DidMetadataUpdateDidMetadataRequestUpdates
     __properties: ClassVar[List[str]] = ["updates"]
 
     model_config = ConfigDict(
@@ -84,7 +84,7 @@ class DidMetadataUpdateDidMetadataRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "updates": DidMetadataAddDidMetadataRequest.from_dict(obj["updates"]) if obj.get("updates") is not None else None
+            "updates": DidMetadataUpdateDidMetadataRequestUpdates.from_dict(obj["updates"]) if obj.get("updates") is not None else None
         })
         return _obj
 

@@ -5,14 +5,21 @@ import { base64url } from 'multiformats/bases/base64';
 import { base58btc } from 'multiformats/bases/base58';
 
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
-import { getDidWeb, getManagedDidWeb } from '@helpers/did.helpers';
+import { getAppDidWeb, getDidWeb, getManagedDidWeb } from '@helpers/did.helpers';
+import { isValidAppSlug } from '@helpers/slug.helpers';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
-import { getSigningAuthoritiesForUser } from '@accesslayer/signing-authority/relationships/read';
+import {
+    getSigningAuthoritiesForListing,
+    getSigningAuthoritiesForUser,
+} from '@accesslayer/signing-authority/relationships/read';
+import { readAppStoreListingBySlug } from '@accesslayer/app-store-listing/read';
 import {
     getDidDocForProfile,
     getDidDocForProfileManager,
+    getDidDocForApp,
     setDidDocForProfile,
     setDidDocForProfileManager,
+    setDidDocForApp,
 } from '@cache/did-docs';
 import { DidDocument, JWK } from '@learncard/types';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
@@ -26,6 +33,44 @@ const encodeKey = (key: Uint8Array) => {
     bytes[1] = 0x01;
     bytes.set(key, 2);
     return base58btc.encode(bytes);
+};
+
+// Validate manager ID to prevent injection attacks
+const isValidManagerId = (id: string): boolean => {
+    // Manager IDs should be valid UUIDs
+    const uuidPattern =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return typeof id === 'string' && uuidPattern.test(id);
+};
+
+// Extract Ed25519 public key bytes and a JWK from a verification method that may
+// have either publicKeyJwk (2018) or publicKeyMultibase/Multikey (2020).
+const extractEd25519FromVerificationMethod = (vm: any): { bytes: Uint8Array; jwk: JWK } => {
+    // Prefer JWK if provided
+    const jwk = vm?.publicKeyJwk as JWK | undefined;
+    if (jwk?.x) {
+        const bytes = base64url.decode(`u${jwk.x}`);
+        return { bytes, jwk } as { bytes: Uint8Array; jwk: JWK };
+    }
+
+    // Handle Multikey / 2020 suite
+    const mb = vm?.publicKeyMultibase as string | undefined;
+    if (mb) {
+        const decoded = base58btc.decode(mb);
+        const bytes = decoded[0] === 0xed && decoded[1] === 0x01 ? decoded.slice(2) : decoded;
+        const x = base64url.encode(bytes).slice(1);
+        return { bytes, jwk: { kty: 'OKP', crv: 'Ed25519', x } as JWK };
+    }
+
+    // Fallback: legacy base58 without multibase prefix
+    const b58 = vm?.publicKeyBase58 as string | undefined;
+    if (b58) {
+        const bytes = base58btc.baseDecode(b58);
+        const x = base64url.encode(bytes).slice(1);
+        return { bytes, jwk: { kty: 'OKP', crv: 'Ed25519', x } as JWK };
+    }
+
+    throw new Error('Unsupported verification method format: missing public key');
 };
 
 export const app = Fastify();
@@ -75,11 +120,9 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         let saDocs: Record<string, any>[] = [];
         try {
-            console.log('Signing authorities get');
             const signingAuthorities = (await getSigningAuthoritiesForUser(profile)).filter(
                 sa => !sa.relationship.did.includes('did:web')
             );
-            console.log('Signing authorities', signingAuthorities);
             if (signingAuthorities) {
                 saDocs = await Promise.all(
                     signingAuthorities.map(async (sa): Promise<Record<string, any>> => {
@@ -103,6 +146,30 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         }
 
         let finalDoc = { ...replacedDoc, controller: profile.did };
+
+        // Ensure the primary keyAgreement uses 2019 suite format for backwards compatibility
+        try {
+            const vm0 = (finalDoc.verificationMethod?.[0] as any) || {};
+            const { bytes: ed25519Bytes } = extractEd25519FromVerificationMethod(vm0);
+
+            // Ensure the primary keyAgreement uses 2019 suite with publicKeyBase58
+            const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
+            const primaryKAId = `${did}#${encodeKey(x25519PublicKeyBytes)}`;
+            const primaryKA = {
+                id: primaryKAId,
+                type: 'X25519KeyAgreementKey2019',
+                controller: did,
+                publicKeyBase58: base58btc.encode(x25519PublicKeyBytes).slice(1),
+            } as const;
+
+            const existingKA = ((finalDoc as any).keyAgreement as any[]) || [];
+            (finalDoc as any).keyAgreement = [
+                primaryKA,
+                ...existingKA.filter(ka => ka?.id !== primaryKAId),
+            ];
+        } catch (e) {
+            request.log?.warn({ err: e }, 'Failed to set 2019 keyAgreement on did:web document');
+        }
 
         if (saDocs) {
             saDocs.map(sa => {
@@ -135,12 +202,12 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                         const targetKey = manager.did.split(':')[2];
 
                         const targetDidDoc = await learnCard.invoke.resolveDid(targetDid);
-                        const targetJwk = (targetDidDoc.verificationMethod?.[0] as any)
-                            .publicKeyJwk as JWK;
+                        const vm = targetDidDoc.verificationMethod?.[0] as any;
+                        const { jwk: targetJwk, bytes: ed25519Bytes } =
+                            extractEd25519FromVerificationMethod(vm);
 
-                        const _decodedJwk = base64url.decode(`u${targetJwk.x}`);
                         const _x25519PublicKeyBytes =
-                            sodium.crypto_sign_ed25519_pk_to_curve25519(_decodedJwk);
+                            sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
 
                         const id = `${did}#${targetKey}`;
 
@@ -180,6 +247,152 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         return reply.send(finalDoc);
     });
 
+    fastify.options('/app/:slug/did.json', async (_request, reply) => {
+        reply.status(200);
+        reply.header('Access-Control-Allow-Origin', '*');
+        reply.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        reply.header('Access-Control-Allow-Headers', '*');
+        return reply.send();
+    });
+
+    fastify.get('/app/:slug/did.json', async (request, reply) => {
+        const { slug } = request.params as { slug: string };
+
+        // Validate slug to prevent injection attacks
+        if (!isValidAppSlug(slug)) {
+            return reply.status(400).send({ error: 'Invalid app slug format' });
+        }
+
+        const cachedResult = await getDidDocForApp(slug);
+
+        if (cachedResult) return reply.send(cachedResult);
+
+        await _sodium.ready;
+        const sodium = _sodium;
+
+        const learnCard = await getEmptyLearnCard();
+
+        const listing = await readAppStoreListingBySlug(slug);
+        if (!listing) return reply.status(404).send();
+
+        const signingAuthorities = (await getSigningAuthoritiesForListing(listing)).filter(
+            sa => !sa.relationship.did.includes('did:web')
+        );
+        if (!signingAuthorities.length) return reply.status(404).send();
+
+        const signingAuthority =
+            signingAuthorities.find(sa => sa.relationship.isPrimary) || signingAuthorities[0];
+        if (!signingAuthority) return reply.status(404).send();
+
+        const authorityDid = signingAuthority.relationship.did;
+        const authorityName = signingAuthority.relationship.name;
+
+        const domainName: string = request.hostname || (request as any).requestContext.domainName;
+        const _domain =
+            !domainName || process.env.IS_OFFLINE
+                ? `localhost%3A${process.env.PORT || 3000}`
+                : domainName.replace(/:/g, '%3A');
+
+        const domain = process.env.DOMAIN_NAME || _domain;
+        const did = getAppDidWeb(domain, slug);
+
+        const didDoc = await learnCard.invoke.resolveDid(authorityDid);
+        const key = authorityDid.split(':')[2];
+
+        const replacedDoc = JSON.parse(
+            JSON.stringify(didDoc)
+                .replaceAll(authorityDid, did)
+                .replaceAll(`#${key}`, `#${authorityName}`)
+        );
+
+        if (replacedDoc?.verificationMethod?.[0]) {
+            replacedDoc.verificationMethod[0].controller = `${did}#${authorityName}`;
+        }
+
+        let saDocs: Record<string, any>[] = [];
+        try {
+            const additionalSigningAuthorities = signingAuthorities.filter(
+                sa =>
+                    !(
+                        sa.relationship.did === signingAuthority.relationship.did &&
+                        sa.relationship.name === signingAuthority.relationship.name
+                    )
+            );
+
+            saDocs = await Promise.all(
+                additionalSigningAuthorities.map(async (sa): Promise<Record<string, any>> => {
+                    const _didDoc = await learnCard.invoke.resolveDid(sa.relationship.did);
+                    const _key = sa.relationship.did.split(':')[2];
+
+                    const _replacedDoc = JSON.parse(
+                        JSON.stringify(_didDoc)
+                            .replaceAll(sa.relationship.did, did)
+                            .replaceAll(`#${_key}`, `#${sa.relationship.name}`)
+                    );
+
+                    if (_replacedDoc?.verificationMethod?.[0]) {
+                        _replacedDoc.verificationMethod[0].controller += `#${sa.relationship.name}`;
+                    }
+
+                    return _replacedDoc;
+                })
+            );
+        } catch (e) {
+            console.error(e);
+        }
+
+        let finalDoc: DidDocument = { ...replacedDoc, controller: authorityDid };
+
+        try {
+            const vm0 = (finalDoc.verificationMethod?.[0] as any) || {};
+            const { bytes: ed25519Bytes } = extractEd25519FromVerificationMethod(vm0);
+            const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
+            const primaryKAId = `${did}#${encodeKey(x25519PublicKeyBytes)}`;
+            const primaryKA = {
+                id: primaryKAId,
+                type: 'X25519KeyAgreementKey2019',
+                controller: did,
+                publicKeyBase58: base58btc.encode(x25519PublicKeyBytes).slice(1),
+            } as const;
+
+            const existingKA = ((finalDoc as any).keyAgreement as any[]) || [];
+            (finalDoc as any).keyAgreement = [
+                primaryKA,
+                ...existingKA.filter(ka => ka?.id !== primaryKAId),
+            ];
+        } catch (e) {
+            request.log?.warn(
+                { err: e },
+                'Failed to set 2019 keyAgreement on app did:web document'
+            );
+        }
+
+        if (saDocs.length) {
+            saDocs.map(sa => {
+                finalDoc.verificationMethod = [
+                    ...(finalDoc.verificationMethod || []),
+                    ...(sa.verificationMethod || []),
+                ];
+                finalDoc.authentication = [
+                    ...(finalDoc.authentication || []),
+                    ...(sa.authentication || []),
+                ];
+                finalDoc.assertionMethod = [
+                    ...(finalDoc.assertionMethod || []),
+                    ...(sa.assertionMethod || []),
+                ];
+                finalDoc.keyAgreement = [
+                    ...(finalDoc.keyAgreement || []),
+                    ...(sa.keyAgreement || []),
+                ];
+            });
+        }
+
+        await setDidDocForApp(slug, finalDoc);
+
+        return reply.send(finalDoc);
+    });
+
     fastify.options('/manager/:id/did.json', async (_request, reply) => {
         reply.status(200);
         reply.header('Access-Control-Allow-Origin', '*');
@@ -190,6 +403,11 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
     fastify.get('/manager/:id/did.json', async (request, reply) => {
         const { id } = request.params as { id: string };
+
+        // Validate manager ID to prevent injection attacks
+        if (!isValidManagerId(id)) {
+            return reply.status(400).send({ error: 'Invalid manager ID format' });
+        }
 
         const cachedResult = await getDidDocForProfileManager(id);
 
@@ -239,12 +457,12 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                     const targetKey = administrator.did.split(':')[2];
 
                     const targetDidDoc = await learnCard.invoke.resolveDid(targetDid);
-                    const targetJwk = (targetDidDoc.verificationMethod?.[0] as any)
-                        .publicKeyJwk as JWK;
+                    const vm = targetDidDoc.verificationMethod?.[0] as any;
+                    const { jwk: targetJwk, bytes: ed25519Bytes } =
+                        extractEd25519FromVerificationMethod(vm);
 
-                    const _decodedJwk = base64url.decode(`u${targetJwk.x}`);
                     const _x25519PublicKeyBytes =
-                        sodium.crypto_sign_ed25519_pk_to_curve25519(_decodedJwk);
+                        sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
 
                     const id = `${did}#${targetKey}`;
 
@@ -306,13 +524,12 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
             JSON.stringify(didDoc).replaceAll(did, didWeb).replaceAll(`#${key}`, '#owner')
         );
 
-        const jwk = replacedDoc.verificationMethod[0].publicKeyJwk;
-
-        const decodedJwk = base64url.decode(`u${jwk.x}`);
-        const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(decodedJwk);
+        const vm = replacedDoc.verificationMethod[0] as any;
+        const { bytes: ed25519Bytes } = extractEd25519FromVerificationMethod(vm);
+        const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
 
         const finalDoc = {
-            ...replacedDoc,
+            ...(replacedDoc as any),
             keyAgreement: [
                 {
                     id: `${didWeb}#${encodeKey(x25519PublicKeyBytes)}`,
@@ -320,8 +537,11 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                     controller: didWeb,
                     publicKeyBase58: base58btc.encode(x25519PublicKeyBytes).slice(1),
                 },
+                ...(((replacedDoc as any).keyAgreement as any[]) || []).filter(
+                    (ka: any) => ka?.id !== `${didWeb}#${encodeKey(x25519PublicKeyBytes)}`
+                ),
             ],
-        };
+        } as any;
 
         setDidDocForProfile('::root::', finalDoc);
 

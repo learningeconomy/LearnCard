@@ -47,7 +47,7 @@ export const authGrantsRouter = t.router({
                 const authGrant = await createAuthGrant({
                     scope: AUTH_GRANT_READ_ONLY_SCOPE,
                     ...input,
-                    status: AuthGrantStatusValidator.Values.active,
+                    status: AuthGrantStatusValidator.enum.active,
                     createdAt: new Date().toISOString(),
                     challenge: `${AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX}${uuid()}`,
                 });
@@ -210,7 +210,7 @@ export const authGrantsRouter = t.router({
                 });
             }
 
-            await updateAuthGrant(authGrant, { status: AuthGrantStatusValidator.Values.revoked });
+            await updateAuthGrant(authGrant, { status: AuthGrantStatusValidator.enum.revoked });
 
             return true;
         }),
@@ -245,11 +245,11 @@ export const authGrantsRouter = t.router({
                 });
             }
 
-            if (authGrant.status !== AuthGrantStatusValidator.Values.revoked) {
+            if (authGrant.status !== AuthGrantStatusValidator.enum.revoked) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message:
-                        'This AuthGrant is not revoked. You can only delete revoked AuthGrants.',
+                        'This AuthGrant is not revoked, you must revoke it before deleting it!',
                 });
             }
 

@@ -13,6 +13,11 @@ import { authGrantsRouter, AuthGrantsRouter } from '@routes/auth-grants';
 import { workflowsRouter, WorkflowsRouter } from '@routes/workflows';
 import { contactMethodsRouter, ContactMethodsRouter } from '@routes/contact-methods';
 import { inboxRouter, InboxRouter } from '@routes/inbox';
+import { skillFrameworksRouter, SkillFrameworksRouter } from '@routes/skill-frameworks';
+import { skillsRouter, SkillsRouter } from '@routes/skills';
+import { integrationsRouter, IntegrationsRouter } from '@routes/integrations';
+import { appStoreRouter, AppStoreRouter } from '@routes/app-store';
+import { activityRouter, ActivityRouter } from '@routes/activity';
 
 /** For end-to-end testing, only available in test environment */
 import { testRouter, TestRouter } from '@routes/test';
@@ -34,6 +39,11 @@ export const appRouter = t.router<{
     workflows: WorkflowsRouter;
     contactMethods: ContactMethodsRouter;
     inbox: InboxRouter;
+    skillFrameworks: SkillFrameworksRouter;
+    skills: SkillsRouter;
+    integrations: IntegrationsRouter;
+    appStore: AppStoreRouter;
+    activity: ActivityRouter;
     test?: TestRouter;
 }>({
     boost: boostsRouter,
@@ -50,6 +60,11 @@ export const appRouter = t.router<{
     workflows: workflowsRouter,
     contactMethods: contactMethodsRouter,
     inbox: inboxRouter,
+    skillFrameworks: skillFrameworksRouter,
+    skills: skillsRouter,
+    integrations: integrationsRouter,
+    appStore: appStoreRouter,
+    activity: activityRouter,
     test: !!process.env.IS_E2E_TEST ? testRouter : undefined,
 });
 

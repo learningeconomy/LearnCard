@@ -15,6 +15,7 @@ import {
 import { getPresentationOwner } from '@accesslayer/presentation/relationships/read';
 import { deletePresentation } from '@accesslayer/presentation/delete';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
+import { getProfileIdFromString } from '@helpers/did.helpers';
 
 export const presentationsRouter = t.router({
     sendPresentation: profileRoute
@@ -36,7 +37,12 @@ export const presentationsRouter = t.router({
             const { profile } = ctx.user;
             const { profileId, presentation } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             const isBlocked = await isRelationshipBlocked(profile, targetProfile);
             if (!targetProfile || isBlocked) {
@@ -88,7 +94,7 @@ export const presentationsRouter = t.router({
                     limit: z.number().int().positive().lt(100).default(25),
                     from: z.string().optional(),
                 })
-                .default({})
+                .default({ limit: 25 })
         )
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit, from }, ctx }) => {
@@ -116,7 +122,7 @@ export const presentationsRouter = t.router({
                     limit: z.number().int().positive().lt(100).default(25),
                     to: z.string().optional(),
                 })
-                .default({})
+                .default({ limit: 25 })
         )
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit, to }, ctx }) => {
@@ -144,7 +150,7 @@ export const presentationsRouter = t.router({
                     limit: z.number().int().positive().lt(100).default(25),
                     from: z.string().optional(),
                 })
-                .default({})
+                .default({ limit: 25 })
         )
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit, from }, ctx }) => {

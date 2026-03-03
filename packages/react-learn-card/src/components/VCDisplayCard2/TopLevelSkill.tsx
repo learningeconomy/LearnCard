@@ -31,9 +31,11 @@ const TopLevelSkill: React.FC<{
 
     const subSkills = skillSelected.subskills ?? [];
     const subSkillsCount = skillSelected.subskills.length ?? 0;
-
+    const isClickable = subSkills?.length > 0;
     return (
-        <div
+        <button
+            onClick={isClickable ? handleExpandSubSkills : undefined}
+            disabled={!isClickable}
             className={`flex items-center justify-between w-full mb-4 bg-violet-100 rounded-[20px]`}
         >
             <div className="flex items-center justify-start w-[80%] px-[6px] py-[10px] overflow-hidden">
@@ -44,25 +46,17 @@ const TopLevelSkill: React.FC<{
                     <p className="font-poppins text-left text-violet-800 font-semibold text-xs">
                         {_category?.title}
                     </p>
-                    <p className="text-black font-poppins text-left text-xs font-normal">
-                        {title}
-                    </p>
+                    <p className="text-black font-poppins text-left text-xs font-normal">{title}</p>
                 </div>
             </div>
             {subSkills?.length > 0 && (
                 <div className="flex items-center justify-center rounded-full bg-white mr-4 h-[40px] w-[40px]">
-                    <button
-                        onClick={e => {
-                            e.stopPropagation();
-                            handleExpandSubSkills?.();
-                        }}
-                        className="text-black font-bold flex items-center justify-center text-center font-poppins"
-                    >
+                    <div className="text-black font-bold flex items-center justify-center text-center font-poppins">
                         +{subSkillsCount}
-                    </button>
+                    </div>
                 </div>
             )}
-        </div>
+        </button>
     );
 };
 

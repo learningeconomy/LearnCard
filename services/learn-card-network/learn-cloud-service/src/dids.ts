@@ -15,6 +15,17 @@ const encodeKey = (key: Uint8Array) => {
     return base58btc.encode(bytes);
 };
 
+// Extract Ed25519 public key bytes from a verification method which may be JWK or Multikey
+const extractEd25519FromVerificationMethod = (vm: any): Uint8Array => {
+    if (vm?.publicKeyJwk?.x) return base64url.decode(`u${vm.publicKeyJwk.x}`);
+    if (vm?.publicKeyMultibase) {
+        const decoded = base58btc.decode(vm.publicKeyMultibase);
+        return decoded[0] === 0xed && decoded[1] === 0x01 ? decoded.slice(2) : decoded;
+    }
+    if (vm?.publicKeyBase58) return base58btc.baseDecode(vm.publicKeyBase58);
+    throw new Error('Unsupported verification method format: missing public key');
+};
+
 export const app = Fastify();
 
 app.register(fastifyCors);
@@ -53,22 +64,27 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
             JSON.stringify(didDoc).replaceAll(did, didWeb).replaceAll(`#${key}`, '#owner')
         );
 
-        const jwk = replacedDoc.verificationMethod[0].publicKeyJwk;
+        const vm = replacedDoc.verificationMethod[0] as any;
+        const ed25519Bytes = extractEd25519FromVerificationMethod(vm);
+        const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
 
-        const decodedJwk = base64url.decode(`u${jwk.x}`);
-        const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(decodedJwk);
+        const primaryKAId = `${didWeb}#${encodeKey(x25519PublicKeyBytes)}`;
+        const primaryKA = {
+            id: primaryKAId,
+            type: 'X25519KeyAgreementKey2019',
+            controller: didWeb,
+            publicKeyBase58: base58btc.encode(x25519PublicKeyBytes).slice(1),
+        } as const;
 
         const finalDoc = {
             ...replacedDoc,
             keyAgreement: [
-                {
-                    id: `${didWeb}#${encodeKey(x25519PublicKeyBytes)}`,
-                    type: 'X25519KeyAgreementKey2019',
-                    controller: didWeb,
-                    publicKeyBase58: base58btc.encode(x25519PublicKeyBytes).slice(1),
-                },
+                primaryKA,
+                ...(((replacedDoc as any).keyAgreement as any[]) || []).filter(
+                    (ka: any) => ka?.id !== primaryKAId
+                ),
             ],
-        };
+        } as any;
 
         setDidDocForProfile('::root::', finalDoc);
 

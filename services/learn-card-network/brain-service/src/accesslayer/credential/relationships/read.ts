@@ -21,10 +21,10 @@ export const getCredentialSentToProfile = async (
     to: ProfileType
 ): Promise<
     | {
-        source: ProfileType;
-        relationship: ProfileRelationships['credentialSent']['RelationshipProperties'];
-        target: CredentialInstance;
-    }
+          source: ProfileType;
+          relationship: ProfileRelationships['credentialSent']['RelationshipProperties'];
+          target: CredentialInstance;
+      }
     | undefined
 > => {
     const data = (
@@ -36,7 +36,11 @@ export const getCredentialSentToProfile = async (
 
     if (!data) return undefined;
 
-    return { ...data, source: inflateObject(data.source.dataValues as any) };
+    return {
+        ...data,
+        source: inflateObject(data.source.dataValues as any),
+        relationship: inflateObject((data.relationship as any)?.dataValues ?? data.relationship),
+    };
 };
 
 export const getCredentialOwner = async (
@@ -55,7 +59,8 @@ export const getCredentialOwner = async (
 
 export const getCredentialReceivedByProfile = async (
     credentialId: string,
-    profile: ProfileType
+    profile: ProfileType,
+    includeRevoked = false
 ): Promise<boolean> => {
     const relationships = await Credential.findRelationships({
         alias: 'credentialReceived',
@@ -65,7 +70,15 @@ export const getCredentialReceivedByProfile = async (
         },
     });
 
-    return relationships.length > 0;
+    if (includeRevoked) {
+        return relationships.length > 0;
+    }
+
+    // Filter out revoked credentials
+    return relationships.some(rel => {
+        const status = (rel.relationship as any)?.status;
+        return !status || status !== 'revoked';
+    });
 };
 
 /**
@@ -195,7 +208,8 @@ export const getAllCredentialsForProfileTerms = async (
 
     if (!includeReceived) {
         query = query.where(
-            `NOT EXISTS { MATCH (credential)-[:${Credential.getRelationshipByAlias('credentialReceived').name
+            `NOT EXISTS { MATCH (credential)-[:${
+                Credential.getRelationshipByAlias('credentialReceived').name
             }]-(profile) }`
         );
     }
@@ -238,4 +252,24 @@ export const getAllCredentialsForProfileTerms = async (
         contract: inflateObject<any>(record.contract),
         transaction: inflateObject<any>(record.transaction),
     }));
+};
+
+export const getBoostIdForCredentialInstance = async (
+    credential: CredentialInstance
+): Promise<string | undefined> => {
+    const results = convertQueryResultToPropertiesObjectArray<{ boostId: string }>(
+        await new QueryBuilder()
+            .match({
+                related: [
+                    { identifier: 'credential', model: Credential, where: { id: credential.id } },
+                    Credential.getRelationshipByAlias('instanceOf'),
+                    { identifier: 'boost', model: Boost },
+                ],
+            })
+            .return('boost.id AS boostId')
+            .limit(1)
+            .run()
+    );
+
+    return results[0]?.boostId;
 };

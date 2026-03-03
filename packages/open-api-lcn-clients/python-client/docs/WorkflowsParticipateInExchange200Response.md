@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**verifiable_presentation** | [**PresentationSendPresentationRequestPresentationAnyOf**](PresentationSendPresentationRequestPresentationAnyOf.md) |  | [optional] 
+**verifiable_presentation** | [**StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1.md) |  | [optional] 
 **verifiable_presentation_request** | [**WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest**](WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest.md) |  | [optional] 
 **redirect_url** | **str** |  | [optional] 
 

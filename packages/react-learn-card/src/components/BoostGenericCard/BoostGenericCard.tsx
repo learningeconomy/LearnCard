@@ -2,7 +2,7 @@ import React from 'react';
 import { BoostGenericCardProps, WalletCategoryTypes } from '../../types';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { DisplayTypeEnum, getDisplayIcon } from '../../helpers/display.helpers';
-import { CertDisplayCardSkillsCount } from '../CertificateDisplayCard';
+import AlignmentSkillsCount from './AlignmentSkillsCount';
 import ThreeDotVertical from '../svgs/ThreeDotVertical';
 import { CircleCheckButton } from '../CircleCheckButton';
 
@@ -93,14 +93,16 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                     }`}
                 >
                     <div className="px-1 flex flex-col items-center justify-center w-full">
-                        {/* Title */}
+                        {/* Title - dynamically size based on length */}
                         {!customTitle ? (
                             <p
                                 className={`
                                 ${customHeaderClass}
-                                text-[16px] font-medium text-center text-grayscale-900 line-clamp-2
-                                h-[40px] flex items-center justify-center
+                                font-medium text-center text-grayscale-900 line-clamp-2
+                                h-[50px] flex items-center justify-center
+                                ${(title?.length ?? 0) > 35 ? 'text-[13px] leading-tight' : 'text-[16px]'}
                             `}
+                                title={title}
                             >
                                 {title}
                             </p>
@@ -117,18 +119,18 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
                         {/* Date & Verifier */}
                         {customDateDisplay || (
-                            <p className="text-[12px] text-grayscale-700 mt-1 flex items-center">
+                            <div className="text-[11px] text-grayscale-700 mt-1 flex flex-col items-center">
                                 {verifierBadge}
-                                {dateDisplay}
-                            </p>
+                                <span>{dateDisplay}</span>
+                            </div>
                         )}
 
                         {/* Skills count if in modal */}
-                        {isInSkillsModal && (
-                            <CertDisplayCardSkillsCount
-                                skills={credential?.skills || []}
+                        {isInSkillsModal && credential && (
+                            <AlignmentSkillsCount
+                                credential={credential}
                                 onClick={handleInnerClick}
-                                isInSkillsModal={isInSkillsModal}
+                                className="mt-[16px]"
                             />
                         )}
                     </div>

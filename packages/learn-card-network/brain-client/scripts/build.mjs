@@ -2,7 +2,7 @@ import path from 'path';
 
 import esbuild from 'esbuild';
 import { NodeResolvePlugin } from '@esbuild-plugins/node-resolve';
-import rimraf from 'rimraf';
+import fs from 'fs/promises';
 
 const nodeResolveExternal = NodeResolvePlugin({
     extensions: ['.ts', '.js', '.tsx', '.jsx', '.cjs', '.mjs'],
@@ -21,7 +21,6 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
@@ -32,7 +31,6 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
@@ -44,9 +42,12 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
-        plugins: [nodeResolveExternal],
+        // For the ESM build, rely on esbuild's default resolution and
+        // bundle dependencies like @learncard/helpers directly, so we
+        // don't end up importing the CJS helpers build that uses
+        // dynamic require('query-string') in the browser.
+        plugins: [],
         entryPoints: ['src/index.ts'],
         format: 'esm',
         outfile: 'dist/brain-client.esm.js',
@@ -54,15 +55,7 @@ const configurations = [
 ];
 
 function asyncRimraf(path) {
-    return new Promise((resolve, reject) => {
-        rimraf(path, err => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
-    });
+    return fs.rm(path, { recursive: true, force: true });
 }
 
 await Promise.all(

@@ -1,4 +1,4 @@
-import 'zod-openapi/extend';
+import type {} from 'zod-openapi';
 
 export * from './vc';
 export * from './did';

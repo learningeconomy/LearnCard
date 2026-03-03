@@ -1,0 +1,773 @@
+import { vi } from 'vitest';
+
+import { getClient, getUser } from './helpers/getClient';
+import { testVc } from './helpers/send';
+import { Profile, Credential, CredentialActivity } from '@models';
+import * as Notifications from '@helpers/notifications.helpers';
+import { addNotificationToQueueSpy } from './helpers/spies';
+import { createCredentialActivity } from '@accesslayer/credential-activity/create';
+import {
+    getActivitiesForProfile,
+    getActivityStatsForProfile,
+    getActivityById,
+} from '@accesslayer/credential-activity/read';
+
+const noAuthClient = getClient();
+let userA: Awaited<ReturnType<typeof getUser>>;
+let userB: Awaited<ReturnType<typeof getUser>>;
+
+describe('Credential Activity', () => {
+    beforeAll(async () => {
+        userA = await getUser();
+        userB = await getUser('b'.repeat(64));
+
+        vi.spyOn(Notifications, 'addNotificationToQueue').mockImplementation(
+            addNotificationToQueueSpy
+        );
+    });
+
+    beforeEach(async () => {
+        await Profile.delete({ detach: true, where: {} });
+        await Credential.delete({ detach: true, where: {} });
+        await CredentialActivity.delete({ detach: true, where: {} });
+
+        await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+        addNotificationToQueueSpy.mockReset();
+    });
+
+    afterAll(async () => {
+        await Profile.delete({ detach: true, where: {} });
+        await Credential.delete({ detach: true, where: {} });
+        await CredentialActivity.delete({ detach: true, where: {} });
+    });
+
+    describe('createCredentialActivity', () => {
+        it('should create an activity record with basic fields', async () => {
+            const activityId = await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'send',
+            });
+
+            expect(activityId).toBeDefined();
+            expect(typeof activityId).toBe('string');
+        });
+
+        it('should create an activity record with all optional fields', async () => {
+            const activityId = await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'CREATED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                boostUri: 'lc:network:localhost%3A3000/trpc:boost:test123',
+                credentialUri: 'lc:network:localhost%3A3000/trpc:credential:cred123',
+                inboxCredentialId: 'inbox123',
+                integrationId: 'integration456',
+                source: 'send',
+                metadata: { templateData: { name: 'Test' } },
+            });
+
+            expect(activityId).toBeDefined();
+        });
+
+        it('should use provided activityId when specified', async () => {
+            const providedActivityId = 'custom-activity-id-123';
+
+            const activityId = await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'sendBoost',
+                activityId: providedActivityId,
+            });
+
+            expect(activityId).toBe(providedActivityId);
+        });
+
+        it('should create FAILED event type', async () => {
+            const activityId = await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'FAILED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                source: 'send',
+                metadata: { error: 'Signing authority not found' },
+            });
+
+            expect(activityId).toBeDefined();
+
+            const activity = await getActivityById(activityId);
+
+            expect(activity).toBeDefined();
+            expect(activity?.eventType).toBe('FAILED');
+            expect(activity?.metadata?.error).toBe('Signing authority not found');
+        });
+
+        it('should chain FAILED event to original activityId', async () => {
+            // Create initial CREATED event
+            const originalActivityId = await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'CREATED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                source: 'send',
+                boostUri: 'lc:network:localhost%3A3000/trpc:boost:test123',
+            });
+
+            // Create FAILED event chained to original
+            const failedActivityId = await createCredentialActivity({
+                activityId: originalActivityId,
+                actorProfileId: 'usera',
+                eventType: 'FAILED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                source: 'send',
+                boostUri: 'lc:network:localhost%3A3000/trpc:boost:test123',
+                metadata: { error: 'Test failure' },
+            });
+
+            // Both should have the same activityId
+            expect(failedActivityId).toBe(originalActivityId);
+
+            // Query activities and verify lifecycle
+            const activities = await getActivitiesForProfile('usera', { limit: 10 });
+            const chainedActivities = activities.filter(a => a.activityId === originalActivityId);
+
+            expect(chainedActivities.length).toBe(2);
+            expect(chainedActivities.some(a => a.eventType === 'CREATED')).toBe(true);
+            expect(chainedActivities.some(a => a.eventType === 'FAILED')).toBe(true);
+        });
+
+        it('should store integrationId on activity', async () => {
+            const integrationId = 'test-integration-123';
+
+            const activityId = await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'send',
+                integrationId,
+            });
+
+            const activity = await getActivityById(activityId);
+
+            expect(activity).toBeDefined();
+            expect(activity?.integrationId).toBe(integrationId);
+        });
+
+        it('should preserve integrationId when chaining events', async () => {
+            const integrationId = 'chain-integration-456';
+
+            // Create initial CREATED event with integrationId
+            const originalActivityId = await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'CREATED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                source: 'send',
+                integrationId,
+            });
+
+            // Create CLAIMED event chained to original with same integrationId
+            await createCredentialActivity({
+                activityId: originalActivityId,
+                actorProfileId: 'usera',
+                eventType: 'CLAIMED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                recipientProfileId: 'userb',
+                source: 'claimLink',
+                integrationId,
+            });
+
+            // Query and verify both have integrationId
+            const activities = await getActivitiesForProfile('usera', { limit: 10 });
+            const chainedActivities = activities.filter(a => a.activityId === originalActivityId);
+
+            expect(chainedActivities.length).toBe(2);
+            expect(chainedActivities.every(a => a.integrationId === integrationId)).toBe(true);
+        });
+    });
+
+    describe('getActivitiesForProfile', () => {
+        it('should return empty array when no activities exist', async () => {
+            const activities = await getActivitiesForProfile('usera', { limit: 10 });
+
+            expect(activities).toEqual([]);
+        });
+
+        it('should return activities for the specified profile', async () => {
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'send',
+            });
+
+            const activities = await getActivitiesForProfile('usera', { limit: 10 });
+
+            expect(activities).toHaveLength(1);
+            expect(activities[0].actorProfileId).toBe('usera');
+            expect(activities[0].eventType).toBe('DELIVERED');
+            expect(activities[0].recipientType).toBe('profile');
+        });
+
+        it('should filter by eventType', async () => {
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'send',
+            });
+
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'CLAIMED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'claim',
+            });
+
+            const deliveredOnly = await getActivitiesForProfile('usera', {
+                limit: 10,
+                eventType: 'DELIVERED',
+            });
+
+            expect(deliveredOnly).toHaveLength(1);
+            expect(deliveredOnly[0].eventType).toBe('DELIVERED');
+        });
+
+        it('should respect limit parameter', async () => {
+            for (let i = 0; i < 5; i++) {
+                await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+            }
+
+            const activities = await getActivitiesForProfile('usera', { limit: 3 });
+
+            expect(activities).toHaveLength(3);
+        });
+
+        it('should support cursor-based pagination', async () => {
+            const timestamps: string[] = [];
+
+            for (let i = 0; i < 5; i++) {
+                await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                // Small delay to ensure different timestamps
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            const firstPage = await getActivitiesForProfile('usera', { limit: 2 });
+
+            expect(firstPage).toHaveLength(2);
+
+            const cursor = firstPage[1].timestamp;
+            const secondPage = await getActivitiesForProfile('usera', { limit: 2, cursor });
+
+            expect(secondPage).toHaveLength(2);
+            expect(secondPage[0].timestamp).not.toBe(firstPage[0].timestamp);
+        });
+    });
+
+    describe('getActivityStatsForProfile', () => {
+        it('should return zero stats when no activities exist', async () => {
+            const stats = await getActivityStatsForProfile('usera');
+
+            expect(stats.total).toBe(0);
+            expect(stats.created).toBe(0);
+            expect(stats.delivered).toBe(0);
+            expect(stats.claimed).toBe(0);
+            expect(stats.expired).toBe(0);
+            expect(stats.failed).toBe(0);
+            expect(stats.claimRate).toBe(0);
+        });
+
+        it('should calculate correct stats', async () => {
+            // Create activities with different event types
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'send',
+                activityId: 'activity1',
+            });
+
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'CLAIMED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'claim',
+                activityId: 'activity1',
+            });
+
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'send',
+                activityId: 'activity2',
+            });
+
+            const stats = await getActivityStatsForProfile('usera');
+
+            expect(stats.delivered).toBeGreaterThanOrEqual(2);
+            expect(stats.claimed).toBeGreaterThanOrEqual(1);
+        });
+
+        it('should count FAILED events in stats', async () => {
+            // Create a CREATED event
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'CREATED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                source: 'send',
+                activityId: 'failed-activity',
+            });
+
+            // Create a FAILED event chained to it
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'FAILED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                source: 'send',
+                activityId: 'failed-activity',
+                metadata: { error: 'Test failure' },
+            });
+
+            const stats = await getActivityStatsForProfile('usera');
+
+            expect(stats.failed).toBeGreaterThanOrEqual(1);
+            expect(stats.created).toBeGreaterThanOrEqual(1);
+        });
+
+        it('should filter stats by integrationId', async () => {
+            const integrationId = 'stats-integration-test';
+
+            // Create activities with integrationId
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'send',
+                integrationId,
+            });
+
+            // Create activity without integrationId
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'send',
+            });
+
+            const filteredStats = await getActivityStatsForProfile('usera', { integrationId });
+            const allStats = await getActivityStatsForProfile('usera');
+
+            expect(filteredStats.delivered).toBe(1);
+            expect(allStats.delivered).toBeGreaterThanOrEqual(2);
+        });
+
+        // Note: boostUri filtering requires FOR_BOOST relationship to actual Boost nodes
+        // This is covered in E2E tests where real Boosts are created
+    });
+
+    describe('getActivityById', () => {
+        it('should return null for non-existent activity', async () => {
+            const activity = await getActivityById('non-existent-id');
+
+            expect(activity).toBeNull();
+        });
+
+        it('should return activity by activityId', async () => {
+            const activityId = await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'send',
+            });
+
+            const activity = await getActivityById(activityId);
+
+            expect(activity).not.toBeNull();
+            expect(activity?.activityId).toBe(activityId);
+            expect(activity?.eventType).toBe('DELIVERED');
+        });
+    });
+
+    describe('Activity Routes', () => {
+        describe('Authentication', () => {
+            it('should not allow unauthenticated access to getMyActivities', async () => {
+                await expect(
+                    noAuthClient.activity.getMyActivities({ limit: 10 })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
+
+            it('should not allow unauthenticated access to getActivityStats', async () => {
+                await expect(
+                    noAuthClient.activity.getActivityStats({})
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
+
+            it('should not allow unauthenticated access to getActivity', async () => {
+                await expect(
+                    noAuthClient.activity.getActivity({ activityId: 'test-id' })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
+
+            it('should not allow partial auth access to getMyActivities', async () => {
+                await expect(
+                    userA.clients.partialAuth.activity.getMyActivities({ limit: 10 })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
+
+            it('should not allow partial auth access to getActivityStats', async () => {
+                await expect(
+                    userA.clients.partialAuth.activity.getActivityStats({})
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
+
+            it('should not allow partial auth access to getActivity', async () => {
+                await expect(
+                    userA.clients.partialAuth.activity.getActivity({ activityId: 'test-id' })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
+        });
+
+        describe('Authorization', () => {
+            it('should only return own activities via getMyActivities', async () => {
+                // Create activity for userA
+                await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                // Create activity for userB
+                await createCredentialActivity({
+                    actorProfileId: 'userb',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'usera',
+                    source: 'send',
+                });
+
+                // UserA should only see their own activity
+                const userAActivities = await userA.clients.fullAuth.activity.getMyActivities({ limit: 10 });
+
+                expect(userAActivities.records).toHaveLength(1);
+                expect(userAActivities.records[0].actorProfileId).toBe('usera');
+
+                // UserB should only see their own activity
+                const userBActivities = await userB.clients.fullAuth.activity.getMyActivities({ limit: 10 });
+
+                expect(userBActivities.records).toHaveLength(1);
+                expect(userBActivities.records[0].actorProfileId).toBe('userb');
+            });
+
+            it('should only return own stats via getActivityStats', async () => {
+                // Create activities for both users
+                await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                await createCredentialActivity({
+                    actorProfileId: 'userb',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'usera',
+                    source: 'send',
+                });
+
+                await createCredentialActivity({
+                    actorProfileId: 'userb',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'usera',
+                    source: 'send',
+                });
+
+                // UserA should see stats for only their activity
+                const userAStats = await userA.clients.fullAuth.activity.getActivityStats({});
+
+                expect(userAStats.delivered).toBe(1);
+
+                // UserB should see stats for only their activities
+                const userBStats = await userB.clients.fullAuth.activity.getActivityStats({});
+
+                expect(userBStats.delivered).toBe(2);
+            });
+
+            it('should return null when querying another user activity via getActivity', async () => {
+                // Create activity for userA
+                const activityId = await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                // UserA should be able to get their own activity
+                const ownActivity = await userA.clients.fullAuth.activity.getActivity({ activityId });
+
+                expect(ownActivity).not.toBeNull();
+                expect(ownActivity?.activityId).toBe(activityId);
+
+                // UserB should NOT be able to get userA's activity
+                const otherActivity = await userB.clients.fullAuth.activity.getActivity({ activityId });
+
+                expect(otherActivity).toBeNull();
+            });
+        });
+
+        describe('Functionality', () => {
+            it('should return activities via route', async () => {
+                await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                const result = await userA.clients.fullAuth.activity.getMyActivities({ limit: 10 });
+
+                expect(result.records).toHaveLength(1);
+                expect(result.hasMore).toBe(false);
+            });
+
+            it('should return stats via route', async () => {
+                await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                const stats = await userA.clients.fullAuth.activity.getActivityStats({});
+
+                expect(stats.delivered).toBeGreaterThanOrEqual(1);
+                expect(typeof stats.claimRate).toBe('number');
+            });
+
+            it('should return activity chain via route', async () => {
+                const activityId = await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                // Add a CLAIMED event with the same activityId
+                await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'CLAIMED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'acceptCredential',
+                    activityId,
+                });
+
+                const chain = await userA.clients.fullAuth.activity.getActivityChain({ activityId });
+
+                expect(chain).toHaveLength(2);
+                expect(chain[0]?.eventType).toBe('DELIVERED');
+                expect(chain[1]?.eventType).toBe('CLAIMED');
+                expect(chain[0]?.activityId).toBe(activityId);
+                expect(chain[1]?.activityId).toBe(activityId);
+            });
+
+            it('should return empty array for non-existent activity chain', async () => {
+                const chain = await userA.clients.fullAuth.activity.getActivityChain({ 
+                    activityId: 'non-existent-id' 
+                });
+
+                expect(chain).toHaveLength(0);
+            });
+
+            it('should return empty array when querying another user activity chain', async () => {
+                const activityId = await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                // UserA should be able to get their own activity chain
+                const ownChain = await userA.clients.fullAuth.activity.getActivityChain({ activityId });
+
+                expect(ownChain).toHaveLength(1);
+
+                // UserB should NOT be able to get userA's activity chain
+                const otherChain = await userB.clients.fullAuth.activity.getActivityChain({ activityId });
+
+                expect(otherChain).toHaveLength(0);
+            });
+
+            it('should return chain in chronological order (oldest first)', async () => {
+                const activityId = await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'CREATED',
+                    recipientType: 'email',
+                    recipientIdentifier: 'test@example.com',
+                    source: 'send',
+                });
+
+                // Small delay to ensure different timestamps
+                await new Promise(resolve => setTimeout(resolve, 10));
+
+                await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'CLAIMED',
+                    recipientType: 'email',
+                    recipientIdentifier: 'test@example.com',
+                    source: 'claimLink',
+                    activityId,
+                });
+
+                const chain = await userA.clients.fullAuth.activity.getActivityChain({ activityId });
+
+                expect(chain).toHaveLength(2);
+                expect(chain[0]?.eventType).toBe('CREATED');
+                expect(chain[1]?.eventType).toBe('CLAIMED');
+
+                // Verify chronological order
+                const firstTimestamp = new Date(chain[0]!.timestamp).getTime();
+                const secondTimestamp = new Date(chain[1]!.timestamp).getTime();
+
+                expect(firstTimestamp).toBeLessThanOrEqual(secondTimestamp);
+            });
+        });
+    });
+
+    describe('Activity Logging Integration', () => {
+        it('should log activity when sending credential to profile', async () => {
+            await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+
+            const activities = await getActivitiesForProfile('usera', { limit: 10 });
+
+            expect(activities.length).toBeGreaterThanOrEqual(1);
+
+            const sendActivity = activities.find(a => a.source === 'sendCredential');
+
+            expect(sendActivity).toBeDefined();
+            expect(sendActivity?.eventType).toBe('DELIVERED');
+            expect(sendActivity?.recipientType).toBe('profile');
+            expect(sendActivity?.recipientIdentifier).toBe('userb');
+        });
+    });
+
+    describe('Activity ID Chaining', () => {
+        it('should chain CLAIMED event to DELIVERED event via activityId for profile sends', async () => {
+            // Send credential from A to B
+            const credentialUri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+
+            // Get the DELIVERED activity
+            const activitiesBeforeClaim = await getActivitiesForProfile('usera', { limit: 10 });
+            const deliveredActivity = activitiesBeforeClaim.find(
+                a => a.eventType === 'DELIVERED' && a.source === 'sendCredential'
+            );
+
+            expect(deliveredActivity).toBeDefined();
+            const originalActivityId = deliveredActivity?.activityId;
+
+            expect(originalActivityId).toBeDefined();
+
+            // B accepts the credential
+            await userB.clients.fullAuth.credential.acceptCredential({
+                uri: credentialUri,
+            });
+
+            // Get all activities and find the CLAIMED event
+            const activitiesAfterClaim = await getActivitiesForProfile('usera', { limit: 20 });
+            const claimedActivity = activitiesAfterClaim.find(a => a.eventType === 'CLAIMED');
+
+            expect(claimedActivity).toBeDefined();
+
+            // Verify the activityId matches (chaining)
+            expect(claimedActivity?.activityId).toBe(originalActivityId);
+        });
+
+        it('should store activityId in credential relationship metadata', async () => {
+            await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+
+            // Get the activity to verify it was created
+            const activities = await getActivitiesForProfile('usera', { limit: 10 });
+            const sendActivity = activities.find(a => a.source === 'sendCredential');
+
+            expect(sendActivity).toBeDefined();
+            expect(sendActivity?.activityId).toBeDefined();
+        });
+
+        it('should create unique activityId for each send operation', async () => {
+            // Send first credential
+            await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+
+            // Send second credential
+            await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+
+            const activities = await getActivitiesForProfile('usera', { limit: 10 });
+            const sendActivities = activities.filter(a => a.source === 'sendCredential');
+
+            expect(sendActivities.length).toBeGreaterThanOrEqual(2);
+
+            // Verify each has unique activityId
+            const activityIds = sendActivities.map(a => a.activityId);
+            const uniqueActivityIds = new Set(activityIds);
+
+            expect(uniqueActivityIds.size).toBe(activityIds.length);
+        });
+    });
+});

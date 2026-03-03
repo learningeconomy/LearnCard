@@ -28,7 +28,7 @@ export type LearnCardConfig = {
         unencryptedCustomFields?: string[];
         automaticallyAssociateDids?: boolean;
     };
-    didkit: InitInput | Promise<InitInput>;
+    didkit: InitInput | Promise<InitInput> | 'node';
     allowRemoteContexts?: boolean;
     ethereumConfig: EthereumConfig;
     debug?: typeof console.log;
@@ -90,6 +90,27 @@ export type NetworkLearnCardFromSeed = InitFunction<
             LearnCloudPlugin,
             ExpirationPlugin,
             EthereumPlugin,
+            VpqrPlugin,
+            CHAPIPlugin,
+            VerifyBoostPlugin,
+            LearnCardPlugin,
+            LearnCardNetworkPlugin
+        ]
+    >
+>;
+
+/** @group Init Functions */
+export type NetworkLearnCardFromApiKey = InitFunction<
+    { apiKey: string; network: true | string; trustedBoostRegistry?: string },
+    'didkit' | 'allowRemoteContexts' | 'debug',
+    LearnCard<
+        [
+            DynamicLoaderPluginType,
+            CryptoPluginType,
+            DIDKitPlugin,
+            VCPlugin,
+            VCTemplatePlugin,
+            ExpirationPlugin,
             VpqrPlugin,
             CHAPIPlugin,
             VerifyBoostPlugin,
@@ -177,6 +198,7 @@ export type InitLearnCard = GenericInitFunction<
         DidWebLearnCardFromSeed,
         DidWebNetworkLearnCardFromSeed,
         LearnCardFromVcApi,
-        CustomLearnCard
+        CustomLearnCard,
+        NetworkLearnCardFromApiKey
     ]
 >;

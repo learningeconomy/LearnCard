@@ -7,11 +7,17 @@ import {
     createSentCredentialRelationship,
     setDefaultClaimedRole,
 } from '@accesslayer/credential/relationships/create';
-import { getCredentialSentToProfile, getCredentialReceivedByProfile } from '@accesslayer/credential/relationships/read';
-import { constructUri, getUriParts } from './uri.helpers';
+import {
+    getCredentialSentToProfile,
+    getCredentialReceivedByProfile,
+    getBoostIdForCredentialInstance,
+} from '@accesslayer/credential/relationships/read';
+import { constructUri, getDomainFromUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
+import { logCredentialClaimed } from './activity.helpers';
 import { ProfileType } from 'types/profile';
 import { processClaimHooks } from './claim-hooks.helpers';
+import { ensureConnectionsForCredentialAcceptance } from './connection.helpers';
 
 export const getCredentialUri = (id: string, domain: string): string =>
     constructUri('credential', id, domain);
@@ -20,23 +26,37 @@ export const sendCredential = async (
     from: ProfileType,
     to: ProfileType,
     credential: VC | UnsignedVC | JWE,
-    domain: string
+    domain: string,
+    metadata?: Record<string, unknown> | undefined,
+    activityId?: string,
+    integrationId?: string
 ): Promise<string> => {
     const credentialInstance = await storeCredential(credential);
 
-    await createSentCredentialRelationship(from, to, credentialInstance);
+    await createSentCredentialRelationship(from, to, credentialInstance, metadata, activityId, integrationId);
 
     let uri = getCredentialUri(credentialInstance.id, domain);
+
+    const isEndorsement = metadata?.type === 'endorsement';
+
+    const notificationTitle = isEndorsement ? 'New Endorsement Received' : 'Credential Received';
+
+    const notificationBody = isEndorsement
+        ? `${from.displayName} has endorsed your credential`
+        : `${from.displayName} has sent you a credential`;
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
         to,
         from,
         message: {
-            title: 'Credential Received',
-            body: `${from.displayName} has sent you a credential`,
+            title: notificationTitle,
+            body: notificationBody,
         },
-        data: { vcUris: [uri] },
+        data: {
+            vcUris: [uri],
+            ...(metadata ? { metadata } : {}),
+        },
     });
 
     return uri;
@@ -48,7 +68,9 @@ export const sendCredential = async (
 export const acceptCredential = async (
     profile: ProfileType,
     uri: string,
-    options: { skipNotification?: boolean } = { skipNotification: false }
+    options: { skipNotification?: boolean; metadata?: Record<string, unknown> } = {
+        skipNotification: false,
+    }
 ): Promise<boolean> => {
     const { id, type } = getUriParts(uri);
 
@@ -74,11 +96,19 @@ export const acceptCredential = async (
         });
     }
 
-    await createReceivedCredentialRelationship(profile, pendingVc.source, pendingVc.target);
+    await createReceivedCredentialRelationship(
+        profile,
+        pendingVc.source,
+        pendingVc.target,
+        pendingVc.relationship.metadata
+    );
 
     await processClaimHooks(profile, pendingVc.target);
 
     await setDefaultClaimedRole(profile, pendingVc.target);
+
+    // Persist explicit CONNECTED_WITH edges (with sources) for auto-connect mechanics
+    await ensureConnectionsForCredentialAcceptance(profile, pendingVc.target.id);
 
     if (!options?.skipNotification) {
         await addNotificationToQueue({
@@ -89,9 +119,31 @@ export const acceptCredential = async (
                 title: 'Boost Accepted',
                 body: `${profile.displayName} has accepted your boost!`,
             },
-            data: { vcUris: [uri] },
+            data: { vcUris: [uri], ...(options?.metadata ? { metadata: options.metadata } : {}) },
         });
     }
+
+    // Log credential activity for claim - chain to original activityId/integrationId if available
+    // activityId and integrationId are stored as separate fields on the relationship
+    const originalActivityId = pendingVc.relationship.activityId;
+    const integrationId = pendingVc.relationship.integrationId;
+
+    // Get boostUri if this credential is associated with a boost
+    const boostId = await getBoostIdForCredentialInstance(pendingVc.target);
+    const boostUri = boostId ? constructUri('boost', boostId, getDomainFromUri(uri)) : undefined;
+
+    await logCredentialClaimed({
+        activityId: originalActivityId,
+        actorProfileId: pendingVc.source.profileId,
+        recipientType: 'profile',
+        recipientIdentifier: profile.profileId,
+        recipientProfileId: profile.profileId,
+        credentialUri: uri,
+        boostUri,
+        integrationId,
+        source: 'claim',
+        metadata: options?.metadata,
+    });
 
     return true;
 };

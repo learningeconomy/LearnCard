@@ -1,0 +1,41 @@
+ion-toast.user-did-success-copy-toast {
+    --background: #eff0f5;
+    --color: #000000;
+    --border-radius: 14px;
+}
+
+.custom-user-did-success-copy-toast {
+    background: #eff0f5;
+    color: #000000;
+    border-radius: 14px;
+}
+
+ion-toast.user-did-success-copy-toast::part(button) {
+    color: #00ba88 !important;
+}
+
+.custom-user-did-success-copy-toast button {
+    color: #00ba88 !important;
+    font-weight: 500;
+    line-height: 1.5px;
+}
+
+ion-toast.user-did-warning-copy-toast {
+    --background: #e11d48;
+    --color: #fff;
+    --border-radius: 14px;
+}
+
+.custom-user-did-copy-fail-toast {
+    background: #e11d48;
+    color: #fff;
+}
+
+ion-toast.user-did-warning-copy-toast::part(button) {
+    color: #fff !important;
+}
+
+.user-image-upload-inprogress {
+    backdrop-filter: blur(2px);
+    background-color: rgb(255, 255, 255, 0.3);
+}

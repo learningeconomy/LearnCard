@@ -6,6 +6,10 @@ import { getProfileByDid } from '@accesslayer/profile/read';
 export const getDidWeb = (domain: string, profileId: string): string =>
     `did:web:${domain}:users:${profileId}`;
 
+/** Generates a did:web for an app listing given the domain and slug */
+export const getAppDidWeb = (domain: string, slug: string): string =>
+    `did:web:${domain}:app:${slug}`;
+
 /** Generates a did:web for a user given the domain of the app */
 export const getManagedDidWeb = (domain: string, id: string): string =>
     `did:web:${domain}:manager:${id}`;

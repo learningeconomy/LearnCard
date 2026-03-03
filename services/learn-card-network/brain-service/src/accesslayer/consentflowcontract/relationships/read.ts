@@ -3,7 +3,7 @@ import mapValues from 'lodash/mapValues';
 import {
     convertObjectRegExpToNeo4j,
     convertQueryResultToPropertiesObjectArray,
-    getMatchQueryWhere,
+    buildWhereForQueryBuilder,
 } from '@helpers/neo4j.helpers';
 import {
     Profile,
@@ -412,11 +412,14 @@ export const getConsentedDataBetweenProfiles = async (
     }: { query?: ConsentFlowDataForDidQuery; limit: number; cursor?: string; domain: string }
 ): Promise<ConsentFlowContractDataForDid[]> => {
     const { id, ...params } = query;
+    const convertedContractQuery = id ? convertObjectRegExpToNeo4j({ id }) : {};
+    const { whereClause: contractWhereClause, params: contractQueryParams } = buildWhereForQueryBuilder('contract', convertedContractQuery as any);
+    
     const _dbQuery = new QueryBuilder(
         new BindParam({
             params: flattenObject({ terms: flattenObject(convertDataQueryToNeo4jQuery(params)) }),
-            contractQuery: id ? convertObjectRegExpToNeo4j({ id }) : {},
             cursor,
+            ...contractQueryParams,
         })
     ).match({
         related: [
@@ -439,7 +442,7 @@ all(key IN keys($params) WHERE
         WHEN false THEN terms[key] IS NULL OR terms[key] = []
     END
 )
-AND ${getMatchQueryWhere('contract', 'contractQuery')}
+AND ${contractWhereClause}
 `);
 
     const dbQuery = cursor ? _dbQuery.raw(' AND terms.updatedAt < $cursor') : _dbQuery;
@@ -493,7 +496,10 @@ export const getTransactionsForTerms = async (
         cursor,
     }: { query?: ConsentFlowTransactionsQuery; limit: number; cursor?: string }
 ): Promise<(DbTransactionType & { credentials: CredentialType[] })[]> => {
-    const query = new QueryBuilder(new BindParam({ params: flattenObject(matchQuery), cursor }))
+    const convertedQuery = flattenObject(matchQuery);
+    const { whereClause, params: transactionQueryParams } = buildWhereForQueryBuilder('transaction', convertedQuery as any);
+    
+    const query = new QueryBuilder(new BindParam({ cursor, ...transactionQueryParams }))
         .match({
             related: [
                 { identifier: 'transaction', model: ConsentFlowTransaction },
@@ -502,8 +508,8 @@ export const getTransactionsForTerms = async (
             ],
         })
         .where(
-            `${getMatchQueryWhere('transaction', 'params')}${
-                cursor ? 'AND transaction.date < $cursor' : ''
+            `${whereClause}${
+                cursor ? ' AND transaction.date < $cursor' : ''
             }`
         )
         .with('transaction')

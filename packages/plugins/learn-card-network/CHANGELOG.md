@@ -1,5 +1,551 @@
 # learn-card-core
 
+## 2.10.3
+
+### Patch Changes
+
+-   [#1006](https://github.com/learningeconomy/LearnCard/pull/1006) [`caf231b53707174ea49f0eb2b65885a36b3e7228`](https://github.com/learningeconomy/LearnCard/commit/caf231b53707174ea49f0eb2b65885a36b3e7228) Thanks [@smurflo2](https://github.com/smurflo2)! - Add Self-Assigned Skills including optional proficiency level field on Boost -> Skill relationship
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.15
+    -   @learncard/core@9.4.7
+    -   @learncard/helpers@1.2.7
+
+## 2.10.2
+
+### Patch Changes
+
+-   [#973](https://github.com/learningeconomy/LearnCard/pull/973) [`5b76830d328bd38b4f184458414ef478c9cc118a`](https://github.com/learningeconomy/LearnCard/commit/5b76830d328bd38b4f184458414ef478c9cc118a) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1510] [LC-1508] Replace temporary revoke for scouts with a more comprehensive solution
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.14
+
+## 2.10.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.13
+
+## 2.10.0
+
+### Minor Changes
+
+-   [#991](https://github.com/learningeconomy/LearnCard/pull/991) [`32e5cfacf499e9a68700170298040f3d313b38da`](https://github.com/learningeconomy/LearnCard/commit/32e5cfacf499e9a68700170298040f3d313b38da) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add semantic skill search backed by embeddings.
+
+    The brain service now generates and stores vector embeddings for skills and exposes semantic search over skills using Neo4j vector queries. Embeddings are generated via Google Gemini embeddings (`gemini-embedding-001`) with configurable batching for efficient backfills, and backfill execution can be safely toggled via environment variables.
+
+    This also adds the typed semantic search route and plugin method so SDK consumers can call semantic skill search directly through the network plugin.
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.12
+    -   @learncard/core@9.4.6
+    -   @learncard/helpers@1.2.6
+
+## 2.9.9
+
+### Patch Changes
+
+-   [#976](https://github.com/learningeconomy/LearnCard/pull/976) [`d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9`](https://github.com/learningeconomy/LearnCard/commit/d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1325] Notification Change for Expired Invite Link
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.5
+    -   @learncard/helpers@1.2.5
+    -   @learncard/network-brain-client@2.5.11
+
+## 2.9.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.10
+
+## 2.9.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.9
+
+## 2.9.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.8
+
+## 2.9.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.7
+
+## 2.9.4
+
+### Patch Changes
+
+-   [#931](https://github.com/learningeconomy/LearnCard/pull/931) [`016b7edc231273aab962b89b4351a3e229fca025`](https://github.com/learningeconomy/LearnCard/commit/016b7edc231273aab962b89b4351a3e229fca025) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - ## App Store Credential Issuance
+
+    Embedded apps in the LearnCard App Store can now issue credentials directly to users via the `sendAppEvent` postMessage API.
+
+    ### Features
+
+    -   **New `send-credential` app event**: Embedded apps can call `sendAppEvent({ type: 'send-credential', boostId, templateData })` to issue credentials from pre-configured boost templates
+    -   **Credential Claim Modal**: When a credential is issued, users see a claim modal with a preview of the credential and can accept it into their wallet
+    -   **Notification Integration**: Credentials create notifications that can be claimed later if dismissed, and are marked as completed when claimed
+    -   **Auto Signing Authority Setup**: When adding a boost to an app listing, the backend automatically configures the signing authority using the developer's primary SA
+    -   **Credentials Step in App Submission**: Developers can now add credential templates (boosts) to their app listings during the submission wizard
+
+    ### API
+
+    ```typescript
+    // From an embedded app
+    const result = await learnCard.sendAppEvent({
+        type: 'send-credential',
+        boostId: 'course-completion', // Boost ID configured in app listing
+        templateData: {
+            /* optional dynamic data */
+        },
+    });
+    // Returns: { credentialUri, boostUri }
+    ```
+
+    ### Documentation
+
+    Added new guide: "Connect an Embedded App" in How-To Guides > Connect Systems
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.6
+    -   @learncard/core@9.4.4
+    -   @learncard/helpers@1.2.4
+
+## 2.9.3
+
+### Patch Changes
+
+-   [#882](https://github.com/learningeconomy/LearnCard/pull/882) [`73865cc62ea292badb99fe41ca8b0f484a12728f`](https://github.com/learningeconomy/LearnCard/commit/73865cc62ea292badb99fe41ca8b0f484a12728f) Thanks [@Custard7](https://github.com/Custard7)! - feat: Unified Send
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.5
+    -   @learncard/core@9.4.3
+    -   @learncard/helpers@1.2.3
+
+## 2.9.2
+
+### Patch Changes
+
+-   [#905](https://github.com/learningeconomy/LearnCard/pull/905) [`f8e50b1e3ceafccde28bef859b2c8b220acb2b7d`](https://github.com/learningeconomy/LearnCard/commit/f8e50b1e3ceafccde28bef859b2c8b220acb2b7d) Thanks [@Custard7](https://github.com/Custard7)! - feat: [LC-1103] Dynamic Boost Templates
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.2
+    -   @learncard/helpers@1.2.2
+    -   @learncard/network-brain-client@2.5.4
+
+## 2.9.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.3
+
+## 2.9.0
+
+### Minor Changes
+
+-   [#895](https://github.com/learningeconomy/LearnCard/pull/895) [`bb6749d4cd123ca1fcee8d6f657861ae77a614a2`](https://github.com/learningeconomy/LearnCard/commit/bb6749d4cd123ca1fcee8d6f657861ae77a614a2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add generic `send` method for ergonomic credential sending
+
+    **Features:**
+
+    -   New `send` method that auto-issues credentials from boost templates
+    -   Supports client-side credential issuance when available, falls back to signing authority
+    -   Contract-aware: automatically routes through consent flow when recipient has consented
+    -   Creates `RELATED_TO` relationship between newly created boosts and contracts
+
+    **Usage:**
+
+    ```typescript
+    // Send using existing boost template
+    await lc.invoke.send({
+        type: 'boost',
+        recipient: 'userProfileId',
+        templateUri: 'urn:lc:boost:...',
+    });
+
+    // Send by creating a new boost
+    await lc.invoke.send({
+        type: 'boost',
+        recipient: 'userProfileId',
+        template: { credential: unsignedVC },
+        contractUri: 'urn:lc:contract:...', // optional
+    });
+    ```
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.1
+    -   @learncard/helpers@1.2.1
+    -   @learncard/network-brain-client@2.5.2
+
+## 2.8.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.1
+
+## 2.8.0
+
+### Minor Changes
+
+-   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
+
+    This includes follow-up fixes for Zod v4 behavior and typing changes:
+
+    -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
+    -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
+    -   Allow `Infinity` for generational query inputs in brain-service routes.
+    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+
+### Patch Changes
+
+-   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - feat: App Store CRUD & Partner Portal
+
+-   Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
+    -   @learncard/network-brain-client@2.5.0
+    -   @learncard/helpers@1.2.0
+    -   @learncard/core@9.4.0
+
+## 2.7.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.19
+
+## 2.7.6
+
+### Patch Changes
+
+-   [#867](https://github.com/learningeconomy/LearnCard/pull/867) [`d04dc8022457ed50c65c2eb878929d0e5653c91a`](https://github.com/learningeconomy/LearnCard/commit/d04dc8022457ed50c65c2eb878929d0e5653c91a) Thanks [@gerardopar](https://github.com/gerardopar)! - Lc 1406 insights
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.18
+
+## 2.7.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.17
+
+## 2.7.4
+
+### Patch Changes
+
+-   [#855](https://github.com/learningeconomy/LearnCard/pull/855) [`6d2769d0a864cac2d664657a5d78f743641e67ec`](https://github.com/learningeconomy/LearnCard/commit/6d2769d0a864cac2d664657a5d78f743641e67ec) Thanks [@gerardopar](https://github.com/gerardopar)! - Add metadata support on acceptCredential
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.16
+
+## 2.7.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.44
+    -   @learncard/helpers@1.1.32
+    -   @learncard/network-brain-client@2.4.15
+
+## 2.7.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.14
+
+## 2.7.1
+
+### Patch Changes
+
+-   [#851](https://github.com/learningeconomy/LearnCard/pull/851) [`a8ba030d48e75094fd64cd3da0725c3c0f468cf2`](https://github.com/learningeconomy/LearnCard/commit/a8ba030d48e75094fd64cd3da0725c3c0f468cf2) Thanks [@gerardopar](https://github.com/gerardopar)! - Add arbitrary metadata support when sending credentials that gets plumbed through to the notification payload
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.13
+    -   @learncard/core@9.3.43
+    -   @learncard/helpers@1.1.31
+
+## 2.7.0
+
+### Minor Changes
+
+-   [#848](https://github.com/learningeconomy/LearnCard/pull/848) [`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add comprehensive Skills & Skill Frameworks system to LearnCard Network
+
+    This introduces a complete skill taxonomy system spanning the LearnCard Network plugin, brain service, and shared types. Organizations can now create custom skill frameworks, organize skills hierarchically, attach frameworks to Boosts, and align specific skills to credentials.
+
+    ## Core Features
+
+    ### Skill Framework Management
+
+    -   **Create Managed Frameworks**: Users can create skill frameworks with metadata (name, description, status)
+    -   **Framework Ownership**: Frameworks are linked to profiles via `MANAGES` relationship for access control
+    -   **Framework Queries**: List, search, and filter frameworks by various criteria
+    -   **External Provider Sync**: Optional integration with external skills services
+
+    ### Hierarchical Skill Organization
+
+    -   **Create Skills**: Add individual skills with statement, description, and code to frameworks
+    -   **Parent-Child Relationships**: Build skill hierarchies using `IS_CHILD_OF` relationships
+    -   **Framework Containment**: Skills linked to frameworks via `CONTAINS` relationships
+    -   **Bulk Operations**: Support for creating multiple skills and frameworks efficiently
+
+    ### Boost Integration
+
+    -   **Attach Frameworks**: Link skill frameworks to Boosts using `USES_FRAMEWORK` relationships
+    -   **Skill Alignment**: Align specific skills to Boosts via `ALIGNED_TO` relationships
+    -   **Ancestor Traversal**: Query skills from frameworks attached to a boost or its ancestors
+    -   **Permission Checks**: Validates boost admin rights before allowing framework/skill operations
+
+    ## API Methods Added
+
+    ### Plugin Methods
+
+    -   `createManagedSkillFramework()` - Create a new skill framework
+    -   `createManagedSkillFrameworks()` - Bulk create frameworks
+    -   `createSkill()` - Add a skill to a framework
+    -   `createSkills()` - Bulk create skills
+    -   `attachFrameworkToBoost()` - Link framework to boost
+    -   `detachFrameworkFromBoost()` - Remove framework from boost
+    -   `alignBoostSkills()` - Align specific skills to boost
+    -   `getSkillsAvailableForBoost()` - Query alignable skills
+    -   `searchSkillsAvailableForBoost()` - Search skills for boost
+    -   `getBoostFrameworks()` - List frameworks attached to boost
+
+    ### Brain Service Routes
+
+    -   `skillFrameworks.createManaged` - Create framework with MANAGES relationship
+    -   `skillFrameworks.listMine` - Query user's managed frameworks
+    -   `skillFrameworks.update` - Update framework metadata
+    -   `skills.create` - Create skills with hierarchy support
+    -   `skills.update` - Update skill metadata
+    -   `skills.searchFrameworkSkills` - Search within framework
+    -   `boost.attachFrameworkToBoost` - Establish USES_FRAMEWORK relationship
+    -   `boost.alignBoostSkills` - Create ALIGNED_TO relationships
+    -   `boost.getSkillsAvailableForBoost` - Graph traversal for available skills
+
+    ## Type System
+
+    ### New Types & Validators
+
+    -   `SkillFrameworkValidator` / `SkillFrameworkType` - Framework structure
+    -   `SkillValidator` / `SkillType` - Individual skill structure
+    -   `SkillFrameworkStatus` - Framework lifecycle states
+    -   `CreateManagedSkillFrameworkInput` - Framework creation params
+    -   `SkillFrameworkQuery` - Framework search parameters
+
+    ## Graph Database Schema
+
+    ### New Relationships
+
+    -   `(Profile)-[:MANAGES]->(SkillFramework)` - Framework ownership
+    -   `(SkillFramework)-[:CONTAINS]->(Skill)` - Framework-skill membership
+    -   `(Skill)-[:IS_CHILD_OF]->(Skill)` - Hierarchical skill organization
+    -   `(Boost)-[:USES_FRAMEWORK]->(SkillFramework)` - Framework attachment
+    -   `(Boost)-[:ALIGNED_TO]->(Skill)` - Skill alignment for credentials
+
+    ### Access Layer Methods
+
+    -   `createSkillFrameworkNode()` - Persist framework with MANAGES relationship
+    -   `createSkill()` - Create skill with CONTAINS and optional IS_CHILD_OF relationships
+    -   `setBoostUsesFramework()` - Establish framework attachment
+    -   `addAlignedSkillsToBoost()` - Batch create ALIGNED_TO relationships
+    -   `getFrameworkSkillsAvailableForBoost()` - Traverse graph for available skills
+
+    This system enables rich skill-based credential metadata, allowing organizations to categorize and align credentials with industry-standard or custom skill taxonomies.
+
+### Patch Changes
+
+-   Updated dependencies [[`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357)]:
+    -   @learncard/helpers@1.1.30
+    -   @learncard/network-brain-client@2.4.12
+    -   @learncard/core@9.3.42
+
+## 2.6.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.11
+
+## 2.6.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.10
+
+## 2.6.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.9
+
+## 2.6.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.8
+
+## 2.6.8
+
+### Patch Changes
+
+-   [#833](https://github.com/learningeconomy/LearnCard/pull/833) [`5fbc434308423d97db4fc8cf63898ed8f8980959`](https://github.com/learningeconomy/LearnCard/commit/5fbc434308423d97db4fc8cf63898ed8f8980959) Thanks [@Custard7](https://github.com/Custard7)! - chore: Bump Versions for Embed SDK PR
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.41
+    -   @learncard/helpers@1.1.29
+    -   @learncard/network-brain-client@2.4.7
+
+## 2.6.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.40
+    -   @learncard/helpers@1.1.28
+    -   @learncard/network-brain-client@2.4.6
+
+## 2.6.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.5
+
+## 2.6.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.4
+
+## 2.6.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.3
+
+## 2.6.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.39
+    -   @learncard/helpers@1.1.27
+    -   @learncard/network-brain-client@2.4.2
+
+## 2.6.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.1
+
+## 2.6.0
+
+### Minor Changes
+
+-   [#807](https://github.com/learningeconomy/LearnCard/pull/807) [`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add initFromApiKey support
+
+### Patch Changes
+
+-   Updated dependencies [[`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298)]:
+    -   @learncard/network-brain-client@2.4.0
+
+## 2.5.23
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.38
+    -   @learncard/helpers@1.1.26
+    -   @learncard/network-brain-client@2.3.28
+
+## 2.5.22
+
+### Patch Changes
+
+-   [#780](https://github.com/learningeconomy/LearnCard/pull/780) [`cd6f8aba37dd67721e10e60c90f65ceb278d4a1e`](https://github.com/learningeconomy/LearnCard/commit/cd6f8aba37dd67721e10e60c90f65ceb278d4a1e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Expose and validate Profile Connection Invite features end-to-end
+
+    -   Brain Service (profiles routes):
+
+        -   generateInvite: supports multi-use (`maxUses`), including unlimited (`maxUses = 0`), and expiration in seconds (`expiration = 0` = no expiration). Returns `{ profileId, challenge, expiresIn }`.
+        -   listInvites: lists valid invites with `{ challenge, expiresIn, usesRemaining, maxUses }` and omits exhausted invites.
+        -   invalidateInvite: idempotently invalidates a specific invite by `challenge`.
+
+    -   Network Plugin (`@learncard/network-plugin`):
+
+        -   Expose `generateInvite(challenge?, expiration?, maxUses?)`.
+        -   Expose `listInvites()` and `invalidateInvite(challenge)`.
+
+    -   Tests (E2E):
+
+        -   Added `tests/e2e/tests/invites.spec.ts` covering single-use, multi-use, unlimited, and invalidation flows from a client perspective.
+
+    -   Docs:
+
+        -   OpenAPI descriptions updated in `services/learn-card-network/brain-service/src/routes/profiles.ts`.
+        -   Detailed notes in `services/learn-card-network/brain-service/CLAUDE.md`.
+
+    -   Notes:
+        -   No breaking changes; routes remain authenticated and backward compatible with older invite formats.
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.27
+
+## 2.5.21
+
+### Patch Changes
+
+-   [#796](https://github.com/learningeconomy/LearnCard/pull/796) [`00c5403c2932185290ae4e226ca4bf446a1d636c`](https://github.com/learningeconomy/LearnCard/commit/00c5403c2932185290ae4e226ca4bf446a1d636c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add AUTO_CONNECT claim hook
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.26
+    -   @learncard/core@9.3.37
+    -   @learncard/helpers@1.1.25
+
+## 2.5.20
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.36
+    -   @learncard/helpers@1.1.24
+    -   @learncard/network-brain-client@2.3.25
+
+## 2.5.19
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.24
+
+## 2.5.18
+
+### Patch Changes
+
+-   [#776](https://github.com/learningeconomy/LearnCard/pull/776) [`1d857d892a25990999e533863f0c50feb2727340`](https://github.com/learningeconomy/LearnCard/commit/1d857d892a25990999e533863f0c50feb2727340) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add countBoostRecipientsWithChildren resolver
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.23
+
 ## 2.5.17
 
 ### Patch Changes
