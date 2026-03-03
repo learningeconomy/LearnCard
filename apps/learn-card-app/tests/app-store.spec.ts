@@ -39,10 +39,11 @@ test.describe('App Store', () => {
             .click();
 
         // 4. Verify the detail modal opens with the app name and description
-        await expect(page.getByText(listing.displayName)).toBeVisible({
+        const modal = page.locator('#right-modal');
+        await expect(modal.getByText(listing.displayName)).toBeVisible({
             timeout: 10_000,
         });
-        await expect(page.getByText('About')).toBeVisible();
+        await expect(modal.getByText('About')).toBeVisible();
     });
 
     test('Install and launch embedded app', async ({ page }) => {
@@ -61,26 +62,33 @@ test.describe('App Store', () => {
             .getByRole('button', { name: 'Get' })
             .click();
 
+        // Scope assertions to the detail modal to avoid strict mode violations
+        // (the app name and buttons also appear in the list item behind the modal)
+        const modal = page.locator('#right-modal');
+
         // 4. In the detail modal, click "Install"
-        await expect(page.getByRole('button', { name: 'Install' })).toBeVisible({
+        await expect(modal.getByRole('button', { name: 'Install' })).toBeVisible({
             timeout: 10_000,
         });
-        await page.getByRole('button', { name: 'Install' }).click();
+        await modal.getByRole('button', { name: 'Install' }).click();
 
         // 5. The AppInstallConsentModal should appear — click "Install" to confirm
         await expect(page.getByText(/install.*\?/i)).toBeVisible({ timeout: 10_000 });
         await page.getByRole('button', { name: 'Install', exact: true }).last().click();
 
-        // 6. After install, the button should change to "Open"
-        await expect(page.getByRole('button', { name: 'Open' })).toBeVisible({ timeout: 30_000 });
+        // 6. Wait for consent modal to close before checking install state
+        await expect(page.getByText(/install.*\?/i)).not.toBeVisible({ timeout: 10_000 });
 
-        // 7. Click "Open" to launch the embedded app
-        await page.getByRole('button', { name: 'Open' }).click();
+        // 7. After install + query refetch, the button should change to "Open"
+        await expect(modal.getByRole('button', { name: 'Open' })).toBeVisible({ timeout: 60_000 });
 
-        // 8. Verify the EmbedIframeModal opens with an iframe
-        await expect(page.getByText(listing.displayName)).toBeVisible({
+        // 8. Click "Open" to launch the embedded app
+        await modal.getByRole('button', { name: 'Open' }).click();
+
+        // 9. Verify the EmbedIframeModal opens with an iframe
+        await expect(page.getByText(listing.displayName).first()).toBeVisible({
             timeout: 10_000,
         });
-        await expect(page.locator('iframe')).toBeVisible({ timeout: 30_000 });
+        await expect(page.locator(`iframe[title*="${listing.displayName}"]`)).toBeVisible({ timeout: 30_000 });
     });
 });
