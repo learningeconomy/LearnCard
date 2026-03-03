@@ -294,13 +294,23 @@ export const getBoostByUriWithDefaultClaimPermissions = async (
                 { model: Role, identifier: 'role' },
             ],
         })
-        .return('boost, role')
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'boost' },
+                Boost.getRelationshipByAlias('defaultRole'),
+                { model: Role, identifier: 'defaultRole' },
+            ],
+        })
+        .return('boost, role, defaultRole')
         .limit(1)
         .run();
 
-    const results = convertQueryResultToPropertiesObjectArray<{ boost: BoostType; role: RoleType }>(
-        rawResults
-    );
+    const results = convertQueryResultToPropertiesObjectArray<{
+        boost: BoostType;
+        role: RoleType;
+        defaultRole: RoleType;
+    }>(rawResults);
 
     if (results.length === 0) return null;
 
@@ -309,6 +319,7 @@ export const getBoostByUriWithDefaultClaimPermissions = async (
     return {
         ...(inflateObject as any)(result!.boost as any),
         claimPermissions: result!.role,
+        defaultPermissions: result!.defaultRole,
     };
 };
 
@@ -599,9 +610,10 @@ export const canProfileViewBoost = async (
         .with('COLLECT(parents) + COLLECT(target) AS boosts')
         .match({ identifier: 'profile', model: Profile, where: { profileId: profile.profileId } })
         .where(
-            `ANY(boost IN boosts WHERE EXISTS((profile)-[:${
-                Boost.getRelationshipByAlias('hasRole').name
-            }]-(boost)))`
+            `ANY(boost IN boosts WHERE
+                EXISTS((profile)-[:${Boost.getRelationshipByAlias('hasRole').name}]-(boost)) OR
+                EXISTS((boost)<-[:INSTANCE_OF]-(:Credential)-[:CREDENTIAL_RECEIVED]->(profile))
+            )`
         );
     const result = await query.return('count(profile) AS count, boosts').run();
 

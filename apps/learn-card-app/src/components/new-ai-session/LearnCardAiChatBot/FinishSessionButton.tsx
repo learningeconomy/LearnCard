@@ -78,7 +78,7 @@ const FinishSessionButton: React.FC = () => {
 
     if (mode === AiSessionMode.insights) {
         return (
-            <div className="min-h-[75px] flex justify-between items-center gap-[15px] p-[15px] absolute top-[0px] left-[0px] w-full bg-white shadow-box-bottom z-[100000] safe-area-inset-top">
+            <div className="min-h-[75px] flex justify-between items-center gap-[15px] p-[15px] absolute top-[0px] left-[0px] w-full bg-white shadow-box-bottom z-[100000] safe-area-top-margin">
                 <div className="flex items-center justify-center gap-1">
                     <AiInsightsIconMonochrome className="w-[24px] h-[24px] mb-1" />
                     <p className="text-sm flex items-center justify-center font-[600] leading-[24px] tracking-[0.25px] text-grayscale-600">
@@ -90,7 +90,7 @@ const FinishSessionButton: React.FC = () => {
                         onClick={handleFinish}
                         className="w-[24px] h-[24px] flex items-center justify-center text-grayscale-600"
                     >
-                        <X />
+                        <X className="text-grayscale-800 w-[24px] h-[24px]" />
                     </button>
                 )}
             </div>
@@ -98,7 +98,7 @@ const FinishSessionButton: React.FC = () => {
     }
 
     return (
-        <div className="min-h-[75px] flex justify-between items-center gap-[15px] p-[15px] absolute top-[0px] left-[0px] w-full bg-white shadow-box-bottom z-[100000] safe-area-inset-top">
+        <div className="min-h-[75px] flex justify-between items-center gap-[15px] p-[15px] absolute top-[0px] left-[0px] w-full bg-white shadow-box-bottom z-[100000] safe-area-top-margin">
             <div className="flex items-center justify-center gap-1 text-grayscale-900 font-semibold">
                 <AiSessionsIconMonochrome className="w-[24px] h-[24px] mr-2" />
                 AI Session
@@ -111,7 +111,7 @@ const FinishSessionButton: React.FC = () => {
                 onClick={handleFinish}
                 className="w-[24px] h-[24px] flex items-center justify-center text-grayscale-600"
             >
-                <X />
+                <X className="text-grayscale-800 w-[24px] h-[24px]" />
             </button>
         </div>
     );

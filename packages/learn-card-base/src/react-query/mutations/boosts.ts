@@ -154,6 +154,7 @@ export const useCreateBoost = () => {
             state,
             status,
             defaultClaimPermissions,
+            defaultPermissions,
             skillIds,
             meta,
             autoConnectRecipients,
@@ -162,6 +163,7 @@ export const useCreateBoost = () => {
             state: BoostCMSState;
             status: LCNBoostStatusEnum;
             defaultClaimPermissions?: BoostPermissions;
+            defaultPermissions?: Partial<BoostPermissions>;
             skillIds?: { frameworkId: string; id: string; proficiencyLevel?: number }[]; // Framework skill references for automatic alignment
             meta?: Record<string, unknown>;
             autoConnectRecipients?: boolean;
@@ -277,6 +279,7 @@ export const useCreateBoost = () => {
                     category: state?.basicInfo?.type,
                     status,
                     claimPermissions: defaultClaimPermissions,
+                    defaultPermissions,
                     skills: skillIds, // Backend will handle framework attachment and alignment
                     ...(autoConnectRecipients === true ? { autoConnectRecipients: true } : {}),
                     ...(meta ? { meta } : {}),
@@ -295,6 +298,7 @@ export const useCreateBoost = () => {
                     category: state?.basicInfo?.type,
                     status,
                     claimPermissions: defaultClaimPermissions,
+                    defaultPermissions,
                     skills: skillIds,
                     ...(autoConnectRecipients === true ? { autoConnectRecipients: true } : {}),
                     ...(meta ? { meta } : {}),

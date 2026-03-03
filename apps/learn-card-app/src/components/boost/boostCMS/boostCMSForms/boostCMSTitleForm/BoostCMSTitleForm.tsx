@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 import { IonTextarea } from '@ionic/react';
 
-import useFirebaseAnalytics from '../../../../../hooks/useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 import { BoostCMSState } from '../../../boost';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -12,7 +12,7 @@ const BoostCMSTitleForm: React.FC<{
     setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
     disabled?: boolean;
 }> = ({ state, setState, disabled = false }) => {
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
     const basicInfo = state?.basicInfo;
 
     const isID = state?.basicInfo?.type === BoostCategoryOptionsEnum.id;
@@ -22,7 +22,7 @@ const BoostCMSTitleForm: React.FC<{
     const maxCount = 100;
 
     const handleLogBoostCMSCreateStep = () => {
-        logAnalyticsEvent('boostCMS_data_entry', {
+        track(AnalyticsEvents.BOOST_CMS_DATA_ENTRY, {
             timestamp: Date.now(),
             action: 'data_entry',
             boostType: state?.basicInfo?.achievementType,
