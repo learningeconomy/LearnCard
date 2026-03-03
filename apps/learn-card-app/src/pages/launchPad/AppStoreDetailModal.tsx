@@ -21,6 +21,7 @@ import {
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
 
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import useAppStore from './useAppStore';
 import { EmbedIframeModal } from './EmbedIframeModal';
 import useTheme from '../../theme/hooks/useTheme';
@@ -94,6 +95,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
     const { isMobile } = useDeviceTypeByWidth();
 
+    const { track } = useAnalytics();
     const { useInstallApp, useUninstallApp, useInstallCount, useIsAppInstalled } = useAppStore();
 
     const installMutation = useInstallApp();
@@ -207,6 +209,11 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
         try {
             await installMutation.mutateAsync(listing.listing_id);
+            track(AnalyticsEvents.LAUNCHPAD_APP_INSTALLED, {
+                appName: listing.display_name,
+                appId: listing.listing_id,
+                category: listing.category,
+            });
             onInstallSuccess?.();
         } catch (error) {
             console.error('Failed to install app:', error);

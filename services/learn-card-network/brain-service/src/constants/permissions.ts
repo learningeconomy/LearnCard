@@ -2,6 +2,7 @@ import { BoostPermissions } from '@learncard/types';
 
 export const CREATOR_PERMISSIONS: BoostPermissions = {
     role: 'creator',
+    canView: true,
     canEdit: true,
     canIssue: true,
     canRevoke: true,
@@ -17,6 +18,7 @@ export const CREATOR_PERMISSIONS: BoostPermissions = {
 
 export const ADMIN_PERMISSIONS: BoostPermissions = {
     role: 'admin',
+    canView: true,
     canEdit: true,
     canIssue: true,
     canRevoke: true,
@@ -32,6 +34,7 @@ export const ADMIN_PERMISSIONS: BoostPermissions = {
 
 export const EMPTY_PERMISSIONS: BoostPermissions = {
     role: 'empty',
+    canView: false,
     canEdit: false,
     canIssue: false,
     canRevoke: false,
@@ -45,6 +48,10 @@ export const EMPTY_PERMISSIONS: BoostPermissions = {
     canViewAnalytics: false,
 };
 
+export const DEFAULT_BOOST_PERMISSIONS: Partial<BoostPermissions> = {
+    canView: true,
+};
+
 export const QUERYABLE_PERMISSIONS = [
     'canIssueChildren',
     'canCreateChildren',
@@ -53,7 +60,13 @@ export const QUERYABLE_PERMISSIONS = [
     'canManageChildrenPermissions',
 ];
 
-export const NON_CHILD_PERMISSIONS = ['canIssue', 'canEdit', 'canRevoke', 'canManagePermissions'];
+export const NON_CHILD_PERMISSIONS = [
+    'canView',
+    'canIssue',
+    'canEdit',
+    'canRevoke',
+    'canManagePermissions',
+];
 
 export const CHILD_TO_NON_CHILD_PERMISSION: Record<string, string> = {
     'canIssueChildren': 'canIssue',
