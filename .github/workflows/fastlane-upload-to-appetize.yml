@@ -22,20 +22,20 @@ jobs:
         environment: ${{ inputs.environment || 'learn-card-app-production' }}
 
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
 
             - name: Select Xcode 15.4
               uses: maxim-lobanov/setup-xcode@v1
               with:
                   xcode-version: "15.4"
 
-            - name: Setup Node.js 20.x
+            - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version-file: '.nvmrc'
 
             - name: Install pnpm
-              uses: pnpm/action-setup@v3
+              uses: pnpm/action-setup@v2
               id: pnpm-install
               with:
                   version: 9
@@ -116,15 +116,15 @@ jobs:
         runs-on: macos-latest
         environment: ${{ inputs.environment || 'learn-card-app-production' }}
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
 
-            - name: Setup Node.js 20.x
+            - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version-file: '.nvmrc'
 
             - name: Install pnpm
-              uses: pnpm/action-setup@v3
+              uses: pnpm/action-setup@v2
               id: pnpm-install
               with:
                   version: 9
