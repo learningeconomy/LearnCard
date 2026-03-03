@@ -11,6 +11,7 @@ import { ProfilePicture } from 'learn-card-base/components/profilePicture/Profil
 import OnboardingRoleItem from '../onboardingRoles/OnboardingRoleItem';
 import OnboardingHeader from '../onboardingHeader/OnboardingHeader';
 import OnboardingFooter from '../onboardingFooter/OnboardingFooter';
+import OnboardingSwiperForSlides from '../onboardingRoles/OnboardingSwiperForSlides';
 import ErrorLogout from '../../network-prompts/ErrorLogout';
 import HandleIcon from 'learn-card-base/svgs/HandleIcon';
 import { Checkmark } from '@learncard/react';
@@ -56,6 +57,7 @@ import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
 import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
 import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
@@ -95,6 +97,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
 }) => {
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
+    const { track } = useAnalytics();
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
@@ -288,6 +291,10 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 });
 
                 if (didWeb) {
+                    track(AnalyticsEvents.ONBOARDING_COMPLETED, {
+                        role: role ?? undefined,
+                        country: country ?? undefined,
+                    });
                     await refetchIsCurrentUserLCNUser();
                     await wallet.invoke.resetLCAClient();
                     await queryClient.resetQueries();
@@ -299,6 +306,16 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     setTimeout(async () => {
                         await onSuccess?.();
                     }, 1000);
+                    newModal(
+                        <OnboardingSwiperForSlides
+                            roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
+                            dob={dob}
+                        />,
+                        {
+                            sectionClassName: '!max-w-full',
+                        },
+                        { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                    );
                 }
 
                 if (role === LearnCardRolesEnum.teacher) {

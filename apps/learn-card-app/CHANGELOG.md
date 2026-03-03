@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.94.26
+
+### Patch Changes
+
+-   [#1028](https://github.com/learningeconomy/LearnCard/pull/1028) [`34a056d1b91b17e010eeb04094ffac7b792d3cd3`](https://github.com/learningeconomy/LearnCard/commit/34a056d1b91b17e010eeb04094ffac7b792d3cd3) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1604] Onboarding Slides
+
+-   [#1006](https://github.com/learningeconomy/LearnCard/pull/1006) [`caf231b53707174ea49f0eb2b65885a36b3e7228`](https://github.com/learningeconomy/LearnCard/commit/caf231b53707174ea49f0eb2b65885a36b3e7228) Thanks [@smurflo2](https://github.com/smurflo2)! - Add Self-Assigned Skills including optional proficiency level field on Boost -> Skill relationship
+
+-   [#1027](https://github.com/learningeconomy/LearnCard/pull/1027) [`bd55b6fac92437009a5209fea8a12c277a565511`](https://github.com/learningeconomy/LearnCard/commit/bd55b6fac92437009a5209fea8a12c277a565511) Thanks [@smurflo2](https://github.com/smurflo2)! - Add date of birth and country fields for child account creation
+
+-   [#1025](https://github.com/learningeconomy/LearnCard/pull/1025) [`35179e0ed8d7694e42efe2ea4bc6f60a96f8bf0e`](https://github.com/learningeconomy/LearnCard/commit/35179e0ed8d7694e42efe2ea4bc6f60a96f8bf0e) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1608][LC-1609] - Resume Builder + Resume Generation
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.7
+    -   @learncard/lca-api-plugin@1.1.15
+    -   @learncard/open-badge-v2-plugin@1.1.8
+    -   @learncard/react@2.9.14
+
 ## 1.94.25
 
 ### Patch Changes

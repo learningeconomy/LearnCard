@@ -341,7 +341,10 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                     </div>
 
                     {columnNode && (
-                        <InfoIcon className="ml-auto w-[24px] h-[24px] text-grayscale-600" />
+                        <InfoIcon
+                            className="ml-auto w-[24px] h-[24px] text-grayscale-600"
+                            version="thinner"
+                        />
                     )}
 
                     {isTopLevel && !isApproveFlow && !isEdit && (

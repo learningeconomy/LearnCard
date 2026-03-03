@@ -708,6 +708,8 @@ jobs:
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
                   WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
                   WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
+                  VITE_ANALYTICS_PROVIDER: ${{ vars.VITE_ANALYTICS_PROVIDER }}
+                  VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
 
             # Deploy OTA update to CapGo
             - name: Upload to CapGo

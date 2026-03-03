@@ -247,6 +247,11 @@ export type BoostCMSState = {
     notes: string;
     address: AddressSpec;
     memberOptions: BoostCMSMemberOptions;
+    boostPermissions: {
+        canView: boolean;
+        canEdit: boolean;
+        canIssue: boolean;
+    };
     alignments?: BoostCMSAlignment[];
 };
 
@@ -304,6 +309,11 @@ export const initialBoostCMSState: BoostCMSState = {
     memberOptions: {
         publiclyDisplayMembers: false,
         autoConnectMembersInContacts: false,
+    },
+    boostPermissions: {
+        canView: false,
+        canEdit: true,
+        canIssue: true,
     },
 };
 

@@ -146,6 +146,7 @@ export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;
 
 export const BoostPermissionsValidator = z.object({
     role: z.string(),
+    canView: z.boolean().default(true),
     canEdit: z.boolean(),
     canIssue: z.boolean(),
     canRevoke: z.boolean(),
@@ -163,6 +164,7 @@ export type BoostPermissions = z.infer<typeof BoostPermissionsValidator>;
 export const BoostPermissionsQueryValidator = z
     .object({
         role: StringQuery,
+        canView: z.boolean(),
         canEdit: z.boolean(),
         canIssue: z.boolean(),
         canRevoke: z.boolean(),
@@ -360,7 +362,13 @@ const SendBoostTemplateValidator = BoostValidator.partial()
         credential: VCValidator.or(UnsignedVCValidator),
         claimPermissions: BoostPermissionsValidator.partial().optional(),
         skills: z
-            .array(z.object({ frameworkId: z.string(), id: z.string() }))
+            .array(
+                z.object({
+                    frameworkId: z.string(),
+                    id: z.string(),
+                    proficiencyLevel: z.number().optional(),
+                })
+            )
             .min(1)
             .optional(),
     });

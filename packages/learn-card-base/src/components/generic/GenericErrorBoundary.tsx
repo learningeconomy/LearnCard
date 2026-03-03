@@ -106,4 +106,43 @@ const GenericErrorBoundary: React.FC<GenericErrorBoundaryProps> = ({
     );
 };
 
+// For displaying the error view without actually throwing an error
+export const GenericErrorView: React.FC<{
+    errorMessage: string;
+    hideGoHome?: boolean;
+    extraButtons?: { label: string; onClick: () => void }[];
+}> = ({ errorMessage, hideGoHome = false, extraButtons }) => {
+    return (
+        <div className="text-grayscale-900 h-full w-full flex flex-col gap-[50px] items-center justify-center p-4">
+            <div className="text-[17px] text-black font-poppins flex flex-col gap-[10px] items-center leading-[130%] tracking-[-0.25px] w-full mx-[20px]">
+                <SpilledCup />
+                Something went wrong.
+                <div className="bg-red-50 p-4 rounded-lg mb-4 w-full max-w-md">
+                    <p className="text-red-800 font-medium">Error:</p>
+                    <p className="text-red-700 text-sm mt-1 break-words">{errorMessage}</p>
+                </div>
+            </div>
+            <div className="flex gap-[10px]">
+                {extraButtons?.map(button => (
+                    <button
+                        key={button.label}
+                        className="bg-white py-[7px] px-[15px] rounded-[30px] text-grayscale-900 text-[14px] shadow-button-bottom font-poppins border-[1px] border-grayscale-200 border-solid"
+                        onClick={button.onClick}
+                    >
+                        {button.label}
+                    </button>
+                ))}
+                {!hideGoHome && (
+                    <button
+                        className="bg-indigo-500 py-[7px] px-[15px] rounded-[30px] text-[14px] text-white font-[600] leading-[24px] tracking-[0.25px] shadow-button-bottom font-poppins"
+                        onClick={() => (window.location.href = '/')}
+                    >
+                        Go Home
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
+
 export default GenericErrorBoundary;
