@@ -18,6 +18,7 @@ import {
     X,
     AlertTriangle,
     Activity,
+    Hash,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
@@ -128,7 +129,9 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
 
                 <div className="space-y-5">
                     <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${statusBg}`}>
+                        <div
+                            className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${statusBg}`}
+                        >
                             {currentEventType === 'CLAIMED' ? (
                                 <CheckCircle2 className={`w-6 h-6 ${statusColor}`} />
                             ) : currentEventType === 'FAILED' ? (
@@ -143,14 +146,24 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 text-lg truncate">{templateName}</h3>
+                            <h3 className="font-semibold text-gray-900 text-lg truncate">
+                                {templateName}
+                            </h3>
 
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusBg} ${statusColor}`}>
+                                <span
+                                    className={`text-xs px-2 py-1 rounded-full font-medium ${statusBg} ${statusColor}`}
+                                >
                                     {statusLabel}
                                 </span>
 
-                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${isInbox ? 'bg-violet-100 text-violet-700' : 'bg-cyan-100 text-cyan-700'}`}>
+                                <span
+                                    className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                        isInbox
+                                            ? 'bg-violet-100 text-violet-700'
+                                            : 'bg-cyan-100 text-cyan-700'
+                                    }`}
+                                >
                                     {isInbox ? 'Email Delivery' : 'Direct Send'}
                                 </span>
                             </div>
@@ -165,9 +178,13 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
 
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm text-gray-500">Recipient</p>
-                                <p className="font-medium text-gray-900 truncate">{recipientName}</p>
+                                <p className="font-medium text-gray-900 truncate">
+                                    {recipientName}
+                                </p>
                                 {item.recipientType === 'profile' && (
-                                    <p className="text-xs text-gray-400 mt-0.5 font-mono truncate">{item.recipientIdentifier}</p>
+                                    <p className="text-xs text-gray-400 mt-0.5 font-mono truncate">
+                                        {item.recipientIdentifier}
+                                    </p>
                                 )}
                             </div>
                         </div>
@@ -192,9 +209,7 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                         minute: '2-digit',
                                     })}
                                 </p>
-                                <p className="text-xs text-gray-400">
-                                    {timeSinceEventText} ago
-                                </p>
+                                <p className="text-xs text-gray-400">{timeSinceEventText} ago</p>
                             </div>
                         </div>
 
@@ -206,9 +221,7 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
 
                                 <div className="min-w-0 flex-1">
                                     <p className="text-sm text-gray-500">Error</p>
-                                    <p className="text-sm text-red-600">
-                                        {errorMessage}
-                                    </p>
+                                    <p className="text-sm text-red-600">{errorMessage}</p>
                                 </div>
                             </div>
                         )}
@@ -234,7 +247,9 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                         {/* Activity Timeline */}
                         {activityChain.length > 0 && (
                             <div className="pt-2 border-t border-gray-100">
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Activity Timeline</p>
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                                    Activity Timeline
+                                </p>
 
                                 <div className="space-y-2">
                                     {isLoadingChain ? (
@@ -242,7 +257,9 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                     ) : (
                                         activityChain.map((event, index) => {
                                             const isAutoDeliver = isAutoDelivery(event);
-                                            let { color, bg, Icon } = getEventStyling(event.eventType);
+                                            let { color, bg, Icon } = getEventStyling(
+                                                event.eventType
+                                            );
 
                                             // Override styling for auto-delivery
                                             if (isAutoDeliver) {
@@ -254,19 +271,29 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                             const eventTime = new Date(event.timestamp);
 
                                             return (
-                                                <div key={event.id} className="flex items-center gap-3">
-                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${bg}`}>
+                                                <div
+                                                    key={event.id}
+                                                    className="flex items-center gap-3"
+                                                >
+                                                    <div
+                                                        className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${bg}`}
+                                                    >
                                                         <Icon className={`w-3 h-3 ${color}`} />
                                                     </div>
 
                                                     <div className="flex-1 min-w-0">
-                                                        <span className={`text-sm font-medium ${color}`}>
+                                                        <span
+                                                            className={`text-sm font-medium ${color}`}
+                                                        >
                                                             {getActivityLabel(event)}
                                                         </span>
                                                     </div>
 
                                                     <span className="text-xs text-gray-400">
-                                                        {eventTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                                        {eventTime.toLocaleTimeString('en-US', {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                        })}
                                                     </span>
                                                 </div>
                                             );
@@ -277,7 +304,9 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                         )}
 
                         <div className="pt-2 border-t border-gray-100">
-                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Technical Details</p>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                                Technical Details
+                            </p>
 
                             <div className="space-y-3">
                                 <div className="flex items-start gap-3">
@@ -288,7 +317,9 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                     <div className="min-w-0 flex-1">
                                         <p className="text-sm text-gray-500">Delivery Method</p>
                                         <p className="font-medium text-gray-900">
-                                            {isInbox ? 'Universal Inbox (Email)' : 'Direct to Profile'}
+                                            {isInbox
+                                                ? 'Universal Inbox (Email)'
+                                                : 'Direct to Profile'}
                                         </p>
                                     </div>
                                 </div>
@@ -303,7 +334,18 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                         <p className="font-medium text-gray-900">{sourceLabel}</p>
                                     </div>
                                 </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                        <Hash className="w-4 h-4 text-gray-600" />
+                                    </div>
 
+                                    <div className="min-w-0 flex-1 overflow-hidden">
+                                        <p className="text-sm text-gray-500">Template Alias</p>
+                                        <p className="font-mono text-xs text-gray-600 break-all">
+                                            {item?.metadata?.templateAlias}
+                                        </p>
+                                    </div>
+                                </div>
                                 {item.boostUri && (
                                     <div className="flex items-start gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -376,7 +418,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     onNavigate,
     refreshKey,
 }) => {
-    const { activity, isLoading: activityLoading, refetch } = useIntegrationActivity(templates, { 
+    const {
+        activity,
+        isLoading: activityLoading,
+        refetch,
+    } = useIntegrationActivity(templates, {
         limit: 10,
         integrationId: integration.id,
     });
@@ -391,10 +437,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
 
     const handleActivityItemClick = (item: CredentialActivityRecord) => {
-        newModal(
-            <IssuanceDetailModal item={item} />,
-            { sectionClassName: '!max-w-[450px]' }
-        );
+        newModal(<IssuanceDetailModal item={item} />, { sectionClassName: '!max-w-[450px]' });
     };
 
     const quickActions = [];
@@ -461,7 +504,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         <div className="space-y-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-2">Quick Actions</h2>
-                <p className="text-sm text-gray-500 mb-4">Common tasks for managing your integration</p>
+                <p className="text-sm text-gray-500 mb-4">
+                    Common tasks for managing your integration
+                </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {quickActions.slice(0, 2).map(action => (
@@ -471,7 +516,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                             className={`p-4 border border-gray-200 rounded-xl ${action.hoverColor} transition-colors text-left group`}
                         >
                             <action.icon className={`w-8 h-8 ${action.iconColor} mb-3`} />
-                            <h3 className="font-medium text-gray-800 group-hover:text-gray-900">{action.title}</h3>
+                            <h3 className="font-medium text-gray-800 group-hover:text-gray-900">
+                                {action.title}
+                            </h3>
                             <p className="text-sm text-gray-500 mt-1">{action.description}</p>
                         </button>
                     ))}
@@ -483,7 +530,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                         className="p-4 border border-gray-200 rounded-xl hover:border-cyan-300 hover:bg-cyan-50 transition-colors text-left group"
                     >
                         <ExternalLink className="w-8 h-8 text-cyan-600 mb-3" />
-                        <h3 className="font-medium text-gray-800 group-hover:text-cyan-700">Documentation</h3>
+                        <h3 className="font-medium text-gray-800 group-hover:text-cyan-700">
+                            Documentation
+                        </h3>
                         <p className="text-sm text-gray-500 mt-1">Learn how to integrate</p>
                     </a>
                 </div>
@@ -500,7 +549,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                     <div className="text-center py-8 text-gray-500">
                         <Zap className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                         <p>No activity yet</p>
-                        <p className="text-sm mt-1">Credentials will appear here as they're issued</p>
+                        <p className="text-sm mt-1">
+                            Credentials will appear here as they're issued
+                        </p>
                     </div>
                 ) : (
                     <div className="space-y-3">
@@ -556,7 +607,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                                     onClick={() => handleActivityItemClick(item)}
                                     className="w-full flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-left"
                                 >
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bgColor}`}>
+                                    <div
+                                        className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bgColor}`}
+                                    >
                                         <Icon className={`w-4 h-4 ${textColor}`} />
                                     </div>
 
@@ -566,7 +619,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                                                 {templateName}
                                             </span>
 
-                                            <span className={`text-xs px-1.5 py-0.5 rounded ${badgeBg} ${badgeText}`}>
+                                            <span
+                                                className={`text-xs px-1.5 py-0.5 rounded ${badgeBg} ${badgeText}`}
+                                            >
                                                 {statusLabel}
                                             </span>
 
@@ -609,7 +664,7 @@ function getDocsUrl(guideType?: string): string {
         case 'embed-claim':
             return 'https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-embed-sdk';
         case 'embed-app':
-            return 'https://docs.learncard.com/sdks/partner-connect'
+            return 'https://docs.learncard.com/sdks/partner-connect';
         case 'consent-flow':
             return 'https://docs.learncard.com/consent-flow';
         default:
