@@ -1,0 +1,70 @@
+name: Staging Health Check
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened]
+    workflow_dispatch:
+        inputs:
+            group_id:
+                description: 'UptimeRobot monitor group ID to check'
+                required: false
+                default: '15487'
+                type: string
+    workflow_call:
+        inputs:
+            group_id:
+                description: 'UptimeRobot monitor group ID to check'
+                required: false
+                default: '15487'
+                type: string
+        secrets:
+            UPTIMEROBOT_API_KEY:
+                required: true
+
+env:
+    UPTIMEROBOT_GROUP_ID: ${{ inputs.group_id || '15487' }}
+
+jobs:
+    staging-health:
+        name: Verify Staging Services Are Healthy
+        if: github.head_ref == 'changeset-release/main' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call'
+        runs-on: ubuntu-latest
+        steps:
+            - name: Check UptimeRobot staging monitors
+              env:
+                  UPTIMEROBOT_API_KEY: ${{ secrets.UPTIMEROBOT_API_KEY }}
+              run: |
+                  if [ -z "$UPTIMEROBOT_API_KEY" ]; then
+                    echo "::error::UPTIMEROBOT_API_KEY secret is not set"
+                    exit 1
+                  fi
+
+                  GROUP_ID="${UPTIMEROBOT_GROUP_ID}"
+                  echo "Querying UptimeRobot for DOWN monitors in group $GROUP_ID..."
+
+                  RESPONSE=$(curl -s -f -X GET \
+                    "https://api.uptimerobot.com/v3/monitors?limit=50&groupId=${GROUP_ID}&status=DOWN" \
+                    -H 'accept: application/json' \
+                    -H "authorization: Bearer ${UPTIMEROBOT_API_KEY}")
+
+                  CURL_EXIT=$?
+                  if [ $CURL_EXIT -ne 0 ]; then
+                    echo "::error::UptimeRobot API request failed (curl exit code: $CURL_EXIT)"
+                    exit 1
+                  fi
+
+                  echo "Response: $RESPONSE"
+
+                  # Check if data array is empty (no monitors down)
+                  DOWN_COUNT=$(echo "$RESPONSE" | jq '.data | length')
+
+                  if [ "$DOWN_COUNT" = "0" ]; then
+                    echo "✅ All staging monitors are UP"
+                  else
+                    echo "::error::$DOWN_COUNT staging monitor(s) are DOWN"
+
+                    # List the down monitors for visibility
+                    echo "$RESPONSE" | jq -r '.data[] | "  ❌ \(.name) (ID: \(.id)) — down since \(.downDatetime)"' 2>/dev/null || true
+
+                    exit 1
+                  fi
