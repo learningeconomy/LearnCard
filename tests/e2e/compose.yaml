@@ -180,7 +180,7 @@ services:
             AUTHORIZED_DIDS: did:web:localhost%3A4000
             MONGO_URI: ${LCA_API_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
             MONGO_DB_NAME: ${LCA_API_MONGO_DB_NAME:-lca-api-e2e}
-            REDIS_URL: redis3
+            REDIS_HOST: redis3
             REDIS_PORT: 6379
             METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-test-key}
 

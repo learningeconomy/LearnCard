@@ -619,26 +619,31 @@ export const keysRouter = t.router({
             let customToken: string | undefined;
 
             if (input.providerType === 'firebase') {
-                try {
-                    await admin.auth().updateUser(user.id, { email });
+                if (process.env.IS_E2E_TEST === 'true') {
+                    // E2E / offline bypass — no Firebase Admin SDK available
+                    customToken = `e2e-custom-token-${user.id}`;
+                } else {
+                    try {
+                        await admin.auth().updateUser(user.id, { email });
 
-                    customToken = await admin.auth().createCustomToken(user.id);
-                } catch (err) {
-                    const code = (err as { code?: string })?.code ?? '';
+                        customToken = await admin.auth().createCustomToken(user.id);
+                    } catch (err) {
+                        const code = (err as { code?: string })?.code ?? '';
 
-                    if (code === 'auth/email-already-exists') {
+                        if (code === 'auth/email-already-exists') {
+                            throw new TRPCError({
+                                code: 'CONFLICT',
+                                message: 'This email is already associated with another account.',
+                            });
+                        }
+
+                        console.error('Failed to update Firebase user email:', err);
+
                         throw new TRPCError({
-                            code: 'CONFLICT',
-                            message: 'This email is already associated with another account.',
+                            code: 'INTERNAL_SERVER_ERROR',
+                            message: 'Failed to link email to your account. Please try again.',
                         });
                     }
-
-                    console.error('Failed to update Firebase user email:', err);
-
-                    throw new TRPCError({
-                        code: 'INTERNAL_SERVER_ERROR',
-                        message: 'Failed to link email to your account. Please try again.',
-                    });
                 }
             }
 
