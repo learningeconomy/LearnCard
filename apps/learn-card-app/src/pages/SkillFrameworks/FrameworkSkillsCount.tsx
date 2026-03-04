@@ -1,10 +1,12 @@
 import React from 'react';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import { conditionalPluralize, useCountSkillsInFramework } from 'learn-card-base';
+import { isOpenSaltFramework } from '../../helpers/opensalt.helpers';
 
 type FrameworkSkillsCountProps = {
     frameworkId?: string;
     skillId?: string;
+    sourceURI?: string;
     countOverride?: number;
     className?: string;
     textClassName?: string;
@@ -16,6 +18,7 @@ type FrameworkSkillsCountProps = {
 const FrameworkSkillsCount: React.FC<FrameworkSkillsCountProps> = ({
     frameworkId,
     skillId,
+    sourceURI,
     countOverride,
     className = '',
     textClassName = '',
@@ -23,10 +26,11 @@ const FrameworkSkillsCount: React.FC<FrameworkSkillsCountProps> = ({
     includeSkillWord = false,
     countAdjustment = 0,
 }) => {
+    const isOpenSalt = isOpenSaltFramework({ id: frameworkId ?? '', sourceURI });
     const { data: { count } = { count: undefined } } = useCountSkillsInFramework(
         frameworkId ?? '',
         skillId,
-        { onlyCountCompetencies: true }
+        { onlyCountCompetencies: !isOpenSalt }
     );
 
     const countToUse = (countOverride ?? count) + countAdjustment;

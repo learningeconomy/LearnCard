@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import type { z } from 'zod';
 import {
     SkillFrameworkStatusEnum,
     SkillFrameworkValidator,
@@ -8,5 +8,7 @@ import {
 export { SkillFrameworkStatusEnum, SkillFrameworkValidator, SkillFrameworkType };
 
 // Brain-service specific flat types
-export type FlatSkillFrameworkType = z.infer<typeof SkillFrameworkValidator>;
+export type FlatSkillFrameworkType = z.infer<typeof SkillFrameworkValidator> & {
+    isPublic?: boolean;
+};
 export const FlatSkillFrameworkValidator = SkillFrameworkValidator;
