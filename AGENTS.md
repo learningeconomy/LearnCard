@@ -440,3 +440,24 @@ Partner Connect example apps follow a consistent pattern:
     -   `apps/scouts/src/pages/troop/InviteSelectionModal.tsx`
 -   **Logic**: Network admins can issue both Leader IDs and Scout IDs to troops they manage
 -   **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
+
+## Privacy Preferences & Age-Gate System
+
+GDPR/COPPA-compliant privacy controls based on user age and country. Minors have AI, analytics, and bug reporting disabled by default.
+
+### Key Files
+
+| File                                                                     | Purpose                                                                                   |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| `packages/learn-card-base/src/constants/gdprAgeLimits.ts`                | `getMinorAgeThreshold(countryCode?)` — returns 18 (non-EU) or GDPR age (13–16, EU)        |
+| `packages/learn-card-base/src/hooks/usePrivacyGate.ts`                   | Auto-initializes preferences on first login based on age/country                          |
+| `packages/learn-card-base/src/hooks/useAiFeatureGate.ts`                 | Point-of-use AI gate with local DOB fallback                                              |
+| `services/learn-card-network/lca-api/src/models/Preferences.ts`          | MongoDB schema with `aiEnabled`, `analyticsEnabled`, `bugReportsEnabled`, `isMinor`, etc. |
+| `services/learn-card-network/lca-api/src/routes/preferences.ts`          | tRPC routes: `createPreferences`, `updatePreferences`, `getPreferencesForDid`             |
+| `apps/learn-card-app/src/pages/privacy-settings/PrivacySettingsPage.tsx` | Three-toggle settings UI; locked for minors                                               |
+
+### Important
+
+-   Always use `getMinorAgeThreshold()` from `learn-card-base` for minor determination — NOT `getGdprAgeLimit()` from the app's local `gdpr.ts` (that one returns 16 for non-EU, only correct for EU parental consent modals)
+-   Preference fields: `aiEnabled`, `aiAutoDisabled`, `analyticsEnabled`, `analyticsAutoDisabled`, `bugReportsEnabled`, `isMinor` (all optional booleans)
+-   See CLAUDE.md for full architectural details

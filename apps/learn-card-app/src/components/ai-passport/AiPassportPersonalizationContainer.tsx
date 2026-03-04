@@ -6,6 +6,7 @@ import AiPassportPersonalizationQuestions from './AiPassportPersonalizationQuest
 import AiPassportPersonalizationContainerFooter from './AiPassportPersonalizationContainerFooter';
 
 import { useWallet } from 'learn-card-base';
+import { AiFeatureGate } from '../ai-feature-gate/AiFeatureGate';
 
 import {
     PersonalizedAnswersState,
@@ -54,22 +55,24 @@ export const AiPassportPersonalizationContainer: React.FC = () => {
     }, [uri]);
 
     return (
-        <div className="h-full">
-            {isLoading && <AiSessionLoader overrideText="Loading Personalization..." showUserImg />}
+        <AiFeatureGate>
+            <div className="h-full">
+                {isLoading && <AiSessionLoader overrideText="Loading Personalization..." showUserImg />}
 
-            <section className="h-full bg-[rgba(53,62,100,0.3)] backdrop-blur-[2px] ion-padding overflow-y-scroll pb-[130px] safe-area-top-margin">
-                <AiPassportPersonalizationFormHeader />
-                <AiPassportPersonalizationQuestions
+                <section className="h-full bg-[rgba(53,62,100,0.3)] backdrop-blur-[2px] ion-padding overflow-y-scroll pb-[130px] safe-area-top-margin">
+                    <AiPassportPersonalizationFormHeader />
+                    <AiPassportPersonalizationQuestions
+                        personalizedAnswers={personalizedAnswers}
+                        setPersonalizedAnswers={setPersonalizedAnswers}
+                    />
+                </section>
+
+                <AiPassportPersonalizationContainerFooter
+                    uri={uri}
                     personalizedAnswers={personalizedAnswers}
-                    setPersonalizedAnswers={setPersonalizedAnswers}
                 />
-            </section>
-
-            <AiPassportPersonalizationContainerFooter
-                uri={uri}
-                personalizedAnswers={personalizedAnswers}
-            />
-        </div>
+            </div>
+        </AiFeatureGate>
     );
 };
 

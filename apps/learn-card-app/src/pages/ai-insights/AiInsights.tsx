@@ -5,6 +5,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { IonContent, IonPage } from '@ionic/react';
 import { useLocation } from 'react-router-dom';
 import AiInsightsTopSkills from './AiInsightsTopSkills';
+import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import ChildInsights from './child-insights/ChildInsights';
 import AiInsightsTabs from './ai-insight-tabs/AiInsightsTabs';
 import MainHeader from '../../components/main-header/MainHeader';
@@ -165,16 +166,18 @@ const AiInsights: React.FC = () => {
                         subheaderType={SubheaderTypeEnum.AiInsights}
                         hidePlusBtn={true}
                     />
-                    <div className="flex relative justify-center items-center w-full">
-                        <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] pb-[100px]">
-                            <AiInsightsTabs
-                                selectedTab={selectedTab}
-                                setSelectedTab={setSelectedTab}
-                                className="w-full mb-4"
-                            />
-                            {activeInsights}
+                    <AiFeatureGate>
+                        <div className="flex relative justify-center items-center w-full">
+                            <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] pb-[100px]">
+                                <AiInsightsTabs
+                                    selectedTab={selectedTab}
+                                    setSelectedTab={setSelectedTab}
+                                    className="w-full mb-4"
+                                />
+                                {activeInsights}
+                            </div>
                         </div>
-                    </div>
+                    </AiFeatureGate>
                 </IonContent>
             </ErrorBoundary>
         </IonPage>
