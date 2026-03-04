@@ -1,10 +1,10 @@
 // Function to determine if the URL is from YouTube
 export const isYoutubeUrl = (url: string) => {
+    if (!url) return false;
     try {
         const { hostname } = new URL(url);
         return hostname.includes('youtube.com') || hostname === 'youtu.be';
-    } catch (e) {
-        console.log('error', e);
+    } catch {
         return false;
     }
 };
@@ -30,6 +30,7 @@ export const getCoverImageUrl = (youtubeWatchUrl: string) => {
 
 // Function to get the source of the video
 export const getVideoSource = (url: string) => {
+    if (!url) return '';
     try {
         const urlObj = new URL(url);
         let hostname = urlObj.hostname;

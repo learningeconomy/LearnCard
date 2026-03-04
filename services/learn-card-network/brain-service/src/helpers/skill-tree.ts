@@ -1,10 +1,9 @@
-import { getChildrenForSkillInFrameworkPaged, getFrameworkRootSkillsPaged } from '@accesslayer/skill/read';
+import {
+    getChildrenForSkillInFrameworkPaged,
+    getFrameworkRootSkillsPaged,
+} from '@accesslayer/skill/read';
 import type { FlatSkillType } from 'types/skill';
-import type {
-    PaginatedSkillTree,
-    SkillTreeNode,
-    SkillFrameworkType,
-} from '@learncard/types';
+import type { PaginatedSkillTree, SkillTreeNode, SkillFrameworkType } from '@learncard/types';
 
 export const DEFAULT_ROOTS_LIMIT = 50;
 export const DEFAULT_CHILDREN_LIMIT = 25;
@@ -15,6 +14,7 @@ export const formatFramework = (framework: any): SkillFrameworkType => ({
     description: framework.description ?? undefined,
     image: framework.image ?? undefined,
     sourceURI: framework.sourceURI ?? undefined,
+    isPublic: framework.isPublic ?? false,
     status: (framework.status as any) ?? 'active',
     createdAt: framework.createdAt ?? undefined,
     updatedAt: framework.updatedAt ?? undefined,
@@ -70,7 +70,11 @@ export async function buildLocalSkillTreePage(
         );
 
         const children = childPage.records.map(child => {
-            const { hasChildren, parentId: _parentId, ...rest } = child as typeof child & {
+            const {
+                hasChildren,
+                parentId: _parentId,
+                ...rest
+            } = child as typeof child & {
                 hasChildren: boolean;
                 parentId?: string;
             };

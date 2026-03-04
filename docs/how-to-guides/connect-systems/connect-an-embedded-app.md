@@ -114,6 +114,21 @@ In the LearnCard Developer Portal, create a new app listing with:
 -   **Name & Description** - What your app does
 -   **Launch URL** - Where your embedded app is hosted
 -   **Permissions** - Request `credentials:write` to issue credentials
+-   **Age Rating** - Content rating for your app (optional)
+-   **Minimum Age** - Minimum user age required to access your app (optional)
+
+#### Age Restrictions
+
+You can configure age-based access controls for your app:
+
+| Field        | Type                                   | Description                                                                                                         |
+| ------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `age_rating` | `'4+'` \| `'9+'` \| `'12+'` \| `'17+'` | Content rating similar to app store ratings. Indicates the maturity level of content.                               |
+| `min_age`    | `number` (0-18)                        | Minimum age (in years) required to access this app. Users below this age will not see or be able to launch the app. |
+
+{% hint style="info" %}
+Age restrictions are enforced based on the user's date of birth in their profile
+{% endhint %}
 
 ### 2. Create Credential Templates
 

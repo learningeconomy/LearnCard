@@ -1,6 +1,6 @@
 {
     "name": "@learncard/benchmarking",
-    "version": "1.0.6",
+    "version": "1.0.8",
     "private": true,
     "description": "Performance benchmarks for LearnCard SDK",
     "type": "commonjs",

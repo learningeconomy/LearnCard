@@ -29,6 +29,8 @@ import {
     useIsCurrentUserLCNUser,
     useContract,
     switchedProfileStore,
+    usePrivacyGate,
+    useAiFeatureGate,
 } from 'learn-card-base';
 import { useAppAuth } from './providers/AuthCoordinatorProvider';
 import { useNetworkConsentMutation } from 'learn-card-base/react-query/mutations/networkConsent';
@@ -43,7 +45,7 @@ import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals } from 'learn-card-base';
-import { useSetAnalyticsUserId, useAnalyticsAgeGate } from '@analytics';
+import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { redirectStore } from 'learn-card-base/stores/redirectStore';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
@@ -67,6 +69,9 @@ const AppRouter: React.FC = () => {
     const { isMobile } = useDeviceTypeByWidth();
     const isChapiInteraction = useIsChapiInteraction();
     const networkConsentMutation = useNetworkConsentMutation();
+    const { setEnabled: setAnalyticsEnabled } = useAnalytics();
+    const { isAiEnabled } = useAiFeatureGate();
+    usePrivacyGate({ onAnalyticsChange: setAnalyticsEnabled });
 
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
@@ -212,7 +217,6 @@ const AppRouter: React.FC = () => {
     useSentryIdentify({ debug: false });
 
     useSetAnalyticsUserId({ debug: false });
-    useAnalyticsAgeGate();
     useAutoVerifyContactMethodWithProofOfLogin();
     useFinalizeInboxCredentials();
 
@@ -257,10 +261,10 @@ const AppRouter: React.FC = () => {
         }
     }, []);
 
-    // Backfill consent logic for existing users
+    // Backfill consent logic for existing users — skipped for minors (AI disabled)
     useEffect(() => {
         const handleBackfillConsent = async () => {
-            if (!currentLCNUserLoading && currentLCNUser && currentUser) {
+            if (!currentLCNUserLoading && currentLCNUser && currentUser && isAiEnabled) {
                 try {
                     // Use the reusable network consent mutation with backfill check
                     await networkConsentMutation.mutateAsync({
@@ -274,7 +278,7 @@ const AppRouter: React.FC = () => {
         };
 
         handleBackfillConsent();
-    }, [currentLCNUser, currentLCNUserLoading, currentUser]);
+    }, [currentLCNUser, currentLCNUserLoading, currentUser, isAiEnabled]);
 
     if (initLoading) return <LoginLoadingPage />;
 

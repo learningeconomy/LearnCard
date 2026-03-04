@@ -121,7 +121,7 @@ export const FamilyPinModal: React.FC<FamilyPinModalProps> = ({
     );
 
     const buttons = (
-        <>
+        <div className="overflow-hidden">
             {actionButton}
 
             <IonRow className="flex w-full items-center justify-center">
@@ -134,7 +134,7 @@ export const FamilyPinModal: React.FC<FamilyPinModalProps> = ({
                     </button>
                 </IonCol>
             </IonRow>
-        </>
+        </div>
     );
 
     return (

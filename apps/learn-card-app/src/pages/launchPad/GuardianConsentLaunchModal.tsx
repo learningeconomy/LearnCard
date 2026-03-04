@@ -19,7 +19,7 @@ import {
 } from 'learn-card-base';
 
 import useGetFamilyCredential from '../../hooks/useGetFamilyCredential';
-import usePin from '../../hooks/usePin';
+import { useGuardianGate } from '../../hooks/useGuardianGate';
 import AccountSwitcherModal from '../../components/learncard/AccountSwitcherModal';
 import FamilyCMS from '../../components/familyCMS/FamilyCMS';
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
@@ -54,7 +54,13 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
     const { familyCredential } = useGetFamilyCredential();
     const hasFamily = !!familyCredential || isSwitchedProfile;
 
-    const { handleVerifyParentPin } = usePin(closeModal);
+    // Guardian gate for child profiles - unified guardian verification
+    const { guardedAction } = useGuardianGate({
+        onCancel: () => {
+            closeAllModals();
+            onCancel?.();
+        },
+    });
     const { handleSwitchAccount } = useSwitchProfile();
 
     const [step, setStep] = useState<LaunchStep>(LaunchStep.loading);
@@ -80,11 +86,6 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
     // Determine initial step based on state
     useEffect(() => {
         const determineStep = async () => {
-            // If switched to a child profile, verify parent first
-            if (isSwitchedProfile) {
-                await handleVerifyParentPin();
-            }
-
             if (!isLoggedIn) {
                 // Not logged in - they need to log in first
                 // For now, just close and let them log in via normal flow
@@ -100,7 +101,7 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
         };
 
         determineStep();
-    }, [isLoggedIn, hasFamily, isSwitchedProfile]);
+    }, [isLoggedIn, hasFamily]);
 
     // Handle profile selection
     const handleProfileSelected = async (user: LCNProfile) => {
@@ -120,25 +121,27 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
     const handleConsentAndLaunch = async () => {
         if (!selectedUser) return;
 
-        setIsProcessing(true);
+        await guardedAction(async () => {
+            setIsProcessing(true);
 
-        try {
-            // Consent to contract for selected user
-            await consentToContract({
-                terms,
-                expiresAt: '',
-                oneTime: false,
-            });
+            try {
+                // Consent to contract for selected user
+                await consentToContract({
+                    terms,
+                    expiresAt: '',
+                    oneTime: false,
+                });
 
-            // Sync credentials in background
-            fetchNewContractCredentials();
+                // Sync credentials in background
+                fetchNewContractCredentials();
 
-            // Launch with redirect
-            await launchWithCredentials(selectedUser.did);
-        } catch (error) {
-            console.error('Failed to consent:', error);
-            setIsProcessing(false);
-        }
+                // Launch with redirect
+                await launchWithCredentials(selectedUser.did);
+            } catch (error) {
+                console.error('Failed to consent:', error);
+                setIsProcessing(false);
+            }
+        });
     };
 
     // Launch directly (for users who already have consent)
@@ -266,7 +269,7 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
     // Select Profile step
     if (step === LaunchStep.selectProfile) {
         return (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 max-w-[400px] mx-auto">
                 <AccountSwitcherModal
                     title="Who's using this app?"
                     showFooter={false}
@@ -287,7 +290,7 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
     // Confirm Consent step
     if (step === LaunchStep.confirmConsent && selectedUser) {
         return (
-            <div className="flex flex-col gap-4 p-6 bg-white rounded-[20px] max-w-[400px]">
+            <div className="flex flex-col gap-4 p-6 bg-white rounded-[20px] max-w-[400px] mx-auto">
                 <div className="flex flex-col items-center gap-4">
                     {appImage && (
                         <img
@@ -315,14 +318,13 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
 
                     {selectedUserHasConsented ? (
                         <p className="text-grayscale-600 text-center">
-                            <span className="font-medium">{selectedUser.displayName}</span>{' '}
-                            is already connected to {appName}.
+                            <span className="font-medium">{selectedUser.displayName}</span> is
+                            already connected to {appName}.
                         </p>
                     ) : (
                         <p className="text-grayscale-600 text-center">
-                            Allow{' '}
-                            <span className="font-medium">{selectedUser.displayName}</span>{' '}
-                            to use {appName}?
+                            Allow <span className="font-medium">{selectedUser.displayName}</span> to
+                            use {appName}?
                         </p>
                     )}
 

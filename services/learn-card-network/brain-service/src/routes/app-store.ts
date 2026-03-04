@@ -58,6 +58,7 @@ import {
     LaunchType,
     PromotionLevel,
     AppStoreListingValidator,
+    AgeRating,
 } from 'types/app-store-listing';
 import type {
     AppStoreListingCreateType,
@@ -208,6 +209,8 @@ const AppStoreListingBaseSchema = z.object({
             message: 'Must be a valid hex color (e.g., #FF5733)',
         })
         .optional(),
+    min_age: z.number().optional(),
+    age_rating: AgeRating.optional(),
 });
 
 // Iframe URL validation refinement (applied to schemas that include launch_type)
@@ -600,7 +603,7 @@ const handleSendCredentialEvent = async (
         boostUri,
         integrationId: integration.id,
         listingId,
-        source: 'sendBoost',
+        source: 'appEvent',
         metadata: { listingId, templateAlias },
     });
 

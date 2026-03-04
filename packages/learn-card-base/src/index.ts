@@ -109,6 +109,8 @@ export * from './hooks/useAiInsightCredential';
 export * from './hooks/useGetCurrentUserRole';
 export * from './hooks/useQrLogin';
 export * from './components/qr-login';
+export * from './hooks/usePrivacyGate';
+export * from './hooks/useAiFeatureGate';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';
