@@ -39,7 +39,7 @@ export const issueBoostToSelf = async (page: Page, timeout = 60_000) => {
 
     // Fill in boost title and description
     await page.getByRole('textbox', { name: /0\// }).fill(TEST_BOOST_TITLE);
-    await page.getByPlaceholder('What is this boost for?').fill('Test boost description');
+    await page.locator('textarea[placeholder="What is this boost for?"]').fill('Test boost description');
 
     // Click Next to proceed to publish
     await page.getByRole('button', { name: 'Next' }).click({ timeout: 30_000 });
