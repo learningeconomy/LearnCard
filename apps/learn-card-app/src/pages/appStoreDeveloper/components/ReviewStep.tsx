@@ -64,13 +64,18 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                         </p>
 
                         <div className="flex items-center gap-2 mt-2">
-                            <span className="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium text-gray-500">
+                            <span className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
                                 {getCategoryLabel(data.category)}
                             </span>
 
                             {launchTypeInfo && (
                                 <span className="px-2 py-0.5 bg-cyan-100 rounded-full text-xs font-medium text-cyan-700">
                                     {launchTypeInfo.label}
+                                </span>
+                            )}
+                            {data.age_rating && (
+                                <span className="inline-block px-2 py-0.5 bg-grayscale-100 text-grayscale-700 text-xs font-medium rounded-full">
+                                    Age {data.age_rating}
                                 </span>
                             )}
                         </div>
@@ -99,12 +104,17 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                         <h4 className="font-medium text-gray-600 text-sm mb-2">Highlights</h4>
 
                         <ul className="space-y-1">
-                            {data.highlights.filter(h => h.trim()).map((highlight, index) => (
-                                <li key={index} className="flex items-start gap-2 text-sm text-gray-500">
-                                    <span className="text-emerald-500">•</span>
-                                    {highlight}
-                                </li>
-                            ))}
+                            {data.highlights
+                                .filter(h => h.trim())
+                                .map((highlight, index) => (
+                                    <li
+                                        key={index}
+                                        className="flex items-start gap-2 text-sm text-gray-500"
+                                    >
+                                        <span className="text-emerald-500">•</span>
+                                        {highlight}
+                                    </li>
+                                ))}
                         </ul>
                     </div>
                 )}
@@ -140,6 +150,20 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                         ))}
                     </div>
                 </div>
+
+                {data.min_age && (
+                    <div className="bg-white rounded-xl border border-gray-200 p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            {/* <Link2 className="w-4 h-4 text-gray-400" /> */}
+
+                            <h4 className="font-medium text-gray-600 text-sm">Minimum Age</h4>
+                        </div>
+
+                        <p className="text-sm text-gray-500 whitespace-pre-wrap">
+                            {data.min_age} years - the app will be hidden from users under this age
+                        </p>
+                    </div>
+                )}
 
                 {/* Additional Links */}
                 {(data.privacy_policy_url || data.terms_url) && (

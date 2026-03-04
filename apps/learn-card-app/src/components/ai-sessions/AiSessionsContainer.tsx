@@ -9,6 +9,7 @@ import { AiSessionsSubHeader } from './AiSessionsHeader/AiSessionsHeader';
 import NewAiSessionContainer from '../new-ai-session/NewAiSessionContainer';
 import AiSessionAssessmentPreviewContainer from '../ai-assessment/AiSessionAssessmentPreviewContainer';
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
+import { AiFeatureGate } from '../ai-feature-gate/AiFeatureGate';
 
 import { aiLoadingStore, useGetEnrichedSession, useGetCurrentLCNUser } from 'learn-card-base';
 import { usePathQuery } from 'learn-card-base';
@@ -222,16 +223,18 @@ export const AiSessionsContainer: React.FC<{
     }
 
     return (
-        <>
-            {isFinishingAssessment && topicRecord && isDesktop && (
-                <AiSessionLoader topicRecord={topicRecord} overrideText={finishedAssessmentText} />
-            )}
-            <AiSessionsLayout
-                handleSetChatBotSelected={handleSetChatBotSelected}
-                leftColumn={leftColumn}
-                rightColumn={rightColumn}
-            />
-        </>
+        <AiFeatureGate>
+            <>
+                {isFinishingAssessment && topicRecord && isDesktop && (
+                    <AiSessionLoader topicRecord={topicRecord} overrideText={finishedAssessmentText} />
+                )}
+                <AiSessionsLayout
+                    handleSetChatBotSelected={handleSetChatBotSelected}
+                    leftColumn={leftColumn}
+                    rightColumn={rightColumn}
+                />
+            </>
+        </AiFeatureGate>
     );
 };
 

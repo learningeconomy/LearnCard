@@ -114,6 +114,21 @@ In the LearnCard Developer Portal, create a new app listing with:
 -   **Name & Description** - What your app does
 -   **Launch URL** - Where your embedded app is hosted
 -   **Permissions** - Request `credentials:write` to issue credentials
+-   **Age Rating** - Content rating for your app (optional)
+-   **Minimum Age** - Minimum user age required to access your app (optional)
+
+#### Age Restrictions
+
+You can configure age-based access controls for your app:
+
+| Field        | Type                                   | Description                                                                                                         |
+| ------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `age_rating` | `'4+'` \| `'9+'` \| `'12+'` \| `'17+'` | Content rating similar to app store ratings. Indicates the maturity level of content.                               |
+| `min_age`    | `number` (0-18)                        | Minimum age (in years) required to access this app. Users below this age will not see or be able to launch the app. |
+
+{% hint style="info" %}
+Age restrictions are enforced based on the user's date of birth in their profile
+{% endhint %}
 
 ### 2. Create Credential Templates
 
@@ -153,11 +168,12 @@ Issue a credential to the current user.
 | `templateAlias` | `string` | Yes      | The template alias configured in your app listing |
 | `templateData`  | `object` | No       | Values for template variables (e.g., `{{name}}`)  |
 
-**Returns:** `Promise<SendCredentialResponse>`
+**Returns:** `Promise<TemplateCredentialResponse>`
 
 ```typescript
-interface SendCredentialResponse {
+interface TemplateCredentialResponse {
     credentialUri: string; // URI of the issued credential
+    boostUri: string;      // URI of the boost template used
 }
 ```
 
@@ -187,7 +203,7 @@ try {
             // User not logged in
             showLoginPrompt();
             break;
-        case 'NOT_FOUND':
+        case 'TEMPLATE_NOT_FOUND':
             // templateAlias doesn't exist for this app
             console.error('Invalid template alias');
             break;
@@ -211,7 +227,13 @@ Let users send peer-to-peer badges to each other. Unlike `sendCredential` (which
 | ------------- | -------- | -------- | ------------------------------------- |
 | `templateUri` | `string` | Yes      | The URI of the badge template to send |
 
-**Returns:** `Promise<void>`
+**Returns:** `Promise<TemplateIssueResponse>`
+
+```typescript
+interface TemplateIssueResponse {
+    issued: boolean; // Whether the user completed the issuance flow
+}
+```
 
 **Example:**
 
@@ -219,8 +241,13 @@ Let users send peer-to-peer badges to each other. Unlike `sendCredential` (which
 // Let users send a "Thank You" badge to someone
 async function sendThankYouBadge() {
     try {
-        await learnCard.initiateTemplateIssue('urn:lc:boost:thank-you-badge');
-        console.log('Peer badge flow initiated');
+        const result = await learnCard.initiateTemplateIssue('urn:lc:boost:thank-you-badge');
+
+        if (result.issued) {
+            console.log('Badge sent successfully!');
+        } else {
+            console.log('User cancelled the badge flow');
+        }
     } catch (error) {
         console.error('Failed to initiate badge:', error);
     }

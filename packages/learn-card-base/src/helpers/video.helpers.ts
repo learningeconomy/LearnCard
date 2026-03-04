@@ -8,6 +8,7 @@ export type VideoMetadata = {
 };
 
 export const getVideoMetadata = async (url: string): Promise<VideoMetadata> => {
+    if (!url) return { type: 'unknown', videoId: null, embedUrl: null, thumbnailUrl: null };
     try {
         const parsed = new URL(url);
         const host = parsed.hostname.replace(/^www\./, '');

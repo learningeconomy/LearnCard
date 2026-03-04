@@ -20,6 +20,7 @@
 -   **Error handling**: Use try/catch with specific error types
 -   **Functions**: Prefer arrow functions with explicit return types
 -   **React**: Function components with hooks preferred over class components
+-   **React callbacks**: Use `onComplete`/`onSwitchComplete` callback props to let parent components control side effects after async actions complete, rather than hardcoding side effects in child components
 -   **Modules**: Keep files focused on single responsibility
 -   **Documentation**: Add JSDoc comments for public APIs and complex logic
 
@@ -413,26 +414,50 @@ Partner Connect example apps follow a consistent pattern:
 
 #### National Admin Troop View Access
 
-**Problem**: National admins saw "ID Revoked" or "Pending Acceptance" when viewing troops they managed but didn't own. This was because `useTroopIDStatus` checks if the *current user* is the recipient.
+**Problem**: National admins saw "ID Revoked" or "Pending Acceptance" when viewing troops they managed but didn't own. This was because `useTroopIDStatus` checks if the _current user_ is the recipient.
 
 **Workaround**: `TroopPage.tsx` uses `hasParentAdminAccess` to bypass the `isRevokedOrPending` check. If a user has `canEditChildren` permissions on the parent network boost, they see full troop details regardless of their personal credential status.
 
 **Implementation Details**:
-- **File**: `apps/scouts/src/pages/troop/TroopPage.tsx`
-- **Logic**: Checks if user has admin access to parent network before enforcing credential status checks
-- **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
+
+-   **File**: `apps/scouts/src/pages/troop/TroopPage.tsx`
+-   **Logic**: Checks if user has admin access to parent network before enforcing credential status checks
+-   **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
 
 #### Network Admin Scout ID Issuance
 
 **Requirement**: Network admins (Directors) must be able to issue Scout IDs for troops under their managed networks.
 
 **Implementation**:
-- **`troops.helpers.ts`**: `canIssueChildren` and `canRevokeChildren` for `network` and `global` roles set to `'*'` (previously excluded `scoutId`).
-- **`InviteSelectionModal.tsx`**: Allows selection between Leader ID and Scout ID for network admins with elevated permissions.
+
+-   **`troops.helpers.ts`**: `canIssueChildren` and `canRevokeChildren` for `network` and `global` roles set to `'*'` (previously excluded `scoutId`).
+-   **`InviteSelectionModal.tsx`**: Allows selection between Leader ID and Scout ID for network admins with elevated permissions.
 
 **Implementation Details**:
-- **Files**: 
-  - `apps/scouts/src/components/troopsCMS/troops.helpers.ts`
-  - `apps/scouts/src/pages/troop/InviteSelectionModal.tsx`
-- **Logic**: Network admins can issue both Leader IDs and Scout IDs to troops they manage
-- **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
+
+-   **Files**:
+    -   `apps/scouts/src/components/troopsCMS/troops.helpers.ts`
+    -   `apps/scouts/src/pages/troop/InviteSelectionModal.tsx`
+-   **Logic**: Network admins can issue both Leader IDs and Scout IDs to troops they manage
+-   **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
+
+## Privacy Preferences & Age-Gate System
+
+GDPR/COPPA-compliant privacy controls based on user age and country. Minors have AI, analytics, and bug reporting disabled by default.
+
+### Key Files
+
+| File                                                                     | Purpose                                                                                   |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| `packages/learn-card-base/src/constants/gdprAgeLimits.ts`                | `getMinorAgeThreshold(countryCode?)` — returns 18 (non-EU) or GDPR age (13–16, EU)        |
+| `packages/learn-card-base/src/hooks/usePrivacyGate.ts`                   | Auto-initializes preferences on first login based on age/country                          |
+| `packages/learn-card-base/src/hooks/useAiFeatureGate.ts`                 | Point-of-use AI gate with local DOB fallback                                              |
+| `services/learn-card-network/lca-api/src/models/Preferences.ts`          | MongoDB schema with `aiEnabled`, `analyticsEnabled`, `bugReportsEnabled`, `isMinor`, etc. |
+| `services/learn-card-network/lca-api/src/routes/preferences.ts`          | tRPC routes: `createPreferences`, `updatePreferences`, `getPreferencesForDid`             |
+| `apps/learn-card-app/src/pages/privacy-settings/PrivacySettingsPage.tsx` | Three-toggle settings UI; locked for minors                                               |
+
+### Important
+
+-   Always use `getMinorAgeThreshold()` from `learn-card-base` for minor determination — NOT `getGdprAgeLimit()` from the app's local `gdpr.ts` (that one returns 16 for non-EU, only correct for EU parental consent modals)
+-   Preference fields: `aiEnabled`, `aiAutoDisabled`, `analyticsEnabled`, `analyticsAutoDisabled`, `bugReportsEnabled`, `isMinor` (all optional booleans)
+-   See CLAUDE.md for full architectural details

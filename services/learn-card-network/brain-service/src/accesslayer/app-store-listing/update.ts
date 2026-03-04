@@ -44,6 +44,8 @@ export const updateAppStoreListing = async (
         updatesToPersist.screenshots_json = updates.screenshots_json;
     if (typeof updates.hero_background_color !== 'undefined')
         updatesToPersist.hero_background_color = updates.hero_background_color;
+    if (typeof updates.min_age !== 'undefined') updatesToPersist.min_age = updates.min_age;
+    if (typeof updates.age_rating !== 'undefined') updatesToPersist.age_rating = updates.age_rating;
 
     const params: Partial<FlatAppStoreListingType> = updatesToPersist;
 

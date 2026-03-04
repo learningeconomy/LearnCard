@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonContent, IonPage, IonRow } from '@ionic/react';
+import { IonContent, IonPage, IonRow, IonSpinner } from '@ionic/react';
 
 import X from 'learn-card-base/svgs/X';
 import BoostCMSAppearanceController from '../boostCMSAppearance/BoostCMSAppearanceController';
@@ -17,7 +17,7 @@ const BoostShareableQRCode: React.FC<{
     boostClaimLink: string;
 }> = ({ handleCloseModal, state, boostClaimLink }) => {
     const defaultTitle =
-        CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type].find(
+        CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type]?.find(
             options => options?.type === state?.basicInfo?.achievementType
         )?.title ?? '';
 
@@ -60,20 +60,33 @@ const BoostShareableQRCode: React.FC<{
                                 {state?.basicInfo?.name || defaultTitle}
                             </h3>
                         </div>
-                        <div className="flex justify-center items-center w-full relative px-10 mb-5 mt-5">
-                            <div className="max-w-[80%] w-full h-auto relative">
-                                <QRCodeSVG
-                                    className="h-full w-full"
-                                    value={boostClaimLink}
-                                    bgColor="transparent"
-                                />
+                        {boostClaimLink ? (
+                            <>
+                                <div className="flex justify-center items-center w-full relative px-10 mb-5 mt-5">
+                                    <div className="max-w-[80%] w-full h-auto relative">
+                                        <QRCodeSVG
+                                            className="h-full w-full"
+                                            value={boostClaimLink}
+                                            bgColor="transparent"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="w-full flex items-end justify-center pt-4 pb-6">
+                                    <h3 className="text-grayscale-800 text-xl text-center">
+                                        Scan Code to Claim Boost
+                                    </h3>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center w-full px-10 py-8 gap-3">
+                                <IonSpinner name="crescent" color="dark" />
+
+                                <p className="text-grayscale-500 text-sm text-center">
+                                    Generating claim link...
+                                </p>
                             </div>
-                        </div>
-                        <div className="w-full flex items-end justify-center pt-4 pb-6">
-                            <h3 className="text-grayscale-800 text-xl text-center">
-                                Scan Code to Claim Boost
-                            </h3>
-                        </div>
+                        )}
                     </div>
                 </IonRow>
             </IonContent>

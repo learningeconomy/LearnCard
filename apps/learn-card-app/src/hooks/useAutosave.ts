@@ -27,6 +27,7 @@ export interface UseAutosaveReturn<T, E = unknown> {
     recoveredStorageKey: string | null;
     clearRecoveredState: (alsoCleanLocalStorage?: boolean) => void;
     saveToLocal: (state: T, extra?: E) => void;
+    saveImmediately: () => void;
     clearLocalSave: () => void;
     hasUnsavedChanges: boolean;
 }
@@ -122,6 +123,29 @@ export function useAutosave<T, E = unknown>({
             console.warn('[useAutosave] Failed to clear local save:', err);
         }
     }, [storageKey]);
+
+    const saveImmediately = useCallback(() => {
+        if (!enabled || typeof window === 'undefined' || !currentStateRef.current) return;
+
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+            saveTimeoutRef.current = null;
+        }
+
+        try {
+            const wrapper: AutosaveStorageWrapper<T, E> = {
+                version: STORAGE_VERSION,
+                timestamp: Date.now(),
+                data: currentStateRef.current.state,
+                extra: currentStateRef.current.extra,
+                storageKey,
+            };
+
+            localStorage.setItem(storageKey, JSON.stringify(wrapper));
+        } catch (err) {
+            console.warn('[useAutosave] Failed to save immediately:', err);
+        }
+    }, [enabled, storageKey]);
 
     const clearRecoveredState = useCallback(
         (alsoCleanLocalStorage: boolean = false) => {
@@ -224,6 +248,7 @@ export function useAutosave<T, E = unknown>({
         recoveredStorageKey,
         clearRecoveredState,
         saveToLocal,
+        saveImmediately,
         clearLocalSave,
         hasUnsavedChanges,
     };
