@@ -3,8 +3,6 @@ import { RefObject, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import type { jsPDF as JsPDFType } from 'jspdf';
-
-const PDF_CAPTURE_STYLE_ID = '__pdf-capture-style__';
 const RESUME_PDF_WIDTH_PX = 760;
 
 const savePdfToNativeDocuments = async (pdf: JsPDFType, successMessage: string): Promise<void> => {
@@ -33,12 +31,8 @@ export const useResumePdf = (
             import('jspdf'),
         ]);
 
-        const style = document.createElement('style');
-        style.id = PDF_CAPTURE_STYLE_ID;
-        style.textContent = `
-            [data-pdf-card] [data-pdf-hide] { display: none !important; }
-        `;
-        document.head.appendChild(style);
+        // Cleanup any legacy capture styles from previous implementations.
+        document.querySelectorAll('#__pdf-capture-style__').forEach(el => el.remove());
 
         const offscreen = document.createElement('div');
         offscreen.style.cssText = `position:fixed;top:-9999px;left:0;width:${RESUME_PDF_WIDTH_PX}px;pointer-events:none;z-index:-1;background:#fff;`;
@@ -52,6 +46,22 @@ export const useResumePdf = (
                 .replace(/\bpy-6\b/, 'py-10')
                 .replace(/\brounded-xl\b/, 'rounded-lg');
             clone.style.cssText += `;width:${RESUME_PDF_WIDTH_PX}px;max-width:${RESUME_PDF_WIDTH_PX}px;margin:0;background:#fff;box-sizing:border-box;box-shadow:none;min-height:0;height:auto;`;
+
+            // Apply export-only visibility transformations on the clone itself
+            // so live preview styles are never affected.
+            clone
+                .querySelectorAll<HTMLElement>('[data-pdf-hide], [data-pdf-screen-only]')
+                .forEach(el => el.remove());
+            clone.querySelectorAll<HTMLElement>('[data-pdf-export-inline]').forEach(el => {
+                el.style.display = 'inline';
+            });
+            clone.querySelectorAll<HTMLElement>('[data-pdf-export-block]').forEach(el => {
+                el.style.display = 'block';
+            });
+            clone.querySelectorAll<HTMLElement>('[data-pdf-export-flex]').forEach(el => {
+                el.style.display = 'flex';
+            });
+
             offscreen.appendChild(clone);
 
             await document.fonts?.ready;
@@ -145,7 +155,6 @@ export const useResumePdf = (
 
             return pdf;
         } finally {
-            document.getElementById(PDF_CAPTURE_STYLE_ID)?.remove();
             document.body.removeChild(offscreen);
         }
     }, [previewCardRef]);

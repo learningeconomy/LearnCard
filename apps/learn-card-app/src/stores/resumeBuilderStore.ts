@@ -13,6 +13,7 @@ import {
 
 export type ResumeBuilderState = {
     personalDetails: PersonalDetails;
+    hiddenPersonalDetails: Partial<Record<keyof PersonalDetails, boolean>>;
     credentialEntries: Partial<Record<ResumeSectionKey, CredentialEntry[]>>;
     sectionOrder: ResumeSectionKey[];
 };
@@ -23,6 +24,9 @@ const defaultPersonalDetails: PersonalDetails = {
     phone: '',
     location: '',
     summary: '',
+    website: '',
+    linkedIn: '',
+    thumbnail: '',
 };
 
 const defaultSectionOrder = RESUME_SECTIONS.map(s => s.key) as ResumeSectionKey[];
@@ -40,6 +44,7 @@ const setEntries = (set: any, section: ResumeSectionKey, entries: CredentialEntr
 export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilderState>(
     {
         personalDetails: defaultPersonalDetails,
+        hiddenPersonalDetails: {},
         sectionOrder: defaultSectionOrder,
         credentialEntries: {},
     },
@@ -48,6 +53,29 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     setPersonalDetails: (details: Partial<PersonalDetails>) => {
         const prev = resumeBuilderStore.get.personalDetails();
         set.personalDetails({ ...prev, ...details });
+    },
+    setPersonalDetailHidden: (key: keyof PersonalDetails, hidden: boolean) => {
+        const prev = resumeBuilderStore.get.hiddenPersonalDetails();
+        if (hidden) {
+            set.hiddenPersonalDetails({ ...prev, [key]: true });
+            return;
+        }
+
+        const next = { ...prev };
+        delete next[key];
+        set.hiddenPersonalDetails(next);
+    },
+    togglePersonalDetailHidden: (key: keyof PersonalDetails) => {
+        const prev = resumeBuilderStore.get.hiddenPersonalDetails();
+        const isHidden = Boolean(prev?.[key]);
+        if (!isHidden) {
+            set.hiddenPersonalDetails({ ...prev, [key]: true });
+            return;
+        }
+
+        const next = { ...prev };
+        delete next[key];
+        set.hiddenPersonalDetails(next);
     },
 
     // ── Credential selection & ordering ─────────────────────────────────────
@@ -164,6 +192,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     // ── Reset ───────────────────────────────────────────────────────────────
     resetStore: () => {
         set.personalDetails(defaultPersonalDetails);
+        set.hiddenPersonalDetails({});
         set.credentialEntries({});
         set.sectionOrder(defaultSectionOrder);
     },

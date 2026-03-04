@@ -37,6 +37,9 @@ export type PersonalDetails = {
     phone: string;
     location: string;
     summary: string;
+    website: string;
+    linkedIn: string;
+    thumbnail: string;
 };
 
 export type ResumeUserInfo = {
@@ -85,6 +88,8 @@ export const resumeUserInfo: ResumeUserInfo[] = [
     { key: 'email', label: 'Email', placeholder: 'jane@example.com' },
     { key: 'phone', label: 'Phone', placeholder: '+1 (555) 000-0000' },
     { key: 'location', label: 'Location', placeholder: 'San Francisco, CA' },
+    { key: 'website', label: 'Website', placeholder: 'https://example.com' },
+    { key: 'linkedIn', label: 'LinkedIn', placeholder: 'https://linkedin.com/in/janedoe' },
     {
         key: 'summary',
         label: 'Summary',
@@ -92,3 +97,21 @@ export const resumeUserInfo: ResumeUserInfo[] = [
         multiline: true,
     },
 ];
+
+export const getLinkedInHandle = (value: string): string => {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+
+    const withoutProtocol = trimmed.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+    const noQueryOrHash = withoutProtocol.split('?')[0].split('#')[0];
+    const noTrailingSlash = noQueryOrHash.replace(/\/+$/, '');
+    const cleaned = noTrailingSlash.replace(/^@/, '').replace(/^\/+/, '');
+
+    const linkedInPathMatch = cleaned.match(/linkedin\.com\/in\/([^/]+)/i);
+    if (linkedInPathMatch?.[1]) return linkedInPathMatch[1];
+
+    const slashIndex = cleaned.lastIndexOf('/');
+    const lastSegment = slashIndex >= 0 ? cleaned.slice(slashIndex + 1) : cleaned;
+
+    return lastSegment || cleaned;
+};

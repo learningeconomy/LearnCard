@@ -30,6 +30,9 @@ export const ResumeConfigPanelUserInfo: React.FC = () => {
                 phone: currentUser?.phoneNumber || '',
                 location: '',
                 summary: currentLCNUser?.bio || '',
+                website: '',
+                linkedIn: '',
+                thumbnail: currentLCNUser?.image || currentUser?.profileImage || '',
             });
         }
     }, [currentLCNUser, currentUser]);
