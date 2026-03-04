@@ -18,31 +18,45 @@ export const loginTestAccount = async (page: Page) => {
     // await page.waitForURL(/wallet/);
 };
 
+/** Title used when creating a test boost. Exported so tests can assert on it. */
+export const TEST_BOOST_TITLE = 'Test Boost';
+
 /**
- * Issues a Social Badge (Charmer) boost to the current user.
- * Navigates directly to the boost creation page, publishes, and issues to self.
+ * Issues a boost to the current user via the UI.
  *
- * Flow: /boost page → Next → Publish & Issue → Boost Myself → Save
+ * Flow: Add to LearnCard → Boost Someone → pick template → fill form →
+ *       Next → Publish & Issue → Plus → Boost Myself → Save
  */
 export const issueBoostToSelf = async (page: Page, timeout = 60_000) => {
-    // Navigate directly to the Charmer social badge boost creation page
-    await page.goto(
-        '/boost?boostUserType=someone&boostCategoryType=socialBadge&boostSubCategoryType=Charmer'
-    );
+    // Open the "Add to LearnCard" menu
+    await page.getByRole('button', { name: 'Add to LearnCard' }).click({ timeout: 30_000 });
 
-    // Step 1: Create step — click "Next" to proceed to publish
+    // Select "Boost Someone"
+    await page.getByRole('button', { name: 'Boost Someone' }).click({ timeout: 30_000 });
+
+    // Select the first available template
+    await page.getByText('LearnCard Template').first().click({ timeout: 30_000 });
+
+    // Fill in boost title and description
+    await page.getByRole('textbox', { name: /0\// }).fill(TEST_BOOST_TITLE);
+    await page.getByPlaceholder('What is this boost for?').fill('Test boost description');
+
+    // Click Next to proceed to publish
     await page.getByRole('button', { name: 'Next' }).click({ timeout: 30_000 });
 
-    // Step 2: Publish step — click "Publish & Issue" to publish the boost
+    // Click Publish & Issue
     await page.getByRole('button', { name: /publish & issue/i }).click({ timeout: 30_000 });
 
-    // Step 3: Issue To step — click "Boost Myself" to add self as recipient
+    // Click Plus to open recipient selection
+    await page.getByRole('button', { name: 'Plus' }).click({ timeout: 30_000 });
+
+    // Click Boost Myself
     await page.getByRole('button', { name: /boost myself/i }).first().click({ timeout });
 
-    // Step 4: Click "Save" to issue the boost
+    // Click Save to issue the boost
     await page.getByRole('button', { name: 'Save' }).click({ timeout: 30_000 });
 
-    // Wait for success indication — toast or navigation away from /boost
+    // Wait for navigation away from /boost
     await page.waitForURL(/(?!.*\/boost)/, { timeout });
 };
 

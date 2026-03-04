@@ -1,4 +1,4 @@
-services:
+pnpservices:
     # app:
     #     image: learncard-monorepo-local
     #     build:

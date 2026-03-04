@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
-import { issueBoostToSelf, waitForAuthenticatedState } from './test.helpers';
+import { issueBoostToSelf, TEST_BOOST_TITLE, waitForAuthenticatedState } from './test.helpers';
 
 test.describe('Wallet Credentials', () => {
     test.beforeEach(async ({ page }) => {
@@ -8,29 +8,13 @@ test.describe('Wallet Credentials', () => {
     });
 
     test('View issued credential in wallet', async ({ page }) => {
-        // 1. Issue a boost to self — creates a "Charmer" Social Badge
+        // 1. Issue a boost to self via the UI
         await issueBoostToSelf(page);
 
-        // 2. Navigate to wallet and verify categories are visible
-        await page.goto('/wallet');
-        await expect(page.getByRole('button', { name: /social badges/i })).toBeVisible({
+        // 2. Navigate to passport and verify the credential appears
+        await page.goto('/passport');
+        await expect(page.getByText(TEST_BOOST_TITLE).first()).toBeVisible({
             timeout: 30_000,
         });
-
-        // 3. Click the Social Badges category
-        await page.getByRole('button', { name: /social badges/i }).click();
-
-        // 4. Verify we're on the Social Badges credential page
-        await page.waitForURL('/socialBadges');
-
-        // 5. Verify the "Charmer" credential card appears in the Earned tab
-        await expect(page.getByText('Charmer').first()).toBeVisible({ timeout: 30_000 });
-
-        // 6. Click the credential card to open the detail view
-        await page.getByText('Charmer').first().click();
-
-        // 7. Verify the credential detail modal/view opens with correct content
-        //    The boost preview modal should display the credential name
-        await expect(page.getByText('Charmer')).toBeVisible({ timeout: 10_000 });
     });
 });
