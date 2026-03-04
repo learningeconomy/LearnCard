@@ -31,6 +31,7 @@ import { sessionLoadingText } from '../newAiSession.helpers';
 import { usePathQuery } from 'learn-card-base';
 
 import { chatBotStore, useChatBotQA } from '../../../stores/chatBotStore';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 export const NewAiSessionChatBotContainer: React.FC<{
     setActiveStep: (step: NewAiSessionStepEnum) => void;
@@ -55,6 +56,8 @@ export const NewAiSessionChatBotContainer: React.FC<{
     // const [chatBotQA, setChatBotQA] = useState<ChatBotQA[]>(newSessionQAInitState);
     const { chatBotQA: chatBotQA } = useChatBotQA(newSessionQAInitState);
     const setChatBotQA = chatBotStore.set.setChatBotQA;
+    const mode = chatBotStore.useTracked.mode();
+    const { track } = useAnalytics();
 
     // const [visibleIndexes, setVisibleIndexes] = useState<number[]>([]);
     const visibleIndexes = chatBotStore.useTracked.visibleIndexes();
@@ -73,7 +76,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
         qa => qa.type === ChatBotQuestionsEnum.TopicSelection
     )?.answer;
     const appAnswer = chatBotQA.find(qa => qa.type === ChatBotQuestionsEnum.AppSelection)?.answer;
-    const app = aiPassportApps.find(app => app.id === appAnswer);
+    const app = aiPassportApps.find(app => Number(app.id) === Number(appAnswer)); // ! hot fix for type mismatch
 
     useEffect(() => {
         const timeouts: NodeJS.Timeout[] = [];
@@ -168,23 +171,32 @@ export const NewAiSessionChatBotContainer: React.FC<{
     };
 
     const handleStartAiSession = () => {
+        const topicAnswer = chatBotQA.find(
+            qa => qa.type === ChatBotQuestionsEnum.TopicSelection
+        )?.answer;
+        const appAnswer = chatBotQA.find(
+            qa => qa.type === ChatBotQuestionsEnum.AppSelection
+        )?.answer;
+
         if (app?.type === AiPassportAppsEnum.learncardapp) {
+            track(AnalyticsEvents.AI_CHAT_SESSION_STARTED, {
+                topic: topicAnswer,
+                appType: 'internal',
+                appName: app?.name,
+            });
             setStartInternalAiChatBot?.(true);
             return;
         }
 
+        track(AnalyticsEvents.AI_CHAT_SESSION_STARTED, {
+            topic: topicAnswer,
+            appType: 'external',
+            appName: aiPassportApps.find(a => a.id === appAnswer)?.name,
+        });
         setShowLoader(true);
 
         setTimeout(() => {
             closeAllModals();
-            const topicAnswer = chatBotQA.find(
-                qa => qa.type === ChatBotQuestionsEnum.TopicSelection
-            )?.answer;
-
-            const appAnswer = chatBotQA.find(
-                qa => qa.type === ChatBotQuestionsEnum.AppSelection
-            )?.answer;
-
             const url = aiPassportApps.find(app => app.id === appAnswer)?.url;
 
             window.location.href = `${url}/chats?topic=${encodeURIComponent(
@@ -201,6 +213,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
                 initialTopic={topicAnswer ?? undefined}
                 contractUri={AiPassportAppContractUri.learncardapp}
                 handleStartOver={handleStartOver}
+                mode={mode}
             />
         );
     }

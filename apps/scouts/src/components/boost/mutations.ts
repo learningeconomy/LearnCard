@@ -15,6 +15,7 @@ export type BoostAndVCType = {
 interface AddVCInput extends CredentialRecordMinusId {
     title?: string;
     imgUrl?: string;
+    boostUri?: string;
 }
 
 type useAddCredentialToWalletReturn = {
@@ -31,7 +32,7 @@ export const useAddCredentialToWallet = () => {
     return useMutation({
         mutationFn: async (input: AddVCInput) => {
             const wallet = await initWallet();
-            const { uri, id, title, imgUrl } = input;
+            const { uri, id, title, imgUrl, boostUri } = input;
             let _id = id;
 
             if (!uri) throw new Error('No uri was provided, uri required');
@@ -50,6 +51,7 @@ export const useAddCredentialToWallet = () => {
                 category,
                 ...(title ? { title } : {}),
                 ...(imgUrl ? { imgUrl } : {}),
+                ...(boostUri ? { boostUri } : {}),
                 // tags: ['Jamboree 2023'],
             });
 

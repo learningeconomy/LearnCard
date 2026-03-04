@@ -108,14 +108,22 @@ const FamilyPage: React.FC = () => {
     }, []);
 
     // Auto-open family creation flow if requested (e.g., underage -> parent login flow)
+    // Wait for credentials to load so we can check if a family already exists
     useEffect(() => {
         const shouldCreate = query.get('createFamily');
-        if (shouldCreate) {
+        if (!shouldCreate) return;
+        if (credentialsLoading) return;
+
+        const familyRecordCount = records?.pages?.[0]?.records?.length ?? 0;
+        const hasFamilyAlready = familyRecordCount > 0;
+
+        if (!hasFamilyAlready) {
             showFamilyCMS();
-            history.replace('/families');
         }
+
+        history.replace('/families');
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [credentialsLoading]);
 
     const imgSrc = RelationshipCats;
     const { iconColor, textColor } = SubheaderContentType[SubheaderTypeEnum.Family];

@@ -94,19 +94,19 @@ export async function getLearnCardNetworkPlugin(
     const client = apiToken
         ? await getApiTokenClient(url, apiToken)
         : await getClient(url, async challenge => {
-              const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+            const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
-              if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+            if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-              return jwt;
-          });
+            return jwt;
+        });
 
     let userData: LCNProfile | undefined;
 
     learnCard?.debug?.('LCN: initial getProfile query starting', { apiToken: !!apiToken });
     const initialQuery = client.profile.getProfile
         .query()
-        .then(result => {
+        .then((result: LCNProfile | undefined) => {
             userData = result;
 
             if (userData?.did) did = userData.did;
@@ -114,7 +114,7 @@ export async function getLearnCardNetworkPlugin(
             learnCard?.debug?.('LCN: initial getProfile success', { did });
             return result;
         })
-        .catch(error => {
+        .catch((error: any) => {
             // Non-fatal: API-key tokens may not have profiles:read; avoid unhandled rejection
             learnCard?.debug?.('LCN: getProfile failed (non-fatal)', error);
             return undefined;
@@ -145,6 +145,21 @@ export async function getLearnCardNetworkPlugin(
         if (!userData) throw new Error('Please make an account first!');
 
         return userData;
+    };
+
+    // Prefer authenticated boost retrieval for issuance flows.
+    // Falls back to storage resolve for backwards compatibility.
+    const getBoostTemplateForIssuance = async (_learnCard: any, boostUri: string) => {
+        try {
+            const boostRecord = await client.boost.getBoost.query({ uri: boostUri });
+            return boostRecord.boost;
+        } catch (error) {
+            learnCard?.debug?.(
+                'LCN: getBoost failed for template retrieval, falling back to resolveFromLCN',
+                error
+            );
+            return _learnCard.invoke.resolveFromLCN(boostUri);
+        }
     };
 
     return {
@@ -332,7 +347,7 @@ export async function getLearnCardNetworkPlugin(
             getProfile: async (_learnCard, profileId) => {
                 try {
                     await ensureUser();
-                } catch {}
+                } catch { }
 
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
@@ -518,6 +533,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.credential.receivedCredentials.query({ from });
             },
+            getRevokedCredentials: async () => {
+                await ensureUser();
+
+                return client.credential.getRevokedCredentials.query();
+            },
             getSentCredentials: async (_learnCard, to) => {
                 await ensureUser();
 
@@ -603,6 +623,11 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.boost.getBoost.query({ uri });
+            },
+            getBoostSkills: async (_learnCard, uri) => {
+                await ensureUser();
+
+                return client.boost.getBoostSkills.query({ uri });
             },
             getBoostFrameworks: async (_learnCard, uri, options = {}) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -808,10 +833,17 @@ export async function getLearnCardNetworkPlugin(
             updateBoost: async (_learnCard, uri, updates, credential) => {
                 await ensureUser();
 
-                return client.boost.updateBoost.mutate({
+                // Allow passing skills similar to createBoost; send them at top-level, not inside updates
+                const { skills, ...restUpdates } = (updates as any) ?? {};
+
+                const payload: any = {
                     uri,
-                    updates: { ...(credential && { credential }), ...updates },
-                });
+                    updates: { ...(credential && { credential }), ...restUpdates },
+                };
+
+                if (Array.isArray(skills) && skills.length > 0) payload.skills = skills;
+
+                return client.boost.updateBoost.mutate(payload);
             },
             attachFrameworkToBoost: async (_learnCard, boostUri, frameworkId) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -873,6 +905,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return result;
             },
+            revokeBoostRecipient: async (_learnCard, boostUri, recipientProfileId) => {
+                await ensureUser();
+
+                return client.boost.revokeBoostRecipient.mutate({ boostUri, recipientProfileId });
+            },
             deleteBoost: async (_learnCard, uri) => {
                 await ensureUser();
 
@@ -886,7 +923,7 @@ export async function getLearnCardNetworkPlugin(
             ) => {
                 await ensureUser();
 
-                const result = await _learnCard.invoke.resolveFromLCN(boostUri);
+                const result = await getBoostTemplateForIssuance(_learnCard, boostUri);
                 const data = await UnsignedVCValidator.spa(result);
 
                 if (!data.success) throw new Error('Did not get a valid boost from URI');
@@ -928,10 +965,9 @@ export async function getLearnCardNetworkPlugin(
                         boost = JSON.parse(rendered);
                     } catch (error) {
                         throw new Error(
-                            `Template substitution failed: ${
-                                error instanceof Error ? error.message : 'Unknown error'
+                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'
                             }. ` +
-                                `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
                         );
                     }
                 }
@@ -1035,7 +1071,10 @@ export async function getLearnCardNetworkPlugin(
                     const isDirectRecipient = isDid || (!isEmail && !isPhone);
 
                     if (canIssueLocally && isDirectRecipient && input.templateUri) {
-                        const result = await _learnCard.invoke.resolveFromLCN(input.templateUri);
+                        const result = await getBoostTemplateForIssuance(
+                            _learnCard,
+                            input.templateUri
+                        );
                         const data = await UnsignedVCValidator.spa(result);
 
                         if (data.success) {
@@ -1064,8 +1103,7 @@ export async function getLearnCardNetworkPlugin(
                                     boost = JSON.parse(rendered);
                                 } catch (error) {
                                     throw new Error(
-                                        `Failed to apply template data: ${
-                                            error instanceof Error ? error.message : 'Unknown error'
+                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'
                                         }`
                                     );
                                 }
@@ -1559,6 +1597,10 @@ export async function getLearnCardNetworkPlugin(
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skillFrameworks.listMine.query();
             },
+            getAllAvailableFrameworks: async (_learnCard, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.getAllAvailableFrameworks.query(options);
+            },
             getSkillFrameworkById: async (_learnCard, id, options = {}) => {
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skillFrameworks.getById.query({ id, ...options });
@@ -1599,6 +1641,11 @@ export async function getLearnCardNetworkPlugin(
                     query,
                     ...options,
                 });
+            },
+            semanticSearchSkills: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.skills.semanticSearchSkills.query(input);
             },
             updateSkillFramework: async (_learnCard, input) => {
                 if (!userData) throw new Error('Please make an account first!');

@@ -2,8 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
-import { useModal } from 'learn-card-base';
-import { IonPage, IonContent, IonToast } from '@ionic/react';
+import { useModal, useDeviceTypeByWidth } from 'learn-card-base';
+import { IonPage, IonContent, IonToast, IonHeader, IonToolbar } from '@ionic/react';
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
@@ -37,6 +37,8 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     const [showErrorToast, setShowErrorToast] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+
+    const { isMobile } = useDeviceTypeByWidth();
 
     // Credential claim modal state
     const [pendingCredential, setPendingCredential] = useState<{
@@ -99,9 +101,9 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
 
     return (
         <IonPage className="h-full w-full">
-            <IonContent fullscreen>
-                <div className="w-full h-full flex flex-col">
-                    <div className="flex items-center justify-between p-4 bg-white border-b safe-area-top-margin">
+            <IonHeader>
+                <IonToolbar color="light">
+                    <div className="flex items-center justify-between px-4 py-2 bg-white border-b">
                         <h2 className="text-xl font-semibold">{appName}</h2>
                         <div className="flex items-center gap-2">
                             {!hideFullScreenButton && !Capacitor.isNativePlatform() && (
@@ -124,7 +126,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                                             d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
                                         />
                                     </svg>
-                                    Full Screen
+                                    {isMobile ? '' : 'Full Screen'}
                                 </button>
                             )}
                             <button
@@ -135,7 +137,11 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                             </button>
                         </div>
                     </div>
-                    <div className="relative flex-1">
+                </IonToolbar>
+            </IonHeader>
+            <IonContent fullscreen>
+                <div className="w-full h-full flex-1">
+                    <div className="relative w-full h-full flex-1">
                         {isLoading && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 z-10">
                                 <div className="flex flex-col items-center gap-4">

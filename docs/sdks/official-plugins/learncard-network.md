@@ -13,7 +13,7 @@ pnpm install @learncard/network-plugin
 #### Initialization
 
 ```javascript
-import { initLearnCard } from '@learncard/init'
+import { initLearnCard } from '@learncard/init';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 
 const networkLearnCard = await initLearnCard({
@@ -40,6 +40,7 @@ Here's a brief overview of the available methods in the `LearnCardNetworkPluginM
 5. **Boosts**: Create, send, update, delete, and claim boosts for users on the network.
 6. **Storage**: Resolve a URI to a credential or presentation.
 7. **Signing Authorities**: Register and retrieve signing authorities for the LearnCard Network.
+8. **Skills**: Manage frameworks/skills and run semantic skill search with `learnCard.invoke.semanticSearchSkills(...)`.
 
 For detailed information on the method signatures and their parameters, refer to the [type definitions](../../../packages/plugins/learn-card-network/src/types.ts) provided in the [`@learncard/network-plugin` package](https://github.com/learningeconomy/LearnCard/tree/main/packages/plugins/learn-card-network).
 
@@ -51,9 +52,9 @@ Here are a few examples of how to use the LearnCard Network Plugin in your appli
 
 ```javascript
 const profile = {
-  profileId: 'johnsmith',
-  displayName: 'John Smith',
-  image: 'https://example.com/avatar.jpg',
+    profileId: 'johnsmith',
+    displayName: 'John Smith',
+    image: 'https://example.com/avatar.jpg',
 };
 
 await networkLearnCard.invoke.createProfile(profile);
@@ -71,7 +72,7 @@ await networkLearnCard.invoke.connectWith(profileId);
 
 ```javascript
 const profileId = 'janesmith';
-const vc = await networkLearnCard.invoke.issueCredential(networkLearnCard.invoke.newCredential())
+const vc = await networkLearnCard.invoke.issueCredential(networkLearnCard.invoke.newCredential());
 const encrypt = true;
 
 await networkLearnCard.invoke.sendCredential(profileId, vc, encrypt);
@@ -84,6 +85,18 @@ const boostUri = 'https://example.com/boost-uri';
 const challenge = 'example-challenge';
 
 await networkLearnCard.invoke.claimBoostWithLink(boostUri, challenge);
+```
+
+**Semantic Skill Search**
+
+```javascript
+const result = await networkLearnCard.invoke.semanticSearchSkills({
+    text: 'project-based learning and collaboration',
+    frameworkId: 'my-framework-id', // optional
+    limit: 50, // optional, defaults to 50
+});
+
+// result.records => [{ id, statement, description, frameworkId, score, ... }]
 ```
 
 These examples demonstrate some of the ways you can interact with the LearnCard Network API using the `@learncard/network-plugin`.&#x20;

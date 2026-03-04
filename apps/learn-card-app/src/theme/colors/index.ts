@@ -52,6 +52,20 @@ export type SpilledCupColors = {
     cupOutline: string;
 };
 
+export type IntroSlidesColors = {
+    firstSlideBackground: string;
+    secondSlideBackground: string;
+    thirdSlideBackground: string;
+    textColors: {
+        primary: string;
+        secondary: string;
+    };
+    pagination: {
+        primary: string;
+        secondary: string;
+    };
+};
+
 export type PlaceholderCategoryKey = CredentialCategoryEnum | 'defaults';
 
 export type PlaceholderCategoryMap = {
@@ -72,6 +86,7 @@ export type ThemeColorTable = Partial<Record<CredentialCategoryEnum, CategoryCol
     sideMenu: SideMenuColors;
     navbar?: NavBarColors;
     placeholders?: PlaceholderCategoryMap;
+    introSlides?: IntroSlidesColors;
     defaults: DefaultColors;
 };
 
@@ -80,6 +95,7 @@ export enum ColorSetEnum {
     sideMenu = 'sideMenu',
     navbar = 'navbar',
     placeholders = 'placeholders',
+    introSlides = 'introSlides',
     defaults = 'defaults',
 }
 
@@ -88,6 +104,7 @@ export type ColorSetByEnum = {
     [ColorSetEnum.sideMenu]: SideMenuColors;
     [ColorSetEnum.navbar]: NavBarColors;
     [ColorSetEnum.placeholders]: PlaceholderCategoryMap;
+    [ColorSetEnum.introSlides]: IntroSlidesColors;
     [ColorSetEnum.defaults]: DefaultColors;
 };
 
@@ -357,6 +374,20 @@ export const colors = {
             },
         },
 
+        introSlides: {
+            firstSlideBackground: 'indigo-500',
+            secondSlideBackground: 'cyan-401',
+            thirdSlideBackground: 'lime-500',
+            textColors: {
+                primary: 'white',
+                secondary: 'white',
+            },
+            pagination: {
+                primary: 'white',
+                secondary: '#E2E3E9', // grayscale-400
+            },
+        },
+
         defaults: {
             primaryColor: 'indigo-500',
             primaryColorShade: 'indigo-200',
@@ -557,6 +588,20 @@ export const colors = {
             inactiveColor: 'text-grayscale-500',
             syncingColor: '!text-blue-500',
             completedColor: '!text-emerald-700',
+        },
+
+        introSlides: {
+            firstSlideBackground: 'blue-500',
+            secondSlideBackground: 'grayscale-200',
+            thirdSlideBackground: 'grayscale-200',
+            textColors: {
+                primary: 'grayscale-900',
+                secondary: 'white',
+            },
+            pagination: {
+                primary: '#3B82F6', // blue-500
+                secondary: '#A8ACBD', // grayscale-400
+            },
         },
 
         placeholders: {

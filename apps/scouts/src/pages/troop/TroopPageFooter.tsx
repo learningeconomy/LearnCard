@@ -19,7 +19,7 @@ import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import TroopActionMenu from './TroopActionMenu';
 import ScoutConnectModal from './ScoutConnectModal';
-import TroopInviteSelectionModal from './TroopInviteSelectionModal';
+import InviteSelectionModal from './InviteSelectionModal';
 
 import { getScoutsRole } from '../../helpers/troop.helpers';
 import { VC, Boost } from '@learncard/types';
@@ -82,15 +82,19 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
         closeModal();
     };
 
-    const openScoutConnectModal = (boostUri: string) => {
+    const openScoutConnectModal = (boostUri: string, typeOverride?: string) => {
         newModal(
             <ScoutConnectModal
                 boostUriForClaimLink={boostUri}
                 credential={credential}
-                type={scoutNoun}
+                type={typeOverride || scoutNoun}
             />,
             {
                 sectionClassName: '!max-w-[450px]',
+            },
+            {
+                desktop: ModalTypes.Cancel,
+                mobile: ModalTypes.Cancel,
             }
         );
     };
@@ -118,24 +122,24 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
     };
     const handleInvite = showInviteButton
         ? () => {
-              if (scoutPermissionsData?.canIssue && troopPermissionsData?.canIssue) {
+              const canInviteScout = scoutPermissionsData?.canIssue;
+              const canInviteLeader = troopPermissionsData?.canIssue || boostPermissionsData?.canIssue;
+
+              if (canInviteScout && canInviteLeader) {
                   newModal(
-                      <TroopInviteSelectionModal
-                          scoutBoostUri={scoutBoostUri}
-                          troopBoostUri={troopBoostUri}
-                          credential={credential}
-                      />
+                      <InviteSelectionModal
+                          onInviteLeader={() => openScoutConnectModal(troopBoostUri, 'Troop Leader')}
+                          onInviteScout={() => openScoutConnectModal(scoutBoostUri, 'Scout')}
+                          handleCloseModal={closeModal}
+                          scoutNoun={scoutNoun}
+                      />,
+                      { sectionClassName: '!max-w-[450px]' },
+                      { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                   );
-              } else if (scoutPermissionsData?.canIssue && !troopPermissionsData?.canIssue) {
-                  openScoutConnectModal(scoutBoostUri);
-              } else if (boostPermissionsData?.canIssue) {
-                  openScoutConnectModal(currentBoostUri);
-              } else if (
-                  !scoutPermissionsData?.canIssue &&
-                  !troopPermissionsData?.canIssue &&
-                  !boostPermissionsData?.canIssue
-              ) {
-                  return;
+              } else if (canInviteScout) {
+                  openScoutConnectModal(scoutBoostUri, 'Scout');
+              } else if (canInviteLeader) {
+                  openScoutConnectModal(troopBoostUri || currentBoostUri, 'Troop Leader');
               }
           }
         : undefined;

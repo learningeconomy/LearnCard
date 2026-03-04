@@ -1,10 +1,10 @@
 import path from 'path';
-import fs from 'fs/promises';
+
 
 import esbuild from 'esbuild';
 import { copy } from 'esbuild-plugin-copy';
 import { NodeResolvePlugin } from '@esbuild-plugins/node-resolve';
-import rimraf from 'rimraf';
+import fs from 'fs/promises';
 
 const nodeResolveExternal = NodeResolvePlugin({
     extensions: ['.ts', '.js', '.tsx', '.jsx', '.cjs', '.mjs'],
@@ -34,6 +34,27 @@ const buildOptions = {
         'cross-fetch',
         'ethers',
         'cipher-base',
+        // Workspace packages — externalized for deduplication
+        '@learncard/chapi-plugin',
+        '@learncard/core',
+        '@learncard/crypto-plugin',
+        '@learncard/didkey-plugin',
+        '@learncard/didkit-plugin',
+        '@learncard/didkit-plugin-node',
+        '@learncard/did-web-plugin',
+        '@learncard/dynamic-loader-plugin',
+        '@learncard/encryption-plugin',
+        '@learncard/ethereum-plugin',
+        '@learncard/expiration-plugin',
+        '@learncard/helpers',
+        '@learncard/learn-card-plugin',
+        '@learncard/learn-cloud-plugin',
+        '@learncard/network-plugin',
+        '@learncard/types',
+        '@learncard/vc-api-plugin',
+        '@learncard/vc-plugin',
+        '@learncard/vc-templates-plugin',
+        '@learncard/vpqr-plugin',
     ],
 };
 
@@ -78,16 +99,8 @@ const configurations = [
     },
 ];
 
-function asyncRimraf(path) {
-    return new Promise((resolve, reject) => {
-        rimraf(path, err => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
-    });
+function asyncRimraf(dirPath) {
+    return fs.rm(dirPath, { recursive: true, force: true });
 }
 
 await Promise.all(

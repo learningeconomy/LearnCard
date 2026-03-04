@@ -37,10 +37,19 @@ export const BoostFrameworkSkillSelector: React.FC<{
         setSelectedSkills((state.alignments as SkillFrameworkNode[]) ?? []);
     }, [reloadStateTrigger]);
 
+    // Sync selectedSkills when state.alignments changes externally (e.g., during recovery)
+    useEffect(() => {
+        const stateAlignments = (state.alignments as SkillFrameworkNode[]) ?? [];
+        if (JSON.stringify(stateAlignments) !== JSON.stringify(selectedSkills)) {
+            setSelectedSkills(stateAlignments);
+        }
+    }, [state.alignments]);
+
     const handleSelectSkills = () => {
         newModal(
             <SelectFrameworkToManageModal
                 hideCreateFramework
+                isBoostSkillSelection
                 onFrameworkSelectOverride={framework => {
                     newModal(
                         <BrowseFrameworkPage

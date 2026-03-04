@@ -11,6 +11,7 @@ import {
     currentUserStore,
     UserProfilePicture,
 } from 'learn-card-base';
+import { clearGuardianVerification } from '../../hooks/useGuardianGate';
 
 import { LCNProfile } from '@learncard/types';
 
@@ -18,17 +19,20 @@ type ParentSwitcherButtonProps = {
     isSwitching: boolean;
     onPlayerSwitch?: (user: LCNProfile) => void;
     handlePlayerSwitchOverride?: (user: LCNProfile) => void;
+    onSwitchComplete?: () => void;
 };
 
 const ParentSwitcherButton: React.FC<ParentSwitcherButtonProps> = ({
     isSwitching,
     onPlayerSwitch,
     handlePlayerSwitchOverride,
+    onSwitchComplete,
 }) => {
     const { closeModal } = useModal();
     const { handleVerifyParentPin, isSwitching: _isParentSwitching } = usePin(user => {
         onPlayerSwitch?.(user);
         closeModal();
+        onSwitchComplete?.();
     });
 
     let currentUser = currentUserStore.get.currentUser();
@@ -39,9 +43,22 @@ const ParentSwitcherButton: React.FC<ParentSwitcherButtonProps> = ({
     const { currentLCNUser } = useGetCurrentLCNUser();
     const isServiceProfile = currentLCNUser?.isServiceProfile;
 
+    const parentUserDid = currentUserStore.get.parentUserDid();
+
     const handleClick = async () => {
+        // Clear guardian verification cache when switching back to parent
+        clearGuardianVerification();
+
         if (handlePlayerSwitchOverride) {
-            await handlePlayerSwitchOverride(currentLCNUser);
+            // Construct parent's LCNProfile from stored parent data
+            const parentProfile: LCNProfile = {
+                did: parentUserDid ?? '',
+                profileId: parentUserDid?.split(':').at(-1) ?? '',
+                displayName: currentUser?.name ?? '',
+                image: currentUser?.profileImage,
+                isServiceProfile: false,
+            };
+            await handlePlayerSwitchOverride(parentProfile);
         } else {
             await handleVerifyParentPin({ ignorePin: isServiceProfile });
         }

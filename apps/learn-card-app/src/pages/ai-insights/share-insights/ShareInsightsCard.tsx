@@ -12,6 +12,8 @@ export const ShareInsightsCard: React.FC<{}> = () => {
 
     const currentUserRole = useGetCurrentUserRole();
 
+    const currentRoleLabel = currentUserRole ? `${currentUserRole} •` : '';
+
     return (
         <div className="w-full flex items-center justify-center max-h-[100px] h-[100px]">
             <div className="w-full h-full bg-white rounded-[16px] flex items-center justify-between relative shadow-bottom-2-4 overflow-hidden">
@@ -27,7 +29,7 @@ export const ShareInsightsCard: React.FC<{}> = () => {
                             {currentUser?.name}
                         </p>
                         <p className="font-semibold text-sm font-poppins capitalize text-grayscale-700">
-                            {currentUserRole} • {total ?? 0} Skills
+                            {currentRoleLabel} {total ?? 0} Skills
                         </p>
                     </div>
                 </div>

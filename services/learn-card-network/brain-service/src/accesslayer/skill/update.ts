@@ -153,3 +153,29 @@ export const deleteSkill = async (
         return { success: true, deletedCount: 1 };
     }
 };
+
+export const updateSkillEmbedding = async (
+    skillId: string,
+    embedding: number[],
+    frameworkId?: string
+): Promise<boolean> => {
+    if (frameworkId) {
+        const result = await neogma.queryRunner.run(
+            `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})
+             SET s.embedding = $embedding
+             RETURN count(s) AS count`,
+            { frameworkId, skillId, embedding }
+        );
+
+        return Number(result.records[0]?.get('count') ?? 0) > 0;
+    }
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (s:Skill {id: $skillId})
+         SET s.embedding = $embedding
+         RETURN count(s) AS count`,
+        { skillId, embedding }
+    );
+
+    return Number(result.records[0]?.get('count') ?? 0) > 0;
+};

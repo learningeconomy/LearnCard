@@ -489,11 +489,15 @@ const BoostCMS: React.FC<{
                                 await (wallet?.invoke as any)?.resolveFromLCN(boostUri)
                             );
                             // oxlint-disable-next-line no-unused-vars
-                            const { sentBoost } = await sendBoostCredential(
+                            const { sentBoost, sentBoostUri } = await sendBoostCredential(
                                 wallet as any,
                                 profile?.profileId as string,
                                 boostUri
                             );
+
+                            // Auto-accept the credential on LCN so it's not stuck in "pending" state
+                            await wallet.invoke.acceptCredential(sentBoostUri, { skipNotification: true });
+
                             //in future allow user to set storage option, eg ceramic or LCN
                             // const uri = await wallet?.store['LearnCard Network'].uploadEncrypted(sentBoost);
                             const issuedVcUri = await (

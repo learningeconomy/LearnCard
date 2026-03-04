@@ -11,7 +11,7 @@ import BoostPreview from '../../boost/boostCMS/BoostPreview/BoostPreview';
 import BoostPreviewBody from '../../boost/boostCMS/BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from '../../boost/boostCMS/BoostPreview/BoostPreviewFooter';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+const HourGlass = '/lotties/hourglass.json';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import IdDisplayContainer from 'apps/learn-card-app/src/pages/ids/IdDisplayContainer';
 import { BoostIssuanceLoading } from '../boostLoader/BoostLoader';
@@ -330,7 +330,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                     <div className="max-w-[50px]">
                         <Lottie
                             loop
-                            animationData={HourGlass}
+                            path={HourGlass}
                             play
                             style={{ width: '100%', height: '100%' }}
                         />

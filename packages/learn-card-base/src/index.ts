@@ -93,11 +93,14 @@ export * from './hooks/useSwitchAccount';
 export * from './hooks/useToast';
 export * from './hooks/useSigningAuthority';
 export * from './hooks/useXApiStatements';
+export * from './hooks/useXApiStatementsForContract';
 export * from './hooks/useGetKeyboardHeight';
 export * from './stores/aiBoostStore';
 export * from './hooks/useGetCheckListStatus';
 export * from './hooks/useAiInsightCredential';
 export * from './hooks/useGetCurrentUserRole';
+export * from './hooks/usePrivacyGate';
+export * from './hooks/useAiFeatureGate';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';
@@ -127,6 +130,34 @@ export * from './stores/newCredsStore';
 export * from './stores/aiLoadingStore';
 export * from './stores/syncProgressStore';
 export * from './stores/boostPreviewStore';
+export {
+    messages,
+    threads,
+    currentThreadId,
+    isTyping,
+    isLoading,
+    isEndingSession,
+    showEndingSessionLoader,
+    activeQuestions,
+    suggestedTopics,
+    topicCredentials,
+    sessionEnded,
+    planReady,
+    planReadyThread,
+    resetChatStores,
+    loadThreads,
+    loadThread,
+    createThread,
+    deleteThread,
+    fetchLearningPathways,
+    connectWebSocket,
+    sendMessageWithQuestion,
+    sendMessage,
+    startTopicWithUri,
+    startLearningPathway,
+    startTopic,
+    updateArtifactClaimedStatus,
+} from './stores/nanoStores/chatStore';
 
 export * from './helpers/credentials/queries';
 export * from './helpers/web3AuthHelpers';

@@ -33,6 +33,22 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
     const { IconWithShape, Icon } = icons;
     const { primaryColor, secondaryColor, indicatorColor, borderColor } = colors;
 
+    let metaData: React.ReactNode | null = (
+        <p className="text-white font-poppins font-semibold text-base">
+            {numeral(count).format('0a')}
+        </p>
+    );
+
+    let metaDataContainerStyles = 'w-[50px]';
+
+    if (
+        categoryType === CredentialCategoryEnum.aiInsight ||
+        categoryType === CredentialCategoryEnum.aiPathway
+    ) {
+        metaData = <p className="text-white font-poppins font-semibold text-base">Explore</p>;
+        metaDataContainerStyles = 'w-[80px]';
+    }
+
     let cardStyles = 'pt-8';
     if (
         categoryType === CredentialCategoryEnum.aiInsight ||
@@ -68,7 +84,7 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
                     </p>
                     {/* TODO: ADD SKELETON LOADER HERE ... i want the skeleton loader to retain the same width and height as the div + color but with a skeleton loader */}
                     <div
-                        className={`w-[50px] h-[30px] flex items-center justify-center rounded-full mt-1 relative bg-${secondaryColor}`}
+                        className={`flex items-center justify-center rounded-full mt-1 relative h-[30px] bg-${secondaryColor} ${metaDataContainerStyles}`}
                     >
                         {showNewItemIndicator && (
                             <div
@@ -85,9 +101,7 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-white font-poppins font-semibold text-base">
-                                {numeral(count).format('0a')}
-                            </p>
+                            metaData
                         )}
                     </div>
                 </div>

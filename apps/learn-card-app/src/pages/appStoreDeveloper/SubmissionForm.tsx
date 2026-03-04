@@ -78,6 +78,8 @@ const SubmissionForm: React.FC = () => {
             highlights: listing.highlights,
             screenshots: listing.screenshots,
             hero_background_color: listing.hero_background_color,
+            min_age: listing.min_age,
+            age_rating: listing.age_rating,
         };
     }, [existingListing]);
 
@@ -146,7 +148,8 @@ const SubmissionForm: React.FC = () => {
         if (validateStep(currentStep)) setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
     };
     const handleBack = () => setCurrentStep(prev => Math.max(prev - 1, 1));
-    const navigateToDashboard = () => history.push(`/app-store/developer/integrations/${integrationId}/apps`);
+    const navigateToDashboard = () =>
+        history.push(`/app-store/developer/integrations/${integrationId}/apps`);
 
     // Check if form has any changes from initial state
     const hasUnsavedChanges = useCallback(() => {
@@ -270,6 +273,8 @@ const SubmissionForm: React.FC = () => {
                 highlights: formData.highlights,
                 screenshots: formData.screenshots,
                 hero_background_color: formData.hero_background_color,
+                min_age: formData.min_age,
+                age_rating: formData.age_rating,
             };
             let savedListingId: string;
             if (isEditMode && listingId) {
@@ -328,6 +333,8 @@ const SubmissionForm: React.FC = () => {
                 highlights: formData.highlights,
                 screenshots: formData.screenshots,
                 hero_background_color: formData.hero_background_color,
+                min_age: formData.min_age,
+                age_rating: formData.age_rating,
             };
             if (isEditMode && listingId) {
                 await updateMutation.mutateAsync({

@@ -146,6 +146,7 @@ export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;
 
 export const BoostPermissionsValidator = z.object({
     role: z.string(),
+    canView: z.boolean().default(true),
     canEdit: z.boolean(),
     canIssue: z.boolean(),
     canRevoke: z.boolean(),
@@ -163,6 +164,7 @@ export type BoostPermissions = z.infer<typeof BoostPermissionsValidator>;
 export const BoostPermissionsQueryValidator = z
     .object({
         role: StringQuery,
+        canView: z.boolean(),
         canEdit: z.boolean(),
         canIssue: z.boolean(),
         canRevoke: z.boolean(),
@@ -360,7 +362,13 @@ const SendBoostTemplateValidator = BoostValidator.partial()
         credential: VCValidator.or(UnsignedVCValidator),
         claimPermissions: BoostPermissionsValidator.partial().optional(),
         skills: z
-            .array(z.object({ frameworkId: z.string(), id: z.string() }))
+            .array(
+                z.object({
+                    frameworkId: z.string(),
+                    id: z.string(),
+                    proficiencyLevel: z.number().optional(),
+                })
+            )
             .min(1)
             .optional(),
     });
@@ -1330,6 +1338,26 @@ export const SkillQueryValidator = z.union([
 
 export type SkillQuery = z.infer<typeof SkillQueryValidator>;
 
+export const SkillSemanticSearchInputValidator = z.object({
+    text: z.string().min(1),
+    frameworkId: z.string().optional(),
+    limit: z.number().int().min(1).max(200).default(50),
+});
+
+export type SkillSemanticSearchInput = z.infer<typeof SkillSemanticSearchInputValidator>;
+
+export const SkillSemanticSearchResultItemValidator = SkillValidator.extend({
+    score: z.number(),
+});
+
+export type SkillSemanticSearchResultItem = z.infer<typeof SkillSemanticSearchResultItemValidator>;
+
+export const SkillSemanticSearchResultValidator = z.object({
+    records: SkillSemanticSearchResultItemValidator.array(),
+});
+
+export type SkillSemanticSearchResult = z.infer<typeof SkillSemanticSearchResultValidator>;
+
 export const SkillFrameworkStatusEnum = z.enum(['active', 'archived']);
 export type SkillFrameworkStatus = z.infer<typeof SkillFrameworkStatusEnum>;
 
@@ -1339,6 +1367,7 @@ export const SkillFrameworkValidator = z.object({
     description: z.string().optional(),
     image: z.string().optional(),
     sourceURI: z.string().url().optional(),
+    isPublic: z.boolean().default(false),
     status: SkillFrameworkStatusEnum.default('active'),
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
@@ -1407,6 +1436,7 @@ export const CreateManagedFrameworkInputValidator = z.object({
     description: z.string().optional(),
     image: z.string().optional(),
     sourceURI: z.string().url().optional(),
+    isPublic: z.boolean().optional(),
     status: SkillFrameworkStatusEnum.optional(),
     skills: z.array(SkillTreeNodeInputValidator).optional(),
     boostUris: z.array(z.string()).optional(),
@@ -1424,6 +1454,7 @@ export const UpdateFrameworkInputValidator = z
         description: z.string().optional(),
         image: z.string().optional(),
         sourceURI: z.string().url().optional(),
+        isPublic: z.boolean().optional(),
         status: SkillFrameworkStatusEnum.optional(),
     })
     .refine(
@@ -1432,6 +1463,7 @@ export const UpdateFrameworkInputValidator = z
             data.description !== undefined ||
             data.image !== undefined ||
             data.sourceURI !== undefined ||
+            data.isPublic !== undefined ||
             data.status !== undefined,
         {
             message: 'At least one field must be provided to update',
@@ -1642,6 +1674,9 @@ export const PromotionLevelValidator = z.enum([
 ]);
 export type PromotionLevel = z.infer<typeof PromotionLevelValidator>;
 
+export const AgeRatingValidator = z.enum(['4+', '9+', '12+', '17+']);
+export type AgeRating = z.infer<typeof AgeRatingValidator>;
+
 export const AppStoreListingValidator = z.object({
     listing_id: z.string(),
     slug: z.string().optional(),
@@ -1662,6 +1697,8 @@ export const AppStoreListingValidator = z.object({
     highlights: z.array(z.string()).optional(),
     screenshots: z.array(z.string()).optional(),
     hero_background_color: z.string().optional(),
+    min_age: z.number().int().min(0).max(18).optional(),
+    age_rating: AgeRatingValidator.optional(),
 });
 
 export type AppStoreListing = z.infer<typeof AppStoreListingValidator>;
@@ -1762,6 +1799,7 @@ export const CredentialActivitySourceTypeValidator = z.enum([
     'inbox',
     'claimLink',
     'acceptCredential',
+    'appEvent',
 ]);
 export type CredentialActivitySourceType = z.infer<typeof CredentialActivitySourceTypeValidator>;
 

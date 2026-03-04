@@ -1,5 +1,147 @@
 # Changelog
 
+## 1.94.29
+
+### Patch Changes
+
+-   [#1044](https://github.com/learningeconomy/LearnCard/pull/1044) [`bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee`](https://github.com/learningeconomy/LearnCard/commit/bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee) Thanks [@smurflo2](https://github.com/smurflo2)! - Add age rating and minimum age (both optional) to apps
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.9
+    -   @learncard/lca-api-plugin@1.1.17
+    -   @learncard/open-badge-v2-plugin@1.1.10
+    -   @learncard/react@2.9.16
+
+## 1.94.28
+
+### Patch Changes
+
+-   [#1040](https://github.com/learningeconomy/LearnCard/pull/1040) [`099ed4735e2565179c33a0d3015ef6961c8feaa3`](https://github.com/learningeconomy/LearnCard/commit/099ed4735e2565179c33a0d3015ef6961c8feaa3) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1615] Unified Guardian Hook
+
+## 1.94.27
+
+### Patch Changes
+
+-   [#1038](https://github.com/learningeconomy/LearnCard/pull/1038) [`49b6234b0b2874ee1e7eaaa8e1c15c2a27549537`](https://github.com/learningeconomy/LearnCard/commit/49b6234b0b2874ee1e7eaaa8e1c15c2a27549537) Thanks [@Custard7](https://github.com/Custard7)! - fix: [LC-1647] Add checks to prevent invalid QR state
+
+-   [#1039](https://github.com/learningeconomy/LearnCard/pull/1039) [`ea28b4d858e16768c3be0c6d65f53fe0ae17af5c`](https://github.com/learningeconomy/LearnCard/commit/ea28b4d858e16768c3be0c6d65f53fe0ae17af5c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix duplicate signing authorities being made every time an App Listing is updated
+
+-   [#1019](https://github.com/learningeconomy/LearnCard/pull/1019) [`0dd6bce821722763335427d582a074a232f93941`](https://github.com/learningeconomy/LearnCard/commit/0dd6bce821722763335427d582a074a232f93941) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1615] Unified Guardian Hook
+
+-   [#1036](https://github.com/learningeconomy/LearnCard/pull/1036) [`14980c4c2b8ff739afa1a2c915884df1c8517770`](https://github.com/learningeconomy/LearnCard/commit/14980c4c2b8ff739afa1a2c915884df1c8517770) Thanks [@Custard7](https://github.com/Custard7)! - fix: Null URL Helper
+
+-   [#1032](https://github.com/learningeconomy/LearnCard/pull/1032) [`4d91db99e41cf0cae65686a9650352d8d48b365a`](https://github.com/learningeconomy/LearnCard/commit/4d91db99e41cf0cae65686a9650352d8d48b365a) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1464] Autosave fix for skills framework
+
+-   [#1031](https://github.com/learningeconomy/LearnCard/pull/1031) [`495f2939cb6e4271cab0a88abea5105fb7e4f9b6`](https://github.com/learningeconomy/LearnCard/commit/495f2939cb6e4271cab0a88abea5105fb7e4f9b6) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-982][LC-1625] - extend default boost permissions, add "canView"
+
+-   [#1033](https://github.com/learningeconomy/LearnCard/pull/1033) [`08a1c8a07501c2f426d16239c4b0551e518a7ed5`](https://github.com/learningeconomy/LearnCard/commit/08a1c8a07501c2f426d16239c4b0551e518a7ed5) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1601] Add AppEvent source
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.8
+    -   @learncard/lca-api-plugin@1.1.16
+    -   @learncard/open-badge-v2-plugin@1.1.9
+    -   @learncard/react@2.9.15
+
+## 1.94.26
+
+### Patch Changes
+
+-   [#1028](https://github.com/learningeconomy/LearnCard/pull/1028) [`34a056d1b91b17e010eeb04094ffac7b792d3cd3`](https://github.com/learningeconomy/LearnCard/commit/34a056d1b91b17e010eeb04094ffac7b792d3cd3) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1604] Onboarding Slides
+
+-   [#1006](https://github.com/learningeconomy/LearnCard/pull/1006) [`caf231b53707174ea49f0eb2b65885a36b3e7228`](https://github.com/learningeconomy/LearnCard/commit/caf231b53707174ea49f0eb2b65885a36b3e7228) Thanks [@smurflo2](https://github.com/smurflo2)! - Add Self-Assigned Skills including optional proficiency level field on Boost -> Skill relationship
+
+-   [#1027](https://github.com/learningeconomy/LearnCard/pull/1027) [`bd55b6fac92437009a5209fea8a12c277a565511`](https://github.com/learningeconomy/LearnCard/commit/bd55b6fac92437009a5209fea8a12c277a565511) Thanks [@smurflo2](https://github.com/smurflo2)! - Add date of birth and country fields for child account creation
+
+-   [#1025](https://github.com/learningeconomy/LearnCard/pull/1025) [`35179e0ed8d7694e42efe2ea4bc6f60a96f8bf0e`](https://github.com/learningeconomy/LearnCard/commit/35179e0ed8d7694e42efe2ea4bc6f60a96f8bf0e) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1608][LC-1609] - Resume Builder + Resume Generation
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.7
+    -   @learncard/lca-api-plugin@1.1.15
+    -   @learncard/open-badge-v2-plugin@1.1.8
+    -   @learncard/react@2.9.14
+
+## 1.94.25
+
+### Patch Changes
+
+-   [#998](https://github.com/learningeconomy/LearnCard/pull/998) [`d33c5cb109efa9a81462d139ac80dec61fbe70b7`](https://github.com/learningeconomy/LearnCard/commit/d33c5cb109efa9a81462d139ac80dec61fbe70b7) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1464] "Autosave" user created content
+
+-   [#964](https://github.com/learningeconomy/LearnCard/pull/964) [`6115dbb71768ae98f2c04e30b19a77574e337bfa`](https://github.com/learningeconomy/LearnCard/commit/6115dbb71768ae98f2c04e30b19a77574e337bfa) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: LC-1463 - AI Pathways MVP
+
+-   [#964](https://github.com/learningeconomy/LearnCard/pull/964) [`6115dbb71768ae98f2c04e30b19a77574e337bfa`](https://github.com/learningeconomy/LearnCard/commit/6115dbb71768ae98f2c04e30b19a77574e337bfa) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: LC-1463 - AI Pathways MVP
+
+-   [#1021](https://github.com/learningeconomy/LearnCard/pull/1021) [`49ec0cf1b1569c9bf94bdc0a7d34bf32f588f6ca`](https://github.com/learningeconomy/LearnCard/commit/49ec0cf1b1569c9bf94bdc0a7d34bf32f588f6ca) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1598 & LC-1593] Rename "Launchpad" to "Apps" and Remove feedback button entirely
+
+-   [#971](https://github.com/learningeconomy/LearnCard/pull/971) [`a5e21c66edcff63a75603e741b6907800bf8c984`](https://github.com/learningeconomy/LearnCard/commit/a5e21c66edcff63a75603e741b6907800bf8c984) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-1501 - AI Insight Sessions
+
+-   [#1005](https://github.com/learningeconomy/LearnCard/pull/1005) [`cef30a9bb66204a45c105c123b325ee7ab4fdedc`](https://github.com/learningeconomy/LearnCard/commit/cef30a9bb66204a45c105c123b325ee7ab4fdedc) Thanks [@goblincore](https://github.com/goblincore)! - Externalize Workspace Deps for all Learncard packages
+
+-   [#992](https://github.com/learningeconomy/LearnCard/pull/992) [`42849fe9be2e6654708546c2cc360589e5745fd5`](https://github.com/learningeconomy/LearnCard/commit/42849fe9be2e6654708546c2cc360589e5745fd5) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: LC-1503 - Add streamMode Support for Structured Plan Streaming
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.14
+    -   @learncard/react@2.9.13
+
+## 1.94.24
+
+### Patch Changes
+
+-   [#1003](https://github.com/learningeconomy/LearnCard/pull/1003) [`2a2c65deb667315e54919ff5b6ae9e51c87bb6db`](https://github.com/learningeconomy/LearnCard/commit/2a2c65deb667315e54919ff5b6ae9e51c87bb6db) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: installing apps you've already consented too
+
+## 1.94.23
+
+### Patch Changes
+
+-   [#999](https://github.com/learningeconomy/LearnCard/pull/999) [`8a2789e817665f6608e490025d842a557d89d82e`](https://github.com/learningeconomy/LearnCard/commit/8a2789e817665f6608e490025d842a557d89d82e) Thanks [@rhen92](https://github.com/rhen92)! - fix: Remove test button for testing only on lc-1423
+
+-   [#996](https://github.com/learningeconomy/LearnCard/pull/996) [`b466db8c0b825debc61a3015e50283a34b7d17ef`](https://github.com/learningeconomy/LearnCard/commit/b466db8c0b825debc61a3015e50283a34b7d17ef) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1581 & LC-1582] Move screenshots to top and truncate about section in app profile
+
+-   [#989](https://github.com/learningeconomy/LearnCard/pull/989) [`4d4f0d30a69f6228ff66a5ebfe891331670ffc6b`](https://github.com/learningeconomy/LearnCard/commit/4d4f0d30a69f6228ff66a5ebfe891331670ffc6b) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1423] Move xAPI statements into "Manage Data Sharing" based on contract
+
+-   [#1000](https://github.com/learningeconomy/LearnCard/pull/1000) [`d2349ca259286045e97293e0398e1a6a6d30cfc3`](https://github.com/learningeconomy/LearnCard/commit/d2349ca259286045e97293e0398e1a6a6d30cfc3) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1584 & LC-1591] Make LaunchPadActionModal wider & Fix Get Started button
+
+-   [#1001](https://github.com/learningeconomy/LearnCard/pull/1001) [`3e2e71af075cef55039ae39baa902f76f7b5fa34`](https://github.com/learningeconomy/LearnCard/commit/3e2e71af075cef55039ae39baa902f76f7b5fa34) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1586 - Migrate AI Tutor Apps to use Official App Store
+
+-   [#988](https://github.com/learningeconomy/LearnCard/pull/988) [`3ea5b9d4b65e1344d0639e84f6fa27d1cef12a3f`](https://github.com/learningeconomy/LearnCard/commit/3ea5b9d4b65e1344d0639e84f6fa27d1cef12a3f) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1373 - Update CMS Thumbnail (Add Media Type preview)
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.13
+    -   @learncard/react@2.9.12
+
+## 1.94.22
+
+### Patch Changes
+
+-   [#977](https://github.com/learningeconomy/LearnCard/pull/977) [`8c61d51a91fa84390d51d933ef1232a635d8f23f`](https://github.com/learningeconomy/LearnCard/commit/8c61d51a91fa84390d51d933ef1232a635d8f23f) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-1548 - fix: App Store "App View" When opening from direct link
+
+-   [#987](https://github.com/learningeconomy/LearnCard/pull/987) [`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1578] Optimize skill framework uploads (aka fix timeout error)
+
+-   [#982](https://github.com/learningeconomy/LearnCard/pull/982) [`c05714270e006d2ffc422c34c6d24497096465a3`](https://github.com/learningeconomy/LearnCard/commit/c05714270e006d2ffc422c34c6d24497096465a3) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1330 - ENV driven THEME
+
+-   Updated dependencies [[`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c)]:
+    -   @learncard/react@2.9.11
+    -   @learncard/helpers@1.2.6
+    -   @learncard/lca-api-plugin@1.1.12
+    -   @learncard/open-badge-v2-plugin@1.1.7
+
+## 1.94.21
+
+### Patch Changes
+
+-   [#976](https://github.com/learningeconomy/LearnCard/pull/976) [`d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9`](https://github.com/learningeconomy/LearnCard/commit/d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1325] Notification Change for Expired Invite Link
+
+-   [#972](https://github.com/learningeconomy/LearnCard/pull/972) [`5a318d7f0b4a134509fe26f302a61f190670f051`](https://github.com/learningeconomy/LearnCard/commit/5a318d7f0b4a134509fe26f302a61f190670f051) Thanks [@Custard7](https://github.com/Custard7)! - perf: Mock DIDKit WASM in Playwright tests to avoid slow CDN fetch
+
+    This speeds up our internal tests. It is not user-facing
+
+-   [#968](https://github.com/learningeconomy/LearnCard/pull/968) [`01572c1731b01c60926e1e1ff4db95ddf08e6e9e`](https://github.com/learningeconomy/LearnCard/commit/01572c1731b01c60926e1e1ff4db95ddf08e6e9e) Thanks [@Custard7](https://github.com/Custard7)! - chore: Silence and Fix Warnings/Errors
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.5
+    -   @learncard/lca-api-plugin@1.1.11
+    -   @learncard/open-badge-v2-plugin@1.1.6
+    -   @learncard/react@2.9.10
+
 ## 1.94.20
 
 ### Patch Changes

@@ -26,12 +26,13 @@ export const updateSkillFramework = async (
         });
     }
 
-    const updates: Record<string, any> = {};
+    const updates: Record<string, unknown> = {};
 
     if (input.name !== undefined) updates.name = input.name;
     if (input.description !== undefined) updates.description = input.description;
     if (input.image !== undefined) updates.image = input.image;
     if (input.sourceURI !== undefined) updates.sourceURI = input.sourceURI;
+    if (input.isPublic !== undefined) updates.isPublic = input.isPublic;
     if (input.status !== undefined) updates.status = input.status;
 
     if (Object.keys(updates).length === 0) {

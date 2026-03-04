@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm';
 
 import 'katex/dist/katex.min.css';
 
-import ShikiHighlighter, { isInlineCode } from 'react-shiki';
+import CodeHighlighter, { isInlineCode } from './CodeHighlighter';
 
 interface MarkdownRendererProps {
     children?: string | null;
@@ -34,13 +34,12 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ children }) => {
                     }
 
                     return (
-                        <ShikiHighlighter
-                            as="div"
+                        <CodeHighlighter
                             showLanguage={!isText}
-                            children={String(codeChildren).replace(/\n$/, '')}
                             language={match?.[1] || 'text'}
-                            theme="one-light"
-                        />
+                        >
+                            {String(codeChildren).replace(/\n$/, '')}
+                        </CodeHighlighter>
                     );
                 },
             }}
@@ -51,3 +50,4 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ children }) => {
 };
 
 export default MarkdownRenderer;
+

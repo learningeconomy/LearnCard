@@ -73,9 +73,10 @@ export const showNavBar = (path?: string): boolean => {
         (path?.includes('/boost') && path !== '/boosts') ||
         path?.includes('/select-credentials') ||
         path?.includes('/share-boost') ||
-        path?.includes('/app-store') || 
+        path?.includes('/app-store') ||
         path?.includes('/cli') ||
-        path?.includes('/login')
+        path?.includes('/login') ||
+        path?.includes('/resume-builder')
     ) {
         return false;
     }

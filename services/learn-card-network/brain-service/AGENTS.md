@@ -363,3 +363,127 @@ curl -X POST \
 ### Testing
 
 -   See `test/profiles.spec.ts` for unit/integration coverage of generation, listing, consumption, unlimited behavior, and invalidation.
+
+## Tracing & Performance Monitoring
+
+The brain service includes a modular tracing system for performance monitoring and debugging. Located in `src/tracing/`.
+
+### Architecture
+
+-   **TracingManager**: Central coordinator that manages providers and span lifecycle using `AsyncLocalStorage` for request-scoped trace context
+-   **TracingProvider**: Interface for output backends (console, JSON, Sentry)
+-   **Spans**: Represent timed operations with `traceId`, `spanId`, `parentSpanId`, timing, and status
+
+### Trace Functions
+
+Import from `@tracing`:
+
+```typescript
+import { trace, traceDb, traceHttp, traceCrypto, traceInternal } from '@tracing';
+```
+
+| Function        | Operation Type | Use Case                                      |
+| --------------- | -------------- | --------------------------------------------- |
+| `trace`         | Custom `op`    | Top-level route spans, custom categories      |
+| `traceDb`       | `db`           | Database operations (Neo4j queries, writes)   |
+| `traceHttp`     | `http`         | Outbound HTTP requests                        |
+| `traceCrypto`   | `crypto`       | Cryptographic operations (signing, verifying) |
+| `traceInternal` | `internal`     | Business logic, data transformations          |
+
+### Usage Pattern
+
+```typescript
+// Top-level route tracing
+.mutation(async ({ ctx, input }) => {
+    return trace('route', 'send', async () => {
+        // Trace database operations
+        const boost = await traceDb('getBoostByUri', () => getBoostByUri(uri));
+
+        // Trace internal logic
+        const prepared = await traceInternal('prepareCredential', () =>
+            prepareCredentialFromBoost(boost, options)
+        );
+
+        // Trace HTTP calls
+        const signed = await traceHttp('signingAuthority', () =>
+            issueCredentialWithSigningAuthority(profile, prepared, sa)
+        );
+
+        return result;
+    }, { recipient: input.recipient }); // Optional metadata
+});
+```
+
+### Providers
+
+Providers are registered automatically on startup based on environment variables:
+
+| Provider  | Env Variable      | Default   | Output Format                                |
+| --------- | ----------------- | --------- | -------------------------------------------- |
+| Console   | `TRACE_CONSOLE`   | `true`    | Indented tree with timing: `✓ db:query 45ms` |
+| JSON      | `TRACE_JSON`      | `false`   | Structured JSON per span (for log ingestion) |
+| Sentry    | `SENTRY_DSN`      | disabled  | Sentry performance transactions              |
+
+**Console output example:**
+```
+[TRACE:a1b2c3]✓ route:send 234ms
+[TRACE:a1b2c3]  ✓ db:getBoostByUri 12ms
+[TRACE:a1b2c3]  ✓ internal:prepareCredential 45ms
+[TRACE:a1b2c3]  ✓ http:signingAuthority 156ms
+```
+
+**JSON output example:**
+```json
+{"type":"TRACE_SPAN","traceId":"a1b2c3","spanId":"d4e5f6","op":"db","name":"getBoostByUri","durationMs":12,"status":"ok","timestamp":"2024-01-15T10:30:00.000Z"}
+```
+
+### Configuration
+
+```bash
+# Disable console tracing (enabled by default)
+TRACE_CONSOLE=false
+
+# Enable JSON tracing for log aggregation
+TRACE_JSON=true
+
+# Enable Sentry performance monitoring
+SENTRY_DSN=https://xxx@sentry.io/xxx
+```
+
+### Best Practices
+
+1. **Wrap entire route mutations** in a top-level `trace('route', 'routeName', ...)` call
+2. **Use appropriate trace functions** for each operation type to enable filtering
+3. **Include relevant metadata** in the optional `data` parameter for debugging
+4. **Trace all async operations** that may have variable latency
+5. **Name spans descriptively** using the format `operation` or `operation:variant`
+
+### Adding New Providers
+
+Implement the `TracingProvider` interface:
+
+```typescript
+import type { TracingProvider, SpanContext, SpanResult } from '../types';
+
+export class MyProvider implements TracingProvider {
+    name = 'my-provider';
+
+    isEnabled(): boolean {
+        return process.env.MY_PROVIDER_ENABLED === 'true';
+    }
+
+    onSpanStart(ctx: SpanContext): void {
+        // Called when span begins
+    }
+
+    onSpanEnd(ctx: SpanContext, result: SpanResult): void {
+        // Called when span completes (success or error)
+    }
+}
+```
+
+Register in `src/tracing/index.ts`:
+
+```typescript
+manager.register(new MyProvider());
+```

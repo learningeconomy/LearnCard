@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
+import { trace, traceDb, traceInternal } from '@tracing';
 
 import {
     BoostValidator as ConsumerBoostValidator,
@@ -30,7 +31,11 @@ import {
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { logCredentialSent, logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
+import {
+    logCredentialSent,
+    logCredentialClaimed,
+    logCredentialFailed,
+} from '@helpers/activity.helpers';
 
 import { t, profileRoute } from '@routes';
 
@@ -65,7 +70,9 @@ import {
     canProfileIssueBoost,
     canProfileEditBoost,
     canProfileCreateChildBoost,
+    canProfileViewBoost,
     getBoostByUriWithDefaultClaimPermissions,
+    getBoostSkillsWithProficiency,
     getFrameworkSkillsAvailableForBoost,
     getFrameworksForBoostPaged,
     searchSkillsAvailableForBoost,
@@ -80,6 +87,7 @@ import {
     issueClaimLinkBoost,
     isDraftBoost,
     isEditableBoost,
+    isBoostViewableByClaimLink,
     convertCredentialToBoostTemplateJSON,
     isInboxRecipient,
     prepareCredentialFromBoost,
@@ -127,6 +135,7 @@ import {
     setProfileAsBoostAdmin,
     setBoostUsesFramework,
     addAlignedSkillsToBoost,
+    replaceAlignedSkillsForBoost,
 } from '@accesslayer/boost/relationships/create';
 import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import { neogma } from '@instance';
@@ -137,7 +146,11 @@ import {
 } from '@accesslayer/boost/relationships/delete';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
-import { EMPTY_PERMISSIONS, QUERYABLE_PERMISSIONS } from 'src/constants/permissions';
+import {
+    EMPTY_PERMISSIONS,
+    DEFAULT_BOOST_PERMISSIONS,
+    QUERYABLE_PERMISSIONS,
+} from 'src/constants/permissions';
 import { updateBoost } from '@accesslayer/boost/update';
 import {
     addClaimPermissionsForBoost,
@@ -215,7 +228,8 @@ export const boostsRouter = t.router({
         })
         .input(z.object({ uri: z.string() }))
         .output(
-            z.object({
+            z
+                .object({
                     targetCode: z.string().optional(),
                     targetName: z.string().optional(),
                     targetDescription: z.string().optional(),
@@ -241,6 +255,54 @@ export const boostsRouter = t.router({
             }
 
             return buildObv3AlignmentsForBoost(boost, ctx.domain);
+        }),
+
+    getBoostSkills: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/skills',
+                tags: ['Boosts'],
+                summary: 'Get aligned skills for a boost',
+                description:
+                    'Returns skills aligned to a boost via ALIGNED_TO, including proficiencyLevel stored on the relationship.',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(z.array(SkillValidator.extend({ proficiencyLevel: z.number().optional() })))
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const decodedUri = decodeURIComponent(input.uri);
+            const boost = await getBoostByUri(decodedUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            // For now, require admin to view aligned skills (consistent with other boost-skill endpoints)
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
+            }
+
+            const skills = await getBoostSkillsWithProficiency(boost);
+
+            // Ensure we only return fields that match SkillValidator (+ proficiencyLevel)
+            return skills.map(skill => ({
+                id: skill.id,
+                statement: skill.statement,
+                description: skill.description ?? undefined,
+                code: skill.code ?? undefined,
+                icon: (skill as any).icon ?? undefined,
+                type: (skill as any).type ?? 'competency',
+                status: (skill as any).status ?? 'active',
+                createdAt: (skill as any).createdAt,
+                updatedAt: (skill as any).updatedAt,
+                frameworkId: (skill as any).frameworkId,
+                proficiencyLevel: (skill as any).proficiencyLevel,
+            }));
         }),
     attachFrameworkToBoost: profileRoute
         .meta({
@@ -331,7 +393,15 @@ export const boostsRouter = t.router({
         .input(
             z.object({
                 boostUri: z.string(),
-                skills: z.array(z.object({ frameworkId: z.string(), id: z.string() })).min(1),
+                skills: z
+                    .array(
+                        z.object({
+                            frameworkId: z.string(),
+                            id: z.string(),
+                            proficiencyLevel: z.number().optional(),
+                        })
+                    )
+                    .min(1),
             })
         )
         .output(z.boolean())
@@ -521,11 +591,12 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { profileId, credential, uri, options } = input;
 
-            if (process.env.NODE_ENV !== 'test') {
-                console.log('🚀 BEGIN - Send Boost', JSON.stringify(input));
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
             }
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
             const isBlocked = await isRelationshipBlocked(profile, targetProfile);
 
             if (!targetProfile || isBlocked) {
@@ -595,281 +666,355 @@ export const boostsRouter = t.router({
         .input(SendBoostInputValidator)
         .output(SendBoostResponseValidator)
         .mutation(async ({ ctx, input }) => {
-            const { profile } = ctx.user;
-            const { contractUri } = input;
-            const { domain } = ctx;
+            return trace(
+                'route',
+                'send',
+                async () => {
+                    const { profile } = ctx.user;
+                    const { contractUri } = input;
+                    const { domain } = ctx;
 
-            // Check if recipient is email/phone (routes to Universal Inbox)
-            const inboxRecipient = isInboxRecipient(input.recipient);
+                    // Check if recipient is email/phone (routes to Universal Inbox)
+                    const inboxRecipient = isInboxRecipient(input.recipient);
 
-            // Resolve boost first (needed for both flows)
-            let boost = null as BoostInstance | null;
-            let boostUri = '';
-            let boostCreated = false;
+                    // Resolve boost first (needed for both flows)
+                    let boost = null as BoostInstance | null;
+                    let boostUri = '';
+                    let boostCreated = false;
 
-            if (input.templateUri) {
-                const resolved = await getBoostByUri(input.templateUri);
-                if (!resolved) {
-                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
-                }
-                boost = resolved;
-                boostUri = input.templateUri;
-            } else if (input.template) {
-                const { credential, claimPermissions, skills, ...metadata } = input.template;
+                    if (input.templateUri) {
+                        const resolved = await traceDb('getBoostByUri', () =>
+                            getBoostByUri(input.templateUri!)
+                        );
+                        if (!resolved) {
+                            throw new TRPCError({
+                                code: 'NOT_FOUND',
+                                message: 'Could not find boost',
+                            });
+                        }
+                        boost = resolved;
+                        boostUri = input.templateUri;
+                    } else if (input.template) {
+                        const { credential, claimPermissions, skills, ...metadata } =
+                            input.template;
 
-                boost = await createBoost(credential, profile, metadata, domain);
+                        boost = await traceDb('createBoost', () =>
+                            createBoost(credential, profile, metadata, domain)
+                        );
 
-                if (Array.isArray(skills) && skills.length > 0) {
-                    await addAlignedSkillsToBoost(boost, skills);
-                }
+                        if (Array.isArray(skills) && skills.length > 0) {
+                            await traceDb('addAlignedSkillsToBoost', () =>
+                                addAlignedSkillsToBoost(boost!, skills)
+                            );
+                        }
 
-                if (claimPermissions) {
-                    await addClaimPermissionsForBoost(boost, {
-                        ...EMPTY_PERMISSIONS,
-                        ...claimPermissions,
-                    });
-                }
+                        if (claimPermissions) {
+                            await traceDb('addClaimPermissionsForBoost', () =>
+                                addClaimPermissionsForBoost(boost!, {
+                                    ...EMPTY_PERMISSIONS,
+                                    ...claimPermissions,
+                                })
+                            );
+                        }
 
-                boostUri = getBoostUri(boost.id, domain);
-                boostCreated = true;
-            }
+                        boostUri = getBoostUri(boost.id, domain);
+                        boostCreated = true;
+                    }
 
-            if (!boost) {
-                throw new TRPCError({
-                    code: 'BAD_REQUEST',
-                    message: 'A templateUri or template creation payload is required.',
-                });
-            }
-
-            if (!(await canProfileIssueBoost(profile, boost))) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'Profile does not have permissions to issue boost',
-                });
-            }
-
-            if (isDraftBoost(boost)) {
-                throw new TRPCError({
-                    code: 'FORBIDDEN',
-                    message: 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
-                });
-            }
-
-            // Route to Universal Inbox for email/phone recipients
-            if (inboxRecipient) {
-                // Prepare the credential - use signedCredential if provided, otherwise from boost template
-                let credential: VC | UnsignedVC;
-
-                if (input.signedCredential) {
-                    credential = input.signedCredential;
-                } else {
-                    try {
-                        credential = await prepareCredentialFromBoost(boost, boostUri, domain, {
-                            templateData: input.templateData as Record<string, unknown>,
-                        });
-                    } catch (e) {
-                        console.error('Failed to prepare boost credential for inbox', e);
+                    if (!boost) {
                         throw new TRPCError({
-                            code: 'INTERNAL_SERVER_ERROR',
-                            message: 'Failed to prepare boost credential',
+                            code: 'BAD_REQUEST',
+                            message: 'A templateUri or template creation payload is required.',
                         });
                     }
-                }
 
-                // Build inbox configuration from SendOptions
-                // Log credential activity FIRST to get activityId for chaining
-                const activityId = await logCredentialSent({
-                    actorProfileId: profile.profileId,
-                    recipientType: inboxRecipient.type,
-                    recipientIdentifier: inboxRecipient.value,
-                    boostUri,
-                    source: 'send',
-                    integrationId: input.integrationId,
-                    metadata: { templateData: input.templateData },
-                });
+                    if (
+                        !(await traceDb('canProfileIssueBoost', () =>
+                            canProfileIssueBoost(profile, boost!)
+                        ))
+                    ) {
+                        throw new TRPCError({
+                            code: 'UNAUTHORIZED',
+                            message: 'Profile does not have permissions to issue boost',
+                        });
+                    }
 
-                const inboxConfig = buildInboxConfig(input.options, boostUri);
+                    if (isDraftBoost(boost)) {
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message:
+                                'Draft Boosts can not be sent. Only Published Boosts can be sent.',
+                        });
+                    }
 
-                try {
-                    const inboxResult = await issueToInbox(
-                        profile,
-                        inboxRecipient,
-                        credential,
-                        { ...inboxConfig, activityId, integrationId: input.integrationId },
-                        ctx
+                    // Route to Universal Inbox for email/phone recipients
+                    if (inboxRecipient) {
+                        // Prepare the credential - use signedCredential if provided, otherwise from boost template
+                        let credential: VC | UnsignedVC;
+
+                        if (input.signedCredential) {
+                            credential = input.signedCredential;
+                        } else {
+                            try {
+                                credential = await traceInternal(
+                                    'prepareCredentialFromBoost:inbox',
+                                    () =>
+                                        prepareCredentialFromBoost(boost!, boostUri, domain, {
+                                            templateData: input.templateData as Record<
+                                                string,
+                                                unknown
+                                            >,
+                                        })
+                                );
+                            } catch (e) {
+                                console.error('Failed to prepare boost credential for inbox', e);
+                                throw new TRPCError({
+                                    code: 'INTERNAL_SERVER_ERROR',
+                                    message: 'Failed to prepare boost credential',
+                                });
+                            }
+                        }
+
+                        // Build inbox configuration from SendOptions
+                        // Log credential activity FIRST to get activityId for chaining
+                        const activityId = await traceDb('logCredentialSent:inbox', () =>
+                            logCredentialSent({
+                                actorProfileId: profile.profileId,
+                                recipientType: inboxRecipient.type,
+                                recipientIdentifier: inboxRecipient.value,
+                                boostUri,
+                                source: 'send',
+                                integrationId: input.integrationId,
+                                metadata: { templateData: input.templateData },
+                            })
+                        );
+
+                        const inboxConfig = buildInboxConfig(input.options, boostUri);
+
+                        try {
+                            const inboxResult = await traceInternal('issueToInbox', () =>
+                                issueToInbox(
+                                    profile,
+                                    inboxRecipient,
+                                    credential,
+                                    {
+                                        ...inboxConfig,
+                                        activityId,
+                                        integrationId: input.integrationId,
+                                    },
+                                    ctx
+                                )
+                            );
+
+                            return {
+                                type: 'boost' as const,
+                                credentialUri: '',
+                                uri: boostUri,
+                                activityId,
+                                inbox: {
+                                    issuanceId: inboxResult.inboxCredential.id,
+                                    status: inboxResult.status,
+                                    claimUrl: inboxResult.claimUrl,
+                                },
+                            };
+                        } catch (error) {
+                            // Log FAILED activity when issueToInbox fails
+                            await traceDb('logCredentialFailed:inbox', () =>
+                                logCredentialFailed({
+                                    activityId,
+                                    actorProfileId: profile.profileId,
+                                    recipientType: inboxRecipient.type,
+                                    recipientIdentifier: inboxRecipient.value,
+                                    boostUri,
+                                    integrationId: input.integrationId,
+                                    source: 'send',
+                                    metadata: {
+                                        error:
+                                            error instanceof Error
+                                                ? error.message
+                                                : 'Unknown error',
+                                    },
+                                })
+                            );
+                            throw error;
+                        }
+                    }
+
+                    // Existing flow for DID/profileId recipients
+                    const recipientProfileId = await traceInternal('getProfileIdFromString', () =>
+                        getProfileIdFromString(input.recipient, domain)
                     );
 
-                    return {
-                        type: 'boost' as const,
-                        credentialUri: '',
-                        uri: boostUri,
-                        activityId,
-                        inbox: {
-                            issuanceId: inboxResult.inboxCredential.id,
-                            status: inboxResult.status,
-                            claimUrl: inboxResult.claimUrl,
-                        },
-                    };
-                } catch (error) {
-                    // Log FAILED activity when issueToInbox fails
-                    await logCredentialFailed({
-                        activityId,
-                        actorProfileId: profile.profileId,
-                        recipientType: inboxRecipient.type,
-                        recipientIdentifier: inboxRecipient.value,
-                        boostUri,
-                        integrationId: input.integrationId,
-                        source: 'send',
-                        metadata: {
-                            error: error instanceof Error ? error.message : 'Unknown error',
-                        },
-                    });
-                    throw error;
-                }
-            }
+                    const targetProfile = recipientProfileId
+                        ? await traceDb('getProfileByProfileId', () =>
+                              getProfileByProfileId(recipientProfileId)
+                          )
+                        : null;
 
-            // Existing flow for DID/profileId recipients
-            const recipientProfileId = await getProfileIdFromString(input.recipient, domain);
+                    if (!targetProfile) {
+                        throw new TRPCError({
+                            code: 'NOT_FOUND',
+                            message: 'Profile not found. Are you sure this person exists?',
+                        });
+                    }
 
-            const targetProfile = recipientProfileId
-                ? await getProfileByProfileId(recipientProfileId)
-                : null;
+                    const isBlocked = await traceDb('isRelationshipBlocked', () =>
+                        isRelationshipBlocked(profile, targetProfile)
+                    );
+                    if (isBlocked) {
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message: 'Profile not found. Are you sure this person exists?',
+                        });
+                    }
 
-            if (!targetProfile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Are you sure this person exists?',
-                });
-            }
+                    let contractTerms = null as Awaited<
+                        ReturnType<typeof getContractTermsForProfile>
+                    > | null;
+                    let decodedContractUri: string | null = null;
+                    let contractDetails: Awaited<
+                        ReturnType<typeof getContractDetailsByUri>
+                    > | null = null;
 
-            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
-            if (isBlocked) {
-                throw new TRPCError({
-                    code: 'FORBIDDEN',
-                    message: 'Profile not found. Are you sure this person exists?',
-                });
-            }
+                    if (contractUri) {
+                        decodedContractUri = decodeURIComponent(contractUri);
+                        contractDetails = await traceDb('getContractDetailsByUri', () =>
+                            getContractDetailsByUri(decodedContractUri!)
+                        );
 
-            let contractTerms = null as Awaited<
-                ReturnType<typeof getContractTermsForProfile>
-            > | null;
-            let decodedContractUri: string | null = null;
-            let contractDetails: Awaited<ReturnType<typeof getContractDetailsByUri>> | null = null;
+                        if (!contractDetails) {
+                            throw new TRPCError({
+                                code: 'NOT_FOUND',
+                                message: 'Could not find contract',
+                            });
+                        }
 
-            if (contractUri) {
-                decodedContractUri = decodeURIComponent(contractUri);
-                contractDetails = await getContractDetailsByUri(decodedContractUri);
+                        const terms = await traceDb('getContractTermsForProfile', () =>
+                            getContractTermsForProfile(targetProfile, contractDetails!.contract)
+                        );
 
-                if (!contractDetails) {
-                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
-                }
+                        const writers = await traceDb('getWritersForContract', () =>
+                            getWritersForContract(contractDetails!.contract)
+                        );
+                        const isWriter = writers.some(
+                            writer => writer.profileId === profile.profileId
+                        );
+                        const isDenied =
+                            terms?.terms.deniedWriters?.includes(profile.profileId) ?? false;
+                        const categoryAllowed = boost.category
+                            ? terms?.terms.write?.credentials?.categories?.[boost.category] === true
+                            : true;
 
-                const terms = await getContractTermsForProfile(
-                    targetProfile,
-                    contractDetails.contract
-                );
+                        if (terms && isWriter && !isDenied && categoryAllowed) {
+                            contractTerms = terms;
+                        }
+                    }
 
-                const writers = await getWritersForContract(contractDetails.contract);
-                const isWriter = writers.some(writer => writer.profileId === profile.profileId);
-                const isDenied = terms?.terms.deniedWriters?.includes(profile.profileId) ?? false;
-                const categoryAllowed = boost.category
-                    ? terms?.terms.write?.credentials?.categories?.[boost.category] === true
-                    : true;
+                    if (boostCreated && contractDetails) {
+                        await traceDb('setRelatedBoostForContract', () =>
+                            setRelatedBoostForContract(contractDetails!.contract, boost!)
+                        );
+                    }
 
-                if (terms && isWriter && !isDenied && categoryAllowed) {
-                    contractTerms = terms;
-                }
-            }
+                    let signedVc: VC | JWE;
 
-            if (boostCreated && contractDetails) {
-                await setRelatedBoostForContract(contractDetails.contract, boost);
-            }
+                    if (input.signedCredential) {
+                        signedVc = input.signedCredential;
+                    } else {
+                        const signingAuthority = await traceDb(
+                            'getPrimarySigningAuthorityForUser',
+                            () => getPrimarySigningAuthorityForUser(profile)
+                        );
 
-            let signedVc: VC | JWE;
+                        if (!signingAuthority) {
+                            throw new TRPCError({
+                                code: 'PRECONDITION_FAILED',
+                                message:
+                                    'You must register a signing authority before using send without a pre-signed credential. Please register one via registerSigningAuthority or sign the credential client-side.',
+                            });
+                        }
 
-            if (input.signedCredential) {
-                signedVc = input.signedCredential;
-            } else {
-                const signingAuthority = await getPrimarySigningAuthorityForUser(profile);
+                        let unsignedVc: UnsignedVC;
 
-                if (!signingAuthority) {
-                    throw new TRPCError({
-                        code: 'PRECONDITION_FAILED',
-                        message:
-                            'You must register a signing authority before using send without a pre-signed credential. Please register one via registerSigningAuthority or sign the credential client-side.',
-                    });
-                }
+                        try {
+                            unsignedVc = await traceInternal('prepareCredentialFromBoost', () =>
+                                prepareCredentialFromBoost(boost!, boostUri, domain, {
+                                    templateData: input.templateData as Record<string, unknown>,
+                                    issuerDid: signingAuthority.relationship.did,
+                                    recipientDid: getDidWeb(domain, targetProfile.profileId),
+                                })
+                            );
+                        } catch (e) {
+                            console.error('Failed to prepare boost credential', e);
+                            throw new TRPCError({
+                                code: 'INTERNAL_SERVER_ERROR',
+                                message: 'Failed to prepare boost credential',
+                            });
+                        }
 
-                let unsignedVc: UnsignedVC;
+                        signedVc = await traceInternal('issueCredentialWithSigningAuthority', () =>
+                            issueCredentialWithSigningAuthority(
+                                profile,
+                                unsignedVc,
+                                signingAuthority,
+                                domain,
+                                false
+                            )
+                        );
+                    }
 
-                try {
-                    unsignedVc = await prepareCredentialFromBoost(boost, boostUri, domain, {
-                        templateData: input.templateData as Record<string, unknown>,
-                        issuerDid: signingAuthority.relationship.did,
-                        recipientDid: getDidWeb(domain, targetProfile.profileId),
-                    });
-                } catch (e) {
-                    console.error('Failed to prepare boost credential', e);
-                    throw new TRPCError({
-                        code: 'INTERNAL_SERVER_ERROR',
-                        message: 'Failed to prepare boost credential',
-                    });
-                }
+                    let skipNotification = profile.profileId === targetProfile.profileId;
 
-                signedVc = await issueCredentialWithSigningAuthority(
-                    profile,
-                    unsignedVc,
-                    signingAuthority,
-                    domain,
-                    false
-                );
-            }
+                    // Log credential activity FIRST to get activityId for chaining
+                    const activityId = await traceDb('logCredentialSent', () =>
+                        logCredentialSent({
+                            actorProfileId: profile.profileId,
+                            recipientType: 'profile',
+                            recipientIdentifier: targetProfile.profileId,
+                            recipientProfileId: targetProfile.profileId,
+                            boostUri,
+                            source: 'send',
+                            integrationId: input.integrationId,
+                            metadata: { templateData: input.templateData },
+                        })
+                    );
 
-            let skipNotification = profile.profileId === targetProfile.profileId;
+                    try {
+                        const credentialUri = await sendBoost({
+                            from: profile,
+                            to: targetProfile,
+                            boost,
+                            credential: signedVc,
+                            domain,
+                            skipNotification,
+                            contractTerms: contractTerms ?? undefined,
+                            activityId,
+                            integrationId: input.integrationId,
+                        });
 
-            // Log credential activity FIRST to get activityId for chaining
-            const activityId = await logCredentialSent({
-                actorProfileId: profile.profileId,
-                recipientType: 'profile',
-                recipientIdentifier: targetProfile.profileId,
-                recipientProfileId: targetProfile.profileId,
-                boostUri,
-                source: 'send',
-                integrationId: input.integrationId,
-                metadata: { templateData: input.templateData },
-            });
-
-            try {
-                const credentialUri = await sendBoost({
-                    from: profile,
-                    to: targetProfile,
-                    boost,
-                    credential: signedVc,
-                    domain,
-                    skipNotification,
-                    contractTerms: contractTerms ?? undefined,
-                    activityId,
-                    integrationId: input.integrationId,
-                });
-
-                return { type: 'boost' as const, credentialUri, uri: boostUri, activityId };
-            } catch (error) {
-                // Log FAILED activity when sendBoost fails
-                await logCredentialFailed({
-                    activityId,
-                    actorProfileId: profile.profileId,
-                    recipientType: 'profile',
-                    recipientIdentifier: targetProfile.profileId,
-                    recipientProfileId: targetProfile.profileId,
-                    boostUri,
-                    integrationId: input.integrationId,
-                    source: 'send',
-                    metadata: {
-                        error: error instanceof Error ? error.message : 'Unknown error',
-                    },
-                });
-                throw error;
-            }
+                        return { type: 'boost' as const, credentialUri, uri: boostUri, activityId };
+                    } catch (error) {
+                        // Log FAILED activity when sendBoost fails
+                        await traceDb('logCredentialFailed', () =>
+                            logCredentialFailed({
+                                activityId,
+                                actorProfileId: profile.profileId,
+                                recipientType: 'profile',
+                                recipientIdentifier: targetProfile.profileId,
+                                recipientProfileId: targetProfile.profileId,
+                                boostUri,
+                                integrationId: input.integrationId,
+                                source: 'send',
+                                metadata: {
+                                    error: error instanceof Error ? error.message : 'Unknown error',
+                                },
+                            })
+                        );
+                        throw error;
+                    }
+                },
+                { recipient: input.recipient }
+            );
         }),
 
     createBoost: profileRoute
@@ -892,7 +1037,13 @@ export const boostsRouter = t.router({
                     claimPermissions: BoostPermissionsValidator.partial().optional(),
                     defaultPermissions: BoostPermissionsValidator.partial().optional(),
                     skills: z
-                        .array(z.object({ frameworkId: z.string(), id: z.string() }))
+                        .array(
+                            z.object({
+                                frameworkId: z.string(),
+                                id: z.string(),
+                                proficiencyLevel: z.number().optional(),
+                            })
+                        )
                         .min(1)
                         .optional(),
                 })
@@ -915,12 +1066,11 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if (defaultPermissions) {
-                await addDefaultPermissionsForBoost(boost, {
-                    ...EMPTY_PERMISSIONS,
-                    ...defaultPermissions,
-                });
-            }
+            await addDefaultPermissionsForBoost(boost, {
+                ...EMPTY_PERMISSIONS,
+                ...DEFAULT_BOOST_PERMISSIONS,
+                ...defaultPermissions,
+            });
 
             return getBoostUri(boost.id, ctx.domain);
         }),
@@ -948,8 +1098,13 @@ export const boostsRouter = t.router({
                         defaultPermissions: BoostPermissionsValidator.partial().optional(),
                     }),
                 skills: z
-                    .array(z.object({ frameworkId: z.string(), id: z.string() }))
-                    .min(1)
+                    .array(
+                        z.object({
+                            frameworkId: z.string(),
+                            id: z.string(),
+                            proficiencyLevel: z.number().optional(),
+                        })
+                    )
                     .optional(),
             })
         )
@@ -995,12 +1150,11 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if (defaultPermissions) {
-                await addDefaultPermissionsForBoost(childBoost, {
-                    ...EMPTY_PERMISSIONS,
-                    ...defaultPermissions,
-                });
-            }
+            await addDefaultPermissionsForBoost(childBoost, {
+                ...EMPTY_PERMISSIONS,
+                ...DEFAULT_BOOST_PERMISSIONS,
+                ...defaultPermissions,
+            });
 
             return getBoostUri(childBoost.id, ctx.domain);
         }),
@@ -1025,6 +1179,7 @@ export const boostsRouter = t.router({
             })
         )
         .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
             const { uri } = input;
 
             const decodedUri = decodeURIComponent(uri);
@@ -1035,6 +1190,13 @@ export const boostsRouter = t.router({
 
             if (!boost || !boostInstance)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await canProfileViewBoost(profile, boostInstance))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permission to view this boost',
+                });
+            }
 
             const { id, boost: _boost, ...remaining } = boost;
             const parsedBoost = JSON.parse(_boost);
@@ -1389,6 +1551,103 @@ export const boostsRouter = t.router({
             });
         }),
 
+    revokeBoostRecipient: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/recipients/revoke',
+                tags: ['Boosts'],
+                summary: 'Revoke a boost recipient',
+                description:
+                    'Revokes a credential for a specified recipient. This marks the credential as revoked instead of deleting it, and removes any permissions granted via claim hooks.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(
+            z.object({
+                boostUri: z.string(),
+                recipientProfileId: z.string(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { boostUri, recipientProfileId } = input;
+
+            const resolvedRecipientProfileId = await getProfileIdFromString(
+                recipientProfileId,
+                ctx.domain
+            );
+            if (!resolvedRecipientProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const decodedUri = decodeURIComponent(boostUri);
+            const boost = await getBoostByUri(decodedUri);
+
+            if (!boost) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            }
+
+            // Check if the profile has permission to revoke
+            const permissions = await getBoostPermissions(boost, profile);
+            if (!permissions.canRevoke) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message:
+                        'Profile does not have permission to revoke credentials for this boost',
+                });
+            }
+
+            // Get the recipient profile
+            const recipientProfile = await getProfileByProfileId(resolvedRecipientProfileId);
+            if (!recipientProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Recipient profile not found',
+                });
+            }
+
+            // Get the credential instance for this boost + recipient
+            const { getCredentialInstanceForBoostAndProfile } = await import(
+                '@accesslayer/credential/read'
+            );
+            const credential = await getCredentialInstanceForBoostAndProfile(
+                boost.id,
+                resolvedRecipientProfileId
+            );
+
+            if (!credential) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'No credential found for this recipient and boost',
+                });
+            }
+
+            // Revoke the credential
+            const { revokeCredentialReceived } = await import(
+                '@accesslayer/credential/relationships/update'
+            );
+            const revoked = await revokeCredentialReceived(
+                credential.id,
+                resolvedRecipientProfileId
+            );
+
+            if (!revoked) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to revoke credential',
+                });
+            }
+
+            // Process revoke hooks to remove permissions
+            const { processRevokeHooks } = await import('@helpers/revoke-hooks.helpers');
+            await processRevokeHooks(recipientProfile, credential);
+
+            return true;
+        }),
+
     getChildrenProfileManagers: profileRoute
         .meta({
             openapi: {
@@ -1524,6 +1783,10 @@ export const boostsRouter = t.router({
             } = input;
 
             const decodedUri = decodeURIComponent(uri);
+            console.log('[BrainService] getPaginatedBoostRecipientsWithChildren called');
+            console.log('[BrainService] URI:', decodedUri);
+            console.log('[BrainService] boostQuery:', JSON.stringify(boostQuery, null, 2));
+
             const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
@@ -1912,13 +2175,22 @@ export const boostsRouter = t.router({
                         credential: VCValidator.or(UnsignedVCValidator).optional(),
                         defaultPermissions: BoostPermissionsValidator.partial().optional(),
                     }),
+                skills: z
+                    .array(
+                        z.object({
+                            frameworkId: z.string(),
+                            id: z.string(),
+                            proficiencyLevel: z.number().optional(),
+                        })
+                    )
+                    .optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
-            const { uri, updates } = input;
+            const { uri, updates, skills } = input;
             const { name, type, category, status, credential, meta, defaultPermissions } = updates;
 
             const decodedUri = decodeURIComponent(uri);
@@ -1979,6 +2251,11 @@ export const boostsRouter = t.router({
                     ...EMPTY_PERMISSIONS,
                     ...defaultPermissions,
                 });
+            }
+
+            // If skills provided (including empty array), replace aligned skills for this boost
+            if (Array.isArray(skills)) {
+                await replaceAlignedSkillsForBoost(boost, skills);
             }
 
             return result;
@@ -2051,7 +2328,12 @@ export const boostsRouter = t.router({
 
             const { uri, profileId } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             const isBlocked = await isRelationshipBlocked(profile, targetProfile);
 
@@ -2109,7 +2391,12 @@ export const boostsRouter = t.router({
 
             const { uri, profileId } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             const isBlocked = await isRelationshipBlocked(profile, targetProfile);
 
@@ -2194,6 +2481,11 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { uri, profileId } = input;
 
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             const decodedUri = decodeURIComponent(uri);
             const boost = await getBoostByUri(decodedUri);
 
@@ -2206,7 +2498,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const otherProfile = await getProfileByProfileId(profileId);
+            const otherProfile = await getProfileByProfileId(resolvedProfileId);
 
             if (!otherProfile) {
                 throw new TRPCError({
@@ -2325,6 +2617,11 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { uri, updates, profileId } = input;
 
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             const decodedUri = decodeURIComponent(uri);
             const boost = await getBoostByUri(decodedUri);
 
@@ -2339,7 +2636,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const otherProfile = await getProfileByProfileId(profileId);
+            const otherProfile = await getProfileByProfileId(resolvedProfileId);
 
             if (!otherProfile) {
                 throw new TRPCError({
@@ -2479,6 +2776,13 @@ export const boostsRouter = t.router({
                 });
             }
 
+            if (!(await isBoostViewableByClaimLink(boost))) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Boost must be viewable by claim link before generating a claim link.',
+                });
+            }
+
             if (await isClaimLinkAlreadySetForBoost(boostUri, challenge)) {
                 throw new TRPCError({
                     code: 'CONFLICT',
@@ -2521,6 +2825,13 @@ export const boostsRouter = t.router({
             }
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isBoostViewableByClaimLink(boost))) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'This boost is not currently viewable by claim link.',
+                });
+            }
 
             const boostOwner = await getBoostOwner(boost);
 
@@ -2753,6 +3064,12 @@ export const boostsRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { profileId, boostUri, signingAuthority, options } = input;
+
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             const normalizedSigningAuthority = {
                 ...signingAuthority,
                 name: signingAuthority.name.toLowerCase(),
@@ -2776,7 +3093,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
 
             if (!targetProfile) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });

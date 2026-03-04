@@ -1,13 +1,10 @@
 import { Capacitor } from '@capacitor/core';
-import { Web3AuthNoModal } from '@web3auth/no-modal';
-import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
-import { OpenloginAdapter } from '@web3auth/openlogin-adapter';
+import type { Web3AuthNoModal } from '@web3auth/no-modal';
+import type { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
+import type { OpenloginAdapter } from '@web3auth/openlogin-adapter';
 import { useQueryClient } from '@tanstack/react-query';
 
 import {
-    CHAIN_NAMESPACES,
-    ADAPTER_EVENTS,
-    CONNECTED_EVENT_DATA,
     IProvider,
     UserInfo,
 } from '@web3auth/base';
@@ -228,8 +225,9 @@ export const useWeb3Auth = (onLogin?: () => Promise<any>) => {
         return privateKey as string;
     };
 
-    const subscribeAuthEvents = (web3auth: Web3AuthNoModal) => {
-        web3auth.on(ADAPTER_EVENTS.CONNECTED, async (_data: CONNECTED_EVENT_DATA) => {
+    const subscribeAuthEvents = async (web3auth: Web3AuthNoModal) => {
+        const { ADAPTER_EVENTS } = await import('@web3auth/base');
+        web3auth.on(ADAPTER_EVENTS.CONNECTED, async (_data) => {
             if (web3auth) {
                 const user: Partial<UserInfo> = await web3auth.getUserInfo();
                 const provider = web3auth.provider;
@@ -328,6 +326,11 @@ export const useWeb3Auth = (onLogin?: () => Promise<any>) => {
             return;
         }
         try {
+            const { Web3AuthNoModal } = await import('@web3auth/no-modal');
+            const { EthereumPrivateKeyProvider } = await import('@web3auth/ethereum-provider');
+            const { OpenloginAdapter } = await import('@web3auth/openlogin-adapter');
+            const { CHAIN_NAMESPACES } = await import('@web3auth/base');
+
             const web3AuthNetworkConfig = getWeb3AuthNetworkConfig(branding);
 
             setInitLoading(showLoading ?? true);
@@ -395,7 +398,7 @@ export const useWeb3Auth = (onLogin?: () => Promise<any>) => {
             });
 
             web3auth.configureAdapter(adapter);
-            subscribeAuthEvents(web3auth);
+            await subscribeAuthEvents(web3auth);
             web3AuthStore.set.web3Auth(web3auth);
 
             await web3auth.init();

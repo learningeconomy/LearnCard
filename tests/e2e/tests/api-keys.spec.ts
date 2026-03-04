@@ -541,6 +541,13 @@ describe('API Key LearnCard Method Permissions', () => {
             category: 'Achievement',
         });
 
+        // Make boost public
+        await seedA.invoke.updateBoost(boostUri, {
+            defaultPermissions: {
+                canView: true,
+            },
+        });
+
         const sa = await seedA.invoke.createSigningAuthority('test-sa');
         expect(sa).toBeDefined();
 
@@ -1193,6 +1200,13 @@ describe('API Key LearnCard Method Permissions', () => {
             name: 'claimable-boost',
             type: 'achievement',
             category: 'Achievement',
+        });
+
+        // Make boost public
+        await seedA.invoke.updateBoost(boostUri, {
+            defaultPermissions: {
+                canView: true,
+            },
         });
 
         const claimLinkSA = { endpoint: 'https://test-sa.example.com', name: 'test-sa' };

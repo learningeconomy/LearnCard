@@ -63,6 +63,10 @@ const otherCredentialTypes = [
     CREDENTIAL_TYPES.PERM_RESIDENT,
 ];
 
+export const SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE = 'ext:SelfAssignedSkills';
+
+export const SELF_ASSIGNED_SKILLS_BOOST_NAME = 'Self-Assigned Skills';
+
 // obv3 achievementType spec -> https://1edtech.github.io/openbadges-specification/ob_v3p0.html#achievementtype-enumeration
 // The type of achievement, for example 'Award' or 'Certification'.
 // This is an extensible enumerated vocabulary. Extending the vocabulary makes use of a naming convention
@@ -341,6 +345,8 @@ const CATEGORY_MAP: Record<
     'ext:WildernessSurvival': 'Merit Badge',
 
     'ext:Family': 'Family',
+
+    [SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE]: 'Skill', // ext:SelfAssignedSkills
 };
 
 // unwrapBoost helper returns inner vc of boost or if normal vc returns vc
@@ -652,7 +658,7 @@ export const getAppSlugFromDidWeb = (did?: string) => {
 
 // Re-export isAppDidWeb from @learncard/helpers to maintain single source of truth
 export { isAppDidWeb } from '@learncard/helpers';
-const getFallBackImage = (credCategory: string) => {
+export const getFallBackImage = (credCategory: string) => {
     if (credCategory === 'Skill') return 'https://cdn.filestackcontent.com/pzfIWTKQTAuuzvLrySGX';
     if (credCategory === 'Experiences')
         return 'https://cdn.filestackcontent.com/5r2T383T0mic3wrSbi3W';

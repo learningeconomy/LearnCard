@@ -1,5 +1,78 @@
 # Changelog
 
+## 1.89.24
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.9
+    -   @learncard/lca-api-plugin@1.1.17
+    -   @learncard/react@2.9.16
+
+## 1.89.23
+
+### Patch Changes
+
+-   [#1038](https://github.com/learningeconomy/LearnCard/pull/1038) [`49b6234b0b2874ee1e7eaaa8e1c15c2a27549537`](https://github.com/learningeconomy/LearnCard/commit/49b6234b0b2874ee1e7eaaa8e1c15c2a27549537) Thanks [@Custard7](https://github.com/Custard7)! - fix: [LC-1647] Add checks to prevent invalid QR state
+
+-   [#1031](https://github.com/learningeconomy/LearnCard/pull/1031) [`495f2939cb6e4271cab0a88abea5105fb7e4f9b6`](https://github.com/learningeconomy/LearnCard/commit/495f2939cb6e4271cab0a88abea5105fb7e4f9b6) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-982][LC-1625] - extend default boost permissions, add "canView"
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.8
+    -   @learncard/lca-api-plugin@1.1.16
+    -   @learncard/react@2.9.15
+
+## 1.89.22
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.7
+    -   @learncard/lca-api-plugin@1.1.15
+    -   @learncard/react@2.9.14
+
+## 1.89.21
+
+### Patch Changes
+
+-   [#1021](https://github.com/learningeconomy/LearnCard/pull/1021) [`49ec0cf1b1569c9bf94bdc0a7d34bf32f588f6ca`](https://github.com/learningeconomy/LearnCard/commit/49ec0cf1b1569c9bf94bdc0a7d34bf32f588f6ca) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1598 & LC-1593] Rename "Launchpad" to "Apps" and Remove feedback button entirely
+
+-   [#973](https://github.com/learningeconomy/LearnCard/pull/973) [`5b76830d328bd38b4f184458414ef478c9cc118a`](https://github.com/learningeconomy/LearnCard/commit/5b76830d328bd38b4f184458414ef478c9cc118a) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1510] [LC-1508] Replace temporary revoke for scouts with a more comprehensive solution
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.14
+    -   @learncard/react@2.9.13
+
+## 1.89.20
+
+### Patch Changes
+
+-   [#989](https://github.com/learningeconomy/LearnCard/pull/989) [`4d4f0d30a69f6228ff66a5ebfe891331670ffc6b`](https://github.com/learningeconomy/LearnCard/commit/4d4f0d30a69f6228ff66a5ebfe891331670ffc6b) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1423] Move xAPI statements into "Manage Data Sharing" based on contract
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.13
+    -   @learncard/react@2.9.12
+
+## 1.89.19
+
+### Patch Changes
+
+-   [#987](https://github.com/learningeconomy/LearnCard/pull/987) [`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1578] Optimize skill framework uploads (aka fix timeout error)
+
+-   Updated dependencies [[`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c)]:
+    -   @learncard/react@2.9.11
+    -   @learncard/helpers@1.2.6
+    -   @learncard/lca-api-plugin@1.1.12
+
+## 1.89.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.5
+    -   @learncard/lca-api-plugin@1.1.11
+    -   @learncard/react@2.9.10
+
 ## 1.89.16
 
 ### Patch Changes

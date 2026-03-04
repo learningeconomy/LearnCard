@@ -9,26 +9,30 @@ import type {
 } from 'aws-lambda';
 import { LCNNotificationValidator } from '@learncard/types';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
-import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-to-openapi';
 import * as Sentry from '@sentry/serverless';
 
 import app from './src/openapi';
 import skillsViewerApp from './src/skills-viewer';
 import { appRouter, createContext } from './src/app';
 import { sendNotification } from './src/helpers/notifications.helpers';
+import { startSkillEmbeddingBackfill } from './src/helpers/skill-embedding.helpers';
 import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
+import { handleTrpcError, sentryBeforeSend, getTracesSampleRate } from './src/helpers/sentry.helpers';
 
 Sentry.AWSLambda.init({
     dsn: process.env.SENTRY_DSN,
     environment: process.env.SENTRY_ENV,
     enabled: Boolean(process.env.SENTRY_DSN),
-    tracesSampleRate: 1.0,
+    tracesSampleRate: getTracesSampleRate(),
+    beforeSend: sentryBeforeSend,
     integrations: [
         new Sentry.Integrations.Console(),
         new Sentry.Integrations.Http({ tracing: true }),
         new Sentry.Integrations.ContextLines(),
     ],
 });
+
+startSkillEmbeddingBackfill().catch(err => console.error('Skill embedding backfill startup error:', err));
 
 export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
 
@@ -46,32 +50,14 @@ export const _openApiHandler = createOpenApiAwsLambdaHandler({
         };
     },
     createContext,
-    onError: ({ error, ctx, path }) => {
-        error.stack = error.stack?.replace('Mr: ', '');
-        error.name = error.message;
-
-        // We want to ignore invalid challenge errors because they are normal
-        if (!(error.code === 'UNAUTHORIZED' && !ctx?.user?.isChallengeValid)) {
-            Sentry.captureException(error, { extra: { ctx, path } });
-            Sentry.getActiveTransaction()?.setHttpStatus(TRPC_ERROR_CODE_HTTP_STATUS[error.code]);
-        }
-    },
+    onError: handleTrpcError,
 });
 
 export const _trpcHandler = awsLambdaRequestHandler({
     allowMethodOverride: true,
     router: appRouter,
     createContext,
-    onError: ({ error, ctx, path }) => {
-        error.stack = error.stack?.replace('Mr: ', '');
-        error.name = error.message;
-
-        // We want to ignore invalid challenge errors because they are normal
-        if (!(error.code === 'UNAUTHORIZED' && !ctx?.user?.isChallengeValid)) {
-            Sentry.captureException(error, { extra: { ctx, path } });
-            Sentry.getActiveTransaction()?.setHttpStatus(TRPC_ERROR_CODE_HTTP_STATUS[error.code]);
-        }
-    },
+    onError: handleTrpcError,
     responseMeta: () => {
         return {
             headers: {

@@ -4,10 +4,10 @@ import { FlatSkillType } from 'types/skill';
 import { v4 as uuid } from 'uuid';
 import { doesSkillExistInFramework } from './read';
 
-export type CreateSkillInput = Omit<
-    FlatSkillType,
-    'id' | 'status' | 'createdAt' | 'updatedAt'
-> & { id?: string; status?: FlatSkillType['status'] };
+export type CreateSkillInput = Omit<FlatSkillType, 'id' | 'status' | 'createdAt' | 'updatedAt'> & {
+    id?: string;
+    status?: FlatSkillType['status'];
+};
 
 export const createSkill = async (
     frameworkId: string,
@@ -19,9 +19,7 @@ export const createSkill = async (
     // Check for duplicate skill ID within this framework
     const exists = await doesSkillExistInFramework(frameworkId, skillId);
     if (exists) {
-        throw new Error(
-            `Skill with ID "${skillId}" already exists in framework "${frameworkId}"`
-        );
+        throw new Error(`Skill with ID "${skillId}" already exists in framework "${frameworkId}"`);
     }
 
     const data: FlatSkillType = {
@@ -39,7 +37,7 @@ export const createSkill = async (
     await Skill.createOne(data);
 
     await neogma.queryRunner.run(
-        `MATCH (f:SkillFramework {id: $frameworkId}), (s:Skill {id: $skillId})
+        `MATCH (f:SkillFramework {id: $frameworkId}), (s:Skill {id: $skillId, frameworkId: $frameworkId})
          MERGE (f)-[:CONTAINS]->(s)`,
         { frameworkId, skillId: data.id }
     );
@@ -84,9 +82,7 @@ export const createSkillsBatch = async (
     // Check for duplicates within the batch itself
     const duplicatesWithinBatch = skillIds.filter((id, index) => skillIds.indexOf(id) !== index);
     if (duplicatesWithinBatch.length > 0) {
-        throw new Error(
-            `Duplicate skill IDs within batch: ${duplicatesWithinBatch.join(', ')}`
-        );
+        throw new Error(`Duplicate skill IDs within batch: ${duplicatesWithinBatch.join(', ')}`);
     }
 
     // Check for duplicates against existing skills in the framework

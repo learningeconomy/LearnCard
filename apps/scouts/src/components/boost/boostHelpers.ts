@@ -265,10 +265,6 @@ export const createBoost = async (
         console.warn('Failed to set alignments on unsignedCredential', e);
     }
 
-    // TODO: Forcibly using 3.0.1 for now, need to figure out what to do about this!
-    unsignedCredential['@context'][1] =
-        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json';
-
     // the returned template credential doesn't seem to respect the input fields....
 
     /// CREATE BOOST
@@ -380,9 +376,6 @@ export const updateBoost = async (
     } catch (e) {
         console.warn('Failed to set nested alignments on updatedCredential', e);
     }
-
-    // TODO: Forcibly using 3.0.1 for now, need to figure out what to do about this!
-    updatedCredential['@context'][1] = 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json';
 
     const updatedBoost = await wallet?.invoke?.updateBoost(boostUri, {
         name: vcInput?.basicInfo?.name || fallbackCredentialValues?.title,

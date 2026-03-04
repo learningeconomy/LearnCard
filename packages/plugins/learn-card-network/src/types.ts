@@ -80,6 +80,8 @@ import {
     GetFullSkillTreeResult,
     GetSkillPathInput,
     GetSkillPathResult,
+    SkillSemanticSearchInput,
+    SkillSemanticSearchResult,
     // Integrations
     LCNIntegration,
     LCNIntegrationCreateType,
@@ -214,6 +216,7 @@ export type LearnCardNetworkPluginMethods = {
         }
     ) => Promise<boolean>;
     getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
+    getRevokedCredentials: () => Promise<string[]>;
     getSentCredentials: (to?: string) => Promise<SentCredentialInfo[]>;
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     deleteCredential: (uri: string) => Promise<boolean>;
@@ -228,17 +231,18 @@ export type LearnCardNetworkPluginMethods = {
     createBoost: (
         credential: VC | UnsignedVC,
         metadata?: Partial<Omit<Boost, 'uri'>> & {
-            skills?: { frameworkId: string; id: string }[];
+            skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
         }
     ) => Promise<string>;
     createChildBoost: (
         parentUri: string,
         credential: VC | UnsignedVC,
         metadata?: Partial<Omit<Boost, 'uri'>> & {
-            skills?: { frameworkId: string; id: string }[];
+            skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
         }
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
+    getBoostSkills: (uri: string) => Promise<(SkillType & { proficiencyLevel?: number })[]>;
     getBoostFrameworks: (
         uri: string,
         options?: { limit?: number; cursor?: string | null; query?: SkillFrameworkQuery }
@@ -354,14 +358,16 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedLCNProfileManagers>;
     updateBoost: (
         uri: string,
-        updates: Partial<Omit<Boost, 'uri'>>,
+        updates: Partial<Omit<Boost, 'uri'>> & {
+            skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
+        },
         credential?: UnsignedVC | VC
     ) => Promise<boolean>;
     attachFrameworkToBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;
     detachFrameworkFromBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;
     alignBoostSkills: (
         boostUri: string,
-        skills: { frameworkId: string; id: string }[]
+        skills: { frameworkId: string; id: string; proficiencyLevel?: number }[]
     ) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
     getBoostAdmins: (
@@ -376,6 +382,7 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<boolean>;
     addBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
     removeBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
+    revokeBoostRecipient: (boostUri: string, recipientProfileId: string) => Promise<boolean>;
     sendBoost: (
         profileId: string,
         boostUri: string,
@@ -612,6 +619,11 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<SkillFrameworkType[]>;
     createSkillFramework: (input: LinkProviderFrameworkInputType) => Promise<SkillFrameworkType>;
     listMySkillFrameworks: () => Promise<SkillFrameworkType[]>;
+    getAllAvailableFrameworks: (options?: {
+        limit?: number;
+        cursor?: string | null;
+        query?: SkillFrameworkQuery;
+    }) => Promise<PaginatedSkillFrameworksType>;
     getSkillFrameworkById: (
         id: string,
         options?: { limit?: number; childrenLimit?: number; cursor?: string | null }
@@ -638,6 +650,7 @@ export type LearnCardNetworkPluginMethods = {
         query: SkillQuery,
         options?: { limit?: number; cursor?: string | null }
     ) => Promise<{ records: SkillType[]; hasMore: boolean; cursor: string | null }>;
+    semanticSearchSkills: (input: SkillSemanticSearchInput) => Promise<SkillSemanticSearchResult>;
     updateSkillFramework: (input: UpdateSkillFrameworkInput) => Promise<SkillFrameworkType>;
     deleteSkillFramework: (id: string) => Promise<{ success: boolean }>;
     replaceSkillFrameworkSkills: (

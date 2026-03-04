@@ -18,12 +18,12 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.event.pull_request.head.sha || github.event.inputs.branch }}
           fetch-depth: 0
 
       - name: Fetch main for NX comparison
         run: |
-          git fetch --no-tags --prune --depth=5 origin main
+          git fetch --no-tags --prune origin main
 
       - name: Use Composite Setup Action
         uses: ./.github/actions/setup
@@ -33,10 +33,10 @@ jobs:
         with:
           timeout_minutes: 10
           max_attempts: 3
-          command: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
+          command: pnpm exec nx affected --target=test --base=origin/main --head=HEAD
         env:
-          SEED: ${{ secrets.SEED }}
-          LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+          SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+          LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
 
   # Run E2E tests on changeset release PRs or manual trigger
   # SSHs into EC2 to run Playwright tests against the branch

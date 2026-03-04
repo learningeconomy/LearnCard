@@ -7,7 +7,7 @@ import AddressBookContactList from '../addressBook-contact-list/AddressBookConta
 
 import { useGetBlockedProfiles } from 'learn-card-base';
 import { AddressBookTabsEnum } from '../addressBookHelpers';
-import ReaperGhost from '../../../assets/lotties/reaperghost.json';
+const ReaperGhost = '/lotties/reaperghost.json';
 import Lottie from 'react-lottie-player';
 
 const AddressBookBlockedContacts: React.FC<{
@@ -40,7 +40,7 @@ const AddressBookBlockedContacts: React.FC<{
                     <div className="w-[280px] h-[280px] mt-[-20px]">
                         <Lottie
                             loop
-                            animationData={ReaperGhost}
+                            path={ReaperGhost}
                             play
                             style={{ width: '100%', height: '100%' }}
                         />

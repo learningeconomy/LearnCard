@@ -6,6 +6,7 @@ import { VC } from '@learncard/types';
 import { insertParamsToFilestackUrl } from 'learn-card-base/filestack/images/filestack.helpers';
 import { getFilestackPreviewUrl } from 'learn-card-base/filestack/images/images.helpers';
 import { getVideoMetadata, VideoMetadata } from 'learn-card-base/helpers/video.helpers';
+import MediaDisplayTypeIcon from '../../assets/images/media-display-type.svg';
 
 import { BoostMediaOptionsEnum } from '../boost/boost';
 import { categoryMetadata, CredentialCategoryEnum } from 'learn-card-base';
@@ -21,6 +22,12 @@ type CredentialBadgeProps = {
     showIcon?: boolean;
     playIconClassName?: string;
     boostType?: CredentialCategoryEnum;
+
+    // CMS thumbnail preview props
+    category?: CredentialCategoryEnum;
+    attachments?: VC['attachments'];
+    backgroundImageStyles?: string;
+    showCMSPlaceholder?: boolean;
 };
 
 export const CredentialMediaBadge: React.FC<CredentialBadgeProps> = ({
@@ -30,10 +37,16 @@ export const CredentialMediaBadge: React.FC<CredentialBadgeProps> = ({
     showIcon = true,
     playIconClassName,
     boostType,
-}) => {
-    const defaultCategory = getDefaultCategoryForCredential(credential);
 
-    const displayTypeBackgroundStyles = 'min-h-[120px] max-h-[120px] !rounded-none';
+    // CMS thumbnail preview props
+    category = undefined,
+    attachments = undefined,
+    backgroundImageStyles = '',
+    showCMSPlaceholder = false,
+}) => {
+    const defaultCategory = category ?? getDefaultCategoryForCredential(credential);
+
+    const displayTypeBackgroundStyles = `min-h-[120px] max-h-[120px] !rounded-none ${backgroundImageStyles}`;
     const { color, SolidIconComponent, IconComponent } =
         categoryMetadata[boostType ?? defaultCategory];
     const [videoMetaData, setVideoMetaData] = useState<VideoMetadata | null>(null);
@@ -41,7 +54,7 @@ export const CredentialMediaBadge: React.FC<CredentialBadgeProps> = ({
     const _colorOverride = color ?? 'gray-500';
 
     const mediaAttachments = getExistingAttachmentsOrEvidence(
-        credential?.attachments || [],
+        attachments || credential?.attachments || [],
         credential?.evidence || []
     );
     const photoAttachments = mediaAttachments.filter(a => a.type === BoostMediaOptionsEnum.photo);
@@ -160,7 +173,20 @@ export const CredentialMediaBadge: React.FC<CredentialBadgeProps> = ({
                 className={`absolute z-10 w-full h-full ${displayTypeBackgroundStyles} rounded-br-[100%] rounded-bl-[100%] bg-${_colorOverride}`}
                 style={{ backgroundColor }}
             >
-                <IconComponent className="w-[75px] h-[75px] absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2" />
+                {showCMSPlaceholder ? (
+                    <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center w-full h-full gap-[10px]">
+                        <img
+                            src={MediaDisplayTypeIcon}
+                            className="w-[60px] h-auto"
+                            alt="display type"
+                        />
+                        <p className="text-center text-sm font-semibold text-grayscale-800">
+                            Add Media
+                        </p>
+                    </div>
+                ) : (
+                    <IconComponent className="w-[75px] h-[75px] absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2" />
+                )}
             </div>
         );
     }

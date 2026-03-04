@@ -95,9 +95,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                 <section className="vc-front-face w-full flex flex-col items-center gap-[15px]">
                     {/* <div className="w-[380px] h-[211px] bg-red-300" /> */}
 
-                    <Flipped inverseFlipId="face">
-                        {customThumbComponent && customThumbComponent}
-                    </Flipped>
+                    <Flipped inverseFlipId="face">{customThumbComponent}</Flipped>
 
                     <Flipped inverseFlipId="face">
                         <div className="text-white w-full flex items-center justify-center font-poppins">

@@ -107,15 +107,12 @@ const CompetencyRow: React.FC<CompetencyRowProps> = ({
 
                 <div className="flex-1 min-w-0 font-poppins text-[17px] text-grayscale-900">
                     <p className="line-clamp-2">
-                        <span className="inline-flex items-center gap-[2px] whitespace-nowrap align-middle">
+                        <span className="inline-flex align-middle mr-[2px]">
                             <PuzzlePiece
                                 version="filled"
-                                className="shrink-0 h-[17px] w-[17px] text-grayscale-900"
+                                className="h-[17px] w-[17px] text-grayscale-900"
                             />
-                            <span className="shrink-0 font-[600]">
-                                {middleTruncate(node.targetCode ?? '')}
-                            </span>
-                        </span>{' '}
+                        </span>
                         {node.targetName}
                     </p>
                 </div>

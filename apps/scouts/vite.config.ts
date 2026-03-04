@@ -32,6 +32,9 @@ export default defineConfig(async ({ mode }) => {
             LCN_URL: env.LCN_URL ? JSON.stringify(env.LCN_URL) : 'undefined',
             LCN_API_URL: env.LCN_API_URL ? JSON.stringify(env.LCN_API_URL) : 'undefined',
             CLOUD_URL: env.CLOUD_URL ? JSON.stringify(env.CLOUD_URL) : 'undefined',
+            LEARN_CLOUD_XAPI_URL: env.LEARN_CLOUD_XAPI_URL
+                ? JSON.stringify(env.LEARN_CLOUD_XAPI_URL)
+                : 'undefined',
             API_URL: env.API_URL ? JSON.stringify(env.API_URL) : 'undefined',
             __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
             'process.version': '"1.0.0"',

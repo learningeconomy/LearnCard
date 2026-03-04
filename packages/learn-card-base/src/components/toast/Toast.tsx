@@ -26,10 +26,8 @@ export const Toast = () => {
 
     const isCustomComponent = React.isValidElement(message);
 
-    const toastTextColor =
-        options.type === ToastTypeEnum.Error ? 'text-white' : 'text-grayscale-900';
-    const toastBackgroundColor =
-        options.type === ToastTypeEnum.Error ? 'bg-rose-500' : 'bg-grayscale-50';
+    const isError = options.type === ToastTypeEnum.Error;
+    const toastTextColor = isError ? 'text-white' : 'text-grayscale-900';
 
     const zIndex = options.zIndex ?? 999999;
 
@@ -60,7 +58,10 @@ export const Toast = () => {
                     className={`fixed top-4 !left-1/2 !-translate-x-1/2 !w-full !px-4 pointer-events-none safe-area-top-margin`}
                 >
                     <div
-                        className={`max-w-[600px] mx-auto rounded-[15px] shadow-[0_2px_4px_0_rgba(0,_0,_0,_0.25)] border-2 border-white py-2 px-4 pointer-events-auto relative hover:bg-grayscale-100 ${toastBackgroundColor}`}
+                        style={{ backgroundColor: isError ? '#f43f5e' : '#FBFBFC' }}
+                        className={`max-w-[600px] mx-auto rounded-[15px] shadow-[0_2px_4px_0_rgba(0,_0,_0,_0.25)] border-2 border-white py-2 px-4 pointer-events-auto relative ${
+                            isError ? 'hover:bg-rose-600' : 'hover:bg-grayscale-100'
+                        }`}
                     >
                         {isCustomComponent ? (
                             message

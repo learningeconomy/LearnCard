@@ -1,6 +1,7 @@
 import { Boost } from '@learncard/types';
 import { VC } from '@learncard/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { getOrFetchCredentialRecordForBoost } from 'learn-card-base/hooks/useGetCredentialRecordForBoost';
 import useWallet from 'learn-card-base/hooks/useWallet';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
@@ -86,13 +87,21 @@ export const useGetAppMetadata = (appID: string) => {
     return useQuery<AppStoreAppMetadata, Error, AppStoreAppMetadata>({
         queryKey: ['appMetadata', appID],
         queryFn: async () => {
-            const response = await fetch(
-                `https://corsproxy.io/?https://itunes.apple.com/lookup?id=${appID}`
-            );
-            if (!response.ok) {
+            const itunesUrl = `https://itunes.apple.com/lookup?id=${appID}`;
+            const url = Capacitor.isNativePlatform()
+                ? itunesUrl
+                : `https://corsproxy.io/?key=${CORS_PROXY_API_KEY}&url=${encodeURIComponent(
+                      itunesUrl
+                  )}`;
+
+            const response = await CapacitorHttp.get({ url });
+
+            if (response.status < 200 || response.status >= 300) {
                 throw new Error('Network response was not ok');
             }
-            const data: AppStoreMetadataResponse = await response.json();
+            const data: AppStoreMetadataResponse =
+                typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+
             if (data.resultCount > 0) {
                 return data.results[0];
             }
@@ -105,13 +114,21 @@ export const useGetAppReviews = (appID: string) => {
     return useQuery<AppStoreAppReview[], Error>({
         queryKey: ['appReviews', appID],
         queryFn: async () => {
-            const response = await fetch(
-                `https://corsproxy.io/?https://itunes.apple.com/rss/customerreviews/page=1/id=${appID}/sortBy=mostRecent/json`
-            );
-            if (!response.ok) {
+            const itunesUrl = `https://itunes.apple.com/rss/customerreviews/page=1/id=${appID}/sortBy=mostRecent/json`;
+            const url = Capacitor.isNativePlatform()
+                ? itunesUrl
+                : `https://corsproxy.io/?key=${CORS_PROXY_API_KEY}&url=${encodeURIComponent(
+                      itunesUrl
+                  )}`;
+
+            const response = await CapacitorHttp.get({ url });
+
+            if (response.status < 200 || response.status >= 300) {
                 throw new Error('Network response was not ok');
             }
-            const data: ReviewFeed = await response.json();
+            const data: ReviewFeed =
+                typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+
             const entries = data.feed.entry;
 
             // If there are no entries or just one (the metadata), throw an error

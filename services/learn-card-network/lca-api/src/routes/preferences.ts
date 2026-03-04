@@ -8,6 +8,26 @@ import { updatePreferences } from '@accesslayer/preferences/update';
 
 import { ThemeEnum } from '../types/preferences';
 
+const preferencesInputSchema = z.object({
+    theme: z.enum([ThemeEnum.Colorful, ThemeEnum.Formal]).optional(),
+    aiEnabled: z.boolean().optional(),
+    aiAutoDisabled: z.boolean().optional(),
+    analyticsEnabled: z.boolean().optional(),
+    analyticsAutoDisabled: z.boolean().optional(),
+    bugReportsEnabled: z.boolean().optional(),
+    isMinor: z.boolean().optional(),
+});
+
+const preferencesOutputSchema = z.object({
+    theme: z.enum([ThemeEnum.Colorful, ThemeEnum.Formal]),
+    aiEnabled: z.boolean().optional(),
+    aiAutoDisabled: z.boolean().optional(),
+    analyticsEnabled: z.boolean().optional(),
+    analyticsAutoDisabled: z.boolean().optional(),
+    bugReportsEnabled: z.boolean().optional(),
+    isMinor: z.boolean().optional(),
+});
+
 export const preferencesRouter = t.router({
     createPreferences: didAndChallengeRoute
         .meta({
@@ -48,15 +68,10 @@ export const preferencesRouter = t.router({
                 description: 'Updates the preferences associated with the current user DID.',
             },
         })
-        .input(
-            z.object({
-                theme: z.enum([ThemeEnum.Colorful, ThemeEnum.Formal]),
-            })
-        )
+        .input(preferencesInputSchema)
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            const { theme } = input;
-            const success = await updatePreferences(ctx.user.did, theme);
+            const success = await updatePreferences(ctx.user.did, input);
 
             if (!success) {
                 throw new TRPCError({
@@ -79,22 +94,19 @@ export const preferencesRouter = t.router({
             },
         })
         .input(z.void())
-        .output(
-            z.object({
-                theme: z.enum([ThemeEnum.Colorful, ThemeEnum.Formal]),
-            })
-        )
+        .output(preferencesOutputSchema)
         .query(async ({ ctx }) => {
             const preferences = await getPreferencesForDid(ctx.user.did);
 
-            if (!preferences) {
-                throw new TRPCError({
-                    code: 'INTERNAL_SERVER_ERROR',
-                    message: 'An unexpected error occured, unable to get preferences',
-                });
-            }
-
-            return { theme: preferences.theme };
+            return {
+                theme: preferences?.theme ?? ThemeEnum.Colorful,
+                aiEnabled: preferences?.aiEnabled,
+                aiAutoDisabled: preferences?.aiAutoDisabled,
+                analyticsEnabled: preferences?.analyticsEnabled,
+                analyticsAutoDisabled: preferences?.analyticsAutoDisabled,
+                bugReportsEnabled: preferences?.bugReportsEnabled,
+                isMinor: preferences?.isMinor,
+            };
         }),
 });
 export type preferencesRouter = typeof preferencesRouter;

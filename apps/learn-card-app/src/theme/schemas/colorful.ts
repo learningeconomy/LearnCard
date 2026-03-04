@@ -105,7 +105,7 @@ export const colorfulTheme: Theme = validateThemeData({
     sideMenuRootLinks: [
         {
             id: SideMenuLinksEnum.launchPad,
-            label: 'LaunchPad',
+            label: 'Apps',
             path: '/launchpad',
         },
         {
@@ -144,6 +144,11 @@ export const colorfulTheme: Theme = validateThemeData({
             id: SideMenuLinksEnum.aiInsights,
             label: 'AI Insights Hub',
             path: '/ai/insights',
+        },
+        {
+            id: SideMenuLinksEnum.aiPathways,
+            label: 'AI Pathways',
+            path: '/ai/pathways',
         },
         {
             id: SideMenuLinksEnum.skills,
@@ -204,7 +209,7 @@ export const colorfulTheme: Theme = validateThemeData({
         },
         {
             id: MobileNavBarLinks.launchpad,
-            label: 'LaunchPad',
+            label: 'Apps',
             path: '/launchpad',
         },
     ],

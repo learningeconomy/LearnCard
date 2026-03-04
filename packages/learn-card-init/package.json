@@ -1,6 +1,6 @@
 {
     "name": "@learncard/init",
-    "version": "2.3.0",
+    "version": "2.3.7",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -68,5 +68,6 @@
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
         "@learncard/vpqr-plugin": "workspace:*"
-    }
+    },
+    "sideEffects": false
 }

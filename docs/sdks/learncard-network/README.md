@@ -13,6 +13,7 @@ This API provides a set of convenient endpoints that allow you to manage credent
 7. **Notification System**: Send notifications for various events
 8. **Utilities**: Check the health of the API endpoint, retrieve a list of valid challenges, and obtain the LearnCard Network Decentralized Identifier (DID).
 9. **Storage**: Store and resolve credentials or presentations using a unique identifier (URI).
+10. **Skills Semantic Search**: Generate embeddings for skill content and query skills by semantic similarity.
+11. **OpenSALT Skill Frameworks**: Link OpenSALT/CASE frameworks, sync skills, and reuse standards in boost alignment flows.
 
 **The LearnCard Network API** makes it simple to create engaging and interactive applications that utilize credentials, boosts, and presentations between users and applications.
-

@@ -1,10 +1,9 @@
-import path from 'path';
-
 import Fastify from 'fastify';
-import fastifyStatic from '@fastify/static';
 import fastifyCors from '@fastify/cors';
-import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
-import { fastifyTRPCOpenApiPlugin, CreateOpenApiFastifyPluginOptions } from 'trpc-to-openapi';
+import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
+import type { FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
+import { fastifyTRPCOpenApiPlugin } from 'trpc-to-openapi';
+import type { CreateOpenApiFastifyPluginOptions } from 'trpc-to-openapi';
 import {
     SQSClient,
     CreateQueueCommand,
@@ -17,13 +16,22 @@ import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
 import { skillsViewerFastifyPlugin } from './skills-viewer';
 import { sendNotification } from '@helpers/notifications.helpers';
+import { startSkillEmbeddingBackfill } from '@helpers/skill-embedding.helpers';
 import { LCNNotificationValidator } from '@learncard/types';
 
-const server = Fastify({ maxParamLength: 5000 });
+const server = Fastify({ routerOptions: { maxParamLength: 5000 } });
 
 server.addHook('onRequest', (request, _reply, done) => {
-    const raw = request.raw as any;
-    const decorated = request as any;
+    type RawWithEmitter = typeof request.raw & {
+        on?: (...args: unknown[]) => unknown;
+        once?: (...args: unknown[]) => unknown;
+        off?: (...args: unknown[]) => unknown;
+        emit?: (...args: unknown[]) => unknown;
+        removeListener?: (...args: unknown[]) => unknown;
+    };
+
+    const raw = request.raw as RawWithEmitter;
+    const decorated = request as unknown as Record<string, unknown>;
 
     const ensureMethod = (method: 'on' | 'once' | 'off' | 'emit' | 'removeListener') => {
         if (typeof decorated[method] === 'function') return;
@@ -44,9 +52,9 @@ server.addHook('onRequest', (request, _reply, done) => {
     ensureMethod('removeListener');
     ensureMethod('off');
 
-    if (decorated.socket === undefined) decorated.socket = raw.socket;
-    if (decorated.connection === undefined) decorated.connection = raw.connection;
-    if (decorated.headers === undefined) decorated.headers = raw.headers;
+    if (decorated.socket === undefined) decorated.socket = raw.socket as unknown;
+    if (decorated.connection === undefined) decorated.connection = raw.connection as unknown;
+    if (decorated.headers === undefined) decorated.headers = raw.headers as unknown;
 
     done();
 });
@@ -77,9 +85,22 @@ server.register(fastifyTRPCOpenApiPlugin, {
 } satisfies CreateOpenApiFastifyPluginOptions<AppRouter>);
 
 server.get('/docs/openapi.json', () => openApiDocument);
-server.register(fastifyStatic, {
-    root: path.join(__dirname, '../src/swagger-ui'),
-    prefix: '/docs/',
+
+const SCALAR_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>LearnCloud Network API</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+    <script id="api-reference" data-url="./docs/openapi.json"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+</body>
+</html>`;
+
+server.get('/docs', (_request, reply) => {
+    return reply.type('text/html').send(SCALAR_HTML);
 });
 
 server.register(didFastifyPlugin);
@@ -89,6 +110,7 @@ server.register(skillsViewerFastifyPlugin);
     try {
         console.log('Server starting on port ', process.env.PORT || 3000);
         await server.listen({ host: '0.0.0.0', port: Number(process.env.PORT || 3000) });
+        await startSkillEmbeddingBackfill();
     } catch (err) {
         console.error(err);
         process.exit(1);

@@ -4,8 +4,9 @@ import { z } from 'zod';
 import { t, profileRoute } from '@routes';
 
 import {
-    SkillFrameworkType,
     SkillFrameworkValidator,
+    PaginatedSkillFrameworksValidator,
+    SkillFrameworkQueryValidator,
     LinkProviderFrameworkInputValidator,
     CreateManagedFrameworkInputValidator,
     CreateManagedFrameworkBatchInputValidator,
@@ -19,6 +20,7 @@ import {
     PaginatedBoostsValidator,
     BoostQueryValidator,
 } from '@learncard/types';
+import type { SkillFrameworkType } from '@learncard/types';
 import {
     upsertSkillFrameworkFromProvider,
     createSkillFramework as createSkillFrameworkNode,
@@ -26,6 +28,7 @@ import {
 import { getBoostsByUri } from '@accesslayer/boost/read';
 import {
     listSkillFrameworksManagedByProfile,
+    getAllAvailableSkillFrameworksForProfilePaged,
     doesProfileManageFramework,
     getSkillFrameworkById,
     getBoostsThatUseFramework,
@@ -35,15 +38,15 @@ import {
     updateSkillFramework as updateSkillFrameworkNode,
     deleteSkillFramework as deleteSkillFrameworkNode,
 } from '@accesslayer/skill-framework/update';
-import { getSkillsProvider } from '@services/skills-provider';
+import { getSkillsProvider, getSkillsProviderForFramework } from '@services/skills-provider';
 import { PaginatedSkillTreeValidator } from 'types/skill-tree';
 import { createSkill } from '@accesslayer/skill/create';
 import { createSkillTree, type SkillTreeInput, toCreateSkillInput } from './skill-inputs';
+import { getProfileIdFromString } from '@helpers/did.helpers';
 import { isProfileBoostAdmin } from '@accesslayer/boost/relationships/read';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { neogma } from '@instance';
 import { getSkillsByFramework } from '@accesslayer/skill/read';
-import { updateSkill, deleteSkill } from '@accesslayer/skill/update';
 import {
     listFrameworkManagers,
     addFrameworkManager,
@@ -59,6 +62,7 @@ import {
     formatFramework,
     type ProviderSkillNode,
 } from '@helpers/skill-tree';
+import { upsertSkillEmbeddings } from '@helpers/skill-embedding.helpers';
 
 export const skillFrameworksRouter = t.router({
     create: profileRoute
@@ -78,7 +82,7 @@ export const skillFrameworksRouter = t.router({
         .output(SkillFrameworkValidator)
         .mutation(async ({ ctx, input }): Promise<SkillFrameworkType> => {
             const profileId = ctx.user.profile.profileId;
-            const provider = getSkillsProvider();
+            const provider = getSkillsProviderForFramework(input.frameworkId);
             const providerFw = await provider.getFrameworkById(input.frameworkId);
             if (!providerFw)
                 throw new TRPCError({
@@ -228,6 +232,11 @@ export const skillFrameworksRouter = t.router({
             const { profile } = ctx.user;
             const { frameworkId, profileId } = input;
 
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             if (!(await doesProfileManageFramework(profile.profileId, frameworkId))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
@@ -235,7 +244,7 @@ export const skillFrameworksRouter = t.router({
                 });
             }
 
-            const targetProfile = await getProfileByProfileId(profileId);
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
             if (!targetProfile) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
@@ -243,7 +252,7 @@ export const skillFrameworksRouter = t.router({
                 });
             }
 
-            const success = await addFrameworkManager(frameworkId, profileId);
+            const success = await addFrameworkManager(frameworkId, resolvedProfileId);
 
             return { success };
         }),
@@ -267,6 +276,11 @@ export const skillFrameworksRouter = t.router({
             const { profile } = ctx.user;
             const { frameworkId, profileId } = input;
 
+            const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
             if (!(await doesProfileManageFramework(profile.profileId, frameworkId))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
@@ -275,7 +289,7 @@ export const skillFrameworksRouter = t.router({
             }
 
             const admins = await listFrameworkManagers(frameworkId);
-            const targetIsAdmin = admins.some(admin => admin.profileId === profileId);
+            const targetIsAdmin = admins.some(admin => admin.profileId === resolvedProfileId);
 
             if (!targetIsAdmin) {
                 return { success: false };
@@ -288,7 +302,7 @@ export const skillFrameworksRouter = t.router({
                 });
             }
 
-            const success = await removeFrameworkManager(frameworkId, profileId);
+            const success = await removeFrameworkManager(frameworkId, resolvedProfileId);
 
             if (!success) {
                 throw new TRPCError({
@@ -371,6 +385,44 @@ export const skillFrameworksRouter = t.router({
             return listSkillFrameworksManagedByProfile(profileId);
         }),
 
+    getAllAvailableFrameworks: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/skills/frameworks/available',
+                tags: ['Skills'],
+                summary: 'List all available frameworks',
+                description:
+                    'Returns frameworks that the caller manages or frameworks marked public. Supports pagination and optional query filters.',
+            },
+            requiredScope: 'skills:read',
+        })
+        .input(
+            z.object({
+                limit: z.number().int().min(1).max(200).default(50),
+                cursor: z.string().nullable().optional(),
+                query: SkillFrameworkQueryValidator.optional(),
+            })
+        )
+        .output(PaginatedSkillFrameworksValidator)
+        .query(async ({ ctx, input }) => {
+            const profileId = ctx.user.profile.profileId;
+            const page = await getAllAvailableSkillFrameworksForProfilePaged(
+                profileId,
+                input.query ?? null,
+                input.limit,
+                input.cursor ?? null
+            );
+
+            const base = {
+                records: page.records.map(formatFramework),
+                hasMore: page.hasMore,
+            };
+
+            return page.cursor ? { ...base, cursor: page.cursor } : base;
+        }),
+
     getById: profileRoute
         .meta({
             openapi: {
@@ -401,7 +453,8 @@ export const skillFrameworksRouter = t.router({
         .query(async ({ input }) => {
             const { id, limit, childrenLimit, cursor } = input;
 
-            const provider = getSkillsProvider();
+            const localFramework = await getSkillFrameworkById(id);
+            const provider = getSkillsProviderForFramework(id, localFramework?.sourceURI);
             const fw = await provider.getFrameworkById(id);
             if (fw) {
                 const providerSkills = await provider.getSkillsForFramework(id);
@@ -431,7 +484,6 @@ export const skillFrameworksRouter = t.router({
                 };
             }
 
-            const localFramework = await getSkillFrameworkById(id);
             if (!localFramework) throw new TRPCError({ code: 'NOT_FOUND' });
 
             const skills = await buildLocalSkillTreePage(id, limit, childrenLimit, cursor ?? null);
@@ -562,120 +614,162 @@ export const skillFrameworksRouter = t.router({
             let deleted = 0;
             let unchanged = 0;
 
-            // Delete skills that are no longer in the new input
             const skillsToDelete = existingSkills.filter(
                 existing => !newSkillsMap.has(existing.id)
             );
-            for (const skill of skillsToDelete) {
-                await deleteSkill(frameworkId, skill.id);
-                await provider.deleteSkill?.(frameworkId, skill.id);
-                deleted++;
-            }
 
-            // Process skills in order (parents before children)
-            // This ensures parent relationships can be established correctly
             for (const { skill, parentId } of flattenedNew) {
-                const input = toCreateSkillInput(skill);
-                const skillId = input.id!;
-
+                const normalized = toCreateSkillInput(skill);
+                const skillId = normalized.id!;
                 const existing = existingSkillsMap.get(skillId);
 
-                if (existing) {
-                    // Check if the skill properties changed
-                    const hasPropertyChanges =
-                        existing.statement !== input.statement ||
-                        existing.description !== input.description ||
-                        existing.code !== input.code ||
-                        existing.icon !== input.icon ||
-                        existing.type !== input.type ||
-                        existing.status !== input.status;
-
-                    // Check if parent relationship changed
-                    const hasParentChange = existing.parentId !== parentId;
-
-                    if (hasPropertyChanges) {
-                        await updateSkill(frameworkId, skillId, {
-                            statement: input.statement,
-                            description: input.description,
-                            code: input.code,
-                            icon: input.icon,
-                            type: input.type,
-                            status: input.status,
-                        });
-
-                        await provider.updateSkill?.(frameworkId, skillId, {
-                            statement: input.statement,
-                            description: input.description,
-                            code: input.code,
-                            icon: input.icon,
-                            type: input.type,
-                            status: input.status,
-                        });
-                    }
-
-                    // Update parent relationship if it changed
-                    if (hasParentChange) {
-                        // Remove old parent relationship
-                        await neogma.queryRunner.run(
-                            `MATCH (s:Skill {id: $skillId})-[r:IS_CHILD_OF]->(:Skill)
-                             DELETE r`,
-                            { skillId }
-                        );
-
-                        // Add new parent relationship if parentId is provided
-                        if (parentId) {
-                            const parentCheck = await neogma.queryRunner.run(
-                                `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(p:Skill {id: $parentId})
-                                 RETURN p.id AS id`,
-                                { frameworkId, parentId }
-                            );
-
-                            if (parentCheck.records.length === 0) {
-                                throw new TRPCError({
-                                    code: 'BAD_REQUEST',
-                                    message: `Parent skill ${parentId} not found in framework`,
-                                });
-                            }
-
-                            await neogma.queryRunner.run(
-                                `MATCH (s:Skill {id: $skillId}), (p:Skill {id: $parentId})
-                                 MERGE (s)-[:IS_CHILD_OF]->(p)`,
-                                { skillId, parentId }
-                            );
-                        }
-
-                        // Update provider if parent changed
-                        await provider.updateSkill?.(frameworkId, skillId, {
-                            parentId: parentId ?? null,
-                        });
-                    }
-
-                    // Count as updated only if properties changed (not parent relationship)
-                    if (hasPropertyChanges) {
-                        updated++;
-                    } else {
-                        unchanged++;
-                    }
-                } else {
-                    // Create new skill
-                    const createdSkill = await createSkill(frameworkId, input, parentId);
-
-                    await provider.createSkill?.(frameworkId, {
-                        id: createdSkill.id,
-                        statement: createdSkill.statement,
-                        description: createdSkill.description ?? undefined,
-                        code: createdSkill.code ?? undefined,
-                        icon: createdSkill.icon ?? undefined,
-                        type: createdSkill.type ?? 'skill',
-                        status: createdSkill.status ?? 'active',
-                        parentId: parentId ?? null,
-                    });
-
+                if (!existing) {
                     created++;
+                    continue;
+                }
+
+                const hasPropertyChanges =
+                    existing.statement !== normalized.statement ||
+                    existing.description !== normalized.description ||
+                    existing.code !== normalized.code ||
+                    existing.icon !== normalized.icon ||
+                    existing.type !== normalized.type ||
+                    existing.status !== normalized.status;
+
+                const hasParentChange = existing.parentId !== parentId;
+
+                if (hasPropertyChanges) {
+                    updated++;
+                } else {
+                    unchanged++;
+                }
+
+                if (hasParentChange && parentId && !newSkillsMap.has(parentId)) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: `Parent skill ${parentId} not found in framework`,
+                    });
                 }
             }
 
+            if (skillsToDelete.length > 0) {
+                const idsToDelete = skillsToDelete.map(s => s.id);
+
+                await neogma.queryRunner.run(
+                    `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
+                     WHERE s.id IN $skillIds
+                     WITH collect(s) AS nodes
+                     FOREACH (n IN nodes | DETACH DELETE n)
+                     RETURN size(nodes) AS deletedCount`,
+                    { frameworkId, skillIds: idsToDelete }
+                );
+
+                await Promise.all(idsToDelete.map(id => provider.deleteSkill?.(frameworkId, id)));
+
+                deleted = idsToDelete.length;
+            }
+
+            const upsertPayload = flattenedNew.map(({ skill }) => {
+                const normalized = toCreateSkillInput(skill);
+                return {
+                    id: normalized.id!,
+                    statement: normalized.statement,
+                    description: normalized.description ?? null,
+                    code: normalized.code ?? null,
+                    icon: normalized.icon ?? null,
+                    type: normalized.type ?? 'skill',
+                    status: normalized.status ?? 'active',
+                };
+            });
+
+            await neogma.queryRunner.run(
+                `UNWIND $skills AS skill
+                 MERGE (s:Skill {id: skill.id, frameworkId: $frameworkId})
+                 SET s.statement = skill.statement,
+                     s.description = skill.description,
+                     s.code = skill.code,
+                     s.icon = skill.icon,
+                     s.type = skill.type,
+                     s.status = skill.status
+                 WITH s
+                 MATCH (f:SkillFramework {id: $frameworkId})
+                 MERGE (f)-[:CONTAINS]->(s)`,
+                { frameworkId, skills: upsertPayload }
+            );
+
+            await neogma.queryRunner.run(
+                `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
+                 OPTIONAL MATCH (s)-[r:IS_CHILD_OF]->(:Skill)
+                 DELETE r`,
+                { frameworkId }
+            );
+
+            const parentRels = flattenedNew
+                .filter(({ parentId }) => Boolean(parentId))
+                .map(({ skill, parentId }) => {
+                    const normalized = toCreateSkillInput(skill);
+                    return { skillId: normalized.id!, parentId: parentId! };
+                });
+
+            if (parentRels.length > 0) {
+                await neogma.queryRunner.run(
+                    `UNWIND $rels AS rel
+                     MATCH (f:SkillFramework {id: $frameworkId})
+                     MATCH (f)-[:CONTAINS]->(s:Skill {id: rel.skillId})
+                     MATCH (f)-[:CONTAINS]->(p:Skill {id: rel.parentId})
+                     MERGE (s)-[:IS_CHILD_OF]->(p)`,
+                    { frameworkId, rels: parentRels }
+                );
+            }
+
+            await Promise.all(
+                flattenedNew.map(async ({ skill, parentId }) => {
+                    const normalized = toCreateSkillInput(skill);
+                    const existing = existingSkillsMap.get(normalized.id!);
+
+                    if (existing) {
+                        await provider.updateSkill?.(frameworkId, normalized.id!, {
+                            statement: normalized.statement,
+                            description: normalized.description,
+                            code: normalized.code,
+                            icon: normalized.icon,
+                            type: normalized.type,
+                            status: normalized.status,
+                            parentId: parentId ?? null,
+                        });
+                    } else {
+                        await provider.createSkill?.(frameworkId, {
+                            id: normalized.id!,
+                            statement: normalized.statement,
+                            description: normalized.description ?? undefined,
+                            code: normalized.code ?? undefined,
+                            icon: normalized.icon ?? undefined,
+                            type: normalized.type ?? 'skill',
+                            status: normalized.status ?? 'active',
+                            parentId: parentId ?? null,
+                        });
+                    }
+                })
+            );
+
             const total = created + updated + deleted + unchanged;
+
+            try {
+                await upsertSkillEmbeddings(
+                    flattenedNew.map(({ skill }) => {
+                        const normalized = toCreateSkillInput(skill);
+                        return {
+                            id: normalized.id!,
+                            frameworkId,
+                            statement: normalized.statement,
+                            description: normalized.description ?? undefined,
+                            code: normalized.code ?? undefined,
+                        };
+                    })
+                );
+            } catch (error) {
+                console.error('Failed to update skill embeddings after replace:', error);
+            }
 
             return {
                 created,

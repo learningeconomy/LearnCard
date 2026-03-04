@@ -1,5 +1,5 @@
 import React from 'react';
-import { capitalize } from 'lodash';
+import { capitalize } from 'lodash-es';
 
 import Star from 'learn-card-base/svgs/Star';
 import { useGetVCInfo } from 'learn-card-base';

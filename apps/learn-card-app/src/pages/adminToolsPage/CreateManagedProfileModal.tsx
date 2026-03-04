@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { cloneDeep } from 'lodash';
+import { cloneDeep } from 'lodash-es';
 import { useQueryClient } from '@tanstack/react-query';
 
 import {

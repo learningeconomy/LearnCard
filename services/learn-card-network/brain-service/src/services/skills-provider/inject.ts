@@ -1,6 +1,6 @@
 import type { UnsignedVC, VC } from '@learncard/types';
 import type { BoostInstance } from '@models';
-import { getSkillsProvider } from './index';
+import { getSkillsProviderForFramework } from './index';
 import { getAlignedSkillsForBoost } from '@accesslayer/boost/relationships/read';
 import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import type { Obv3Alignment } from './types';
@@ -35,7 +35,6 @@ export async function injectObv3AlignmentsIntoCredentialForBoost(
             byFramework.set(fid, arr);
         }
 
-        const provider = getSkillsProvider();
         let alignments: any[] = [];
 
         // Get unique framework IDs from the aligned skills
@@ -50,6 +49,7 @@ export async function injectObv3AlignmentsIntoCredentialForBoost(
             const framework = await getSkillFrameworkById(fwId);
             if (!framework) continue;
 
+            const provider = getSkillsProviderForFramework(fwId, framework.sourceURI);
             const res = await provider.buildObv3Alignments(fwId, idsForFramework, domain);
             if (Array.isArray(res) && res.length > 0) alignments = alignments.concat(res);
         }
@@ -64,20 +64,34 @@ export async function injectObv3AlignmentsIntoCredentialForBoost(
         // Ensure JSON-LD alignment entries have a type, matching plugin behavior
         const jsonLdAlignments = cleanedAlignments.map(a => ({ ...a, type: ['Alignment'] }));
 
+        const isInjectedSkillAlignment = (alignment: any): boolean => {
+            if (!alignment || typeof alignment !== 'object') return false;
+
+            // If the alignment references a frameworkId/id pair, it's intended to be skill-based.
+            if (alignment.frameworkId && alignment.id) return true;
+
+            // If the alignment targetUrl points at our skill URL structure, treat it as skill-based.
+            // Example: https://{domain}/frameworks/{frameworkId}/skills/{skillId}
+            const targetUrl = alignment.targetUrl;
+            if (typeof targetUrl !== 'string') return false;
+
+            return targetUrl.startsWith(`https://${domain}/frameworks/`);
+        };
+
         const addAlignments = (subject: any) => {
             if (!subject) return;
             // OBv3-style: achievement.alignment[] preferred if present
             if (subject.achievement) {
                 const ach = subject.achievement;
-                if (!Array.isArray(ach.alignment))
-                    ach.alignment = Array.isArray(ach.alignment) ? ach.alignment : [];
-                ach.alignment = [...ach.alignment, ...jsonLdAlignments];
+                const existing = Array.isArray(ach.alignment) ? ach.alignment : [];
+                const retained = existing.filter((a: any) => !isInjectedSkillAlignment(a));
+                ach.alignment = [...retained, ...jsonLdAlignments];
                 return;
             }
             // Fallback: subject.alignment[]
-            if (!Array.isArray(subject.alignment))
-                subject.alignment = Array.isArray(subject.alignment) ? subject.alignment : [];
-            subject.alignment = [...subject.alignment, ...jsonLdAlignments];
+            const existing = Array.isArray(subject.alignment) ? subject.alignment : [];
+            const retained = existing.filter((a: any) => !isInjectedSkillAlignment(a));
+            subject.alignment = [...retained, ...jsonLdAlignments];
         };
 
         if (Array.isArray(credential.credentialSubject)) {
@@ -122,7 +136,6 @@ export async function buildObv3AlignmentsForBoost(
             byFramework.set(fid, arr);
         }
 
-        const provider = getSkillsProvider();
         let cleaned: Obv3Alignment[] = [];
 
         // Get unique framework IDs from the aligned skills
@@ -137,6 +150,7 @@ export async function buildObv3AlignmentsForBoost(
             const framework = await getSkillFrameworkById(fwId);
             if (!framework) continue;
 
+            const provider = getSkillsProviderForFramework(fwId, framework.sourceURI);
             const alignments = await provider.buildObv3Alignments(fwId, idsForFramework, domain);
             const cleanedPart = (alignments || []).map(a =>
                 Object.fromEntries(Object.entries(a).filter(([, v]) => v !== undefined))

@@ -14,6 +14,7 @@ interface DatePickerInputProps {
     label?: string;
     minDate?: string;
     maxDate?: string;
+    disabled?: boolean;
 }
 
 const DatePickerInput: React.FC<DatePickerInputProps> = ({
@@ -24,6 +25,7 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
     label = 'Date of Birth',
     minDate = new Date('1900-01-01T00:00:00'),
     maxDate = new Date(),
+    disabled = false,
 }) => {
     const { newModal, closeModal } = useModal();
 
@@ -69,11 +71,13 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
             <>
                 <button
                     type="button"
+                    disabled={disabled}
                     className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
                         error ? 'login-input-email-error' : ''
-                    }`}
+                    } ${disabled ? '!opacity-70 cursor-not-allowed' : ''}`}
                     onClick={e => {
                         e.preventDefault();
+                        if (disabled) return;
                         newModal(
                             <div className="w-full h-full transparent flex items-center justify-center">
                                 <IonDatetime
@@ -106,7 +110,11 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                     }}
                 >
                     {value ? moment(value).format('MMMM D, YYYY') : label}
-                    <Calendar className="pointer-events-none text-grayscale-700 w-[24px]" />
+                    <Calendar
+                        className={`pointer-events-none text-grayscale-700 w-[24px] ${
+                            disabled ? 'opacity-50' : ''
+                        }`}
+                    />
                 </button>
             </>
         );
@@ -129,9 +137,14 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                 dateFormat="MMMM d, yyyy"
                 className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
                     error ? 'login-input-email-error' : ''
+                } ${disabled ? '!opacity-70 cursor-not-allowed' : ''}`}
+                disabled={disabled}
+            />
+            <Calendar
+                className={`pointer-events-none absolute right-[16px] top-[50%] -translate-y-1/2 text-grayscale-700 w-[24px] ${
+                    disabled ? 'opacity-50' : ''
                 }`}
             />
-            <Calendar className="pointer-events-none absolute right-[16px] top-[50%] -translate-y-1/2 text-grayscale-700 w-[24px]" />
         </div>
     );
 };

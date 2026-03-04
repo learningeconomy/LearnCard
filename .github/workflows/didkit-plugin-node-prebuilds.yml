@@ -48,6 +48,8 @@ jobs:
 
         name: Build ${{ matrix.settings.target }}
         runs-on: ${{ matrix.settings.host }}
+        env:
+            BUILD_DIDKIT_NAPI: "1"
 
         steps:
             - uses: actions/checkout@v4
