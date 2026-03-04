@@ -190,17 +190,6 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const isHardBlocked =
         userAge !== null && minAge !== undefined && minAge > 0 && userAge < minAge;
 
-    // Soft block: age_rating violation (child can install with guardian approval)
-    // Only applies when userAge is known
-    const isAgeRatingRestricted =
-        userAge !== null && ageRatingMinAge > 0 && userAge < ageRatingMinAge;
-
-    // Check if child profile is missing DOB
-    const childMissingDob = isChildProfile && !currentLCNUser?.dob;
-
-    // Check if listing has any age restriction (for DOB entry flow)
-    const hasAgeRestriction = (minAge !== undefined && minAge > 0) || ageRatingMinAge > 0;
-
     // Combined age floor for display purposes
     const ageFloor = minAge !== undefined ? minAge : ageRatingMinAge;
 
@@ -447,27 +436,15 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             return;
         }
 
-        // Case 2: Child profile missing DOB and app has age restriction
-        // Use guardian gate, then prompt for DOB entry
-        if (childMissingDob && hasAgeRestriction) {
-            guardedAction(
-                () => {
-                    showDobEntryModal();
-                },
-                { ignorePriorVerification: true }
-            );
-            return;
-        }
-
-        // Case 3: Child profile - check age restrictions
+        // Case 2: Child profile - check age restrictions
         if (isChildProfile) {
             const noAgeRating = ageRatingMinAge === 0;
             const childAgeUnknown = userAge === null;
             const childTooYoung = userAge !== null && userAge < ageRatingMinAge;
 
-            // Case 3a: No age rating specified - require guardian approval
-            // Case 3b: Child age unknown - require guardian approval
-            // Case 3c: Child too young - require guardian approval
+            // Case 2a: No age rating specified - require guardian approval
+            // Case 2b: Child age unknown - require guardian approval
+            // Case 2c: Child too young - require guardian approval
             if (noAgeRating || childAgeUnknown || childTooYoung) {
                 guardedAction(
                     () => {
@@ -478,10 +455,10 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 return;
             }
 
-            // Case 3d: Child old enough - proceed directly without guardian approval
+            // Case 2d: Child old enough - proceed directly without guardian approval
         }
 
-        // Case 4: User is old enough - proceed directly
+        // Case 3: User is old enough - proceed directly
         showInstallConsentModal();
     };
 

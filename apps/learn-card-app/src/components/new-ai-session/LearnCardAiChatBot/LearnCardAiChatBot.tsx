@@ -29,6 +29,7 @@ import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 
 import { sessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
 import { AiPassportAppContractUri } from '../../ai-passport-apps/aiPassport-apps.helpers';
+import { AiFeatureGate } from '../../ai-feature-gate/AiFeatureGate';
 
 export const BACKEND_URL = LEARNCARD_AI_URL;
 
@@ -333,6 +334,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     }, [messageRefs.current[messagesToShow.length - 1]?.offsetHeight, typing]);
 
     return (
+        <AiFeatureGate>
         <div
             className={`flex flex-col h-full min-h-[32rem] w-full max-w-[829px] mx-auto sm:pb-[30px] bg-white ${
                 isDesktop ? 'pt-[100px]' : ''
@@ -430,6 +432,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                 </>
             )}
         </div>
+        </AiFeatureGate>
     );
 };
 

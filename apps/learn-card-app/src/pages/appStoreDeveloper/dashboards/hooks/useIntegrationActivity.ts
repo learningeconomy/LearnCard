@@ -50,11 +50,16 @@ export type CredentialEventType = 'CREATED' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED
  */
 export function getEventTypeLabel(eventType: CredentialEventType): string {
     switch (eventType) {
-        case 'CREATED': return 'Sent';
-        case 'DELIVERED': return 'Delivered';
-        case 'CLAIMED': return 'Claimed';
-        case 'EXPIRED': return 'Expired';
-        case 'FAILED': return 'Failed';
+        case 'CREATED':
+            return 'Sent';
+        case 'DELIVERED':
+            return 'Delivered';
+        case 'CLAIMED':
+            return 'Claimed';
+        case 'EXPIRED':
+            return 'Expired';
+        case 'FAILED':
+            return 'Failed';
     }
 }
 
@@ -76,9 +81,9 @@ export function getActivityLabel(record: CredentialActivityRecord): string {
  * Check if this is an auto-delivery event (DELIVERED to inbox with recipientProfileId)
  */
 export function isAutoDelivery(record: CredentialActivityRecord): boolean {
-    return record.eventType === 'DELIVERED' && 
-           !!record.recipientProfileId && 
-           isInboxActivity(record);
+    return (
+        record.eventType === 'DELIVERED' && !!record.recipientProfileId && isInboxActivity(record)
+    );
 }
 
 /**
@@ -114,9 +119,28 @@ export function getActivityError(record: CredentialActivityRecord): string | und
  * Format source for display
  */
 export function formatActivitySource(source: string): string {
-    if (source === 'claimLink') return 'Claim Link';
-    if (source === 'send') return 'API Send';
-    return source || 'Unknown';
+    switch (source) {
+        case 'send':
+            return 'API Send';
+        case 'sendBoost':
+            return 'Boost Send';
+        case 'sendCredential':
+            return 'Credential Send';
+        case 'contract':
+            return 'Contract';
+        case 'claim':
+            return 'Claim';
+        case 'inbox':
+            return 'Inbox';
+        case 'claimLink':
+            return 'Claim Link';
+        case 'acceptCredential':
+            return 'Accept Credential';
+        case 'appEvent':
+            return 'App Event';
+        default:
+            return source || 'Unknown';
+    }
 }
 
 export interface IntegrationActivityResult {
@@ -135,10 +159,10 @@ export interface IntegrationActivityResult {
 
 /**
  * Hook to fetch unified activity using the new CredentialActivity API.
- * 
+ *
  * This replaces the previous complex implementation that combined boost recipients
  * and inbox credentials from separate sources. Now uses a single unified API.
- * 
+ *
  * @param templates - Credential templates to filter by (optional)
  * @param options.limit - Maximum number of activities to fetch
  * @param options.integrationId - Filter activities by integration ID for accurate per-integration stats
@@ -203,7 +227,7 @@ export function useIntegrationActivity(
                     setStats({
                         totalSent: apiStats.delivered + apiStats.created,
                         totalClaimed: apiStats.claimed,
-                        pendingClaims: (apiStats.delivered + apiStats.created) - apiStats.claimed,
+                        pendingClaims: apiStats.delivered + apiStats.created - apiStats.claimed,
                         claimRate: apiStats.claimRate,
                     });
                 }

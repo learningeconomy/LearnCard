@@ -1,8 +1,9 @@
-import { ModelFactory, NeogmaInstance } from 'neogma';
+import { ModelFactory } from 'neogma';
+import type { NeogmaInstance } from 'neogma';
 
 import { neogma } from '@instance';
 
-import { FlatSkillFrameworkType } from 'types/skill-framework';
+import type { FlatSkillFrameworkType } from 'types/skill-framework';
 
 export type SkillFrameworkRelationships = Record<string, never>;
 
@@ -20,6 +21,7 @@ export const SkillFramework = ModelFactory<FlatSkillFrameworkType, SkillFramewor
             description: { type: 'string', required: false },
             image: { type: 'string', required: false },
             sourceURI: { type: 'string', required: false },
+            isPublic: { type: 'boolean', required: false },
             status: { type: 'string', required: false },
             createdAt: { type: 'string', required: false },
             updatedAt: { type: 'string', required: false },

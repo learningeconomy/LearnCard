@@ -956,4 +956,114 @@ LIMIT 20;
 ```
 
 
+## Privacy Preferences & Age-Gate System
+
+The app enforces GDPR/COPPA-compliant privacy controls based on user age and country. Minors have AI features, analytics, and bug reporting disabled by default; adults can toggle them freely.
+
+### Preference Fields (MongoDB via lca-api)
+
+Stored in the `preferences` collection alongside the existing `theme` field:
+
+| Field | Type | Default (adults) | Default (minors) | Purpose |
+|-------|------|-------------------|-------------------|---------|
+| `aiEnabled` | boolean? | `true` | `false` | User's AI features toggle |
+| `aiAutoDisabled` | boolean? | `false` | `true` | System flag: was AI auto-disabled at signup? |
+| `analyticsEnabled` | boolean? | `true` | `false` | Firebase Analytics toggle |
+| `analyticsAutoDisabled` | boolean? | `false` | `true` | System flag: was analytics auto-disabled? |
+| `bugReportsEnabled` | boolean? | `true` | `false` | Sentry bug reports toggle |
+| `isMinor` | boolean? | `false` | `true` | Cached minor status (age < threshold) |
+
+**Schema**: `services/learn-card-network/lca-api/src/models/Preferences.ts`
+**Routes**: `services/learn-card-network/lca-api/src/routes/preferences.ts` (tRPC: `createPreferences`, `updatePreferences`, `getPreferencesForDid`)
+**Tests**: `services/learn-card-network/lca-api/test/preferences.spec.ts`
+
+### GDPR Age Thresholds
+
+**File**: `packages/learn-card-base/src/constants/gdprAgeLimits.ts`
+
+```typescript
+getMinorAgeThreshold(countryCode?: string): number
+// EU countries → GDPR age-of-consent (13–16 by country)
+// Non-EU / undefined → 18
+```
+
+**Important**: Do NOT use `getGdprAgeLimit()` from the app's local `gdpr.ts` for minor determination. That function returns `DEFAULT_EU_AGE_LIMIT` (16) for non-EU countries and is only correct for the EU parental consent modal during onboarding. Always use `getMinorAgeThreshold()` from `learn-card-base` for age-gate logic.
+
+Country-specific thresholds:
+
+| Country | Code | Age |
+|---------|------|-----|
+| Sweden | SE | 13 |
+| Ireland | IE | 13 |
+| Spain | ES | 14 |
+| Austria | AT | 14 |
+| Italy | IT | 14 |
+| France | FR | 15 |
+| Germany | DE | 16 |
+| Netherlands | NL | 16 |
+| Other EU | — | 16 (default) |
+| Non-EU | — | 18 |
+
+### Frontend Hooks
+
+#### `usePrivacyGate` (`packages/learn-card-base/src/hooks/usePrivacyGate.ts`)
+
+Runs on app load (called in `AppRouter.tsx`). On first run, auto-initializes all preference fields based on age/country. Also notifies the analytics system via `onAnalyticsChange` callback whenever `analyticsEnabled` changes.
+
+```typescript
+usePrivacyGate({ onAnalyticsChange: (enabled: boolean) => void })
+// Returns: { isMinor: boolean, preferences }
+```
+
+#### `useAiFeatureGate` (`packages/learn-card-base/src/hooks/useAiFeatureGate.ts`)
+
+Point-of-use gate for AI features. Includes a local DOB fallback so minors are blocked even before preferences have been persisted.
+
+```typescript
+useAiFeatureGate()
+// Returns: { isAiEnabled: boolean, isLoading: boolean, reason: AiFeatureGateReason }
+// reason: 'enabled' | 'disabled_by_user' | 'disabled_minor' | 'loading'
+```
+
+### UI Integration Points
+
+| File | What it does |
+|------|-------------|
+| `AppRouter.tsx` | Calls `usePrivacyGate({ onAnalyticsChange })` to init preferences and gate Firebase Analytics |
+| `PrivacySettingsPage.tsx` / `PrivacySettingsModal.tsx` | Three toggles (AI, Analytics, Bug Reports); locked for minors with amber warning |
+| `LaunchPad.tsx` | AI tab shows "AI Apps Unavailable" banner when `!isAiEnabled` |
+| `LaunchPadActionModal.tsx` | Filters out AI action buttons when `!isAiEnabled` |
+| `AiSessionsContainer.tsx`, `AiInsights.tsx`, `AiPassportPersonalizationContainer.tsx`, `AiTutorConnectedView.tsx` | Wrapped in `<AiFeatureGate>` component |
+| `SideMenuSecondaryLinks.tsx` | Intercepts AI nav links, shows toast when `!isAiEnabled` |
+| `sentry.ts` (`useSentryIdentify`) | Reads `bugReportsEnabled` preference; clears Sentry user when disabled |
+| `OnboardingNetworkForm.tsx` | Initializes preferences immediately after profile creation using `getMinorAgeThreshold(country)` |
+
+### Data Flow
+
+```
+1. SIGNUP (OnboardingNetworkForm.tsx):
+   ├── Creates profile with DOB + country
+   └── Calls updatePreferences({ aiEnabled, analyticsEnabled, bugReportsEnabled, isMinor, ... })
+
+2. APP LOAD (AppRouter.tsx):
+   ├── usePrivacyGate runs → checks if preferences need first-run initialization
+   ├── If aiAutoDisabled/analyticsAutoDisabled are undefined → initializes based on age
+   └── Notifies Firebase Analytics via onAnalyticsChange callback
+
+3. FEATURE GATE (any component):
+   ├── useAiFeatureGate() → checks child profile, DOB fallback, then stored preferences
+   └── <AiFeatureGate> component wraps AI views with disabled state
+
+4. USER SETTINGS (PrivacySettingsPage.tsx):
+   ├── Shows toggles; minors see locked state
+   └── Calls updatePreferences({ field: newValue }) on toggle
+```
+
+### Testing Preferences Backend
+
+```bash
+cd services/learn-card-network/lca-api
+pnpm test -- preferences.spec.ts
+```
+
 Please read AGENTS.md

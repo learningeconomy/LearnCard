@@ -12,6 +12,9 @@ import {
     CredentialCategoryEnum,
     newCredsStore,
     lazyWithRetry,
+    useAiFeatureGate,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import ResumeBuilderController from '../../components/resume-builder/ResumeBuilderController';
@@ -60,6 +63,8 @@ const WalletPage: React.FC = () => {
     const hideAiWalletRoutes = flags?.hideAiWalletRoutes;
     const showAiInsights = flags?.showAiInsights;
     const hideAiPathways = flags?.hideAiPathways;
+    const { isAiEnabled, reason } = useAiFeatureGate();
+    const { presentToast } = useToast();
     const placeholderCategories = [
         CredentialCategoryEnum.aiPathway,
         CredentialCategoryEnum.aiInsight,
@@ -112,9 +117,26 @@ const WalletPage: React.FC = () => {
         [CredentialCategoryEnum.membership]: '/memberships',
     };
 
+    const AI_CATEGORIES = [
+        CredentialCategoryEnum.aiTopic,
+        CredentialCategoryEnum.aiPathway,
+        CredentialCategoryEnum.aiInsight,
+    ];
+
     const handleClickSquare = (categoryType: CredentialCategoryEnum) => {
         const path = categoryToPath[categoryType];
-        if (path) history.push(path);
+        if (!path) return;
+
+        if (AI_CATEGORIES.includes(categoryType) && !isAiEnabled) {
+            const msg =
+                reason === 'disabled_minor'
+                    ? 'AI features are not available for users under 18.'
+                    : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
+            presentToast(msg, { type: ToastTypeEnum.Error });
+            return;
+        }
+
+        history.push(path);
     };
 
     const renderWalletList = categories?.map(category => {

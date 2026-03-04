@@ -41,6 +41,7 @@ import {
     useToast,
     ToastTypeEnum,
     useDeviceTypeByWidth,
+    useUpdatePreferences,
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -54,6 +55,7 @@ import EUParentalConsentModalContent from './components/EUParentalConsentModalCo
 import UnderageModalContent from './components/UnderageModalContent';
 import USConsentNoticeModalContent from './components/USConsentNoticeModalContent';
 import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
+import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
 import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
 import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
@@ -101,6 +103,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
+    const { mutateAsync: updatePreferences } = useUpdatePreferences();
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
     const flags = useFlags();
     const schoolCodes = (flags?.underageSchoolCodes as string[]) || [];
@@ -291,6 +294,22 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 });
 
                 if (didWeb) {
+                    // Initialize privacy preferences based on age at signup
+                    const age = dob ? calculateAge(dob) : null;
+                    const limit = getMinorAgeThreshold(country);
+                    const isMinorUser = age !== null && !isNaN(age) && age < limit;
+
+                    await updatePreferences({
+                        aiEnabled: !isMinorUser,
+                        aiAutoDisabled: isMinorUser,
+                        analyticsEnabled: !isMinorUser,
+                        analyticsAutoDisabled: isMinorUser,
+                        bugReportsEnabled: !isMinorUser,
+                        isMinor: isMinorUser,
+                    }).catch(err => {
+                        console.error('Failed to initialize preferences (non-blocking):', err);
+                    });
+
                     track(AnalyticsEvents.ONBOARDING_COMPLETED, {
                         role: role ?? undefined,
                         country: country ?? undefined,

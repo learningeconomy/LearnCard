@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet } from 'learn-card-base';
+import { useGetPreferencesForDid } from 'learn-card-base';
 
 export type UseSentryIdentifyOptions = {
     debug?: boolean;
@@ -49,9 +50,13 @@ if (isSentryEnabled) {
 export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
     const currentUser = useCurrentUser();
     const { getDID } = useWallet();
+    const { data: preferences } = useGetPreferencesForDid();
+    // Default true so existing users without stored preferences are unaffected
+    const bugReportsEnabled = preferences?.bugReportsEnabled ?? true;
+
     useEffect(() => {
         if (isSentryEnabled) {
-            if (currentUser) {
+            if (currentUser && bugReportsEnabled) {
                 if (options.debug) console.debug('Identify user! 🎸', currentUser);
                 getDID()
                     .then(did => {
@@ -82,5 +87,5 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
                 Sentry.setTag('packageVersion', __PACKAGE_VERSION__);
             }
         }
-    }, [currentUser]);
+    }, [currentUser, bugReportsEnabled]);
 };
