@@ -1,6 +1,6 @@
 {
     "name": "@learncard/didkit-plugin-node",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "description": "Node-native DIDKit plugin for LearnCard (N-API addon wrapper)",
     "main": "./dist/index.js",
     "module": "./dist/index.js",
