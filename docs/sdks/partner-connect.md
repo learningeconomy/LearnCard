@@ -10,7 +10,7 @@ The Partner Connect SDK transforms complex `postMessage` communication into clea
 - **🎯 Type-safe**: Full TypeScript support with comprehensive type definitions  
 - **⚡ Promise-based**: Modern async/await API eliminates callback complexity
 - **🧹 Clean**: Abstracts away all postMessage implementation details
-- **📦 Lightweight**: Zero dependencies, ~8KB minified
+- **📦 Lightweight**: Zero runtime dependencies, ~8KB minified
 - **🛡️ Robust**: Built-in timeout handling and structured error management
 
 ## Installation
@@ -61,22 +61,34 @@ try {
 
 ### Factory Function
 
-#### `createPartnerConnect(options)`
+#### `createPartnerConnect(options?)`
 
 Creates a new Partner Connect SDK instance.
 
 **Parameters:**
-- `options` (`PartnerConnectOptions`): Configuration options
+- `options` (`PartnerConnectOptions`, optional): Configuration options. Defaults to `{ hostOrigin: 'https://learncard.app' }`.
 
 **Returns:** `PartnerConnect` instance
 
 **Example:**
 ```typescript
+// Default configuration (uses https://learncard.app)
+const learnCard = createPartnerConnect();
+
+// Custom configuration
 const learnCard = createPartnerConnect({
   hostOrigin: 'https://learncard.app',
   requestTimeout: 30000
 });
 ```
+
+{% hint style="info" %}
+You can also import and instantiate the `PartnerConnect` class directly:
+```typescript
+import { PartnerConnect } from '@learncard/partner-connect';
+const learnCard = new PartnerConnect();
+```
+{% endhint %}
 
 ### Configuration
 
@@ -143,16 +155,39 @@ interface IdentityResponse {
 }
 ```
 
-#### `sendCredential(credential)`
+#### `sendCredential(input)`
 
-Send a verifiable credential to the user's LearnCard wallet.
+Send a credential to the user's LearnCard wallet. Supports two modes:
+
+**Mode 1: Template-Based Issuance (Recommended for App Store Apps)**
+
+Issue a credential using a pre-configured boost template attached to your App Store listing. LearnCard handles signing and delivery.
 
 **Parameters:**
-- `credential` (`unknown`): The verifiable credential to send
+- `input` (`TemplateCredentialInput`): Template alias and optional data
+
+**Returns:** `Promise<TemplateCredentialResponse>`
+
+```typescript
+const result = await learnCard.sendCredential({
+  templateAlias: 'course-completion',
+  templateData: {
+    courseName: 'JavaScript 101',
+    completionDate: new Date().toISOString()
+  }
+});
+console.log('Credential URI:', result.credentialUri);
+```
+
+**Mode 2: Raw Credential**
+
+Send a pre-signed verifiable credential directly. Your backend must issue and sign the credential first.
+
+**Parameters:**
+- `input` (`unknown`): A signed verifiable credential object
 
 **Returns:** `Promise<SendCredentialResponse>`
 
-**Example:**
 ```typescript
 // Your backend issues the credential
 const credential = await yourBackend.issueCredential(identity.user.did);
@@ -161,6 +196,10 @@ const credential = await yourBackend.issueCredential(identity.user.did);
 const response = await learnCard.sendCredential(credential);
 console.log('Credential ID:', response.credentialId);
 ```
+
+{% hint style="info" %}
+For App Store embedded apps, template-based issuance is strongly recommended. See [Connect an Embedded App](../how-to-guides/connect-systems/connect-an-embedded-app.md) for a complete walkthrough.
+{% endhint %}
 
 #### `launchFeature(featurePath, initialPrompt?)`
 
@@ -231,28 +270,38 @@ if (response.credential) {
 }
 ```
 
-#### `requestConsent(contractUri)`
+#### `requestConsent(contractUri, options?)`
 
 Request user consent for data access permissions.
 
 **Parameters:**
 - `contractUri` (`string`): URI of the consent contract
+- `options` (`RequestConsentOptions`, optional): Additional options
+
+| Option     | Type      | Default | Description                                                                 |
+|------------|-----------|---------|-----------------------------------------------------------------------------|
+| `redirect` | `boolean` | `false` | If `true`, redirects to the contract's configured URL after consent granted |
 
 **Returns:** `Promise<ConsentResponse>`
 
 **Example:**
 ```typescript
+// Basic consent request
 const response = await learnCard.requestConsent(
   'lc:network:network.learncard.com/trpc:contract:abc123'
 );
 
 if (response.granted) {
   console.log('User granted consent');
-  // Proceed with data access
 } else {
   console.log('User denied consent');
-  // Handle gracefully
 }
+
+// With redirect (for server-side consent verification)
+const response = await learnCard.requestConsent(
+  'lc:network:network.learncard.com/trpc:contract:abc123',
+  { redirect: true }
+);
 ```
 
 #### `initiateTemplateIssue(templateId, draftRecipients?)`
@@ -617,8 +666,88 @@ async function awardCertificate(courseName, studentDid) {
 }
 ```
 
+## TypeScript Types
+
+All types are exported from the package for full type safety:
+
+```typescript
+import type {
+  // Configuration
+  PartnerConnectOptions,
+
+  // Responses
+  IdentityResponse,
+  SendCredentialResponse,
+  TemplateCredentialInput,
+  TemplateCredentialResponse,
+  TemplateIssueResponse,
+  CredentialSearchResponse,
+  CredentialSpecificResponse,
+  ConsentResponse,
+  RequestConsentOptions,
+
+  // Credential queries
+  VerifiablePresentationRequest,
+  VPRQuery,
+
+  // Errors
+  LearnCardError,
+  ErrorCode,
+
+  // App events
+  AppEvent,
+  AppEventResponse,
+  SendCredentialEvent,
+} from '@learncard/partner-connect';
+```
+
+### Key Type Definitions
+
+```typescript
+interface TemplateCredentialInput {
+  templateAlias: string;
+  templateData?: Record<string, unknown>;
+}
+
+interface TemplateCredentialResponse {
+  credentialUri: string;
+  boostUri: string;
+}
+
+interface SendCredentialResponse {
+  credentialId: string;
+}
+
+interface TemplateIssueResponse {
+  issued: boolean;
+}
+
+interface ConsentResponse {
+  granted: boolean;
+}
+
+interface RequestConsentOptions {
+  redirect?: boolean;
+}
+
+type ErrorCode =
+  | 'LC_TIMEOUT'
+  | 'LC_UNAUTHENTICATED'
+  | 'CREDENTIAL_NOT_FOUND'
+  | 'USER_REJECTED'
+  | 'UNAUTHORIZED'
+  | 'TEMPLATE_NOT_FOUND'
+  | string;
+
+interface LearnCardError {
+  code: ErrorCode;
+  message: string;
+}
+```
+
 ## Related Documentation
 
+- [Connect an Embedded App](../how-to-guides/connect-systems/connect-an-embedded-app.md) - Step-by-step guide for App Store credential issuance
 - [LearnCard Core SDK](/sdks/learncard-core/) - Backend credential operations
 - [LearnCard Network](/sdks/learncard-network/) - Network integration
 - [Creating Connected Websites](/how-to-guides/connect-systems/connect-a-website) - Integration guide

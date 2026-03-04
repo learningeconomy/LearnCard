@@ -34,7 +34,7 @@ env:
 
 jobs:
     health-check:
-        name: 'Health Check: ${{ inputs.group_name || inputs.group_id || ''LearnCloud Staging'' }}'
+        name: UpTime Health Check
         if: github.head_ref == 'changeset-release/main' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call'
         runs-on: ubuntu-latest
         steps:
