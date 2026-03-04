@@ -1367,6 +1367,7 @@ export const SkillFrameworkValidator = z.object({
     description: z.string().optional(),
     image: z.string().optional(),
     sourceURI: z.string().url().optional(),
+    isPublic: z.boolean().default(false),
     status: SkillFrameworkStatusEnum.default('active'),
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
@@ -1435,6 +1436,7 @@ export const CreateManagedFrameworkInputValidator = z.object({
     description: z.string().optional(),
     image: z.string().optional(),
     sourceURI: z.string().url().optional(),
+    isPublic: z.boolean().optional(),
     status: SkillFrameworkStatusEnum.optional(),
     skills: z.array(SkillTreeNodeInputValidator).optional(),
     boostUris: z.array(z.string()).optional(),
@@ -1452,6 +1454,7 @@ export const UpdateFrameworkInputValidator = z
         description: z.string().optional(),
         image: z.string().optional(),
         sourceURI: z.string().url().optional(),
+        isPublic: z.boolean().optional(),
         status: SkillFrameworkStatusEnum.optional(),
     })
     .refine(
@@ -1460,6 +1463,7 @@ export const UpdateFrameworkInputValidator = z
             data.description !== undefined ||
             data.image !== undefined ||
             data.sourceURI !== undefined ||
+            data.isPublic !== undefined ||
             data.status !== undefined,
         {
             message: 'At least one field must be provided to update',
@@ -1790,6 +1794,7 @@ export const CredentialActivitySourceTypeValidator = z.enum([
     'inbox',
     'claimLink',
     'acceptCredential',
+    'appEvent',
 ]);
 export type CredentialActivitySourceType = z.infer<typeof CredentialActivitySourceTypeValidator>;
 

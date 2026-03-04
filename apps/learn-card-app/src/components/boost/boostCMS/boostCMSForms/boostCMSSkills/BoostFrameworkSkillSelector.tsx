@@ -49,6 +49,7 @@ export const BoostFrameworkSkillSelector: React.FC<{
         newModal(
             <SelectFrameworkToManageModal
                 hideCreateFramework
+                isBoostSkillSelection
                 onFrameworkSelectOverride={framework => {
                     newModal(
                         <BrowseFrameworkPage

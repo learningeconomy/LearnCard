@@ -20,6 +20,7 @@
 -   **Error handling**: Use try/catch with specific error types
 -   **Functions**: Prefer arrow functions with explicit return types
 -   **React**: Function components with hooks preferred over class components
+-   **React callbacks**: Use `onComplete`/`onSwitchComplete` callback props to let parent components control side effects after async actions complete, rather than hardcoding side effects in child components
 -   **Modules**: Keep files focused on single responsibility
 -   **Documentation**: Add JSDoc comments for public APIs and complex logic
 
