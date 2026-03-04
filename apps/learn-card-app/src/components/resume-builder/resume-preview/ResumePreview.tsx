@@ -92,11 +92,58 @@ const ResumePreview = forwardRef<
                 const sourceW = canvas.width;
                 const sourceH = canvas.height;
                 const pageHeightPx = Math.floor((sourceW * pdfH) / pdfW);
+                const minPageFillPx = Math.floor(pageHeightPx * 0.6);
+
+                const cloneRect = clone.getBoundingClientRect();
+                const domBreakAnchors = Array.from(
+                    clone.querySelectorAll<HTMLElement>('[data-pdf-break-anchor]')
+                )
+                    .map(el => Math.round(el.getBoundingClientRect().top - cloneRect.top))
+                    .filter(y => y > 0 && y < clone.scrollHeight)
+                    .sort((a, b) => a - b);
+
+                const domToCanvasRatio = sourceH / clone.scrollHeight;
+                const breakAnchorsPx = domBreakAnchors.map(y => Math.round(y * domToCanvasRatio));
 
                 let renderedY = 0;
                 let pageIndex = 0;
                 while (renderedY < sourceH) {
-                    const sliceH = Math.min(pageHeightPx, sourceH - renderedY);
+                    const remaining = sourceH - renderedY;
+                    if (remaining <= pageHeightPx) {
+                        const lastCanvas = document.createElement('canvas');
+                        lastCanvas.width = sourceW;
+                        lastCanvas.height = remaining;
+                        const lastCtx = lastCanvas.getContext('2d');
+                        if (!lastCtx) break;
+                        lastCtx.fillStyle = '#ffffff';
+                        lastCtx.fillRect(0, 0, sourceW, remaining);
+                        lastCtx.drawImage(
+                            canvas,
+                            0,
+                            renderedY,
+                            sourceW,
+                            remaining,
+                            0,
+                            0,
+                            sourceW,
+                            remaining
+                        );
+                        if (pageIndex > 0) pdf.addPage();
+                        const lastImg = lastCanvas.toDataURL('image/png');
+                        const lastRenderH = (remaining * pdfW) / sourceW;
+                        pdf.addImage(lastImg, 'PNG', 0, 0, pdfW, lastRenderH, undefined, 'FAST');
+                        break;
+                    }
+
+                    const defaultEnd = renderedY + pageHeightPx;
+                    const candidateAnchors = breakAnchorsPx.filter(
+                        y => y > renderedY + minPageFillPx && y <= defaultEnd
+                    );
+                    const snappedEnd =
+                        candidateAnchors.length > 0
+                            ? candidateAnchors[candidateAnchors.length - 1]
+                            : defaultEnd;
+                    const sliceH = Math.max(1, snappedEnd - renderedY);
                     const pageCanvas = document.createElement('canvas');
                     pageCanvas.width = sourceW;
                     pageCanvas.height = sliceH;

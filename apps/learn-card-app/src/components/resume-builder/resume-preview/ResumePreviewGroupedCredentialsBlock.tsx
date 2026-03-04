@@ -34,12 +34,16 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
 
     if (measureOnly || isPreviewing) {
         return (
-            <div className="mb-6">
+            <div className="mb-6" data-pdf-break-anchor>
                 <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 mb-3 border-b border-grayscale-100 pb-1">
                     {section.label}
                 </h2>
                 {entries.map(entry => (
-                    <div key={entry.uri} className="flex items-start gap-2 py-1">
+                    <div
+                        key={entry.uri}
+                        className="flex items-start gap-2 py-1"
+                        data-pdf-break-anchor
+                    >
                         <div className="flex-1">
                             <ResumePreviewCredentialToTextBlock
                                 uri={entry.uri}
@@ -55,7 +59,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
     }
 
     return (
-        <div className="mb-6">
+        <div className="mb-6" data-pdf-break-anchor>
             <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 mb-3 border-b border-grayscale-100 pb-1">
                 {section.label}
             </h2>
@@ -79,7 +83,11 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                 {entries.map(entry => {
                     const isEditing = editingUris.includes(entry.uri);
                     return (
-                        <div key={entry.uri} className="flex items-start gap-2 py-1">
+                        <div
+                            key={entry.uri}
+                            className="flex items-start gap-2 py-1"
+                            data-pdf-break-anchor
+                        >
                             <div className="flex-1">
                                 <ResumePreviewCredentialToTextBlock
                                     uri={entry.uri}
@@ -101,7 +109,10 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                                         title="Deselect credential"
                                         aria-label="Deselect credential"
                                     >
-                                        <IonIcon icon={trashOutline} className="w-[24px] h-[24px]" />
+                                        <IonIcon
+                                            icon={trashOutline}
+                                            className="w-[24px] h-[24px]"
+                                        />
                                     </button>
                                 )}
                                 <ResumePreviewEditBlockButton
