@@ -16,6 +16,9 @@ export type LaunchTypeEnum = z.infer<typeof LaunchType>;
 export const PromotionLevel = z.enum(['FEATURED_CAROUSEL', 'CURATED_LIST', 'STANDARD', 'DEMOTED']);
 export type PromotionLevelEnum = z.infer<typeof PromotionLevel>;
 
+export const AgeRating = z.enum(['4+', '9+', '12+', '17+']);
+export type AgeRatingEnum = z.infer<typeof AgeRating>;
+
 export const AppStoreListingValidator = z.object({
     listing_id: z.string(),
     slug: z.string().optional(),
@@ -36,6 +39,8 @@ export const AppStoreListingValidator = z.object({
     highlights_json: z.string().optional(),
     screenshots_json: z.string().optional(),
     hero_background_color: z.string().optional(),
+    min_age: z.number().int().min(0).max(18).optional(),
+    age_rating: AgeRating.optional(),
 });
 export type AppStoreListingType = z.infer<typeof AppStoreListingValidator>;
 

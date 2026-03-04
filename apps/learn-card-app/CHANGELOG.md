@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.94.29
+
+### Patch Changes
+
+-   [#1044](https://github.com/learningeconomy/LearnCard/pull/1044) [`bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee`](https://github.com/learningeconomy/LearnCard/commit/bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee) Thanks [@smurflo2](https://github.com/smurflo2)! - Add age rating and minimum age (both optional) to apps
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.9
+    -   @learncard/lca-api-plugin@1.1.17
+    -   @learncard/open-badge-v2-plugin@1.1.10
+    -   @learncard/react@2.9.16
+
+## 1.94.28
+
+### Patch Changes
+
+-   [#1040](https://github.com/learningeconomy/LearnCard/pull/1040) [`099ed4735e2565179c33a0d3015ef6961c8feaa3`](https://github.com/learningeconomy/LearnCard/commit/099ed4735e2565179c33a0d3015ef6961c8feaa3) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1615] Unified Guardian Hook
+
 ## 1.94.27
 
 ### Patch Changes

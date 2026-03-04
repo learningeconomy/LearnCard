@@ -3,6 +3,7 @@ import type { AppStoreListing, LaunchType as LCLaunchType } from '@learncard/typ
 export type AppListingStatus = 'DRAFT' | 'PENDING_REVIEW' | 'LISTED' | 'ARCHIVED';
 export type LaunchType = LCLaunchType;
 export type PromotionLevel = 'FEATURED_CAROUSEL' | 'CURATED_LIST' | 'STANDARD' | 'DEMOTED';
+export type AgeRating = '4+' | '9+' | '12+' | '17+';
 
 // Extended listing type until types package is rebuilt
 export interface ExtendedAppStoreListing extends AppStoreListing {
@@ -10,6 +11,8 @@ export interface ExtendedAppStoreListing extends AppStoreListing {
     highlights?: string[];
     screenshots?: string[];
     hero_background_color?: string;
+    min_age?: number;
+    age_rating?: AgeRating;
 }
 
 export interface AppStoreListingCreate {
@@ -29,7 +32,16 @@ export interface AppStoreListingCreate {
     highlights?: string[];
     screenshots?: string[];
     hero_background_color?: string;
+    min_age?: number;
+    age_rating?: AgeRating;
 }
+
+export const AGE_RATING_OPTIONS: { value: AgeRating; label: string; minAge: number }[] = [
+    { value: '4+', label: '4+', minAge: 4 },
+    { value: '9+', label: '9+', minAge: 9 },
+    { value: '12+', label: '12+', minAge: 12 },
+    { value: '17+', label: '17+', minAge: 17 },
+];
 
 // Permission types for app capabilities
 export type AppPermission =
