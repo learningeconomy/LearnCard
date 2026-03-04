@@ -181,6 +181,11 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                 {launchTypeInfo?.label}
                             </span>
                             <StatusBadge status={listing.app_listing_status as AppListingStatus} />
+                            {listing.age_rating && (
+                                <span className="inline-block px-2 py-0.5 bg-grayscale-100 text-grayscale-700 text-xs font-medium rounded-full">
+                                    Age {listing.age_rating}
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -208,6 +213,16 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                 </li>
                             ))}
                         </ul>
+                    </div>
+                )}
+
+                {/* Minimum Age */}
+                {listing.min_age && (
+                    <div>
+                        <h3 className="text-sm font-medium text-gray-600 mb-1">Minimum Age</h3>
+                        <p className="text-sm text-gray-500 whitespace-pre-wrap">
+                            {listing.min_age}
+                        </p>
                     </div>
                 )}
 
