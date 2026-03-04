@@ -22,9 +22,11 @@ export const ResumeBuilder: React.FC = () => {
 
     const [panelOpen, setPanelOpen] = useState<boolean>(true); // Desktop side panel
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false); // Mobile drawer
+
     const [isPreviewing, setIsPreviewing] = useState<boolean>(false);
-    const [loadingAction, setLoadingAction] = useState<ResumeBuilderHeaderAction>(null);
     const [inlinePreviewUrl, setInlinePreviewUrl] = useState<string | null>(null);
+
+    const [loadingAction, setLoadingAction] = useState<ResumeBuilderHeaderAction>(null);
 
     const handlePreview = useCallback(async () => {
         if (loadingAction) return;
@@ -84,6 +86,7 @@ export const ResumeBuilder: React.FC = () => {
             <div className="flex-1 min-w-0 flex flex-col">
                 <ResumeBuilderHeader
                     loadingAction={loadingAction}
+                    isMobile={isMobile}
                     onPreview={handlePreview}
                     onDownload={handleDownload}
                 />
