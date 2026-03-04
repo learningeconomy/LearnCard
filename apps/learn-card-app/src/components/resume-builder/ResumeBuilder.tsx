@@ -1,12 +1,14 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 
 import { IonIcon } from '@ionic/react';
 import { menuOutline } from 'ionicons/icons';
+import ResumeIframePreview from './ResumeIframePreview';
 import ResumePreviewFAB from './resume-preview/ResumePreviewFAB';
 import ResumeConfigPanelFAB from './resume-config-panel/ResumeConfigPanelFAB';
 import ResumePreview, { ResumePreviewHandle } from './resume-preview/ResumePreview';
 import ResumeConfigOverlayPanel from './resume-config-panel/ResumeConfigOverlayPanel';
 import ResumeConfigDesktopSidePanel from './resume-config-panel/ResumeConfigDesktopSidePanel';
+import ResumeBuilderHeader, { ResumeBuilderHeaderAction } from './ResumeBuilderHeader';
 
 import { useDeviceTypeByWidth, useModal, ModalTypes } from 'learn-card-base';
 import { useResumePreselection } from './useResumePreselection';
@@ -21,17 +23,39 @@ export const ResumeBuilder: React.FC = () => {
     const [panelOpen, setPanelOpen] = useState<boolean>(true); // Desktop side panel
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false); // Mobile drawer
     const [isPreviewing, setIsPreviewing] = useState<boolean>(false);
+    const [loadingAction, setLoadingAction] = useState<ResumeBuilderHeaderAction>(null);
+    const [inlinePreviewUrl, setInlinePreviewUrl] = useState<string | null>(null);
 
-    const handleDownload = useCallback(() => resumePreviewRef.current?.generatePDF(), []);
+    const handlePreview = useCallback(async () => {
+        if (loadingAction) return;
+        setLoadingAction('preview');
+        try {
+            const nextUrl = await resumePreviewRef.current?.createPDFPreviewUrl();
+            if (nextUrl) {
+                setInlinePreviewUrl(prevUrl => {
+                    if (prevUrl) URL.revokeObjectURL(prevUrl);
+                    return nextUrl;
+                });
+            }
+        } finally {
+            setLoadingAction(null);
+        }
+    }, [loadingAction]);
+
+    const handleDownload = useCallback(async () => {
+        if (loadingAction) return;
+        setLoadingAction('download');
+        try {
+            await resumePreviewRef.current?.generatePDF();
+        } finally {
+            setLoadingAction(null);
+        }
+    }, [loadingAction]);
 
     const openResumeConfigPanel = () => {
         if (isMobile) {
             newModal(
-                <ResumeConfigOverlayPanel
-                    drawerOpen={drawerOpen}
-                    setDrawerOpen={setDrawerOpen}
-                    onDownload={handleDownload}
-                />
+                <ResumeConfigOverlayPanel drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen} />
             );
         } else {
             setPanelOpen(true);
@@ -42,15 +66,38 @@ export const ResumeBuilder: React.FC = () => {
         ? 'flex-1 overflow-y-auto py-6 px-3 flex flex-col pb-[100px]'
         : 'flex-1 overflow-y-auto py-10 px-6 flex justify-center';
 
+    useEffect(() => {
+        return () => {
+            if (inlinePreviewUrl) URL.revokeObjectURL(inlinePreviewUrl);
+        };
+    }, [inlinePreviewUrl]);
+
+    const closeInlinePreview = useCallback(() => {
+        setInlinePreviewUrl(prevUrl => {
+            if (prevUrl) URL.revokeObjectURL(prevUrl);
+            return null;
+        });
+    }, []);
+
     return (
         <div className="flex h-full w-full bg-grayscale-50 overflow-hidden relative">
-            <div className={previewWrapperStyles}>
-                <ResumePreview
-                    ref={resumePreviewRef}
-                    isMobile={isMobile}
-                    isPreviewing={isPreviewing}
+            <div className="flex-1 min-w-0 flex flex-col">
+                <ResumeBuilderHeader
+                    loadingAction={loadingAction}
+                    onPreview={handlePreview}
+                    onDownload={handleDownload}
                 />
+
+                <div className={previewWrapperStyles}>
+                    <ResumePreview
+                        ref={resumePreviewRef}
+                        isMobile={isMobile}
+                        isPreviewing={isPreviewing}
+                    />
+                </div>
             </div>
+
+            <ResumeIframePreview previewUrl={inlinePreviewUrl} onClose={closeInlinePreview} />
 
             {/* ── Desktop side panel ── */}
             {!isMobile && (
@@ -59,7 +106,6 @@ export const ResumeBuilder: React.FC = () => {
                     setPanelOpen={setPanelOpen}
                     isPreviewing={isPreviewing}
                     setIsPreviewing={setIsPreviewing}
-                    onDownload={handleDownload}
                 />
             )}
 
