@@ -54,7 +54,7 @@ on:
                 type: boolean
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}-${{ contains(github.event.head_commit.message, 'chore(release): version packages') && 'production' || github.event_name == 'workflow_dispatch' && 'manual' || 'staging' }}
+    group: "${{ github.workflow }}-${{ github.ref }}-${{ contains(github.event.head_commit.message, 'chore(release): version packages') && 'production' || github.event_name == 'workflow_dispatch' && 'manual' || 'staging' }}"
     cancel-in-progress: false
 
 env:
