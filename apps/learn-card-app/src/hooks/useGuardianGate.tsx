@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import {
     switchedProfileStore,
@@ -6,6 +6,8 @@ import {
     useWallet,
     ModalTypes,
     currentUserStore,
+    useGetCurrentLCNUser,
+    calculateAge,
 } from 'learn-card-base';
 
 import { FamilyPinWrapper } from '../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
@@ -34,15 +36,25 @@ export type UseGuardianGateOptions = {
     verificationTTL?: number;
 };
 
+export type GuardedActionOptions = {
+    /** Force re-verification even if guardian was recently verified */
+    ignorePriorVerification?: boolean;
+};
+
 export type GuardianGateResult = {
     /** Wraps an action with guardian approval when needed */
-    guardedAction: (action: () => Promise<void> | void) => Promise<void>;
+    guardedAction: (
+        action: () => Promise<void> | void,
+        options?: GuardedActionOptions
+    ) => Promise<void>;
     /** Whether the current profile is a child profile */
     isChildProfile: boolean;
     /** Whether the guardian has verified within the current TTL window */
     isGuardianVerified: boolean;
     /** Force clear the verification cache */
     clearVerification: () => void;
+    /** Current user age */
+    userAge: number | null;
 };
 
 export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianGateResult => {
@@ -55,6 +67,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
 
     const { newModal, closeModal } = useModal();
     const { initWallet } = useWallet();
+    const { currentLCNUser } = useGetCurrentLCNUser();
 
     const isSwitchedProfile = switchedProfileStore?.use?.isSwitchedProfile();
     const profileType = switchedProfileStore?.use?.profileType();
@@ -62,6 +75,14 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
 
     // Determine if we're operating as a child profile
     const isChildProfile = Boolean(isSwitchedProfile && profileType === 'child');
+
+    // Calculate user age from date of birth
+    const userAge = useMemo(() => {
+        const userDob = currentLCNUser?.dob; // form: "YYYY-MM-DD"
+        if (!userDob) return null;
+        const age = calculateAge(userDob);
+        return Number.isNaN(age) ? null : age;
+    }, [currentLCNUser?.dob]);
 
     // Check if verification is still valid within TTL
     const isGuardianVerified = useCallback((): boolean => {
@@ -87,7 +108,11 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
     }, [parentDid]);
 
     const guardedAction = useCallback(
-        async (action: () => Promise<void> | void): Promise<void> => {
+        async (
+            action: () => Promise<void> | void,
+            options: GuardedActionOptions = {}
+        ): Promise<void> => {
+            const { ignorePriorVerification = false } = options;
             // If skip is enabled, execute immediately
             if (skip) {
                 await action();
@@ -101,7 +126,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
             }
 
             // If already verified within TTL, execute immediately
-            if (isGuardianVerified()) {
+            if (!ignorePriorVerification && isGuardianVerified()) {
                 onVerified?.(); // fix for an edge case where the original source modal was closed quickly after entering PIN
                 await action();
                 return;
@@ -179,6 +204,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
         isChildProfile,
         isGuardianVerified: isGuardianVerified(),
         clearVerification,
+        userAge,
     };
 };
 

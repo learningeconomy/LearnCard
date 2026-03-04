@@ -1,5 +1,13 @@
 # @learncard/benchmarking
 
+## 1.0.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.7
+    -   @learncard/didkit-plugin-node@0.2.5
+
 ## 1.0.7
 
 ### Patch Changes

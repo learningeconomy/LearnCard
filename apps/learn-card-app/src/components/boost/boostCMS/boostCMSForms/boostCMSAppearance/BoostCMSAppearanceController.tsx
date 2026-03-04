@@ -69,7 +69,7 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
         );
     } else {
         badgeCircleText =
-            CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type].find(
+            CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type]?.find(
                 options => options?.type === state?.basicInfo?.achievementType
             )?.title ?? '';
     }

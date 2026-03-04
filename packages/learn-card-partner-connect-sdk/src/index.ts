@@ -511,7 +511,7 @@ export class PartnerConnect {
  * });
  * ```
  */
-export function createPartnerConnect(options: PartnerConnectOptions): PartnerConnect {
+export function createPartnerConnect(options?: PartnerConnectOptions): PartnerConnect {
     return new PartnerConnect(options);
 }
 

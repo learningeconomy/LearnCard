@@ -1,6 +1,6 @@
 {
     "name": "scoutpass-app",
-    "version": "1.89.23",
+    "version": "1.89.25",
     "private": true,
     "dependencies": {
         "@capacitor-community/sqlite": "^7.0.1",

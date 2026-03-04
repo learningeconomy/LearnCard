@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.89.25
+
+### Patch Changes
+
+-   [#1048](https://github.com/learningeconomy/LearnCard/pull/1048) [`22aafd3b8764ed0bac2f48d870ab8421fab13978`](https://github.com/learningeconomy/LearnCard/commit/22aafd3b8764ed0bac2f48d870ab8421fab13978) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Add optional chaining to CATEGORY_TO_SUBCATEGORY_LIST lookups
+
+## 1.89.24
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.9
+    -   @learncard/lca-api-plugin@1.1.17
+    -   @learncard/react@2.9.16
+
 ## 1.89.23
 
 ### Patch Changes
