@@ -71,7 +71,7 @@ export const SELF_ASSIGNED_SKILLS_BOOST_NAME = 'Self-Assigned Skills';
 // The type of achievement, for example 'Award' or 'Certification'.
 // This is an extensible enumerated vocabulary. Extending the vocabulary makes use of a naming convention
 // ! MUST ALIGN WITH -> learn-card-base/src/components/issueVC -> constants.ts -> { AchievementTypes }
-const CATEGORY_MAP: Record<
+export const CATEGORY_MAP: Record<
     KnownCredentialType | 'Student Buckcard' | `ext:${string}`,
     CredentialCategory
 > = {
