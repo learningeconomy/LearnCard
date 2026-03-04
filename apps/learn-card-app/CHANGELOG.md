@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.94.31
+
+### Patch Changes
+
+-   [#1051](https://github.com/learningeconomy/LearnCard/pull/1051) [`e15dafbc571e8c63fa4fddcfbb03e87d495b01ff`](https://github.com/learningeconomy/LearnCard/commit/e15dafbc571e8c63fa4fddcfbb03e87d495b01ff) Thanks [@Custard7](https://github.com/Custard7)! - fix: Category Map Error
+
 ## 1.94.30
 
 ### Patch Changes
