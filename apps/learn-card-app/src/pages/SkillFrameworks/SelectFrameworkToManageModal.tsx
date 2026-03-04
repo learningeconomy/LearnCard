@@ -9,6 +9,7 @@ import {
     useWallet,
     useToast,
     ToastTypeEnum,
+    useGetSkillFrameworkById,
 } from 'learn-card-base';
 
 import Plus from 'learn-card-base/svgs/Plus';
@@ -60,7 +61,13 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
     const queryClient = useQueryClient();
     const flags = useFlags<Flags>();
 
-    const { data: frameworks = [], isLoading: isLoadingFrameworks } = useListMySkillFrameworks();
+    const { data: userFrameworks = [], isLoading: isLoadingFrameworks } =
+        useListMySkillFrameworks();
+
+    const defaultFrameworkId = flags?.selfAssignedSkillsFrameworkId;
+    const { data: defaultFramework } = useGetSkillFrameworkById(defaultFrameworkId);
+
+    const frameworks = [defaultFramework.framework, ...(userFrameworks ?? [])];
 
     const [openSaltRef, setOpenSaltRef] = React.useState('');
     const [isImportingOpenSaltFramework, setIsImportingOpenSaltFramework] = React.useState(false);
