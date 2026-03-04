@@ -600,7 +600,7 @@ const handleSendCredentialEvent = async (
         boostUri,
         integrationId: integration.id,
         listingId,
-        source: 'sendBoost',
+        source: 'appEvent',
         metadata: { listingId, templateAlias },
     });
 

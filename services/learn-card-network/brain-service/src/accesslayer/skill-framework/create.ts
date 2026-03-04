@@ -1,13 +1,13 @@
 import { neogma } from '@instance';
 import { SkillFramework } from '@models';
-import { FlatSkillFrameworkType } from 'types/skill-framework';
+import type { FlatSkillFrameworkType } from 'types/skill-framework';
 import { v4 as uuid } from 'uuid';
 import type { Framework as ProviderFramework } from '@services/skills-provider/types';
 
 export type CreateSkillFrameworkInput = Omit<
     FlatSkillFrameworkType,
-    'id' | 'status' | 'createdAt' | 'updatedAt'
-> & { id?: string; status?: FlatSkillFrameworkType['status'] };
+    'id' | 'status' | 'createdAt' | 'updatedAt' | 'isPublic'
+> & { id?: string; status?: FlatSkillFrameworkType['status']; isPublic?: boolean };
 
 export const createSkillFramework = async (
     actorProfileId: string,
@@ -20,6 +20,7 @@ export const createSkillFramework = async (
         description: input.description,
         image: input.image,
         sourceURI: input.sourceURI,
+        isPublic: input.isPublic ?? false,
         status: input.status ?? 'active',
         createdAt: now,
         updatedAt: now,
@@ -50,17 +51,30 @@ export const upsertSkillFrameworkFromProvider = async (
         description: framework.description,
         image: framework.image || '',
         sourceURI: framework.sourceURI,
+        isPublic: true,
         status: 'active',
         createdAt: now,
         updatedAt: now,
     } as FlatSkillFrameworkType;
 
+    const params = {
+        id: data.id,
+        name: data.name,
+        description: data.description ?? null,
+        image: data.image ?? '',
+        sourceURI: data.sourceURI ?? null,
+        isPublic: data.isPublic ?? false,
+        status: data.status,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+    };
+
     // Merge local representation
     await neogma.queryRunner.run(
         `MERGE (f:SkillFramework {id: $id})
-         ON CREATE SET f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI, f.status = $status, f.createdAt = $createdAt, f.updatedAt = $updatedAt
-         ON MATCH SET  f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI, f.updatedAt = $updatedAt`,
-        data as any
+         ON CREATE SET f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI, f.isPublic = $isPublic, f.status = $status, f.createdAt = $createdAt, f.updatedAt = $updatedAt
+         ON MATCH SET  f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI, f.isPublic = $isPublic, f.updatedAt = $updatedAt`,
+        params
     );
 
     // Ensure MANAGES relationship

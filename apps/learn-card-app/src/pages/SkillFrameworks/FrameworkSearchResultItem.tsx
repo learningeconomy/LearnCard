@@ -107,6 +107,7 @@ const FrameworkSearchResultItem: React.FC<FrameworkSearchResultItemProps> = ({
                             Framework Tier •{' '}
                             <FrameworkSkillsCount
                                 frameworkId={frameworkInfo.id}
+                                sourceURI={frameworkInfo.sourceURI}
                                 skillId={node.id}
                                 includeSkillWord
                                 className="text-[12px] text-grayscale-700"

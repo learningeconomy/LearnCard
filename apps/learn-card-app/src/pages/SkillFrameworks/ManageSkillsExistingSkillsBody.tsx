@@ -94,6 +94,7 @@ const ManageSkillsExistingSkillsBody: React.FC<ManageSkillsExistingSkillsBodyPro
 
                         <FrameworkSkillsCount
                             frameworkId={skillFramework?.framework.id}
+                            sourceURI={skillFramework?.framework.sourceURI}
                             includeSkillWord
                             className="text-[17px] text-grayscale-600"
                         />
