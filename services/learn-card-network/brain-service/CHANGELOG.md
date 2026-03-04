@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.12.2
+
+### Patch Changes
+
+-   [#1046](https://github.com/learningeconomy/LearnCard/pull/1046) [`36cd4d51908084c0775958014c18f7f0886898b1`](https://github.com/learningeconomy/LearnCard/commit/36cd4d51908084c0775958014c18f7f0886898b1) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix: remove auth check for searching skill frameworks
+
 ## 3.12.1
 
 ### Patch Changes
