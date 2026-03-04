@@ -21,8 +21,10 @@ export type ApiSkillNode = {
 export type ApiFrameworkInfo = {
     id: string;
     name: string;
-    image: string;
-    description: string;
+    image?: string;
+    description?: string;
+    sourceURI?: string;
+    isPublic?: boolean;
     status: string;
     // createdAt: string;
     // updatedAt: string;

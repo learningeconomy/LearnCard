@@ -65,16 +65,13 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = () => {
                             <Plus className="w-[25px] h-[25px]" />
                             Create Framework
                         </button>
-                        {frameworksExist && (
-                            <button
-                                onClick={openSelectFrameworkToManageModal}
-                                className="flex items-center justify-center gap-[10px] pl-[20px] pr-[15px] py-[7px] rounded-[30px] bg-grayscale-900 text-white text-[17px] font-notoSans font-[600] leading-[24px] tracking-[0.25px]"
-                            >
-                                <Pencil className="w-[25px] h-[25px]" version={3} />
-                                {/* <PuzzlePiece version="with-plus" className="w-[25px] h-[25px]" /> */}
-                                Manage Skills
-                            </button>
-                        )}
+                        <button
+                            onClick={openSelectFrameworkToManageModal}
+                            className="flex items-center justify-center gap-[10px] pl-[20px] pr-[15px] py-[7px] rounded-[30px] bg-grayscale-900 text-white text-[17px] font-notoSans font-[600] leading-[24px] tracking-[0.25px]"
+                        >
+                            <Pencil className="w-[25px] h-[25px]" version={3} />
+                            Manage Skills
+                        </button>
                     </div>
 
                     {frameworksExist && (

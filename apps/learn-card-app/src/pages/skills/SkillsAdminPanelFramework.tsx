@@ -5,9 +5,10 @@ import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import FrameworkSkillsCount from '../SkillFrameworks/FrameworkSkillsCount';
 
 import { SkillFramework } from '../../components/boost/boost';
+import type { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 
 type SkillsAdminPanelFrameworkProps = {
-    framework: SkillFramework;
+    framework: SkillFramework | ApiFrameworkInfo;
     buttonClassName?: string;
     onClick?: () => void;
 };
@@ -17,6 +18,8 @@ const SkillsAdminPanelFramework: React.FC<SkillsAdminPanelFrameworkProps> = ({
     buttonClassName,
     onClick,
 }) => {
+    const sourceURI = 'sourceURI' in framework ? framework.sourceURI : undefined;
+
     return (
         <button className={buttonClassName} onClick={onClick}>
             <FrameworkImage image={framework.image} />
@@ -34,6 +37,7 @@ const SkillsAdminPanelFramework: React.FC<SkillsAdminPanelFrameworkProps> = ({
 
                 <FrameworkSkillsCount
                     frameworkId={framework.id}
+                    sourceURI={sourceURI}
                     includeSkillWord
                     className="text-[12px] !text-grayscale-700"
                 />
