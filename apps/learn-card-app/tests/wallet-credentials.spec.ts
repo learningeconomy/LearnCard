@@ -7,15 +7,13 @@ test.describe('Wallet Credentials', () => {
         await waitForAuthenticatedState(page);
     });
 
-    test('Issue a boost to self', async ({ page }) => {
-        await issueBoostToSelf(page);
-    });
-
-    test('View issued credential in wallet', async ({ page }) => {
-        // Issue a boost first, then verify it appears in the wallet
+    test('Issue a boost to self and view it in wallet', async ({ page }) => {
         await issueBoostToSelf(page);
 
-        await page.goto('/socialBadges');
+        // Assert boost was issued — navigates to socialBadges and toast appears
+        await page.waitForURL(/socialBadges/, { timeout: 30_000 });
+
+        // Assert credential appears in wallet
         await expect(page.getByText(TEST_BOOST_TITLE).first()).toBeVisible({
             timeout: 30_000,
         });
