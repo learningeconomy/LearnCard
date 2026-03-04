@@ -9,12 +9,7 @@ test.describe('Wallet Credentials', () => {
 
     test('View issued credential in wallet', async ({ page }) => {
         // 1. Issue a boost to self — creates a "Charmer" Social Badge
-        try {
-            await issueBoostToSelf(page);
-        } catch (error) {
-            console.error('The page often crashes here when trying to issue the VC =(', error);
-            return;
-        }
+        await issueBoostToSelf(page);
 
         // 2. Navigate to wallet and verify categories are visible
         await page.goto('/wallet');

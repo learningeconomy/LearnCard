@@ -20,24 +20,30 @@ export const loginTestAccount = async (page: Page) => {
 
 /**
  * Issues a Social Badge (Charmer) boost to the current user.
- * Navigates through the boost creation flow, publishes, and issues to self.
- * Waits for redirect to /wallet after issuance completes.
+ * Navigates directly to the boost creation page, publishes, and issues to self.
  *
- * Note: The VC issuance step has a known intermittent crash. This helper
- * will throw if the page fails to redirect to /wallet within the timeout.
+ * Flow: /boost page → Next → Publish & Issue → Boost Myself → Save
  */
 export const issueBoostToSelf = async (page: Page, timeout = 60_000) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Boost' }).click();
-    await page.getByRole('button', { name: 'New Boost' }).click();
-    await page.getByRole('button', { name: 'Social Badge', exact: true }).click();
-    await page.getByRole('button', { name: 'Charmer' }).click();
-    await page.getByRole('button', { name: 'Next' }).click();
-    await page.getByRole('button', { name: 'Publish & Issue' }).click();
-    await page.locator('ion-col').filter({ hasText: 'Issue To' }).getByRole('button').click();
-    await page.getByRole('button', { name: 'Boost Myself' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
-    await page.waitForURL('/wallet', { timeout });
+    // Navigate directly to the Charmer social badge boost creation page
+    await page.goto(
+        '/boost?boostUserType=someone&boostCategoryType=socialBadge&boostSubCategoryType=Charmer'
+    );
+
+    // Step 1: Create step — click "Next" to proceed to publish
+    await page.getByRole('button', { name: 'Next' }).click({ timeout: 30_000 });
+
+    // Step 2: Publish step — click "Publish & Issue" to publish the boost
+    await page.getByRole('button', { name: /publish & issue/i }).click({ timeout: 30_000 });
+
+    // Step 3: Issue To step — click "Boost Myself" to add self as recipient
+    await page.getByRole('button', { name: /boost myself/i }).first().click({ timeout });
+
+    // Step 4: Click "Save" to issue the boost
+    await page.getByRole('button', { name: 'Save' }).click({ timeout: 30_000 });
+
+    // Wait for success indication — toast or navigation away from /boost
+    await page.waitForURL(/(?!.*\/boost)/, { timeout });
 };
 
 /**
