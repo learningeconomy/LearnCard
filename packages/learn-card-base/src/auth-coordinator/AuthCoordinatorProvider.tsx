@@ -106,8 +106,7 @@ export interface AuthCoordinatorProviderProps {
 
     /**
      * Kill-switch: when false the coordinator stays in `idle` and never initializes.
-     * Defaults to `true`.  Set via `VITE_USE_AUTH_COORDINATOR=false` env var
-     * or pass explicitly.
+     * Defaults to `true`.
      */
     enabled?: boolean;
 

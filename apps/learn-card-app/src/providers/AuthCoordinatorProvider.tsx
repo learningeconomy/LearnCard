@@ -203,7 +203,6 @@ const DeviceLinkOverlay: React.FC<{
 // To swap providers at deploy-time, set environment variables:
 //   VITE_AUTH_PROVIDER=firebase          (default)
 //   VITE_KEY_DERIVATION=sss             (default)
-//   VITE_USE_AUTH_COORDINATOR=false      (kill-switch)
 // ---------------------------------------------------------------------------
 
 registerKeyDerivationFactory('sss', (config) =>
