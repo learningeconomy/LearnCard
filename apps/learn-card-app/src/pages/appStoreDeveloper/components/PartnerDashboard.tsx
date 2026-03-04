@@ -428,6 +428,31 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                 )}
                             </div>
 
+                            <div className="grid grid-cols-2 gap-4">
+                                {selectedListing.age_rating && (
+                                    <div>
+                                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                                            Age Rating
+                                        </label>
+
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            {selectedListing.age_rating}
+                                        </p>
+                                    </div>
+                                )}
+                                {selectedListing.min_age && (
+                                    <div>
+                                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                                            Minimum Age
+                                        </label>
+
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            {selectedListing.min_age}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
                             <div>
                                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
                                     Listing ID

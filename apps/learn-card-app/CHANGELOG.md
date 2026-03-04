@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.94.28
+
+### Patch Changes
+
+-   [#1040](https://github.com/learningeconomy/LearnCard/pull/1040) [`099ed4735e2565179c33a0d3015ef6961c8feaa3`](https://github.com/learningeconomy/LearnCard/commit/099ed4735e2565179c33a0d3015ef6961c8feaa3) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1615] Unified Guardian Hook
+
 ## 1.94.27
 
 ### Patch Changes

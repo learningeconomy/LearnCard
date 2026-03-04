@@ -12,6 +12,7 @@ import {
     AppListingStatus,
     LaunchType,
     PromotionLevel,
+    AgeRating,
 } from 'types/app-store-listing';
 
 export type AppStoreListingRelationships = {
@@ -90,6 +91,8 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
             highlights_json: { type: 'string', required: false },
             screenshots_json: { type: 'string', required: false },
             hero_background_color: { type: 'string', required: false },
+            min_age: { type: 'number', required: false },
+            age_rating: { type: 'string', enum: AgeRating.options, required: false },
         } as any,
         relationships: {
             publishedBy: { model: Integration, direction: 'in', name: 'PUBLISHES_LISTING' },
