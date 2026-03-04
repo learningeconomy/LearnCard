@@ -168,11 +168,12 @@ Issue a credential to the current user.
 | `templateAlias` | `string` | Yes      | The template alias configured in your app listing |
 | `templateData`  | `object` | No       | Values for template variables (e.g., `{{name}}`)  |
 
-**Returns:** `Promise<SendCredentialResponse>`
+**Returns:** `Promise<TemplateCredentialResponse>`
 
 ```typescript
-interface SendCredentialResponse {
+interface TemplateCredentialResponse {
     credentialUri: string; // URI of the issued credential
+    boostUri: string;      // URI of the boost template used
 }
 ```
 
@@ -202,7 +203,7 @@ try {
             // User not logged in
             showLoginPrompt();
             break;
-        case 'NOT_FOUND':
+        case 'TEMPLATE_NOT_FOUND':
             // templateAlias doesn't exist for this app
             console.error('Invalid template alias');
             break;
@@ -226,7 +227,13 @@ Let users send peer-to-peer badges to each other. Unlike `sendCredential` (which
 | ------------- | -------- | -------- | ------------------------------------- |
 | `templateUri` | `string` | Yes      | The URI of the badge template to send |
 
-**Returns:** `Promise<void>`
+**Returns:** `Promise<TemplateIssueResponse>`
+
+```typescript
+interface TemplateIssueResponse {
+    issued: boolean; // Whether the user completed the issuance flow
+}
+```
 
 **Example:**
 
@@ -234,8 +241,13 @@ Let users send peer-to-peer badges to each other. Unlike `sendCredential` (which
 // Let users send a "Thank You" badge to someone
 async function sendThankYouBadge() {
     try {
-        await learnCard.initiateTemplateIssue('urn:lc:boost:thank-you-badge');
-        console.log('Peer badge flow initiated');
+        const result = await learnCard.initiateTemplateIssue('urn:lc:boost:thank-you-badge');
+
+        if (result.issued) {
+            console.log('Badge sent successfully!');
+        } else {
+            console.log('User cancelled the badge flow');
+        }
     } catch (error) {
         console.error('Failed to initiate badge:', error);
     }
