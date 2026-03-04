@@ -491,8 +491,12 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                                         )}
                                                     </div>
                                                     <div
-                                                        onClick={() => copyBoostLinkToClipBoard()}
-                                                        className="w-[20%] flex items-center justify-end"
+                                                        onClick={() => {
+                                                            if (getCurrentClaimLink()) {
+                                                                copyBoostLinkToClipBoard();
+                                                            }
+                                                        }}
+                                                        className={`w-[20%] flex items-center justify-end ${!getCurrentClaimLink() ? 'opacity-30 pointer-events-none' : 'cursor-pointer'}`}
                                                     >
                                                         <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
                                                     </div>
@@ -517,7 +521,8 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                                             }
                                                         );
                                                     }}
-                                                    className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg  normal tracking-wide"
+                                                    disabled={isLinkLoading || !getCurrentClaimLink()}
+                                                    className="flex items-center justify-center bg-grayscale-900 disabled:bg-grayscale-400 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg  normal tracking-wide"
                                                 >
                                                     <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2 " />{' '}
                                                     Show Code

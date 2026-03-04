@@ -48,6 +48,10 @@ export const EMPTY_PERMISSIONS: BoostPermissions = {
     canViewAnalytics: false,
 };
 
+export const DEFAULT_BOOST_PERMISSIONS: Partial<BoostPermissions> = {
+    canView: true,
+};
+
 export const QUERYABLE_PERMISSIONS = [
     'canIssueChildren',
     'canCreateChildren',

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -19,6 +19,8 @@ import ManageSkillsJsonUploadedBody, { FrameworkJsonError } from './ManageSkills
 import ManageSkillsCancelUpdateModal from './ManageSkillsCancelUpdateModal';
 import ManageSkillsConfirmationModal from './ManageSkillsConfirmationModal';
 import ManageSkillsExistingSkillsBody from './ManageSkillsExistingSkillsBody';
+import useAutosave from '../../hooks/useAutosave';
+import RecoveryPrompt from '../../components/common/RecoveryPrompt';
 
 import { getFileInfo } from 'apps/learn-card-app/src/hooks/useUploadFile';
 import {
@@ -73,6 +75,14 @@ type ManageSkillsProps = {
     onSuccessClose?: () => void;
 };
 
+// Autosave state type for JSON upload flow
+type ManageSkillsAutosaveState = {
+    fileSkillFramework: SkillFramework | null;
+    fileInfo: { type: string; size: string; name: string } | null;
+    frameworkApproved: boolean;
+    selectedFrameworkId: string | null;
+};
+
 // oxlint-disable-next-line no-empty-pattern
 const ManageSkills: React.FC<ManageSkillsProps> = ({
     initialFrameworkId,
@@ -104,6 +114,100 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
         null
     );
     const [fileSkillFramework, setFileSkillFramework] = useState<SkillFramework | null>(null);
+
+    // Autosave hook - saves JSON upload progress to localStorage
+    const storageKey = selectedFrameworkId
+        ? `lc_manage_skills_json_${selectedFrameworkId}`
+        : 'lc_manage_skills_json';
+
+    const {
+        hasRecoveredState,
+        recoveredState,
+        clearRecoveredState,
+        saveToLocal,
+        saveImmediately,
+        clearLocalSave,
+    } = useAutosave<ManageSkillsAutosaveState, { frameworkName: string }>({
+        storageKey,
+        enabled: !isSaving,
+        hasContent: state => state?.fileSkillFramework !== null,
+    });
+
+    const hasShownRecoveryRef = useRef(false);
+
+    // Show recovery prompt if we have recovered state
+    useEffect(() => {
+        if (hasRecoveredState && recoveredState && !hasShownRecoveryRef.current) {
+            hasShownRecoveryRef.current = true;
+
+            setTimeout(() => {
+                const handleRecover = () => {
+                    if (recoveredState.fileSkillFramework) {
+                        setFileSkillFramework(recoveredState.fileSkillFramework);
+                    }
+                    if (recoveredState.fileInfo) {
+                        setFileInfo(recoveredState.fileInfo);
+                    }
+                    if (recoveredState.frameworkApproved) {
+                        setFrameworkApproved(recoveredState.frameworkApproved);
+                    }
+                    if (recoveredState.selectedFrameworkId && !initialFrameworkId) {
+                        setSelectedFrameworkId(recoveredState.selectedFrameworkId);
+                    }
+                    clearRecoveredState();
+                    closeModal();
+                };
+
+                const handleDiscard = () => {
+                    clearRecoveredState(true);
+                    closeModal();
+                };
+
+                newModal(
+                    <RecoveryPrompt
+                        itemName={framework?.name || 'JSON Upload'}
+                        itemType="framework JSON"
+                        onRecover={handleRecover}
+                        onDiscard={handleDiscard}
+                        discardButtonText="Start Fresh"
+                    />,
+                    { sectionClassName: '!max-w-[400px]' },
+                    { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                );
+            }, 300);
+        }
+    }, [
+        hasRecoveredState,
+        recoveredState,
+        clearRecoveredState,
+        newModal,
+        closeModal,
+        framework?.name,
+        initialFrameworkId,
+    ]);
+
+    // Save to localStorage whenever relevant state changes
+    useEffect(() => {
+        if (fileSkillFramework && !isSaving) {
+            saveToLocal(
+                {
+                    fileSkillFramework,
+                    fileInfo,
+                    frameworkApproved,
+                    selectedFrameworkId,
+                },
+                { frameworkName: framework?.name || '' }
+            );
+        }
+    }, [
+        fileSkillFramework,
+        fileInfo,
+        frameworkApproved,
+        selectedFrameworkId,
+        saveToLocal,
+        isSaving,
+        framework?.name,
+    ]);
 
     const collectSkillNames = useCallback((nodes?: SkillFrameworkNode[]): string[] => {
         if (!nodes) return [];
@@ -302,6 +406,8 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                     status: '',
                 }}
                 handleClose={() => {
+                    // Save immediately when closing to ensure edits are captured
+                    saveImmediately();
                     closeModal();
                 }}
                 handleApproveOverride={updatedSkillTree => {
@@ -314,6 +420,12 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
 
                     setFrameworkApproved(true);
                     closeModal();
+                }}
+                onSkillTreeChange={updatedSkillTree => {
+                    // Save edits to autosave as they happen during review
+                    setFileSkillFramework(prev =>
+                        prev ? { ...prev, skills: updatedSkillTree } : null
+                    );
                 }}
             />,
             undefined,
@@ -372,6 +484,8 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
             await queryClient.invalidateQueries({
                 queryKey: ['searchFrameworkSkills', selectedFrameworkId],
             });
+
+            clearLocalSave();
 
             closeModal(); // close ManageSkills modal
 

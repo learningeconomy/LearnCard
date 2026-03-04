@@ -32,6 +32,92 @@ export const listSkillFrameworksManagedByProfile = async (
         .filter(Boolean);
 };
 
+export const getAllAvailableSkillFrameworksForProfilePaged = async (
+    profileId: string,
+    searchQuery: Record<string, unknown> | null,
+    limit: number,
+    cursor?: string | null
+): Promise<{
+    records: FlatSkillFrameworkType[];
+    hasMore: boolean;
+    cursor: string | null;
+}> => {
+    const convertedQuery = convertObjectRegExpToNeo4j(searchQuery ?? {});
+    const { whereClause, params: queryParams } = buildWhereClause('f', convertedQuery as any);
+
+    let cursorName: string | null = null;
+    let cursorCreated: string | null = null;
+    let cursorId: string | null = null;
+
+    if (cursor) {
+        try {
+            const decoded = JSON.parse(cursor);
+            if (decoded && typeof decoded === 'object') {
+                cursorName = (decoded.n as string) ?? null;
+                cursorCreated = (decoded.c as string) ?? null;
+                cursorId = (decoded.i as string) ?? null;
+            }
+        } catch {
+            cursorId = cursor;
+        }
+    }
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (f:SkillFramework)
+         OPTIONAL MATCH (p:Profile {profileId: $profileId})-[:MANAGES]->(f)
+         WITH f, p
+         WHERE (p IS NOT NULL OR coalesce(f.isPublic, false) = true)
+         AND ${whereClause}
+         AND (
+            $cursorName IS NULL OR
+            toLower(f.name) > $cursorName OR
+            (toLower(f.name) = $cursorName AND (
+                COALESCE(f.createdAt, "") > COALESCE($cursorCreated, "") OR
+                (COALESCE(f.createdAt, "") = COALESCE($cursorCreated, "") AND f.id > COALESCE($cursorId, ""))
+            ))
+         )
+         RETURN DISTINCT f AS f
+         ORDER BY toLower(f.name) ASC, COALESCE(f.createdAt, "") ASC, f.id ASC
+         LIMIT $limitPlusOne`,
+        {
+            profileId,
+            ...queryParams,
+            cursorName,
+            cursorCreated,
+            cursorId,
+            limitPlusOne: int(limit + 1),
+        }
+    );
+
+    const all = result.records
+        .map(record => {
+            const node = record.get('f') as { properties?: Record<string, unknown> } | undefined;
+            if (!node?.properties) return null;
+
+            const props = node.properties;
+            return {
+                ...(props as FlatSkillFrameworkType),
+                isPublic: Boolean(props.isPublic),
+                status: (props.status as string | undefined) ?? 'active',
+            } as FlatSkillFrameworkType;
+        })
+        .filter(Boolean) as FlatSkillFrameworkType[];
+
+    const hasMore = all.length > limit;
+    const page = all.slice(0, limit);
+    const last = page[page.length - 1];
+    const nextCursor =
+        hasMore && last
+            ? JSON.stringify({
+                  n: (last.name || '').toLowerCase(),
+                  c: last.createdAt || '',
+                  i: last.id,
+              })
+            : null;
+
+    return { records: page, hasMore, cursor: nextCursor };
+};
+
 export const doesProfileManageFramework = async (
     profileId: string,
     frameworkId: string
@@ -126,7 +212,8 @@ export const getFrameworkWithSkills = async (id: string): Promise<FrameworkWithS
             description: props.description,
             code: props.code,
             type: props.type ?? 'skill',
-            status: props.status === 'archived' || props.status === 'inactive' ? 'archived' : 'active',
+            status:
+                props.status === 'archived' || props.status === 'inactive' ? 'archived' : 'active',
             ...(parentId && { parentId }),
         } as SkillNode;
     });
@@ -153,14 +240,14 @@ export const getBoostsThatUseFramework = async (
     // Build WHERE clause from query if provided
     let queryWhereClause = 'true';
     let queryParams = {};
-    
+
     if (query) {
         const convertedQuery = convertObjectRegExpToNeo4j(query);
         const { whereClause, params } = buildWhereClause('b', convertedQuery as any);
         queryWhereClause = whereClause;
         queryParams = params;
     }
-    
+
     const result = await neogma.queryRunner.run(
         `MATCH (f:SkillFramework {id: $frameworkId})<-[r:USES_FRAMEWORK]-(b:Boost)
          WHERE ($cursor IS NULL OR 
@@ -193,16 +280,19 @@ export const getBoostsThatUseFramework = async (
 
     const hasMore = all.length > limit;
     const page = all.slice(0, limit);
-    
+
     // Create composite cursor: relationshipCreatedAt|boostCreatedAt|boostId
-    const nextCursor = hasMore && page.length > 0 ? (() => {
-        const lastRecord = page[page.length - 1]!;
-        const lastResultRecord = result.records[page.length - 1];
-        const relCreatedAt = lastResultRecord?.get('relCreatedAt');
-        const boostCreatedAt = lastResultRecord?.get('boostCreatedAt');
-        const boostId = lastRecord.uri.split(':').pop();
-        return `${relCreatedAt}|${boostCreatedAt}|${boostId}`;
-    })() : undefined;
+    const nextCursor =
+        hasMore && page.length > 0
+            ? (() => {
+                  const lastRecord = page[page.length - 1]!;
+                  const lastResultRecord = result.records[page.length - 1];
+                  const relCreatedAt = lastResultRecord?.get('relCreatedAt');
+                  const boostCreatedAt = lastResultRecord?.get('boostCreatedAt');
+                  const boostId = lastRecord.uri.split(':').pop();
+                  return `${relCreatedAt}|${boostCreatedAt}|${boostId}`;
+              })()
+            : undefined;
 
     return { records: page, hasMore, cursor: nextCursor };
 };
@@ -218,14 +308,14 @@ export const countBoostsThatUseFramework = async (
     // Build WHERE clause from query if provided
     let queryWhereClause = 'true';
     let queryParams = {};
-    
+
     if (query) {
         const convertedQuery = convertObjectRegExpToNeo4j(query);
         const { whereClause, params } = buildWhereClause('b', convertedQuery as any);
         queryWhereClause = whereClause;
         queryParams = params;
     }
-    
+
     const result = await neogma.queryRunner.run(
         `MATCH (f:SkillFramework {id: $frameworkId})<-[r:USES_FRAMEWORK]-(b:Boost)
          WHERE (${queryWhereClause})

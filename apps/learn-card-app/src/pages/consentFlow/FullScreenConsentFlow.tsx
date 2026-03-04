@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
-import usePin from 'apps/learn-card-app/src/hooks/usePin';
 
 import {
     useModal,
@@ -18,6 +17,7 @@ import {
 } from 'learn-card-base';
 
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
+import { useGuardianGate } from '../../hooks/useGuardianGate';
 import ConsentFlowConnecting from './ConsentFlowConnecting';
 import ConsentFlowConfirmation from './ConsentFlowConfirmation';
 import ConsentFlowGetAnAdultPrompt from './ConsentFlowGetAnAdult';
@@ -96,7 +96,16 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         shouldGetAnAdult ? ConsentFlowStep.getAnAdult : ConsentFlowStep.confirmation
     );
 
-    const { handleVerifyParentPin } = usePin(closeModal);
+    // Guardian gate for child profiles - replaces fragmented usePin logic
+    const { guardedAction, isChildProfile } = useGuardianGate({
+        skip: isPreview || !!insightsProfile,
+        onVerified: () => {
+            // After guardian verification, proceed to confirmation
+            if (step === ConsentFlowStep.getAnAdult) {
+                setStep(ConsentFlowStep.confirmation);
+            }
+        },
+    });
 
     const { mutateAsync: consentToContract, isPending: consentingToContract } =
         useConsentToContract(
@@ -216,17 +225,11 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
 
     const handleNextStep = async () => {
         if (step === ConsentFlowStep.getAnAdult) {
-            if (isSwitchedProfile) {
-                // todo show current user on confirmation page in this case
-                await handleVerifyParentPin({
-                    switchToParentAfterPin: false,
-                    closeButtonText: 'Back',
-                    onSuccess: () => {
-                        setStep(ConsentFlowStep.confirmation);
-                        closeModal();
-                    },
-                });
-            }
+            // Use unified guardian gate for verification
+            // The onVerified callback will handle the step transition
+            await guardedAction(async () => {
+                // Action is empty because step transition is handled in onVerified
+            });
         }
     };
 
