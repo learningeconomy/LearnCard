@@ -9,6 +9,7 @@ import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth
 import { useGetCredentialList, useIsCollapsed } from 'learn-card-base';
 
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
+import { AiFeatureGate } from '../ai-feature-gate/AiFeatureGate';
 import AiSessionsLayout from './layout/AiSessionsLayout';
 import AiSessionSuggestions from './AiSessionSuggestions/AiSessionSuggestions';
 import AiSessionTopics from './AiSessionTopics/AiSessionTopics';
@@ -168,11 +169,13 @@ export const AiSessionTopicsContainer: React.FC = () => {
     }
 
     return (
-        <AiSessionsLayout
-            handleSetChatBotSelected={handleSetChatBotSelected}
-            leftColumn={leftColumn}
-            rightColumn={rightColumn}
-        />
+        <AiFeatureGate>
+            <AiSessionsLayout
+                handleSetChatBotSelected={handleSetChatBotSelected}
+                leftColumn={leftColumn}
+                rightColumn={rightColumn}
+            />
+        </AiFeatureGate>
     );
 };
 
