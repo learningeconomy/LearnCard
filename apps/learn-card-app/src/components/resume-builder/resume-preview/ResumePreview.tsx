@@ -3,9 +3,7 @@ import React, { useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import ResumePreviewUserInfo from './ResumePreviewUserInfo';
 import ResumePreviewEmptyPlaceholder from './ResumePreviewEmptyPlaceholder';
 import ResumePreviewGroupedCredentialsBlock from './ResumePreviewGroupedCredentialsBlock';
-
-import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+import useResumePdf from './useResumePdf';
 
 import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
@@ -13,6 +11,7 @@ import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 const LETTER_HEIGHT_PX = 1056; // US Letter at 96 DPI
 
 export type ResumePreviewHandle = {
+    createPDFPreviewUrl: () => Promise<string | null>;
     generatePDF: () => Promise<void>;
 };
 
@@ -25,6 +24,7 @@ const ResumePreview = forwardRef<
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
 
     const previewCardRef = useRef<HTMLDivElement>(null);
+    const { createPDFPreviewUrl, generatePDF } = useResumePdf(previewCardRef);
 
     const orderedSections = useMemo(() => {
         return sectionOrder
@@ -39,151 +39,8 @@ const ResumePreview = forwardRef<
     }, [personalDetails, credentialEntries]);
 
     useImperativeHandle(ref, () => ({
-        generatePDF: async () => {
-            const card = previewCardRef.current;
-            if (!card) return;
-
-            const [html2canvas, { jsPDF }] = await Promise.all([
-                import('html2canvas').then(m => m.default),
-                import('jspdf'),
-            ]);
-
-            // Inject a temporary stylesheet that hides all interactive UI during capture
-            const style = document.createElement('style');
-            style.id = '__pdf-capture-style__';
-            style.textContent = `
-                [data-pdf-card] [data-pdf-hide] { display: none !important; }
-            `;
-            document.head.appendChild(style);
-
-            // Off-screen container for fixed-width clones (ensures correct PDF dimensions on mobile)
-            const offscreen = document.createElement('div');
-            offscreen.style.cssText =
-                'position:fixed;top:-9999px;left:0;width:760px;pointer-events:none;z-index:-1;background:#fff;';
-            document.body.appendChild(offscreen);
-
-            try {
-                const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
-                const clone = card.cloneNode(true) as HTMLElement;
-                clone.className = clone.className
-                    .replace(/\bpx-4\b/, 'px-10')
-                    .replace(/\bpy-6\b/, 'py-10')
-                    .replace(/\brounded-xl\b/, 'rounded-lg');
-                clone.style.cssText +=
-                    ';width:760px;max-width:760px;margin:0;background:#fff;box-sizing:border-box;box-shadow:none;min-height:0;height:auto;';
-                offscreen.appendChild(clone);
-
-                await document.fonts?.ready;
-
-                const canvas = await html2canvas(clone, {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: '#ffffff',
-                    width: 760,
-                    windowWidth: 760,
-                    height: clone.scrollHeight,
-                });
-
-                const pdfW = pdf.internal.pageSize.getWidth();
-                const pdfH = pdf.internal.pageSize.getHeight();
-
-                // Convert the long canvas into letter-sized page slices at a fixed scale.
-                const sourceW = canvas.width;
-                const sourceH = canvas.height;
-                const pageHeightPx = Math.floor((sourceW * pdfH) / pdfW);
-                const minPageFillPx = Math.floor(pageHeightPx * 0.6);
-
-                const cloneRect = clone.getBoundingClientRect();
-                const domBreakAnchors = Array.from(
-                    clone.querySelectorAll<HTMLElement>('[data-pdf-break-anchor]')
-                )
-                    .map(el => Math.round(el.getBoundingClientRect().top - cloneRect.top))
-                    .filter(y => y > 0 && y < clone.scrollHeight)
-                    .sort((a, b) => a - b);
-
-                const domToCanvasRatio = sourceH / clone.scrollHeight;
-                const breakAnchorsPx = domBreakAnchors.map(y => Math.round(y * domToCanvasRatio));
-
-                let renderedY = 0;
-                let pageIndex = 0;
-                while (renderedY < sourceH) {
-                    const remaining = sourceH - renderedY;
-                    if (remaining <= pageHeightPx) {
-                        const lastCanvas = document.createElement('canvas');
-                        lastCanvas.width = sourceW;
-                        lastCanvas.height = remaining;
-                        const lastCtx = lastCanvas.getContext('2d');
-                        if (!lastCtx) break;
-                        lastCtx.fillStyle = '#ffffff';
-                        lastCtx.fillRect(0, 0, sourceW, remaining);
-                        lastCtx.drawImage(
-                            canvas,
-                            0,
-                            renderedY,
-                            sourceW,
-                            remaining,
-                            0,
-                            0,
-                            sourceW,
-                            remaining
-                        );
-                        if (pageIndex > 0) pdf.addPage();
-                        const lastImg = lastCanvas.toDataURL('image/png');
-                        const lastRenderH = (remaining * pdfW) / sourceW;
-                        pdf.addImage(lastImg, 'PNG', 0, 0, pdfW, lastRenderH, undefined, 'FAST');
-                        break;
-                    }
-
-                    const defaultEnd = renderedY + pageHeightPx;
-                    const candidateAnchors = breakAnchorsPx.filter(
-                        y => y > renderedY + minPageFillPx && y <= defaultEnd
-                    );
-                    const snappedEnd =
-                        candidateAnchors.length > 0
-                            ? candidateAnchors[candidateAnchors.length - 1]
-                            : defaultEnd;
-                    const sliceH = Math.max(1, snappedEnd - renderedY);
-                    const pageCanvas = document.createElement('canvas');
-                    pageCanvas.width = sourceW;
-                    pageCanvas.height = sliceH;
-
-                    const ctx = pageCanvas.getContext('2d');
-                    if (!ctx) break;
-
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, sourceW, sliceH);
-                    ctx.drawImage(canvas, 0, renderedY, sourceW, sliceH, 0, 0, sourceW, sliceH);
-
-                    if (pageIndex > 0) pdf.addPage();
-                    const imgData = pageCanvas.toDataURL('image/png');
-                    const renderH = (sliceH * pdfW) / sourceW;
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfW, renderH, undefined, 'FAST');
-
-                    renderedY += sliceH;
-                    pageIndex += 1;
-                }
-
-                if (Capacitor.isNativePlatform()) {
-                    const pdfData = pdf.output('datauristring').split(',')[1];
-                    const fileName = `resume_${Date.now()}.pdf`;
-                    await Filesystem.writeFile({
-                        path: fileName,
-                        data: pdfData,
-                        directory: Directory.Documents,
-                    });
-                    alert('Resume saved to Documents!');
-                } else {
-                    const a = document.createElement('a');
-                    a.download = 'resume.pdf';
-                    a.href = pdf.output('datauristring');
-                    a.click();
-                }
-            } finally {
-                document.getElementById('__pdf-capture-style__')?.remove();
-                document.body.removeChild(offscreen);
-            }
-        },
+        createPDFPreviewUrl,
+        generatePDF,
     }));
 
     if (!hasAnyContent) {
