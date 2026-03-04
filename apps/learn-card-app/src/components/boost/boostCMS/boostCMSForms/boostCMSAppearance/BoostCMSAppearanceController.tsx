@@ -60,7 +60,7 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
 
     const categoryType = state?.basicInfo?.type
         || CATEGORY_MAP[state?.basicInfo?.achievementType as keyof typeof CATEGORY_MAP] as BoostCategoryOptionsEnum | undefined
-        || BoostCategoryOptionsEnum.socialBadge;
+        || BoostCategoryOptionsEnum.achievement;
 
     const boostMetadata = getBoostMetadata(categoryType);
     const { Icon } = getThemedCategoryIcons(
