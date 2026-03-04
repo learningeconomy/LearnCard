@@ -133,7 +133,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const [isExpanded, setIsExpanded] = useState(false);
 
     // Guardian gate for child profiles - verify before showing permissions modal
-    const { guardedAction, clearVerification: clearGuardianVerification } = useGuardianGate({
+    const { guardedAction } = useGuardianGate({
         skip: isPreview,
     });
     const [canExpand, setCanExpand] = useState(false);
@@ -341,7 +341,6 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 if (enteredAge < ageFloor) {
                     // Child is underage - block installation
                     showAgeBlockedModal();
-                    clearGuardianVerification(); // so the child can't just click Install again without a guardian verification
                 } else {
                     // Child meets age requirement - proceed to install
                     showInstallConsentModal();
@@ -451,22 +450,38 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         // Case 2: Child profile missing DOB and app has age restriction
         // Use guardian gate, then prompt for DOB entry
         if (childMissingDob && hasAgeRestriction) {
-            guardedAction(() => {
-                showDobEntryModal();
-            });
+            guardedAction(
+                () => {
+                    showDobEntryModal();
+                },
+                { ignorePriorVerification: true }
+            );
             return;
         }
 
-        // Case 3: Soft block - age_rating violation for child profiles
-        // Require guardian approval but allow installation
-        if (isAgeRatingRestricted && isChildProfile) {
-            guardedAction(() => {
-                showInstallConsentModal();
-            });
-            return;
+        // Case 3: Child profile - check age restrictions
+        if (isChildProfile) {
+            const noAgeRating = ageRatingMinAge === 0;
+            const childAgeUnknown = userAge === null;
+            const childTooYoung = userAge !== null && userAge < ageRatingMinAge;
+
+            // Case 3a: No age rating specified - require guardian approval
+            // Case 3b: Child age unknown - require guardian approval
+            // Case 3c: Child too young - require guardian approval
+            if (noAgeRating || childAgeUnknown || childTooYoung) {
+                guardedAction(
+                    () => {
+                        showInstallConsentModal();
+                    },
+                    { ignorePriorVerification: true }
+                );
+                return;
+            }
+
+            // Case 3d: Child old enough - proceed directly without guardian approval
         }
 
-        // Case 4: No age restriction or user is old enough - proceed directly
+        // Case 4: User is old enough - proceed directly
         showInstallConsentModal();
     };
 
@@ -604,9 +619,12 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
         // Child profile missing DOB with age-restricted app - require guardian + DOB entry
         if (childMissingDob && hasAgeRestriction) {
-            guardedAction(() => {
-                showDobEntryModal();
-            });
+            guardedAction(
+                () => {
+                    showDobEntryModal();
+                },
+                { ignorePriorVerification: true }
+            );
             return;
         }
 

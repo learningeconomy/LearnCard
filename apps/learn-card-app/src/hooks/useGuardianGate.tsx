@@ -36,9 +36,17 @@ export type UseGuardianGateOptions = {
     verificationTTL?: number;
 };
 
+export type GuardedActionOptions = {
+    /** Force re-verification even if guardian was recently verified */
+    ignorePriorVerification?: boolean;
+};
+
 export type GuardianGateResult = {
     /** Wraps an action with guardian approval when needed */
-    guardedAction: (action: () => Promise<void> | void) => Promise<void>;
+    guardedAction: (
+        action: () => Promise<void> | void,
+        options?: GuardedActionOptions
+    ) => Promise<void>;
     /** Whether the current profile is a child profile */
     isChildProfile: boolean;
     /** Whether the guardian has verified within the current TTL window */
@@ -100,7 +108,11 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
     }, [parentDid]);
 
     const guardedAction = useCallback(
-        async (action: () => Promise<void> | void): Promise<void> => {
+        async (
+            action: () => Promise<void> | void,
+            options: GuardedActionOptions = {}
+        ): Promise<void> => {
+            const { ignorePriorVerification = false } = options;
             // If skip is enabled, execute immediately
             if (skip) {
                 await action();
@@ -114,7 +126,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
             }
 
             // If already verified within TTL, execute immediately
-            if (isGuardianVerified()) {
+            if (!ignorePriorVerification && isGuardianVerified()) {
                 await action();
                 return;
             }
