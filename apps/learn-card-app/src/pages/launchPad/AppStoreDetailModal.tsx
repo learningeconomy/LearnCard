@@ -617,25 +617,6 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             return;
         }
 
-        // Child profile missing DOB with age-restricted app - require guardian + DOB entry
-        if (childMissingDob && hasAgeRestriction) {
-            guardedAction(
-                () => {
-                    showDobEntryModal();
-                },
-                { ignorePriorVerification: true }
-            );
-            return;
-        }
-
-        // Soft block: age_rating violation for child profiles - require guardian approval
-        if (isAgeRatingRestricted && isChildProfile) {
-            guardedAction(async () => {
-                await proceedWithLaunch();
-            });
-            return;
-        }
-
         await proceedWithLaunch();
     };
 
