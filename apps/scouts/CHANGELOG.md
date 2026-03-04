@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.89.23
+
+### Patch Changes
+
+-   [#1038](https://github.com/learningeconomy/LearnCard/pull/1038) [`49b6234b0b2874ee1e7eaaa8e1c15c2a27549537`](https://github.com/learningeconomy/LearnCard/commit/49b6234b0b2874ee1e7eaaa8e1c15c2a27549537) Thanks [@Custard7](https://github.com/Custard7)! - fix: [LC-1647] Add checks to prevent invalid QR state
+
+-   [#1031](https://github.com/learningeconomy/LearnCard/pull/1031) [`495f2939cb6e4271cab0a88abea5105fb7e4f9b6`](https://github.com/learningeconomy/LearnCard/commit/495f2939cb6e4271cab0a88abea5105fb7e4f9b6) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-982][LC-1625] - extend default boost permissions, add "canView"
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.8
+    -   @learncard/lca-api-plugin@1.1.16
+    -   @learncard/react@2.9.15
+
 ## 1.89.22
 
 ### Patch Changes
