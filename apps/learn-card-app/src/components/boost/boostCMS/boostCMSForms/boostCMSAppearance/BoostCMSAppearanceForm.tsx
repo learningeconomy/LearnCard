@@ -149,7 +149,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
         );
     } else {
         achievementTypeSelected =
-            CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type].find(
+            CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type]?.find(
                 options => options?.type === state?.basicInfo?.achievementType
             )?.title ?? '';
     }
