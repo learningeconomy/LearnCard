@@ -1,5 +1,12 @@
 # @welibraryos/lca-api-client
 
+## 1.1.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-service@1.2.6
+
 ## 1.1.10
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @learncard/network-brain-client
 
+## 2.5.17
+
+### Patch Changes
+
+-   [#1044](https://github.com/learningeconomy/LearnCard/pull/1044) [`bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee`](https://github.com/learningeconomy/LearnCard/commit/bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee) Thanks [@smurflo2](https://github.com/smurflo2)! - Add age rating and minimum age (both optional) to apps
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-service@3.12.1
+
 ## 2.5.16
 
 ### Patch Changes
