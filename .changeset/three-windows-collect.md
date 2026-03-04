@@ -5,7 +5,6 @@
 "@learncard/types": patch
 "@learncard/network-plugin": patch
 "@learncard/network-brain-service": patch
-"@workspace/e2e-tests": patch
 ---
 
 feat: [LC-982][LC-1625] - extend default boost permissions, add "canView"
