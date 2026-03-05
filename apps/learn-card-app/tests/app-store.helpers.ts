@@ -8,9 +8,6 @@ const NEO4J_PASSWORD = 'this-is-the-password';
 
 const EMBED_URL = 'https://test-embed-app.example.com';
 
-// did:key generated from seed 'a'.repeat(64) — the test user in waitForAuthenticatedState
-const TEST_USER_DID_KEY = 'did:key:z6Mkv1o2GEgtXjFdEMfLtupcKhGRydM8V7VHzii7Uh4aHoqH';
-
 const MOCK_EMBED_HTML = `
 <!DOCTYPE html>
 <html>
@@ -78,33 +75,6 @@ export const seedAppListing = async (): Promise<SeededListing> => {
     }
 
     return { listingId, displayName };
-};
-
-/**
- * Ensures the test user's Profile node exists in Neo4j with the correct did:key.
- * The installApp mutation calls ensureUser → getProfileByDid(did:key) to find the profile.
- * Without this, install fails with "Please make an account first".
- */
-export const ensureTestProfile = async (
-    profileId: string,
-    did: string = TEST_USER_DID_KEY
-): Promise<void> => {
-    const driver = neo4j.driver(NEO4J_URI, neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD));
-    const session = driver.session();
-
-    try {
-        // MERGE by profileId, always set the did:key so brain-service can look it up
-        await session.run(
-            `MERGE (p:Profile {profileId: $profileId})
-             ON CREATE SET p.did = $did, p.displayName = $displayName
-             ON MATCH SET p.did = $did`,
-            { profileId, did, displayName: profileId }
-        );
-        console.log(`[ensureTestProfile] Ensured profile "${profileId}" with did: ${did}`);
-    } finally {
-        await session.close();
-        await driver.close();
-    }
 };
 
 /**

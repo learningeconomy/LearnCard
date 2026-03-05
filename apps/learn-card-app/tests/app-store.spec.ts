@@ -1,22 +1,18 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
-import {
-    seedAppListing,
-    ensureTestProfile,
-    mockEmbedRoute,
-    SeededListing,
-} from './app-store.helpers';
+import { seedAppListing, mockEmbedRoute, SeededListing } from './app-store.helpers';
 import { waitForAuthenticatedState } from './test.helpers';
 
 test.describe('App Store', () => {
     let listing: SeededListing;
 
     test.beforeEach(async ({ page }) => {
-        // Seed Neo4j data BEFORE auth so the app's initial queries pick it up
+        // Seed Neo4j listing BEFORE auth so the app's initial queries pick it up
         listing = await seedAppListing();
-        await ensureTestProfile('testa');
 
-        await waitForAuthenticatedState(page);
+        // Login and create a network profile in one step — the seed route calls
+        // wallet.invoke.createProfile() which guarantees DID consistency
+        await waitForAuthenticatedState(page, { profileId: 'testa' });
 
         // Mock only the embed URL — everything else is real
         await mockEmbedRoute(page);

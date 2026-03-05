@@ -14,18 +14,34 @@ test.describe('Wallet Credentials', () => {
     });
 
     test('Issue credential to yourself', async ({ page }) => {
-        // Start from /socialBadges so history.goBack() returns here after issuing
-        await page.goto('/socialBadges');
-
+        // waitForAuthenticatedState lands on /wallet — issue credential from here
         await issueCredentialToSelf(page);
 
-        // history.goBack() returns to /socialBadges
-        await page.waitForURL(/\/socialBadges/, { timeout: 60_000 });
+        // history.goBack() returns to /wallet
+        await page.waitForURL(/\/wallet/, { timeout: 60_000 });
 
-        // Verify credential appears
+        // Verify the Boosts category exists on wallet page
+        const boostsCategory = page.locator('[role="button"]').filter({ hasText: 'Boosts' });
+        await expect(boostsCategory).toBeVisible({ timeout: 30_000 });
+
+        // Click the Boosts category to navigate to credential list
+        await boostsCategory.click();
+        await page.waitForURL(/\/socialBadges/, { timeout: 30_000 });
+
+        // Verify credential appears in the list
         await expect(page.getByText(TEST_CREDENTIAL_TITLE).first()).toBeVisible({
             timeout: 30_000,
         });
+
+        // Click credential to open detail view
+        await page.getByText(TEST_CREDENTIAL_TITLE).first().click();
+
+        // Verify detail view elements
+        await expect(page.locator('.vc-card-header-main-title')).toContainText(
+            TEST_CREDENTIAL_TITLE,
+            { timeout: 30_000 }
+        );
+        await expect(page.locator('.issued-by')).toBeVisible({ timeout: 30_000 });
     });
 
     test('Issue credential to someone else', async ({ page, browser }) => {
@@ -47,8 +63,8 @@ test.describe('Wallet Credentials', () => {
             profileId: TEST_USER_2_PROFILE_ID,
         });
 
-        // User 1: Navigate to /socialBadges so history.goBack() returns here after issuing
-        await page.goto('/socialBadges');
+        // User 1: Start from /wallet so history.goBack() returns here after issuing
+        // (waitForAuthenticatedState already lands on /wallet)
 
         // User 1: Create a credential and send to user 2
         await page.getByRole('button', { name: 'Add to LearnCard' }).click({ timeout: 30_000 });
@@ -92,8 +108,8 @@ test.describe('Wallet Credentials', () => {
         // so we dispatch the click directly on the DOM element to bypass hit-testing.
         await page.locator('[data-testid="boost-cms-save"]').dispatchEvent('click');
 
-        // history.goBack() returns to /socialBadges
-        await page.waitForURL(/\/socialBadges/, { timeout: 60_000 });
+        // history.goBack() returns to /wallet
+        await page.waitForURL(/\/wallet/, { timeout: 60_000 });
 
         // Log any console errors for debugging if the test fails later
         if (consoleErrors.length > 0) {
@@ -119,6 +135,33 @@ test.describe('Wallet Credentials', () => {
         await expect(page2.getByText(/successfully claimed/i)).toBeVisible({
             timeout: 30_000,
         });
+
+        // User 2: Navigate to wallet and verify credential via category
+        await page2.goto('/wallet');
+        await page2.waitForURL(/\/wallet/, { timeout: 30_000 });
+
+        // Verify the Boosts category exists on User 2's wallet
+        const boostsCategory = page2.locator('[role="button"]').filter({ hasText: 'Boosts' });
+        await expect(boostsCategory).toBeVisible({ timeout: 30_000 });
+
+        // Click into the Boosts category
+        await boostsCategory.click();
+        await page2.waitForURL(/\/socialBadges/, { timeout: 30_000 });
+
+        // Verify credential appears in User 2's credential list
+        await expect(page2.getByText(TEST_CREDENTIAL_TITLE).first()).toBeVisible({
+            timeout: 30_000,
+        });
+
+        // Click credential to open detail view
+        await page2.getByText(TEST_CREDENTIAL_TITLE).first().click();
+
+        // Verify detail view elements
+        await expect(page2.locator('.vc-card-header-main-title')).toContainText(
+            TEST_CREDENTIAL_TITLE,
+            { timeout: 30_000 }
+        );
+        await expect(page2.locator('.issued-by')).toBeVisible({ timeout: 30_000 });
 
         await context2.close();
     });
