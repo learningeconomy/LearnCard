@@ -1,5 +1,6 @@
 import { createStore } from '@udecode/zustood';
 import { v4 as uuidv4 } from 'uuid';
+import { CredentialCategoryEnum } from 'learn-card-base';
 
 import {
     PersonalDetails,
@@ -14,6 +15,7 @@ import {
 export type ResumeBuilderState = {
     personalDetails: PersonalDetails;
     hiddenPersonalDetails: Partial<Record<keyof PersonalDetails, boolean>>;
+    currentJobCredentialUri: string | null;
     documentSetup: {
         showQRCode: boolean;
         fileName: string;
@@ -54,6 +56,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     {
         personalDetails: defaultPersonalDetails,
         hiddenPersonalDetails: {},
+        currentJobCredentialUri: null,
         documentSetup: defaultDocumentSetup,
         sectionOrder: defaultSectionOrder,
         credentialEntries: {},
@@ -96,6 +99,9 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
         const prev = resumeBuilderStore.get.documentSetup();
         set.documentSetup({ ...prev, ...setup });
     },
+    setCurrentJobCredentialUri: (uri: string | null) => {
+        set.currentJobCredentialUri(uri);
+    },
 
     // ── Credential selection & ordering ─────────────────────────────────────
     toggleCredential: (section: ResumeSectionKey, uri: string) => {
@@ -104,6 +110,12 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
         if (exists) {
             const removed = entries.filter(e => e.uri !== uri).map((e, i) => ({ ...e, index: i }));
             setEntries(set, section, removed);
+            if (
+                section === CredentialCategoryEnum.workHistory &&
+                resumeBuilderStore.get.currentJobCredentialUri() === uri
+            ) {
+                set.currentJobCredentialUri(null);
+            }
         } else {
             const added: CredentialEntry = { uri, index: entries.length, fields: [] };
             setEntries(set, section, [...entries, added]);
@@ -212,6 +224,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     resetStore: () => {
         set.personalDetails(defaultPersonalDetails);
         set.hiddenPersonalDetails({});
+        set.currentJobCredentialUri(null);
         set.documentSetup(defaultDocumentSetup);
         set.credentialEntries({});
         set.sectionOrder(defaultSectionOrder);

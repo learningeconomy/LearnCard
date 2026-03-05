@@ -3,9 +3,11 @@ import React from 'react';
 import { IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
 import ResumePreviewCredentialToTextBlock from './ResumePreviewCredentialToTextBlock';
 import ResumePreviewCredentialActionRail from './ResumePreviewCredentialActionRail';
+import ResumePreviewCurrentJobSelector from './ResumePreviewCurrentJobSelector';
 
 import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
+import { CredentialCategoryEnum } from 'learn-card-base';
 
 const ResumePreviewGroupedCredentialsBlock: React.FC<{
     section: (typeof RESUME_SECTIONS)[number];
@@ -15,8 +17,11 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
     measureOnly?: boolean;
 }> = ({ section, filteredUris, measureOnly = false }) => {
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
+    const currentJobCredentialUri = resumeBuilderStore.useTracked.currentJobCredentialUri();
+    const setCurrentJobCredentialUri = resumeBuilderStore.set.setCurrentJobCredentialUri;
 
     const sectionKey = section.key as ResumeSectionKey;
+    const isWorkExperienceSection = sectionKey === CredentialCategoryEnum.workHistory;
     const allEntries = [...(credentialEntries[sectionKey] ?? [])].sort((a, b) => a.index - b.index);
     const entries = filteredUris
         ? allEntries.filter(e => filteredUris.includes(e.uri))
@@ -80,6 +85,20 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                             data-pdf-break-anchor
                         >
                             <div className="flex-1">
+                                {isWorkExperienceSection && (
+                                    <div data-pdf-hide className="mb-1">
+                                        <ResumePreviewCurrentJobSelector
+                                            isSelected={currentJobCredentialUri === entry.uri}
+                                            onClick={() =>
+                                                setCurrentJobCredentialUri(
+                                                    currentJobCredentialUri === entry.uri
+                                                        ? null
+                                                        : entry.uri
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                )}
                                 <ResumePreviewCredentialToTextBlock
                                     uri={entry.uri}
                                     section={sectionKey}
