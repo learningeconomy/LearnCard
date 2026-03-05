@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { IonIcon } from '@ionic/react';
 import { trashOutline } from 'ionicons/icons';
@@ -8,6 +8,8 @@ type ResumePreviewEditableTextBlockProps = {
     placeholder: string;
     isEditing: boolean;
     isSelfAttested: boolean;
+    showDefaultSummaryDecoration?: boolean;
+    onRestoreDefault?: () => void;
     onChange: (val: string) => void;
     onRemove?: () => void;
     multiline?: boolean;
@@ -18,14 +20,21 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
     placeholder,
     isEditing,
     isSelfAttested,
+    showDefaultSummaryDecoration,
+    onRestoreDefault,
     onChange,
     onRemove,
     multiline,
 }) => {
     const [draft, setDraft] = useState(value);
     const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
+    const showDecoration = multiline && showDefaultSummaryDecoration;
 
     const commit = () => onChange(draft.trim());
+
+    useEffect(() => {
+        setDraft(value);
+    }, [value]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !multiline) {
@@ -44,17 +53,45 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                 setDraft(e.target.value);
                 onChange(e.target.value);
             },
-            className:
-                'w-full text-xs text-grayscale-700 bg-indigo-50/45 rounded-lg px-2 py-1.5 outline-none resize-none leading-relaxed',
+            className: `w-full text-xs text-grayscale-700 bg-indigo-50 rounded-lg px-2 py-1.5 outline-none resize-none leading-relaxed ${
+                showDecoration ? 'pb-7' : ''
+            }`,
         };
 
         return (
             <div className="flex items-start justify-center gap-2 w-full my-1">
-                {multiline ? (
-                    <textarea {...(sharedProps as any)} rows={3} />
-                ) : (
-                    <input {...(sharedProps as any)} type="text" />
-                )}
+                <div className="relative flex-1">
+                    {multiline ? (
+                        <textarea {...(sharedProps as any)} rows={3} />
+                    ) : (
+                        <input {...(sharedProps as any)} type="text" />
+                    )}
+                    {showDecoration && (
+                        <div className="absolute bottom-2 right-2 bg-indigo-50 p-1">
+                            {isSelfAttested ? (
+                                <span className="text-grayscale-600 font-semibold text-xs">
+                                    Edited
+                                    {onRestoreDefault && (
+                                        <>
+                                            <span className="mx-1 text-grayscale-600">•</span>
+                                            <button
+                                                type="button"
+                                                className="text-indigo-600 font-semibold text-xs"
+                                                onClick={onRestoreDefault}
+                                            >
+                                                Restore Default
+                                            </button>
+                                        </>
+                                    )}
+                                </span>
+                            ) : (
+                                <span className="text-grayscale-600 font-semibold text-xs">
+                                    Default Summary
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
                 {onRemove && (
                     <div className="flex items-center justify-center h-full mt-[4px]">
                         <button

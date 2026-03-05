@@ -152,6 +152,20 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                     isEditing={isEditing}
                                     isSelfAttested={field.source === 'selfAttested'}
                                     multiline={field.type === 'description'}
+                                    showDefaultSummaryDecoration={field.type === 'description'}
+                                    onRestoreDefault={
+                                        field.type === 'description' && vcDescription
+                                            ? () => {
+                                                  updateCredentialField(
+                                                      uri,
+                                                      section,
+                                                      field.id,
+                                                      vcDescription,
+                                                      'vc'
+                                                  );
+                                              }
+                                            : undefined
+                                    }
                                     onChange={val => {
                                         let source: 'vc' | 'selfAttested';
                                         if (
