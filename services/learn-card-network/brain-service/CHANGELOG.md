@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.12.3
+
+### Patch Changes
+
+-   [#1053](https://github.com/learningeconomy/LearnCard/pull/1053) [`329ef8ef5c35d5a45635d426057c248ae0a66325`](https://github.com/learningeconomy/LearnCard/commit/329ef8ef5c35d5a45635d426057c248ae0a66325) Thanks [@Custard7](https://github.com/Custard7)! - fix: p2p badge claims
+
 ## 3.12.2
 
 ### Patch Changes
