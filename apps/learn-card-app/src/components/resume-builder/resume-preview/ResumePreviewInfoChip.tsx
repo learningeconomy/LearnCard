@@ -3,7 +3,7 @@ import React from 'react';
 import X from '../../svgs/X';
 import { LinkedInIcon } from '../../svgs/LinkedInIcon';
 
-import { PersonalDetails, getLinkedInHandle } from '../resume-builder.helpers';
+import { PersonalDetails, UserInfoEnum, getLinkedInHandle } from '../resume-builder.helpers';
 
 export const ResumePreviewInfoChip: React.FC<{
     detailKey: keyof PersonalDetails;
@@ -12,7 +12,7 @@ export const ResumePreviewInfoChip: React.FC<{
 }> = ({ detailKey, value, onRemove }) => {
     return (
         <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 text-grayscale-800 text-xs font-semibold px-3 py-1.5">
-            {detailKey === 'linkedIn' ? (
+            {detailKey === UserInfoEnum.LinkedIn ? (
                 <>
                     <LinkedInIcon className="w-4 h-4" />
                     <span className="truncate max-w-[260px]">/{getLinkedInHandle(value)}</span>

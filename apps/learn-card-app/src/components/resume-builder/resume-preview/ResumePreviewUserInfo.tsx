@@ -6,16 +6,18 @@ import { ProfilePicture } from 'learn-card-base';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 import ResumePreviewInfoChip from './ResumePreviewInfoChip';
 
-import { PersonalDetails, getLinkedInHandle } from '../resume-builder.helpers';
+import { PersonalDetails, UserInfoEnum, getLinkedInHandle } from '../resume-builder.helpers';
 
 const ResumePreviewUserInfo: React.FC = () => {
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const hiddenPersonalDetails = resumeBuilderStore.useTracked.hiddenPersonalDetails();
+    const documentSetup = resumeBuilderStore.useTracked.documentSetup();
     const setPersonalDetails = resumeBuilderStore.set.setPersonalDetails;
     const setPersonalDetailHidden = resumeBuilderStore.set.setPersonalDetailHidden;
 
     const isFieldVisible = (key: keyof PersonalDetails) =>
         !hiddenPersonalDetails?.[key] && Boolean(personalDetails[key]?.trim());
+    const showThumbnail = !hiddenPersonalDetails?.[UserInfoEnum.Thumbnail];
 
     const hasPersonalInfo = useMemo(() => {
         return Object.values(personalDetails).some(v => v.trim());
@@ -29,10 +31,10 @@ const ResumePreviewUserInfo: React.FC = () => {
     };
 
     const exportContactItems = [
-        isFieldVisible('email') ? personalDetails.email : '',
-        isFieldVisible('phone') ? personalDetails.phone : '',
-        isFieldVisible('website') ? personalDetails.website : '',
-        isFieldVisible('linkedIn')
+        isFieldVisible(UserInfoEnum.Email) ? personalDetails.email : '',
+        isFieldVisible(UserInfoEnum.Phone) ? personalDetails.phone : '',
+        isFieldVisible(UserInfoEnum.Website) ? personalDetails.website : '',
+        isFieldVisible(UserInfoEnum.LinkedIn)
             ? `linkedin.com/in/${getLinkedInHandle(personalDetails.linkedIn)}`
             : '',
     ].filter(Boolean);
@@ -41,30 +43,32 @@ const ResumePreviewUserInfo: React.FC = () => {
         <div className="border-b border-solid border-2 border-grayscale-100 bg-grayscale-50 p-4 mb-6 rounded-[20px]">
             <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0">
-                    <div className="relative shrink-0">
-                        <ProfilePicture
-                            customContainerClass="text-grayscale-900 h-[60px] w-[60px] min-h-[60px] min-w-[60px] max-h-[60px] max-w-[60px] mt-[0px] mb-0"
-                            customImageClass="w-full h-full object-cover"
-                        />
-                    </div>
+                    {showThumbnail && (
+                        <div className="relative shrink-0">
+                            <ProfilePicture
+                                customContainerClass="text-grayscale-900 h-[60px] w-[60px] min-h-[60px] min-w-[60px] max-h-[60px] max-w-[60px] mt-[0px] mb-0"
+                                customImageClass="w-full h-full object-cover"
+                            />
+                        </div>
+                    )}
 
                     <div className="min-w-0">
-                        {isFieldVisible('name') && (
+                        {isFieldVisible(UserInfoEnum.Name) && (
                             <h1 className="text-3xl font-bold text-grayscale-900 tracking-tight">
                                 {personalDetails.name}
                             </h1>
                         )}
 
                         <div data-pdf-screen-only className="flex flex-wrap gap-2 mt-2">
-                            {isFieldVisible('location') && (
+                            {isFieldVisible(UserInfoEnum.Location) && (
                                 <ResumePreviewInfoChip
-                                    detailKey="location"
+                                    detailKey={UserInfoEnum.Location}
                                     value={personalDetails.location}
                                     onRemove={removeField}
                                 />
                             )}
                         </div>
-                        {isFieldVisible('location') && (
+                        {isFieldVisible(UserInfoEnum.Location) && (
                             <p
                                 data-pdf-export-block
                                 style={{ display: 'none' }}
@@ -76,9 +80,11 @@ const ResumePreviewUserInfo: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="shrink-0 rounded-lg border border-grayscale-200 bg-white p-2">
-                    <QRCodeSVG value="https://learncard.app" size={44} />
-                </div>
+                {documentSetup?.showQRCode && (
+                    <div className="shrink-0 rounded-lg border border-grayscale-200 bg-white p-2">
+                        <QRCodeSVG value="https://learncard.app" size={44} />
+                    </div>
+                )}
             </div>
 
             {Boolean(personalDetails.summary.trim()) && (
@@ -96,50 +102,53 @@ const ResumePreviewUserInfo: React.FC = () => {
                         <IonToggle
                             mode="ios"
                             className="family-cms-toggle"
-                            checked={!hiddenPersonalDetails?.summary}
-                            onIonChange={e => setPersonalDetailHidden('summary', !e.detail.checked)}
+                            checked={!hiddenPersonalDetails?.[UserInfoEnum.Summary]}
+                            onIonChange={e =>
+                                setPersonalDetailHidden(UserInfoEnum.Summary, !e.detail.checked)
+                            }
                         />
                     </div>
                 </div>
             )}
-            {Boolean(personalDetails.summary.trim()) && !hiddenPersonalDetails?.summary && (
-                <p
-                    data-pdf-export-block
-                    style={{ display: 'none' }}
-                    className="mt-4 text-sm text-grayscale-700 leading-relaxed"
-                >
-                    {personalDetails.summary}
-                </p>
-            )}
+            {Boolean(personalDetails.summary.trim()) &&
+                !hiddenPersonalDetails?.[UserInfoEnum.Summary] && (
+                    <p
+                        data-pdf-export-block
+                        style={{ display: 'none' }}
+                        className="mt-4 text-sm text-grayscale-700 leading-relaxed"
+                    >
+                        {personalDetails.summary}
+                    </p>
+                )}
 
             <div
                 data-pdf-screen-only
                 className="mt-4 pt-4 border-t border-grayscale-200 flex flex-wrap gap-2"
             >
-                {isFieldVisible('email') && (
+                {isFieldVisible(UserInfoEnum.Email) && (
                     <ResumePreviewInfoChip
-                        detailKey="email"
+                        detailKey={UserInfoEnum.Email}
                         value={personalDetails.email}
                         onRemove={removeField}
                     />
                 )}
-                {isFieldVisible('phone') && (
+                {isFieldVisible(UserInfoEnum.Phone) && (
                     <ResumePreviewInfoChip
-                        detailKey="phone"
+                        detailKey={UserInfoEnum.Phone}
                         value={personalDetails.phone}
                         onRemove={removeField}
                     />
                 )}
-                {isFieldVisible('website') && (
+                {isFieldVisible(UserInfoEnum.Website) && (
                     <ResumePreviewInfoChip
-                        detailKey="website"
+                        detailKey={UserInfoEnum.Website}
                         value={personalDetails.website}
                         onRemove={removeField}
                     />
                 )}
-                {isFieldVisible('linkedIn') && (
+                {isFieldVisible(UserInfoEnum.LinkedIn) && (
                     <ResumePreviewInfoChip
-                        detailKey="linkedIn"
+                        detailKey={UserInfoEnum.LinkedIn}
                         value={personalDetails.linkedIn}
                         onRemove={removeField}
                     />
