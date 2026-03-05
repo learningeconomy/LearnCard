@@ -1,0 +1,63 @@
+import React, { useState } from 'react';
+
+import { IonIcon, IonToggle } from '@ionic/react';
+import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
+import { resumeBuilderStore } from '../../../../stores/resumeBuilderStore';
+
+const ResumeConfigPanelDocumentSetup: React.FC = () => {
+    const [open, setOpen] = useState<boolean>(true);
+    const documentSetup = resumeBuilderStore.useTracked.documentSetup();
+    const setDocumentSetup = resumeBuilderStore.set.setDocumentSetup;
+
+    return (
+        <div className="bg-white border border-grayscale-200 rounded-2xl overflow-hidden">
+            <button
+                className="w-full flex items-center justify-between px-4 py-3 text-left"
+                onClick={() => setOpen(o => !o)}
+            >
+                <span className="text-[24px] font-bold text-grayscale-900">Document Setup</span>
+                <IonIcon
+                    color="grayscale-800"
+                    icon={open ? chevronDownOutline : chevronUpOutline}
+                />
+            </button>
+
+            {open && (
+                <div className="px-4 pb-4 flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                            <p className="text-xs font-semibold text-grayscale-900">
+                                LearnCard QR code • {documentSetup?.showQRCode ? 'On' : 'Off'}
+                            </p>
+                            <p className="text-xs text-grayscale-700 mt-1">
+                                This code allows employers to view the credentials attached to this
+                                resume.
+                            </p>
+                        </div>
+                        <IonToggle
+                            mode="ios"
+                            className="family-cms-toggle"
+                            checked={Boolean(documentSetup?.showQRCode)}
+                            onIonChange={e => setDocumentSetup({ showQRCode: e.detail.checked })}
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-grayscale-700">
+                            File Name
+                        </label>
+                        <input
+                            type="text"
+                            className="w-full text-sm bg-grayscale-100 border border-grayscale-200 rounded-lg px-3 py-2 text-grayscale-800 placeholder-grayscale-400 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                            placeholder="resume.pdf"
+                            value={documentSetup?.fileName ?? ''}
+                            onChange={e => setDocumentSetup({ fileName: e.target.value })}
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default ResumeConfigPanelDocumentSetup;
