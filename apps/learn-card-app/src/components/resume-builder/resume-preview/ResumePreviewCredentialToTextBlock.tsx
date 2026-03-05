@@ -5,8 +5,9 @@ import ResumePreviewEditableTextBlock from './ResumePreviewEditableTextBlock';
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
-import { useGetResolvedCredential, useGetVCInfo } from 'learn-card-base';
+import { CredentialCategoryEnum, useGetResolvedCredential, useGetVCInfo } from 'learn-card-base';
 import { ResumeSectionKey } from '../resume-builder.helpers';
+import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
 
 const ResumePreviewCredentialToTextBlock: React.FC<{
     uri: string;
@@ -18,6 +19,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     const { title, description: vcDescription } = useGetVCInfo(vc || {}, section);
 
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
+    const currentJobCredentialUri = resumeBuilderStore.useTracked.currentJobCredentialUri();
     const initCredentialFields = resumeBuilderStore.set.initCredentialFields;
     const addCredentialField = resumeBuilderStore.set.addCredentialField;
     const updateCredentialField = resumeBuilderStore.set.updateCredentialField;
@@ -27,6 +29,13 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     const fields = [...(entry?.fields ?? [])].sort((a, b) => a.index - b.index);
 
     const info = vc ? getInfoFromCredential(vc as any, 'MMM yyyy', { uppercaseDate: false }) : null;
+    const isCurrentJob =
+        section === CredentialCategoryEnum.workHistory && currentJobCredentialUri === uri;
+    const dateLabel = info?.createdAt
+        ? isCurrentJob
+            ? `${info.createdAt} - Present`
+            : info.createdAt
+        : '';
 
     useEffect(() => {
         if (!vc || !entry) return;
@@ -48,13 +57,10 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
         <div className="flex items-start gap-3">
             <div className="flex flex-col gap-1 flex-1 min-w-0">
                 {/* ── Locked anchor: title · issuer · date ── */}
-                <p className="text-sm font-semibold text-grayscale-800">
-                    {title || 'Credential'}
-                    {info?.createdAt && (
-                        <span className="font-normal text-grayscale-500">
-                            {' · '}
-                            {info?.createdAt}
-                        </span>
+                <p className="gap-1 text-sm flex items-center font-semibold text-grayscale-800">
+                    <TrustedIcon className="w-4 h-4 inline-block mr-1" /> {title || 'Credential'}
+                    {Boolean(dateLabel) && (
+                        <span className="font-medium text-grayscale-600">• {dateLabel}</span>
                     )}
                 </p>
 
