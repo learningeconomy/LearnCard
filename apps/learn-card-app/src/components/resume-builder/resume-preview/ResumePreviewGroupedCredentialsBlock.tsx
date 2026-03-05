@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 import { IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
 import ResumePreviewCredentialToTextBlock from './ResumePreviewCredentialToTextBlock';
@@ -13,15 +13,8 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
     filteredUris?: string[];
     /** When true, render without interactive controls (used for hidden measurement) */
     measureOnly?: boolean;
-    /** When true, hide all editing UI for clean preview/PDF mode */
-    isPreviewing?: boolean;
-}> = ({ section, filteredUris, measureOnly = false, isPreviewing = false }) => {
+}> = ({ section, filteredUris, measureOnly = false }) => {
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
-    const [editingUris, setEditingUris] = useState<string[]>([]);
-
-    const toggleEditing = (uri: string, val: boolean) => {
-        setEditingUris(prev => (val ? [...prev, uri] : prev.filter(u => u !== uri)));
-    };
 
     const sectionKey = section.key as ResumeSectionKey;
     const allEntries = [...(credentialEntries[sectionKey] ?? [])].sort((a, b) => a.index - b.index);
@@ -31,7 +24,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
 
     if (!entries.length) return null;
 
-    if (measureOnly || isPreviewing) {
+    if (measureOnly) {
         return (
             <div className="mb-6" data-pdf-break-anchor>
                 <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 mb-3 border-b border-grayscale-100 pb-1">
@@ -80,7 +73,6 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                 }}
             >
                 {entries.map(entry => {
-                    const isEditing = editingUris.includes(entry.uri);
                     return (
                         <div
                             key={entry.uri}
@@ -91,25 +83,19 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                                 <ResumePreviewCredentialToTextBlock
                                     uri={entry.uri}
                                     section={sectionKey}
-                                    isEditing={isEditing}
-                                    setIsEditing={val => toggleEditing(entry.uri, val)}
+                                    isEditing
+                                    setIsEditing={() => {}}
                                 />
                             </div>
                             <div data-pdf-hide className="flex items-center gap-1 shrink-0 mt-1">
-                                {!isEditing && (
-                                    <ResumePreviewCredentialActionRail
-                                        onDelete={() =>
-                                            resumeBuilderStore.set.toggleCredential(
-                                                sectionKey,
-                                                entry.uri
-                                            )
-                                        }
-                                    />
-                                )}
-                                {/* <ResumePreviewEditBlockButton
-                                    isEditing={isEditing}
-                                    setIsEditing={val => toggleEditing(entry.uri, val)}
-                                /> */}
+                                <ResumePreviewCredentialActionRail
+                                    onDelete={() =>
+                                        resumeBuilderStore.set.toggleCredential(
+                                            sectionKey,
+                                            entry.uri
+                                        )
+                                    }
+                                />
                             </div>
                         </div>
                     );

@@ -18,7 +18,7 @@ export type ResumePreviewHandle = {
 const ResumePreview = forwardRef<
     ResumePreviewHandle,
     { isMobile?: boolean; isPreviewing?: boolean }
->(function ResumePreview({ isMobile = false, isPreviewing = false }, ref) {
+>(function ResumePreview({ isMobile = false }, ref) {
     const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
@@ -78,7 +78,6 @@ const ResumePreview = forwardRef<
                                 key={sectionKey}
                                 section={section}
                                 filteredUris={entries.map(entry => entry.uri)}
-                                isPreviewing={isPreviewing}
                             />
                         );
                     })}
