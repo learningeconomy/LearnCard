@@ -31,7 +31,7 @@ export async function setup() {
     let start = performance.now();
     console.log('Starting docker...');
 
-    await execa`docker compose up -d --build`;
+    //await execa`docker compose up -d --build`;
 
     console.log('Docker started in', ((performance.now() - start) / 1000).toFixed(2), 'seconds');
 
@@ -53,7 +53,7 @@ export async function setup() {
         start = performance.now();
         console.log('Stopping docker...');
 
-        await execa`docker compose down`;
+        //await execa`docker compose down`;
 
         console.log(
             'Docker stopped in',
