@@ -554,9 +554,10 @@ describe('Skills & Frameworks E2E', () => {
         expect(lastPage.cursor).toBeNull();
 
         // Test 11: Authorization check - User B cannot search in A's framework
-        await expect(
-            b.invoke.searchFrameworkSkills(fwId, { statement: { $regex: /.*/ } }, { limit: 10 })
-        ).rejects.toBeDefined();
+        // TODO: Searching skills frameworks no longer requires authorization. Re-enable if we require authorization again.
+        // await expect(
+        //     b.invoke.searchFrameworkSkills(fwId, { statement: { $regex: /.*/ } }, { limit: 10 })
+        // ).rejects.toBeDefined();
     });
 
     test('can search skills using $or operator to combine conditions', async () => {
