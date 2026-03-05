@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { trashOutline } from 'ionicons/icons';
+import TrashBin from '../../../components/svgs/TrashBin';
 
 type ResumePreviewEditableTextBlockProps = {
     value: string;
@@ -93,13 +92,13 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                     )}
                 </div>
                 {onRemove && (
-                    <div className="flex items-center justify-center h-full mt-[4px]">
+                    <div className="flex items-center justify-center h-full">
                         <button
                             onClick={onRemove}
-                            className="shrink-0 text-grayscale-300 leading-none"
+                            className="shrink-0 text-grayscale-700 bg-grayscale-100 rounded-[10px] p-1 leading-none"
                             title="Remove"
                         >
-                            <IonIcon icon={trashOutline} className="w-[24px] h-[24px]" />
+                            <TrashBin className="w-[24px] h-[24px]" />
                         </button>
                     </div>
                 )}

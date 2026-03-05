@@ -1,8 +1,17 @@
 import React, { useEffect } from 'react';
-import { IonDatetime, IonReorder, IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
+import { add } from 'ionicons/icons';
 import moment from 'moment';
 
+import {
+    IonDatetime,
+    IonIcon,
+    IonReorder,
+    IonReorderGroup,
+    ReorderEndCustomEvent,
+} from '@ionic/react';
 import ResumeBuilderToggle from '../ResumeBuilderToggle';
+import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
+import VerticalArrowsIcon from '../../../components/svgs/VerticalArrowsIcon';
 import ResumePreviewEditableTextBlock from './ResumePreviewEditableTextBlock';
 import ResumePreviewCredentialDateDisplay from './ResumePreviewCredentialDateDisplay';
 
@@ -16,14 +25,13 @@ import {
     useModal,
 } from 'learn-card-base';
 import { ResumeSectionKey } from '../resume-builder.helpers';
-import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
 
 const ResumePreviewCredentialToTextBlock: React.FC<{
     uri: string;
     section: ResumeSectionKey;
     isEditing: boolean;
     setIsEditing: (val: boolean) => void;
-}> = ({ uri, section, isEditing, setIsEditing }) => {
+}> = ({ uri, section, isEditing, setIsEditing: _setIsEditing }) => {
     const { data: vc } = useGetResolvedCredential(uri);
     const { title, description: vcDescription } = useGetVCInfo(vc || {}, section);
 
@@ -40,6 +48,8 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
 
     const entry = (credentialEntries[section] ?? []).find(e => e.uri === uri);
     const fields = [...(entry?.fields ?? [])].sort((a, b) => a.index - b.index);
+    const metadataFields = fields.filter(field => field.type === 'metadata');
+    const lastMetadataField = metadataFields[metadataFields.length - 1];
 
     const info = vc ? getInfoFromCredential(vc as any, 'MMM yyyy', { uppercaseDate: false }) : null;
     const selectedEndDate = workExperienceEndDates?.[uri] ?? '';
@@ -104,7 +114,14 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
         ]);
     }, [vc, entry?.fields.length]);
 
-    const handleAddDetail = () => {
+    useEffect(() => {
+        if (!isEditing || !entry) return;
+        if (metadataFields.length > 0) return;
+        addCredentialField(uri, section, '', 'selfAttested', 'metadata');
+    }, [isEditing, entry?.fields.length, metadataFields.length]);
+
+    const handleAddDetail = (fieldValue: string) => {
+        if (!fieldValue.trim()) return;
         addCredentialField(uri, section, '', 'selfAttested', 'metadata');
     };
 
@@ -144,9 +161,18 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                     {fields.map(field => {
                         const isDescriptionField = field.type === 'description';
                         const isDescriptionHidden = isDescriptionField && Boolean(field.hidden);
+                        const isMetadataAddRow =
+                            isEditing &&
+                            field.type === 'metadata' &&
+                            field.id === lastMetadataField?.id;
 
                         return (
-                            <div key={field.id} className="flex items-center gap-1">
+                            <div
+                                key={field.id}
+                                className={`flex items-center gap-1 w-full ${
+                                    !isDescriptionField ? 'max-w-[581px]' : ''
+                                }`}
+                            >
                                 <div className="flex-1">
                                     {isDescriptionField && isEditing ? (
                                         <div data-pdf-hide className="flex items-start gap-3">
@@ -270,7 +296,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                                 );
                                             }}
                                             onRemove={
-                                                field.type === 'metadata'
+                                                field.type === 'metadata' && !isMetadataAddRow
                                                     ? () =>
                                                           removeCredentialField(
                                                               uri,
@@ -282,29 +308,29 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                         />
                                     )}
                                 </div>
-                                {isEditing && field.type !== 'description' && <IonReorder />}
+                                {isEditing && field.type === 'metadata' && isMetadataAddRow ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAddDetail(field.value)}
+                                        className={`shrink-0 w-[32px] h-[32px] rounded-xl bg-grayscale-100 flex items-center justify-center text-grayscale-700`}
+                                        title="Add item"
+                                    >
+                                        <IonIcon icon={add} className="w-6 h-6" />
+                                    </button>
+                                ) : (
+                                    isEditing &&
+                                    field.type !== 'description' && (
+                                        <div className="shrink-0 text-grayscale-700 bg-grayscale-100 rounded-[10px]  leading-none h-[32px] w-[32px] flex items-center justify-center">
+                                            <IonReorder>
+                                                <VerticalArrowsIcon />
+                                            </IonReorder>
+                                        </div>
+                                    )
+                                )}
                             </div>
                         );
                     })}
                 </IonReorderGroup>
-
-                {/* ── Add detail + Done buttons (edit mode only) ── */}
-                {isEditing && (
-                    <div data-pdf-hide className="flex items-center gap-1 mt-1">
-                        <button
-                            onClick={handleAddDetail}
-                            className="text-xs border border-solid border-indigo-500/45 text-indigo-500 font-medium flex items-center px-2 py-1 rounded-lg"
-                        >
-                            Add
-                        </button>
-                        <button
-                            onClick={() => setIsEditing(false)}
-                            className="text-xs bg-emerald-600 font-medium text-white px-2 py-1 rounded-lg"
-                        >
-                            Save
-                        </button>
-                    </div>
-                )}
             </div>
         </div>
     );
