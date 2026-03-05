@@ -36,6 +36,8 @@ This guide covers the environment variables and infrastructure needed to deploy 
 | `POSTMARK_BRAND_NAME` | Brand name used in email templates. | `LearnCard` |
 | `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS` | Postmark template alias for login verification OTP emails. | `login-code` |
 | `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS` | Postmark template alias for endorsement request emails. | `endorsement-request` |
+| `POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS` | *(Optional)* Postmark template alias for recovery email verification codes. Falls back to plain-text if unset. Template model: `verificationCode`, `verificationEmail`. | `recovery-email-code` |
+| `POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS` | *(Optional)* Postmark template alias for recovery key backup emails. Falls back to plain-text if unset. Template model: `brandName`, `recoveryKey`. | `recovery-key` |
 
 {% hint style="warning" %}
 The template variables changed from numeric IDs to string aliases in this release:
