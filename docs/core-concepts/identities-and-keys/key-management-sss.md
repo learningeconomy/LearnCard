@@ -129,7 +129,7 @@ Existing users who were on the previous Web3Auth-based key management system are
 5. The user is marked as migrated on the server.
 6. The user is prompted to set up recovery methods.
 
-Migration is controlled by the `REACT_APP_ENABLE_SSS_MIGRATION` environment variable.
+Migration is automatic — the AuthCoordinator detects legacy accounts and enters `needs_migration` state without requiring any feature flag.
 
 ---
 

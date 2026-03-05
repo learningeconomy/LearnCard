@@ -88,22 +88,12 @@ export default defineConfig(({ mode }) => {
             'process.env.REACT_APP_SSS_SERVER_URL': process.env.REACT_APP_SSS_SERVER_URL
                 ? JSON.stringify(process.env.REACT_APP_SSS_SERVER_URL)
                 : 'undefined',
-            'process.env.REACT_APP_ENABLE_SSS_MIGRATION': process.env.REACT_APP_ENABLE_SSS_MIGRATION
-                ? JSON.stringify(process.env.REACT_APP_ENABLE_SSS_MIGRATION)
-                : 'undefined',
             SENTRY_ENV: process.env.SENTRY_ENV ? `"${process.env.SENTRY_ENV}"` : '"development"',
             SENTRY_DSN: process.env.SENTRY_DSN
                 ? `"${process.env.SENTRY_DSN}"`
                 : '"https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704"',
             GOOGLE_MAPS_API_KEY:
                 process.env.GOOGLE_MAPS_API_KEY && `"${process.env.GOOGLE_MAPS_API_KEY}"`,
-            // Use values from .env via loadEnv so they're available at build time
-            WEB3AUTH_MAINNET_CLIENT_ID: env.WEB3AUTH_MAINNET_CLIENT_ID
-                ? JSON.stringify(env.WEB3AUTH_MAINNET_CLIENT_ID)
-                : 'undefined',
-            WEB3AUTH_TESTNET_CLIENT_ID: env.WEB3AUTH_TESTNET_CLIENT_ID
-                ? JSON.stringify(env.WEB3AUTH_TESTNET_CLIENT_ID)
-                : 'undefined',
             APP_THEME: env.APP_THEME ? JSON.stringify(env.APP_THEME) : '"colorful"',
             CORS_PROXY_API_KEY: env.CORS_PROXY_API_KEY
                 ? JSON.stringify(env.CORS_PROXY_API_KEY)

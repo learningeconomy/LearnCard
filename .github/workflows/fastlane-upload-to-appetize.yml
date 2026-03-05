@@ -62,6 +62,12 @@ jobs:
                   VITE_WEB3AUTH_NETWORK: ${{ vars.VITE_WEB3AUTH_NETWORK }}
                   VITE_WEB3AUTH_VERIFIER_ID: ${{ vars.VITE_WEB3AUTH_VERIFIER_ID }}
                   VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
+                  VITE_AUTH_PROVIDER: ${{ vars.VITE_AUTH_PROVIDER }}
+                  VITE_KEY_DERIVATION: ${{ vars.VITE_KEY_DERIVATION }}
+                  VITE_SSS_SERVER_URL: ${{ vars.VITE_SSS_SERVER_URL }}
+                  VITE_ENABLE_EMAIL_BACKUP_SHARE: ${{ vars.VITE_ENABLE_EMAIL_BACKUP_SHARE }}
+                  VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
+                  VITE_REQUIRE_EMAIL_FOR_PHONE_USERS: ${{ vars.VITE_REQUIRE_EMAIL_FOR_PHONE_USERS }}
 
             - name: Sync Capacitor Files to iOS
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
@@ -153,6 +159,12 @@ jobs:
                   VITE_WEB3AUTH_NETWORK: ${{ vars.VITE_WEB3AUTH_NETWORK }}
                   VITE_WEB3AUTH_VERIFIER_ID: ${{ vars.VITE_WEB3AUTH_VERIFIER_ID }}
                   VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
+                  VITE_AUTH_PROVIDER: ${{ vars.VITE_AUTH_PROVIDER }}
+                  VITE_KEY_DERIVATION: ${{ vars.VITE_KEY_DERIVATION }}
+                  VITE_SSS_SERVER_URL: ${{ vars.VITE_SSS_SERVER_URL }}
+                  VITE_ENABLE_EMAIL_BACKUP_SHARE: ${{ vars.VITE_ENABLE_EMAIL_BACKUP_SHARE }}
+                  VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
+                  VITE_REQUIRE_EMAIL_FOR_PHONE_USERS: ${{ vars.VITE_REQUIRE_EMAIL_FOR_PHONE_USERS }}
 
             - name: Sync Capacitor Files to Android
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}

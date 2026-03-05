@@ -79,7 +79,6 @@ The frontend reads environment variables with a dual-prefix fallback: `VITE_*` f
 |---|---|---|
 | `VITE_ENABLE_EMAIL_BACKUP_SHARE` | `'true'` | Auto-send backup share to user's email during key setup. Set `'false'` to disable. |
 | `VITE_REQUIRE_EMAIL_FOR_PHONE_USERS` | `'true'` | Require phone-only users to link an email before proceeding. |
-| `REACT_APP_ENABLE_SSS_MIGRATION` | — | Set to `'true'` to enable automatic Web3Auth → SSS migration for existing users. |
 | `VITE_ENABLE_AUTH_DEBUG_WIDGET` | `'false'` | Show auth/key debug overlay. Auto-enabled in dev mode. |
 
 ### Web3Auth (Migration Period)
@@ -142,9 +141,7 @@ The service account JSON is provided via `GOOGLE_APPLICATION_CREDENTIAL`.
 
 5. **Set frontend env vars**: `VITE_KEY_DERIVATION=sss` and `VITE_SSS_SERVER_URL` pointing to your lca-api instance.
 
-6. **Enable migration** (if upgrading from Web3Auth): set `REACT_APP_ENABLE_SSS_MIGRATION=true`.
-
-7. **Verify** by logging in with a new account and checking that the AuthCoordinator reaches the `ready` state.
+6. **Verify** by logging in with a new account and checking that the AuthCoordinator reaches the `ready` state.
 
 ---
 

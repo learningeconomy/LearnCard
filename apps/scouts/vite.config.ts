@@ -54,9 +54,6 @@ export default defineConfig(async ({ mode }) => {
             'process.env.REACT_APP_SSS_SERVER_URL': env.REACT_APP_SSS_SERVER_URL
                 ? JSON.stringify(env.REACT_APP_SSS_SERVER_URL)
                 : 'undefined',
-            'process.env.REACT_APP_ENABLE_SSS_MIGRATION': env.REACT_APP_ENABLE_SSS_MIGRATION
-                ? JSON.stringify(env.REACT_APP_ENABLE_SSS_MIGRATION)
-                : 'undefined',
         },
         resolve: {
             alias: [
