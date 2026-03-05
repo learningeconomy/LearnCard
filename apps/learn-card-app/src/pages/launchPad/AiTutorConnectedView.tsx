@@ -15,6 +15,7 @@ import {
 import { ThreeDotVertical } from '@learncard/react';
 
 import TrashBin from '../../components/svgs/TrashBin';
+import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import useAppStore from './useAppStore';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData';
@@ -406,6 +407,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
     );
 
     return (
+        <AiFeatureGate>
         <div className="h-full w-full flex flex-col bg-gradient-to-b from-violet-500 to-indigo-600">
             <div className="flex-1 overflow-y-auto ion-padding pb-[100px]">
                 <div className="max-w-[600px] mx-auto">
@@ -440,6 +442,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
                 </div>
             </IonFooter>
         </div>
+        </AiFeatureGate>
     );
 };
 

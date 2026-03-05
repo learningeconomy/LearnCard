@@ -1,7 +1,7 @@
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 
-import { IonRow } from '@ionic/react';
+import { IonRow, IonSpinner } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import BoostCMSAppearanceController from '../boostCMSAppearance/BoostCMSAppearanceController';
 import BoostCMSIDAppearanceController from '../boostCMSAppearance/BoostCMSIDAppearanceController';
@@ -27,7 +27,7 @@ const BoostShareableQRCode: React.FC<BoostShareableQRCodeProps> = ({
     const { closeModal } = useModal();
 
     const defaultTitle =
-        CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type].find(
+        CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type]?.find(
             options => options?.type === state?.basicInfo?.achievementType
         )?.title ?? '';
 
@@ -75,18 +75,33 @@ const BoostShareableQRCode: React.FC<BoostShareableQRCodeProps> = ({
                     </div>
                 )}
 
-                <div className="flex justify-center items-center w-full relative px-10 mb-2 mt-2">
-                    <div className="max-w-[220px] w-full h-auto relative">
-                        <QRCodeSVG
-                            className="h-full w-full"
-                            value={boostClaimLink}
-                            bgColor="transparent"
-                        />
+                {boostClaimLink ? (
+                    <>
+                        <div className="flex justify-center items-center w-full relative px-10 mb-2 mt-2">
+                            <div className="max-w-[220px] w-full h-auto relative">
+                                <QRCodeSVG
+                                    className="h-full w-full"
+                                    value={boostClaimLink}
+                                    bgColor="transparent"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="w-full flex items-end justify-center pt-4 pb-6">
+                            <h3 className="font-poppins text-grayscale-800 text-xl text-center">
+                                {text}
+                            </h3>
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex flex-col items-center justify-center w-full px-10 py-8 gap-3">
+                        <IonSpinner name="crescent" color="dark" />
+
+                        <p className="font-poppins text-grayscale-500 text-sm text-center">
+                            Generating claim link...
+                        </p>
                     </div>
-                </div>
-                <div className="w-full flex items-end justify-center pt-4 pb-6">
-                    <h3 className="font-poppins text-grayscale-800 text-xl text-center">{text}</h3>
-                </div>
+                )}
             </div>
         </IonRow>
     );

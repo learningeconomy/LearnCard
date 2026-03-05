@@ -1,5 +1,59 @@
 # @learncard/network-brain-service
 
+## 3.12.2
+
+### Patch Changes
+
+-   [#1046](https://github.com/learningeconomy/LearnCard/pull/1046) [`36cd4d51908084c0775958014c18f7f0886898b1`](https://github.com/learningeconomy/LearnCard/commit/36cd4d51908084c0775958014c18f7f0886898b1) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix: remove auth check for searching skill frameworks
+
+## 3.12.1
+
+### Patch Changes
+
+-   Updated dependencies [[`bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee`](https://github.com/learningeconomy/LearnCard/commit/bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee)]:
+    -   @learncard/types@5.12.3
+    -   @learncard/core@9.4.9
+    -   @learncard/helpers@1.2.9
+    -   @learncard/did-web-plugin@1.1.9
+    -   @learncard/didkey-plugin@1.1.9
+    -   @learncard/didkit-plugin@1.7.5
+    -   @learncard/didkit-plugin-node@0.2.5
+    -   @learncard/encryption-plugin@1.1.9
+    -   @learncard/learn-card-plugin@1.2.9
+    -   @learncard/vc-plugin@1.4.5
+    -   @learncard/vc-templates-plugin@1.1.9
+    -   @learncard/crypto-plugin@1.1.9
+    -   @learncard/expiration-plugin@1.2.9
+
+## 3.12.0
+
+### Minor Changes
+
+-   [#1017](https://github.com/learningeconomy/LearnCard/pull/1017) [`f82707268adc17496b70cbcda5acb3d9750d8849`](https://github.com/learningeconomy/LearnCard/commit/f82707268adc17496b70cbcda5acb3d9750d8849) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Support OpenSALT skills
+
+### Patch Changes
+
+-   [#1031](https://github.com/learningeconomy/LearnCard/pull/1031) [`495f2939cb6e4271cab0a88abea5105fb7e4f9b6`](https://github.com/learningeconomy/LearnCard/commit/495f2939cb6e4271cab0a88abea5105fb7e4f9b6) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-982][LC-1625] - extend default boost permissions, add "canView"
+
+-   [#1033](https://github.com/learningeconomy/LearnCard/pull/1033) [`08a1c8a07501c2f426d16239c4b0551e518a7ed5`](https://github.com/learningeconomy/LearnCard/commit/08a1c8a07501c2f426d16239c4b0551e518a7ed5) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1601] Add AppEvent source
+
+-   [#1037](https://github.com/learningeconomy/LearnCard/pull/1037) [`370d75b1f7095aade140bf63cc71f7168be3ba7b`](https://github.com/learningeconomy/LearnCard/commit/370d75b1f7095aade140bf63cc71f7168be3ba7b) Thanks [@gerardopar](https://github.com/gerardopar)! - Fix tests can view
+
+-   Updated dependencies [[`495f2939cb6e4271cab0a88abea5105fb7e4f9b6`](https://github.com/learningeconomy/LearnCard/commit/495f2939cb6e4271cab0a88abea5105fb7e4f9b6), [`08a1c8a07501c2f426d16239c4b0551e518a7ed5`](https://github.com/learningeconomy/LearnCard/commit/08a1c8a07501c2f426d16239c4b0551e518a7ed5)]:
+    -   @learncard/types@5.12.2
+    -   @learncard/core@9.4.8
+    -   @learncard/helpers@1.2.8
+    -   @learncard/did-web-plugin@1.1.8
+    -   @learncard/didkey-plugin@1.1.8
+    -   @learncard/didkit-plugin@1.7.4
+    -   @learncard/didkit-plugin-node@0.2.4
+    -   @learncard/encryption-plugin@1.1.8
+    -   @learncard/learn-card-plugin@1.2.8
+    -   @learncard/vc-plugin@1.4.4
+    -   @learncard/vc-templates-plugin@1.1.8
+    -   @learncard/crypto-plugin@1.1.8
+    -   @learncard/expiration-plugin@1.2.8
+
 ## 3.11.3
 
 ### Patch Changes

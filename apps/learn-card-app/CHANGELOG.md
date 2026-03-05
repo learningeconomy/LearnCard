@@ -1,5 +1,59 @@
 # Changelog
 
+## 1.94.31
+
+### Patch Changes
+
+-   [#1051](https://github.com/learningeconomy/LearnCard/pull/1051) [`e15dafbc571e8c63fa4fddcfbb03e87d495b01ff`](https://github.com/learningeconomy/LearnCard/commit/e15dafbc571e8c63fa4fddcfbb03e87d495b01ff) Thanks [@Custard7](https://github.com/Custard7)! - fix: Category Map Error
+
+## 1.94.30
+
+### Patch Changes
+
+-   [#1048](https://github.com/learningeconomy/LearnCard/pull/1048) [`22aafd3b8764ed0bac2f48d870ab8421fab13978`](https://github.com/learningeconomy/LearnCard/commit/22aafd3b8764ed0bac2f48d870ab8421fab13978) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Add optional chaining to CATEGORY_TO_SUBCATEGORY_LIST lookups
+
+## 1.94.29
+
+### Patch Changes
+
+-   [#1044](https://github.com/learningeconomy/LearnCard/pull/1044) [`bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee`](https://github.com/learningeconomy/LearnCard/commit/bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee) Thanks [@smurflo2](https://github.com/smurflo2)! - Add age rating and minimum age (both optional) to apps
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.9
+    -   @learncard/lca-api-plugin@1.1.17
+    -   @learncard/open-badge-v2-plugin@1.1.10
+    -   @learncard/react@2.9.16
+
+## 1.94.28
+
+### Patch Changes
+
+-   [#1040](https://github.com/learningeconomy/LearnCard/pull/1040) [`099ed4735e2565179c33a0d3015ef6961c8feaa3`](https://github.com/learningeconomy/LearnCard/commit/099ed4735e2565179c33a0d3015ef6961c8feaa3) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1615] Unified Guardian Hook
+
+## 1.94.27
+
+### Patch Changes
+
+-   [#1038](https://github.com/learningeconomy/LearnCard/pull/1038) [`49b6234b0b2874ee1e7eaaa8e1c15c2a27549537`](https://github.com/learningeconomy/LearnCard/commit/49b6234b0b2874ee1e7eaaa8e1c15c2a27549537) Thanks [@Custard7](https://github.com/Custard7)! - fix: [LC-1647] Add checks to prevent invalid QR state
+
+-   [#1039](https://github.com/learningeconomy/LearnCard/pull/1039) [`ea28b4d858e16768c3be0c6d65f53fe0ae17af5c`](https://github.com/learningeconomy/LearnCard/commit/ea28b4d858e16768c3be0c6d65f53fe0ae17af5c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix duplicate signing authorities being made every time an App Listing is updated
+
+-   [#1019](https://github.com/learningeconomy/LearnCard/pull/1019) [`0dd6bce821722763335427d582a074a232f93941`](https://github.com/learningeconomy/LearnCard/commit/0dd6bce821722763335427d582a074a232f93941) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1615] Unified Guardian Hook
+
+-   [#1036](https://github.com/learningeconomy/LearnCard/pull/1036) [`14980c4c2b8ff739afa1a2c915884df1c8517770`](https://github.com/learningeconomy/LearnCard/commit/14980c4c2b8ff739afa1a2c915884df1c8517770) Thanks [@Custard7](https://github.com/Custard7)! - fix: Null URL Helper
+
+-   [#1032](https://github.com/learningeconomy/LearnCard/pull/1032) [`4d91db99e41cf0cae65686a9650352d8d48b365a`](https://github.com/learningeconomy/LearnCard/commit/4d91db99e41cf0cae65686a9650352d8d48b365a) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1464] Autosave fix for skills framework
+
+-   [#1031](https://github.com/learningeconomy/LearnCard/pull/1031) [`495f2939cb6e4271cab0a88abea5105fb7e4f9b6`](https://github.com/learningeconomy/LearnCard/commit/495f2939cb6e4271cab0a88abea5105fb7e4f9b6) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-982][LC-1625] - extend default boost permissions, add "canView"
+
+-   [#1033](https://github.com/learningeconomy/LearnCard/pull/1033) [`08a1c8a07501c2f426d16239c4b0551e518a7ed5`](https://github.com/learningeconomy/LearnCard/commit/08a1c8a07501c2f426d16239c4b0551e518a7ed5) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1601] Add AppEvent source
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.8
+    -   @learncard/lca-api-plugin@1.1.16
+    -   @learncard/open-badge-v2-plugin@1.1.9
+    -   @learncard/react@2.9.15
+
 ## 1.94.26
 
 ### Patch Changes

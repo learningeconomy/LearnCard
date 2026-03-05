@@ -8,6 +8,7 @@ This page provides common usage examples for the **LearnCloud Network API**, so 
 -   Trigger and validate ConsentFlows
 -   Monitor health and fetch metadata (like DIDs or challenge keys)
 -   Run semantic search across skill frameworks
+-   Link and use OpenSALT skill frameworks
 
 Each example is standalone and self-explanatory. Scroll, copy, and paste what you need.
 
@@ -77,8 +78,6 @@ const result = await learnCard.invoke.send({
 
 ---
 
-##
-
 ## 🔎 Semantic Skill Search
 
 Use semantic search when keyword matching is too strict and you want meaning-based results.
@@ -104,3 +103,37 @@ console.log(results.records[0]);
 {% hint style="info" %}
 Semantic search requires skill embeddings to be present. In LearnCard Network, embeddings are generated for skill create/update/sync flows and can be backfilled when enabled by environment configuration.
 {% endhint %}
+
+---
+
+## OpenSALT Skill Frameworks
+
+Link an OpenSALT framework by CASE URL (or UUID), then sync it locally:
+
+```typescript
+const framework = await learnCard.invoke.createSkillFramework({
+    frameworkId:
+        'https://opensalt.net/ims/case/v1p0/CFDocuments/c6085394-d7cb-11e8-824f-0242ac160002',
+});
+
+await learnCard.invoke.syncFrameworkSkills({ id: framework.id });
+```
+
+List frameworks available to the current profile (managed + public):
+
+```typescript
+const page = await learnCard.invoke.getAllAvailableFrameworks({
+    limit: 25,
+    cursor: null,
+});
+
+console.log(page.records.map(framework => framework.id));
+```
+
+To align a boost with skills from that framework:
+
+```typescript
+await learnCard.invoke.alignBoostSkills(boostUri, [{ frameworkId: framework.id, id: 'skill-id' }]);
+```
+
+For full details, see [Skill Frameworks & OpenSALT](skills-and-opensalt.md).

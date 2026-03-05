@@ -47,6 +47,12 @@ export const useDeveloperPortal = () => {
 
     const ensureAppSigningAuthority = async (listingId: string): Promise<void> => {
         const wallet = await initWallet();
+
+        const existingSa = await wallet.invoke.getListingSigningAuthority(listingId);
+        if (existingSa) {
+            return;
+        }
+
         const listing = await wallet.invoke.getAppStoreListing(listingId);
 
         if (!listing?.slug) return;

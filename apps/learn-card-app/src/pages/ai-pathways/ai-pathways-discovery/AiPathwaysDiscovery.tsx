@@ -13,6 +13,7 @@ import ExperimentalFeatureBox from '../../../components/generic/ExperimentalFeat
 import ErrorBoundaryFallback from '../../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwayExploreContent from '../ai-pathway-explore-content/AiPathwayExploreContent';
 
+import { AiFeatureGate } from '../../../components/ai-feature-gate/AiFeatureGate';
 import { SubheaderTypeEnum } from '../../../components/main-subheader/MainSubHeader.types';
 import { CredentialCategoryEnum } from 'learn-card-base';
 
@@ -60,53 +61,55 @@ const AiPathwaysDiscovery: React.FC = () => {
                         subheaderType={SubheaderTypeEnum.AiPathways}
                         hidePlusBtn={true}
                     />
-                    <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
-                        <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
-                            <ExperimentalFeatureBox className="shadow-box-bottom" />
-                        </div>
-
-                        {/* Search Input Section */}
-                        <AiPathwaysDiscoverySearch
-                            keywordInput={keywordInput}
-                            setKeywordInput={setKeywordInput}
-                            searchKeyword={searchKeyword}
-                            setSearchKeyword={setSearchKeyword}
-                        />
-
-                        {emptyPathways ? (
-                            <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px] flex-col gap-4">
-                                {searchKeyword && (
-                                    <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 px-[15px] py-[18px] rounded-[15px]">
-                                        <div className="w-full flex-col flex items-center justify-center gap-4">
-                                            <p className="text-center text-lg font-semibold text-gray-600">
-                                                No results found for "{searchKeyword}"
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                                <AiPathwaysEmptyPlaceholder />
+                    <AiFeatureGate>
+                        <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
+                            <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
+                                <ExperimentalFeatureBox className="shadow-box-bottom" />
                             </div>
-                        ) : (
-                            <>
-                                <AiPathwayCourses
-                                    courses={[]}
-                                    schoolPrograms={schoolPrograms}
-                                    keywords={activeKeywords}
-                                    fieldOfStudy={undefined}
-                                    isLoading={isLoading}
-                                />
-                                <AiPathwayCareers
-                                    careerKeywords={activeKeywords}
-                                    occupations={occupations}
-                                    isLoading={isLoading}
-                                />
-                                <AiPathwayExploreContent
-                                    occupations={occupations}
-                                    isLoading={isLoading}
-                                />
-                            </>
-                        )}
-                    </div>
+
+                            {/* Search Input Section */}
+                            <AiPathwaysDiscoverySearch
+                                keywordInput={keywordInput}
+                                setKeywordInput={setKeywordInput}
+                                searchKeyword={searchKeyword}
+                                setSearchKeyword={setSearchKeyword}
+                            />
+
+                            {emptyPathways ? (
+                                <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px] flex-col gap-4">
+                                    {searchKeyword && (
+                                        <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 px-[15px] py-[18px] rounded-[15px]">
+                                            <div className="w-full flex-col flex items-center justify-center gap-4">
+                                                <p className="text-center text-lg font-semibold text-gray-600">
+                                                    No results found for "{searchKeyword}"
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <AiPathwaysEmptyPlaceholder />
+                                </div>
+                            ) : (
+                                <>
+                                    <AiPathwayCourses
+                                        courses={[]}
+                                        schoolPrograms={schoolPrograms}
+                                        keywords={activeKeywords}
+                                        fieldOfStudy={undefined}
+                                        isLoading={isLoading}
+                                    />
+                                    <AiPathwayCareers
+                                        careerKeywords={activeKeywords}
+                                        occupations={occupations}
+                                        isLoading={isLoading}
+                                    />
+                                    <AiPathwayExploreContent
+                                        occupations={occupations}
+                                        isLoading={isLoading}
+                                    />
+                                </>
+                            )}
+                        </div>
+                    </AiFeatureGate>
                 </IonContent>
             </ErrorBoundary>
         </IonPage>

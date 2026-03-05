@@ -84,6 +84,7 @@ const SkillFrameworkInfoBox: React.FC<SkillFrameworkInfoBoxProps> = ({ framework
                     <div className="flex items-center ml-auto text-[14px]">
                         <FrameworkSkillsCount
                             frameworkId={frameworkId}
+                            sourceURI={frameworkData?.framework?.sourceURI}
                             className="!text-grayscale-700"
                             includeSkillWord
                         />

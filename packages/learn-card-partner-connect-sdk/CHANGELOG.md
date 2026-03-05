@@ -1,5 +1,25 @@
 # @learncard/partner-connect
 
+## 0.2.9
+
+### Patch Changes
+
+-   [#1050](https://github.com/learningeconomy/LearnCard/pull/1050) [`53af27e4505eea081d60464a4e6b4fd9392ce897`](https://github.com/learningeconomy/LearnCard/commit/53af27e4505eea081d60464a4e6b4fd9392ce897) Thanks [@Custard7](https://github.com/Custard7)! - chore: Update @partner-connect docs
+
+## 0.2.8
+
+### Patch Changes
+
+-   Updated dependencies [[`bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee`](https://github.com/learningeconomy/LearnCard/commit/bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee)]:
+    -   @learncard/types@5.12.3
+
+## 0.2.7
+
+### Patch Changes
+
+-   Updated dependencies [[`495f2939cb6e4271cab0a88abea5105fb7e4f9b6`](https://github.com/learningeconomy/LearnCard/commit/495f2939cb6e4271cab0a88abea5105fb7e4f9b6), [`08a1c8a07501c2f426d16239c4b0551e518a7ed5`](https://github.com/learningeconomy/LearnCard/commit/08a1c8a07501c2f426d16239c4b0551e518a7ed5)]:
+    -   @learncard/types@5.12.2
+
 ## 0.2.6
 
 ### Patch Changes
