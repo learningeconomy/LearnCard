@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 
-import { IonIcon, IonToggle } from '@ionic/react';
+import { IonIcon } from '@ionic/react';
 import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
 import { resumeBuilderStore } from '../../../../stores/resumeBuilderStore';
+import ResumeBuilderToggle from '../../ResumeBuilderToggle';
 
 const ResumeConfigPanelDocumentSetup: React.FC = () => {
     const [open, setOpen] = useState<boolean>(true);
@@ -30,12 +31,10 @@ const ResumeConfigPanelDocumentSetup: React.FC = () => {
                                 <p className="text-xs font-semibold text-grayscale-900">
                                     LearnCard QR code • {documentSetup?.showQRCode ? 'On' : 'Off'}
                                 </p>
-                                <IonToggle
-                                    mode="ios"
-                                    className="family-cms-toggle"
+                                <ResumeBuilderToggle
                                     checked={Boolean(documentSetup?.showQRCode)}
-                                    onIonChange={e =>
-                                        setDocumentSetup({ showQRCode: e.detail.checked })
+                                    onChange={checked =>
+                                        setDocumentSetup({ showQRCode: checked })
                                     }
                                 />
                             </div>

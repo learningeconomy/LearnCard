@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
-import { IonIcon, IonToggle } from '@ionic/react';
+import { IonIcon } from '@ionic/react';
 import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
 
 import { resumeUserInfo, UserInfoEnum } from '../../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../../stores/resumeBuilderStore';
 import ResumeConfigPanelUserInfoItem from './ResumeConfigPanelUserInfoItem';
+import ResumeBuilderToggle from '../../ResumeBuilderToggle';
 
 import { useCurrentUser, useGetCurrentLCNUser } from 'learn-card-base';
 
@@ -60,12 +61,10 @@ const ResumeConfigPanelUserInfo: React.FC = () => {
                         <label className="text-xs font-semibold text-grayscale-900">
                             Thumbnail • {thumbnailChecked ? 'On' : 'Off'}
                         </label>
-                        <IonToggle
-                            mode="ios"
-                            className="family-cms-toggle"
+                        <ResumeBuilderToggle
                             checked={thumbnailChecked}
-                            onIonChange={e =>
-                                setPersonalDetailHidden(UserInfoEnum.Thumbnail, !e.detail.checked)
+                            onChange={checked =>
+                                setPersonalDetailHidden(UserInfoEnum.Thumbnail, !checked)
                             }
                         />
                     </div>

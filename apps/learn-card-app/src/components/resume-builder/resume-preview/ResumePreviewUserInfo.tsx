@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 
-import { IonToggle } from '@ionic/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { ProfilePicture } from 'learn-card-base';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 import ResumePreviewInfoChip from './ResumePreviewInfoChip';
+import ResumeBuilderToggle from '../ResumeBuilderToggle';
 
 import { PersonalDetails, UserInfoEnum, getLinkedInHandle } from '../resume-builder.helpers';
 
@@ -99,12 +99,10 @@ const ResumePreviewUserInfo: React.FC = () => {
                         </span>
                     </div>
                     <div data-pdf-hide className="shrink-0 flex flex-col items-center gap-2 pt-0.5">
-                        <IonToggle
-                            mode="ios"
-                            className="family-cms-toggle"
+                        <ResumeBuilderToggle
                             checked={!hiddenPersonalDetails?.[UserInfoEnum.Summary]}
-                            onIonChange={e =>
-                                setPersonalDetailHidden(UserInfoEnum.Summary, !e.detail.checked)
+                            onChange={checked =>
+                                setPersonalDetailHidden(UserInfoEnum.Summary, !checked)
                             }
                         />
                     </div>

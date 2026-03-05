@@ -1,9 +1,9 @@
 import React from 'react';
 
-import { IonToggle } from '@ionic/react';
 import LocationIcon from '../../../svgs/LocationIcon';
 import LinkedInIcon from '../../../svgs/LinkedInIcon';
 import { UserInfoEnum } from '../../resume-builder.helpers';
+import ResumeBuilderToggle from '../../ResumeBuilderToggle';
 
 type ResumeConfigPanelUserInfoItemProps = {
     type: UserInfoEnum;
@@ -82,12 +82,7 @@ const ResumeConfigPanelUserInfoItem: React.FC<ResumeConfigPanelUserInfoItemProps
                 {(isLinkedIn || isLocation) && decoratedInput}
                 {!(multiline || isLinkedIn || isLocation) && plainInput}
                 {showToggle && (
-                    <IonToggle
-                        mode="ios"
-                        className="family-cms-toggle"
-                        checked={checked}
-                        onIonChange={e => onToggle(e.detail.checked)}
-                    />
+                    <ResumeBuilderToggle checked={checked} onChange={onToggle} />
                 )}
             </div>
         </div>
