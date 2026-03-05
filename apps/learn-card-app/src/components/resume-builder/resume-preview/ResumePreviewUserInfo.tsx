@@ -60,6 +60,13 @@ const ResumePreviewUserInfo: React.FC = () => {
                         )}
 
                         <div data-pdf-screen-only className="flex flex-wrap gap-2 mt-2">
+                            {isFieldVisible(UserInfoEnum.Career) && (
+                                <ResumePreviewInfoChip
+                                    detailKey={UserInfoEnum.Career}
+                                    value={personalDetails.career}
+                                    onRemove={removeField}
+                                />
+                            )}
                             {isFieldVisible(UserInfoEnum.Location) && (
                                 <ResumePreviewInfoChip
                                     detailKey={UserInfoEnum.Location}
