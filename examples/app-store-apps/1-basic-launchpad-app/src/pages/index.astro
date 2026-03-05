@@ -2,7 +2,8 @@
 // Server-side data (if needed for backend integration in the future)
 const config = {
   contractUri: import.meta.env.CONTRACT_URI || 'lc:network:network.learncard.com/trpc:contract:fc430a19-5f0d-46e2-95c5-15fa57f753c9',
-  boostUri: import.meta.env.BOOST_URI || 'lc:network:network.learncard.com/trpc:boost:fbe30973-68b2-4a87-b0ac-80938ff382c4'
+  boostUri: import.meta.env.BOOST_URI || 'lc:network:network.learncard.com/trpc:boost:fbe30973-68b2-4a87-b0ac-80938ff382c4',
+  templateAlias: import.meta.env.TEMPLATE_ALIAS || 'achievement'
 };
 ---
 
@@ -52,42 +53,49 @@ const config = {
         id="issue-cred-btn"
         class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
       >
-        1. Issue Credential (SDK: sendCredential)
+        1. Issue Credential (SDK: sendCredential + preventDuplicateClaim)
+      </button>
+
+      <button
+        id="check-credential-btn"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+      >
+        2. Check Credential Status (SDK: checkUserHasCredential)
       </button>
 
       <button
         id="launch-ai-btn"
-        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+        class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
       >
-        2. Launch AI Tutor (SDK: launchFeature)
+        3. Launch AI Tutor (SDK: launchFeature)
       </button>
 
       <button
         id="ask-cred-btn"
-        class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+        class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
       >
-        3. Request Credential (SDK: askCredentialSearch)
+        4. Request Credential (SDK: askCredentialSearch)
       </button>
 
       <button
         id="request-consent-btn"
-        class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+        class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
       >
-        4. Request Consent (SDK: requestConsent)
+        5. Request Consent (SDK: requestConsent)
       </button>
 
       <button
         id="ask-specific-cred-btn"
-        class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+        class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
       >
-        5. Request Specific Credential (SDK: askCredentialSpecific)
+        6. Request Specific Credential (SDK: askCredentialSpecific)
       </button>
 
       <button
         id="initiate-template-issue-btn"
         class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
       >
-        6. Initiate Template Issue (SDK: initiateTemplateIssue)
+        7. Initiate Template Issue (SDK: initiateTemplateIssue)
       </button>
     </div>
   </div>
@@ -98,7 +106,6 @@ const config = {
   </script>
 
   <script>
-    import { actions } from 'astro:actions';
     import { createPartnerConnect } from '@learncard/partner-connect';
 
     // --- CONFIGURATION ---
@@ -166,29 +173,54 @@ const config = {
       updateStatus('Issuing credential request. Waiting for user consent popup...', 'info');
 
       try {
-        const identity = await learnCard.requestIdentity();
+        const response = await learnCard.sendCredential({
+          templateAlias: window.__LC_CONFIG.templateAlias,
+          templateData: {
+            issuedAt: new Date().toISOString()
+          },
+          preventDuplicateClaim: true
+        });
 
-        const { data: credential, error } = await actions.issueCredential({ recipientDid: identity.user.did });
-        if (error) {
-          console.error(error)
-          throw new Error(error)
+        if (response.alreadyClaimed) {
+          updateStatus(`Already earned! Existing credential: ${response.credentialUri}`, 'info');
+          return;
         }
-        console.log('CREDENTIAL:', credential);
 
-        const response = await learnCard.sendCredential(credential);
-        
-        // Save the credential ID for later use
         if (response.credentialId) {
           lastIssuedCredentialId = response.credentialId;
+          updateStatus(`Credential Issued! New ID: ${response.credentialId}`, 'success');
+          return;
         }
-        
-        updateStatus(`Credential Issued! New ID: ${response.credentialId}`, 'success');
+
+        updateStatus(`Credential Issued! URI: ${response.credentialUri}`, 'success');
       } catch (error) {
         updateStatus(`Issue Failed: ${error.message || 'User rejected credential.'}`, 'error');
       }
     }
 
-    // C. Launch Feature
+
+    // C. Check Credential Status
+    async function handleCheckCredentialStatus() {
+      updateStatus('Checking credential status silently...', 'info');
+
+      try {
+        const result = await learnCard.checkUserHasCredential({
+          templateAlias: window.__LC_CONFIG.templateAlias
+        });
+
+        if (result.hasCredential) {
+          updateStatus(`Already earned! Status: ${result.status || 'claimed'} (${result.credentialUri || 'no URI'})`, 'success');
+        } else if (result.status === 'revoked') {
+          updateStatus('Credential was previously issued but is now revoked.', 'error');
+        } else {
+          updateStatus('Not earned yet. Click "Issue Credential" to claim it.', 'info');
+        }
+      } catch (error) {
+        updateStatus(`Check Failed: ${error.message || 'Unable to check credential status.'}`, 'error');
+      }
+    }
+
+    // D. Launch Feature
     async function handleLaunchFeature() {
       updateStatus('Requesting LearnCard Host to launch AI Tutor...');
 
@@ -203,7 +235,7 @@ const config = {
       }
     }
 
-    // D. Request Credential (Gated Content)
+    // E. Request Credential (Gated Content)
     async function handleAskCredential() {
       updateStatus(
         'Requesting user to share a credential (searching for "Learning History"). Waiting for consent...',
@@ -247,7 +279,7 @@ const config = {
       }
     }
 
-    // E. Request Consent
+    // F. Request Consent
     async function handleRequestConsent() {
       updateStatus(
         'Requesting user consent for general permissions. Waiting for consent...',
@@ -271,7 +303,7 @@ const config = {
       }
     }
 
-    // F. Request Specific Credential
+    // G. Request Specific Credential
     async function handleAskSpecificCredential() {
       updateStatus(
         'Requesting a specific credential by ID. Waiting for user to share...',
@@ -318,7 +350,7 @@ const config = {
       }
     }
 
-    // G. Initiate Template Issue (Boost)
+    // H. Initiate Template Issue (Boost)
     async function handleInitiateTemplateIssue() {
       updateStatus(
         'Initiating template issue flow. Opening Send Boost modal...',
@@ -381,6 +413,7 @@ const config = {
     window.onload = function () {
       // Attach event listeners to the buttons
       document.getElementById('issue-cred-btn').addEventListener('click', handleIssueCredential);
+      document.getElementById('check-credential-btn').addEventListener('click', handleCheckCredentialStatus);
       document.getElementById('launch-ai-btn').addEventListener('click', handleLaunchFeature);
       document.getElementById('ask-cred-btn').addEventListener('click', handleAskCredential);
       document.getElementById('request-consent-btn').addEventListener('click', handleRequestConsent);

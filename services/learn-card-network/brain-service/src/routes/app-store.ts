@@ -70,6 +70,8 @@ import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
 import { getAppDidWeb, getDidWeb } from '@helpers/did.helpers';
+import { getCredentialUri } from '@helpers/credential.helpers';
+import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
 
 // =============================================================================
 // VALIDATION HELPERS
@@ -452,6 +454,7 @@ const handleSendCredentialEvent = async (
 ): Promise<Record<string, unknown>> => {
     const templateAlias = event.templateAlias as string | undefined;
     const templateData = event.templateData as Record<string, unknown> | undefined;
+    const preventDuplicateClaim = Boolean(event.preventDuplicateClaim);
 
     if (!templateAlias) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias required' });
@@ -468,6 +471,24 @@ const handleSendCredentialEvent = async (
     }
 
     const { boost, boostUri } = boostResult;
+
+    if (preventDuplicateClaim) {
+        const existingCredential = await getCredentialStatusForBoostAndProfile(
+            boost.id,
+            profile.profileId
+        );
+
+        if (existingCredential && existingCredential.status !== 'revoked') {
+            return {
+                hasCredential: true,
+                alreadyClaimed: true,
+                credentialUri: getCredentialUri(existingCredential.credential.id, ctx.domain),
+                receivedDate: existingCredential.receivedDate ?? existingCredential.sentDate,
+                status: existingCredential.status,
+                boostUri,
+            };
+        }
+    }
 
     if (isDraftBoost(boost)) {
         throw new TRPCError({
@@ -623,6 +644,86 @@ const handleSendCredentialEvent = async (
     return {
         credentialUri,
         boostUri,
+    };
+};
+
+const handleCheckCredentialEvent = async (
+    ctx: { domain: string },
+    profile: { profileId: string },
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const templateAlias = event.templateAlias as string | undefined;
+    const boostUriInput = event.boostUri as string | undefined;
+
+    if (!templateAlias && !boostUriInput) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias or boostUri required' });
+    }
+
+    if (templateAlias && boostUriInput) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Provide either templateAlias or boostUri, not both',
+        });
+    }
+
+    let boost: { id: string } | null = null;
+    let boostUri: string;
+
+    if (templateAlias) {
+        const boostResult = await getBoostForListingByTemplateAlias(
+            listingId,
+            templateAlias,
+            ctx.domain
+        );
+
+        if (!boostResult) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
+        }
+
+        boost = boostResult.boost;
+        boostUri = boostResult.boostUri;
+    } else {
+        boostUri = boostUriInput as string;
+        const boosts = await getBoostsForListing(listingId, ctx.domain);
+        const hasBoostAccess = boosts.some(item => item.boostUri === boostUri);
+
+        if (!hasBoostAccess) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Boost is not associated with this app',
+            });
+        }
+
+        boost = await getBoostByUri(boostUri);
+
+        if (!boost) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+        }
+    }
+
+    const credentialStatus = await getCredentialStatusForBoostAndProfile(
+        boost.id,
+        profile.profileId
+    );
+
+    if (!credentialStatus) {
+        return {
+            hasCredential: false,
+            boostUri,
+        };
+    }
+
+    const credentialUri = getCredentialUri(credentialStatus.credential.id, ctx.domain);
+    const receivedDate = credentialStatus.receivedDate ?? credentialStatus.sentDate;
+    const hasCredential = credentialStatus.status !== 'revoked';
+
+    return {
+        hasCredential,
+        boostUri,
+        credentialUri,
+        receivedDate,
+        status: credentialStatus.status,
     };
 };
 
@@ -1408,6 +1509,10 @@ export const appStoreRouter = t.router({
 
             if (eventType === 'send-credential') {
                 return handleSendCredentialEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'check-credential') {
+                return handleCheckCredentialEvent(ctx, profile, resolvedListingId, event);
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });

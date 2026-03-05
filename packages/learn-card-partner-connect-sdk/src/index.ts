@@ -30,6 +30,8 @@ import type {
     ConsentResponse,
     RequestConsentOptions,
     TemplateIssueResponse,
+    CheckCredentialInput,
+    CheckCredentialResponse,
     AppEvent,
     AppEventResponse,
     LearnCardError,
@@ -309,10 +311,22 @@ export class PartnerConnect {
                 type: 'send-credential',
                 templateAlias: templateInput.templateAlias,
                 templateData: templateInput.templateData,
+                preventDuplicateClaim: templateInput.preventDuplicateClaim,
             }) as Promise<TemplateCredentialResponse>;
         }
 
         return this.sendMessage<SendCredentialResponse>('SEND_CREDENTIAL', { credential: input });
+    }
+
+    /**
+     * Check whether the current user already has a credential from a given boost template.
+     * This is a silent, non-interactive status check for installed app integrations.
+     */
+    public checkUserHasCredential(input: CheckCredentialInput): Promise<CheckCredentialResponse> {
+        return this.sendAppEvent({
+            type: 'check-credential',
+            ...input,
+        }) as unknown as Promise<CheckCredentialResponse>;
     }
 
     /**

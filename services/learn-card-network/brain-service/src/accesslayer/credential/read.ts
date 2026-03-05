@@ -57,13 +57,15 @@ export const getReceivedCredentialsForProfile = async (
 
     const fromQuery = hasFromFilter
         ? matchQuery.where(
-            new Where({ source: { profileId: { [Op.in]: from } } }, matchQuery.getBindParam())
-        )
+              new Where({ source: { profileId: { [Op.in]: from } } }, matchQuery.getBindParam())
+          )
         : matchQuery;
 
     // Filter out revoked credentials
     const query = fromQuery.raw(
-        `${hasFromFilter ? 'AND' : 'WHERE'} (received.status IS NULL OR received.status <> "revoked")`
+        `${
+            hasFromFilter ? 'AND' : 'WHERE'
+        } (received.status IS NULL OR received.status <> "revoked")`
     );
 
     const results = convertQueryResultToPropertiesObjectArray<{
@@ -84,7 +86,9 @@ export const getReceivedCredentialsForProfile = async (
             from: receivedProps.from as string,
             sent: sentProps.date as string,
             received: receivedProps.date as string,
-            metadata: (receivedProps.metadata ?? sentProps.metadata) as Record<string, unknown> | undefined,
+            metadata: (receivedProps.metadata ?? sentProps.metadata) as
+                | Record<string, unknown>
+                | undefined,
         };
     });
 };
@@ -109,8 +113,8 @@ export const getSentCredentialsForProfile = async (
     const whereQuery =
         to && to.length > 0
             ? matchQuery.where(
-                new Where({ sent: { to: { [Op.in]: to } } }, matchQuery.getBindParam())
-            )
+                  new Where({ sent: { to: { [Op.in]: to } } }, matchQuery.getBindParam())
+              )
             : matchQuery;
 
     const query = whereQuery.match({
@@ -180,7 +184,8 @@ export const getIncomingCredentialsForProfile = async (
             })
             // Don't return credentials that have been accepted
             .where(
-                `NOT (credential)-[:CREDENTIAL_RECEIVED]->()${whereFrom ? `AND ${whereFrom.getStatement('text')}` : ''
+                `NOT (credential)-[:CREDENTIAL_RECEIVED]->()${
+                    whereFrom ? `AND ${whereFrom.getStatement('text')}` : ''
                 }`
             )
             .return('source, relationship, credential')
@@ -203,21 +208,23 @@ export const getIncomingCredentialsForProfile = async (
     });
 };
 
-/**
- * Get a credential instance for a specific boost and profile.
- * This is used to find the credential that was issued when a profile claimed a boost.
- * Looks via credentialSent (which exists for pending and claimed) and filters out revoked credentials.
- */
-export const getCredentialInstanceForBoostAndProfile = async (
+export interface CredentialStatusForBoostAndProfile {
+    credential: CredentialInstance;
+    sentDate?: string;
+    receivedDate?: string;
+    status: 'pending' | 'claimed' | 'revoked';
+}
+
+export const getCredentialStatusForBoostAndProfile = async (
     boostId: string,
     profileId: string
-): Promise<CredentialInstance | null> => {
+): Promise<CredentialStatusForBoostAndProfile | null> => {
     const { Boost } = await import('@models');
 
-    // Use credentialSent to find credentials (exists for both pending and claimed)
-    // Then optionally match credentialReceived to check revocation status
     const results = convertQueryResultToPropertiesObjectArray<{
         credential: CredentialType;
+        sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
+        received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
     }>(
         await new QueryBuilder()
             .match({
@@ -245,10 +252,9 @@ export const getCredentialInstanceForBoostAndProfile = async (
                     { identifier: 'recipient', model: Profile, where: { profileId } },
                 ],
             })
-            // Use WITH barrier pattern for correct filtering
-            .with('credential, received')
-            .where('received IS NULL OR coalesce(received.status, "") <> "revoked"')
-            .return('credential')
+            .with('credential, sent, received')
+            .return('credential, sent, received')
+            .orderBy('coalesce(received.date, sent.date) DESC')
             .limit(1)
             .run()
     );
@@ -257,7 +263,50 @@ export const getCredentialInstanceForBoostAndProfile = async (
         return null;
     }
 
-    return Credential.findOne({ where: { id: results[0]!.credential.id } });
+    const result = results[0];
+    if (!result) {
+        return null;
+    }
+
+    const credential = await Credential.findOne({ where: { id: result.credential.id } });
+    if (!credential) {
+        return null;
+    }
+
+    const sentProps = inflateRelationshipProperties(
+        result.sent as unknown as Record<string, unknown>
+    );
+    const receivedProps = result.received
+        ? inflateRelationshipProperties(result.received as unknown as Record<string, unknown>)
+        : undefined;
+
+    const rawStatus = receivedProps?.status;
+    const status = rawStatus === 'revoked' ? 'revoked' : receivedProps ? 'claimed' : 'pending';
+
+    return {
+        credential,
+        sentDate: sentProps.date as string | undefined,
+        receivedDate: receivedProps?.date as string | undefined,
+        status,
+    };
+};
+
+/**
+ * Get a credential instance for a specific boost and profile.
+ * This is used to find the credential that was issued when a profile claimed a boost.
+ * Looks via credentialSent (which exists for pending and claimed) and filters out revoked credentials.
+ */
+export const getCredentialInstanceForBoostAndProfile = async (
+    boostId: string,
+    profileId: string
+): Promise<CredentialInstance | null> => {
+    const credentialStatus = await getCredentialStatusForBoostAndProfile(boostId, profileId);
+
+    if (!credentialStatus || credentialStatus.status === 'revoked') {
+        return null;
+    }
+
+    return credentialStatus.credential;
 };
 
 /**

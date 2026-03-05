@@ -3,7 +3,12 @@
  */
 
 // Re-export AppEvent types from shared types package
-export type { AppEvent, SendCredentialEvent, AppEventResponse } from '@learncard/types';
+export type {
+    AppEvent,
+    SendCredentialEvent,
+    CheckCredentialEvent,
+    AppEventResponse,
+} from '@learncard/types';
 
 /**
  * Configuration options for initializing the SDK
@@ -96,6 +101,11 @@ export interface TemplateCredentialInput {
 
     /** Optional template data for Mustache-style variable substitution */
     templateData?: Record<string, unknown>;
+
+    /**
+     * If true, the host will return an existing credential (if present) instead of issuing a duplicate.
+     */
+    preventDuplicateClaim?: boolean;
 }
 
 /**
@@ -180,7 +190,22 @@ export interface TemplateIssueResponse {
     [key: string]: unknown;
 }
 
-// AppEvent, SendCredentialEvent, and AppEventResponse are re-exported from @learncard/types above
+// AppEvent, SendCredentialEvent, CheckCredentialEvent, and AppEventResponse are re-exported from @learncard/types above
+
+/**
+ * Input used to check if the authenticated user already has a credential for a boost template
+ */
+export type CheckCredentialInput = { templateAlias: string } | { boostUri: string };
+
+/**
+ * Response from checkUserHasCredential
+ */
+export interface CheckCredentialResponse {
+    hasCredential: boolean;
+    credentialUri?: string;
+    receivedDate?: string;
+    status?: 'pending' | 'claimed' | 'revoked';
+}
 
 /**
  * Error codes that can be returned by the LearnCard host
@@ -192,6 +217,8 @@ export type ErrorCode =
     | 'USER_REJECTED'
     | 'UNAUTHORIZED'
     | 'TEMPLATE_NOT_FOUND'
+    | 'BOOST_NOT_FOUND'
+    | 'INSUFFICIENT_PERMISSIONS'
     | string;
 
 /**
