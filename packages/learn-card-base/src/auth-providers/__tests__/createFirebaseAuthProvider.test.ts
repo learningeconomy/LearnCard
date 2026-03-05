@@ -2,9 +2,8 @@
  * createFirebaseAuthProvider Unit Tests
  *
  * Tests the Firebase auth provider factory for:
- * - Null return when no user
  * - getIdToken delegation and error handling
- * - getCurrentUser with stale-session detection
+ * - getCurrentUser mapping from getAuth().currentUser
  * - signOut delegation
  * - getProviderType
  */
@@ -22,11 +21,20 @@ import type { FirebaseAuthConfig } from '../createFirebaseAuthProvider';
 
 const mockGetIdToken = vi.fn().mockResolvedValue('mock-id-token');
 
+const createMockCurrentUser = (overrides?: Record<string, unknown>) => ({
+    uid: 'user-1',
+    email: 'test@example.com',
+    phoneNumber: '+1234567890',
+    displayName: null,
+    photoURL: null,
+    getIdToken: mockGetIdToken,
+    ...overrides,
+});
+
 const createConfig = (overrides?: Partial<FirebaseAuthConfig>): FirebaseAuthConfig => ({
     getAuth: () => ({
-        currentUser: { getIdToken: mockGetIdToken },
+        currentUser: createMockCurrentUser(),
     }),
-    user: { uid: 'user-1', email: 'test@example.com', phoneNumber: '+1234567890' },
     ...overrides,
 });
 
@@ -35,31 +43,7 @@ const createConfig = (overrides?: Partial<FirebaseAuthConfig>): FirebaseAuthConf
 // ---------------------------------------------------------------------------
 
 describe('createFirebaseAuthProvider', () => {
-    describe('returns null when user is absent', () => {
-        it('returns null when user is null', () => {
-            const result = createFirebaseAuthProvider(createConfig({ user: null }));
-
-            expect(result).toBeNull();
-        });
-
-        it('returns null when user.uid is null', () => {
-            const result = createFirebaseAuthProvider(
-                createConfig({ user: { uid: null, email: 'a@b.com' } })
-            );
-
-            expect(result).toBeNull();
-        });
-
-        it('returns null when user.uid is undefined', () => {
-            const result = createFirebaseAuthProvider(
-                createConfig({ user: { uid: undefined } })
-            );
-
-            expect(result).toBeNull();
-        });
-    });
-
-    describe('returns a valid AuthProvider when user has uid', () => {
+    describe('always returns a valid AuthProvider', () => {
         it('returns non-null provider', () => {
             const provider = createFirebaseAuthProvider(createConfig());
 
@@ -67,7 +51,7 @@ describe('createFirebaseAuthProvider', () => {
         });
 
         it('getProviderType returns firebase', () => {
-            const provider = createFirebaseAuthProvider(createConfig())!;
+            const provider = createFirebaseAuthProvider(createConfig());
 
             expect(provider.getProviderType()).toBe('firebase');
         });
@@ -75,7 +59,7 @@ describe('createFirebaseAuthProvider', () => {
 
     describe('getIdToken()', () => {
         it('delegates to Firebase SDK currentUser.getIdToken', async () => {
-            const provider = createFirebaseAuthProvider(createConfig())!;
+            const provider = createFirebaseAuthProvider(createConfig());
 
             const token = await provider.getIdToken();
 
@@ -88,7 +72,7 @@ describe('createFirebaseAuthProvider', () => {
                 createConfig({
                     getAuth: () => ({ currentUser: null }),
                 })
-            )!;
+            );
 
             await expect(provider.getIdToken()).rejects.toThrow(AuthSessionError);
             await expect(provider.getIdToken()).rejects.toThrow('No Firebase user');
@@ -97,7 +81,7 @@ describe('createFirebaseAuthProvider', () => {
 
     describe('getCurrentUser()', () => {
         it('returns AuthUser with correct fields', async () => {
-            const provider = createFirebaseAuthProvider(createConfig())!;
+            const provider = createFirebaseAuthProvider(createConfig());
 
             const user = await provider.getCurrentUser();
 
@@ -105,7 +89,10 @@ describe('createFirebaseAuthProvider', () => {
                 id: 'user-1',
                 email: 'test@example.com',
                 phone: '+1234567890',
+                displayName: undefined,
+                photoUrl: undefined,
                 providerType: 'firebase',
+                createdAt: undefined,
             });
         });
 
@@ -114,7 +101,7 @@ describe('createFirebaseAuthProvider', () => {
                 createConfig({
                     getAuth: () => ({ currentUser: null }),
                 })
-            )!;
+            );
 
             const user = await provider.getCurrentUser();
 
@@ -123,8 +110,16 @@ describe('createFirebaseAuthProvider', () => {
 
         it('omits email and phone when not present', async () => {
             const provider = createFirebaseAuthProvider(
-                createConfig({ user: { uid: 'user-1' } })
-            )!;
+                createConfig({
+                    getAuth: () => ({
+                        currentUser: createMockCurrentUser({
+                            uid: 'user-1',
+                            email: null,
+                            phoneNumber: null,
+                        }),
+                    }),
+                })
+            );
 
             const user = await provider.getCurrentUser();
 
@@ -132,8 +127,29 @@ describe('createFirebaseAuthProvider', () => {
                 id: 'user-1',
                 email: undefined,
                 phone: undefined,
+                displayName: undefined,
+                photoUrl: undefined,
                 providerType: 'firebase',
+                createdAt: undefined,
             });
+        });
+
+        it('maps displayName and photoUrl when present', async () => {
+            const provider = createFirebaseAuthProvider(
+                createConfig({
+                    getAuth: () => ({
+                        currentUser: createMockCurrentUser({
+                            displayName: 'Test User',
+                            photoURL: 'https://example.com/photo.jpg',
+                        }),
+                    }),
+                })
+            );
+
+            const user = await provider.getCurrentUser();
+
+            expect(user?.displayName).toBe('Test User');
+            expect(user?.photoUrl).toBe('https://example.com/photo.jpg');
         });
     });
 
@@ -141,7 +157,7 @@ describe('createFirebaseAuthProvider', () => {
         it('calls onSignOut when provided', async () => {
             const onSignOut = vi.fn().mockResolvedValue(undefined);
 
-            const provider = createFirebaseAuthProvider(createConfig({ onSignOut }))!;
+            const provider = createFirebaseAuthProvider(createConfig({ onSignOut }));
 
             await provider.signOut();
 
@@ -151,7 +167,7 @@ describe('createFirebaseAuthProvider', () => {
         it('does nothing when onSignOut is not provided', async () => {
             const provider = createFirebaseAuthProvider(
                 createConfig({ onSignOut: undefined })
-            )!;
+            );
 
             // Should not throw
             await expect(provider.signOut()).resolves.toBeUndefined();
