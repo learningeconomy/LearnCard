@@ -1,5 +1,5 @@
 import { Locator, Page } from '@playwright/test';
-import { TEST_USER_SEED, TEST_USER_2_SEED } from './constants';
+import { TEST_USER_SEED } from './constants';
 
 // This is basically expect(locator).toBeVisible() except it'll actually wait for the timeout if the element isn't visible yet
 export const locatorExists = async (locator: Locator, timeout: number = 1000) =>
@@ -18,8 +18,8 @@ export const loginTestAccount = async (page: Page) => {
     // await page.waitForURL(/wallet/);
 };
 
-/** Title used when creating a test boost. Exported so tests can assert on it. */
-export const TEST_BOOST_TITLE = 'Test Boost';
+/** Title used when creating a test credential. Exported so tests can assert on it. */
+export const TEST_CREDENTIAL_TITLE = 'Test Credential';
 
 /**
  * Completes the "Setup Your Profile" modal to join the LearnCard Network.
@@ -36,12 +36,12 @@ export const joinNetworkIfNeeded = async (page: Page, profileId: string) => {
 };
 
 /**
- * Issues a boost to the current user via the UI.
+ * Issues a credential to the current user via the UI.
  *
  * Flow: Add to LearnCard → Boost Someone → pick template → fill form →
  *       Next → Publish & Issue → Plus → Boost Myself → Save
  */
-export const issueBoostToSelf = async (page: Page, timeout = 60_000) => {
+export const issueCredentialToSelf = async (page: Page, timeout = 60_000) => {
     // Open the "Add to LearnCard" menu
     await page.getByRole('button', { name: 'Add to LearnCard' }).click({ timeout: 30_000 });
 
@@ -51,9 +51,9 @@ export const issueBoostToSelf = async (page: Page, timeout = 60_000) => {
     // Select the first available template
     await page.getByText('LearnCard Template').first().click({ timeout: 30_000 });
 
-    // Fill in boost title and description
-    await page.getByRole('textbox', { name: /0\// }).fill(TEST_BOOST_TITLE);
-    await page.locator('textarea[placeholder="What is this boost for?"]').fill('Test boost description');
+    // Fill in credential title and description
+    await page.getByRole('textbox', { name: /0\// }).fill(TEST_CREDENTIAL_TITLE);
+    await page.locator('textarea[placeholder="What is this boost for?"]').fill('Test credential description');
 
     // Click Next to proceed to publish
     await page.getByRole('button', { name: 'Next' }).click({ timeout: 30_000 });
