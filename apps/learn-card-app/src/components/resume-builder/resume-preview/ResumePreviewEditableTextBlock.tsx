@@ -59,6 +59,11 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
 
         return (
             <div className="flex items-start justify-center gap-2 w-full my-1">
+                {!multiline && (
+                    <span className="text-xs text-grayscale-900 leading-relaxed shrink-0 mt-2">
+                        •
+                    </span>
+                )}
                 <div className="relative flex-1">
                     {multiline ? (
                         <textarea {...(sharedProps as any)} rows={3} />
