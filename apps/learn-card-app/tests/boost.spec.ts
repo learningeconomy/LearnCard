@@ -1,58 +1,117 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
-import { issueBoostToSelf } from './test.helpers';
+import { issueBoostToSelf, TEST_BOOST_TITLE, waitForAuthenticatedState } from './test.helpers';
+import { TEST_USER_2_SEED, TEST_USER_PROFILE_ID, TEST_USER_2_PROFILE_ID } from './constants';
+import { mockDidKitWasmForContext } from './route.helpers';
 
 test.describe('Boosting', () => {
+    test.beforeEach(async ({ page }) => {
+        await waitForAuthenticatedState(page);
+    });
+
     test('Boosting yourself', async ({ page }) => {
-        try {
-            await issueBoostToSelf(page);
-        } catch (error) {
-            console.error('The page often crashes here when trying to issue the VC =(', error);
-            return;
-        }
+        // Start from /socialBadges so history.goBack() returns here after issuing
+        await page.goto('/socialBadges');
 
-        await page.getByRole('button', { name: /social badges/i }).click();
+        await issueBoostToSelf(page);
 
-        await expect(page.getByText('Charmer').first()).toBeVisible({ timeout: 30_000 });
+        // history.goBack() returns to /socialBadges
+        await page.waitForURL(/\/socialBadges/, { timeout: 60_000 });
+
+        // Verify credential appears
+        await expect(page.getByText(TEST_BOOST_TITLE).first()).toBeVisible({ timeout: 30_000 });
     });
 
     test('Boosting someone else', async ({ page, browser }) => {
-        await page.goto('/');
-        await page.getByRole('link', { name: 'Contacts' }).click();
-        await page.getByLabel('', { exact: true }).fill('test2');
-        await page.locator('ion-item path').click();
-        await page.locator('#cancel-modal').getByRole('button', { name: 'Boost' }).click();
-        await page.getByRole('button', { name: 'New Boost' }).click();
-        await page.getByRole('button', { name: 'Social Badge' }).click();
-        await page.getByRole('button', { name: 'Charmer' }).click();
-        await page.getByRole('button', { name: 'Next' }).click();
-        await page.getByRole('button', { name: 'Publish & Issue' }).click();
+        // Capture console errors for debugging
+        const consoleErrors: string[] = [];
+        page.on('console', msg => {
+            if (msg.type() === 'error') consoleErrors.push(msg.text());
+        });
 
-        // Make sure boost finished sending
-        try {
-            await expect(page.getByText(/boost issued/i)).toBeVisible();
-        } catch (error) {
-            console.error('The page often crashes here when trying to issue the VC =(', error);
-            return;
+        // User 1: Re-authenticate with a network profile
+        await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
+
+        // User 2: Authenticate and join the network
+        const context2 = await browser.newContext({ ignoreHTTPSErrors: true });
+        await mockDidKitWasmForContext(context2);
+        const page2 = await context2.newPage();
+        await waitForAuthenticatedState(page2, {
+            seed: TEST_USER_2_SEED,
+            profileId: TEST_USER_2_PROFILE_ID,
+        });
+
+        // User 1: Navigate to /socialBadges so history.goBack() returns here after issuing
+        await page.goto('/socialBadges');
+
+        // User 1: Create a boost and send to user 2
+        await page.getByRole('button', { name: 'Add to LearnCard' }).click({ timeout: 30_000 });
+        await page.getByRole('button', { name: 'Boost Someone' }).click({ timeout: 30_000 });
+
+        // Select the first available template
+        await page.getByText('LearnCard Template').first().click({ timeout: 30_000 });
+
+        // Fill in boost title
+        await page.getByRole('textbox', { name: /0\// }).fill(TEST_BOOST_TITLE);
+
+        // Click Next to proceed to publish
+        await page.getByRole('button', { name: 'Next' }).click({ timeout: 30_000 });
+
+        // Click Publish & Issue
+        await page.getByRole('button', { name: /publish & issue/i }).click({ timeout: 30_000 });
+
+        // Click Plus to open recipient selection
+        await page.getByRole('button', { name: 'Plus' }).click({ timeout: 30_000 });
+
+        // Click "Boost Others" to open the search
+        await page.getByRole('button', { name: /boost others/i }).click({ timeout: 30_000 });
+
+        // Search for user 2 by profileId
+        await page.locator('input[placeholder="Search LearnCard Network..."]').fill(TEST_USER_2_PROFILE_ID);
+
+        // Wait for search results to load (500ms debounce + network request)
+        await page.getByText(TEST_USER_2_PROFILE_ID).waitFor({ timeout: 30_000 });
+
+        // Select user 2 from search results (click Plus next to their name)
+        // Use last() since the header also has a Plus button
+        await page.getByRole('button', { name: 'Plus' }).last().click({ timeout: 30_000 });
+
+        // Click Save in the address book modal to confirm recipient selection
+        await page.getByRole('button', { name: 'Save' }).click({ timeout: 30_000 });
+
+        // Click Save in the header to issue the boost.
+        // useIonModal elements set aria-hidden and create overlays that intercept mouse events,
+        // so we dispatch the click directly on the DOM element to bypass hit-testing.
+        await page.locator('[data-testid="boost-cms-save"]').dispatchEvent('click');
+
+        // history.goBack() returns to /socialBadges
+        await page.waitForURL(/\/socialBadges/, { timeout: 60_000 });
+
+        // Log any console errors for debugging if the test fails later
+        if (consoleErrors.length > 0) {
+            console.log('Console errors during boost issuance:', consoleErrors);
         }
 
-        //open new browser context
-        const newContext = await browser.newContext({
-            storageState: 'tests/states/test2State.json',
+        // User 2: Navigate to alerts and accept the boost
+        await page2.getByRole('link', { name: 'Alerts', exact: true }).click({ timeout: 30_000 });
+
+        // Claim the boost
+        await page2.getByRole('button', { name: /claim/i }).click({ timeout: 30_000 });
+
+        // Click the boost card to open details
+        await page2.getByRole('button', { name: new RegExp(TEST_BOOST_TITLE) }).click({
+            timeout: 30_000,
         });
-        const page2 = await newContext.newPage();
-        await page2.goto('/wallet');
 
-        await page2.getByRole('banner').getByRole('button').first().click();
+        // Accept the credential
+        await page2.getByRole('button', { name: 'Details' }).click({ timeout: 30_000 });
+        await page2.getByRole('button', { name: 'Accept' }).click({ timeout: 30_000 });
 
-        await page2.waitForURL('/notifications');
+        // Assert credential was accepted
+        await expect(page2.getByText(/successfully claimed/i)).toBeVisible({
+            timeout: 30_000,
+        });
 
-        await page2
-            .getByRole('button', {
-                name: /claim/i,
-            })
-            .click();
-
-        await page2.getByRole('button', { name: 'Accept' }).click();
+        await context2.close();
     });
 });
