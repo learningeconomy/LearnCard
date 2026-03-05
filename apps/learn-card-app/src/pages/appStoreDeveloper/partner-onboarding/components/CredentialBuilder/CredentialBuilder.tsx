@@ -255,6 +255,8 @@ interface CredentialBuilderProps {
     initialValidationStatus?: ValidationStatus;
     /** When true, hides the "Dynamic" field mode option (useful for peer-to-peer badges) */
     disableDynamicFields?: boolean;
+    /** When true, hides the Recipient & Activity section (templates don't need recipient info) */
+    hideRecipientSection?: boolean;
 }
 
 export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
@@ -266,6 +268,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
     onValidationChange,
     initialValidationStatus = 'unknown',
     disableDynamicFields = false,
+    hideRecipientSection = false,
 }) => {
     const { initWallet } = useWallet();
     const [userDid, setUserDid] = useState<string>('did:web:preview');
@@ -483,6 +486,11 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         return new Date().toISOString();
                     }
 
+                    // Image-like fields: return empty to avoid broken <img> tags
+                    if (lowerVar.includes('image') || lowerVar.includes('logo') || lowerVar.includes('photo') || lowerVar.includes('icon') || lowerVar.includes('thumbnail') || lowerVar.includes('avatar')) {
+                        return '';
+                    }
+
                     const humanized = varName.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
                     return `[${humanized}]`;
                 });
@@ -507,10 +515,16 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
 
         const rendered = replaceDynamicVariables(json) as Record<string, unknown>;
 
-        // Add preview issuer info
+        // Add preview issuer info — preserve issuer object structure if present
+        const renderedIssuer = rendered.issuer;
+        let previewIssuer: unknown = userDid;
+        if (typeof renderedIssuer === 'object' && renderedIssuer !== null) {
+            previewIssuer = { ...(renderedIssuer as Record<string, unknown>), id: userDid };
+        }
+
         return {
             ...rendered,
-            issuer: userDid,
+            issuer: previewIssuer,
             validFrom: new Date().toISOString(),
         };
     }, [template, userDid]);
@@ -700,10 +714,13 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
 
             {/* Validation Errors */}
             {validationErrors.length > 0 && activeTab === 'builder' && template.schemaType === 'obv3' && (
-                <div className="px-4 py-2 bg-amber-50 border-b border-amber-200">
-                    <p className="text-xs text-amber-700">
-                        <strong>Missing required fields:</strong> {validationErrors.join(', ')}
-                    </p>
+                <div className="px-4 py-3 bg-red-50 border-b border-red-300">
+                    <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                        <p className="text-sm text-red-700 font-medium">
+                            Missing required fields: {validationErrors.join(', ')}
+                        </p>
+                    </div>
                 </div>
             )}
 
@@ -811,17 +828,22 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         {/* CredentialInfoSection hidden - fields auto-populated from Achievement */}
 
                         <IssuerSection
-                            isExpanded={expandedSections.has('issuer')}
-                            onToggle={() => toggleSection('issuer')}
-                        />
-
-                        <RecipientSection
                             template={template}
                             onChange={onChange}
-                            isExpanded={expandedSections.has('recipient')}
-                            onToggle={() => toggleSection('recipient')}
+                            isExpanded={expandedSections.has('issuer')}
+                            onToggle={() => toggleSection('issuer')}
                             disableDynamicFields={disableDynamicFields}
                         />
+
+                        {!hideRecipientSection && (
+                            <RecipientSection
+                                template={template}
+                                onChange={onChange}
+                                isExpanded={expandedSections.has('recipient')}
+                                onToggle={() => toggleSection('recipient')}
+                                disableDynamicFields={disableDynamicFields}
+                            />
+                        )}
 
                         <AchievementSection
                             template={template}

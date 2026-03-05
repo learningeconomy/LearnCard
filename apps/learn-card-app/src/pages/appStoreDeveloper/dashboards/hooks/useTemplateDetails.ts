@@ -357,9 +357,22 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
 
         // Replace system placeholders
         const issuerDid = wallet.id.did();
+
+        // Handle issuer as either a string or object with nested id
+        let resolvedIssuer: unknown = credential.issuer;
+        if (typeof credential.issuer === 'string' && credential.issuer === '{{issuer_did}}') {
+            resolvedIssuer = issuerDid;
+        } else if (typeof credential.issuer === 'object' && credential.issuer !== null) {
+            const issuerObj = { ...(credential.issuer as Record<string, unknown>) };
+            if (issuerObj.id === '{{issuer_did}}') {
+                issuerObj.id = issuerDid;
+            }
+            resolvedIssuer = issuerObj;
+        }
+
         const preparedCredential = {
             ...credential,
-            issuer: credential.issuer === '{{issuer_did}}' ? issuerDid : credential.issuer,
+            issuer: resolvedIssuer,
             validFrom: credential.validFrom === '{{issue_date}}' ? new Date().toISOString() : credential.validFrom,
         };
 
@@ -408,9 +421,22 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
 
         // Replace system placeholders
         const issuerDid = wallet.id.did();
+
+        // Handle issuer as either a string or object with nested id
+        let resolvedIssuer: unknown = credential.issuer;
+        if (typeof credential.issuer === 'string' && credential.issuer === '{{issuer_did}}') {
+            resolvedIssuer = issuerDid;
+        } else if (typeof credential.issuer === 'object' && credential.issuer !== null) {
+            const issuerObj = { ...(credential.issuer as Record<string, unknown>) };
+            if (issuerObj.id === '{{issuer_did}}') {
+                issuerObj.id = issuerDid;
+            }
+            resolvedIssuer = issuerObj;
+        }
+
         const preparedCredential = {
             ...credential,
-            issuer: credential.issuer === '{{issuer_did}}' ? issuerDid : credential.issuer,
+            issuer: resolvedIssuer,
             validFrom: credential.validFrom === '{{issue_date}}' ? new Date().toISOString() : credential.validFrom,
         };
 

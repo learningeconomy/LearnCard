@@ -131,9 +131,34 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
         credential.image = fieldToJson(template.image);
     }
 
-    // Issuer - just use the issuer ID (DID) as a string, not an object
-    // This will be replaced with wallet.id.did() during actual issuance
-    credential.issuer = fieldToJson(template.issuer.id) || '{{issuer_did}}';
+    // Issuer - use string DID when only ID is present, object when extra fields are filled
+    // The DID placeholder will be replaced with wallet.id.did() during actual issuance
+    const issuerHasExtraFields = (template.issuer.name?.value || template.issuer.name?.isDynamic)
+        || (template.issuer.url?.value || template.issuer.url?.isDynamic)
+        || (template.issuer.image?.value || template.issuer.image?.isDynamic)
+        || (template.issuer.email?.value || template.issuer.email?.isDynamic);
+
+    if (issuerHasExtraFields) {
+        const issuerObj: Record<string, unknown> = {
+            id: fieldToJson(template.issuer.id) || '{{issuer_did}}',
+            type: ['Profile'],
+        };
+        if (template.issuer.name?.value || template.issuer.name?.isDynamic) {
+            issuerObj.name = fieldToJson(template.issuer.name);
+        }
+        if (template.issuer.url?.value || template.issuer.url?.isDynamic) {
+            issuerObj.url = fieldToJson(template.issuer.url);
+        }
+        if (template.issuer.image?.value || template.issuer.image?.isDynamic) {
+            issuerObj.image = fieldToJson(template.issuer.image);
+        }
+        if (template.issuer.email?.value || template.issuer.email?.isDynamic) {
+            issuerObj.email = fieldToJson(template.issuer.email);
+        }
+        credential.issuer = issuerObj;
+    } else {
+        credential.issuer = fieldToJson(template.issuer.id) || '{{issuer_did}}';
+    }
 
     // Dates (VC v2 syntax)
     credential.validFrom = fieldToJson(template.validFrom) || '{{issue_date}}';
@@ -425,11 +450,16 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
     const otherIdArr = Array.isArray(achievementObj.otherIdentifier) ? achievementObj.otherIdentifier as Record<string, unknown>[] : [];
     const subjectIdArr = Array.isArray(subjectObj.identifier) ? subjectObj.identifier as Record<string, unknown>[] : [];
 
-    // Parse issuer - can be a string (DID) or an object
+    // Parse issuer - can be a string (DID) or an object with name/url/image/email
     const issuerValue = json.issuer;
+    const issuerObj = (typeof issuerValue === 'object' && issuerValue !== null) ? issuerValue as Record<string, unknown> : null;
     const issuer: IssuerTemplate = {
-        id: issuerValue ? jsonToField(typeof issuerValue === 'string' ? issuerValue : (issuerValue as Record<string, unknown>).id) : undefined,
-        name: staticField(''),
+        id: issuerValue ? jsonToField(typeof issuerValue === 'string' ? issuerValue : issuerObj?.id) : undefined,
+        name: issuerObj?.name ? jsonToField(issuerObj.name) : staticField(''),
+        url: issuerObj?.url ? jsonToField(issuerObj.url) : undefined,
+        image: issuerObj?.image ? jsonToField(issuerObj.image) : undefined,
+        email: issuerObj?.email ? jsonToField(issuerObj.email) : undefined,
+        description: issuerObj?.description ? jsonToField(issuerObj.description) : undefined,
     };
 
     // Parse achievement with all OBv3 fields
@@ -853,9 +883,7 @@ export const validateTemplate = (template: OBv3CredentialTemplate): string[] => 
         errors.push('Credential name is required');
     }
 
-    if (!template.issuer.name.value && !template.issuer.name.isDynamic) {
-        errors.push('Issuer name is required');
-    }
+    // Issuer name is optional — derived from wallet profile at issuance time
 
     if (!template.credentialSubject.achievement.name.value && !template.credentialSubject.achievement.name.isDynamic) {
         errors.push('Achievement name is required');

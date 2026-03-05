@@ -23,6 +23,7 @@ import {
     Sparkles,
     Pencil,
     Send,
+    AlertCircle,
 } from 'lucide-react';
 
 import { useToast, ToastTypeEnum } from 'learn-card-base';
@@ -83,6 +84,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     const [editingAlias, setEditingAlias] = useState<string | null>(null);
     const [tempAliasValue, setTempAliasValue] = useState('');
     const [selectedTemplateForCode, setSelectedTemplateForCode] = useState<ManagedTemplate | null>(null);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     // Reset local state when context changes (listingId, featureType)
     React.useEffect(() => {
@@ -125,6 +127,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     // Save from builder (create or update)
     const handleSaveFromBuilder = useCallback(async () => {
         setIsSaving(true);
+        setSaveError(null);
 
         try {
             const credentialData = templateToJson(currentBuildingTemplate);
@@ -150,6 +153,8 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
             setCurrentBuildingTemplate(getBlankTemplate());
         } catch (err) {
             console.error('Failed to save template:', err);
+            const errMsg = err instanceof Error ? err.message : String(err);
+            setSaveError(errMsg);
             presentToast(`Failed to ${editingTemplate ? 'update' : 'create'} template`, { type: ToastTypeEnum.Error });
         } finally {
             setIsSaving(false);
@@ -418,8 +423,31 @@ if (result.credentialUri) {
                                     template={currentBuildingTemplate}
                                     onChange={setCurrentBuildingTemplate}
                                     disableDynamicFields={featureType === 'peer-badges'}
+                                    hideRecipientSection={true}
                                 />
                             </div>
+
+                            {saveError && (
+                                <div className="px-4 py-3 bg-red-50 border-t border-red-200">
+                                    <div className="flex items-start gap-2">
+                                        <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-red-800">
+                                                Failed to save template
+                                            </p>
+                                            <p className="text-xs text-red-600 mt-1 break-words">
+                                                {saveError}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => setSaveError(null)}
+                                            className="text-red-400 hover:text-red-600 flex-shrink-0"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="p-3 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
                                 <button

@@ -119,30 +119,46 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
         }
 
         if (enableFileUpload) {
-            return (
-                <div className="flex gap-2">
-                    <input
-                        type={type}
-                        value={field.value}
-                        onChange={(e) => handleValueChange(e.target.value)}
-                        placeholder={field.isDynamic ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}` : placeholder}
-                        disabled={disabled}
-                        className={`${baseClasses} flex-1`}
-                    />
+            const hasImageUrl = field.value && /^https?:\/\/.+/i.test(field.value);
 
-                    <button
-                        type="button"
-                        onClick={handleFileSelect}
-                        disabled={disabled || isUploading}
-                        className="flex items-center gap-1 px-3 py-2 bg-cyan-50 text-cyan-700 border border-cyan-200 rounded-lg text-sm font-medium hover:bg-cyan-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Upload image"
-                    >
-                        {isUploading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <Upload className="w-4 h-4" />
-                        )}
-                    </button>
+            return (
+                <div className="space-y-2">
+                    <div className="flex gap-2">
+                        <input
+                            type={type}
+                            value={field.value}
+                            onChange={(e) => handleValueChange(e.target.value)}
+                            placeholder={field.isDynamic ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}` : placeholder}
+                            disabled={disabled}
+                            className={`${baseClasses} flex-1`}
+                        />
+
+                        <button
+                            type="button"
+                            onClick={handleFileSelect}
+                            disabled={disabled || isUploading}
+                            className="flex items-center gap-1 px-3 py-2 bg-cyan-50 text-cyan-700 border border-cyan-200 rounded-lg text-sm font-medium hover:bg-cyan-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Upload image"
+                        >
+                            {isUploading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Upload className="w-4 h-4" />
+                            )}
+                        </button>
+                    </div>
+
+                    {hasImageUrl && (
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-lg">
+                            <img
+                                src={field.value}
+                                alt="Uploaded preview"
+                                className="w-10 h-10 rounded object-cover border border-gray-200"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                            <span className="text-xs text-gray-500 truncate flex-1">{field.value.split('/').pop()}</span>
+                        </div>
+                    )}
                 </div>
             );
         }
