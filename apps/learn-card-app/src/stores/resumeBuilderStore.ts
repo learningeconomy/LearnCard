@@ -14,6 +14,10 @@ import {
 export type ResumeBuilderState = {
     personalDetails: PersonalDetails;
     hiddenPersonalDetails: Partial<Record<keyof PersonalDetails, boolean>>;
+    documentSetup: {
+        showQRCode: boolean;
+        fileName: string;
+    };
     credentialEntries: Partial<Record<ResumeSectionKey, CredentialEntry[]>>;
     sectionOrder: ResumeSectionKey[];
 };
@@ -30,6 +34,10 @@ const defaultPersonalDetails: PersonalDetails = {
 };
 
 const defaultSectionOrder = RESUME_SECTIONS.map(s => s.key) as ResumeSectionKey[];
+const defaultDocumentSetup = {
+    showQRCode: true,
+    fileName: 'resume.pdf',
+};
 
 const makeFieldId = () => uuidv4();
 
@@ -45,6 +53,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     {
         personalDetails: defaultPersonalDetails,
         hiddenPersonalDetails: {},
+        documentSetup: defaultDocumentSetup,
         sectionOrder: defaultSectionOrder,
         credentialEntries: {},
     },
@@ -76,6 +85,15 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
         const next = { ...prev };
         delete next[key];
         set.hiddenPersonalDetails(next);
+    },
+    setDocumentSetup: (
+        setup: Partial<{
+            showQRCode: boolean;
+            fileName: string;
+        }>
+    ) => {
+        const prev = resumeBuilderStore.get.documentSetup();
+        set.documentSetup({ ...prev, ...setup });
     },
 
     // ── Credential selection & ordering ─────────────────────────────────────
@@ -193,6 +211,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     resetStore: () => {
         set.personalDetails(defaultPersonalDetails);
         set.hiddenPersonalDetails({});
+        set.documentSetup(defaultDocumentSetup);
         set.credentialEntries({});
         set.sectionOrder(defaultSectionOrder);
     },

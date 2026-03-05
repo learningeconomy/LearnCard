@@ -15,7 +15,7 @@ const ResumeConfigPanelDocumentSetup: React.FC = () => {
                 className="w-full flex items-center justify-between px-4 py-3 text-left"
                 onClick={() => setOpen(o => !o)}
             >
-                <span className="text-[24px] font-bold text-grayscale-900">Document Setup</span>
+                <span className="text-[19px] font-500 text-grayscale-900">Document Setup</span>
                 <IonIcon
                     color="grayscale-800"
                     icon={open ? chevronDownOutline : chevronUpOutline}
@@ -26,20 +26,24 @@ const ResumeConfigPanelDocumentSetup: React.FC = () => {
                 <div className="px-4 pb-4 flex flex-col gap-3">
                     <div className="flex items-center justify-between">
                         <div className="flex flex-col">
-                            <p className="text-xs font-semibold text-grayscale-900">
-                                LearnCard QR code • {documentSetup?.showQRCode ? 'On' : 'Off'}
-                            </p>
-                            <p className="text-xs text-grayscale-700 mt-1">
+                            <div className="flex items-center justify-between gap-2 w-full">
+                                <p className="text-xs font-semibold text-grayscale-900">
+                                    LearnCard QR code • {documentSetup?.showQRCode ? 'On' : 'Off'}
+                                </p>
+                                <IonToggle
+                                    mode="ios"
+                                    className="family-cms-toggle"
+                                    checked={Boolean(documentSetup?.showQRCode)}
+                                    onIonChange={e =>
+                                        setDocumentSetup({ showQRCode: e.detail.checked })
+                                    }
+                                />
+                            </div>
+                            <p className="text-sm text-grayscale-700 mt-1">
                                 This code allows employers to view the credentials attached to this
                                 resume.
                             </p>
                         </div>
-                        <IonToggle
-                            mode="ios"
-                            className="family-cms-toggle"
-                            checked={Boolean(documentSetup?.showQRCode)}
-                            onIonChange={e => setDocumentSetup({ showQRCode: e.detail.checked })}
-                        />
                     </div>
 
                     <div className="flex flex-col gap-1">
@@ -48,7 +52,7 @@ const ResumeConfigPanelDocumentSetup: React.FC = () => {
                         </label>
                         <input
                             type="text"
-                            className="w-full text-sm bg-grayscale-100 border border-grayscale-200 rounded-lg px-3 py-2 text-grayscale-800 placeholder-grayscale-400 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                            className="resume-builder-input-bg w-full text-sm bg-grayscale-100 border border-grayscale-200 rounded-lg px-3 py-2 text-grayscale-800 placeholder-grayscale-400 focus:outline-none focus:ring-1 focus:ring-indigo-300"
                             placeholder="resume.pdf"
                             value={documentSetup?.fileName ?? ''}
                             onChange={e => setDocumentSetup({ fileName: e.target.value })}

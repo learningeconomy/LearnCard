@@ -82,7 +82,7 @@ export const ResumeBuilder: React.FC = () => {
     }, []);
 
     return (
-        <div className="flex h-full w-full bg-grayscale-50 overflow-hidden relative">
+        <div className="resume-builder flex h-full w-full bg-grayscale-50 overflow-hidden relative">
             <div className="flex-1 min-w-0 flex flex-col">
                 <ResumeBuilderHeader
                     loadingAction={loadingAction}
