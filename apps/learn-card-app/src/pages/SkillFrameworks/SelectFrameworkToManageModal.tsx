@@ -67,7 +67,13 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
     const defaultFrameworkId = flags?.selfAssignedSkillsFrameworkId;
     const { data: defaultFramework } = useGetSkillFrameworkById(defaultFrameworkId);
 
-    const frameworks = [defaultFramework.framework, ...(userFrameworks ?? [])];
+    const frameworks: ApiFrameworkInfo[] = [];
+    if (defaultFramework?.framework) {
+        frameworks.push(defaultFramework.framework);
+    }
+    if (userFrameworks) {
+        frameworks.push(...userFrameworks);
+    }
 
     const [openSaltRef, setOpenSaltRef] = React.useState('');
     const [isImportingOpenSaltFramework, setIsImportingOpenSaltFramework] = React.useState(false);
