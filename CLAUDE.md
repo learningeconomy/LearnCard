@@ -1,11 +1,5 @@
 # LearnCard SDK
 
-## Tooling
-
-- When vexp MCP is available, prefer `run_pipeline` for complex cross-cutting searches (impact analysis, multi-file refactors)
-- For simple lookups (specific file, function, grep for a pattern), use built-in tools (Grep, Glob, Read) directly — they're faster and more reliable
-- vexp is optional — if it errors or is unavailable, fall back to built-in tools
-
 ## Build & Test Commands
 
 - Build project: `pnpm build` or `pnpm exec nx build <package-name>`
@@ -73,8 +67,6 @@ learnCard.store.LearnCloud.uploadEncrypted(vc)   // Store credential
 // Network plugin: packages/plugins/learn-card-network/src/plugin.ts
 // React Query:    packages/learn-card-base/src/react-query/
 ```
-<<<<<<< HEAD
-=======
 
 ### Connections
 
@@ -557,4 +549,3 @@ pnpm test -- preferences.spec.ts
 ```
 
 Please read AGENTS.md
->>>>>>> origin/main
