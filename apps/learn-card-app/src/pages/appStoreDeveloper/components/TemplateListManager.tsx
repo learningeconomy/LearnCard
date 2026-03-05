@@ -44,7 +44,7 @@ import {
 import { CodeBlock } from './CodeBlock';
 
 export interface TemplateListManagerProps {
-    listingId: string;
+    listingId?: string;
     integrationId?: string;
     featureType?: 'issue-credentials' | 'peer-badges';
     showCodeSnippets?: boolean;
@@ -93,7 +93,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
         setEditingAlias(null);
         setTempAliasValue('');
         setSelectedTemplateForCode(null);
-    }, [listingId, featureType]);
+    }, [listingId, integrationId, featureType]);
 
     // Notify parent when templates change
     React.useEffect(() => {
@@ -203,12 +203,17 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
 const result = await learnCard.initiateTemplateIssue('${template.boostUri}');`;
         }
 
+        // Use templateAlias when available (listing-based), boostUri otherwise
+        const templateRef = template.templateAlias
+            ? `    templateAlias: '${template.templateAlias}'`
+            : `    templateUri: '${template.boostUri}'`;
+
         if (hasVariables) {
             const templateDataLines = template.variables!.map(v => `        ${v}: 'value', // Replace with actual value`).join('\n');
 
             return `// Issue "${template.name}" credential to user
 const result = await learnCard.sendCredential({
-    templateAlias: '${template.templateAlias}',
+${templateRef},
     templateData: {
 ${templateDataLines}
     }
@@ -221,7 +226,7 @@ if (result.credentialUri) {
 
         return `// Issue "${template.name}" credential to user
 const result = await learnCard.sendCredential({
-    templateAlias: '${template.templateAlias}'
+${templateRef}
 });
 
 if (result.credentialUri) {
@@ -275,8 +280,8 @@ if (result.credentialUri) {
                                 <div className="flex-1 min-w-0">
                                     <h5 className="font-medium text-gray-900 truncate">{template.name}</h5>
 
-                                    {/* Alias - only for issue-credentials templates */}
-                                    {featureType === 'issue-credentials' && (
+                                    {/* Alias - only for issue-credentials templates with a listing */}
+                                    {featureType === 'issue-credentials' && listingId && (
                                         <div className="flex items-center gap-2 mt-1">
                                             <span className="text-xs text-gray-500">Alias:</span>
 
