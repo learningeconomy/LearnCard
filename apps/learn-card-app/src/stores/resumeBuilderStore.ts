@@ -16,6 +16,7 @@ export type ResumeBuilderState = {
     personalDetails: PersonalDetails;
     hiddenPersonalDetails: Partial<Record<keyof PersonalDetails, boolean>>;
     currentJobCredentialUri: string | null;
+    workExperienceEndDates: Record<string, string>;
     documentSetup: {
         showQRCode: boolean;
         fileName: string;
@@ -57,6 +58,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
         personalDetails: defaultPersonalDetails,
         hiddenPersonalDetails: {},
         currentJobCredentialUri: null,
+        workExperienceEndDates: {},
         documentSetup: defaultDocumentSetup,
         sectionOrder: defaultSectionOrder,
         credentialEntries: {},
@@ -102,6 +104,17 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     setCurrentJobCredentialUri: (uri: string | null) => {
         set.currentJobCredentialUri(uri);
     },
+    setWorkExperienceEndDate: (uri: string, date: string) => {
+        const prev = resumeBuilderStore.get.workExperienceEndDates();
+        if (!date) {
+            const next = { ...prev };
+            delete next[uri];
+            set.workExperienceEndDates(next);
+            return;
+        }
+
+        set.workExperienceEndDates({ ...prev, [uri]: date });
+    },
 
     // ── Credential selection & ordering ─────────────────────────────────────
     toggleCredential: (section: ResumeSectionKey, uri: string) => {
@@ -115,6 +128,14 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
                 resumeBuilderStore.get.currentJobCredentialUri() === uri
             ) {
                 set.currentJobCredentialUri(null);
+            }
+            if (section === CredentialCategoryEnum.workHistory) {
+                const prevEndDates = resumeBuilderStore.get.workExperienceEndDates();
+                if (prevEndDates[uri]) {
+                    const nextEndDates = { ...prevEndDates };
+                    delete nextEndDates[uri];
+                    set.workExperienceEndDates(nextEndDates);
+                }
             }
         } else {
             const added: CredentialEntry = { uri, index: entries.length, fields: [] };
@@ -225,6 +246,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
         set.personalDetails(defaultPersonalDetails);
         set.hiddenPersonalDetails({});
         set.currentJobCredentialUri(null);
+        set.workExperienceEndDates({});
         set.documentSetup(defaultDocumentSetup);
         set.credentialEntries({});
         set.sectionOrder(defaultSectionOrder);
