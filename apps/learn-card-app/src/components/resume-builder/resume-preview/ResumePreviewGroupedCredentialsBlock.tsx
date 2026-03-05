@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { IonIcon, IonReorder, IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
-import { trashOutline } from 'ionicons/icons';
 
+import { IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
 import ResumePreviewCredentialToTextBlock from './ResumePreviewCredentialToTextBlock';
-import ResumePreviewEditBlockButton from './ResumePreviewEditBlockButton';
+import ResumePreviewCredentialActionRail from './ResumePreviewCredentialActionRail';
 
 import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
@@ -98,28 +97,19 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                             </div>
                             <div data-pdf-hide className="flex items-center gap-1 shrink-0 mt-1">
                                 {!isEditing && (
-                                    <button
-                                        onClick={() =>
+                                    <ResumePreviewCredentialActionRail
+                                        onDelete={() =>
                                             resumeBuilderStore.set.toggleCredential(
                                                 sectionKey,
                                                 entry.uri
                                             )
                                         }
-                                        className="shrink-0 text-grayscale-300 leading-none"
-                                        title="Deselect credential"
-                                        aria-label="Deselect credential"
-                                    >
-                                        <IonIcon
-                                            icon={trashOutline}
-                                            className="w-[24px] h-[24px]"
-                                        />
-                                    </button>
+                                    />
                                 )}
-                                <ResumePreviewEditBlockButton
+                                {/* <ResumePreviewEditBlockButton
                                     isEditing={isEditing}
                                     setIsEditing={val => toggleEditing(entry.uri, val)}
-                                />
-                                {!isEditing && <IonReorder />}
+                                /> */}
                             </div>
                         </div>
                     );
