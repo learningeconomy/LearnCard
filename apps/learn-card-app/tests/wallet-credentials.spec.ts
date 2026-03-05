@@ -36,12 +36,12 @@ test.describe('Wallet Credentials', () => {
         // Click credential to open detail view
         await page.getByText(TEST_CREDENTIAL_TITLE).first().click();
 
-        // Verify detail view elements
-        await expect(page.locator('.vc-card-header-main-title')).toContainText(
+        // Verify detail view elements (front + back face both have the title, use first())
+        await expect(page.locator('.vc-card-header-main-title').first()).toContainText(
             TEST_CREDENTIAL_TITLE,
             { timeout: 30_000 }
         );
-        await expect(page.locator('.issued-by')).toBeVisible({ timeout: 30_000 });
+        await expect(page.locator('.issued-by').first()).toBeVisible({ timeout: 30_000 });
     });
 
     test('Issue credential to someone else', async ({ page, browser }) => {
@@ -156,12 +156,12 @@ test.describe('Wallet Credentials', () => {
         // Click credential to open detail view
         await page2.getByText(TEST_CREDENTIAL_TITLE).first().click();
 
-        // Verify detail view elements
-        await expect(page2.locator('.vc-card-header-main-title')).toContainText(
+        // Verify detail view elements (front + back face both have the title, use first())
+        await expect(page2.locator('.vc-card-header-main-title').first()).toContainText(
             TEST_CREDENTIAL_TITLE,
             { timeout: 30_000 }
         );
-        await expect(page2.locator('.issued-by')).toBeVisible({ timeout: 30_000 });
+        await expect(page2.locator('.issued-by').first()).toBeVisible({ timeout: 30_000 });
 
         await context2.close();
     });
