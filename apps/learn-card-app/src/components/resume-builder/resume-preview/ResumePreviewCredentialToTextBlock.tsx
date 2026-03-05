@@ -48,6 +48,11 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
 
     const entry = (credentialEntries[section] ?? []).find(e => e.uri === uri);
     const fields = [...(entry?.fields ?? [])].sort((a, b) => a.index - b.index);
+    const visibleExportFields = fields.filter(field => {
+        if (!field.value.trim()) return false;
+        if (field.type === 'description' && field.hidden) return false;
+        return true;
+    });
     const metadataFields = fields.filter(field => field.type === 'metadata');
     const lastMetadataField = metadataFields[metadataFields.length - 1];
 
@@ -130,7 +135,10 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
             <div className="flex flex-col gap-1 flex-1 min-w-0">
                 {/* ── Locked anchor: title · issuer · date ── */}
                 <p className="gap-1 text-sm flex items-center font-semibold text-grayscale-800">
-                    <TrustedIcon className="w-4 h-4 inline-block mr-1" /> {title || 'Credential'}
+                    <span data-pdf-hide className="inline-flex mr-1">
+                        <TrustedIcon className="w-4 h-4 inline-block" />
+                    </span>
+                    {title || 'Credential'}
                     <ResumePreviewCredentialDateDisplay
                         isWorkExperienceSection={isWorkExperienceSection}
                         createdAt={info?.createdAt}
@@ -141,196 +149,182 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                     />
                 </p>
 
-                {/* ── All fields (description + metadata) rendered uniformly ── */}
-                <IonReorderGroup
-                    disabled={!isEditing}
-                    onIonReorderEnd={(e: ReorderEndCustomEvent) => {
-                        e.stopPropagation();
-                        const { from, to } = e.detail;
-                        const reordered = [...fields];
-                        const [moved] = reordered.splice(from, 1);
-                        reordered.splice(to, 0, moved);
-                        resumeBuilderStore.set.reorderCredentialFields(
-                            uri,
-                            section,
-                            reordered.map(f => f.id)
-                        );
-                        e.detail.complete();
-                    }}
-                >
-                    {fields.map(field => {
-                        const isDescriptionField = field.type === 'description';
-                        const isDescriptionHidden = isDescriptionField && Boolean(field.hidden);
-                        const isMetadataAddRow =
-                            isEditing &&
-                            field.type === 'metadata' &&
-                            field.id === lastMetadataField?.id;
-
-                        return (
-                            <div
-                                key={field.id}
-                                className={`flex items-center gap-1 w-full ${
-                                    !isDescriptionField ? 'max-w-[581px]' : ''
-                                }`}
+                {isEditing ? (
+                    <>
+                        <div data-pdf-screen-only>
+                            <IonReorderGroup
+                                disabled={!isEditing}
+                                onIonReorderEnd={(e: ReorderEndCustomEvent) => {
+                                    e.stopPropagation();
+                                    const { from, to } = e.detail;
+                                    const reordered = [...fields];
+                                    const [moved] = reordered.splice(from, 1);
+                                    reordered.splice(to, 0, moved);
+                                    resumeBuilderStore.set.reorderCredentialFields(
+                                        uri,
+                                        section,
+                                        reordered.map(f => f.id)
+                                    );
+                                    e.detail.complete();
+                                }}
                             >
-                                <div className="flex-1">
-                                    {isDescriptionField && isEditing ? (
-                                        <div data-pdf-hide className="flex items-start gap-3">
+                                {fields.map(field => {
+                                    const isDescriptionField = field.type === 'description';
+                                    const isDescriptionHidden =
+                                        isDescriptionField && Boolean(field.hidden);
+                                    const isMetadataAddRow =
+                                        field.type === 'metadata' &&
+                                        field.id === lastMetadataField?.id;
+
+                                    return (
+                                        <div
+                                            key={field.id}
+                                            className={`flex items-center gap-1 w-full ${
+                                                !isDescriptionField ? 'max-w-[581px]' : ''
+                                            }`}
+                                        >
                                             <div className="flex-1">
-                                                <ResumePreviewEditableTextBlock
-                                                    value={field.value}
-                                                    placeholder={
-                                                        field.type === 'description'
-                                                            ? 'Add a description…'
-                                                            : 'Add more details…'
-                                                    }
-                                                    isEditing={isEditing}
-                                                    isSelfAttested={field.source === 'selfAttested'}
-                                                    multiline={field.type === 'description'}
-                                                    showDefaultSummaryDecoration={
-                                                        field.type === 'description'
-                                                    }
-                                                    onRestoreDefault={
-                                                        field.type === 'description' &&
-                                                        vcDescription
-                                                            ? () => {
-                                                                  updateCredentialField(
-                                                                      uri,
-                                                                      section,
-                                                                      field.id,
-                                                                      vcDescription,
-                                                                      'vc'
-                                                                  );
-                                                              }
-                                                            : undefined
-                                                    }
-                                                    onChange={val => {
-                                                        let source: 'vc' | 'selfAttested';
-                                                        if (
-                                                            field.type === 'description' &&
-                                                            val === vcDescription &&
-                                                            vcDescription
-                                                        ) {
-                                                            source = 'vc';
-                                                        } else {
-                                                            source = 'selfAttested';
+                                                {isDescriptionField ? (
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="flex-1">
+                                                            <ResumePreviewEditableTextBlock
+                                                                value={field.value}
+                                                                placeholder="Add a description..."
+                                                                isEditing
+                                                                isSelfAttested={
+                                                                    field.source === 'selfAttested'
+                                                                }
+                                                                multiline
+                                                                showDefaultSummaryDecoration
+                                                                onRestoreDefault={
+                                                                    vcDescription
+                                                                        ? () => {
+                                                                              updateCredentialField(
+                                                                                  uri,
+                                                                                  section,
+                                                                                  field.id,
+                                                                                  vcDescription,
+                                                                                  'vc'
+                                                                              );
+                                                                          }
+                                                                        : undefined
+                                                                }
+                                                                onChange={val => {
+                                                                    const source =
+                                                                        vcDescription &&
+                                                                        val === vcDescription
+                                                                            ? 'vc'
+                                                                            : 'selfAttested';
+                                                                    updateCredentialField(
+                                                                        uri,
+                                                                        section,
+                                                                        field.id,
+                                                                        val,
+                                                                        source
+                                                                    );
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div className="shrink-0 flex flex-col items-center gap-2 pt-0.5">
+                                                            <ResumeBuilderToggle
+                                                                checked={!isDescriptionHidden}
+                                                                onChange={checked =>
+                                                                    setCredentialFieldHidden(
+                                                                        uri,
+                                                                        section,
+                                                                        field.id,
+                                                                        !checked
+                                                                    )
+                                                                }
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <ResumePreviewEditableTextBlock
+                                                        value={field.value}
+                                                        placeholder="Add item"
+                                                        isEditing
+                                                        isSelfAttested={
+                                                            field.source === 'selfAttested'
                                                         }
-                                                        updateCredentialField(
-                                                            uri,
-                                                            section,
-                                                            field.id,
-                                                            val,
-                                                            source
-                                                        );
-                                                    }}
-                                                    onRemove={
-                                                        field.type === 'metadata'
-                                                            ? () =>
-                                                                  removeCredentialField(
-                                                                      uri,
-                                                                      section,
-                                                                      field.id
-                                                                  )
-                                                            : undefined
-                                                    }
-                                                />
+                                                        onChange={val =>
+                                                            updateCredentialField(
+                                                                uri,
+                                                                section,
+                                                                field.id,
+                                                                val,
+                                                                'selfAttested'
+                                                            )
+                                                        }
+                                                        onRemove={
+                                                            !isMetadataAddRow
+                                                                ? () =>
+                                                                      removeCredentialField(
+                                                                          uri,
+                                                                          section,
+                                                                          field.id
+                                                                      )
+                                                                : undefined
+                                                        }
+                                                    />
+                                                )}
                                             </div>
-                                            <div className="shrink-0 flex flex-col items-center gap-2 pt-0.5">
-                                                <ResumeBuilderToggle
-                                                    checked={!isDescriptionHidden}
-                                                    onChange={checked =>
-                                                        setCredentialFieldHidden(
-                                                            uri,
-                                                            section,
-                                                            field.id,
-                                                            !checked
-                                                        )
-                                                    }
-                                                />
-                                            </div>
+                                            {field.type === 'metadata' && isMetadataAddRow ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAddDetail(field.value)}
+                                                    className="shrink-0 w-[32px] h-[32px] rounded-xl bg-grayscale-100 flex items-center justify-center text-grayscale-700"
+                                                    title="Add item"
+                                                >
+                                                    <IonIcon icon={add} className="w-6 h-6" />
+                                                </button>
+                                            ) : (
+                                                field.type === 'metadata' &&
+                                                metadataFields.length > 1 && (
+                                                    <div className="shrink-0 text-grayscale-700 bg-grayscale-100 rounded-[10px] leading-none h-[32px] w-[32px] flex items-center justify-center">
+                                                        <IonReorder>
+                                                            <VerticalArrowsIcon />
+                                                        </IonReorder>
+                                                    </div>
+                                                )
+                                            )}
                                         </div>
-                                    ) : (
-                                        <ResumePreviewEditableTextBlock
-                                            value={field.value}
-                                            placeholder={
-                                                field.type === 'description'
-                                                    ? 'Add a description…'
-                                                    : 'Add more details…'
-                                            }
-                                            isEditing={isEditing}
-                                            isSelfAttested={field.source === 'selfAttested'}
-                                            multiline={field.type === 'description'}
-                                            showDefaultSummaryDecoration={
-                                                field.type === 'description'
-                                            }
-                                            onRestoreDefault={
-                                                field.type === 'description' && vcDescription
-                                                    ? () => {
-                                                          updateCredentialField(
-                                                              uri,
-                                                              section,
-                                                              field.id,
-                                                              vcDescription,
-                                                              'vc'
-                                                          );
-                                                      }
-                                                    : undefined
-                                            }
-                                            onChange={val => {
-                                                let source: 'vc' | 'selfAttested';
-                                                if (
-                                                    field.type === 'description' &&
-                                                    val === vcDescription &&
-                                                    vcDescription
-                                                ) {
-                                                    source = 'vc';
-                                                } else {
-                                                    source = 'selfAttested';
-                                                }
-                                                updateCredentialField(
-                                                    uri,
-                                                    section,
-                                                    field.id,
-                                                    val,
-                                                    source
-                                                );
-                                            }}
-                                            onRemove={
-                                                field.type === 'metadata' && !isMetadataAddRow
-                                                    ? () =>
-                                                          removeCredentialField(
-                                                              uri,
-                                                              section,
-                                                              field.id
-                                                          )
-                                                    : undefined
-                                            }
-                                        />
-                                    )}
-                                </div>
-                                {isEditing && field.type === 'metadata' && isMetadataAddRow ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => handleAddDetail(field.value)}
-                                        className={`shrink-0 w-[32px] h-[32px] rounded-xl bg-grayscale-100 flex items-center justify-center text-grayscale-700`}
-                                        title="Add item"
-                                    >
-                                        <IonIcon icon={add} className="w-6 h-6" />
-                                    </button>
-                                ) : (
-                                    isEditing &&
-                                    field.type !== 'description' && (
-                                        <div className="shrink-0 text-grayscale-700 bg-grayscale-100 rounded-[10px]  leading-none h-[32px] w-[32px] flex items-center justify-center">
-                                            <IonReorder>
-                                                <VerticalArrowsIcon />
-                                            </IonReorder>
-                                        </div>
-                                    )
-                                )}
-                            </div>
-                        );
-                    })}
-                </IonReorderGroup>
+                                    );
+                                })}
+                            </IonReorderGroup>
+                        </div>
+
+                        <div
+                            data-pdf-export-block
+                            style={{ display: 'none' }}
+                            className="flex flex-col gap-1"
+                        >
+                            {visibleExportFields.map(field => (
+                                <ResumePreviewEditableTextBlock
+                                    key={field.id}
+                                    value={field.value}
+                                    placeholder=""
+                                    isEditing={false}
+                                    isSelfAttested={field.source === 'selfAttested'}
+                                    multiline={field.type === 'description'}
+                                />
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex flex-col gap-1">
+                        {visibleExportFields.map(field => (
+                            <ResumePreviewEditableTextBlock
+                                key={field.id}
+                                value={field.value}
+                                placeholder=""
+                                isEditing={false}
+                                isSelfAttested={field.source === 'selfAttested'}
+                                multiline={field.type === 'description'}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

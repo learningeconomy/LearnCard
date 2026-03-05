@@ -28,7 +28,7 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
 
     return (
         <>
-            <span className="font-medium text-grayscale-600">
+            <span data-pdf-screen-only className="font-medium text-grayscale-600">
                 • {createdAt}
                 {isCurrentJob && ' - Present'}
                 {!isCurrentJob && ' -'}
@@ -46,15 +46,13 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
                     <Calendar className="w-5 h-5 text-grayscale-900" />
                 </button>
             )}
-            {!isCurrentJob && Boolean(dateLabel) && (
-                <span
-                    data-pdf-export-inline
-                    style={{ display: 'none' }}
-                    className="font-medium text-grayscale-600"
-                >
-                    • {dateLabel}
-                </span>
-            )}
+            <span
+                data-pdf-export-inline
+                style={{ display: 'none' }}
+                className="font-medium text-grayscale-600"
+            >
+                • {dateLabel || `${createdAt}${isCurrentJob ? ' - Present' : ''}`}
+            </span>
         </>
     );
 };
