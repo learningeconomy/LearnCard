@@ -90,6 +90,12 @@ export const resumeUserInfo: ResumeUserInfo[] = [
     { key: UserInfoEnum.Name, label: 'Full Name', placeholder: 'Jane Doe' },
     { key: UserInfoEnum.Career, label: 'Professional Title', placeholder: 'Software Engineer' },
     { key: UserInfoEnum.Location, label: 'Location', placeholder: 'San Francisco, CA' },
+    {
+        key: UserInfoEnum.Summary,
+        label: 'Professional Summary',
+        placeholder: 'Brief professional summary...',
+        multiline: true,
+    },
     { key: UserInfoEnum.Email, label: 'Email', placeholder: 'jane@example.com' },
     { key: UserInfoEnum.Phone, label: 'Phone', placeholder: '+1 (555) 000-0000' },
     { key: UserInfoEnum.Website, label: 'Website', placeholder: 'https://example.com' },
@@ -97,12 +103,6 @@ export const resumeUserInfo: ResumeUserInfo[] = [
         key: UserInfoEnum.LinkedIn,
         label: 'LinkedIn',
         placeholder: 'https://linkedin.com/in/janedoe',
-    },
-    {
-        key: UserInfoEnum.Summary,
-        label: 'Summary',
-        placeholder: 'Brief professional summary...',
-        multiline: true,
     },
 ];
 
