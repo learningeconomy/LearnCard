@@ -24,6 +24,7 @@ export type ResumeBuilderState = {
 
 const defaultPersonalDetails: PersonalDetails = {
     name: '',
+    career: '',
     email: '',
     phone: '',
     location: '',

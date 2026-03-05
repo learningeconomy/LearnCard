@@ -31,19 +31,22 @@ export const RESUME_SECTIONS = [
 
 export type ResumeSectionKey = (typeof RESUME_SECTIONS)[number]['key'];
 
-export type PersonalDetails = {
-    name: string;
-    email: string;
-    phone: string;
-    location: string;
-    summary: string;
-    website: string;
-    linkedIn: string;
-    thumbnail: string;
-};
+export enum UserInfoEnum {
+    Name = 'name',
+    Career = 'career',
+    Email = 'email',
+    Phone = 'phone',
+    Location = 'location',
+    Summary = 'summary',
+    Website = 'website',
+    LinkedIn = 'linkedIn',
+    Thumbnail = 'thumbnail',
+}
+
+export type PersonalDetails = Record<UserInfoEnum, string>;
 
 export type ResumeUserInfo = {
-    key: keyof PersonalDetails;
+    key: UserInfoEnum;
     label: string;
     placeholder: string;
     multiline?: boolean;
@@ -84,14 +87,19 @@ export type CredentialEntry = {
 };
 
 export const resumeUserInfo: ResumeUserInfo[] = [
-    { key: 'name', label: 'Full Name', placeholder: 'Jane Doe' },
-    { key: 'email', label: 'Email', placeholder: 'jane@example.com' },
-    { key: 'phone', label: 'Phone', placeholder: '+1 (555) 000-0000' },
-    { key: 'location', label: 'Location', placeholder: 'San Francisco, CA' },
-    { key: 'website', label: 'Website', placeholder: 'https://example.com' },
-    { key: 'linkedIn', label: 'LinkedIn', placeholder: 'https://linkedin.com/in/janedoe' },
+    { key: UserInfoEnum.Name, label: 'Full Name', placeholder: 'Jane Doe' },
+    { key: UserInfoEnum.Career, label: 'Professional Title', placeholder: 'Software Engineer' },
+    { key: UserInfoEnum.Location, label: 'Location', placeholder: 'San Francisco, CA' },
+    { key: UserInfoEnum.Email, label: 'Email', placeholder: 'jane@example.com' },
+    { key: UserInfoEnum.Phone, label: 'Phone', placeholder: '+1 (555) 000-0000' },
+    { key: UserInfoEnum.Website, label: 'Website', placeholder: 'https://example.com' },
     {
-        key: 'summary',
+        key: UserInfoEnum.LinkedIn,
+        label: 'LinkedIn',
+        placeholder: 'https://linkedin.com/in/janedoe',
+    },
+    {
+        key: UserInfoEnum.Summary,
         label: 'Summary',
         placeholder: 'Brief professional summary...',
         multiline: true,
