@@ -78,6 +78,7 @@ export type ResumeFieldEntry = {
     source: ResumeFieldSource;
     type: ResumeFieldType;
     index: number;
+    hidden?: boolean;
 };
 
 export type CredentialEntry = {

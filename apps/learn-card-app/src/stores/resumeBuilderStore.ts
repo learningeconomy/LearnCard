@@ -166,6 +166,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
             ...f,
             id: makeFieldId(),
             index: i,
+            hidden: false,
         }));
         const updated = entries.map((e, i) => (i === entryIdx ? { ...e, fields } : e));
         setEntries(set, section, updated);
@@ -189,6 +190,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
             source,
             type,
             index: fields.length,
+            hidden: false,
         };
         const updated = entries.map((e, i) =>
             i === entryIdx ? { ...e, fields: [...e.fields, newField] } : e
@@ -209,6 +211,21 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
         const fields = entries[entryIdx].fields.map(f =>
             f.id === fieldId ? { ...f, value, source } : f
         );
+        const updated = entries.map((e, i) => (i === entryIdx ? { ...e, fields } : e));
+        setEntries(set, section, updated);
+    },
+
+    setCredentialFieldHidden: (
+        uri: string,
+        section: ResumeSectionKey,
+        fieldId: string,
+        hidden: boolean
+    ) => {
+        const entries = getEntries(section);
+        const entryIdx = entries.findIndex(e => e.uri === uri);
+        if (entryIdx === -1) return;
+
+        const fields = entries[entryIdx].fields.map(f => (f.id === fieldId ? { ...f, hidden } : f));
         const updated = entries.map((e, i) => (i === entryIdx ? { ...e, fields } : e));
         setEntries(set, section, updated);
     },

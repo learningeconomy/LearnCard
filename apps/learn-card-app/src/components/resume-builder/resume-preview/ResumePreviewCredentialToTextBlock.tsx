@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { IonDatetime, IonReorder, IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
 import moment from 'moment';
 
+import ResumeBuilderToggle from '../ResumeBuilderToggle';
 import ResumePreviewEditableTextBlock from './ResumePreviewEditableTextBlock';
 import ResumePreviewCredentialDateDisplay from './ResumePreviewCredentialDateDisplay';
 
@@ -33,6 +34,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     const addCredentialField = resumeBuilderStore.set.addCredentialField;
     const updateCredentialField = resumeBuilderStore.set.updateCredentialField;
     const removeCredentialField = resumeBuilderStore.set.removeCredentialField;
+    const setCredentialFieldHidden = resumeBuilderStore.set.setCredentialFieldHidden;
     const setWorkExperienceEndDate = resumeBuilderStore.set.setWorkExperienceEndDate;
     const { newModal, closeModal } = useModal();
 
@@ -139,56 +141,151 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                         e.detail.complete();
                     }}
                 >
-                    {fields.map(field => (
-                        <div key={field.id} className="flex items-center gap-1">
-                            <div className="flex-1">
-                                <ResumePreviewEditableTextBlock
-                                    value={field.value}
-                                    placeholder={
-                                        field.type === 'description'
-                                            ? 'Add a description…'
-                                            : 'Add more details…'
-                                    }
-                                    isEditing={isEditing}
-                                    isSelfAttested={field.source === 'selfAttested'}
-                                    multiline={field.type === 'description'}
-                                    showDefaultSummaryDecoration={field.type === 'description'}
-                                    onRestoreDefault={
-                                        field.type === 'description' && vcDescription
-                                            ? () => {
-                                                  updateCredentialField(
-                                                      uri,
-                                                      section,
-                                                      field.id,
-                                                      vcDescription,
-                                                      'vc'
-                                                  );
-                                              }
-                                            : undefined
-                                    }
-                                    onChange={val => {
-                                        let source: 'vc' | 'selfAttested';
-                                        if (
-                                            field.type === 'description' &&
-                                            val === vcDescription &&
-                                            vcDescription
-                                        ) {
-                                            source = 'vc';
-                                        } else {
-                                            source = 'selfAttested';
-                                        }
-                                        updateCredentialField(uri, section, field.id, val, source);
-                                    }}
-                                    onRemove={
-                                        field.type === 'metadata'
-                                            ? () => removeCredentialField(uri, section, field.id)
-                                            : undefined
-                                    }
-                                />
+                    {fields.map(field => {
+                        const isDescriptionField = field.type === 'description';
+                        const isDescriptionHidden = isDescriptionField && Boolean(field.hidden);
+
+                        return (
+                            <div key={field.id} className="flex items-center gap-1">
+                                <div className="flex-1">
+                                    {isDescriptionField && isEditing ? (
+                                        <div data-pdf-hide className="flex items-start gap-3">
+                                            <div className="flex-1">
+                                                <ResumePreviewEditableTextBlock
+                                                    value={field.value}
+                                                    placeholder={
+                                                        field.type === 'description'
+                                                            ? 'Add a description…'
+                                                            : 'Add more details…'
+                                                    }
+                                                    isEditing={isEditing}
+                                                    isSelfAttested={field.source === 'selfAttested'}
+                                                    multiline={field.type === 'description'}
+                                                    showDefaultSummaryDecoration={
+                                                        field.type === 'description'
+                                                    }
+                                                    onRestoreDefault={
+                                                        field.type === 'description' &&
+                                                        vcDescription
+                                                            ? () => {
+                                                                  updateCredentialField(
+                                                                      uri,
+                                                                      section,
+                                                                      field.id,
+                                                                      vcDescription,
+                                                                      'vc'
+                                                                  );
+                                                              }
+                                                            : undefined
+                                                    }
+                                                    onChange={val => {
+                                                        let source: 'vc' | 'selfAttested';
+                                                        if (
+                                                            field.type === 'description' &&
+                                                            val === vcDescription &&
+                                                            vcDescription
+                                                        ) {
+                                                            source = 'vc';
+                                                        } else {
+                                                            source = 'selfAttested';
+                                                        }
+                                                        updateCredentialField(
+                                                            uri,
+                                                            section,
+                                                            field.id,
+                                                            val,
+                                                            source
+                                                        );
+                                                    }}
+                                                    onRemove={
+                                                        field.type === 'metadata'
+                                                            ? () =>
+                                                                  removeCredentialField(
+                                                                      uri,
+                                                                      section,
+                                                                      field.id
+                                                                  )
+                                                            : undefined
+                                                    }
+                                                />
+                                            </div>
+                                            <div className="shrink-0 flex flex-col items-center gap-2 pt-0.5">
+                                                <ResumeBuilderToggle
+                                                    checked={!isDescriptionHidden}
+                                                    onChange={checked =>
+                                                        setCredentialFieldHidden(
+                                                            uri,
+                                                            section,
+                                                            field.id,
+                                                            !checked
+                                                        )
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <ResumePreviewEditableTextBlock
+                                            value={field.value}
+                                            placeholder={
+                                                field.type === 'description'
+                                                    ? 'Add a description…'
+                                                    : 'Add more details…'
+                                            }
+                                            isEditing={isEditing}
+                                            isSelfAttested={field.source === 'selfAttested'}
+                                            multiline={field.type === 'description'}
+                                            showDefaultSummaryDecoration={
+                                                field.type === 'description'
+                                            }
+                                            onRestoreDefault={
+                                                field.type === 'description' && vcDescription
+                                                    ? () => {
+                                                          updateCredentialField(
+                                                              uri,
+                                                              section,
+                                                              field.id,
+                                                              vcDescription,
+                                                              'vc'
+                                                          );
+                                                      }
+                                                    : undefined
+                                            }
+                                            onChange={val => {
+                                                let source: 'vc' | 'selfAttested';
+                                                if (
+                                                    field.type === 'description' &&
+                                                    val === vcDescription &&
+                                                    vcDescription
+                                                ) {
+                                                    source = 'vc';
+                                                } else {
+                                                    source = 'selfAttested';
+                                                }
+                                                updateCredentialField(
+                                                    uri,
+                                                    section,
+                                                    field.id,
+                                                    val,
+                                                    source
+                                                );
+                                            }}
+                                            onRemove={
+                                                field.type === 'metadata'
+                                                    ? () =>
+                                                          removeCredentialField(
+                                                              uri,
+                                                              section,
+                                                              field.id
+                                                          )
+                                                    : undefined
+                                            }
+                                        />
+                                    )}
+                                </div>
+                                {isEditing && field.type !== 'description' && <IonReorder />}
                             </div>
-                            {isEditing && <IonReorder />}
-                        </div>
-                    ))}
+                        );
+                    })}
                 </IonReorderGroup>
 
                 {/* ── Add detail + Done buttons (edit mode only) ── */}
