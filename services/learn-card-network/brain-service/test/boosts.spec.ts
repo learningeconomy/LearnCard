@@ -13,7 +13,7 @@ import {
     InboxCredential,
     ContactMethod,
 } from '@models';
-import { getClaimLinkOptionsInfoForBoost, getTTLForClaimLink } from '@cache/claim-links';
+import { getClaimLinkOptionsInfoForBoost, getClaimLinkGeneratorProfileId, getTTLForClaimLink } from '@cache/claim-links';
 import { BoostStatus } from 'types/boost';
 import { adminRole, creatorRole, emptyRole } from './helpers/permissions';
 import { neogma } from '@instance';
@@ -2943,6 +2943,114 @@ describe('Boosts', () => {
                 await expect(
                     userE.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })
                 ).rejects.toThrow();
+            } else {
+                expect(sa).toBeDefined();
+            }
+        });
+
+        it('should allow a non-owner with defaultPermissions.canIssue to generate and have a claim link claimed', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                defaultPermissions: { canIssue: true },
+            });
+
+            // userB registers their own signing authority (userA's SA is different)
+            await userB.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'userb-def-sa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            const sa = await userB.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'userb-def-sa',
+            });
+
+            if (sa) {
+                const claimLinkSA = {
+                    endpoint: sa.signingAuthority.endpoint,
+                    name: sa.relationship.name,
+                };
+                const challenge = 'default-perm-claim-challenge';
+
+                // userB (not an admin, but has canIssue via defaultPermissions) generates the claim link
+                await expect(
+                    userB.clients.fullAuth.boost.generateClaimLink({
+                        boostUri: uri,
+                        challenge,
+                        claimLinkSA,
+                    })
+                ).resolves.toMatchObject({
+                    boostUri: uri,
+                    challenge,
+                });
+
+                // Verify the generator profileId is stored in the cache
+                const generatorId = await getClaimLinkGeneratorProfileId(uri, challenge);
+                expect(generatorId).toBe('userb');
+
+                // userC claims the boost - should succeed because the SA is looked up
+                // on userB's profile (the generator), not userA's (the owner)
+                await expect(
+                    userC.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })
+                ).resolves.not.toThrow();
+
+                // Verify userC actually received the credential
+                const credentials = await userC.clients.fullAuth.credential.receivedCredentials();
+                expect(credentials.length).toBeGreaterThan(0);
+            } else {
+                expect(sa).toBeDefined();
+            }
+        });
+
+        it('should allow a non-owner admin to generate a claim link using their own SA', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            // Make userB an admin of userA's boost
+            await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
+
+            // userB registers their own signing authority (different from userA's)
+            await userB.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'userb-sa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            const sa = await userB.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'userb-sa',
+            });
+
+            if (sa) {
+                const claimLinkSA = {
+                    endpoint: sa.signingAuthority.endpoint,
+                    name: sa.relationship.name,
+                };
+                const challenge = 'admin-claim-challenge';
+
+                // userB (non-owner admin) generates the claim link with their own SA
+                await expect(
+                    userB.clients.fullAuth.boost.generateClaimLink({
+                        boostUri: uri,
+                        challenge,
+                        claimLinkSA,
+                    })
+                ).resolves.toMatchObject({
+                    boostUri: uri,
+                    challenge,
+                });
+
+                // Verify the generator profileId is stored in the cache
+                const generatorId = await getClaimLinkGeneratorProfileId(uri, challenge);
+                expect(generatorId).toBe('userb');
+
+                // userC claims the boost - this should succeed because the SA
+                // is looked up on userB's profile (the generator), not userA's (the owner)
+                await expect(
+                    userC.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })
+                ).resolves.not.toThrow();
             } else {
                 expect(sa).toBeDefined();
             }
