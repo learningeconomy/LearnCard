@@ -3,13 +3,24 @@ import { RefObject, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import type { jsPDF as JsPDFType } from 'jspdf';
+import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 const RESUME_PDF_WIDTH_PX = 760;
 
-const savePdfToNativeDocuments = async (pdf: JsPDFType, successMessage: string): Promise<void> => {
+const toPdfFileName = (raw?: string): string => {
+    const trimmed = (raw || '').trim();
+    if (!trimmed) return 'resume.pdf';
+    return /\.pdf$/i.test(trimmed) ? trimmed : `${trimmed}.pdf`;
+};
+
+const savePdfToNativeDocuments = async (
+    pdf: JsPDFType,
+    successMessage: string,
+    fileName?: string
+): Promise<void> => {
     const pdfData = pdf.output('datauristring').split(',')[1];
-    const fileName = `resume_${Date.now()}.pdf`;
+    const safeFileName = toPdfFileName(fileName);
     await Filesystem.writeFile({
-        path: fileName,
+        path: safeFileName,
         data: pdfData,
         directory: Directory.Documents,
     });
@@ -162,11 +173,13 @@ export const useResumePdf = (
     const createPDFPreviewUrl = useCallback(async (): Promise<string | null> => {
         const pdf = await buildPDF();
         if (!pdf) return null;
+        const fileName = resumeBuilderStore.get.documentSetup()?.fileName;
 
         if (Capacitor.isNativePlatform()) {
             await savePdfToNativeDocuments(
                 pdf,
-                'Preview is not available on this device. Resume saved to Documents.'
+                'Preview is not available on this device. Resume saved to Documents.',
+                fileName
             );
             return null;
         }
@@ -178,14 +191,15 @@ export const useResumePdf = (
     const generatePDF = useCallback(async (): Promise<void> => {
         const pdf = await buildPDF();
         if (!pdf) return;
+        const fileName = toPdfFileName(resumeBuilderStore.get.documentSetup()?.fileName);
 
         if (Capacitor.isNativePlatform()) {
-            await savePdfToNativeDocuments(pdf, 'Resume saved to Documents!');
+            await savePdfToNativeDocuments(pdf, 'Resume saved to Documents!', fileName);
             return;
         }
 
         const a = document.createElement('a');
-        a.download = 'resume.pdf';
+        a.download = fileName;
         a.href = pdf.output('datauristring');
         a.click();
     }, [buildPDF]);
