@@ -135,7 +135,7 @@ export const EmbedAppFullScreen: React.FC = () => {
                         </IonButton>
                     </IonButtons>
                     <IonTitle>{appName}</IonTitle>
-                    <IonButtons slot="end">
+                    <IonButtons className="mr-[10px]" slot="end">
                         <AppCredentialDashboard
                             appId={appId}
                             appName={appName}

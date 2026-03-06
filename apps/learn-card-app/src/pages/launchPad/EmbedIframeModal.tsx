@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { X } from 'lucide-react';
 
 import { useModal, useDeviceTypeByWidth } from 'learn-card-base';
 import { IonPage, IonContent, IonToast, IonHeader, IonToolbar } from '@ionic/react';
@@ -104,7 +105,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         <IonPage className="h-full w-full">
             <IonHeader>
                 <IonToolbar color="light">
-                    <div className="flex items-center justify-between px-4 py-2 bg-white border-b">
+                    <div className="flex items-center justify-between px-3 py-4 bg-white border-b">
                         <h2 className="text-xl font-semibold">{appName}</h2>
                         <div className="flex items-center gap-2">
                             <AppCredentialDashboard
@@ -139,7 +140,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                                 onClick={closeModal}
                                 className="px-4 py-2 rounded-full bg-gray-200 hover:bg-gray-300 font-medium"
                             >
-                                Close
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
                     </div>
