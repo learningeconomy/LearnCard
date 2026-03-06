@@ -18,9 +18,11 @@ export const renderSkillPage = (data: SkillRenderData): string => {
     const title = `${skill.statement} | ${framework.name}`;
     const description = skill.description || `Explore the ${skill.statement} skill in the ${framework.name} framework.`;
     
-    const clientDomain = process.env.CLIENT_APP_DOMAIN_NAME || 'scoutnetwork.org';
-    const isScouts = clientDomain.includes('scout');
-    const appUrl = `https://${clientDomain}/frameworks/${framework.id}/skills/${skill.id}`;
+    const domain = process.env.DOMAIN_NAME || 'scoutnetwork.org';
+    const isScouts = domain.includes('scout');
+    const sanitizedDomain = domain.replace(/^https?:\/\//, '');
+    const skillUrl = `https://${sanitizedDomain}/frameworks/${framework.id}/skills/${skill.id}`;
+
 
     const theme = isScouts
         ? {
@@ -53,7 +55,7 @@ export const renderSkillPage = (data: SkillRenderData): string => {
     <meta property="og:title" content="${title}">
     <meta property="og:description" content="${description}">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="${appUrl}">
+    <meta property="og:url" content="${skillUrl}">
     <meta property="og:image" content="https://network.learncard.com/assets/icon/icon.png">
     
     <!-- Twitter -->
