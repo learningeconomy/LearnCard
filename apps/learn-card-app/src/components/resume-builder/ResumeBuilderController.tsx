@@ -24,7 +24,7 @@ export const ResumeBuilderController: React.FC<{ className?: string }> = ({ clas
         history.push('/resume-builder');
     };
 
-    // if (!flags?.enableResumeBuilder) return null;
+    if (!flags?.enableResumeBuilder) return null;
 
     const resumeExists = false; // TODO: Check if resume exists
 
