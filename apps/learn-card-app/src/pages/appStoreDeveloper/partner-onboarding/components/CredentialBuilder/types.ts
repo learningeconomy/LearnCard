@@ -236,7 +236,7 @@ export const OBV3_ACHIEVEMENT_TYPES = [
 // Default OBv3 contexts (VC v2)
 export const DEFAULT_CONTEXTS = [
     'https://www.w3.org/ns/credentials/v2',
-    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
+    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
 ];
 
 // Default types

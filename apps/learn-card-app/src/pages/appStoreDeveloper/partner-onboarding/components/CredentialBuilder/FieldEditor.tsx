@@ -89,19 +89,30 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`;
 
         if (type === 'select' && options) {
-            return (
-                <select
-                    value={field.value}
-                    onChange={(e) => handleValueChange(e.target.value)}
-                    disabled={disabled}
-                    className={baseClasses}
-                >
-                    <option value="">Select...</option>
+            const validValues = new Set(options.map(o => o.value));
+            const isValid = !field.value || validValues.has(field.value);
 
-                    {options.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                </select>
+            return (
+                <div>
+                    <select
+                        value={isValid ? field.value : ''}
+                        onChange={(e) => handleValueChange(e.target.value)}
+                        disabled={disabled}
+                        className={baseClasses}
+                    >
+                        <option value="">Select...</option>
+
+                        {options.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                    </select>
+
+                    {!isValid && field.value && (
+                        <p className="text-xs text-amber-600 mt-1">
+                            Invalid value &quot;{field.value}&quot; — please select a valid option.
+                        </p>
+                    )}
+                </div>
             );
         }
 
