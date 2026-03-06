@@ -10,7 +10,7 @@
  * - PartnerConnectTab (Dashboard)
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
     Plus,
     Loader2,
@@ -88,6 +88,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     const [selectedTemplateForCode, setSelectedTemplateForCode] = useState<ManagedTemplate | null>(null);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [builderValidationStatus, setBuilderValidationStatus] = useState<ValidationStatus>('unknown');
+    const builderRef = useRef<HTMLDivElement>(null);
 
     // Structural validation errors (required fields, URL format)
     const structuralErrors = React.useMemo(
@@ -133,6 +134,11 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
             setShowBuilder(true);
             setBuilderValidationStatus('unknown');
             setSaveError(null);
+
+            // Scroll to builder after React renders it
+            requestAnimationFrame(() => {
+                builderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
         } catch (err) {
             console.error('Failed to load template for editing:', err);
             presentToast('Failed to load template for editing', { type: ToastTypeEnum.Error });
@@ -273,9 +279,11 @@ if (result.credentialUri) {
                         <div
                             key={template.boostUri}
                             className={`p-4 rounded-xl border transition-colors ${
-                                selectedTemplateForCode?.boostUri === template.boostUri
-                                    ? 'border-emerald-300 bg-emerald-50'
-                                    : 'border-gray-200 bg-white hover:border-gray-300'
+                                editingTemplate?.boostUri === template.boostUri
+                                    ? 'border-blue-300 bg-blue-50'
+                                    : selectedTemplateForCode?.boostUri === template.boostUri
+                                        ? 'border-emerald-300 bg-emerald-50'
+                                        : 'border-gray-200 bg-white hover:border-gray-300'
                             }`}
                         >
                             <div className="flex items-start gap-3">
@@ -368,7 +376,11 @@ if (result.credentialUri) {
                                     {editable && (
                                         <button
                                             onClick={() => handleStartEdit(template)}
-                                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            className={`p-2 rounded-lg transition-colors ${
+                                                editingTemplate?.boostUri === template.boostUri
+                                                    ? 'bg-blue-100 text-blue-700'
+                                                    : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                                            }`}
                                             title="Edit template"
                                         >
                                             <Edit3 className="w-4 h-4" />
@@ -409,7 +421,7 @@ if (result.credentialUri) {
             {editable && (
                 <>
                     {showBuilder ? (
-                        <div className={`border rounded-xl overflow-hidden ${editingTemplate ? 'border-blue-200' : 'border-emerald-200'}`}>
+                        <div ref={builderRef} className={`border rounded-xl overflow-hidden ${editingTemplate ? 'border-blue-200' : 'border-emerald-200'}`}>
                             <div className={`p-3 border-b flex items-center justify-between ${editingTemplate ? 'bg-blue-50 border-blue-200' : 'bg-emerald-50 border-emerald-200'}`}>
                                 <h5 className={`font-medium flex items-center gap-2 ${editingTemplate ? 'text-blue-800' : 'text-emerald-800'}`}>
                                     {editingTemplate ? (
