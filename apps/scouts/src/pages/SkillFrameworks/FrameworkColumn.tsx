@@ -342,7 +342,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                         <InfoIcon className="ml-auto w-[24px] h-[24px] text-grayscale-600" />
                     )}
 
-                    {isTopLevel && !isApproveFlow && !isEdit && (
+                    {isTopLevel && !isApproveFlow && !isEdit && !isSelectSkillsFlow && (
                         <button
                             onClick={() =>
                                 newModal(
