@@ -8,6 +8,7 @@ import { useLearnCardMessageHandlers } from '../../../hooks/post-message/useLear
 
 import { DiagnosticsPanel, DiagnosticEvent, ACTION_TO_PERMISSION } from './DiagnosticsPanel';
 import { CredentialClaimModal } from '../../launchPad/CredentialClaimModal';
+import { AppCredentialDashboard } from '../../launchPad/AppCredentialDashboard';
 import type {
     AppPermission,
     LaunchConfig as LocalLaunchConfig,
@@ -153,7 +154,6 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
         return wrapped;
     }, [baseHandlers, addDiagnosticEvent, updateDiagnosticEvent]);
 
-
     // Initialize the PostMessage listener
     useLearnCardPostMessage({
         trustedOrigins: embedOrigin ? [embedOrigin] : [],
@@ -191,12 +191,19 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                 </div>
                             </div>
 
-                            <button
-                                onClick={handleClose}
-                                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <AppCredentialDashboard
+                                    appId={listing.slug || listing.listing_id}
+                                    appName={listing.display_name}
+                                    pendingCredential={pendingCredential}
+                                />
+                                <button
+                                    onClick={handleClose}
+                                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Non-embeddable message */}
@@ -255,12 +262,19 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                             </div>
                         </div>
 
-                        <button
-                            onClick={handleClose}
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <AppCredentialDashboard
+                                appId={listing.slug || listing.listing_id}
+                                appName={listing.display_name}
+                                pendingCredential={pendingCredential}
+                            />
+                            <button
+                                onClick={handleClose}
+                                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Main Content */}

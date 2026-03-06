@@ -8,6 +8,7 @@ import { IonPage, IonContent, IonToast, IonHeader, IonToolbar } from '@ionic/rea
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
 import { CredentialClaimModal } from './CredentialClaimModal';
+import { AppCredentialDashboard } from './AppCredentialDashboard';
 
 interface LaunchConfig {
     url?: string;
@@ -106,6 +107,11 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                     <div className="flex items-center justify-between px-4 py-2 bg-white border-b">
                         <h2 className="text-xl font-semibold">{appName}</h2>
                         <div className="flex items-center gap-2">
+                            <AppCredentialDashboard
+                                appId={appId?.toString() || 'preview'}
+                                appName={appName}
+                                pendingCredential={pendingCredential}
+                            />
                             {!hideFullScreenButton && !Capacitor.isNativePlatform() && (
                                 <button
                                     onClick={handleFullScreen}

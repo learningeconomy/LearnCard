@@ -1,10 +1,19 @@
 import React, { useState, useCallback } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle } from '@ionic/react';
+import {
+    IonPage,
+    IonContent,
+    IonHeader,
+    IonToolbar,
+    IonButtons,
+    IonButton,
+    IonTitle,
+} from '@ionic/react';
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
 import { CredentialClaimModal } from './CredentialClaimModal';
+import { AppCredentialDashboard } from './AppCredentialDashboard';
 
 interface EmbedAppParams {
     appId: string;
@@ -12,11 +21,11 @@ interface EmbedAppParams {
 
 /**
  * Full-screen dedicated page for embedded partner applications.
- * 
+ *
  * Accessible via:
  * - /apps/:appId?embedUrl=https://example.com&appName=My App (query params)
  * - /apps/:appId with embedUrl and appName in location state
- * 
+ *
  * Query params take precedence over location state.
  */
 interface LaunchConfig {
@@ -26,7 +35,12 @@ interface LaunchConfig {
 }
 
 export const EmbedAppFullScreen: React.FC = () => {
-    const history = useHistory<{ embedUrl?: string; appName?: string; launchConfig?: LaunchConfig; isInstalled?: boolean }>();
+    const history = useHistory<{
+        embedUrl?: string;
+        appName?: string;
+        launchConfig?: LaunchConfig;
+        isInstalled?: boolean;
+    }>();
     const { appId } = useParams<EmbedAppParams>();
     const [isLoading, setIsLoading] = useState(true);
 
@@ -45,8 +59,11 @@ export const EmbedAppFullScreen: React.FC = () => {
     }, []);
 
     // Get embedUrl and appName from query params or location state
-    const queryParams = React.useMemo(() => new URLSearchParams(history.location.search), [history.location.search]);
-    
+    const queryParams = React.useMemo(
+        () => new URLSearchParams(history.location.search),
+        [history.location.search]
+    );
+
     const embedUrl = queryParams.get('embedUrl') || history.location.state?.embedUrl;
     const appName = queryParams.get('appName') || history.location.state?.appName || 'Partner App';
     const launchConfig = history.location.state?.launchConfig;
@@ -55,7 +72,9 @@ export const EmbedAppFullScreen: React.FC = () => {
     // Redirect back if no embedUrl provided
     React.useEffect(() => {
         if (!embedUrl) {
-            console.error('[EmbedApp] No embedUrl provided in query params or state, redirecting back');
+            console.error(
+                '[EmbedApp] No embedUrl provided in query params or state, redirecting back'
+            );
             history.goBack();
         }
     }, [embedUrl, history]);
@@ -116,6 +135,13 @@ export const EmbedAppFullScreen: React.FC = () => {
                         </IonButton>
                     </IonButtons>
                     <IonTitle>{appName}</IonTitle>
+                    <IonButtons slot="end">
+                        <AppCredentialDashboard
+                            appId={appId}
+                            appName={appName}
+                            pendingCredential={pendingCredential}
+                        />
+                    </IonButtons>
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>
@@ -129,7 +155,9 @@ export const EmbedAppFullScreen: React.FC = () => {
                                     <div className="w-16 h-16 border-4 border-indigo-600 rounded-full border-t-transparent absolute top-0 left-0 animate-spin"></div>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-lg font-semibold text-grayscale-800">Loading {appName}...</p>
+                                    <p className="text-lg font-semibold text-grayscale-800">
+                                        Loading {appName}...
+                                    </p>
                                     <p className="text-sm text-grayscale-600 mt-1">Please wait</p>
                                 </div>
                             </div>
