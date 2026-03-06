@@ -13,24 +13,6 @@ const ResumeBuilderPage: React.FC = () => {
 
     return (
         <IonPage>
-            {isMobile && (
-                <IonHeader className="ion-no-border">
-                    <IonToolbar color="grayscale-100">
-                        <div className="flex items-center justify-start px-4 gap-2">
-                            <button
-                                aria-label="Go back"
-                                onClick={() => {
-                                    history.goBack();
-                                }}
-                            >
-                                <LeftArrow className="w-7 h-auto text-grayscale-900" />
-                            </button>
-
-                            <p className="text-grayscale-900 font-semibold">Resume Builder</p>
-                        </div>
-                    </IonToolbar>
-                </IonHeader>
-            )}
             <IonContent className="ion-no-padding">
                 <div className="h-full w-full">
                     <ResumeBuilder />

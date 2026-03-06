@@ -66,7 +66,7 @@ export const ResumeBuilder: React.FC = () => {
     };
 
     const previewWrapperStyles = isMobile
-        ? 'flex-1 overflow-y-auto py-6 px-3 flex flex-col pb-[100px]'
+        ? 'flex-1 overflow-y-auto py-6 px-3 flex flex-col'
         : 'flex-1 overflow-y-auto py-10 px-6 flex justify-center';
 
     useEffect(() => {
@@ -116,11 +116,6 @@ export const ResumeBuilder: React.FC = () => {
             {/* ── Mobile FABs ── */}
             {isMobile && !drawerOpen && (
                 <>
-                    {/* Preview toggle FAB — sits to the left of the edit FAB */}
-                    <ResumePreviewFAB
-                        isPreviewing={isPreviewing}
-                        setIsPreviewing={setIsPreviewing}
-                    />
                     <ResumeConfigPanelFAB openResumeConfigPanel={openResumeConfigPanel} />
                 </>
             )}
