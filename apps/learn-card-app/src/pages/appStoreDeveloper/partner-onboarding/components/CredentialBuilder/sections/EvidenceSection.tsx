@@ -114,35 +114,6 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                             />
 
                             <FieldEditor
-                                label="Name"
-                                field={item.name || staticField('')}
-                                onChange={(f) => updateEvidenceItem(index, 'name', f)}
-                                placeholder="e.g., Final Project"
-                                helpText="Name of the evidence item"
-                                showDynamicToggle={!disableDynamicFields}
-                            />
-
-                            <FieldEditor
-                                label="Description"
-                                field={item.description || staticField('')}
-                                onChange={(f) => updateEvidenceItem(index, 'description', f)}
-                                placeholder="Describe the evidence..."
-                                helpText="Description of the evidence"
-                                type="textarea"
-                                showDynamicToggle={!disableDynamicFields}
-                            />
-
-                            <FieldEditor
-                                label="Narrative"
-                                field={item.narrative || staticField('')}
-                                onChange={(f) => updateEvidenceItem(index, 'narrative', f)}
-                                placeholder="Detailed narrative..."
-                                helpText="Detailed narrative about the evidence"
-                                type="textarea"
-                                showDynamicToggle={!disableDynamicFields}
-                            />
-
-                            <FieldEditor
                                 label="Genre"
                                 field={item.genre || staticField('')}
                                 onChange={(f) => updateEvidenceItem(index, 'genre', f)}

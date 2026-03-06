@@ -376,24 +376,14 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
         });
     }
 
-    // Evidence
+    credential.credentialSubject = credentialSubject;
+
+    // Evidence is a top-level credential property (VC v2 context), NOT inside credentialSubject
     if (template.credentialSubject.evidence && template.credentialSubject.evidence.length > 0) {
-        credentialSubject.evidence = template.credentialSubject.evidence.map(e => {
+        credential.evidence = template.credentialSubject.evidence.map(e => {
             const evidence: Record<string, unknown> = {
                 type: [fieldToJson(e.type) || 'Evidence'],
             };
-
-            if (e.name?.value || e.name?.isDynamic) {
-                evidence.name = fieldToJson(e.name);
-            }
-
-            if (e.description?.value || e.description?.isDynamic) {
-                evidence.description = fieldToJson(e.description);
-            }
-
-            if (e.narrative?.value || e.narrative?.isDynamic) {
-                evidence.narrative = fieldToJson(e.narrative);
-            }
 
             if (e.genre?.value || e.genre?.isDynamic) {
                 evidence.genre = fieldToJson(e.genre);
@@ -406,8 +396,6 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
             return evidence;
         });
     }
-
-    credential.credentialSubject = credentialSubject;
 
     return credential;
 };
@@ -446,7 +434,9 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
     const achievementObj = (typeof subjectObj.achievement === 'object' && subjectObj.achievement !== null) ? subjectObj.achievement as Record<string, unknown> : {};
     const criteriaObj = (typeof achievementObj.criteria === 'object' && achievementObj.criteria !== null) ? achievementObj.criteria as Record<string, unknown> : undefined;
     const alignmentArr = Array.isArray(achievementObj.alignment) ? achievementObj.alignment as Record<string, unknown>[] : [];
-    const evidenceArr = Array.isArray(subjectObj.evidence) ? subjectObj.evidence as Record<string, unknown>[] : [];
+    // Evidence is a top-level credential property (VC v2), but also check subjectObj for backwards compat
+    const evidenceArr = Array.isArray(json.evidence) ? json.evidence as Record<string, unknown>[]
+        : Array.isArray(subjectObj.evidence) ? subjectObj.evidence as Record<string, unknown>[] : [];
     const resultArr = Array.isArray(subjectObj.result) ? subjectObj.result as Record<string, unknown>[] : [];
     const resultDescArr = Array.isArray(achievementObj.resultDescription) ? achievementObj.resultDescription as Record<string, unknown>[] : [];
     const otherIdArr = Array.isArray(achievementObj.otherIdentifier) ? achievementObj.otherIdentifier as Record<string, unknown>[] : [];
@@ -510,12 +500,11 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
         id: subjectObj.id ? jsonToField(subjectObj.id) : undefined,
         name: subjectObj.name ? jsonToField(subjectObj.name) : undefined,
         achievement,
+        // Evidence scoped context only allows: id, type, audience, genre
         evidence: evidenceArr.map((e, i) => ({
             id: `evidence_${i}`,
             type: e.type ? jsonToField(Array.isArray(e.type) ? e.type[0] : e.type) : undefined,
-            name: e.name ? jsonToField(e.name) : undefined,
-            description: e.description ? jsonToField(e.description) : undefined,
-            narrative: e.narrative ? jsonToField(e.narrative) : undefined,
+            name: e.name ? jsonToField(e.name) : undefined, // kept for backwards compat parsing
             genre: e.genre ? jsonToField(e.genre) : undefined,
             audience: e.audience ? jsonToField(e.audience) : undefined,
         })),
@@ -711,12 +700,9 @@ export const extractVariablesByType = (template: OBv3CredentialTemplate): Extrac
         checkField(r.achievedLevel);
     });
 
-    // Evidence
+    // Evidence (scoped context only allows: type, audience, genre)
     template.credentialSubject.evidence?.forEach(e => {
         checkField(e.type);
-        checkField(e.name);
-        checkField(e.description);
-        checkField(e.narrative);
         checkField(e.genre);
         checkField(e.audience);
     });
@@ -856,12 +842,9 @@ export const extractDynamicVariables = (template: OBv3CredentialTemplate): strin
         checkField(r.achievedLevel);
     });
 
-    // Evidence
+    // Evidence (scoped context only allows: type, audience, genre)
     template.credentialSubject.evidence?.forEach(e => {
         checkField(e.type);
-        checkField(e.name);
-        checkField(e.description);
-        checkField(e.narrative);
         checkField(e.genre);
         checkField(e.audience);
     });
