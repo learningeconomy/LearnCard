@@ -52,8 +52,8 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                 setDraft(e.target.value);
                 onChange(e.target.value);
             },
-            className: `w-full text-xs text-grayscale-700 bg-indigo-50 rounded-lg px-2 py-1.5 outline-none resize-none leading-relaxed ${
-                showDecoration ? 'pb-7' : ''
+            className: `w-full text-xs text-grayscale-700 px-2 py-1.5 outline-none resize-none leading-relaxed ${
+                showDecoration ? 'bg-transparent rounded-none' : 'bg-indigo-50 rounded-lg'
             }`,
         };
 
@@ -64,36 +64,38 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                         •
                     </span>
                 )}
-                <div className="relative flex-1">
-                    {multiline ? (
-                        <textarea {...(sharedProps as any)} rows={3} />
+                <div className="flex-1">
+                    {showDecoration ? (
+                        <div className="bg-indigo-50 rounded-lg overflow-hidden">
+                            <textarea {...(sharedProps as any)} rows={3} />
+                            <div className="flex justify-end px-2 pb-1.5">
+                                {isSelfAttested ? (
+                                    <span className="text-grayscale-600 font-semibold text-xs">
+                                        Edited
+                                        {onRestoreDefault && (
+                                            <>
+                                                <span className="mx-1 text-grayscale-600">•</span>
+                                                <button
+                                                    type="button"
+                                                    className="text-indigo-600 font-semibold text-xs"
+                                                    onClick={onRestoreDefault}
+                                                >
+                                                    Restore Default
+                                                </button>
+                                            </>
+                                        )}
+                                    </span>
+                                ) : (
+                                    <span className="text-grayscale-600 font-semibold text-xs">
+                                        Default Summary
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    ) : multiline ? (
+                        <textarea {...(sharedProps as any)} rows={2} />
                     ) : (
                         <input {...(sharedProps as any)} type="text" />
-                    )}
-                    {showDecoration && (
-                        <div className="absolute bottom-2 right-2 bg-indigo-50 p-1">
-                            {isSelfAttested ? (
-                                <span className="text-grayscale-600 font-semibold text-xs">
-                                    Edited
-                                    {onRestoreDefault && (
-                                        <>
-                                            <span className="mx-1 text-grayscale-600">•</span>
-                                            <button
-                                                type="button"
-                                                className="text-indigo-600 font-semibold text-xs"
-                                                onClick={onRestoreDefault}
-                                            >
-                                                Restore Default
-                                            </button>
-                                        </>
-                                    )}
-                                </span>
-                            ) : (
-                                <span className="text-grayscale-600 font-semibold text-xs">
-                                    Default Summary
-                                </span>
-                            )}
-                        </div>
                     )}
                 </div>
                 {onRemove && (

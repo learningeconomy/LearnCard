@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { ProfilePicture } from 'learn-card-base';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
+import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
 import ResumePreviewInfoChip from './ResumePreviewInfoChip';
 import ResumeBuilderToggle from '../ResumeBuilderToggle';
 
@@ -88,7 +89,11 @@ const ResumePreviewUserInfo: React.FC = () => {
                 </div>
 
                 {documentSetup?.showQRCode && (
-                    <div className="shrink-0 rounded-lg border border-grayscale-200 bg-white p-2">
+                    <div className="relative shrink-0 rounded-lg border border-grayscale-200 bg-white p-2">
+                        <div className="absolute top-[-7px] right-[-7px]">
+                            <TrustedIcon className="w-4 h-4" />
+                        </div>
+
                         <QRCodeSVG value="https://learncard.app" size={44} />
                     </div>
                 )}
@@ -100,10 +105,6 @@ const ResumePreviewUserInfo: React.FC = () => {
                         <p className="text-[13px] text-grayscale-900 leading-relaxed">
                             {personalDetails.summary}
                         </p>
-
-                        <span className="text-xs text-grayscale-500 self-end text-right">
-                            Default Summary
-                        </span>
                     </div>
                     <div data-pdf-hide className="shrink-0 flex flex-col items-center gap-2 pt-0.5">
                         <ResumeBuilderToggle
