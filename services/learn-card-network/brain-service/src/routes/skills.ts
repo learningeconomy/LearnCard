@@ -178,17 +178,8 @@ export const skillsRouter = t.router({
                 cursor: z.string().nullable(),
             })
         )
-        .query(async ({ ctx, input }) => {
-            const profileId = ctx.user.profile.profileId;
+        .query(async ({ input }) => {
             const { id: frameworkId, query, limit, cursor } = input;
-
-            const manages = await doesProfileManageFramework(profileId, frameworkId);
-            if (!manages) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'Profile does not manage this framework',
-                });
-            }
 
             const result = await searchSkillsInFramework(frameworkId, query, limit, cursor ?? null);
 

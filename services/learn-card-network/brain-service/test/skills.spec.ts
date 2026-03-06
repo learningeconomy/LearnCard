@@ -1228,25 +1228,26 @@ describe('Skills router', () => {
         );
     });
 
-    it('enforces management permissions on framework skill search', async () => {
+    it('allows any authenticated user to search framework skills', async () => {
         await createProfileFor(userA, 'usera');
         const frameworkId = `fw-search-${crypto.randomUUID()}`;
 
         await userA.clients.fullAuth.skillFrameworks.createManaged({
             id: frameworkId,
-            name: 'Private Framework',
-            skills: [{ id: `${frameworkId}-skill`, statement: 'Private Skill' }],
+            name: 'Public Framework',
+            skills: [{ id: `${frameworkId}-skill`, statement: 'Public Skill' }],
         });
 
-        // User B cannot search in A's framework
+        // User B can search in A's framework (no management required)
         await createProfileFor(userB, 'userb');
-        await expect(
-            userB.clients.fullAuth.skills.searchFrameworkSkills({
-                id: frameworkId,
-                query: { statement: { $regex: /.*/ } },
-                limit: 10,
-            })
-        ).rejects.toThrow();
+        const result = await userB.clients.fullAuth.skills.searchFrameworkSkills({
+            id: frameworkId,
+            query: { statement: { $regex: /.*/ } },
+            limit: 10,
+        });
+
+        expect(result.records.length).toBe(1);
+        expect(result.records[0]!.statement).toBe('Public Skill');
     });
 
     it('requires skills:read scope for framework search', async () => {
