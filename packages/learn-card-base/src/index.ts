@@ -159,6 +159,7 @@ export {
     updateArtifactClaimedStatus,
 } from './stores/nanoStores/chatStore';
 
+export * from './helpers/credentialHelpers';
 export * from './helpers/credentials/queries';
 export * from './helpers/web3AuthHelpers';
 export * from './helpers/statusBarHelpers';
