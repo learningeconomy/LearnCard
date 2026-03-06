@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.94.32
+
+### Patch Changes
+
+-   [#1058](https://github.com/learningeconomy/LearnCard/pull/1058) [`409bc50fbb7c48930e3ed40c9b0df5ab2e8b957f`](https://github.com/learningeconomy/LearnCard/commit/409bc50fbb7c48930e3ed40c9b0df5ab2e8b957f) Thanks [@Custard7](https://github.com/Custard7)! - Alignments
+
 ## 1.94.31
 
 ### Patch Changes
