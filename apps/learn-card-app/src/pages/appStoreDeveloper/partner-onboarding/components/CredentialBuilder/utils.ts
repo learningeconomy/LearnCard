@@ -70,7 +70,9 @@ export const fieldToJson = (field: TemplateFieldValue | undefined): string | und
         return `{{${field.variableName}}}`;
     }
 
-    return field.value || undefined;
+    // Trim whitespace/newlines to avoid backend parsing errors from textarea inputs
+    const trimmed = field.value?.trim();
+    return trimmed || undefined;
 };
 
 /**
