@@ -31,7 +31,7 @@ export const ResumeIframePreview: React.FC<{
     };
 
     return (
-        <div className="absolute inset-0 z-30 bg-black/50 p-3 sm:p-6 ">
+        <div className="absolute inset-0 z-30 bg-black/50 p-3 sm:p-6 safe-area-top-margin">
             <div className="w-full h-full bg-white rounded-xl shadow-2xl border border-grayscale-200 overflow-hidden flex flex-col">
                 <div className="shrink-0 h-[48px] px-3 border-b border-grayscale-200 flex items-center justify-between bg-grayscale-50">
                     <div className="flex items-center gap-2">

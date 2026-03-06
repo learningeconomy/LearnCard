@@ -5,6 +5,8 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { IonIcon } from '@ionic/react';
 import SlimCaretRight from '../svgs/SlimCaretRight';
 import { documentTextOutline } from 'ionicons/icons';
+import ResumeBuilderIcon from '../../assets/images/resume-builder-icon.png';
+
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 
 import { useTheme } from '../../theme/hooks/useTheme';
@@ -22,7 +24,7 @@ export const ResumeBuilderController: React.FC<{ className?: string }> = ({ clas
         history.push('/resume-builder');
     };
 
-    if (!flags?.enableResumeBuilder) return null;
+    // if (!flags?.enableResumeBuilder) return null;
 
     const resumeExists = false; // TODO: Check if resume exists
 
@@ -34,11 +36,16 @@ export const ResumeBuilderController: React.FC<{ className?: string }> = ({ clas
         >
             <div className="flex items-center gap-[10px]">
                 <div className={`rounded-[10px] p-[5px] bg-white max-h-[40px] max-w-[40px]`}>
-                    <IonIcon
+                    <img
+                        src={ResumeBuilderIcon}
+                        alt="Resume Builder"
+                        className="w-[30px] h-[30px]"
+                    />
+                    {/* <IonIcon
                         color="grayscale-600"
                         icon={documentTextOutline}
                         className="w-[30px] h-[30px]"
-                    />
+                    /> */}
                 </div>
                 <div className="flex flex-col">
                     <h5 className="text-[17px] font-poppins font-[600] text-grayscale-900 leading-[130%]">
