@@ -13,6 +13,7 @@ import { ResumePdfPreviewData } from './resume-preview/useResumePdf';
 
 import { useDeviceTypeByWidth, useModal, ModalTypes } from 'learn-card-base';
 import { useResumePreselection } from './useResumePreselection';
+import ResumeBuilderLoader from './ResumeBuilderLoader';
 
 export const ResumeBuilder: React.FC = () => {
     useResumePreselection();
@@ -84,6 +85,11 @@ export const ResumeBuilder: React.FC = () => {
 
     return (
         <div className="resume-builder flex h-full w-full bg-grayscale-50 overflow-hidden relative">
+            {loadingAction && (
+                <div className="absolute inset-0 h-full w-full z-[100] bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                    <ResumeBuilderLoader />
+                </div>
+            )}
             <div className="flex-1 min-w-0 flex flex-col">
                 <ResumeBuilderHeader
                     loadingAction={loadingAction}
