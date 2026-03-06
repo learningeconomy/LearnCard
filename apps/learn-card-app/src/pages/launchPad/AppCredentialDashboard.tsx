@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Award, X, Inbox } from 'lucide-react';
 
 import { useWallet } from 'learn-card-base';
@@ -173,19 +174,24 @@ export const AppCredentialDashboard: React.FC<AppCredentialDashboardProps> = ({
                 )}
             </button>
 
-            {/* Slide-Over Panel with Backdrop */}
-            {isOpen && (
-                <div className="fixed inset-0 z-50 flex justify-end" onClick={handleBackdropClick}>
-                    {/* Backdrop */}
+            {/* Slide-Over Panel with Backdrop - Using portal to escape Ionic stacking context */}
+            {isOpen &&
+                createPortal(
                     <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
-                        aria-hidden="true"
-                    />
+                        className="fixed inset-0 z-[9999] flex justify-end"
+                        onClick={handleBackdropClick}
+                    >
+                        {/* Backdrop */}
+                        <div
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 cursor-pointer"
+                            aria-hidden="true"
+                            onClick={() => setIsOpen(false)}
+                        />
 
-                    {/* Panel */}
-                    <div
-                        ref={panelRef}
-                        className={`
+                        {/* Panel */}
+                        <div
+                            ref={panelRef}
+                            className={`
                             relative 
                             w-full max-w-[400px] 
                             h-full 
@@ -195,82 +201,83 @@ export const AppCredentialDashboard: React.FC<AppCredentialDashboardProps> = ({
                             transform transition-transform duration-300 ease-out
                             ${isOpen ? 'translate-x-0' : 'translate-x-full'}
                         `}
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="credential-dashboard-title"
-                    >
-                        {/* Panel Header */}
-                        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-indigo-500 to-purple-600">
-                            <div>
-                                <h2
-                                    id="credential-dashboard-title"
-                                    className="text-lg font-semibold text-white"
-                                >
-                                    Credentials from {appName}
-                                </h2>
-                                <p className="text-sm text-white/80">
-                                    {badgeCount} credential{badgeCount !== 1 ? 's' : ''} earned
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                className="p-2 rounded-full hover:bg-white/20 text-white transition-colors"
-                                aria-label="Close panel"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-                            {isLoading && earnedCredentials.length === 0 ? (
-                                // Loading State
-                                <div className="space-y-4">
-                                    {[1, 2, 3].map(i => (
-                                        <div
-                                            key={i}
-                                            className="bg-white rounded-xl p-4 shadow-sm animate-pulse"
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-16 h-16 bg-gray-200 rounded-lg" />
-                                                <div className="flex-1 space-y-2">
-                                                    <div className="h-4 bg-gray-200 rounded w-3/4" />
-                                                    <div className="h-3 bg-gray-200 rounded w-1/2" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : earnedCredentials.length === 0 ? (
-                                // Empty State
-                                <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                                    <div className="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                                        <Inbox className="w-12 h-12 text-indigo-400" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                                        No credentials earned yet
-                                    </h3>
-                                    <p className="text-gray-500 text-sm">
-                                        Keep exploring {appName}! Credentials you earn will appear
-                                        here.
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="credential-dashboard-title"
+                        >
+                            {/* Panel Header */}
+                            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-indigo-500 to-purple-600">
+                                <div>
+                                    <h2
+                                        id="credential-dashboard-title"
+                                        className="text-lg font-semibold text-white"
+                                    >
+                                        Credentials from {appName}
+                                    </h2>
+                                    <p className="text-sm text-white/80">
+                                        {badgeCount} credential{badgeCount !== 1 ? 's' : ''} earned
                                     </p>
                                 </div>
-                            ) : (
-                                // Credential List
-                                <div className="space-y-4">
-                                    {earnedCredentials.map((record, index) => (
-                                        <CredentialCard
-                                            key={record.uri}
-                                            record={record}
-                                            isNew={record.isNew}
-                                            index={index}
-                                        />
-                                    ))}
-                                </div>
-                            )}
+                                <button
+                                    onClick={() => setIsOpen(false)}
+                                    className="p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+                                    aria-label="Close panel"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                                {isLoading && earnedCredentials.length === 0 ? (
+                                    // Loading State
+                                    <div className="space-y-4">
+                                        {[1, 2, 3].map(i => (
+                                            <div
+                                                key={i}
+                                                className="bg-white rounded-xl p-4 shadow-sm animate-pulse"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-16 h-16 bg-gray-200 rounded-lg" />
+                                                    <div className="flex-1 space-y-2">
+                                                        <div className="h-4 bg-gray-200 rounded w-3/4" />
+                                                        <div className="h-3 bg-gray-200 rounded w-1/2" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : earnedCredentials.length === 0 ? (
+                                    // Empty State
+                                    <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                                        <div className="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+                                            <Inbox className="w-12 h-12 text-indigo-400" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                                            No credentials earned yet
+                                        </h3>
+                                        <p className="text-gray-500 text-sm">
+                                            Keep exploring {appName}! Credentials you earn will
+                                            appear here.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    // Credential List
+                                    <div className="space-y-4">
+                                        {earnedCredentials.map((record, index) => (
+                                            <CredentialCard
+                                                key={record.uri}
+                                                record={record}
+                                                isNew={record.isNew}
+                                                index={index}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                </div>
-            )}
+                    </div>,
+                    document.body
+                )}
         </>
     );
 };
