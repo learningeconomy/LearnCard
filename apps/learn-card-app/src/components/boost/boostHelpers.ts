@@ -25,7 +25,7 @@ export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState =
         ? replaceUnderscoresWithWhiteSpace(
               getAchievementTypeFromCustomType(state.basicInfo.achievementType ?? '') ?? ''
           )
-        : CATEGORY_TO_SUBCATEGORY_LIST[state.basicInfo.type].find(
+        : CATEGORY_TO_SUBCATEGORY_LIST[state.basicInfo.type]?.find(
               options => options.type === state.basicInfo.achievementType
           )?.title ?? '';
 
@@ -75,7 +75,7 @@ export const getBoostCredentialPreview = (vcInput: BoostCMSState) => {
         };
     } else {
         fallbackCredentialValues =
-            CATEGORY_TO_SUBCATEGORY_LIST?.[vcInput?.basicInfo?.type].find(
+            CATEGORY_TO_SUBCATEGORY_LIST?.[vcInput?.basicInfo?.type]?.find(
                 options => options?.type === vcInput?.basicInfo?.achievementType
             ) ?? {};
     }
@@ -191,7 +191,7 @@ export const updateBoost = async (
         };
     } else {
         fallbackCredentialValues =
-            CATEGORY_TO_SUBCATEGORY_LIST?.[vcInput?.basicInfo?.type].find(
+            CATEGORY_TO_SUBCATEGORY_LIST?.[vcInput?.basicInfo?.type]?.find(
                 options => options?.type === vcInput?.basicInfo?.achievementType
             ) ?? {};
     }
@@ -428,7 +428,7 @@ export const getDefaultBoostTitle = (category: string, achievementType: string) 
 
             return customTypeTitle;
         } else {
-            const achievementTypeTitle = CATEGORY_TO_SUBCATEGORY_LIST?.[category].find(
+            const achievementTypeTitle = CATEGORY_TO_SUBCATEGORY_LIST?.[category]?.find(
                 options => options?.type === achievementType
             )?.title;
 

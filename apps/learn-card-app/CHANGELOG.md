@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.94.31
+
+### Patch Changes
+
+-   [#1051](https://github.com/learningeconomy/LearnCard/pull/1051) [`e15dafbc571e8c63fa4fddcfbb03e87d495b01ff`](https://github.com/learningeconomy/LearnCard/commit/e15dafbc571e8c63fa4fddcfbb03e87d495b01ff) Thanks [@Custard7](https://github.com/Custard7)! - fix: Category Map Error
+
+## 1.94.30
+
+### Patch Changes
+
+-   [#1048](https://github.com/learningeconomy/LearnCard/pull/1048) [`22aafd3b8764ed0bac2f48d870ab8421fab13978`](https://github.com/learningeconomy/LearnCard/commit/22aafd3b8764ed0bac2f48d870ab8421fab13978) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Add optional chaining to CATEGORY_TO_SUBCATEGORY_LIST lookups
+
 ## 1.94.29
 
 ### Patch Changes
