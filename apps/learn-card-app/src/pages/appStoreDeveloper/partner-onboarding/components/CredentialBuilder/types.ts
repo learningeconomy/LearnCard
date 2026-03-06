@@ -99,6 +99,7 @@ export interface AlignmentTemplate {
 // OBv3 Evidence structure
 export interface EvidenceTemplate {
     id: string; // Internal ID for React keys
+    evidenceUrl?: TemplateFieldValue; // OBv3 "id" field — URL to the evidence artifact
     type?: TemplateFieldValue;
     name?: TemplateFieldValue;
     description?: TemplateFieldValue;
