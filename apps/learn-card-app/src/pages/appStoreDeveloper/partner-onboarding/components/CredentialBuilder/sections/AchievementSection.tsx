@@ -323,8 +323,30 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                         label="Language"
                         field={achievement.inLanguage || staticField('')}
                         onChange={(f) => updateAchievement('inLanguage', f)}
-                        placeholder="e.g., en"
-                        helpText="Language code (ISO 639-1)"
+                        type="select"
+                        options={[
+                            { value: 'en', label: 'English' },
+                            { value: 'es', label: 'Spanish' },
+                            { value: 'fr', label: 'French' },
+                            { value: 'de', label: 'German' },
+                            { value: 'pt', label: 'Portuguese' },
+                            { value: 'zh', label: 'Chinese' },
+                            { value: 'ja', label: 'Japanese' },
+                            { value: 'ko', label: 'Korean' },
+                            { value: 'ar', label: 'Arabic' },
+                            { value: 'hi', label: 'Hindi' },
+                            { value: 'it', label: 'Italian' },
+                            { value: 'nl', label: 'Dutch' },
+                            { value: 'ru', label: 'Russian' },
+                            { value: 'sv', label: 'Swedish' },
+                            { value: 'pl', label: 'Polish' },
+                            { value: 'tr', label: 'Turkish' },
+                            { value: 'vi', label: 'Vietnamese' },
+                            { value: 'th', label: 'Thai' },
+                            { value: 'id', label: 'Indonesian' },
+                            { value: 'he', label: 'Hebrew' },
+                        ]}
+                        helpText="Language of this achievement"
                         showDynamicToggle={!disableDynamicFields}
                     />
                 </div>
