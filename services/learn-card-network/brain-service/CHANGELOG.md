@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.12.4
+
+### Patch Changes
+
+-   [#1061](https://github.com/learningeconomy/LearnCard/pull/1061) [`be053cfa6bbffa8ff34ba65673d1696abe77e5f1`](https://github.com/learningeconomy/LearnCard/commit/be053cfa6bbffa8ff34ba65673d1696abe77e5f1) Thanks [@goblincore](https://github.com/goblincore)! - fix: Derive domain from existing env variable for brain service skill-renderer
+
 ## 3.12.3
 
 ### Patch Changes
