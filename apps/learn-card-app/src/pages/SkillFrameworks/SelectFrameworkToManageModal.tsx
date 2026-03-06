@@ -72,7 +72,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
         frameworks.push(defaultFramework.framework);
     }
     if (userFrameworks) {
-        frameworks.push(...userFrameworks);
+        frameworks.push(...userFrameworks.filter(f => f.id !== defaultFramework?.framework?.id));
     }
 
     const [openSaltRef, setOpenSaltRef] = React.useState('');
