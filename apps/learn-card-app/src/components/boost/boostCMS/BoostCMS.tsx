@@ -849,8 +849,6 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     state?.issueTo.map(async issuee => {
                         // handle self boosting
                         if (issuee?.profileId === profile?.profileId) {
-                            console.log('boostUri', boostUri);
-                            console.log('boost', await wallet.invoke.getBoost(boostUri));
                             // oxlint-disable-next-line no-unused-vars
                             const { sentBoost, sentBoostUri } = await sendBoostCredential(
                                 wallet,
