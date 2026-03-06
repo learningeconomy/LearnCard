@@ -889,6 +889,25 @@ export const validateTemplate = (template: OBv3CredentialTemplate): string[] => 
         errors.push('Achievement name is required');
     }
 
+    // Criteria ID must be a valid URI (JSON-LD @id field)
+    const criteriaId = template.credentialSubject.achievement.criteria?.id;
+    if (criteriaId?.value && !criteriaId.isDynamic) {
+        if (!/^https?:\/\//i.test(criteriaId.value) && !/^urn:/i.test(criteriaId.value)) {
+            errors.push('Criteria URL must be a valid URL (e.g., https://example.com)');
+        }
+    }
+
+    // Alignment targetUrl must be a valid URI (JSON-LD @id field)
+    const alignments = template.credentialSubject.achievement.alignment || [];
+    for (const a of alignments) {
+        if (a.targetUrl?.value && !a.targetUrl.isDynamic) {
+            if (!/^https?:\/\//i.test(a.targetUrl.value) && !/^urn:/i.test(a.targetUrl.value)) {
+                errors.push('Alignment Target URL must be a valid URL (e.g., https://example.com)');
+                break;
+            }
+        }
+    }
+
     return errors;
 };
 
