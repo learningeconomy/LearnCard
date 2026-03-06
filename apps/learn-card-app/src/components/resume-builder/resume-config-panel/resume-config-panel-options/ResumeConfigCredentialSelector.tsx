@@ -10,6 +10,7 @@ import { IonIcon } from '@ionic/react';
 import { useGetCredentialList } from 'learn-card-base';
 import { ResumeSectionKey } from '../../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../../stores/resumeBuilderStore';
+import ResumeBuilderToggle from '../../ResumeBuilderToggle';
 
 import 'swiper/css';
 
@@ -25,13 +26,17 @@ export const ResumeConfigCredentialSelector: React.FC<{
     const [atEnd, setAtEnd] = useState<boolean>(false);
 
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
+    const hiddenSections = resumeBuilderStore.useTracked.hiddenSections();
     const toggleCredential = resumeBuilderStore.set.toggleCredential;
+    const setSectionHidden = resumeBuilderStore.set.setSectionHidden;
     const selected = (credentialEntries[sectionKey] ?? []).map(e => e.uri);
+    const isSectionVisible = !hiddenSections?.[sectionKey];
 
     const { data: credentialPages, isLoading } = useGetCredentialList(sectionKey as any);
 
     const records = credentialPages?.pages?.flatMap(page => page?.records ?? []) ?? [];
     const selectedCount = selected.length;
+    const statusLabel = isSectionVisible ? 'On' : 'Off';
     const handleSwiperUpdate = (swiper: any) => {
         setAtBeginning(swiper.isBeginning);
         setAtEnd(swiper.isEnd);
@@ -40,20 +45,30 @@ export const ResumeConfigCredentialSelector: React.FC<{
     return (
         <div className="bg-white border border-grayscale-200 rounded-2xl border-b overflow-hidden">
             <button
-                className="w-full flex items-center justify-between px-4 py-3 text-left"
-                onClick={() => setOpen(o => !o)}
+                className="w-full flex items-center justify-between px-4 py-4 text-left"
+                onClick={() => setOpen(!open)}
             >
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-grayscale-800">{label}</span>
-                    {selectedCount > 0 && (
-                        <span className="text-xs font-semibold bg-indigo-100 text-indigo-600 rounded-full px-2 py-0.5">
-                            {selectedCount}
+                <div className="flex flex-col items-center">
+                    <div className="flex items-center justify-start gap-2">
+                        <div onClick={e => e.stopPropagation()} className="shrink-0">
+                            <ResumeBuilderToggle
+                                checked={isSectionVisible}
+                                onChange={checked => setSectionHidden(sectionKey, !checked)}
+                            />
+                        </div>
+                        <span className="block text-[18px] leading-none font-medium text-grayscale-900">
+                            {label}
                         </span>
-                    )}
+                    </div>
+
+                    <span className="block text-xs font-semibold text-grayscale-600">
+                        {selectedCount} Selected • {statusLabel}
+                    </span>
                 </div>
                 <IonIcon
                     color="grayscale-800"
                     icon={open ? chevronDownOutline : chevronUpOutline}
+                    className="shrink-0 text-grayscale-500"
                 />
             </button>
             {open && (

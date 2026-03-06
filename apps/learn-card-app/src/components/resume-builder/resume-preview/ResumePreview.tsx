@@ -22,6 +22,7 @@ const ResumePreview = forwardRef<
     const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
+    const hiddenSections = resumeBuilderStore.useTracked.hiddenSections();
 
     const previewCardRef = useRef<HTMLDivElement>(null);
     const { createPDFPreviewUrl, generatePDF } = useResumePdf(previewCardRef);
@@ -72,7 +73,7 @@ const ResumePreview = forwardRef<
                         const entries = [...(credentialEntries[sectionKey] ?? [])].sort(
                             (a, b) => a.index - b.index
                         );
-                        if (!entries.length) return null;
+                        if (!entries.length || hiddenSections?.[sectionKey]) return null;
                         return (
                             <ResumePreviewGroupedCredentialsBlock
                                 key={sectionKey}

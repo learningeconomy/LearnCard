@@ -15,6 +15,7 @@ import {
 export type ResumeBuilderState = {
     personalDetails: PersonalDetails;
     hiddenPersonalDetails: Partial<Record<keyof PersonalDetails, boolean>>;
+    hiddenSections: Partial<Record<ResumeSectionKey, boolean>>;
     currentJobCredentialUri: string | null;
     workExperienceEndDates: Record<string, string>;
     documentSetup: {
@@ -57,6 +58,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     {
         personalDetails: defaultPersonalDetails,
         hiddenPersonalDetails: {},
+        hiddenSections: {},
         currentJobCredentialUri: null,
         workExperienceEndDates: {},
         documentSetup: defaultDocumentSetup,
@@ -91,6 +93,29 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
         const next = { ...prev };
         delete next[key];
         set.hiddenPersonalDetails(next);
+    },
+    setSectionHidden: (section: ResumeSectionKey, hidden: boolean) => {
+        const prev = resumeBuilderStore.get.hiddenSections();
+        if (hidden) {
+            set.hiddenSections({ ...prev, [section]: true });
+            return;
+        }
+
+        const next = { ...prev };
+        delete next[section];
+        set.hiddenSections(next);
+    },
+    toggleSectionHidden: (section: ResumeSectionKey) => {
+        const prev = resumeBuilderStore.get.hiddenSections();
+        const isHidden = Boolean(prev?.[section]);
+        if (!isHidden) {
+            set.hiddenSections({ ...prev, [section]: true });
+            return;
+        }
+
+        const next = { ...prev };
+        delete next[section];
+        set.hiddenSections(next);
     },
     setDocumentSetup: (
         setup: Partial<{
@@ -262,6 +287,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     resetStore: () => {
         set.personalDetails(defaultPersonalDetails);
         set.hiddenPersonalDetails({});
+        set.hiddenSections({});
         set.currentJobCredentialUri(null);
         set.workExperienceEndDates({});
         set.documentSetup(defaultDocumentSetup);
