@@ -505,6 +505,7 @@ const IssueVerifyStep: React.FC<{
     const [selectedTemplateUri, setSelectedTemplateUri] = useState<string>(
         templates[0]?.boostUri || ''
     );
+    const [showTemplateSelector, setShowTemplateSelector] = useState(false);
     const [recipientEmail, setRecipientEmail] = useState('');
 
     // API Token selector state
@@ -755,26 +756,69 @@ else:
             {/* Template Selector */}
             {templates.length > 0 && (
                 <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Credential Template
-                    </label>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                                <Send className="w-5 h-5 text-cyan-600" />
+                            </div>
 
-                    <select
-                        value={selectedTemplateUri}
-                        onChange={(e) => setSelectedTemplateUri(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    >
-                        {templates.map((template) => (
-                            <option key={template.boostUri} value={template.boostUri}>
-                                {template.name || 'Untitled Template'}
-                            </option>
-                        ))}
-                    </select>
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">Credential Template</p>
+
+                                <p className="text-xs text-cyan-700 font-medium">
+                                    {selectedTemplate?.name || 'Untitled Template'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {templates.length > 1 && (
+                            <button
+                                onClick={() => setShowTemplateSelector(!showTemplateSelector)}
+                                className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
+                            >
+                                {showTemplateSelector ? 'Hide' : 'Change'}
+                                {showTemplateSelector ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </button>
+                        )}
+                    </div>
 
                     {selectedTemplate && (
                         <p className="text-xs text-gray-500 mt-2 font-mono truncate">
                             URI: {selectedTemplate.boostUri}
                         </p>
+                    )}
+
+                    {showTemplateSelector && templates.length > 1 && (
+                        <div className="mt-3 pt-3 border-t border-cyan-200 space-y-2">
+                            {templates.map((template) => (
+                                <button
+                                    key={template.boostUri}
+                                    onClick={() => {
+                                        setSelectedTemplateUri(template.boostUri);
+                                        setShowTemplateSelector(false);
+                                    }}
+                                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                                        selectedTemplateUri === template.boostUri
+                                            ? 'bg-cyan-100 border-cyan-300'
+                                            : 'bg-white border-gray-200 hover:border-cyan-300'
+                                    }`}
+                                >
+                                    <div className="text-left">
+                                        <p className="text-sm font-medium text-gray-700">
+                                            {template.name || 'Untitled Template'}
+                                        </p>
+
+                                        <p className="text-xs text-gray-500 font-mono truncate max-w-xs">
+                                            {template.boostUri}
+                                        </p>
+                                    </div>
+
+                                    {selectedTemplateUri === template.boostUri && (
+                                        <CheckCircle2 className="w-5 h-5 text-cyan-600 flex-shrink-0" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
                     )}
                 </div>
             )}

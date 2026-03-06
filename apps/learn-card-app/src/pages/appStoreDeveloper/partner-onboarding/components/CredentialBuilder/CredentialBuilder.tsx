@@ -17,6 +17,7 @@ import {
     Users,
     Layers,
     CheckCircle,
+    CheckCircle2,
     AlertTriangle,
     XCircle,
     Loader2,
@@ -427,6 +428,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
         template.credentialSubject?.achievement?.image?.value,
     ]);
     const [showPresetSelector, setShowPresetSelector] = useState(false);
+    const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
 
     // Toggle section expansion
     const toggleSection = useCallback((section: SectionId) => {
@@ -461,6 +463,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
             }
 
             onChange(newTemplate);
+            setSelectedPresetId(presetId);
             setShowPresetSelector(false);
 
             // Expand relevant sections
@@ -646,10 +649,16 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         <button
                             type="button"
                             onClick={() => setShowPresetSelector(!showPresetSelector)}
-                            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                            className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                selectedPresetId
+                                    ? 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
                         >
                             <Sparkles className="w-4 h-4" />
-                            Templates
+                            {selectedPresetId
+                                ? TEMPLATE_PRESETS.find(p => p.id === selectedPresetId)?.name || 'Templates'
+                                : 'Templates'}
                             <ChevronDown className={`w-4 h-4 transition-transform ${showPresetSelector ? 'rotate-180' : ''}`} />
                         </button>
 
@@ -668,26 +677,37 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                     <div className="max-h-80 overflow-y-auto p-2">
                                         {TEMPLATE_PRESETS.map(preset => {
                                             const IconComponent = PRESET_ICONS[preset.icon] || FileText;
+                                            const isActive = selectedPresetId === preset.id;
 
                                             return (
                                                 <button
                                                     key={preset.id}
                                                     type="button"
                                                     onClick={() => applyPreset(preset.id)}
-                                                    className="w-full flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                                                    className={`w-full flex items-start gap-3 p-2 rounded-lg transition-colors text-left ${
+                                                        isActive
+                                                            ? 'bg-cyan-50 ring-1 ring-cyan-200'
+                                                            : 'hover:bg-gray-50'
+                                                    }`}
                                                 >
-                                                    <div className="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                                        isActive ? 'bg-cyan-200' : 'bg-cyan-100'
+                                                    }`}>
                                                         <IconComponent className="w-4 h-4 text-cyan-600" />
                                                     </div>
 
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium text-gray-800">
+                                                        <p className={`text-sm font-medium ${isActive ? 'text-cyan-800' : 'text-gray-800'}`}>
                                                             {preset.name}
                                                         </p>
                                                         <p className="text-xs text-gray-500 truncate">
                                                             {preset.description}
                                                         </p>
                                                     </div>
+
+                                                    {isActive && (
+                                                        <CheckCircle2 className="w-4 h-4 text-cyan-600 flex-shrink-0 mt-0.5" />
+                                                    )}
                                                 </button>
                                             );
                                         })}
