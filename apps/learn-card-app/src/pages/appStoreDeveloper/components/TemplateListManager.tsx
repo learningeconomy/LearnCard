@@ -281,7 +281,7 @@ if (result.credentialUri) {
                             className={`p-4 rounded-xl border transition-colors ${
                                 editingTemplate?.boostUri === template.boostUri
                                     ? 'border-blue-300 bg-blue-50'
-                                    : selectedTemplateForCode?.boostUri === template.boostUri
+                                    : showCodeSnippets && selectedTemplateForCode?.boostUri === template.boostUri
                                         ? 'border-emerald-300 bg-emerald-50'
                                         : 'border-gray-200 bg-white hover:border-gray-300'
                             }`}
