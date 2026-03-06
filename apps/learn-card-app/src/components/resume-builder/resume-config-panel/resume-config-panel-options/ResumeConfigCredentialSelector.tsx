@@ -38,7 +38,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
     };
 
     return (
-        <div className="border-b border-grayscale-100">
+        <div className="bg-white border border-grayscale-200 rounded-2xl border-b overflow-hidden">
             <button
                 className="w-full flex items-center justify-between px-4 py-3 text-left"
                 onClick={() => setOpen(o => !o)}
