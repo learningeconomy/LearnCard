@@ -21,14 +21,21 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
 }) => {
     if (!isWorkExperienceSection) {
         if (!dateLabel) return null;
-        return <span className="font-medium text-grayscale-600">• {dateLabel}</span>;
+        return (
+            <span className="block sm:inline font-medium text-grayscale-600 leading-tight">
+                • {dateLabel}
+            </span>
+        );
     }
 
     if (!createdAt) return null;
 
     return (
-        <>
-            <span data-pdf-screen-only className="font-medium text-grayscale-600">
+        <div className="flex items-center gap-1">
+            <span
+                data-pdf-screen-only
+                className="block sm:inline font-medium text-grayscale-600 leading-tight"
+            >
                 • {createdAt}
                 {isCurrentJob && ' - Present'}
                 {!isCurrentJob && ' -'}
@@ -38,7 +45,7 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
                     data-pdf-hide
                     type="button"
                     onClick={onOpenInlineDatePicker}
-                    className="inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
+                    className="ml-1 sm:mt-0 inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
                 >
                     <span className="font-medium text-grayscale-900">
                         {formattedEndDate || 'End date'}
@@ -53,7 +60,7 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
             >
                 • {dateLabel || `${createdAt}${isCurrentJob ? ' - Present' : ''}`}
             </span>
-        </>
+        </div>
     );
 };
 

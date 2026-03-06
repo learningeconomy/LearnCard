@@ -134,20 +134,28 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
         <div className="flex items-start gap-3">
             <div className="flex flex-col gap-1 flex-1 min-w-0">
                 {/* ── Locked anchor: title · issuer · date ── */}
-                <p className="gap-1 text-sm flex items-center font-semibold text-grayscale-800">
-                    <span data-pdf-hide className="inline-flex mr-1">
+                <div className="flex items-start gap-1.5 min-w-0">
+                    <span data-pdf-hide className="inline-flex mt-0.5 shrink-0">
                         <TrustedIcon className="w-4 h-4 inline-block" />
                     </span>
-                    {title || 'Credential'}
-                    <ResumePreviewCredentialDateDisplay
-                        isWorkExperienceSection={isWorkExperienceSection}
-                        createdAt={info?.createdAt}
-                        isCurrentJob={isCurrentJob}
-                        formattedEndDate={formattedEndDate}
-                        dateLabel={dateLabel}
-                        onOpenInlineDatePicker={openInlineDatePicker}
-                    />
-                </p>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1">
+                            <span className="text-sm font-semibold text-grayscale-800 leading-tight break-words">
+                                {title || 'Credential'}
+                            </span>
+                            <div className="mt-1 sm:mt-0 min-w-0">
+                                <ResumePreviewCredentialDateDisplay
+                                    isWorkExperienceSection={isWorkExperienceSection}
+                                    createdAt={info?.createdAt}
+                                    isCurrentJob={isCurrentJob}
+                                    formattedEndDate={formattedEndDate}
+                                    dateLabel={dateLabel}
+                                    onOpenInlineDatePicker={openInlineDatePicker}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 {isEditing ? (
                     <>
