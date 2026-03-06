@@ -21,6 +21,7 @@
  */
 
 import type { AuthProviderType } from '../auth-coordinator/types';
+import type { TenantConfig } from './tenantConfig';
 
 export type KeyDerivationProviderType = 'sss' | 'web3auth';
 
@@ -60,6 +61,53 @@ export interface AuthConfig {
     /** Ethereum RPC URL for Web3Auth private key provider (e.g. Infura endpoint) */
     web3AuthRpcTarget: string;
 }
+
+// -----------------------------------------------------------------
+// TenantConfig override bridge
+// -----------------------------------------------------------------
+
+let _authConfigOverrides: Partial<AuthConfig> | null = null;
+
+/**
+ * Populate auth config from a TenantConfig.
+ *
+ * Call this once at app boot, before the auth coordinator initializes.
+ * Values set here take priority over environment variables, so existing
+ * `getAuthConfig()` callers automatically get tenant-aware values without
+ * needing to be refactored.
+ */
+export const setAuthConfigFromTenant = (tenant: TenantConfig): void => {
+    _authConfigOverrides = {
+        authProvider: tenant.auth.provider as AuthProviderType,
+        keyDerivation: tenant.auth.keyDerivation,
+        serverUrl: tenant.auth.sssServerUrl,
+        enableEmailBackupShare: tenant.auth.enableEmailBackupShare,
+        requireEmailForPhoneUsers: tenant.auth.requireEmailForPhoneUsers,
+        web3AuthClientId: tenant.auth.web3Auth?.clientId ?? '',
+        web3AuthNetwork: tenant.auth.web3Auth?.network ?? '',
+        web3AuthVerifierId: tenant.auth.web3Auth?.verifierId ?? '',
+        web3AuthRpcTarget: tenant.auth.web3Auth?.rpcTarget ?? 'https://rpc.ankr.com/eth',
+    };
+};
+
+/**
+ * Set arbitrary partial overrides on the auth config.
+ * Values set here take priority over environment variables.
+ */
+export const setAuthConfigOverrides = (overrides: Partial<AuthConfig>): void => {
+    _authConfigOverrides = { ...(_authConfigOverrides ?? {}), ...overrides };
+};
+
+/**
+ * Clear any overrides — useful for tests.
+ */
+export const clearAuthConfigOverrides = (): void => {
+    _authConfigOverrides = null;
+};
+
+// -----------------------------------------------------------------
+// Environment variable helpers
+// -----------------------------------------------------------------
 
 const getEnvVar = (key: string): string | undefined => {
     // Vite exposes VITE_* env vars from .env files via import.meta.env
@@ -113,32 +161,45 @@ const readEnv = (suffix: string, legacySuffix?: string): string | undefined => {
  */
 export const getAuthConfig = (): AuthConfig => {
     const authProvider: AuthProviderType =
-        readEnv('AUTH_PROVIDER', 'AUTH_PROVIDER') || 'firebase';
+        _authConfigOverrides?.authProvider ??
+        readEnv('AUTH_PROVIDER', 'AUTH_PROVIDER') ?? 'firebase';
 
     const keyDerivationEnv =
-        readEnv('KEY_DERIVATION', 'KEY_DERIVATION_PROVIDER') || 'sss';
+        _authConfigOverrides?.keyDerivation ??
+        readEnv('KEY_DERIVATION', 'KEY_DERIVATION_PROVIDER') ?? 'sss';
 
     const keyDerivation: KeyDerivationProviderType =
         keyDerivationEnv === 'web3auth' ? 'web3auth' : 'sss';
 
     const serverUrl =
-        readEnv('SSS_SERVER_URL', 'SSS_SERVER_URL') || 'http://localhost:5100/api';
+        _authConfigOverrides?.serverUrl ??
+        readEnv('SSS_SERVER_URL', 'SSS_SERVER_URL') ?? 'http://localhost:5100/api';
 
-    const enableEmailBackupShare = readEnv('ENABLE_EMAIL_BACKUP_SHARE', 'ENABLE_EMAIL_BACKUP_SHARE') !== 'false';
+    const enableEmailBackupShareEnv = readEnv('ENABLE_EMAIL_BACKUP_SHARE', 'ENABLE_EMAIL_BACKUP_SHARE');
+    const enableEmailBackupShare =
+        _authConfigOverrides?.enableEmailBackupShare ??
+        (enableEmailBackupShareEnv !== undefined ? enableEmailBackupShareEnv !== 'false' : true);
 
-    const requireEmailForPhoneUsers = readEnv('REQUIRE_EMAIL_FOR_PHONE_USERS', 'REQUIRE_EMAIL_FOR_PHONE_USERS') !== 'false';
+    const requireEmailEnv = readEnv('REQUIRE_EMAIL_FOR_PHONE_USERS', 'REQUIRE_EMAIL_FOR_PHONE_USERS');
+    const requireEmailForPhoneUsers =
+        _authConfigOverrides?.requireEmailForPhoneUsers ??
+        (requireEmailEnv !== undefined ? requireEmailEnv !== 'false' : true);
 
     const web3AuthClientId =
-        readEnv('WEB3AUTH_CLIENT_ID', 'WEB3AUTH_CLIENT_ID') || '';
+        _authConfigOverrides?.web3AuthClientId ??
+        readEnv('WEB3AUTH_CLIENT_ID', 'WEB3AUTH_CLIENT_ID') ?? '';
 
     const web3AuthNetwork =
-        readEnv('WEB3AUTH_NETWORK', 'WEB3AUTH_NETWORK') || '';
+        _authConfigOverrides?.web3AuthNetwork ??
+        readEnv('WEB3AUTH_NETWORK', 'WEB3AUTH_NETWORK') ?? '';
 
     const web3AuthVerifierId =
-        readEnv('WEB3AUTH_VERIFIER_ID', 'WEB3AUTH_VERIFIER_ID') || '';
+        _authConfigOverrides?.web3AuthVerifierId ??
+        readEnv('WEB3AUTH_VERIFIER_ID', 'WEB3AUTH_VERIFIER_ID') ?? '';
 
     const web3AuthRpcTarget =
-        readEnv('WEB3AUTH_RPC_TARGET', 'WEB3AUTH_RPC_TARGET') || 'https://rpc.ankr.com/eth';
+        _authConfigOverrides?.web3AuthRpcTarget ??
+        readEnv('WEB3AUTH_RPC_TARGET', 'WEB3AUTH_RPC_TARGET') ?? 'https://rpc.ankr.com/eth';
 
     return {
         authProvider,

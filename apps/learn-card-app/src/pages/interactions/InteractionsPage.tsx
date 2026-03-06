@@ -22,6 +22,7 @@ import {
     alertCircleOutline,
     informationCircleOutline,
 } from 'ionicons/icons';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 
 const InteractionsPage: React.FC = () => {
     const location = useLocation();
@@ -36,7 +37,7 @@ const InteractionsPage: React.FC = () => {
 
         const currentPath = location.pathname;
         const currentSearch = location.search;
-        const appURL = IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:8888';
+        const appURL = getAppBaseUrl();
         const fullUrl = `${appURL}${currentPath}${currentSearch}`;
 
         const queryParams = new URLSearchParams(currentSearch);

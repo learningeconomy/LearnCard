@@ -1,3 +1,6 @@
+import type { TenantBrandingConfig } from '../../config/tenantConfig';
+import { getHeaderTextColor as getHeaderTextColorFromConfig } from '../../config/brandingHelpers';
+
 // Note: tab routes must include leading slash
 export const lcRoutes = {
     // tab1: "/home",
@@ -102,8 +105,16 @@ export const getScoutPassBrandingColors = (path: string = '/') => {
 
 export const getHeaderBrandingColor = (
     branding: BrandingEnum = BrandingEnum.learncard,
-    path: string = '/'
+    path: string = '/',
+    tenantBranding?: TenantBrandingConfig
 ) => {
+    // Data-driven path: if tenant branding config provides headerTextColors, use it
+    if (tenantBranding) {
+        const override = getHeaderTextColorFromConfig(tenantBranding, path);
+
+        if (override) return override;
+    }
+
     if (branding === BrandingEnum.metaversity) {
         return getMetaversityHeaderBrandingColors(path);
     }

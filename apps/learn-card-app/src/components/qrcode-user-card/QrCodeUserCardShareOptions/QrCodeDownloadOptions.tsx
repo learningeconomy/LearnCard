@@ -4,6 +4,7 @@ import { Media } from '@capacitor-community/media';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 
 import { useModal, useWallet, useIsCurrentUserLCNUser } from 'learn-card-base';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
 
 import { IonSpinner } from '@ionic/react';
@@ -204,9 +205,7 @@ const QrCodeUserCardShareOptions: React.FC<{
     let link = `learncard.app/connect?connect=true&did=${walletDid}`;
 
     if (contractUri) {
-        link = `${
-            IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
-        }/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
+        link = `${getAppBaseUrl()}/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
     }
 
     if (overrideShareLink) {

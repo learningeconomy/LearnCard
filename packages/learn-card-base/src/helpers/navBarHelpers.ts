@@ -1,6 +1,15 @@
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import type { TenantBrandingConfig } from '../config/tenantConfig';
+import { getNavBarColorOverride } from '../config/brandingHelpers';
 
-export const getNavBarColor = (path?: string, branding?: BrandingEnum): string => {
+export const getNavBarColor = (path?: string, branding?: BrandingEnum, tenantBranding?: TenantBrandingConfig): string => {
+    // Data-driven path: if tenant branding config provides a navBarColors override, use it
+    if (tenantBranding && path) {
+        const override = getNavBarColorOverride(tenantBranding, path);
+
+        if (override) return override;
+    }
+
     if (branding === BrandingEnum.scoutPass) {
         if (path === '/currencies' || path === '/socialBadges' || path === '/badges') {
             return 'bg-sp-purple-lighter';

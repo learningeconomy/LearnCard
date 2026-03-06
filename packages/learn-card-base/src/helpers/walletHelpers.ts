@@ -10,11 +10,7 @@ import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
 import { isPlatformWeb } from 'learn-card-base/helpers/platformHelpers';
 import { requireCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
-import {
-    LCA_API_ENDPOINT,
-    LEARNCLOUD_URL,
-    LEARNCARD_NETWORK_URL,
-} from 'learn-card-base/constants/Networks';
+import { LEARNCARD_NETWORK_URL } from 'learn-card-base/constants/Networks';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { QueryClient } from '@tanstack/react-query';
 
@@ -52,15 +48,10 @@ export const getBespokeLearnCard = async (
 
     let network: string | boolean = networkStore.get.networkUrl();
     if (!network || network === LEARNCARD_NETWORK_URL) network = true;
-    if (LCN_URL) network = LCN_URL;
 
-    let cloudUrl = networkStore.get.cloudUrl();
-    if (!cloudUrl) cloudUrl = LEARNCLOUD_URL;
-    if (CLOUD_URL) cloudUrl = CLOUD_URL;
+    const cloudUrl = networkStore.get.cloudUrl();
 
-    let apiEndpoint = networkStore.get.apiEndpoint();
-    if (!apiEndpoint) apiEndpoint = LCA_API_ENDPOINT;
-    if (API_URL) apiEndpoint = API_URL;
+    const apiEndpoint = networkStore.get.apiEndpoint();
 
     const networkLearnCard = await initLearnCard({
         seed,
