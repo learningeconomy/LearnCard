@@ -45,25 +45,26 @@ export const ResumeConfigCredentialSelector: React.FC<{
     return (
         <div className="bg-white border border-grayscale-200 rounded-2xl border-b overflow-hidden">
             <button
-                className="w-full flex items-center justify-between px-4 py-4 text-left"
+                className="w-full flex items-center justify-between px-4 py-4 text-left border-b border-solid border-[1px] border-grayscale-200"
                 onClick={() => setOpen(!open)}
             >
                 <div className="flex flex-col items-center">
-                    <div className="flex items-center justify-start gap-2">
+                    <div className="flex items-start justify-start gap-2">
                         <div onClick={e => e.stopPropagation()} className="shrink-0">
                             <ResumeBuilderToggle
                                 checked={isSectionVisible}
                                 onChange={checked => setSectionHidden(sectionKey, !checked)}
                             />
                         </div>
-                        <span className="block text-[18px] leading-none font-medium text-grayscale-900">
-                            {label}
-                        </span>
+                        <div className="flex-1 flex flex-col gap-2">
+                            <span className="block text-[18px] leading-none font-medium text-grayscale-900">
+                                {label}
+                            </span>
+                            <span className="block text-xs font-semibold text-grayscale-600">
+                                {selectedCount} Selected • {statusLabel}
+                            </span>
+                        </div>
                     </div>
-
-                    <span className="block text-xs font-semibold text-grayscale-600">
-                        {selectedCount} Selected • {statusLabel}
-                    </span>
                 </div>
                 <IonIcon
                     color="grayscale-800"
@@ -82,7 +83,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
                         </p>
                     )}
                     {!isLoading && records.length > 0 && (
-                        <div className="relative px-4">
+                        <div className="relative px-4 pt-4">
                             <Swiper
                                 onSwiper={swiper => {
                                     swiperRef.current = swiper;
