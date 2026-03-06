@@ -3,7 +3,7 @@ import React, { useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import ResumePreviewUserInfo from './ResumePreviewUserInfo';
 import ResumePreviewEmptyPlaceholder from './ResumePreviewEmptyPlaceholder';
 import ResumePreviewGroupedCredentialsBlock from './ResumePreviewGroupedCredentialsBlock';
-import useResumePdf from './useResumePdf';
+import useResumePdf, { ResumePdfPreviewData } from './useResumePdf';
 
 import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
@@ -11,7 +11,7 @@ import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 const LETTER_HEIGHT_PX = 1056; // US Letter at 96 DPI
 
 export type ResumePreviewHandle = {
-    createPDFPreviewUrl: () => Promise<string | null>;
+    createPDFPreviewUrl: () => Promise<ResumePdfPreviewData | null>;
     generatePDF: () => Promise<void>;
 };
 

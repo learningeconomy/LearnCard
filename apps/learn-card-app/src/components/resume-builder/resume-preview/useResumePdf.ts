@@ -6,6 +6,12 @@ import type { jsPDF as JsPDFType } from 'jspdf';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 const RESUME_PDF_WIDTH_PX = 760;
 
+export type ResumePdfPreviewData = {
+    fileName: string;
+    pageCount: number;
+    url: string;
+};
+
 const toPdfFileName = (raw?: string): string => {
     const trimmed = (raw || '').trim();
     if (!trimmed) return 'resume.pdf';
@@ -30,7 +36,7 @@ const savePdfToNativeDocuments = async (
 export const useResumePdf = (
     previewCardRef: RefObject<HTMLDivElement>
 ): {
-    createPDFPreviewUrl: () => Promise<string | null>;
+    createPDFPreviewUrl: () => Promise<ResumePdfPreviewData | null>;
     generatePDF: () => Promise<void>;
 } => {
     const buildPDF = useCallback(async (): Promise<JsPDFType | null> => {
@@ -170,10 +176,10 @@ export const useResumePdf = (
         }
     }, [previewCardRef]);
 
-    const createPDFPreviewUrl = useCallback(async (): Promise<string | null> => {
+    const createPDFPreviewUrl = useCallback(async (): Promise<ResumePdfPreviewData | null> => {
         const pdf = await buildPDF();
         if (!pdf) return null;
-        const fileName = resumeBuilderStore.get.documentSetup()?.fileName;
+        const fileName = toPdfFileName(resumeBuilderStore.get.documentSetup()?.fileName);
 
         if (Capacitor.isNativePlatform()) {
             await savePdfToNativeDocuments(
@@ -185,7 +191,11 @@ export const useResumePdf = (
         }
 
         const blob = pdf.output('blob');
-        return URL.createObjectURL(blob);
+        return {
+            fileName,
+            pageCount: pdf.getNumberOfPages(),
+            url: URL.createObjectURL(blob),
+        };
     }, [buildPDF]);
 
     const generatePDF = useCallback(async (): Promise<void> => {

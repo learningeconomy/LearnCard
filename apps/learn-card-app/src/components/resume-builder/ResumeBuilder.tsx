@@ -9,6 +9,7 @@ import ResumePreview, { ResumePreviewHandle } from './resume-preview/ResumePrevi
 import ResumeConfigOverlayPanel from './resume-config-panel/ResumeConfigOverlayPanel';
 import ResumeConfigDesktopSidePanel from './resume-config-panel/ResumeConfigDesktopSidePanel';
 import ResumeBuilderHeader, { ResumeBuilderHeaderAction } from './ResumeBuilderHeader';
+import { ResumePdfPreviewData } from './resume-preview/useResumePdf';
 
 import { useDeviceTypeByWidth, useModal, ModalTypes } from 'learn-card-base';
 import { useResumePreselection } from './useResumePreselection';
@@ -24,7 +25,7 @@ export const ResumeBuilder: React.FC = () => {
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false); // Mobile drawer
 
     const [isPreviewing, setIsPreviewing] = useState<boolean>(false);
-    const [inlinePreviewUrl, setInlinePreviewUrl] = useState<string | null>(null);
+    const [inlinePreview, setInlinePreview] = useState<ResumePdfPreviewData | null>(null);
 
     const [loadingAction, setLoadingAction] = useState<ResumeBuilderHeaderAction>(null);
 
@@ -32,11 +33,11 @@ export const ResumeBuilder: React.FC = () => {
         if (loadingAction) return;
         setLoadingAction('preview');
         try {
-            const nextUrl = await resumePreviewRef.current?.createPDFPreviewUrl();
-            if (nextUrl) {
-                setInlinePreviewUrl(prevUrl => {
-                    if (prevUrl) URL.revokeObjectURL(prevUrl);
-                    return nextUrl;
+            const nextPreview = await resumePreviewRef.current?.createPDFPreviewUrl();
+            if (nextPreview) {
+                setInlinePreview(prevPreview => {
+                    if (prevPreview?.url) URL.revokeObjectURL(prevPreview.url);
+                    return nextPreview;
                 });
             }
         } finally {
@@ -70,13 +71,13 @@ export const ResumeBuilder: React.FC = () => {
 
     useEffect(() => {
         return () => {
-            if (inlinePreviewUrl) URL.revokeObjectURL(inlinePreviewUrl);
+            if (inlinePreview?.url) URL.revokeObjectURL(inlinePreview.url);
         };
-    }, [inlinePreviewUrl]);
+    }, [inlinePreview]);
 
     const closeInlinePreview = useCallback(() => {
-        setInlinePreviewUrl(prevUrl => {
-            if (prevUrl) URL.revokeObjectURL(prevUrl);
+        setInlinePreview(prevPreview => {
+            if (prevPreview?.url) URL.revokeObjectURL(prevPreview.url);
             return null;
         });
     }, []);
@@ -100,7 +101,7 @@ export const ResumeBuilder: React.FC = () => {
                 </div>
             </div>
 
-            <ResumeIframePreview previewUrl={inlinePreviewUrl} onClose={closeInlinePreview} />
+            <ResumeIframePreview preview={inlinePreview} onClose={closeInlinePreview} />
 
             {/* ── Desktop side panel ── */}
             {!isMobile && (
