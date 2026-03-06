@@ -18,23 +18,23 @@ export const renderSkillPage = (data: SkillRenderData): string => {
     const title = `${skill.statement} | ${framework.name}`;
     const description = skill.description || `Explore the ${skill.statement} skill in the ${framework.name} framework.`;
     
-    const brand = process.env.APP_BRAND || 'scouts';
-    const appUrl = brand === 'lca' 
-        ? `https://learncard.com/frameworks/${framework.id}/skills/${skill.id}`
-        : `https://scoutnetwork.org/frameworks/${framework.id}/skills/${skill.id}`;
+    const domain = process.env.DOMAIN_NAME || 'scoutnetwork.org';
+    const isScouts = domain.includes('scout');
+    const sanitizedDomain = domain.replace(/^https?:\/\//, '');
+    const skillUrl = `https://${sanitizedDomain}/frameworks/${framework.id}/skills/${skill.id}`;
 
-    let theme = {
-        bgColor: '#5b2994',
-        cardBg: '#ffffff',
-        primary: '#5b2994',
-        text: '#000000',
-        textMuted: '#666666',
-        logoUrl: 'https://cdn.filestackcontent.com/bVO0X4JITFypGBTNSOjE', // Scouts Logo
-        logoAlt: 'ScoutPass'
-    };
 
-    if (brand === 'lca') {
-        theme = {
+    const theme = isScouts
+        ? {
+            bgColor: '#5b2994',
+            cardBg: '#ffffff',
+            primary: '#5b2994',
+            text: '#000000',
+            textMuted: '#666666',
+            logoUrl: 'https://cdn.filestackcontent.com/bVO0X4JITFypGBTNSOjE', // Scouts Logo
+            logoAlt: 'ScoutPass'
+        }
+        : {
             bgColor: '#00ba88',
             cardBg: '#ffffff',
             primary: '#00ba88',
@@ -43,7 +43,6 @@ export const renderSkillPage = (data: SkillRenderData): string => {
             logoUrl: 'https://cdn.filestackcontent.com/S2N8iyiaQNaRPiqijnq7', // LCA Logo
             logoAlt: 'LearnCard'
         };
-    }
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -56,7 +55,7 @@ export const renderSkillPage = (data: SkillRenderData): string => {
     <meta property="og:title" content="${title}">
     <meta property="og:description" content="${description}">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="${appUrl}">
+    <meta property="og:url" content="${skillUrl}">
     <meta property="og:image" content="https://network.learncard.com/assets/icon/icon.png">
     
     <!-- Twitter -->
