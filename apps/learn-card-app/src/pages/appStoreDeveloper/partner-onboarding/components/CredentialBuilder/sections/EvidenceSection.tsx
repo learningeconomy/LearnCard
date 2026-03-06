@@ -5,13 +5,14 @@
 import React from 'react';
 import { FileCheck, Plus, X } from 'lucide-react';
 
-import { 
-    OBv3CredentialTemplate, 
-    EvidenceTemplate, 
-    TemplateFieldValue, 
+import {
+    OBv3CredentialTemplate,
+    EvidenceTemplate,
+    TemplateFieldValue,
     staticField,
 } from '../types';
 import { FieldEditor, CollapsibleSection } from '../FieldEditor';
+import { FieldValidationError, getFieldError } from '../utils';
 
 interface EvidenceSectionProps {
     template: OBv3CredentialTemplate;
@@ -19,6 +20,7 @@ interface EvidenceSectionProps {
     isExpanded: boolean;
     onToggle: () => void;
     disableDynamicFields?: boolean;
+    validationErrors?: FieldValidationError[];
 }
 
 export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
@@ -27,6 +29,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
     isExpanded,
     onToggle,
     disableDynamicFields = false,
+    validationErrors = [],
 }) => {
     const evidence = template.credentialSubject.evidence || [];
 
@@ -121,6 +124,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                                 helpText="Link to the evidence artifact (webpage, file, portfolio)"
                                 type="url"
                                 showDynamicToggle={!disableDynamicFields}
+                                error={getFieldError(validationErrors, `evidence.${index}.evidenceUrl`)}
                             />
 
                             <FieldEditor

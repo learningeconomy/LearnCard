@@ -883,6 +883,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             isExpanded={expandedSections.has('evidence')}
                             onToggle={() => toggleSection('evidence')}
                             disableDynamicFields={disableDynamicFields}
+                            validationErrors={validationErrors}
                         />
 
                         <DatesSection

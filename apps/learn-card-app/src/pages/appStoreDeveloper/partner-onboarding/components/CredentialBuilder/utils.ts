@@ -932,6 +932,17 @@ export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidat
         }
     }
 
+    // Evidence URL must be a valid URI (JSON-LD @id field)
+    const evidenceItems = template.credentialSubject.evidence || [];
+    for (let i = 0; i < evidenceItems.length; i++) {
+        const e = evidenceItems[i];
+        if (e.evidenceUrl?.value && !e.evidenceUrl.isDynamic) {
+            if (!/^https?:\/\//i.test(e.evidenceUrl.value) && !/^urn:/i.test(e.evidenceUrl.value)) {
+                errors.push({ field: `evidence.${i}.evidenceUrl`, message: 'Must be a valid URL (e.g., https://example.com)' });
+            }
+        }
+    }
+
     return errors;
 };
 
