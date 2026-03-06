@@ -4,6 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import type { jsPDF as JsPDFType } from 'jspdf';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
+
 const RESUME_PDF_WIDTH_PX = 760;
 
 export type ResumePdfPreviewData = {
@@ -31,6 +32,27 @@ const savePdfToNativeDocuments = async (
         directory: Directory.Documents,
     });
     alert(successMessage);
+};
+
+const savePdfToNativeFile = async (
+    pdf: JsPDFType,
+    fileName?: string
+): Promise<{ fileName: string; uri: string }> => {
+    const pdfData = pdf.output('datauristring').split(',')[1];
+    const safeFileName = toPdfFileName(fileName);
+
+    await Filesystem.writeFile({
+        path: safeFileName,
+        data: pdfData,
+        directory: Directory.Documents,
+    });
+
+    const { uri } = await Filesystem.getUri({
+        path: safeFileName,
+        directory: Directory.Documents,
+    });
+
+    return { fileName: safeFileName, uri };
 };
 
 export const useResumePdf = (
@@ -180,20 +202,22 @@ export const useResumePdf = (
         const pdf = await buildPDF();
         if (!pdf) return null;
         const fileName = toPdfFileName(resumeBuilderStore.get.documentSetup()?.fileName);
+        const pageCount = pdf.getNumberOfPages();
 
         if (Capacitor.isNativePlatform()) {
-            await savePdfToNativeDocuments(
-                pdf,
-                'Preview is not available on this device. Resume saved to Documents.',
-                fileName
-            );
-            return null;
+            const nativeFile = await savePdfToNativeFile(pdf, fileName);
+
+            return {
+                fileName: nativeFile.fileName,
+                pageCount,
+                url: Capacitor.convertFileSrc(nativeFile.uri),
+            };
         }
 
         const blob = pdf.output('blob');
         return {
             fileName,
-            pageCount: pdf.getNumberOfPages(),
+            pageCount,
             url: URL.createObjectURL(blob),
         };
     }, [buildPDF]);
