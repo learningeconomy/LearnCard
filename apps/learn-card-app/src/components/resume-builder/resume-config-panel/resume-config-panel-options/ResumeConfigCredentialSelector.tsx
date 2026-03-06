@@ -2,12 +2,12 @@ import React, { useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 
 import BoostEarnedCard from '../../../boost/boost-earned-card/BoostEarnedCard';
-import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
+import { chevronDownOutline, chevronUpOutline, searchOutline } from 'ionicons/icons';
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
 import SlimCaretLeft from '../../../svgs/SlimCaretLeft';
 import { IonIcon } from '@ionic/react';
 
-import { useGetCredentialList } from 'learn-card-base';
+import { useGetCredentials } from 'learn-card-base';
 import { ResumeSectionKey } from '../../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../../stores/resumeBuilderStore';
 import ResumeBuilderToggle from '../../ResumeBuilderToggle';
@@ -21,6 +21,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
     const swiperRef = useRef<any>(null);
 
     const [open, setOpen] = useState<boolean>(false);
+    const [searchQuery, setSearchQuery] = useState<string>('');
 
     const [atBeginning, setAtBeginning] = useState<boolean>(true);
     const [atEnd, setAtEnd] = useState<boolean>(false);
@@ -32,9 +33,36 @@ export const ResumeConfigCredentialSelector: React.FC<{
     const selected = (credentialEntries[sectionKey] ?? []).map(e => e.uri);
     const isSectionVisible = !hiddenSections?.[sectionKey];
 
-    const { data: credentialPages, isLoading } = useGetCredentialList(sectionKey as any);
+    const { data: credentialResults, isLoading } = useGetCredentials(
+        sectionKey as any,
+        undefined,
+        true
+    );
 
-    const records = credentialPages?.pages?.flatMap(page => page?.records ?? []) ?? [];
+    console.log(`credentialResults::${sectionKey}`, credentialResults);
+
+    const records = (credentialResults as Array<{ vc: any; uri?: string }> | undefined) ?? [];
+    const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+
+    const filteredRecords = records.filter(record => {
+        if (!normalizedSearchQuery) return true;
+
+        const credentialSubject = record?.vc?.credentialSubject as Record<string, any> | undefined;
+        const boost = record?.vc?.boostCredential;
+
+        const searchableText = [
+            boost?.name,
+            record?.vc?.name,
+            credentialSubject?.name,
+            credentialSubject?.title,
+            credentialSubject?.achievement?.name,
+        ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+
+        return searchableText.includes(normalizedSearchQuery);
+    });
     const selectedCount = selected.length;
     const statusLabel = isSectionVisible ? 'On' : 'Off';
     const handleSwiperUpdate = (swiper: any) => {
@@ -74,15 +102,37 @@ export const ResumeConfigCredentialSelector: React.FC<{
             </button>
             {open && (
                 <div className="pb-4">
+                    <div className="px-4 pt-4">
+                        <div className="flex items-center gap-3 rounded-2xl bg-grayscale-100 px-4 py-3">
+                            <IonIcon
+                                icon={searchOutline}
+                                className="h-5 w-5 shrink-0 text-grayscale-500"
+                            />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                placeholder={label}
+                                className="w-full bg-transparent text-sm text-grayscale-800 placeholder:text-grayscale-500 outline-none"
+                            />
+                        </div>
+                    </div>
                     {isLoading && (
-                        <p className="text-xs text-grayscale-400 px-4 mb-2">Loading credentials…</p>
+                        <p className="text-xs text-grayscale-400 px-4 mt-4 mb-2">
+                            Loading credentials...
+                        </p>
                     )}
                     {!isLoading && records.length === 0 && (
-                        <p className="text-xs text-grayscale-400 px-4 mb-2">
+                        <p className="text-xs text-grayscale-400 px-4 mt-4 mb-2">
                             No credentials in this category.
                         </p>
                     )}
-                    {!isLoading && records.length > 0 && (
+                    {!isLoading && records.length > 0 && filteredRecords.length === 0 && (
+                        <p className="text-xs text-grayscale-400 px-4 mt-4 mb-2">
+                            No credentials match "{searchQuery.trim()}".
+                        </p>
+                    )}
+                    {!isLoading && filteredRecords.length > 0 && (
                         <div className="relative px-4 pt-4">
                             <Swiper
                                 onSwiper={swiper => {
@@ -105,9 +155,9 @@ export const ResumeConfigCredentialSelector: React.FC<{
                                 preventClicksPropagation={false}
                                 style={{ overflow: 'visible' }}
                             >
-                                {records.map((record, index) => {
+                                {filteredRecords.map((record, index) => {
                                     const isSelected = selected.includes(record.uri);
-                                    const boostCategory = record.category as any;
+                                    const boostCategory = sectionKey as any;
 
                                     return (
                                         <SwiperSlide
@@ -116,7 +166,8 @@ export const ResumeConfigCredentialSelector: React.FC<{
                                             className={`cursor-pointer transition-opacity`}
                                         >
                                             <BoostEarnedCard
-                                                record={record}
+                                                credential={record.vc}
+                                                record={{ uri: record.uri }}
                                                 categoryType={boostCategory}
                                                 sizeLg={12}
                                                 sizeMd={12}
@@ -146,7 +197,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
                                 </button>
                             )}
 
-                            {(!atBeginning || records.length > 2) && (
+                            {(!atBeginning || filteredRecords.length > 2) && (
                                 <button
                                     onClick={() => swiperRef.current?.slideNext()}
                                     aria-label="Next credential"
