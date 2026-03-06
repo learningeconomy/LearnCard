@@ -19,7 +19,7 @@ export const renderSkillPage = (data: SkillRenderData): string => {
     const description = skill.description || `Explore the ${skill.statement} skill in the ${framework.name} framework.`;
     
     const clientDomain = process.env.CLIENT_APP_DOMAIN_NAME || 'scoutnetwork.org';
-    const isScouts = clientDomain.includes('scout');
+    const isScouts = clientDomain.toLowerCase().includes('scout');
     const sanitizedDomain = clientDomain.replace(/^https?:\/\//, '');
     const appUrl = `https://${sanitizedDomain}`;
 
