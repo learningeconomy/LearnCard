@@ -245,7 +245,7 @@ registerKeyDerivationFactory('web3auth', () => {
         verifier: web3AuthVerifierId,
         chainConfig: web3AuthRpcTarget ? { rpcTarget: web3AuthRpcTarget } : undefined,
     });
-});
+}); 
 
 registerAuthProviderFactory('firebase', () =>
     createFirebaseAuthProvider({
