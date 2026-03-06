@@ -64,7 +64,7 @@ export const ResumeBuilderHeader: React.FC<{
                             <span className={isMobile ? 'sr-only' : ''}>Download PDF</span>
                         )}
                     </button>
-                    <button
+                    {/* <button
                         className={`inline-flex items-center gap-2 h-9 rounded-full border border-solid border-grayscale-200 bg-white text-grayscale-600 font-semibold text-sm ${
                             isMobile ? 'w-9 justify-center px-0' : 'px-4'
                         }`}
@@ -72,7 +72,7 @@ export const ResumeBuilderHeader: React.FC<{
                     >
                         <ShareIcon className="w-5 h-5" />
                         <span className={isMobile ? 'sr-only' : ''}>Share</span>
-                    </button>
+                    </button> */}
                     <button
                         className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-grayscale-200 bg-white text-grayscale-500"
                         aria-label="More options (coming soon)"
