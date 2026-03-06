@@ -118,8 +118,7 @@ const FullApp: React.FC = () => {
                                 <AppUrlListener />
                                 <PushNotificationListener />
                                 <PresentVcModalListener />
-                                {/* <UserProfileSetupListener loading={initLoading} /> */}
-                                <AppRouter initLoading={initLoading} />
+                                <AppRouter />
                                 <QRCodeScannerListener />
                                 {showScannerOverlay && <QRCodeScannerOverlay />}
                                 <AuthKeyDebugWidget />
