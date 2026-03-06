@@ -859,41 +859,58 @@ export const extractDynamicVariables = (template: OBv3CredentialTemplate): strin
 };
 
 /**
- * Validate a template and return any errors
+ * A field-level validation error with a path identifier for inline display
  */
-export const validateTemplate = (template: OBv3CredentialTemplate): string[] => {
-    const errors: string[] = [];
+export interface FieldValidationError {
+    /** Dot-path identifying the field, e.g. 'achievement.name', 'achievement.criteria.id' */
+    field: string;
+    /** Human-readable error message */
+    message: string;
+}
+
+/**
+ * Validate a template and return field-level errors
+ */
+export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidationError[] => {
+    const errors: FieldValidationError[] = [];
 
     if (!template.name.value && !template.name.isDynamic) {
-        errors.push('Credential name is required');
+        errors.push({ field: 'name', message: 'Credential name is required' });
     }
 
     // Issuer name is optional — derived from wallet profile at issuance time
 
     if (!template.credentialSubject.achievement.name.value && !template.credentialSubject.achievement.name.isDynamic) {
-        errors.push('Achievement name is required');
+        errors.push({ field: 'achievement.name', message: 'Achievement name is required' });
     }
 
     // Criteria ID must be a valid URI (JSON-LD @id field)
     const criteriaId = template.credentialSubject.achievement.criteria?.id;
     if (criteriaId?.value && !criteriaId.isDynamic) {
         if (!/^https?:\/\//i.test(criteriaId.value) && !/^urn:/i.test(criteriaId.value)) {
-            errors.push('Criteria URL must be a valid URL (e.g., https://example.com)');
+            errors.push({ field: 'achievement.criteria.id', message: 'Must be a valid URL (e.g., https://example.com)' });
         }
     }
 
     // Alignment targetUrl must be a valid URI (JSON-LD @id field)
     const alignments = template.credentialSubject.achievement.alignment || [];
-    for (const a of alignments) {
+    for (let i = 0; i < alignments.length; i++) {
+        const a = alignments[i];
         if (a.targetUrl?.value && !a.targetUrl.isDynamic) {
             if (!/^https?:\/\//i.test(a.targetUrl.value) && !/^urn:/i.test(a.targetUrl.value)) {
-                errors.push('Alignment Target URL must be a valid URL (e.g., https://example.com)');
-                break;
+                errors.push({ field: `achievement.alignment.${i}.targetUrl`, message: 'Must be a valid URL (e.g., https://example.com)' });
             }
         }
     }
 
     return errors;
+};
+
+/**
+ * Get the error message for a specific field from validation errors
+ */
+export const getFieldError = (errors: FieldValidationError[], field: string): string | undefined => {
+    return errors.find(e => e.field === field)?.message;
 };
 
 /**

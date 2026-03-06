@@ -747,18 +747,6 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                 </div>
             )}
 
-            {/* Validation Errors */}
-            {validationErrors.length > 0 && activeTab === 'builder' && template.schemaType === 'obv3' && (
-                <div className="px-4 py-3 bg-red-50 border-b border-red-300">
-                    <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                        <p className="text-sm text-red-700 font-medium">
-                            Missing required fields: {validationErrors.join(', ')}
-                        </p>
-                    </div>
-                </div>
-            )}
-
             {/* Issuance Validation Error Panel */}
             {validationStatus === 'invalid' && analyzedError && (
                 <div className="px-4 py-3 bg-red-50 border-b border-red-200">
@@ -886,6 +874,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             isExpanded={expandedSections.has('achievement')}
                             onToggle={() => toggleSection('achievement')}
                             disableDynamicFields={disableDynamicFields}
+                            validationErrors={validationErrors}
                         />
 
                         <EvidenceSection

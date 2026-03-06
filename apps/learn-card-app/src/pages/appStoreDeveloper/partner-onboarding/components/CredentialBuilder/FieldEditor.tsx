@@ -22,6 +22,8 @@ interface FieldEditorProps {
     disabled?: boolean;
     showDynamicToggle?: boolean;
     enableFileUpload?: boolean;
+    /** Inline validation error message shown beneath the field */
+    error?: string;
 }
 
 export const FieldEditor: React.FC<FieldEditorProps> = ({
@@ -36,9 +38,14 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
     disabled = false,
     showDynamicToggle = true,
     enableFileUpload = false,
+    error,
 }) => {
     const [showHelp, setShowHelp] = useState(false);
     const [customVarName, setCustomVarName] = useState(false);
+    const [touched, setTouched] = useState(false);
+
+    // Only show the error visually after the user has interacted with the field
+    const showError = error && touched;
 
     // Use refs to avoid stale closures in async callbacks (like file upload)
     const fieldRef = useRef(field);
@@ -83,9 +90,11 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
 
     const renderInput = () => {
         const baseClasses = `w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors ${
-            field.isDynamic 
-                ? 'border-violet-300 bg-violet-50 focus:ring-2 focus:ring-violet-500 focus:border-violet-500' 
-                : 'border-gray-200 bg-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500'
+            showError
+                ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500 focus:border-red-500'
+                : field.isDynamic
+                    ? 'border-violet-300 bg-violet-50 focus:ring-2 focus:ring-violet-500 focus:border-violet-500'
+                    : 'border-gray-200 bg-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`;
 
         if (type === 'select' && options) {
@@ -97,6 +106,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                     <select
                         value={isValid ? field.value : ''}
                         onChange={(e) => handleValueChange(e.target.value)}
+                        onBlur={() => setTouched(true)}
                         disabled={disabled}
                         className={baseClasses}
                     >
@@ -121,6 +131,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                 <textarea
                     value={field.value}
                     onChange={(e) => handleValueChange(e.target.value)}
+                    onBlur={() => setTouched(true)}
                     placeholder={field.isDynamic ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}` : placeholder}
                     disabled={disabled}
                     rows={3}
@@ -139,6 +150,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                             type={type}
                             value={field.value}
                             onChange={(e) => handleValueChange(e.target.value)}
+                            onBlur={() => setTouched(true)}
                             placeholder={field.isDynamic ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}` : placeholder}
                             disabled={disabled}
                             className={`${baseClasses} flex-1`}
@@ -179,6 +191,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                 type={type}
                 value={field.value}
                 onChange={(e) => handleValueChange(e.target.value)}
+                onBlur={() => setTouched(true)}
                 placeholder={field.isDynamic ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}` : placeholder}
                 disabled={disabled}
                 className={baseClasses}
@@ -280,6 +293,10 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             )}
 
             {renderInput()}
+
+            {showError && (
+                <p className="text-xs text-red-600 mt-1">{error}</p>
+            )}
 
             {field.isDynamic && (
                 <div className="flex items-center gap-2 mt-1">

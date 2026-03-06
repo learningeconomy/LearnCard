@@ -471,7 +471,7 @@ if (result.credentialUri) {
                                     <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
                                         <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                                         <p className="text-xs text-red-700">
-                                            {structuralErrors.join('. ')}
+                                            {structuralErrors.map(e => e.message).join('. ')}
                                         </p>
                                     </div>
                                 )}

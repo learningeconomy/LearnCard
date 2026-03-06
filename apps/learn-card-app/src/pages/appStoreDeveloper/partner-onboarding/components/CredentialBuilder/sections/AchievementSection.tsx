@@ -6,15 +6,16 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Trophy, Plus, X, ChevronDown, Folder } from 'lucide-react';
 import { constructCustomBoostType, isCustomBoostType, getCategoryTypeFromCustomType, getAchievementTypeFromCustomType, replaceUnderscoresWithWhiteSpace } from 'learn-card-base/helpers/boostCustomTypeHelpers';
 
-import { 
-    OBv3CredentialTemplate, 
-    AchievementTemplate, 
-    TemplateFieldValue, 
+import {
+    OBv3CredentialTemplate,
+    AchievementTemplate,
+    TemplateFieldValue,
     AlignmentTemplate,
     staticField,
     OBV3_ACHIEVEMENT_TYPES,
 } from '../types';
 import { FieldEditor, CollapsibleSection } from '../FieldEditor';
+import { FieldValidationError, getFieldError } from '../utils';
 
 interface AchievementSectionProps {
     template: OBv3CredentialTemplate;
@@ -22,6 +23,7 @@ interface AchievementSectionProps {
     isExpanded: boolean;
     onToggle: () => void;
     disableDynamicFields?: boolean;
+    validationErrors?: FieldValidationError[];
 }
 
 export const AchievementSection: React.FC<AchievementSectionProps> = ({
@@ -30,6 +32,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
     isExpanded,
     onToggle,
     disableDynamicFields = false,
+    validationErrors = [],
 }) => {
     const achievement = template.credentialSubject.achievement;
 
@@ -159,6 +162,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                 helpText="The name of the achievement being recognized"
                 required
                 showDynamicToggle={!disableDynamicFields}
+                error={getFieldError(validationErrors, 'achievement.name')}
             />
 
             <FieldEditor
@@ -438,6 +442,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                         helpText="URL to detailed criteria documentation"
                         type="url"
                         showDynamicToggle={!disableDynamicFields}
+                        error={getFieldError(validationErrors, 'achievement.criteria.id')}
                     />
                 </div>
             </div>
@@ -498,6 +503,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                                     helpText="URL to the standard or framework"
                                     type="url"
                                     showDynamicToggle={!disableDynamicFields}
+                                    error={getFieldError(validationErrors, `achievement.alignment.${index}.targetUrl`)}
                                 />
 
                                 <FieldEditor
