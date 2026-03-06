@@ -299,6 +299,22 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
 
         try {
             const json = templateToJson(template);
+
+            // Client-side JSON-LD validation first (catches key expansion errors locally)
+            try {
+                const { validateCredentialJsonLd } = await import('./validateJsonLd');
+                const jsonLdResult = await validateCredentialJsonLd(json);
+                if (!jsonLdResult.valid) {
+                    const changes = diffTemplates(lastValidTemplate, template);
+                    setChangedFields(changes);
+                    updateValidationStatus('invalid', jsonLdResult.errors.join('; '));
+                    return;
+                }
+            } catch (jsonLdErr) {
+                // If JSON-LD validation itself fails to load, fall through to server validation
+                console.warn('[CredentialBuilder] Client-side JSON-LD validation unavailable:', jsonLdErr);
+            }
+
             const result = await onTestIssue(json);
 
             if (result.success) {
@@ -309,7 +325,6 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
             } else {
                 // Track what changed since last valid state
                 const changes = diffTemplates(lastValidTemplate, template);
-                console.log("Changes", changes)
                 setChangedFields(changes);
                 updateValidationStatus('invalid', result.error || 'Validation failed');
             }

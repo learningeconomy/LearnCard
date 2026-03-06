@@ -39,7 +39,9 @@ import {
     getBlankTemplate,
     templateToJson,
     jsonToTemplate,
+    validateTemplate,
     type OBv3CredentialTemplate,
+    type ValidationStatus,
 } from '../partner-onboarding/components/CredentialBuilder';
 
 import { CodeBlock } from './CodeBlock';
@@ -85,6 +87,16 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     const [tempAliasValue, setTempAliasValue] = useState('');
     const [selectedTemplateForCode, setSelectedTemplateForCode] = useState<ManagedTemplate | null>(null);
     const [saveError, setSaveError] = useState<string | null>(null);
+    const [builderValidationStatus, setBuilderValidationStatus] = useState<ValidationStatus>('unknown');
+
+    // Structural validation errors (required fields, URL format)
+    const structuralErrors = React.useMemo(
+        () => (showBuilder ? validateTemplate(currentBuildingTemplate) : []),
+        [showBuilder, currentBuildingTemplate]
+    );
+
+    // Block save when there are structural errors or JSON-LD validation failed
+    const canSave = structuralErrors.length === 0 && builderValidationStatus !== 'invalid';
 
     // Reset local state when context changes (listingId, featureType)
     React.useEffect(() => {
@@ -95,6 +107,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
         setEditingAlias(null);
         setTempAliasValue('');
         setSelectedTemplateForCode(null);
+        setBuilderValidationStatus('unknown');
     }, [listingId, integrationId, featureType]);
 
     // Notify parent when templates change
@@ -118,6 +131,8 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
             setCurrentBuildingTemplate(obv3Template);
             setEditingTemplate(template);
             setShowBuilder(true);
+            setBuilderValidationStatus('unknown');
+            setSaveError(null);
         } catch (err) {
             console.error('Failed to load template for editing:', err);
             presentToast('Failed to load template for editing', { type: ToastTypeEnum.Error });
@@ -422,6 +437,7 @@ if (result.credentialUri) {
                                 <CredentialBuilder
                                     template={currentBuildingTemplate}
                                     onChange={setCurrentBuildingTemplate}
+                                    onValidationChange={(status) => setBuilderValidationStatus(status)}
                                     disableDynamicFields={featureType === 'peer-badges'}
                                     hideRecipientSection={true}
                                 />
@@ -449,7 +465,27 @@ if (result.credentialUri) {
                                 </div>
                             )}
 
-                            <div className="p-3 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
+                            <div className="p-3 bg-gray-50 border-t border-gray-200 space-y-2">
+                                {/* Validation errors near save button */}
+                                {structuralErrors.length > 0 && (
+                                    <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                                        <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-red-700">
+                                            {structuralErrors.join('. ')}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {builderValidationStatus === 'invalid' && structuralErrors.length === 0 && (
+                                    <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                                        <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-red-700">
+                                            Template has validation errors. Fix the issues shown above before saving.
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-end gap-2">
                                 <button
                                     onClick={handleCancelBuilder}
                                     className="px-4 py-2 text-gray-600 hover:text-gray-800 rounded-lg text-sm font-medium"
@@ -459,7 +495,7 @@ if (result.credentialUri) {
 
                                 <button
                                     onClick={handleSaveFromBuilder}
-                                    disabled={isSaving}
+                                    disabled={isSaving || !canSave}
                                     className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors ${
                                         editingTemplate
                                             ? 'bg-blue-500 hover:bg-blue-600'
@@ -483,11 +519,16 @@ if (result.credentialUri) {
                                         </>
                                     )}
                                 </button>
+                                </div>
                             </div>
                         </div>
                     ) : (
                         <button
-                            onClick={() => setShowBuilder(true)}
+                            onClick={() => {
+                                setShowBuilder(true);
+                                setBuilderValidationStatus('unknown');
+                                setSaveError(null);
+                            }}
                             className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-emerald-300 text-emerald-600 rounded-xl hover:bg-emerald-50 transition-colors"
                         >
                             <Plus className="w-5 h-5" />
