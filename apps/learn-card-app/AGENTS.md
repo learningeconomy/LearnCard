@@ -174,12 +174,14 @@ A form-based OBv3 credential template builder used by partner onboarding guides.
 
 ### JSON-LD Validation Architecture
 
-The CredentialBuilder validates templates in three layers:
-1. **Structural** (`validateTemplate()`) — required fields, URL format (sync, immediate)
-2. **JSON-LD** (`validateCredentialJsonLd()`) — runs `jsonld.expand()` with bundled contexts (async, debounced 2s)
-3. **Server** (`onTestIssue()`) — actual test issuance via backend (async, only if JSON-LD passes)
+The CredentialBuilder validates templates in three layers via `runValidation()` (debounced 2s after edits):
+1. **Structural** (`validateTemplate()`) — required fields, URL format. If errors, sets status to `'invalid'` immediately and stops.
+2. **JSON-LD** (`validateCredentialJsonLd()`) — runs `jsonld.expand()` with bundled contexts. If errors, sets `'invalid'` and stops.
+3. **Server** (`onTestIssue()`) — actual test issuance via backend. Only runs if both previous layers pass.
 
-Bundled contexts avoid network fetches. The `@digitalcredentials/jsonld` library is dynamically imported to keep it out of the initial bundle. Mustache `{{variables}}` are replaced with placeholder URIs before expansion.
+All three layers feed into `onValidationChange(status, error)` which parent components use to block save/continue. Bundled contexts avoid network fetches. The `@digitalcredentials/jsonld` library is dynamically imported to keep it out of the initial bundle. Mustache `{{variables}}` are replaced with placeholder URIs before expansion.
+
+**Note:** `issueCredential()` injects signing contexts (e.g., `ed25519-2020/v1`) into the credential's `@context`. `jsonToTemplate()` strips these via `SIGNING_ARTIFACT_CONTEXTS` to avoid validation failures when loading saved templates.
 
 ### Credential Context Layers
 
