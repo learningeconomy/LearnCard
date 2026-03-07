@@ -451,7 +451,7 @@ if (result.credentialUri) {
                                     onChange={setCurrentBuildingTemplate}
                                     onValidationChange={(status) => setBuilderValidationStatus(status)}
                                     disableDynamicFields={featureType === 'peer-badges'}
-                                    hideRecipientSection={true}
+                                    hideRecipientSection={false}
                                 />
                             </div>
 
