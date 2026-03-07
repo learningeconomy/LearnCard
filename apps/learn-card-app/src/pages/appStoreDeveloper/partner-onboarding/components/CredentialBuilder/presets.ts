@@ -29,11 +29,11 @@ const createBaseTemplate = (overrides: Partial<OBv3CredentialTemplate>): OBv3Cre
         name: staticField(''),
     },
     credentialSubject: {
-        //name: dynamicField('recipient_name', ''),
+        name: dynamicField('recipient_name', ''),
         id: systemField('recipient_did'),
         achievement: {
-            name: staticField(''),
-            description: staticField(''),
+            name: dynamicField('achievement_name', ''),
+            description: dynamicField('achievement_description', ''),
         },
     },
     validFrom: systemField('issue_date'),
@@ -60,8 +60,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
             credentialSubject: {
                 name: dynamicField('recipient_name', ''),
                 achievement: {
-                    name: dynamicField('course_name', 'Course Name'),
-                    description: dynamicField('course_description', 'Course description'),
+                    name: dynamicField('course_name', ''),
+                    description: dynamicField('course_description', ''),
                     achievementType: staticField('Course'),
                     humanCode: dynamicField('course_code', ''),
                     criteria: {
@@ -90,8 +90,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
             credentialSubject: {
                 name: dynamicField('recipient_name', ''),
                 achievement: {
-                    name: dynamicField('badge_name', 'Badge Name'),
-                    description: dynamicField('badge_description', 'Badge description'),
+                    name: dynamicField('badge_name', ''),
+                    description: dynamicField('badge_description', ''),
                     achievementType: staticField('Badge'),
                     image: dynamicField('badge_image', ''),
                     criteria: {
@@ -112,8 +112,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
             credentialSubject: {
                 name: dynamicField('recipient_name', ''),
                 achievement: {
-                    name: dynamicField('certificate_name', 'Certificate Name'),
-                    description: dynamicField('certificate_description', 'Certificate description'),
+                    name: dynamicField('certificate_name', ''),
+                    description: dynamicField('certificate_description', ''),
                     achievementType: staticField('Certificate'),
                     criteria: {
                         narrative: staticField('Met all requirements for this professional certificate.'),
@@ -134,8 +134,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
             credentialSubject: {
                 name: dynamicField('recipient_name', ''),
                 achievement: {
-                    name: dynamicField('skill_name', 'Skill Name'),
-                    description: dynamicField('skill_description', 'Description of the skill'),
+                    name: dynamicField('skill_name', ''),
+                    description: dynamicField('skill_description', ''),
                     achievementType: staticField('Competency'),
                     criteria: {
                         narrative: dynamicField('skill_criteria', 'Demonstrated proficiency through assessment.'),
@@ -162,8 +162,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
             credentialSubject: {
                 name: dynamicField('recipient_name', ''),
                 achievement: {
-                    name: dynamicField('license_name', 'License Name'),
-                    description: dynamicField('license_description', 'License description'),
+                    name: dynamicField('license_name', ''),
+                    description: dynamicField('license_description', ''),
                     achievementType: staticField('License'),
                     criteria: {
                         narrative: staticField('Met all requirements for licensure.'),
@@ -186,8 +186,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
             credentialSubject: {
                 name: dynamicField('recipient_name', ''),
                 achievement: {
-                    name: dynamicField('membership_name', 'Membership Name'),
-                    description: dynamicField('membership_description', 'Membership description'),
+                    name: dynamicField('membership_name', ''),
+                    description: dynamicField('membership_description', ''),
                     achievementType: staticField('Membership'),
                     criteria: {
                         narrative: staticField('Active member in good standing.'),
@@ -216,8 +216,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
             credentialSubject: {
                 name: dynamicField('recipient_name', ''),
                 achievement: {
-                    name: dynamicField('micro_credential_name', 'Micro-Credential Name'),
-                    description: dynamicField('micro_credential_description', 'What was learned'),
+                    name: dynamicField('micro_credential_name', ''),
+                    description: dynamicField('micro_credential_description', ''),
                     achievementType: staticField('MicroCredential'),
                     creditsAvailable: dynamicField('duration_hours', ''),
                     criteria: {

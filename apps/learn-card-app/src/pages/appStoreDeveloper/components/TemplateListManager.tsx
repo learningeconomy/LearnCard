@@ -26,7 +26,7 @@ import {
     AlertCircle,
 } from 'lucide-react';
 
-import { useToast, ToastTypeEnum } from 'learn-card-base';
+import { useToast, ToastTypeEnum, useGetCurrentLCNUser } from 'learn-card-base';
 
 import {
     useTemplateManager,
@@ -66,6 +66,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     onTemplateChange,
 }) => {
     const { presentToast } = useToast();
+    const { currentLCNUser } = useGetCurrentLCNUser();
 
     // Use the shared template manager hook
     const {
@@ -77,6 +78,18 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
         updateAlias,
         refetch,
     } = useTemplateManager({ listingId, integrationId, featureType });
+
+    // Create a blank template pre-filled with org issuer info
+    const createBlankWithIssuer = useCallback(() => {
+        const blank = getBlankTemplate();
+        if (currentLCNUser?.displayName) {
+            blank.issuer.name.value = currentLCNUser.displayName;
+        }
+        if (currentLCNUser?.image) {
+            blank.issuer.image = { value: currentLCNUser.image, isDynamic: false, variableName: '' };
+        }
+        return blank;
+    }, [currentLCNUser]);
 
     // Local UI state
     const [showBuilder, setShowBuilder] = useState(false);
@@ -99,11 +112,18 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     // Block save when there are structural errors or JSON-LD validation failed
     const canSave = structuralErrors.length === 0 && builderValidationStatus !== 'invalid';
 
+    // Pre-fill issuer info on initial blank template when user data loads
+    React.useEffect(() => {
+        if (currentLCNUser && !showBuilder && !editingTemplate) {
+            setCurrentBuildingTemplate(createBlankWithIssuer());
+        }
+    }, [currentLCNUser]); // eslint-disable-line react-hooks/exhaustive-deps
+
     // Reset local state when context changes (listingId, featureType)
     React.useEffect(() => {
         setShowBuilder(false);
         setEditingTemplate(null);
-        setCurrentBuildingTemplate(getBlankTemplate());
+        setCurrentBuildingTemplate(createBlankWithIssuer());
         setIsSaving(false);
         setEditingAlias(null);
         setTempAliasValue('');
@@ -171,7 +191,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
 
             setShowBuilder(false);
             setEditingTemplate(null);
-            setCurrentBuildingTemplate(getBlankTemplate());
+            setCurrentBuildingTemplate(createBlankWithIssuer());
         } catch (err) {
             console.error('Failed to save template:', err);
             const errMsg = err instanceof Error ? err.message : String(err);
@@ -213,7 +233,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     const handleCancelBuilder = useCallback(() => {
         setShowBuilder(false);
         setEditingTemplate(null);
-        setCurrentBuildingTemplate(getBlankTemplate());
+        setCurrentBuildingTemplate(createBlankWithIssuer());
     }, []);
 
     // Generate code snippet
@@ -452,6 +472,8 @@ if (result.credentialUri) {
                                     onValidationChange={(status) => setBuilderValidationStatus(status)}
                                     disableDynamicFields={featureType === 'peer-badges'}
                                     hideRecipientSection={false}
+                                    issuerName={currentLCNUser?.displayName}
+                                    issuerImage={currentLCNUser?.image}
                                 />
                             </div>
 
