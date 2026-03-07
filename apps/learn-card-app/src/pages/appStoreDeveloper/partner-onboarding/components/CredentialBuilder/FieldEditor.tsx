@@ -98,31 +98,30 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`;
 
         if (type === 'select' && options) {
+            // If current value is not in options, clear it on mount
             const validValues = new Set(options.map(o => o.value));
-            const isValid = !field.value || validValues.has(field.value);
+            const currentIsValid = !field.value || validValues.has(field.value);
 
             return (
-                <div>
-                    <select
-                        value={isValid ? field.value : ''}
-                        onChange={(e) => handleValueChange(e.target.value)}
-                        onBlur={() => setTouched(true)}
-                        disabled={disabled}
-                        className={baseClasses}
-                    >
-                        <option value="">Select...</option>
+                <select
+                    value={currentIsValid ? field.value : ''}
+                    onChange={(e) => handleValueChange(e.target.value)}
+                    onBlur={() => {
+                        setTouched(true);
+                        // Auto-clear invalid legacy values when user interacts
+                        if (!currentIsValid && field.value) {
+                            handleValueChange('');
+                        }
+                    }}
+                    disabled={disabled}
+                    className={baseClasses}
+                >
+                    <option value="">Select...</option>
 
-                        {options.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                    </select>
-
-                    {!isValid && field.value && (
-                        <p className="text-xs text-amber-600 mt-1">
-                            Invalid value &quot;{field.value}&quot; — please select a valid option.
-                        </p>
-                    )}
-                </div>
+                    {options.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                </select>
             );
         }
 

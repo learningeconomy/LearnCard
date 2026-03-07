@@ -245,7 +245,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                                     id: childUri,
                                     name: fullChild?.name || (childCredential?.name as string) || 'Untitled Template',
                                     description: (childCredential?.description as string) || '',
-                                    achievementType: (childConfig?.achievementType as string) || 'Course Completion',
+                                    achievementType: (childConfig?.achievementType as string) || 'Achievement',
                                     fields: (childConfig?.fields as CredentialTemplate['fields']) || [],
                                     imageUrl: (fullChild as Record<string, unknown>)?.image as string | undefined,
                                     boostUri: childUri,

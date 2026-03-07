@@ -559,6 +559,8 @@ if (result.credentialUri) {
                     ) : (
                         <button
                             onClick={() => {
+                                setCurrentBuildingTemplate(createBlankWithIssuer());
+                                setEditingTemplate(null);
                                 setShowBuilder(true);
                                 setBuilderValidationStatus('unknown');
                                 setSaveError(null);
