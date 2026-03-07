@@ -423,9 +423,18 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
 /**
  * Parse a JSON credential object back to OBv3CredentialTemplate
  */
+// Contexts injected by the signing process — not part of the template definition
+const SIGNING_ARTIFACT_CONTEXTS = new Set([
+    'https://w3id.org/security/suites/ed25519-2020/v1',
+    'https://w3id.org/security/suites/ed25519-2018/v1',
+    'https://w3id.org/security/suites/jws-2020/v1',
+]);
+
 export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTemplate => {
     const schemaType = detectSchemaType(json);
-    const contexts = Array.isArray(json['@context']) ? json['@context'] as string[] : DEFAULT_CONTEXTS;
+    const rawContexts = Array.isArray(json['@context']) ? json['@context'] as string[] : DEFAULT_CONTEXTS;
+    // Strip signing artifact contexts that get injected by issueCredential()
+    const contexts = rawContexts.filter(c => !SIGNING_ARTIFACT_CONTEXTS.has(c));
     const types = Array.isArray(json.type) ? json.type as string[] : DEFAULT_TYPES;
 
     // For non-OBv3 credentials, store raw JSON and create minimal template

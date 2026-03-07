@@ -295,6 +295,14 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
     const runValidation = useCallback(async () => {
         if (!onTestIssue) return;
 
+        // Check structural errors first (invalid URLs, missing required fields)
+        const structuralErrors = validateTemplate(template);
+        if (structuralErrors.length > 0) {
+            const errorMessages = structuralErrors.map(e => `${e.field}: ${e.message}`).join('; ');
+            updateValidationStatus('invalid', errorMessages);
+            return;
+        }
+
         updateValidationStatus('validating');
 
         try {
