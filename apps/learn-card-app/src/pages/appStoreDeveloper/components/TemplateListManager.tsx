@@ -54,6 +54,8 @@ export interface TemplateListManagerProps {
     editable?: boolean;
     compact?: boolean;
     onTemplateChange?: (templates: ManagedTemplate[]) => void;
+    /** Fires when builder opens/closes — true means unsaved template work in progress */
+    onBuilderOpenChange?: (isOpen: boolean) => void;
 }
 
 export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
@@ -64,6 +66,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     editable = true,
     compact = false,
     onTemplateChange,
+    onBuilderOpenChange,
 }) => {
     const { presentToast } = useToast();
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -130,6 +133,11 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
         setSelectedTemplateForCode(null);
         setBuilderValidationStatus('unknown');
     }, [listingId, integrationId, featureType]);
+
+    // Notify parent when builder opens/closes
+    React.useEffect(() => {
+        onBuilderOpenChange?.(showBuilder);
+    }, [showBuilder, onBuilderOpenChange]);
 
     // Notify parent when templates change
     React.useEffect(() => {

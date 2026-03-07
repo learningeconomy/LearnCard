@@ -447,6 +447,7 @@ const CreateTemplatesStep: React.FC<{
     onTemplatesChange: (templates: ManagedTemplate[]) => void;
 }> = ({ onComplete, onBack, integrationId, onTemplatesChange }) => {
     const [hasTemplates, setHasTemplates] = useState(false);
+    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
     return (
         <div className="space-y-6">
@@ -468,26 +469,35 @@ const CreateTemplatesStep: React.FC<{
                     setHasTemplates(templates.length > 0);
                     onTemplatesChange(templates);
                 }}
+                onBuilderOpenChange={setIsBuilderOpen}
             />
 
             {/* Navigation */}
-            <div className="flex gap-3">
-                <button
-                    onClick={onBack}
-                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back
-                </button>
+            <div className="space-y-2">
+                <div className="flex gap-3">
+                    <button
+                        onClick={onBack}
+                        className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back
+                    </button>
 
-                <button
-                    onClick={onComplete}
-                    disabled={!hasTemplates}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                    Continue
-                    <ArrowRight className="w-4 h-4" />
-                </button>
+                    <button
+                        onClick={onComplete}
+                        disabled={!hasTemplates || isBuilderOpen}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        Continue
+                        <ArrowRight className="w-4 h-4" />
+                    </button>
+                </div>
+
+                {isBuilderOpen && (
+                    <p className="text-xs text-amber-600 text-center">
+                        Save or cancel the template you&apos;re editing before continuing.
+                    </p>
+                )}
             </div>
         </div>
     );
