@@ -123,7 +123,9 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
         credential.id = fieldToJson(template.id);
     }
 
-    credential.name = fieldToJson(template.name) || 'Untitled Credential';
+    // Credential name mirrors achievement name (static or dynamic)
+    const achievementName = template.credentialSubject.achievement.name;
+    credential.name = fieldToJson(achievementName) || fieldToJson(template.name) || 'Untitled Credential';
 
     if (template.description?.value || template.description?.isDynamic) {
         credential.description = fieldToJson(template.description);
@@ -903,9 +905,7 @@ export interface FieldValidationError {
 export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidationError[] => {
     const errors: FieldValidationError[] = [];
 
-    if (!template.name.value && !template.name.isDynamic) {
-        errors.push({ field: 'name', message: 'Credential name is required' });
-    }
+    // Credential name is auto-derived from achievement name during serialization
 
     // Issuer name is optional — derived from wallet profile at issuance time
 
