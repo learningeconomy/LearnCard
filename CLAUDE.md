@@ -1,11 +1,5 @@
 # LearnCard SDK
 
-## Tooling
-
-- When vexp MCP is available, prefer `run_pipeline` for complex cross-cutting searches (impact analysis, multi-file refactors)
-- For simple lookups (specific file, function, grep for a pattern), use built-in tools (Grep, Glob, Read) directly — they're faster and more reliable
-- vexp is optional — if it errors or is unavailable, fall back to built-in tools
-
 ## Build & Test Commands
 
 - Build project: `pnpm build` or `pnpm exec nx build <package-name>`
@@ -54,23 +48,6 @@ For detailed architecture, read the relevant AGENTS.md when working in that area
 | ScoutPass app | `apps/scouts/AGENTS.md` | Troop/Scout hierarchy, credential status, key components |
 | LearnCard app (E2E testing, architecture) | `apps/learn-card-app/AGENTS.md` | Playwright E2E test setup, auth, Ionic modal gotchas, credential flows |
 
-## Quick Reference — Common Patterns
+## Quick Reference
 
-```typescript
-// Network plugin methods (tRPC client under the hood)
-learnCard.invoke.createProfile(...)
-learnCard.invoke.acceptCredential(uri)
-learnCard.invoke.getRevokedCredentials()
-
-// Control planes
-learnCard.read.get(uri)                          // Resolve credential content
-learnCard.index.LearnCloud.get({ category })     // Personal wallet index (MongoDB)
-learnCard.index.LearnCloud.add(record)           // Add to personal index
-learnCard.store.LearnCloud.uploadEncrypted(vc)   // Store credential
-
-// Key locations
-// Types:          packages/learn-card-types/src/lcn.ts
-// Brain routes:   services/learn-card-network/brain-service/src/routes/
-// Network plugin: packages/plugins/learn-card-network/src/plugin.ts
-// React Query:    packages/learn-card-base/src/react-query/
-```
+For common API patterns and key file locations, see `PATTERNS.md` in the repo root.
