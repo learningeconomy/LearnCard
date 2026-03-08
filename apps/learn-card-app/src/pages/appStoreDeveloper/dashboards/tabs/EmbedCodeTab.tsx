@@ -1,21 +1,36 @@
-import React, { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Copy, Check, Award } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
 import type { LCNIntegration } from '@learncard/types';
 
 import { useToast } from 'learn-card-base/hooks/useToast';
+import type { CredentialTemplate } from '../types';
+
+interface EmbedClaimConfig {
+    partnerName?: string;
+    branding?: { primaryColor: string; accentColor: string; partnerLogoUrl?: string };
+    requestBackgroundIssuance?: boolean;
+}
 
 interface EmbedCodeTabProps {
     integration: LCNIntegration;
+    templates?: CredentialTemplate[];
 }
 
-export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration }) => {
-    const { presentToast } = useToast();
-    const [copied, setCopied] = useState<string | null>(null);
+/**
+ * Generate an HTML snippet for a given credential name and config
+ */
+function buildHtmlSnippet(
+    credentialName: string,
+    publishableKey: string,
+    partnerName: string,
+    branding: EmbedClaimConfig['branding'],
+    requestBackgroundIssuance: boolean
+): string {
+    const primaryColor = branding?.primaryColor || '#1F51FF';
+    const accentColor = branding?.accentColor || '#0F3BD9';
 
-    const publishableKey = integration.publishableKey;
-
-    const htmlCode = `<!-- LearnCard Claim Button -->
+    return `<!-- LearnCard Claim Button -->
 <div id="learncard-claim"></div>
 <!-- TODO: Verify CDN deployment URL is live before shipping -->
 <script src="https://cdn.learncard.com/embed-sdk/v1/learncard.js" defer></script>
@@ -23,21 +38,36 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration }) => {
   window.addEventListener('DOMContentLoaded', function() {
     LearnCard.init({
       target: '#learncard-claim',
-      credential: { name: 'My Credential' },
       publishableKey: '${publishableKey}',
-      // partnerName: 'Your Company',
-      // branding: { primaryColor: '#1F51FF', accentColor: '#0F3BD9' },
-      // apiBaseUrl: 'https://network.learncard.com/api', // Override API base URL if needed
-      onSuccess: ({ credentialId, consentGiven }) => {
-        console.log('Claimed!', credentialId);
+      partnerName: '${partnerName}',
+      credential: { name: '${credentialName}' },
+      branding: {
+        primaryColor: '${primaryColor}',
+        accentColor: '${accentColor}',
+      },
+      requestBackgroundIssuance: ${requestBackgroundIssuance},
+      onSuccess: function(details) {
+        console.log('Claimed!', details.credentialId);
       },
     });
   });
 </script>`;
+}
 
-    const npmCode = `npm install @learncard/embed-sdk`;
+/**
+ * Generate a React snippet for a given credential name and config
+ */
+function buildReactSnippet(
+    credentialName: string,
+    publishableKey: string,
+    partnerName: string,
+    branding: EmbedClaimConfig['branding'],
+    requestBackgroundIssuance: boolean
+): string {
+    const primaryColor = branding?.primaryColor || '#1F51FF';
+    const accentColor = branding?.accentColor || '#0F3BD9';
 
-    const reactCode = `import { useRef, useEffect } from 'react';
+    return `import { useRef, useEffect } from 'react';
 import { init } from '@learncard/embed-sdk';
 
 function ClaimButton() {
@@ -47,19 +77,85 @@ function ClaimButton() {
     if (!targetRef.current) return;
     init({
       target: targetRef.current,
-      credential: { name: 'My Credential' },
       publishableKey: '${publishableKey}',
-      // partnerName: 'Your Company',
-      // branding: { primaryColor: '#1F51FF', accentColor: '#0F3BD9' },
-      // apiBaseUrl: 'https://network.learncard.com/api', // Override API base URL if needed
-      onSuccess: ({ credentialId, consentGiven }) => {
-        console.log('Claimed!', credentialId);
+      partnerName: '${partnerName}',
+      credential: { name: '${credentialName}' },
+      branding: {
+        primaryColor: '${primaryColor}',
+        accentColor: '${accentColor}',
+      },
+      requestBackgroundIssuance: ${requestBackgroundIssuance},
+      onSuccess: (details) => {
+        console.log('Claimed!', details.credentialId);
       },
     });
   }, []);
 
   return <div ref={targetRef} />;
 }`;
+}
+
+export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templates = [] }) => {
+    const { presentToast } = useToast();
+    const [copied, setCopied] = useState<string | null>(null);
+    const [selectedTemplateIdx, setSelectedTemplateIdx] = useState<number>(0);
+
+    // Read persisted config from integration guideState
+    const guideState = integration.guideState as
+        | { config?: { embedClaimConfig?: EmbedClaimConfig } }
+        | undefined;
+    const config = guideState?.config?.embedClaimConfig;
+
+    const publishableKey = integration.publishableKey || 'YOUR_PUBLISHABLE_KEY';
+    const partnerName = config?.partnerName || 'Your Company';
+    const branding = config?.branding;
+    const requestBackgroundIssuance = config?.requestBackgroundIssuance ?? true;
+
+    // Build snippets per template, or a generic one if no templates exist
+    const snippets = useMemo(() => {
+        if (templates.length > 0) {
+            return templates.map(t => ({
+                name: t.name,
+                htmlCode: buildHtmlSnippet(
+                    t.name,
+                    publishableKey,
+                    partnerName,
+                    branding,
+                    requestBackgroundIssuance
+                ),
+                reactCode: buildReactSnippet(
+                    t.name,
+                    publishableKey,
+                    partnerName,
+                    branding,
+                    requestBackgroundIssuance
+                ),
+            }));
+        }
+
+        return [
+            {
+                name: 'My Credential',
+                htmlCode: buildHtmlSnippet(
+                    'My Credential',
+                    publishableKey,
+                    partnerName,
+                    branding,
+                    requestBackgroundIssuance
+                ),
+                reactCode: buildReactSnippet(
+                    'My Credential',
+                    publishableKey,
+                    partnerName,
+                    branding,
+                    requestBackgroundIssuance
+                ),
+            },
+        ];
+    }, [templates, publishableKey, partnerName, branding, requestBackgroundIssuance]);
+
+    const currentSnippet = snippets[selectedTemplateIdx] || snippets[0];
+    const npmCode = `npm install @learncard/embed-sdk`;
 
     const copyCode = async (code: string, id: string) => {
         await Clipboard.write({ string: code });
@@ -94,13 +190,45 @@ function ClaimButton() {
                 </div>
             </div>
 
+            {/* Template Selector (only when multiple templates exist) */}
+            {snippets.length > 1 && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Select Template
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                        {snippets.map((snippet, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setSelectedTemplateIdx(idx)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                                    idx === selectedTemplateIdx
+                                        ? 'bg-cyan-100 text-cyan-800 border border-cyan-300'
+                                        : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
+                                }`}
+                            >
+                                <Award className="w-3.5 h-3.5" />
+                                {snippet.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* HTML Snippet */}
             <div>
                 <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium text-gray-800">HTML Snippet</h3>
+                    <h3 className="font-medium text-gray-800">
+                        HTML Snippet
+                        {snippets.length > 1 && (
+                            <span className="text-sm font-normal text-gray-500 ml-2">
+                                ({currentSnippet.name})
+                            </span>
+                        )}
+                    </h3>
 
                     <button
-                        onClick={() => copyCode(htmlCode, 'html')}
+                        onClick={() => copyCode(currentSnippet.htmlCode, 'html')}
                         className="text-xs text-gray-600 hover:text-gray-800 flex items-center gap-1"
                     >
                         {copied === 'html' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
@@ -109,17 +237,24 @@ function ClaimButton() {
                 </div>
 
                 <pre className="p-4 bg-gray-900 text-gray-100 rounded-xl text-sm overflow-x-auto">
-                    <code>{htmlCode}</code>
+                    <code>{currentSnippet.htmlCode}</code>
                 </pre>
             </div>
 
             {/* React/npm */}
             <div>
                 <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium text-gray-800">React / npm</h3>
+                    <h3 className="font-medium text-gray-800">
+                        React / npm
+                        {snippets.length > 1 && (
+                            <span className="text-sm font-normal text-gray-500 ml-2">
+                                ({currentSnippet.name})
+                            </span>
+                        )}
+                    </h3>
 
                     <button
-                        onClick={() => copyCode(reactCode, 'react')}
+                        onClick={() => copyCode(currentSnippet.reactCode, 'react')}
                         className="text-xs text-gray-600 hover:text-gray-800 flex items-center gap-1"
                     >
                         {copied === 'react' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
@@ -132,7 +267,7 @@ function ClaimButton() {
                 </div>
 
                 <pre className="p-4 bg-gray-900 text-gray-100 rounded-xl text-sm overflow-x-auto">
-                    <code>{reactCode}</code>
+                    <code>{currentSnippet.reactCode}</code>
                 </pre>
             </div>
         </div>

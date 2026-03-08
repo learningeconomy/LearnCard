@@ -514,7 +514,9 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                     />
                 )}
 
-                {activeTab === 'embed-code' && <EmbedCodeTab integration={integration} />}
+                {activeTab === 'embed-code' && (
+                    <EmbedCodeTab integration={integration} templates={templates} />
+                )}
 
                 {activeTab === 'contracts' && <ContractsTab integration={integration} />}
 
