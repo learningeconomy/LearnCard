@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     Key,
     Code,
@@ -28,6 +28,7 @@ import { useGuideState } from '../shared/useGuideState';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
 import { TemplateListManager } from '../../components/TemplateListManager';
 import type { ManagedTemplate } from '../../dashboards/hooks/useTemplateDetails';
+import { init as initEmbed } from '@learncard/embed-sdk';
 import type { GuideProps } from '../GuidePage';
 
 const STEPS = [
@@ -690,53 +691,170 @@ const ConfigureStep: React.FC<{
 };
 
 // Step 5: Test
+const EmbedPreview: React.FC<{
+    publishableKey: string;
+    partnerName: string;
+    credential: { name: string; [key: string]: unknown };
+    branding?: { primaryColor?: string; accentColor?: string; partnerLogoUrl?: string };
+    requestBackgroundIssuance?: boolean;
+}> = ({ publishableKey, partnerName, credential, branding, requestBackgroundIssuance }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const credentialKey = JSON.stringify(credential);
+    const brandingKey = JSON.stringify(branding);
+
+    useEffect(() => {
+        if (!containerRef.current) return;
+        containerRef.current.innerHTML = '';
+        setError(null);
+        setIsLoaded(false);
+
+        try {
+            initEmbed({
+                target: containerRef.current,
+                publishableKey,
+                partnerName,
+                credential,
+                branding,
+                requestBackgroundIssuance,
+                onSuccess: details => {
+                    console.log('Embed claim success:', details);
+                },
+            });
+            setIsLoaded(true);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to load embed SDK');
+        }
+
+        return () => {
+            if (containerRef.current) {
+                containerRef.current.innerHTML = '';
+            }
+        };
+    }, [publishableKey, partnerName, credentialKey, brandingKey, requestBackgroundIssuance]);
+
+    return (
+        <div className="border rounded-lg bg-gray-50 p-6">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Live Preview</h4>
+
+            <p className="text-xs text-gray-500 mb-4">
+                This is the actual claim button your users will see. Click it to test the full flow.
+            </p>
+
+            {error && (
+                <div className="text-sm text-red-600 bg-red-50 rounded p-3 mb-4">{error}</div>
+            )}
+
+            <div ref={containerRef} className="min-h-[60px] flex items-center justify-center" />
+
+            {!isLoaded && !error && (
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading preview...
+                </div>
+            )}
+        </div>
+    );
+};
+
 const TestStep: React.FC<{
     onBack: () => void;
     onComplete: () => void;
     publishableKey: string;
     templates: ManagedTemplate[];
     partnerName: string;
-}> = ({ onBack, onComplete, publishableKey, templates, partnerName }) => {
-    const hasTemplates = templates.length > 0;
-    const firstTemplateName = hasTemplates ? templates[0]?.name || 'Untitled Template' : 'No template';
+    branding: { primaryColor: string; accentColor: string; partnerLogoUrl: string };
+    requestBackgroundIssuance: boolean;
+}> = ({ onBack, onComplete, publishableKey, templates, partnerName, branding, requestBackgroundIssuance }) => {
+    const [selectedTemplateIdx, setSelectedTemplateIdx] = useState(0);
+
+    const checks = [
+        { label: 'Publishable key configured', ok: !!publishableKey },
+        { label: 'At least one credential template', ok: templates.length > 0 },
+        { label: 'Partner name set', ok: !!partnerName },
+    ];
+    const allChecksPass = checks.every(c => c.ok);
+
+    const selectedTemplate = templates[selectedTemplateIdx];
+
+    const credential = useMemo(
+        () => ({
+            name: selectedTemplate?.name || 'Untitled Template',
+            ...(selectedTemplate || {}),
+        }),
+        [selectedTemplate]
+    );
+
     return (
         <div className="space-y-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Test Your Integration</h3>
 
                 <p className="text-gray-600">
-                    Here's a checklist and the user flow to verify everything works.
+                    Verify your configuration and preview the claim button your users will see.
                 </p>
             </div>
 
-            {/* Checklist */}
+            {/* Dynamic pre-flight checklist */}
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
                 <h4 className="font-medium text-gray-800 mb-3">Pre-flight checklist</h4>
 
                 <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                        <CheckCircle2 className={`w-4 h-4 ${publishableKey ? 'text-emerald-600' : 'text-gray-300'}`} />
-                        <span className={publishableKey ? 'text-gray-800' : 'text-gray-400'}>Publishable key configured</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <CheckCircle2 className={`w-4 h-4 ${hasTemplates ? 'text-emerald-600' : 'text-gray-300'}`} />
-                        <span className={hasTemplates ? 'text-gray-800' : 'text-gray-400'}>
-                            {hasTemplates ? `Template created: ${firstTemplateName}` : 'No template created'}
-                        </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        <span className="text-gray-800">SDK loaded on page</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        <span className="text-gray-800">Target element exists</span>
-                    </div>
+                    {checks.map(check => (
+                        <div key={check.label} className="flex items-center gap-2">
+                            <CheckCircle2
+                                className={`w-4 h-4 ${check.ok ? 'text-emerald-600' : 'text-gray-300'}`}
+                            />
+                            <span className={check.ok ? 'text-gray-800' : 'text-gray-400'}>
+                                {check.label}
+                            </span>
+                        </div>
+                    ))}
                 </div>
             </div>
+
+            {/* Template selector (only if multiple templates) */}
+            {templates.length > 1 && (
+                <div className="p-4 border border-gray-200 rounded-xl">
+                    <label
+                        htmlFor="template-select"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                        Select template to preview
+                    </label>
+                    <select
+                        id="template-select"
+                        value={selectedTemplateIdx}
+                        onChange={e => setSelectedTemplateIdx(Number(e.target.value))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    >
+                        {templates.map((t, idx) => (
+                            <option key={t.id || idx} value={idx}>
+                                {t.name || `Template ${idx + 1}`}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            {/* Live embed preview */}
+            {allChecksPass ? (
+                <EmbedPreview
+                    publishableKey={publishableKey}
+                    partnerName={partnerName}
+                    credential={credential}
+                    branding={branding}
+                    requestBackgroundIssuance={requestBackgroundIssuance}
+                />
+            ) : (
+                <div className="border rounded-lg bg-gray-50 p-6 text-center">
+                    <p className="text-sm text-gray-500">
+                        Complete all pre-flight checks above to see a live preview of the claim button.
+                    </p>
+                </div>
+            )}
 
             {/* User flow */}
             <div className="p-4 border border-gray-200 rounded-xl">
@@ -786,7 +904,7 @@ const TestStep: React.FC<{
                 <h4 className="font-medium text-blue-800 mb-2">Returning Users</h4>
 
                 <p className="text-sm text-blue-700">
-                    The SDK remembers logged-in users via localStorage. On their next visit, they'll see an 
+                    The SDK remembers logged-in users via localStorage. On their next visit, they'll see an
                     "Accept Credential" button instead of entering email/OTP again.
                 </p>
             </div>
@@ -967,6 +1085,8 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                         publishableKey={publishableKey}
                         templates={templates}
                         partnerName={partnerName}
+                        branding={branding}
+                        requestBackgroundIssuance={requestBackgroundIssuance}
                     />
                 );
 
