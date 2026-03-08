@@ -16,6 +16,7 @@ import { createSentCredentialRelationship } from '@accesslayer/credential/relati
 import {
     isClaimLinkAlreadySetForBoost,
     getClaimLinkSAInfoForBoost,
+    getClaimLinkGeneratorProfileId,
     useClaimLinkForBoost,
 } from '@cache/claim-links';
 
@@ -29,7 +30,7 @@ import {
     getContactMethodById,
     getProfileByContactMethod,
 } from '@accesslayer/contact-method/read';
-import { getProfileByDid } from '@accesslayer/profile/read';
+import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 
 import { getBoostUri, isBoostViewableByClaimLink, isDraftBoost } from '@helpers/boost.helpers';
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
@@ -291,13 +292,22 @@ async function handlePresentationForClaim(
         });
     }
 
-    const boostOwner = await getBoostOwner(boost);
+    const [boostOwner, generatorProfileId] = await Promise.all([
+        getBoostOwner(boost),
+        getClaimLinkGeneratorProfileId(exchangeInfo.boostUri, exchangeInfo.challenge),
+    ]);
+
     if (!boostOwner) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost owner' });
     }
 
+    // Use the generator's profile for SA lookup if available, fall back to boost owner
+    const saOwner = generatorProfileId
+        ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
+        : boostOwner;
+
     const signingAuthorityForUser = await getSigningAuthorityForUserByName(
-        boostOwner,
+        saOwner,
         claimLinkSA.endpoint,
         claimLinkSA.name
     );
@@ -374,7 +384,7 @@ async function handlePresentationForClaim(
         await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);
 
         const vc = await issueCredentialWithSigningAuthority(
-            boostOwner,
+            saOwner,
             boostCredential,
             signingAuthorityForUser,
             domain,

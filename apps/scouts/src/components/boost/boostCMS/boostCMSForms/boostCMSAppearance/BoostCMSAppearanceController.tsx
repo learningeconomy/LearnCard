@@ -21,6 +21,7 @@ import {
     useModal,
     ModalTypes,
 } from 'learn-card-base';
+import { CATEGORY_MAP } from 'learn-card-base/helpers/credentialHelpers';
 
 type BoostCMSActiveAppearanceControllerProps = {
     state: BoostCMSState;
@@ -48,8 +49,12 @@ const BoostCMSAppearanceController: React.FC<BoostCMSActiveAppearanceControllerP
     showEditButton = true,
     customHeaderClass = '',
 }) => {
+    const categoryType = state?.basicInfo?.type
+        || CATEGORY_MAP[state?.basicInfo?.achievementType as keyof typeof CATEGORY_MAP] as BoostCategoryOptionsEnum | undefined
+        || BoostCategoryOptionsEnum.achievement;
+
     const { color, subColor, IconComponent } =
-        boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
+        boostCategoryOptions[categoryType] || {};
     let badgeCircleText = '';
 
     if (isCustomBoostType(state?.basicInfo?.achievementType)) {
@@ -58,7 +63,7 @@ const BoostCMSAppearanceController: React.FC<BoostCMSActiveAppearanceControllerP
         );
     } else {
         badgeCircleText =
-            CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type as any]?.find(
+            CATEGORY_TO_SUBCATEGORY_LIST?.[categoryType]?.find(
                 (options: any) => options?.type === state?.basicInfo?.achievementType
             )?.title ?? '';
     }
@@ -127,7 +132,7 @@ const BoostCMSAppearanceController: React.FC<BoostCMSActiveAppearanceControllerP
                         </div>
                         <div className="absolute flex items-center justify-center left-[37%] bottom-[-12%]">
                             <Ribbon />
-                            <IconComponent className={`absolute text-${color} h-[30px] mb-3`} />
+                            {IconComponent && <IconComponent className={`absolute text-${color} h-[30px] mb-3`} />}
                         </div>
                     </div>
                 )}

@@ -12,6 +12,7 @@ import CircleWithText from 'learn-card-base/svgs/CircleWithText';
 import MeritBadgeRibbon from 'learn-card-base/svgs/MeritBadgeRibbon';
 
 import { BoostCMSAppearanceDisplayTypeEnum, BoostCMSState } from '../../../boost';
+import { boostCategoryMetadata } from 'learn-card-base';
 import BoostCMSAppearanceFormModal from './BoostCMSAppearanceFormModal';
 import {
     CredentialCategoryEnum,
@@ -22,8 +23,9 @@ import {
     useModal,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
-import CertRibbon from 'apps/learn-card-app/src/components/svgs/CertRibbon';
+import CertRibbon from '../../../../svgs/CertRibbon';
 import CredentialMediaBadge from 'learn-card-base/components/CredentialBadge/CredentialMediaBadge';
+import { CATEGORY_MAP } from 'learn-card-base/helpers/credentialHelpers';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
 
@@ -56,11 +58,18 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
     const { newModal } = useModal();
     const { getThemedCategoryIcons } = useTheme();
 
-    const boostMetadata = getBoostMetadata(state?.basicInfo?.type as BoostCategoryOptionsEnum);
+    const categoryType = state?.basicInfo?.type
+        || CATEGORY_MAP[state?.basicInfo?.achievementType as keyof typeof CATEGORY_MAP] as BoostCategoryOptionsEnum | undefined
+        || BoostCategoryOptionsEnum.achievement;
+
+    const boostMetadata = getBoostMetadata(categoryType);
     const { Icon } = getThemedCategoryIcons(
         boostMetadata?.credentialType as CredentialCategoryEnum
     );
     const { color, subColor } = boostMetadata || {};
+
+    const defaultThumbnail = boostCategoryMetadata[categoryType]?.CategoryImage;
+
     let badgeCircleText = '';
 
     if (isCustomBoostType(state?.basicInfo?.achievementType)) {
@@ -69,7 +78,7 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
         );
     } else {
         badgeCircleText =
-            CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type]?.find(
+            CATEGORY_TO_SUBCATEGORY_LIST?.[categoryType]?.find(
                 options => options?.type === state?.basicInfo?.achievementType
             )?.title ?? '';
     }
@@ -174,7 +183,7 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
                     <div
                         className={`relative flex items-center justify-center rounded-full border-white border-solid border-4 bg-${subColor} overflow-hidden object-contain bg-${subColor} ${imageStyles}`}
                     >
-                        <img src={state?.appearance?.badgeThumbnail} alt="badge thumbnail" />
+                        <img src={state?.appearance?.badgeThumbnail || defaultThumbnail} alt="badge thumbnail" />
                     </div>
                 )}
 
@@ -193,7 +202,7 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
                 {isBadgeDisplayType && (
                     <div className="absolute flex items-center justify-center left-[37%] bottom-[-12%]">
                         <Ribbon />
-                        <Icon className={`absolute text-${color} h-[30px] mb-3`} />
+                        {Icon && <Icon className={`absolute text-${color} h-[30px] mb-3`} />}
                     </div>
                 )}
 

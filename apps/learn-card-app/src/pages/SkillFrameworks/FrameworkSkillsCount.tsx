@@ -33,7 +33,8 @@ const FrameworkSkillsCount: React.FC<FrameworkSkillsCountProps> = ({
         { onlyCountCompetencies: !isOpenSalt }
     );
 
-    const countToUse = (countOverride ?? count) + countAdjustment;
+    const calculatedCount = (countOverride ?? count) + countAdjustment;
+    const countToUse = Number.isNaN(calculatedCount) ? undefined : calculatedCount;
 
     return (
         <div className={`flex items-center text-grayscale-600 gap-[2px] ${className}`}>
