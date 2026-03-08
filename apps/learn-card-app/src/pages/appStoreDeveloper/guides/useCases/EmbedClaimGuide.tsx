@@ -855,32 +855,42 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
     // Derive publishable key from selected integration
     const publishableKey = selectedIntegration?.publishableKey || '';
 
-    // Restore saved config from guide state
-    const savedConfig = guideState.getConfig<{
-        partnerName?: string;
-        branding?: { primaryColor: string; accentColor: string; partnerLogoUrl: string };
-        requestBackgroundIssuance?: boolean;
-    }>('embedClaimConfig');
-
     const [templates, setTemplates] = useState<ManagedTemplate[]>([]);
-    const [partnerName, setPartnerName] = useState(savedConfig?.partnerName ?? '');
-    const [branding, setBranding] = useState(savedConfig?.branding ?? {
+    const [partnerName, setPartnerName] = useState('');
+    const [branding, setBranding] = useState({
         primaryColor: '#1F51FF',
         accentColor: '#0F3BD9',
         partnerLogoUrl: '',
     });
-    const [requestBackgroundIssuance, setRequestBackgroundIssuance] = useState(savedConfig?.requestBackgroundIssuance ?? false);
+    const [requestBackgroundIssuance, setRequestBackgroundIssuance] = useState(false);
     const [hasRestoredState, setHasRestoredState] = useState(false);
 
-    // Mark state as restored after initial render
+    // ============================================================
+    // STATE PERSISTENCE - Restore from guideState config when integration loads
+    // ============================================================
     useEffect(() => {
-        if (!hasRestoredState) {
-            setHasRestoredState(true);
-        }
-    }, [hasRestoredState]);
+        if (hasRestoredState) return;
 
-    // Persist config when values change
+        const savedConfig = guideState.getConfig<{
+            partnerName?: string;
+            branding?: { primaryColor: string; accentColor: string; partnerLogoUrl: string };
+            requestBackgroundIssuance?: boolean;
+        }>('embedClaimConfig');
+
+        if (savedConfig) {
+            if (savedConfig.partnerName !== undefined) setPartnerName(savedConfig.partnerName);
+            if (savedConfig.branding !== undefined) setBranding(savedConfig.branding);
+            if (savedConfig.requestBackgroundIssuance !== undefined) setRequestBackgroundIssuance(savedConfig.requestBackgroundIssuance);
+        }
+
+        setHasRestoredState(true);
+    }, [guideState, selectedIntegration?.id, hasRestoredState]);
+
+    // ============================================================
+    // STATE PERSISTENCE - Sync state changes to guideState config
+    // ============================================================
     useEffect(() => {
+        // Don't save until we've restored (prevents overwriting with empty state)
         if (!hasRestoredState) return;
 
         guideState.updateConfig('embedClaimConfig', {
