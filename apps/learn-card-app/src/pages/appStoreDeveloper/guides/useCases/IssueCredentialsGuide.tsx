@@ -1053,12 +1053,45 @@ else:
     );
 };
 
+// Config persisted via guideState so it survives page reloads
+interface IssueCredentialsConfig {
+    apiTokenGrantId?: string;
+    templateUris?: string[];
+}
+
 // Main component
 const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
     const guideState = useGuideState('issue-credentials', STEPS.length, selectedIntegration);
 
-    const [apiToken, setApiToken] = useState('');
+    // Restore persisted config on mount
+    const savedConfig = guideState.getConfig<IssueCredentialsConfig>('issueCredentialsConfig');
+
+    const [apiToken, setApiToken] = useState(savedConfig?.apiTokenGrantId ?? '');
     const [templates, setTemplates] = useState<ManagedTemplate[]>([]);
+
+    // Persist API token when it changes
+    const savedConfigRef = useRef(savedConfig);
+    savedConfigRef.current = savedConfig;
+
+    useEffect(() => {
+        if (apiToken) {
+            guideState.updateConfig('issueCredentialsConfig', {
+                ...savedConfigRef.current,
+                apiTokenGrantId: apiToken,
+            });
+        }
+    }, [apiToken]);
+
+    // Persist template URIs when templates change
+    useEffect(() => {
+        const uris = templates.map(t => t.boostUri).filter(Boolean) as string[];
+        if (uris.length > 0) {
+            guideState.updateConfig('issueCredentialsConfig', {
+                ...savedConfigRef.current,
+                templateUris: uris,
+            });
+        }
+    }, [templates]);
 
     // Allow navigating to current step, any completed step, or any earlier step.
     // Forward navigation requires all previous steps to be complete.
@@ -1071,6 +1104,14 @@ const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) =>
         }
         return true;
     }, [guideState.currentStep, guideState.isStepComplete]);
+
+    if (!selectedIntegration) {
+        return (
+            <div className="text-center py-12">
+                <p className="text-gray-500">Please select an integration from the header dropdown to continue.</p>
+            </div>
+        );
+    }
 
     const handleStepComplete = (stepId: string) => {
         guideState.markStepComplete(stepId);
