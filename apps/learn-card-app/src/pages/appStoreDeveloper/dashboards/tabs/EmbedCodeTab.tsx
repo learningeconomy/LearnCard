@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Copy, Check, Award } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
 import type { LCNIntegration } from '@learncard/types';
@@ -17,6 +17,28 @@ interface EmbedCodeTabProps {
     templates?: CredentialTemplate[];
 }
 
+/** Escape single quotes in user-provided strings for safe JS string interpolation */
+const safe = (str: string): string => str.replace(/'/g, "\\'");
+
+/**
+ * Build the branding block for generated snippets, conditionally including partnerLogoUrl
+ */
+function buildBrandingBlock(branding: EmbedClaimConfig['branding'], indent: string): string {
+    const primaryColor = branding?.primaryColor || '#1F51FF';
+    const accentColor = branding?.accentColor || '#0F3BD9';
+    const logoLine = branding?.partnerLogoUrl
+        ? `${indent}  partnerLogoUrl: '${safe(branding.partnerLogoUrl)}',`
+        : `${indent}  // partnerLogoUrl: "https://your-logo.png",`;
+
+    return [
+        `${indent}branding: {`,
+        `${indent}  primaryColor: '${primaryColor}',`,
+        `${indent}  accentColor: '${accentColor}',`,
+        logoLine,
+        `${indent}},`,
+    ].join('\n');
+}
+
 /**
  * Generate an HTML snippet for a given credential name and config
  */
@@ -27,8 +49,7 @@ function buildHtmlSnippet(
     branding: EmbedClaimConfig['branding'],
     requestBackgroundIssuance: boolean
 ): string {
-    const primaryColor = branding?.primaryColor || '#1F51FF';
-    const accentColor = branding?.accentColor || '#0F3BD9';
+    const brandingBlock = buildBrandingBlock(branding, '      ');
 
     return `<!-- LearnCard Claim Button -->
 <div id="learncard-claim"></div>
@@ -38,13 +59,10 @@ function buildHtmlSnippet(
   window.addEventListener('DOMContentLoaded', function() {
     LearnCard.init({
       target: '#learncard-claim',
-      publishableKey: '${publishableKey}',
-      partnerName: '${partnerName}',
-      credential: { name: '${credentialName}' },
-      branding: {
-        primaryColor: '${primaryColor}',
-        accentColor: '${accentColor}',
-      },
+      publishableKey: '${safe(publishableKey)}',
+      partnerName: '${safe(partnerName)}',
+      credential: { name: '${safe(credentialName)}' },
+${brandingBlock}
       requestBackgroundIssuance: ${requestBackgroundIssuance},
       onSuccess: function(details) {
         console.log('Claimed!', details.credentialId);
@@ -64,8 +82,7 @@ function buildReactSnippet(
     branding: EmbedClaimConfig['branding'],
     requestBackgroundIssuance: boolean
 ): string {
-    const primaryColor = branding?.primaryColor || '#1F51FF';
-    const accentColor = branding?.accentColor || '#0F3BD9';
+    const brandingBlock = buildBrandingBlock(branding, '      ');
 
     return `import { useRef, useEffect } from 'react';
 import { init } from '@learncard/embed-sdk';
@@ -77,13 +94,10 @@ function ClaimButton() {
     if (!targetRef.current) return;
     init({
       target: targetRef.current,
-      publishableKey: '${publishableKey}',
-      partnerName: '${partnerName}',
-      credential: { name: '${credentialName}' },
-      branding: {
-        primaryColor: '${primaryColor}',
-        accentColor: '${accentColor}',
-      },
+      publishableKey: '${safe(publishableKey)}',
+      partnerName: '${safe(partnerName)}',
+      credential: { name: '${safe(credentialName)}' },
+${brandingBlock}
       requestBackgroundIssuance: ${requestBackgroundIssuance},
       onSuccess: (details) => {
         console.log('Claimed!', details.credentialId);
@@ -153,6 +167,13 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
             },
         ];
     }, [templates, publishableKey, partnerName, branding, requestBackgroundIssuance]);
+
+    // Reset index when templates array shrinks below current selection
+    useEffect(() => {
+        if (selectedTemplateIdx >= snippets.length) {
+            setSelectedTemplateIdx(0);
+        }
+    }, [snippets.length, selectedTemplateIdx]);
 
     const currentSnippet = snippets[selectedTemplateIdx] || snippets[0];
     const npmCode = `npm install @learncard/embed-sdk`;
