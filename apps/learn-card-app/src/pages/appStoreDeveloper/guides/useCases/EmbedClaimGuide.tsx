@@ -27,6 +27,7 @@ import { Clipboard } from '@capacitor/clipboard';
 
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
+import { useDeveloperPortal } from '../../useDeveloperPortal';
 import { OBv3CredentialBuilder } from '../../../../components/credentials/OBv3CredentialBuilder';
 import type { GuideProps } from '../GuidePage';
 
@@ -899,6 +900,19 @@ const TestStep: React.FC<{
 
 // Main component
 const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedIntegration }) => {
+    const { useUpdateIntegration } = useDeveloperPortal();
+    const updateIntegrationMutation = useUpdateIntegration();
+
+    // Ensure guideType is set to 'embed-claim' when entering this guide
+    useEffect(() => {
+        if (selectedIntegration && selectedIntegration.guideType !== 'embed-claim') {
+            updateIntegrationMutation.mutate({
+                id: selectedIntegration.id,
+                updates: { guideType: 'embed-claim' },
+            });
+        }
+    }, [selectedIntegration?.id, selectedIntegration?.guideType]);
+
     const guideState = useGuideState('embed-claim', STEPS.length, selectedIntegration);
 
     // Derive publishable key from selected integration
@@ -928,6 +942,15 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
         partnerLogoUrl: '',
     });
     const [requestBackgroundIssuance, setRequestBackgroundIssuance] = useState(false);
+
+    // Integration selection guard — placed after all hooks to respect Rules of Hooks
+    if (!selectedIntegration) {
+        return (
+            <div className="text-center py-12">
+                <p className="text-gray-500">Please select an integration from the header dropdown to continue.</p>
+            </div>
+        );
+    }
 
     const handleStepComplete = (stepId: string) => {
         guideState.markStepComplete(stepId);
