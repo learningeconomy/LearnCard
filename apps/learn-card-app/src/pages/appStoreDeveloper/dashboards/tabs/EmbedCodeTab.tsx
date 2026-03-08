@@ -17,26 +17,48 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration }) => {
 
     const htmlCode = `<!-- LearnCard Claim Button -->
 <div id="learncard-claim"></div>
-<script src="https://cdn.learncard.com/embed-sdk.js"></script>
+<!-- TODO: Verify CDN deployment URL is live before shipping -->
+<script src="https://cdn.learncard.com/embed-sdk/v1/learncard.js" defer></script>
 <script>
-  LearnCard.init({
-    target: '#learncard-claim',
-    publishableKey: '${publishableKey}',
-    // Configure your credential here
+  window.addEventListener('DOMContentLoaded', function() {
+    LearnCard.init({
+      target: '#learncard-claim',
+      credential: { name: 'My Credential' },
+      publishableKey: '${publishableKey}',
+      // partnerName: 'Your Company',
+      // branding: { primaryColor: '#1F51FF', accentColor: '#0F3BD9' },
+      // apiBaseUrl: 'https://network.learncard.com/api', // Override API base URL if needed
+      onSuccess: ({ credentialId, consentGiven }) => {
+        console.log('Claimed!', credentialId);
+      },
+    });
   });
 </script>`;
 
     const npmCode = `npm install @learncard/embed-sdk`;
 
-    const reactCode = `import { LearnCardEmbed } from '@learncard/embed-sdk';
+    const reactCode = `import { useRef, useEffect } from 'react';
+import { init } from '@learncard/embed-sdk';
 
 function ClaimButton() {
-  return (
-    <LearnCardEmbed
-      publishableKey="${publishableKey}"
-      // Configure your credential here
-    />
-  );
+  const targetRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!targetRef.current) return;
+    init({
+      target: targetRef.current,
+      credential: { name: 'My Credential' },
+      publishableKey: '${publishableKey}',
+      // partnerName: 'Your Company',
+      // branding: { primaryColor: '#1F51FF', accentColor: '#0F3BD9' },
+      // apiBaseUrl: 'https://network.learncard.com/api', // Override API base URL if needed
+      onSuccess: ({ credentialId, consentGiven }) => {
+        console.log('Claimed!', credentialId);
+      },
+    });
+  }, []);
+
+  return <div ref={targetRef} />;
 }`;
 
     const copyCode = async (code: string, id: string) => {

@@ -239,7 +239,8 @@ const LoadSdkStep: React.FC<{
                     title="CDN Script Tag"
                     snippets={{
                         typescript: `<!-- Add before closing </body> tag -->
-<script src="https://cdn.learncard.com/sdk/v1/learncard.js" defer></script>
+<!-- TODO: Verify CDN deployment URL is live before shipping -->
+<script src="https://cdn.learncard.com/embed-sdk/v1/learncard.js" defer></script>
 
 <!-- Then initialize after page loads -->
 <script>
@@ -316,6 +317,7 @@ const ConfigureStep: React.FC<{
     requestBackgroundIssuance: boolean;
     setRequestBackgroundIssuance: (value: boolean) => void;
     onTemplatesChange: (templates: ManagedTemplate[]) => void;
+    templates: ManagedTemplate[];
 }> = ({
     onComplete,
     onBack,
@@ -328,6 +330,7 @@ const ConfigureStep: React.FC<{
     requestBackgroundIssuance,
     setRequestBackgroundIssuance,
     onTemplatesChange,
+    templates,
 }) => {
     const { presentToast } = useToast();
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
@@ -355,20 +358,24 @@ const ConfigureStep: React.FC<{
 
     const getCode = () => {
         const partner = partnerName || 'Your Company';
+        const boostUri = templates[0]?.boostUri || '<your-boost-uri>';
+        const credName = templates[0]?.name || 'My Credential';
 
         return `LearnCard.init({
+    // Where to render the claim button
+    target: '#claim-target',
+
+    // The credential to issue (created via Template Builder above)
+    credential: {
+        name: '${credName}',
+        boostUri: '${boostUri}',
+    },
+
     // Your publishable key from the Developer Portal
     publishableKey: '${publishableKey}',
 
     // Partner branding
     partnerName: '${partner}',
-
-    // Where to render the claim button
-    target: '#claim-target',
-
-    // The credential template to issue (created via Template Builder above)
-    // Reference your template by its Boost URI
-    templateUri: '<your-boost-uri>',
 
     // Custom branding for the claim modal
     branding: ${brandingCode},
@@ -383,7 +390,9 @@ const ConfigureStep: React.FC<{
             console.log('User consented to future issuance!');
         }` : ''}
         // Show success message, redirect, etc.
-    }
+    },
+
+    // apiBaseUrl: 'https://network.learncard.com/api', // Override API base URL if needed
 });`;
     };
 
@@ -640,8 +649,9 @@ const ConfigureStep: React.FC<{
                 <h4 className="font-medium text-amber-800 mb-2">Important Options</h4>
 
                 <ul className="text-sm text-amber-700 space-y-1">
+                    <li>• <code className="bg-amber-100 px-1 rounded">target</code> — CSS selector or HTMLElement for the claim button</li>
+                    <li>• <code className="bg-amber-100 px-1 rounded">credential</code> — Credential config with name and boost URI</li>
                     <li>• <code className="bg-amber-100 px-1 rounded">publishableKey</code> — Required for real claims</li>
-                    <li>• <code className="bg-amber-100 px-1 rounded">templateUri</code> — Boost URI from your saved template above</li>
                     <li>• <code className="bg-amber-100 px-1 rounded">branding</code> — Customize the claim modal appearance</li>
                     <li>• <code className="bg-amber-100 px-1 rounded">requestBackgroundIssuance</code> — Ask consent for future issuance</li>
                     <li>• <code className="bg-amber-100 px-1 rounded">onSuccess</code> — Handle post-claim actions</li>
@@ -908,6 +918,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                         requestBackgroundIssuance={requestBackgroundIssuance}
                         setRequestBackgroundIssuance={setRequestBackgroundIssuance}
                         onTemplatesChange={setTemplates}
+                        templates={templates}
                     />
                 );
 
