@@ -1,20 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-    Key, 
-    Code, 
-    Package, 
-    Settings, 
-    Play, 
-    ArrowRight, 
-    ArrowLeft, 
+import React, { useState, useEffect } from 'react';
+import {
+    Key,
+    Code,
+    Package,
+    Settings,
+    Play,
+    ArrowRight,
+    ArrowLeft,
     ExternalLink,
     CheckCircle2,
     Copy,
     Check,
     Loader2,
     Building2,
-    Sparkles,
-    Award,
     ChevronDown,
     ChevronUp,
     Upload,
@@ -22,13 +20,14 @@ import {
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
-import { useToast, ToastTypeEnum, useConfirmation, useFilestack, useWallet } from 'learn-card-base';
+import { useToast, useFilestack } from 'learn-card-base';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
-import { OBv3CredentialBuilder } from '../../../../components/credentials/OBv3CredentialBuilder';
+import { TemplateListManager } from '../../components/TemplateListManager';
+import type { ManagedTemplate } from '../../dashboards/hooks/useTemplateDetails';
 import type { GuideProps } from '../GuidePage';
 
 const STEPS = [
@@ -306,8 +305,6 @@ const ConfigureStep: React.FC<{
     onBack: () => void;
     publishableKey: string;
     selectedIntegration: LCNIntegration | null;
-    credential: Record<string, unknown>;
-    setCredential: (cred: Record<string, unknown>) => void;
     partnerName: string;
     setPartnerName: (name: string) => void;
     branding: {
@@ -318,40 +315,25 @@ const ConfigureStep: React.FC<{
     setBranding: (branding: { primaryColor: string; accentColor: string; partnerLogoUrl: string }) => void;
     requestBackgroundIssuance: boolean;
     setRequestBackgroundIssuance: (value: boolean) => void;
-}> = ({ 
-    onComplete, 
-    onBack, 
-    publishableKey, 
+    onTemplatesChange: (templates: ManagedTemplate[]) => void;
+}> = ({
+    onComplete,
+    onBack,
+    publishableKey,
     selectedIntegration,
-    credential, 
-    setCredential, 
-    partnerName, 
+    partnerName,
     setPartnerName,
     branding,
     setBranding,
     requestBackgroundIssuance,
     setRequestBackgroundIssuance,
+    onTemplatesChange,
 }) => {
     const { presentToast } = useToast();
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+    const [hasTemplates, setHasTemplates] = useState(false);
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [keyCopied, setKeyCopied] = useState(false);
-    const { initWallet } = useWallet();
-    const [userDid, setUserDid] = useState<string>('');
-
-    // Fetch user's DID on mount
-    useEffect(() => {
-        const fetchDid = async () => {
-            try {
-                const wallet = await initWallet();
-                const did = wallet.id.did();
-                setUserDid(did);
-            } catch (err) {
-                console.error('Failed to get DID:', err);
-            }
-        };
-        fetchDid();
-    }, []);
 
     // Logo upload via Filestack
     const { handleFileSelect: handleLogoUpload, isLoading: isUploadingLogo } = useFilestack({
@@ -361,27 +343,8 @@ const ConfigureStep: React.FC<{
         fileType: 'image/*',
     });
 
-    const handleCredentialSave = (newCredential: Record<string, unknown>) => {
-        // Add issuer if we have the DID
-        if (userDid) {
-            newCredential.issuer = userDid;
-        }
-        setCredential(newCredential);
-    };
-
-    // Extract display info from credential
-    const credentialName = (credential.name as string) || 'Untitled Credential';
-    const credentialSubject = credential.credentialSubject as Record<string, unknown> | undefined;
-    const achievement = credentialSubject?.achievement as Record<string, unknown> | undefined;
-    const credentialDescription = (achievement?.description as string) || '';
-    const achievementImage = (achievement?.image as { id?: string })?.id || (achievement?.image as string) || '';
-
     // Check if branding is set
     const hasBranding = branding.primaryColor !== '#1F51FF' || branding.partnerLogoUrl;
-
-    // Format credential JSON for code snippets
-    const credentialJson = useMemo(() => JSON.stringify(credential, null, 4), [credential]);
-    const credentialJsonIndented = credentialJson.split('\n').map((line, i) => i === 0 ? line : '        ' + line).join('\n');
 
     // Format branding object for code
     const brandingCode = `{
@@ -396,16 +359,17 @@ const ConfigureStep: React.FC<{
         return `LearnCard.init({
     // Your publishable key from the Developer Portal
     publishableKey: '${publishableKey}',
-    
+
     // Partner branding
     partnerName: '${partner}',
-    
+
     // Where to render the claim button
     target: '#claim-target',
-    
-    // The credential to issue (built with Credential Builder)
-    credential: ${credentialJsonIndented},
-    
+
+    // The credential template to issue (created via Template Builder above)
+    // Reference your template by its Boost URI
+    templateUri: '<your-boost-uri>',
+
     // Custom branding for the claim modal
     branding: ${brandingCode},
     ${requestBackgroundIssuance ? `
@@ -429,7 +393,8 @@ const ConfigureStep: React.FC<{
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Configure the SDK</h3>
 
                 <p className="text-gray-600">
-                    Build your credential and customize branding for the claim experience.
+                    Create your credential template and customize branding for the claim experience.
+                    Templates persist as reusable Boosts that you can reference by URI.
                 </p>
             </div>
 
@@ -490,68 +455,17 @@ const ConfigureStep: React.FC<{
                 </div>
             )}
 
-            {/* Credential preview card */}
-            <div className="p-4 bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-200 rounded-2xl">
-                <div className="flex items-start gap-4">
-                    {/* Credential icon/image */}
-                    {achievementImage ? (
-                        <img
-                            src={achievementImage}
-                            alt={credentialName}
-                            className="w-16 h-16 rounded-xl object-cover flex-shrink-0 border border-gray-200"
-                            onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                            }}
-                        />
-                    ) : null}
-
-                    <div className={`w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 ${achievementImage ? 'hidden' : ''}`}>
-                        <Award className="w-8 h-8 text-white" />
-                    </div>
-
-                    {/* Credential info */}
-                    <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-800 truncate">{credentialName}</h4>
-
-                        <p className="text-sm text-gray-600 line-clamp-2 mt-0.5">
-                            {credentialDescription || 'No description set'}
-                        </p>
-
-                        <div className="flex items-center gap-2 mt-2">
-                            <span className="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs font-medium">
-                                {(achievement?.achievementType as string) || 'Achievement'}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Edit button */}
-                    <button
-                        onClick={() => setIsBuilderOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-white text-cyan-600 border border-cyan-300 rounded-xl font-medium hover:bg-cyan-50 transition-colors"
-                    >
-                        <Sparkles className="w-4 h-4" />
-                        Edit
-                    </button>
-                </div>
-
-                {/* Open builder button if using default */}
-                {credentialName === 'Achievement Badge' && (
-                    <button
-                        onClick={() => setIsBuilderOpen(true)}
-                        className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
-                    >
-                        <Sparkles className="w-4 h-4" />
-                        Customize Your Credential
-                    </button>
-                )}
-            </div>
-
-            {/* Credential Builder Modal */}
-            <OBv3CredentialBuilder
-                isOpen={isBuilderOpen}
-                onClose={() => setIsBuilderOpen(false)}
-                onSave={handleCredentialSave}
+            {/* Template Builder */}
+            <TemplateListManager
+                integrationId={selectedIntegration?.id}
+                featureType="issue-credentials"
+                showCodeSnippets={false}
+                editable={true}
+                onTemplateChange={(newTemplates) => {
+                    setHasTemplates(newTemplates.length > 0);
+                    onTemplatesChange(newTemplates);
+                }}
+                onBuilderOpenChange={setIsBuilderOpen}
             />
 
             {/* Partner Name */}
@@ -711,7 +625,7 @@ const ConfigureStep: React.FC<{
                                 background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.accentColor} 100%)` 
                             }}
                         >
-                            Claim "{credentialName}"
+                            Claim Credential
                         </div>
                     </div>
                 </div>
@@ -727,29 +641,39 @@ const ConfigureStep: React.FC<{
 
                 <ul className="text-sm text-amber-700 space-y-1">
                     <li>• <code className="bg-amber-100 px-1 rounded">publishableKey</code> — Required for real claims</li>
-                    <li>• <code className="bg-amber-100 px-1 rounded">credential</code> — Built using the Credential Builder above</li>
+                    <li>• <code className="bg-amber-100 px-1 rounded">templateUri</code> — Boost URI from your saved template above</li>
                     <li>• <code className="bg-amber-100 px-1 rounded">branding</code> — Customize the claim modal appearance</li>
                     <li>• <code className="bg-amber-100 px-1 rounded">requestBackgroundIssuance</code> — Ask consent for future issuance</li>
                     <li>• <code className="bg-amber-100 px-1 rounded">onSuccess</code> — Handle post-claim actions</li>
                 </ul>
             </div>
 
-            <div className="flex gap-3">
-                <button
-                    onClick={onBack}
-                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back
-                </button>
+            {/* Navigation */}
+            <div className="space-y-2">
+                <div className="flex gap-3">
+                    <button
+                        onClick={onBack}
+                        className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back
+                    </button>
 
-                <button
-                    onClick={onComplete}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
-                >
-                    Continue
-                    <ArrowRight className="w-4 h-4" />
-                </button>
+                    <button
+                        onClick={onComplete}
+                        disabled={!hasTemplates || isBuilderOpen}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        Continue
+                        <ArrowRight className="w-4 h-4" />
+                    </button>
+                </div>
+
+                {isBuilderOpen && (
+                    <p className="text-xs text-amber-600 text-center">
+                        Save or cancel the template you&apos;re editing before continuing.
+                    </p>
+                )}
             </div>
         </div>
     );
@@ -760,10 +684,11 @@ const TestStep: React.FC<{
     onBack: () => void;
     onComplete: () => void;
     publishableKey: string;
-    credential: Record<string, unknown>;
+    templates: ManagedTemplate[];
     partnerName: string;
-}> = ({ onBack, onComplete, publishableKey, credential, partnerName }) => {
-    const credentialName = (credential.name as string) || 'Untitled Credential';
+}> = ({ onBack, onComplete, publishableKey, templates, partnerName }) => {
+    const hasTemplates = templates.length > 0;
+    const firstTemplateName = hasTemplates ? templates[0]?.name || 'Untitled Template' : 'No template';
     return (
         <div className="space-y-6">
             <div>
@@ -785,8 +710,10 @@ const TestStep: React.FC<{
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <CheckCircle2 className={`w-4 h-4 ${credentialName ? 'text-emerald-600' : 'text-gray-300'}`} />
-                        <span className={credentialName ? 'text-gray-800' : 'text-gray-400'}>Credential name set</span>
+                        <CheckCircle2 className={`w-4 h-4 ${hasTemplates ? 'text-emerald-600' : 'text-gray-300'}`} />
+                        <span className={hasTemplates ? 'text-gray-800' : 'text-gray-400'}>
+                            {hasTemplates ? `Template created: ${firstTemplateName}` : 'No template created'}
+                        </span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -918,23 +845,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
     // Derive publishable key from selected integration
     const publishableKey = selectedIntegration?.publishableKey || '';
 
-    const [credential, setCredential] = useState<Record<string, unknown>>({
-        '@context': [
-            'https://www.w3.org/ns/credentials/v2',
-            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-        ],
-        type: ['VerifiableCredential', 'OpenBadgeCredential'],
-        name: 'Achievement Badge',
-        credentialSubject: {
-            type: ['AchievementSubject'],
-            achievement: {
-                type: ['Achievement'],
-                name: 'Achievement Badge',
-                description: 'Awarded for completing the course',
-                achievementType: 'Achievement',
-            },
-        },
-    });
+    const [templates, setTemplates] = useState<ManagedTemplate[]>([]);
     const [partnerName, setPartnerName] = useState('');
     const [branding, setBranding] = useState({
         primaryColor: '#1F51FF',
@@ -990,14 +901,13 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                         onBack={guideState.prevStep}
                         publishableKey={publishableKey}
                         selectedIntegration={selectedIntegration}
-                        credential={credential}
-                        setCredential={setCredential}
                         partnerName={partnerName}
                         setPartnerName={setPartnerName}
                         branding={branding}
                         setBranding={setBranding}
                         requestBackgroundIssuance={requestBackgroundIssuance}
                         setRequestBackgroundIssuance={setRequestBackgroundIssuance}
+                        onTemplatesChange={setTemplates}
                     />
                 );
 
@@ -1007,7 +917,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                         onBack={guideState.prevStep}
                         onComplete={() => handleStepComplete('test')}
                         publishableKey={publishableKey}
-                        credential={credential}
+                        templates={templates}
                         partnerName={partnerName}
                     />
                 );
