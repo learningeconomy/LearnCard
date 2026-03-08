@@ -706,14 +706,15 @@ const EmbedPreview: React.FC<{
     const brandingKey = JSON.stringify(branding);
 
     useEffect(() => {
-        if (!containerRef.current) return;
-        containerRef.current.innerHTML = '';
+        const el = containerRef.current;
+        if (!el) return;
+        el.innerHTML = '';
         setError(null);
         setIsLoaded(false);
 
         try {
             initEmbed({
-                target: containerRef.current,
+                target: el,
                 publishableKey,
                 partnerName,
                 credential,
@@ -729,9 +730,7 @@ const EmbedPreview: React.FC<{
         }
 
         return () => {
-            if (containerRef.current) {
-                containerRef.current.innerHTML = '';
-            }
+            if (el) el.innerHTML = '';
         };
     }, [publishableKey, partnerName, credentialKey, brandingKey, requestBackgroundIssuance]);
 
@@ -777,7 +776,8 @@ const TestStep: React.FC<{
     ];
     const allChecksPass = checks.every(c => c.ok);
 
-    const selectedTemplate = templates[selectedTemplateIdx];
+    const safeIdx = Math.min(selectedTemplateIdx, Math.max(0, templates.length - 1));
+    const selectedTemplate = templates[safeIdx];
 
     const credential = useMemo(
         () => ({
