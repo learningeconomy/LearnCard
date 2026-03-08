@@ -10,12 +10,13 @@
  *
  * Environment Variables:
  *   POSTMARK_SERVER_TOKEN  — Postmark API key
- *   POSTMARK_FROM_EMAIL    — Default "From" address (required for Postmark)
+ *   POSTMARK_FROM_EMAIL    — Email domain, e.g. "learncard.com" (required for Postmark)
  */
 
 import { DeliveryService } from './delivery.service';
 import { LogAdapter } from './adapters/log.adapter';
 import { PostmarkAdapter } from './adapters/postmark.adapter';
+import { getFrom } from './from';
 
 const IS_TEST_ENVIRONMENT = process.env.NODE_ENV === 'test';
 
@@ -34,7 +35,7 @@ export const getDeliveryService = (): DeliveryService => {
 
     if (POSTMARK_SERVER_TOKEN && POSTMARK_FROM_EMAIL) {
         console.log('[delivery] Postmark credentials found. Using PostmarkAdapter.');
-        cachedService = new PostmarkAdapter(POSTMARK_SERVER_TOKEN, POSTMARK_FROM_EMAIL);
+        cachedService = new PostmarkAdapter(POSTMARK_SERVER_TOKEN, getFrom());
         return cachedService;
     }
 
