@@ -870,6 +870,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
     // ============================================================
     useEffect(() => {
         if (hasRestoredState) return;
+        if (!selectedIntegration) return; // Wait for integration to load
 
         const savedConfig = guideState.getConfig<{
             partnerName?: string;
