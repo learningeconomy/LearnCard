@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
     Key,
     Code,
@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
-import { useToast, useFilestack } from 'learn-card-base';
+import { useToast, useFilestack, ToastTypeEnum } from 'learn-card-base';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
@@ -44,7 +44,8 @@ const STEPS = [
 const PublishableKeyStep: React.FC<{
     onComplete: () => void;
     selectedIntegration: LCNIntegration | null;
-}> = ({ onComplete, selectedIntegration }) => {
+    isTransitioning?: boolean;
+}> = ({ onComplete, selectedIntegration, isTransitioning }) => {
     const { presentToast } = useToast();
     const [copied, setCopied] = useState(false);
 
@@ -53,10 +54,17 @@ const PublishableKeyStep: React.FC<{
     const copyKey = async () => {
         if (!publishableKey) return;
 
-        await Clipboard.write({ string: publishableKey });
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-        presentToast('Key copied!', { hasDismissButton: true });
+        try {
+            await Clipboard.write({ string: publishableKey });
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+            presentToast('Key copied!', { hasDismissButton: true });
+        } catch {
+            presentToast('Failed to copy key.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
     };
 
     return (
@@ -114,11 +122,17 @@ const PublishableKeyStep: React.FC<{
 
             <button
                 onClick={onComplete}
-                disabled={!publishableKey}
+                disabled={!publishableKey || isTransitioning}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-                Continue
-                <ArrowRight className="w-4 h-4" />
+                {isTransitioning ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                    <>
+                        Continue
+                        <ArrowRight className="w-4 h-4" />
+                    </>
+                )}
             </button>
         </div>
     );
@@ -128,7 +142,8 @@ const PublishableKeyStep: React.FC<{
 const AddTargetStep: React.FC<{
     onComplete: () => void;
     onBack: () => void;
-}> = ({ onComplete, onBack }) => {
+    isTransitioning?: boolean;
+}> = ({ onComplete, onBack, isTransitioning }) => {
     return (
         <div className="space-y-6">
             <div>
@@ -184,10 +199,17 @@ const AddTargetStep: React.FC<{
 
                 <button
                     onClick={onComplete}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
+                    disabled={isTransitioning}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    Continue
-                    <ArrowRight className="w-4 h-4" />
+                    {isTransitioning ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                        <>
+                            Continue
+                            <ArrowRight className="w-4 h-4" />
+                        </>
+                    )}
                 </button>
             </div>
         </div>
@@ -198,7 +220,8 @@ const AddTargetStep: React.FC<{
 const LoadSdkStep: React.FC<{
     onComplete: () => void;
     onBack: () => void;
-}> = ({ onComplete, onBack }) => {
+    isTransitioning?: boolean;
+}> = ({ onComplete, onBack, isTransitioning }) => {
     const [method, setMethod] = useState<'cdn' | 'npm'>('cdn');
 
     return (
@@ -291,10 +314,17 @@ init({
 
                 <button
                     onClick={onComplete}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
+                    disabled={isTransitioning}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    Continue
-                    <ArrowRight className="w-4 h-4" />
+                    {isTransitioning ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                        <>
+                            Continue
+                            <ArrowRight className="w-4 h-4" />
+                        </>
+                    )}
                 </button>
             </div>
         </div>
@@ -319,6 +349,7 @@ const ConfigureStep: React.FC<{
     setRequestBackgroundIssuance: (value: boolean) => void;
     onTemplatesChange: (templates: ManagedTemplate[]) => void;
     templates: ManagedTemplate[];
+    isTransitioning?: boolean;
 }> = ({
     onComplete,
     onBack,
@@ -332,6 +363,7 @@ const ConfigureStep: React.FC<{
     setRequestBackgroundIssuance,
     onTemplatesChange,
     templates,
+    isTransitioning,
 }) => {
     const { presentToast } = useToast();
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
@@ -340,12 +372,22 @@ const ConfigureStep: React.FC<{
     const [keyCopied, setKeyCopied] = useState(false);
 
     // Logo upload via Filestack
-    const { handleFileSelect: handleLogoUpload, isLoading: isUploadingLogo } = useFilestack({
+    const { handleFileSelect: handleLogoUpload, isLoading: isUploadingLogo, error: logoUploadError } = useFilestack({
         onUpload: (url: string) => {
             setBranding({ ...branding, partnerLogoUrl: url });
         },
         fileType: 'image/*',
     });
+
+    // Show error toast when logo upload fails
+    useEffect(() => {
+        if (logoUploadError) {
+            presentToast('Failed to upload logo. Please try again.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
+    }, [logoUploadError]);
 
     // Check if branding is set
     const hasBranding = branding.primaryColor !== '#1F51FF' || branding.partnerLogoUrl;
@@ -419,10 +461,17 @@ const ConfigureStep: React.FC<{
 
                         <button
                             onClick={async () => {
-                                await Clipboard.write({ string: publishableKey });
-                                setKeyCopied(true);
-                                setTimeout(() => setKeyCopied(false), 2000);
-                                presentToast('Key copied!', { hasDismissButton: true });
+                                try {
+                                    await Clipboard.write({ string: publishableKey });
+                                    setKeyCopied(true);
+                                    setTimeout(() => setKeyCopied(false), 2000);
+                                    presentToast('Key copied!', { hasDismissButton: true });
+                                } catch {
+                                    presentToast('Failed to copy key.', {
+                                        type: ToastTypeEnum.Error,
+                                        hasDismissButton: true,
+                                    });
+                                }
                             }}
                             className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
                         >
@@ -672,11 +721,17 @@ const ConfigureStep: React.FC<{
 
                     <button
                         onClick={onComplete}
-                        disabled={!hasTemplates || isBuilderOpen}
+                        disabled={!hasTemplates || isBuilderOpen || isTransitioning}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        Continue
-                        <ArrowRight className="w-4 h-4" />
+                        {isTransitioning ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <>
+                                Continue
+                                <ArrowRight className="w-4 h-4" />
+                            </>
+                        )}
                     </button>
                 </div>
 
@@ -766,7 +821,8 @@ const TestStep: React.FC<{
     partnerName: string;
     branding: { primaryColor: string; accentColor: string; partnerLogoUrl: string };
     requestBackgroundIssuance: boolean;
-}> = ({ onBack, onComplete, publishableKey, templates, partnerName, branding, requestBackgroundIssuance }) => {
+    isTransitioning?: boolean;
+}> = ({ onBack, onComplete, publishableKey, templates, partnerName, branding, requestBackgroundIssuance, isTransitioning }) => {
     const [selectedTemplateIdx, setSelectedTemplateIdx] = useState(0);
 
     const checks = [
@@ -943,10 +999,17 @@ const TestStep: React.FC<{
 
                 <button
                     onClick={onComplete}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
+                    disabled={isTransitioning}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    Continue to Go Live
-                    <ArrowRight className="w-4 h-4" />
+                    {isTransitioning ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                        <>
+                            Continue to Go Live
+                            <ArrowRight className="w-4 h-4" />
+                        </>
+                    )}
                 </button>
             </div>
         </div>
@@ -1019,6 +1082,17 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
         });
     }, [partnerName, branding, requestBackgroundIssuance, hasRestoredState]);
 
+    const [isTransitioning, setIsTransitioning] = useState(false);
+
+    const handleStepComplete = useCallback((stepId: string) => {
+        if (isTransitioning) return;
+        setIsTransitioning(true);
+        guideState.markStepComplete(stepId);
+        guideState.nextStep();
+        // Brief debounce to prevent double-clicks during step transition
+        setTimeout(() => setIsTransitioning(false), 600);
+    }, [isTransitioning, guideState]);
+
     // Integration selection guard — placed after all hooks to respect Rules of Hooks
     if (!selectedIntegration) {
         return (
@@ -1028,11 +1102,6 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
         );
     }
 
-    const handleStepComplete = (stepId: string) => {
-        guideState.markStepComplete(stepId);
-        guideState.nextStep();
-    };
-
     const renderStep = () => {
         switch (guideState.currentStep) {
             case 0:
@@ -1040,6 +1109,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                     <PublishableKeyStep
                         onComplete={() => handleStepComplete('publishable-key')}
                         selectedIntegration={selectedIntegration}
+                        isTransitioning={isTransitioning}
                     />
                 );
 
@@ -1048,6 +1118,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                     <AddTargetStep
                         onComplete={() => handleStepComplete('add-target')}
                         onBack={guideState.prevStep}
+                        isTransitioning={isTransitioning}
                     />
                 );
 
@@ -1056,6 +1127,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                     <LoadSdkStep
                         onComplete={() => handleStepComplete('load-sdk')}
                         onBack={guideState.prevStep}
+                        isTransitioning={isTransitioning}
                     />
                 );
 
@@ -1074,6 +1146,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                         setRequestBackgroundIssuance={setRequestBackgroundIssuance}
                         onTemplatesChange={setTemplates}
                         templates={templates}
+                        isTransitioning={isTransitioning}
                     />
                 );
 
@@ -1087,6 +1160,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                         partnerName={partnerName}
                         branding={branding}
                         requestBackgroundIssuance={requestBackgroundIssuance}
+                        isTransitioning={isTransitioning}
                     />
                 );
 
