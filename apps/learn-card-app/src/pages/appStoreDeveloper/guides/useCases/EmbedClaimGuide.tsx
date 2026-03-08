@@ -855,14 +855,40 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
     // Derive publishable key from selected integration
     const publishableKey = selectedIntegration?.publishableKey || '';
 
+    // Restore saved config from guide state
+    const savedConfig = guideState.getConfig<{
+        partnerName?: string;
+        branding?: { primaryColor: string; accentColor: string; partnerLogoUrl: string };
+        requestBackgroundIssuance?: boolean;
+    }>('embedClaimConfig');
+
     const [templates, setTemplates] = useState<ManagedTemplate[]>([]);
-    const [partnerName, setPartnerName] = useState('');
-    const [branding, setBranding] = useState({
+    const [partnerName, setPartnerName] = useState(savedConfig?.partnerName ?? '');
+    const [branding, setBranding] = useState(savedConfig?.branding ?? {
         primaryColor: '#1F51FF',
         accentColor: '#0F3BD9',
         partnerLogoUrl: '',
     });
-    const [requestBackgroundIssuance, setRequestBackgroundIssuance] = useState(false);
+    const [requestBackgroundIssuance, setRequestBackgroundIssuance] = useState(savedConfig?.requestBackgroundIssuance ?? false);
+    const [hasRestoredState, setHasRestoredState] = useState(false);
+
+    // Mark state as restored after initial render
+    useEffect(() => {
+        if (!hasRestoredState) {
+            setHasRestoredState(true);
+        }
+    }, [hasRestoredState]);
+
+    // Persist config when values change
+    useEffect(() => {
+        if (!hasRestoredState) return;
+
+        guideState.updateConfig('embedClaimConfig', {
+            partnerName,
+            branding,
+            requestBackgroundIssuance,
+        });
+    }, [partnerName, branding, requestBackgroundIssuance, hasRestoredState]);
 
     // Integration selection guard — placed after all hooks to respect Rules of Hooks
     if (!selectedIntegration) {
