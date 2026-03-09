@@ -351,6 +351,8 @@ const ConfigureStep: React.FC<{
     onTemplatesChange: (templates: ManagedTemplate[]) => void;
     templates: ManagedTemplate[];
     isTransitioning?: boolean;
+    whitelistedDomains: string[];
+    onWhitelistedDomainsChange: (domains: string[]) => void;
 }> = ({
     onComplete,
     onBack,
@@ -365,12 +367,15 @@ const ConfigureStep: React.FC<{
     onTemplatesChange,
     templates,
     isTransitioning,
+    whitelistedDomains,
+    onWhitelistedDomainsChange,
 }) => {
     const { presentToast } = useToast();
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
     const [hasTemplates, setHasTemplates] = useState(false);
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [keyCopied, setKeyCopied] = useState(false);
+    const [domainInput, setDomainInput] = useState('');
 
     // Logo upload via Filestack
     const { handleFileSelect: handleLogoUpload, isLoading: isUploadingLogo, error: logoUploadError } = useFilestack({
@@ -544,6 +549,78 @@ const ConfigureStep: React.FC<{
                 <p className="text-xs text-gray-500 mt-1">
                     Shown in the claim modal as the issuing organization
                 </p>
+            </div>
+
+            {/* Whitelisted Domains */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Whitelisted Domains</label>
+
+                <p className="text-xs text-gray-500 mb-2">
+                    The LearnCard Network domain(s) your integration is authorized to operate on.
+                    For production use <code className="bg-gray-100 px-1 rounded">network.learncard.com</code>,
+                    for local development use <code className="bg-gray-100 px-1 rounded">localhost:4000</code>.
+                    This will be auto-configured when you test, but you can manage it here.
+                </p>
+
+                <div className="flex gap-2 mb-2">
+                    <input
+                        type="text"
+                        value={domainInput}
+                        onChange={(e) => setDomainInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const domain = domainInput.trim();
+                                if (domain && !whitelistedDomains.includes(domain)) {
+                                    onWhitelistedDomainsChange([...whitelistedDomains, domain]);
+                                    setDomainInput('');
+                                }
+                            }
+                        }}
+                        placeholder="e.g., network.learncard.com or localhost:4000"
+                        className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        style={{ colorScheme: 'light' }}
+                    />
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const domain = domainInput.trim();
+                            if (domain && !whitelistedDomains.includes(domain)) {
+                                onWhitelistedDomainsChange([...whitelistedDomains, domain]);
+                                setDomainInput('');
+                            }
+                        }}
+                        className="px-3 py-2 bg-cyan-500 text-white text-sm font-medium rounded-lg hover:bg-cyan-600 transition-colors"
+                    >
+                        Add
+                    </button>
+                </div>
+
+                {whitelistedDomains.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                        {whitelistedDomains.map((domain) => (
+                            <span
+                                key={domain}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-medium text-indigo-700"
+                            >
+                                {domain}
+                                <button
+                                    type="button"
+                                    onClick={() => onWhitelistedDomainsChange(whitelistedDomains.filter(d => d !== domain))}
+                                    className="text-indigo-400 hover:text-indigo-700 ml-0.5"
+                                    aria-label={`Remove ${domain}`}
+                                >
+                                    &times;
+                                </button>
+                            </span>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-xs text-amber-600">
+                        No domains whitelisted yet. The embed will not work until you add at least one domain.
+                    </p>
+                )}
             </div>
 
             {/* Advanced Options Toggle */}
@@ -1090,6 +1167,23 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
         });
     }, [partnerName, branding, requestBackgroundIssuance, hasRestoredState]);
 
+    // Auto-whitelist the network domain when reaching the test step so the embed preview works.
+    // The brain service checks its own domain against the integration's whitelistedDomains.
+    useEffect(() => {
+        if (guideState.currentStep !== 4 || !selectedIntegration) return;
+        try {
+            const url = new URL(apiBaseUrl);
+            const networkDomain = url.hostname + (url.port ? `:${url.port}` : '');
+            const existing = selectedIntegration.whitelistedDomains || [];
+            if (!existing.includes(networkDomain)) {
+                updateIntegrationMutation.mutate({
+                    id: selectedIntegration.id,
+                    updates: { whitelistedDomains: [...existing, networkDomain] },
+                });
+            }
+        } catch {}
+    }, [guideState.currentStep, selectedIntegration?.id, apiBaseUrl]);
+
     const [isTransitioning, setIsTransitioning] = useState(false);
 
     const handleStepComplete = useCallback((stepId: string) => {
@@ -1155,6 +1249,13 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                         onTemplatesChange={setTemplates}
                         templates={templates}
                         isTransitioning={isTransitioning}
+                        whitelistedDomains={selectedIntegration.whitelistedDomains || []}
+                        onWhitelistedDomainsChange={(domains) => {
+                            updateIntegrationMutation.mutate({
+                                id: selectedIntegration.id,
+                                updates: { whitelistedDomains: domains },
+                            });
+                        }}
                     />
                 );
 
