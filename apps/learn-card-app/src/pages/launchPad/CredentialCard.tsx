@@ -44,8 +44,6 @@ const CredentialCard: React.FC<CredentialCardProps> = ({ record, isNew, index })
     };
     const updatedCategory = categoryDisplayMap[category] || category;
 
-    console.log('category', category);
-    console.log('credential', credential);
     const formattedDate = record.dateEarned.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -95,7 +93,7 @@ const CredentialCard: React.FC<CredentialCardProps> = ({ record, isNew, index })
                         </div>
 
                         {/* Status Badge */}
-                        <div className="mt-[8px] flex">
+                        <div className="mt-[8px] flex xs:flex-col xs:items-start">
                             {record.status === 'claimed' && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-sm font-medium rounded-full font-poppins">
                                     <Check className="w-3 h-3" />
@@ -109,7 +107,7 @@ const CredentialCard: React.FC<CredentialCardProps> = ({ record, isNew, index })
                                 </span>
                             )}
                             {/* Category Tag */}
-                            <span className="ml-2 inline-flex px-2 py-0.5 bg-gray-100 text-gray-900 text-sm rounded-full capitalize font-poppins">
+                            <span className="ml-2 xs:ml-0 xs:mt-2 inline-flex px-2 py-0.5 bg-gray-100 text-gray-900 text-sm rounded-full capitalize font-poppins">
                                 {updatedCategory}
                             </span>
                         </div>
