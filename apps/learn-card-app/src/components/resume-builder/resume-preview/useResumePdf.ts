@@ -15,10 +15,6 @@ export type ResumePdfPreviewData = {
     url: string;
 };
 
-const PDF_PREVIEW_FRAGMENT = '#view=FitH&zoom=page-fit&toolbar=0&navpanes=0&scrollbar=0';
-
-const toPdfPreviewUrl = (url: string): string => `${url}${PDF_PREVIEW_FRAGMENT}`;
-
 const toPdfFileName = (raw?: string): string => {
     const trimmed = (raw || '').trim();
     if (!trimmed) return 'resume.pdf';
@@ -229,7 +225,7 @@ export const useResumePdf = (
             downloadUrl,
             fileName,
             pageCount,
-            url: toPdfPreviewUrl(downloadUrl),
+            url: downloadUrl,
         };
     }, [buildPDF]);
 
