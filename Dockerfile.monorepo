@@ -55,6 +55,7 @@ COPY packages/plugins/vc-api/package.json packages/plugins/vc-api/
 COPY packages/plugins/vc-templates/package.json packages/plugins/vc-templates/
 COPY packages/plugins/vpqr/package.json packages/plugins/vpqr/
 COPY packages/plugins/simple-signing-plugin/package.json packages/plugins/simple-signing-plugin/
+COPY packages/learn-card-embed-sdk/package.json packages/learn-card-embed-sdk/
 COPY apps/learn-card-app/package.json apps/learn-card-app/
 
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
@@ -97,6 +98,7 @@ COPY packages/plugins/vc-api packages/plugins/vc-api
 COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY packages/plugins/vpqr packages/plugins/vpqr
 COPY packages/plugins/simple-signing-plugin packages/plugins/simple-signing-plugin
+COPY packages/learn-card-embed-sdk packages/learn-card-embed-sdk
 COPY apps/learn-card-app apps/learn-card-app
 
 RUN --mount=type=cache,id=nx-cache,target=/app/.nx \
