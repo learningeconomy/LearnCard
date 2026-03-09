@@ -13,9 +13,16 @@ export type ResumeBuilderHeaderAction = 'preview' | 'download' | null;
 export const ResumeBuilderHeader: React.FC<{
     loadingAction: ResumeBuilderHeaderAction;
     isMobile?: boolean;
+    isDesktopPanelClosed?: boolean;
     onPreview: () => void;
     onDownload: () => void;
-}> = ({ loadingAction, isMobile = false, onPreview, onDownload }) => {
+}> = ({
+    loadingAction,
+    isMobile = false,
+    isDesktopPanelClosed = false,
+    onPreview,
+    onDownload,
+}) => {
     const history = useHistory();
 
     return (
@@ -47,7 +54,11 @@ export const ResumeBuilderHeader: React.FC<{
                     </button>
                 </div>
 
-                <div className={`flex items-center ${!isMobile ? 'pr-[60px]' : ''}`}>
+                <div
+                    className={`flex items-center ${
+                        !isMobile && isDesktopPanelClosed ? 'pr-[60px]' : ''
+                    }`}
+                >
                     <button
                         onClick={onDownload}
                         disabled={loadingAction !== null}

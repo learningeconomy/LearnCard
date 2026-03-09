@@ -100,6 +100,7 @@ export const ResumeBuilder: React.FC = () => {
                 <ResumeBuilderHeader
                     loadingAction={loadingAction}
                     isMobile={isMobile}
+                    isDesktopPanelClosed={!panelOpen}
                     onPreview={handlePreview}
                     onDownload={handleDownload}
                 />
