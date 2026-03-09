@@ -123,6 +123,16 @@
           if (v && idx < 5) focusIndex(idx + 1);
           if (!v && idx > 0) focusIndex(idx - 1);
         });
+        input.addEventListener('paste', function (e) {
+          e.preventDefault();
+          var pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+          if (!pasted) return;
+          for (var j = 0; j < pasted.length && j < 6; j++) {
+            digits[j] = pasted[j];
+          }
+          onInput(digits.join(''));
+          focusIndex(Math.min(pasted.length, 5));
+        });
         input.addEventListener('keydown', function (e) {
           if (e.key === 'Backspace' && !e.target.value && idx > 0) focusIndex(idx - 1);
         });

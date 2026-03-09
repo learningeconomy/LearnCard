@@ -21,12 +21,23 @@
         if (prev) prev.focus();
       }
     }
+    function onPaste(e){
+      e.preventDefault();
+      var pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g,'').slice(0,6);
+      if (!pasted) return;
+      for (var j = 0; j < pasted.length && j < 6; j++) digits[j] = pasted[j];
+      props.onInput(digits.join(''));
+      var inputs = e.target.parentElement.querySelectorAll('input');
+      var focusIdx = Math.min(pasted.length, 5);
+      if (inputs[focusIdx]) inputs[focusIdx].focus();
+    }
     return h('div', { class: 'otp' },
       [0,1,2,3,4,5].map(function(i){
         return h('input', {
           type: 'text', inputMode: 'numeric', maxLength: 1,
           value: digits[i] || '',
           onInput: onChange.bind(null, i),
+          onPaste: onPaste,
           onKeyDown: function(ev){ if (ev.key === 'Backspace' && !ev.target.value && i>0) {
             var prev = ev.target.parentElement.querySelectorAll('input')[i-1]; if (prev) prev.focus();
           }}

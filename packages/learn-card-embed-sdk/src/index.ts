@@ -259,7 +259,7 @@ function openModal(opts: InitOptions): { close: () => void } {
           'Authorization': `Bearer ${sessionJwt}`,
         },
         body: JSON.stringify({
-          credential: opts.credential,
+          credential: (opts.credential as any).credential ?? (opts.credential as any).obv3Template ?? opts.credential,
           configuration: { publishableKey: opts.publishableKey },
         }),
       });
@@ -339,7 +339,7 @@ function openModal(opts: InitOptions): { close: () => void } {
               'Authorization': `Bearer ${sessionJwt}`,
             },
             body: JSON.stringify({
-              credential: opts.credential,
+              credential: (opts.credential as any).credential ?? (opts.credential as any).obv3Template ?? opts.credential,
               configuration: { publishableKey: opts.publishableKey },
             }),
           });
