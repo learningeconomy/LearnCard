@@ -174,6 +174,22 @@ function openModal(opts: InitOptions): { close: () => void } {
   const apiBase = (opts.apiBaseUrl ?? 'https://network.learncard.com/api').replace(/\/$/, '');
   let sessionJwt: string | null = stored?.jwt || null;
 
+  // Map technical/internal error codes to user-friendly messages
+  function friendlyError(raw: string, fallback: string): string {
+    const normalized = raw.toUpperCase().replace(/[\s_-]+/g, '_');
+    const map: Record<string, string> = {
+      NOT_FOUND: 'This integration could not be found. Please check your configuration.',
+      UNAUTHORIZED: 'Authorization failed. Please check your publishable key.',
+      FORBIDDEN: 'Access denied. Please check your permissions.',
+      RATE_LIMITED: 'Too many attempts. Please wait a moment and try again.',
+      INVALID_EMAIL: 'Please enter a valid email address.',
+      INVALID_CODE: 'The code you entered is incorrect. Please try again.',
+      EXPIRED: 'This code has expired. Please request a new one.',
+      INTERNAL_SERVER_ERROR: 'Something went wrong on our end. Please try again later.',
+    };
+    return map[normalized] || (/^[A-Z_]+$/.test(raw) ? fallback : raw);
+  }
+
   async function defaultEmailSubmit(email: string): Promise<EmailSubmitResult> {
     // If publishableKey is missing, preserve no-op behavior for backwards compatibility and tests
     if (!opts.publishableKey) return { ok: true };
@@ -190,15 +206,17 @@ function openModal(opts: InitOptions): { close: () => void } {
       });
 
       if (!res.ok) {
-        // Try to parse a message if available
-        let message = 'Failed to send code';
-        try { const j = await res.json(); if (j?.message) message = j.message; } catch {}
+        let message = 'Unable to send verification code. Please try again.';
+        try {
+          const j = await res.json();
+          if (j?.message) message = friendlyError(j.message, message);
+        } catch {}
         return { ok: false, error: message };
       }
 
       return { ok: true };
     } catch (e) {
-      return { ok: false, error: 'Network error while sending code' };
+      return { ok: false, error: 'Unable to reach the server. Please check your connection and try again.' };
     }
   }
 
@@ -218,14 +236,17 @@ function openModal(opts: InitOptions): { close: () => void } {
       });
 
       if (!verifyRes.ok) {
-        let message = 'Verification failed';
-        try { const j = await verifyRes.json(); if (j?.message) message = j.message; } catch {}
+        let message = 'Verification failed. Please try again.';
+        try {
+          const j = await verifyRes.json();
+          if (j?.message) message = friendlyError(j.message, message);
+        } catch {}
         return { ok: false, error: message };
       }
 
       const verifyJson = await verifyRes.json() as { sessionJwt?: string };
       if (!verifyJson?.sessionJwt || typeof verifyJson.sessionJwt !== 'string') {
-        return { ok: false, error: 'Invalid session response' };
+        return { ok: false, error: 'Something went wrong. Please try again.' };
       }
       sessionJwt = verifyJson.sessionJwt;
       setStoredSession(email, sessionJwt);
@@ -244,14 +265,17 @@ function openModal(opts: InitOptions): { close: () => void } {
       });
 
       if (!claimRes.ok) {
-        let message = 'Failed to claim credential';
-        try { const j = await claimRes.json(); if (j?.message) message = j.message; } catch {}
+        let message = 'Unable to claim credential. Please try again.';
+        try {
+          const j = await claimRes.json();
+          if (j?.message) message = friendlyError(j.message, message);
+        } catch {}
         return { ok: false, error: message };
       }
 
       return { ok: true };
     } catch (e) {
-      return { ok: false, error: 'Network error during verification' };
+      return { ok: false, error: 'Unable to reach the server. Please check your connection and try again.' };
     }
   }
 
@@ -285,7 +309,7 @@ function openModal(opts: InitOptions): { close: () => void } {
         cb ? cb(email || '') : defaultEmailSubmit(email || '')
       ) as Promise<EmailSubmitResult>;
       p.then(res => sendToIframe('lc-embed:email-submit:result', res))
-       .catch(() => sendToIframe('lc-embed:email-submit:result', { ok: false, error: 'Failed to send code' }));
+       .catch(() => sendToIframe('lc-embed:email-submit:result', { ok: false, error: 'Unable to send code. Please try again.' }));
       return;
     }
 
@@ -297,15 +321,15 @@ function openModal(opts: InitOptions): { close: () => void } {
         cb ? cb(email || '', code || '') : defaultOtpVerify(email || '', code || '')
       ) as Promise<OtpVerifyResult>;
       p.then(res => sendToIframe('lc-embed:otp-verify:result', res))
-       .catch(() => sendToIframe('lc-embed:otp-verify:result', { ok: false, error: 'Verification failed' }));
+       .catch(() => sendToIframe('lc-embed:otp-verify:result', { ok: false, error: 'Verification failed. Please try again.' }));
       return;
     }
 
     // Accept (already-logged-in) flow
     if (isTrustedMessageOfType(data, nonce, 'lc-embed:accept')) {
       const p: Promise<OtpVerifyResult> = (async () => {
-        if (!opts.publishableKey) return { ok: false, error: 'Configuration error' };
-        if (!sessionJwt) return { ok: false, error: 'Not logged in' };
+        if (!opts.publishableKey) return { ok: false, error: 'Configuration error. Please contact support.' };
+        if (!sessionJwt) return { ok: false, error: 'Your session has expired. Please log in again.' };
 
         try {
           const claimRes = await fetch(`${apiBase}/inbox/claim`, {
@@ -321,20 +345,23 @@ function openModal(opts: InitOptions): { close: () => void } {
           });
 
           if (!claimRes.ok) {
-            let message = 'Failed to claim credential';
-            try { const j = await claimRes.json(); if (j?.message) message = j.message; } catch {}
-            if (claimRes.status === 401) message = 'Session expired. Please log in again.';
+            let message = 'Unable to claim credential. Please try again.';
+            try {
+              const j = await claimRes.json();
+              if (j?.message) message = friendlyError(j.message, message);
+            } catch {}
+            if (claimRes.status === 401) message = 'Your session has expired. Please log in again.';
             return { ok: false, error: message };
           }
 
           return { ok: true };
         } catch {
-          return { ok: false, error: 'Network error during claim' };
+          return { ok: false, error: 'Unable to reach the server. Please check your connection and try again.' };
         }
       })();
 
       p.then(res => sendToIframe('lc-embed:accept:result', res))
-       .catch(() => sendToIframe('lc-embed:accept:result', { ok: false, error: 'Failed to claim' }));
+       .catch(() => sendToIframe('lc-embed:accept:result', { ok: false, error: 'Unable to claim credential. Please try again.' }));
       return;
     }
 
