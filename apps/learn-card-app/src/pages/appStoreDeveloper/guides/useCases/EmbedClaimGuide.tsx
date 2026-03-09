@@ -1187,6 +1187,18 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
         }
     };
 
+    // Allow navigating to current step, any completed step, or any earlier step.
+    // Forward navigation requires all previous steps to be complete.
+    const canNavigateToStep = useCallback((index: number) => {
+        if (index === guideState.currentStep) return true;
+        if (index < guideState.currentStep) return true;
+        if (guideState.isStepComplete(STEPS[index].id)) return true;
+        for (let i = 0; i < index; i++) {
+            if (!guideState.isStepComplete(STEPS[i].id)) return false;
+        }
+        return true;
+    }, [guideState.currentStep, guideState.isStepComplete]);
+
     return (
         <div className="max-w-3xl mx-auto py-4">
             <div className="mb-8">
@@ -1196,6 +1208,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                     steps={STEPS}
                     completedSteps={guideState.state.completedSteps}
                     onStepClick={guideState.goToStep}
+                    isStepNavigable={canNavigateToStep}
                 />
             </div>
 
