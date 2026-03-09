@@ -47,7 +47,7 @@ export const ResumeBuilderHeader: React.FC<{
                     </button>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className={`flex items-center ${!isMobile ? 'pr-[60px]' : ''}`}>
                     <button
                         onClick={onDownload}
                         disabled={loadingAction !== null}
@@ -73,12 +73,12 @@ export const ResumeBuilderHeader: React.FC<{
                         <ShareIcon className="w-5 h-5" />
                         <span className={isMobile ? 'sr-only' : ''}>Share</span>
                     </button> */}
-                    <button
+                    {/* <button
                         className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-grayscale-200 bg-white text-grayscale-500"
                         aria-label="More options (coming soon)"
                     >
                         <IonIcon icon={ellipsisVertical} className="text-base" />
-                    </button>
+                    </button> */}
                 </div>
             </div>
         </div>
