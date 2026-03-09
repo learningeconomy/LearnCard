@@ -2,11 +2,13 @@
 
 ## Overview
 
-The Partner Connect SDK now supports configuring multiple allowed origins for message validation. This enables partner apps to whitelist multiple deployment environments, domains, or brands while maintaining security.
+The Partner Connect SDK supports configuring multiple allowed origins via the `hostOrigin` option. These origins serve as a **whitelist for the `lc_host_override` query parameter**, enabling partner apps to work across multiple deployment environments (production, staging, preview) without code changes.
+
+**Important:** At runtime, only a **single active origin** is used for both sending and receiving messages. The multiple origins array does **not** enable accepting messages from multiple origins simultaneously.
 
 ## Usage
 
-### Single Origin (Original Behavior)
+### Single Origin (Default Behavior)
 
 ```typescript
 const learnCard = createPartnerConnect({
@@ -14,7 +16,7 @@ const learnCard = createPartnerConnect({
 });
 ```
 
-### Multiple Origins (New Feature)
+### Multiple Origins (Whitelist for `lc_host_override`)
 
 ```typescript
 const learnCard = createPartnerConnect({
@@ -28,94 +30,77 @@ const learnCard = createPartnerConnect({
 
 ## Behavior
 
+### How Origin Resolution Works
+
+At initialization, the SDK determines a **single `activeHostOrigin`** using this hierarchy:
+
+1. **`lc_host_override` query parameter** — if present and the value is in the configured `hostOrigin` array (or is a native app origin when `allowNativeAppOrigins` is `true`)
+2. **First configured `hostOrigin`** — fallback
+3. **Default** — `https://learncard.app`
+
 ### Incoming Messages (Validation)
 
-Messages are accepted from:
-1. **Any** configured origin (exact match)
-2. **Capacitor origins** (always: `capacitor://localhost`, `ionic://localhost`)
-3. **Localhost variants** (when any configured origin is localhost-based)
+Messages are validated with **strict exact matching** against the single `activeHostOrigin`:
 
-Example with multiple origins:
+```typescript
+private isValidOrigin(eventOrigin: string): boolean {
+  return eventOrigin === this.activeHostOrigin;
+}
+```
+
+Example with multiple origins and no override:
 
 ```typescript
 hostOrigin: ['https://app.com', 'https://staging.app.com']
+// No lc_host_override in URL
 
+// Active origin: https://app.com (first in array)
 // ✅ Accepts: https://app.com
-// ✅ Accepts: https://staging.app.com
-// ✅ Accepts: capacitor://localhost (mobile apps)
-// ✅ Accepts: ionic://localhost (legacy mobile)
+// ❌ Rejects: https://staging.app.com (not the active origin)
 // ❌ Rejects: https://unauthorized.com
-// ❌ Rejects: http://localhost:3000 (not localhost-based)
+```
+
+Example with override:
+
+```typescript
+hostOrigin: ['https://app.com', 'https://staging.app.com']
+// URL: ?lc_host_override=https://staging.app.com
+
+// Active origin: https://staging.app.com (from validated override)
+// ✅ Accepts: https://staging.app.com
+// ❌ Rejects: https://app.com (not the active origin)
 ```
 
 ### Outgoing Messages (Sending)
 
-Messages are **automatically sent to the detected parent origin**:
+Messages are always sent to the `activeHostOrigin`:
 
 ```typescript
-hostOrigin: ['https://prod.com', 'https://staging.com', 'https://dev.com']
-
-// If iframe is hosted on staging.com:
-// → postMessage will use: 'https://staging.com'
-
-// If iframe is hosted on prod.com:
-// → postMessage will use: 'https://prod.com'
-
-// If detection fails (rare):
-// → postMessage will fall back to: 'https://prod.com' (first in array)
+window.parent.postMessage(message, this.activeHostOrigin);
 ```
-
-**How Detection Works:**
-1. SDK attempts to read `window.parent.location.origin` (same-origin only)
-2. If cross-origin (typical), SDK waits for first incoming message from parent
-3. Uses the validated origin from that message for all subsequent outgoing messages
-4. Falls back to first configured origin if detection fails
-
-**Important:** While the first origin is used as a fallback, messages are intelligently routed to the actual parent origin in practice.
 
 ## Common Use Cases
 
 ### 1. Multiple Deployment Environments
 
-Support production, staging, and preview deployments:
+Support production and staging via `lc_host_override`:
 
 ```typescript
 const learnCard = createPartnerConnect({
   hostOrigin: [
-    'https://app.example.com',              // Production
-    'https://staging.example.com',          // Staging
-    'https://preview-pr-123.example.com'    // PR preview
+    'https://app.example.com',              // Production (default)
+    'https://staging.example.com',          // Staging (via override)
   ]
 });
+
+// Production iframe: https://partner-app.com/
+//   → Active origin: https://app.example.com
+//
+// Staging iframe: https://partner-app.com/?lc_host_override=https://staging.example.com
+//   → Active origin: https://staging.example.com
 ```
 
-### 2. Multiple Brands/Domains
-
-Single app supporting multiple brand domains:
-
-```typescript
-const learnCard = createPartnerConnect({
-  hostOrigin: [
-    'https://brand-a.com',
-    'https://brand-b.com',
-    'https://brand-c.com'
-  ]
-});
-```
-
-### 3. Development + Production
-
-```typescript
-const isDev = process.env.NODE_ENV === 'development';
-
-const learnCard = createPartnerConnect({
-  hostOrigin: isDev 
-    ? ['http://localhost:3000', 'http://localhost:5173']  // Dev: multiple ports
-    : ['https://app.com', 'https://staging.app.com']      // Prod: prod + staging
-});
-```
-
-### 4. Dynamic Configuration
+### 2. Dynamic Configuration
 
 Load allowed origins from environment:
 
@@ -127,24 +112,36 @@ const learnCard = createPartnerConnect({
 });
 
 // .env:
-// ALLOWED_ORIGINS=https://app.com,https://staging.app.com,https://preview.app.com
+// ALLOWED_ORIGINS=https://app.com,https://staging.app.com
+```
+
+### 3. Development + Production
+
+```typescript
+const isDev = process.env.NODE_ENV === 'development';
+
+const learnCard = createPartnerConnect({
+  hostOrigin: isDev
+    ? 'http://localhost:3000'
+    : ['https://app.com', 'https://staging.app.com']
+});
 ```
 
 ## Security Considerations
 
 ### ✅ Safe
 
-- All origins are explicitly whitelisted
-- Exact match required for validation
-- Capacitor origins are cryptographically secure
-- No wildcards or pattern matching (prevents broad attacks)
+- Only a **single active origin** is used at runtime for message validation
+- The whitelist only controls which `lc_host_override` values are accepted
+- Exact match required for validation (no wildcards or patterns)
+- The LearnCard host controls which override value is set on the iframe URL
 
 ### ⚠️ Important
 
-1. **Don't over-whitelist:** Only add origins you control
-2. **First origin matters:** Outgoing messages use the first origin
-3. **Keep list minimal:** More origins = larger attack surface
-4. **Use environment variables:** Don't hardcode sensitive origins
+1. **Only whitelist origins you control** — any whitelisted origin can become the active origin via `lc_host_override`
+2. **First origin is the default** — used when no valid override is present
+3. **Keep list minimal** — fewer whitelisted origins = smaller attack surface
+4. **Use environment variables** — don't hardcode sensitive origins
 
 ### ❌ Avoid
 
@@ -155,8 +152,7 @@ hostOrigin: [
   'https://staging.app.com',
   'https://dev.app.com',
   'https://test.app.com',
-  'https://preview-*.app.com',  // This won't work anyway (no wildcards)
-  // ... 20 more origins
+  // ... many more origins
 ]
 
 // ✅ DO: Minimal necessary origins
@@ -182,9 +178,8 @@ const learnCard = createPartnerConnect({
 ### Upgrading to Multiple Origins
 
 1. **Identify your origins:**
-   - Production domain
-   - Staging/preview domains
-   - Development localhost (optional)
+   - Production domain (first in array = default)
+   - Staging/preview domains (available via `lc_host_override`)
 
 2. **Convert to array:**
    ```typescript
@@ -197,12 +192,12 @@ const learnCard = createPartnerConnect({
 
 3. **Order matters:**
    - Put primary/production origin first
-   - Messages will be sent to the first origin
+   - First origin is used as the default active origin
 
 4. **Test thoroughly:**
-   - Verify all origins accept messages
-   - Verify unauthorized origins are rejected
-   - Verify outgoing messages use correct origin
+   - Verify default active origin works without override
+   - Verify `lc_host_override` switches the active origin correctly
+   - Verify invalid overrides are rejected
 
 ## TypeScript
 
@@ -228,27 +223,34 @@ const learnCard2 = createPartnerConnect(config2);
 
 ### Internal Storage
 
-Origins are normalized to an array internally:
+Origins are normalized to an array internally, but a single `activeHostOrigin` is determined at init:
 
 ```typescript
-constructor(options: PartnerConnectOptions) {
-  const hostOrigin = options.hostOrigin || 'https://learncard.app';
+constructor(options?: PartnerConnectOptions) {
+  const hostOrigin = options?.hostOrigin || 'https://learncard.app';
   this.hostOrigins = Array.isArray(hostOrigin) ? hostOrigin : [hostOrigin];
+  // ...
+  this.configureActiveOrigin(); // Determines single activeHostOrigin
 }
 ```
 
-### Validation Logic
+### Whitelist Validation (for `lc_host_override`)
+
+```typescript
+private isOriginInWhitelist(origin: string): boolean {
+  return (
+    this.hostOrigins.includes(origin) ||
+    (this.allowNativeAppOrigins && this.isOriginNativeApp(origin))
+  );
+}
+```
+
+### Message Validation (runtime)
 
 ```typescript
 private isValidOrigin(eventOrigin: string): boolean {
-  // Check exact match with any configured origin
-  if (this.hostOrigins.includes(eventOrigin)) return true;
-  
-  // Check Capacitor origins (always allowed)
-  // ...
-  
-  // Check localhost variants (if applicable)
-  // ...
+  // STRICT: Only the single active origin
+  return eventOrigin === this.activeHostOrigin;
 }
 ```
 
@@ -256,8 +258,8 @@ private isValidOrigin(eventOrigin: string): boolean {
 
 ```typescript
 private sendMessage<T>(action: string, payload?: unknown): Promise<T> {
-  // Use first configured origin for sending
-  window.parent.postMessage(message, this.hostOrigins[0]);
+  // Always sends to the single active origin
+  window.parent.postMessage(message, this.activeHostOrigin);
 }
 ```
 
@@ -266,64 +268,17 @@ private sendMessage<T>(action: string, payload?: unknown): Promise<T> {
 **Q: Can I use wildcards like `*.example.com`?**  
 A: No, only exact origin matching is supported for security.
 
-**Q: What if I need different behavior for different origins?**  
-A: Create separate SDK instances for different origin groups.
+**Q: Does the SDK accept messages from ALL configured origins?**  
+A: No. Only the single `activeHostOrigin` (determined at initialization) is used for message validation. The origins array is a whitelist for `lc_host_override` only.
 
 **Q: Can I change origins after initialization?**  
 A: No, origins are set at construction and immutable. Create a new instance if needed.
 
 **Q: What happens with an empty array?**  
-A: Empty arrays are not recommended. Always provide at least one origin.
+A: Empty arrays are not recommended. The SDK falls back to `https://learncard.app`.
 
 **Q: Do I need to include Capacitor origins in the array?**  
-A: No, Capacitor origins are always accepted automatically.
+A: No, when `allowNativeAppOrigins` is `true` (default), Capacitor/localhost origins are automatically accepted as valid `lc_host_override` values.
 
-**Q: Can I mix localhost and production origins?**  
-A: Yes, but localhost variants are only accepted if ANY origin is localhost-based.
-
-## Examples
-
-### Astro App with Environment Detection
-
-```typescript
----
-const isProd = import.meta.env.PROD;
-const hostOrigins = isProd
-  ? ['https://learncard.app']
-  : ['http://localhost:3000', 'http://localhost:4321'];
----
-
-<script>
-  import { createPartnerConnect } from '@learncard/partner-connect';
-  
-  const learnCard = createPartnerConnect({
-    hostOrigin: window.__LEARNCARD_ORIGINS
-  });
-</script>
-
-<script define:vars={{ hostOrigins }}>
-  window.__LEARNCARD_ORIGINS = hostOrigins;
-</script>
-```
-
-### React App with Env Variables
-
-```typescript
-// config.ts
-export const LEARNCARD_ORIGINS = process.env.REACT_APP_LEARNCARD_ORIGINS
-  ?.split(',')
-  .map(origin => origin.trim())
-  || ['https://learncard.app'];
-
-// App.tsx
-import { createPartnerConnect } from '@learncard/partner-connect';
-import { LEARNCARD_ORIGINS } from './config';
-
-const learnCard = createPartnerConnect({
-  hostOrigin: LEARNCARD_ORIGINS
-});
-```
-
----
-
-**The Partner Connect SDK now supports flexible multi-origin configurations while maintaining security!** 🔒✨
+**Q: How does the LearnCard host select which origin to use?**  
+A: The LearnCard host sets `?lc_host_override=<origin>` on the partner app's iframe URL. The SDK validates this against the whitelist and uses it as the active origin.

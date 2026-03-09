@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.94.33
+
+### Patch Changes
+
+-   [#1057](https://github.com/learningeconomy/LearnCard/pull/1057) [`03d040717a0fa4ae5fcdeeff0b437f4a906103a5`](https://github.com/learningeconomy/LearnCard/commit/03d040717a0fa4ae5fcdeeff0b437f4a906103a5) Thanks [@smurflo2](https://github.com/smurflo2)! - Add default framework when selecting skills
+
+## 1.94.32
+
+### Patch Changes
+
+-   [#1058](https://github.com/learningeconomy/LearnCard/pull/1058) [`409bc50fbb7c48930e3ed40c9b0df5ab2e8b957f`](https://github.com/learningeconomy/LearnCard/commit/409bc50fbb7c48930e3ed40c9b0df5ab2e8b957f) Thanks [@Custard7](https://github.com/Custard7)! - Alignments
+
+## 1.94.31
+
+### Patch Changes
+
+-   [#1051](https://github.com/learningeconomy/LearnCard/pull/1051) [`e15dafbc571e8c63fa4fddcfbb03e87d495b01ff`](https://github.com/learningeconomy/LearnCard/commit/e15dafbc571e8c63fa4fddcfbb03e87d495b01ff) Thanks [@Custard7](https://github.com/Custard7)! - fix: Category Map Error
+
+## 1.94.30
+
+### Patch Changes
+
+-   [#1048](https://github.com/learningeconomy/LearnCard/pull/1048) [`22aafd3b8764ed0bac2f48d870ab8421fab13978`](https://github.com/learningeconomy/LearnCard/commit/22aafd3b8764ed0bac2f48d870ab8421fab13978) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Add optional chaining to CATEGORY_TO_SUBCATEGORY_LIST lookups
+
 ## 1.94.29
 
 ### Patch Changes
