@@ -21,6 +21,7 @@ import {
 import type { LCNIntegration } from '@learncard/types';
 
 import { useToast, useFilestack, ToastTypeEnum } from 'learn-card-base';
+import { LEARNCARD_NETWORK_API_URL } from 'learn-card-base/constants/Networks';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
@@ -752,7 +753,8 @@ const EmbedPreview: React.FC<{
     credential: { name: string; [key: string]: unknown };
     branding?: { primaryColor?: string; accentColor?: string; partnerLogoUrl?: string };
     requestBackgroundIssuance?: boolean;
-}> = ({ publishableKey, partnerName, credential, branding, requestBackgroundIssuance }) => {
+    apiBaseUrl?: string;
+}> = ({ publishableKey, partnerName, credential, branding, requestBackgroundIssuance, apiBaseUrl }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -775,6 +777,7 @@ const EmbedPreview: React.FC<{
                 credential,
                 branding,
                 requestBackgroundIssuance,
+                ...(apiBaseUrl ? { apiBaseUrl } : {}),
                 onSuccess: details => {
                     console.log('Embed claim success:', details);
                 },
@@ -787,7 +790,7 @@ const EmbedPreview: React.FC<{
         return () => {
             if (el) el.innerHTML = '';
         };
-    }, [publishableKey, partnerName, credentialKey, brandingKey, requestBackgroundIssuance]);
+    }, [publishableKey, partnerName, credentialKey, brandingKey, requestBackgroundIssuance, apiBaseUrl]);
 
     return (
         <div className="border rounded-lg bg-gray-50 p-6">
@@ -822,7 +825,8 @@ const TestStep: React.FC<{
     branding: { primaryColor: string; accentColor: string; partnerLogoUrl: string };
     requestBackgroundIssuance: boolean;
     isTransitioning?: boolean;
-}> = ({ onBack, onComplete, publishableKey, templates, partnerName, branding, requestBackgroundIssuance, isTransitioning }) => {
+    apiBaseUrl?: string;
+}> = ({ onBack, onComplete, publishableKey, templates, partnerName, branding, requestBackgroundIssuance, isTransitioning, apiBaseUrl }) => {
     const [selectedTemplateIdx, setSelectedTemplateIdx] = useState(0);
 
     const checks = [
@@ -903,6 +907,7 @@ const TestStep: React.FC<{
                     credential={credential}
                     branding={branding}
                     requestBackgroundIssuance={requestBackgroundIssuance}
+                    apiBaseUrl={apiBaseUrl}
                 />
             ) : (
                 <div className="border rounded-lg bg-gray-50 p-6 text-center">
@@ -1036,6 +1041,9 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
     // Derive publishable key from selected integration
     const publishableKey = selectedIntegration?.publishableKey || '';
 
+    // Resolve API base URL for embed preview (local dev uses LCN_API_URL env var)
+    const apiBaseUrl = LCN_API_URL || LEARNCARD_NETWORK_API_URL;
+
     const [templates, setTemplates] = useState<ManagedTemplate[]>([]);
     const [partnerName, setPartnerName] = useState('');
     const [branding, setBranding] = useState({
@@ -1161,6 +1169,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                         branding={branding}
                         requestBackgroundIssuance={requestBackgroundIssuance}
                         isTransitioning={isTransitioning}
+                        apiBaseUrl={apiBaseUrl}
                     />
                 );
 
