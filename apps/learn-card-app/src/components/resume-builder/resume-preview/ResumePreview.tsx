@@ -7,6 +7,7 @@ import useResumePdf, { ResumePdfPreviewData } from './useResumePdf';
 
 import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
+import { CredentialCategoryEnum } from 'learn-card-base';
 
 const LETTER_HEIGHT_PX = 1056; // US Letter at 96 DPI
 
@@ -28,23 +29,34 @@ const ResumePreview = forwardRef<
     const { createPDFPreviewUrl, generatePDF } = useResumePdf(previewCardRef);
 
     const orderedSections = useMemo(() => {
-        return sectionOrder
+        const sectionsFromSavedOrder = sectionOrder
             .map(key => RESUME_SECTIONS.find(s => s.key === key))
             .filter(Boolean) as (typeof RESUME_SECTIONS)[number][];
+        const missingSections = RESUME_SECTIONS.filter(
+            section => !sectionsFromSavedOrder.some(orderedSection => orderedSection.key === section.key)
+        );
+
+        return [...sectionsFromSavedOrder, ...missingSections];
     }, [sectionOrder]);
 
-    const hasAnyContent = useMemo(() => {
+    const hasVisibleContent = useMemo(() => {
         const hasPersonal = Object.values(personalDetails).some(v => v.trim());
         const hasCredentials = Object.values(credentialEntries).some(arr => arr && arr.length > 0);
-        return hasPersonal || hasCredentials;
-    }, [personalDetails, credentialEntries]);
+        const hasVisibleEmptySection = orderedSections.some(section => {
+            const sectionKey = section.key as ResumeSectionKey;
+            if (hiddenSections?.[sectionKey]) return false;
+            return sectionKey !== CredentialCategoryEnum.socialBadge;
+        });
+
+        return hasPersonal || hasCredentials || hasVisibleEmptySection;
+    }, [credentialEntries, hiddenSections, orderedSections, personalDetails]);
 
     useImperativeHandle(ref, () => ({
         createPDFPreviewUrl,
         generatePDF,
     }));
 
-    if (!hasAnyContent) {
+    if (!hasVisibleContent) {
         return <ResumePreviewEmptyPlaceholder />;
     }
 
@@ -70,14 +82,13 @@ const ResumePreview = forwardRef<
                     <ResumePreviewUserInfo />
                     {orderedSections.map(section => {
                         const sectionKey = section.key as ResumeSectionKey;
-                        const entries = [...(credentialEntries[sectionKey] ?? [])].sort(
-                            (a, b) => a.index - b.index
-                        );
-                        if (!entries.length || hiddenSections?.[sectionKey]) return null;
+                        const entries = [...(credentialEntries[sectionKey] ?? [])].sort((a, b) => a.index - b.index);
+                        if (hiddenSections?.[sectionKey]) return null;
                         return (
                             <ResumePreviewGroupedCredentialsBlock
                                 key={sectionKey}
                                 section={section}
+                                isMobile={isMobile}
                                 filteredUris={entries.map(entry => entry.uri)}
                             />
                         );

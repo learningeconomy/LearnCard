@@ -27,6 +27,10 @@ export const RESUME_SECTIONS = [
         key: CredentialCategoryEnum.socialBadge,
         label: 'Badges & Certifications',
     },
+    {
+        key: CredentialCategoryEnum.accommodation,
+        label: 'Accommodations',
+    },
 ] as const;
 
 export type ResumeSectionKey = (typeof RESUME_SECTIONS)[number]['key'];
