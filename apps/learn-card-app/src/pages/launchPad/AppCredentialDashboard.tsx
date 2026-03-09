@@ -105,17 +105,16 @@ export const AppCredentialDashboard: React.FC<AppCredentialDashboardProps> = ({
 
     return (
         <>
-            <button
-                onClick={openPanel}
-                className="relative p-2 rounded-full bg-indigo-100 hover:bg-indigo-200 text-indigo-600 transition-colors"
-                title={`Credentials from ${appName}`}
-                aria-label={`View credentials from ${appName}. ${badgeCount} credential${
-                    badgeCount !== 1 ? 's' : ''
-                } earned.`}
-            >
-                <Award className="w-5 h-5" />
-
-                {badgeCount > 0 && (
+            {badgeCount > 0 && (
+                <button
+                    onClick={openPanel}
+                    className="relative p-2 rounded-full bg-indigo-100 hover:bg-indigo-200 text-indigo-600 transition-colors"
+                    title={`Credentials from ${appName}`}
+                    aria-label={`View credentials from ${appName}. ${badgeCount} credential${
+                        badgeCount !== 1 ? 's' : ''
+                    } earned.`}
+                >
+                    <Award className="w-5 h-5" />
                     <span
                         className={`
                             absolute -top-1 -right-1 
@@ -129,8 +128,8 @@ export const AppCredentialDashboard: React.FC<AppCredentialDashboardProps> = ({
                     >
                         {badgeCount > 99 ? '99+' : badgeCount}
                     </span>
-                )}
-            </button>
+                </button>
+            )}
         </>
     );
 };
