@@ -28,7 +28,10 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
     const [sessionNewUris] = useState<Set<string>>(initialNewUris);
 
     const fetchCredentials = useCallback(async () => {
-        if (!appId) return;
+        if (!appId) {
+            setIsLoading(false);
+            return;
+        }
 
         setIsLoading(true);
         try {
@@ -36,6 +39,7 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
             if (!wallet) return;
 
             const result = await wallet.invoke.getMyCredentialsFromApp(appId, { limit: 50 });
+
             const appCredentials: CredentialRecord[] = [];
 
             for (const record of result.records) {
@@ -61,7 +65,6 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
                     });
                 }
             }
-
             setEarnedCredentials(appCredentials);
             setBadgeCount(result.totalCount);
         } catch (error) {
@@ -69,15 +72,27 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
         } finally {
             setIsLoading(false);
         }
-    }, [appId, initWallet, sessionNewUris]);
+    }, [appId, sessionNewUris]);
 
     // Fetch on mount
     useEffect(() => {
         fetchCredentials();
     }, [fetchCredentials]);
 
+    // Handle ESC key to close panel
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
     return (
-        <div className="flex flex-col h-full bg-white">
+        <div className="flex flex-col h-full bg-white safe-area-top-margin">
             {/* Panel Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-indigo-500 to-purple-600">
                 <div>
