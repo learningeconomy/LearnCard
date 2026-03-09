@@ -25,7 +25,7 @@ export const ResumeIframePreview: React.FC<{
 
     const handleDownload = () => {
         const a = document.createElement('a');
-        a.href = preview.url;
+        a.href = preview.downloadUrl;
         a.download = preview.fileName;
         a.click();
     };

@@ -30,6 +30,12 @@ export const ResumeBuilder: React.FC = () => {
 
     const [loadingAction, setLoadingAction] = useState<ResumeBuilderHeaderAction>(null);
 
+    const revokePreviewBlobUrl = useCallback((preview: ResumePdfPreviewData | null) => {
+        if (preview?.downloadUrl?.startsWith('blob:')) {
+            URL.revokeObjectURL(preview.downloadUrl);
+        }
+    }, []);
+
     const handlePreview = useCallback(async () => {
         if (loadingAction) return;
         setLoadingAction('preview');
@@ -37,14 +43,14 @@ export const ResumeBuilder: React.FC = () => {
             const nextPreview = await resumePreviewRef.current?.createPDFPreviewUrl();
             if (nextPreview) {
                 setInlinePreview(prevPreview => {
-                    if (prevPreview?.url) URL.revokeObjectURL(prevPreview.url);
+                    revokePreviewBlobUrl(prevPreview);
                     return nextPreview;
                 });
             }
         } finally {
             setLoadingAction(null);
         }
-    }, [loadingAction]);
+    }, [loadingAction, revokePreviewBlobUrl]);
 
     const handleDownload = useCallback(async () => {
         if (loadingAction) return;
@@ -72,16 +78,16 @@ export const ResumeBuilder: React.FC = () => {
 
     useEffect(() => {
         return () => {
-            if (inlinePreview?.url) URL.revokeObjectURL(inlinePreview.url);
+            revokePreviewBlobUrl(inlinePreview);
         };
-    }, [inlinePreview]);
+    }, [inlinePreview, revokePreviewBlobUrl]);
 
     const closeInlinePreview = useCallback(() => {
         setInlinePreview(prevPreview => {
-            if (prevPreview?.url) URL.revokeObjectURL(prevPreview.url);
+            revokePreviewBlobUrl(prevPreview);
             return null;
         });
-    }, []);
+    }, [revokePreviewBlobUrl]);
 
     return (
         <div className="resume-builder flex h-full w-full bg-grayscale-50 overflow-hidden relative">

@@ -1,6 +1,7 @@
 import { RefObject, useCallback } from 'react';
 
 import { Capacitor } from '@capacitor/core';
+import { FileViewer } from '@capacitor/file-viewer';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import type { jsPDF as JsPDFType } from 'jspdf';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
@@ -8,10 +9,15 @@ import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 const RESUME_PDF_WIDTH_PX = 760;
 
 export type ResumePdfPreviewData = {
+    downloadUrl: string;
     fileName: string;
     pageCount: number;
     url: string;
 };
+
+const PDF_PREVIEW_FRAGMENT = '#view=FitH&zoom=page-fit&toolbar=0&navpanes=0&scrollbar=0';
+
+const toPdfPreviewUrl = (url: string): string => `${url}${PDF_PREVIEW_FRAGMENT}`;
 
 const toPdfFileName = (raw?: string): string => {
     const trimmed = (raw || '').trim();
@@ -53,6 +59,14 @@ const savePdfToNativeFile = async (
     });
 
     return { fileName: safeFileName, uri };
+};
+
+const previewPdfOnNativeDevice = async (pdf: JsPDFType, fileName?: string): Promise<void> => {
+    const nativeFile = await savePdfToNativeFile(pdf, fileName);
+
+    await FileViewer.openDocumentFromLocalPath({
+        path: nativeFile.uri,
+    });
 };
 
 export const useResumePdf = (
@@ -205,20 +219,17 @@ export const useResumePdf = (
         const pageCount = pdf.getNumberOfPages();
 
         if (Capacitor.isNativePlatform()) {
-            const nativeFile = await savePdfToNativeFile(pdf, fileName);
-
-            return {
-                fileName: nativeFile.fileName,
-                pageCount,
-                url: Capacitor.convertFileSrc(nativeFile.uri),
-            };
+            await previewPdfOnNativeDevice(pdf, fileName);
+            return null;
         }
 
         const blob = pdf.output('blob');
+        const downloadUrl = URL.createObjectURL(blob);
         return {
+            downloadUrl,
             fileName,
             pageCount,
-            url: URL.createObjectURL(blob),
+            url: toPdfPreviewUrl(downloadUrl),
         };
     }, [buildPDF]);
 
