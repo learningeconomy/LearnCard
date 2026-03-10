@@ -35,7 +35,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
         <button
             type="button"
             onClick={() => setIsCollapsed(value => !value)}
-            className="w-full flex items-center justify-between gap-3 text-left mb-1 border-b border-grayscale-100 pb-2.5"
+            className="w-full flex items-center justify-between gap-3 text-left border-solid border-b border-grayscale-100 pb-2.5"
             data-pdf-hide
         >
             <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500">
@@ -65,7 +65,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                     </>
                 ) : (
                     <>
-                        <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 mb-1 border-b border-grayscale-100 pb-2.5">
+                        <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 border-solid border-b border-grayscale-100 pb-2.5">
                             {section.label}
                         </h2>
                         <ResumePreviewSectionPlaceholder category={sectionKey} className="mb-0" />
@@ -78,7 +78,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
     if (measureOnly) {
         return (
             <div className="mb-6" data-pdf-break-anchor>
-                <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 mb-1 border-b border-grayscale-100 pb-2.5">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 border-solid border-b border-grayscale-100 pb-2.5">
                     {section.label}
                 </h2>
                 {entries.map(entry => (
@@ -106,7 +106,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
             {isMobile ? (
                 sectionHeader
             ) : (
-                <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 mb-1 border-b border-grayscale-100 pb-2.5">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 border-solid border-b border-grayscale-100 pb-2.5">
                     {section.label}
                 </h2>
             )}

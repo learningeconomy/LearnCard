@@ -69,7 +69,7 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
 
     return (
         <div className={className} data-pdf-screen-only>
-            <div className="rounded-[24px] border border-dashed bg-white px-6 py-6 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="rounded-[24px] border border-dashed bg-white px-6 py-6 flex flex-col gap-5 md:flex-row md:items-center md:justify-between mt-4">
                 <div className="flex items-start gap-4 min-w-0">
                     <div className="h-[86px] w-[86px] rounded-[24px] flex items-center justify-center shrink-0">
                         {IconComponent && <IconComponent className="h-[64px] w-[64px]" />}
