@@ -551,6 +551,18 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         });
     }
 
+    const getActivityStat = (eventTypeFilter: string, activityStats: any) => {
+        const statMap = {
+            DELIVERED: activityStats.totalSent,
+            CLAIMED: activityStats.totalClaimed,
+            ALL: activityStats.totalIssued,
+        };
+
+        const total = statMap[eventTypeFilter as keyof typeof statMap];
+
+        return total ? `Load More (showing ${activity.length} of ${total})` : 'Load More';
+    };
+
     // Always add documentation link
     const docsUrl = getDocsUrl(integration.guideType);
 
@@ -735,7 +747,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                                         Loading...
                                     </>
                                 ) : (
-                                    `Load More (showing ${activity.length} of ${activityStats.totalIssued})`
+                                    getActivityStat(eventTypeFilter, activityStats)
                                 )}
                             </button>
                         )}
