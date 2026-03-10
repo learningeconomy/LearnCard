@@ -8,7 +8,7 @@ import { TRPCError } from '@trpc/server';
 import admin from 'firebase-admin';
 
 import { t, openRoute, didRoute } from '@routes';
-import { getDeliveryService } from '../services/delivery';
+import { getDeliveryService, getFrom } from '../services/delivery';
 import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
 import { encryptAuthShare, decryptAuthShare } from '@helpers/shareEncryption.helpers';
 import { maskEmail } from '@helpers/maskEmail';
@@ -384,6 +384,7 @@ export const keysRouter = t.router({
                                 verificationCode: code,
                                 verificationEmail: input.email,
                             },
+                            from: getFrom({ mailbox: 'recovery' }),
                         }
                         : {
                             to: input.email,
@@ -398,6 +399,7 @@ export const keysRouter = t.router({
                                 '',
                                 'If you did not request this, you can safely ignore this email.',
                             ].join('\n'),
+                            from: getFrom({ mailbox: 'recovery' }),
                         }
                 );
             } catch (emailError) {
@@ -547,6 +549,7 @@ export const keysRouter = t.router({
                                 brandName,
                                 recoveryKey: input.emailShare,
                             },
+                            from: getFrom({ mailbox: 'recovery' }),
                         }
                         : {
                             to: targetEmail,
@@ -566,6 +569,7 @@ export const keysRouter = t.router({
                                 '',
                                 'If you did not request this, you can safely ignore this email.',
                             ].join('\n'),
+                            from: getFrom({ mailbox: 'recovery' }),
                         }
                 );
             } catch (emailError) {
