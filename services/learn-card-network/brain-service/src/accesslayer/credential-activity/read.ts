@@ -136,15 +136,15 @@ export const getActivityStatsForProfile = async (
         ${boostIds?.length ? 'MATCH (a)-[:FOR_BOOST]->(b:Boost)' : ''}
         ${boostFilter}
         WITH a.activityId as aid, COLLECT(a) as events
-        WITH aid, [e IN events | e] as allEvents,
-             [e IN events WHERE e.eventType IN ['CLAIMED'] | e][0] as claimedEvent
+        WITH aid, REDUCE(latest = HEAD(events), e IN TAIL(events) |
+            CASE WHEN e.timestamp > latest.timestamp THEN e ELSE latest END) as latestEvent
         WITH 
             COUNT(DISTINCT aid) as total,
-            SUM(CASE WHEN [e IN allEvents WHERE e.eventType = 'CREATED'][0] IS NOT NULL THEN 1 ELSE 0 END) as created,
-            SUM(CASE WHEN [e IN allEvents WHERE e.eventType = 'DELIVERED'][0] IS NOT NULL THEN 1 ELSE 0 END) as delivered,
-            SUM(CASE WHEN claimedEvent IS NOT NULL THEN 1 ELSE 0 END) as claimed,
-            SUM(CASE WHEN [e IN allEvents WHERE e.eventType = 'EXPIRED'][0] IS NOT NULL THEN 1 ELSE 0 END) as expired,
-            SUM(CASE WHEN [e IN allEvents WHERE e.eventType = 'FAILED'][0] IS NOT NULL THEN 1 ELSE 0 END) as failed
+            SUM(CASE WHEN latestEvent.eventType = 'CREATED' THEN 1 ELSE 0 END) as created,
+            SUM(CASE WHEN latestEvent.eventType = 'DELIVERED' THEN 1 ELSE 0 END) as delivered,
+            SUM(CASE WHEN latestEvent.eventType = 'CLAIMED' THEN 1 ELSE 0 END) as claimed,
+            SUM(CASE WHEN latestEvent.eventType = 'EXPIRED' THEN 1 ELSE 0 END) as expired,
+            SUM(CASE WHEN latestEvent.eventType = 'FAILED' THEN 1 ELSE 0 END) as failed
         RETURN total, created, delivered, claimed, expired, failed
     `;
 
