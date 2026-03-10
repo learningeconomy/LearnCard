@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { IonSpinner } from '@ionic/react';
 import {
@@ -19,6 +20,7 @@ import { getDefaultDisplayType, sendBoostCredential } from '../boost/boostHelper
 import { useAddCredentialToWallet } from '../boost/mutations';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 import type { ResumeSectionKey } from './resume-builder.helpers';
+import { switchedProfileStore } from 'learn-card-base';
 
 type ResumeSelfAttestModalProps = {
     category: ResumeSectionKey;
@@ -31,6 +33,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
     const { data: profile } = useGetProfile();
     const { mutateAsync: createBoost } = useCreateBoost();
     const { mutateAsync: addCredentialToWallet } = useAddCredentialToWallet();
+    const queryClient = useQueryClient();
 
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -38,6 +41,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
 
     const boostCategory = category as unknown as BoostCategoryOptionsEnum;
     const metadata = boostCategoryMetadata[boostCategory];
+    const switchedDid = switchedProfileStore.use.switchedDid();
 
     const continueDisabled = !name.trim() || !description.trim() || isLoading;
 
@@ -91,6 +95,12 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
             if (!issuedVcUri) throw new Error('Unable to save issued credential');
 
             await addCredentialToWallet({ uri: issuedVcUri });
+            await queryClient.invalidateQueries({
+                queryKey: ['useGetCredentials', switchedDid, category, true],
+            });
+            await queryClient.invalidateQueries({
+                queryKey: ['useGetCredentials', switchedDid, category, undefined],
+            });
 
             const existingEntries = resumeBuilderStore.get.credentialEntries()[category] ?? [];
             const alreadySelected = existingEntries.some(entry => entry.uri === issuedVcUri);

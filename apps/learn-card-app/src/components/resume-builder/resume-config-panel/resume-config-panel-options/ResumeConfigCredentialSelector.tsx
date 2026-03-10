@@ -39,8 +39,6 @@ export const ResumeConfigCredentialSelector: React.FC<{
         true
     );
 
-    console.log(`credentialResults::${sectionKey}`, credentialResults);
-
     const records = (credentialResults as Array<{ vc: any; uri?: string }> | undefined) ?? [];
     const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 
