@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, profileRoute, openRoute } from '@routes';
+import { t, profileRoute, openRoute, guardianGatedRoute } from '@routes';
 import { ConsentFlowContract } from '@models';
 
 import {
@@ -873,7 +873,7 @@ export const contractsRouter = t.router({
             });
         }),
 
-    consentToContract: profileRoute
+    consentToContract: guardianGatedRoute
         .meta({
             openapi: {
                 protect: true,
@@ -1140,7 +1140,7 @@ export const contractsRouter = t.router({
             };
         }),
 
-    updateConsentedContractTerms: profileRoute
+    updateConsentedContractTerms: guardianGatedRoute
         .meta({
             openapi: {
                 protect: true,

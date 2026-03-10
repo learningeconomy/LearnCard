@@ -4,7 +4,7 @@ import { LCNNotificationTypeEnumValidator } from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 
-import { t, openRoute, profileRoute } from '@routes';
+import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
@@ -1083,7 +1083,7 @@ export const appStoreRouter = t.router({
 
     // ==================== User Install/Uninstall Routes ====================
 
-    installApp: profileRoute
+    installApp: guardianGatedRoute
         .meta({
             openapi: {
                 protect: true,
@@ -1099,6 +1099,11 @@ export const appStoreRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const listing = await readAppStoreListingById(input.listingId);
+
+            console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+            console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+            console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+            console.log('ctx:', ctx);
 
             if (!listing || listing.app_listing_status !== 'LISTED') {
                 throw new TRPCError({
