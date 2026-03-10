@@ -38,7 +38,10 @@ export const LEGACY_LER_RS_TYPE_TOKEN = 'LERRS';
  */
 export const TCP_CONTEXT_V1 = 'https://ctx.learncard.com/tcp/1.0.0.json';
 /**
- * Wrapper VC type used for Trusted Career Profile package credentials.
+ * LearnCard-defined wrapper VC type for TCP resume package artifacts.
+ *
+ * This is intentionally NOT a canonical HR Open Standards LER-RS type;
+ * it is a custom wrapper used to bind PDF URL/hash + included credential refs.
  */
 export const TCP_WRAPPER_TYPE = 'TrustedCareerProfile';
 
