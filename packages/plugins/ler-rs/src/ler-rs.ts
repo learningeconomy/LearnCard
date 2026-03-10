@@ -1,14 +1,44 @@
 import { VC as VerifiableCredential, UnsignedVC, VP as VerifiablePresentation, UnsignedVP } from '@learncard/types';
-import { LERRSDependentLearnCard, LERRSPlugin, CreateLerRecordParams, CreateLerPresentationParams, VerifyLerPresentationParams, VerificationResult, LerRsRecord } from './types';
+import {
+  LERRSDependentLearnCard,
+  LERRSPlugin,
+  CreateLerRecordParams,
+  CreateLerPresentationParams,
+  VerifyLerPresentationParams,
+  VerificationResult,
+  LerRsRecord,
+  LER_RS_CREDENTIAL_CONTEXT_V1,
+  LER_RS_VC_CONTEXT_V45,
+  LER_RS_TYPE_URI_V45,
+  LEGACY_LER_RS_TYPE_URI_V44,
+  LEGACY_LER_RS_TYPE_TOKEN,
+} from './types';
 
-const VC_CONTEXT = 'https://www.w3.org/ns/credentials/v2';
-const LERRS_TYPE = 'LERRS';
+const getItemVerifications = (item: { verifiableCredential?: VerifiableCredential; verifications?: VerifiableCredential[] }): VerifiableCredential[] => {
+  if (item.verifications?.length) return item.verifications;
+  if (item.verifiableCredential) return [item.verifiableCredential];
+  return [];
+};
 
 const toArray = <T>(maybe: T | T[] | undefined): T[] => (maybe == null ? [] : Array.isArray(maybe) ? maybe : [maybe]);
 
+const credentialHasLerRsType = (credential: VerifiableCredential): boolean => {
+  const typeList = Array.isArray(credential.type) ? credential.type : [credential.type];
+  if (typeList.some(type => [LEGACY_LER_RS_TYPE_TOKEN, LEGACY_LER_RS_TYPE_URI_V44, LER_RS_TYPE_URI_V45].includes(type))) return true;
+
+  const credentialSubject = credential.credentialSubject as Record<string, unknown> | undefined;
+  if (!credentialSubject) return false;
+
+  const inlineType = credentialSubject.type;
+  if (typeof inlineType === 'string' && [LEGACY_LER_RS_TYPE_URI_V44, LER_RS_TYPE_URI_V45].includes(inlineType)) return true;
+
+  const nestedType = (credentialSubject.lerrsType as Record<string, unknown> | undefined)?.type;
+  return typeof nestedType === 'string' && [LEGACY_LER_RS_TYPE_URI_V44, LER_RS_TYPE_URI_V45].includes(nestedType);
+};
+
 const buildEmploymentHistories = (items: NonNullable<CreateLerRecordParams['workHistory']>): LerRsRecord['employmentHistories'] => {
   return items.map(item => {
-    const { narrative, verifiableCredential, position, employer, start, end, ...rest } = item;
+    const { narrative, verifiableCredential, verifications, position, employer, start, end, ...rest } = item;
 
     const container: Record<string, unknown> = { ...rest };
 
@@ -22,38 +52,45 @@ const buildEmploymentHistories = (items: NonNullable<CreateLerRecordParams['work
     }
     if (narrative) container.narrative = narrative;
 
-    const verifications = verifiableCredential ? [verifiableCredential] : [];
-    return { ...container, ...(verifications.length ? { verifications } : {}) };
+    const containerVerifications = getItemVerifications({ verifiableCredential, verifications });
+    return { ...container, ...(containerVerifications.length ? { verifications: containerVerifications } : {}) };
   });
 };
 
 const buildEducationAndLearnings = (items: NonNullable<CreateLerRecordParams['educationHistory']>): LerRsRecord['educationAndLearnings'] => {
   return items.map(item => {
-    const { narrative, verifiableCredential, institution, start, end, degree, specializations, ...rest } = item;
+    const { narrative, verifiableCredential, verifications, institution, start, end, degree, specializations, ...rest } = item;
 
     const container: Record<string, unknown> = { ...rest };
-    if (institution) container.institution = institution;
+    if (institution) container.institution = { name: institution };
     if (start) container.start = start;
     if (end) container.end = end;
     if (degree || specializations) {
-      container.educationDegrees = [{ ...(degree ? { name: degree } : {}), ...(specializations ? { specializations } : {}) }];
+      container.educationDegrees = [
+        {
+          ...(degree ? { name: degree } : {}),
+          ...(specializations
+            ? { specializations: specializations.map(specialization => ({ name: specialization })) }
+            : {}),
+        },
+      ];
     }
     if (narrative) container.narrative = narrative;
 
-    const verifications = verifiableCredential ? [verifiableCredential] : [];
-    return { ...container, ...(verifications.length ? { verifications } : {}) };
+    const containerVerifications = getItemVerifications({ verifiableCredential, verifications });
+    return { ...container, ...(containerVerifications.length ? { verifications: containerVerifications } : {}) };
   });
 };
 
 const buildCertifications = (items: NonNullable<CreateLerRecordParams['certifications']>): LerRsRecord['certifications'] => {
   return items.map(item => {
-    const { narrative, verifiableCredential, ...rest } = item;
+    const { narrative, verifiableCredential, verifications, ...rest } = item;
 
     const container: Record<string, unknown> = { ...rest };
     if (narrative) container.narrative = narrative;
 
-    const verifications = verifiableCredential ? [verifiableCredential] : [];
-    return { ...container, ...(verifications.length ? { verifications } : {}) };
+    const containerVerifications = getItemVerifications({ verifiableCredential, verifications });
+    return { ...container, ...(containerVerifications.length ? { verifications: containerVerifications } : {}) };
   });
 };
 
@@ -66,39 +103,41 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
       createLerRecord: async (_learnCard, params): Promise<VerifiableCredential> => {
         const signer = params.learnCard ?? _learnCard;
         const did = signer.id.did();
+        const issuedAt = new Date().toISOString();
+        const documentId = crypto.randomUUID();
 
         const personSection: LerRsRecord['person'] = {
-          id: params.person.id,
           name: {
-            givenName: params.person.givenName,
-            familyName: params.person.familyName,
-            formattedName: `${params.person.givenName} ${params.person.familyName}`,
+            given: params.person.givenName,
+            family: params.person.familyName,
+            formattedName: params.person.formattedName ?? `${params.person.givenName} ${params.person.familyName}`,
           },
         };
 
         const communication: LerRsRecord['communication'] | undefined = params.person.email
-          ? { emails: [{ address: params.person.email }] }
+          ? { email: [{ address: params.person.email }] }
           : undefined;
 
         const lerRecord: LerRsRecord = {
+          type: LER_RS_TYPE_URI_V45,
+          documentId: { value: documentId },
           person: personSection,
           ...(communication ? { communication } : {}),
           skills: (params.skills || []).map(s => ({ name: s })),
           employmentHistories: params.workHistory ? buildEmploymentHistories(params.workHistory) : undefined,
           educationAndLearnings: params.educationHistory ? buildEducationAndLearnings(params.educationHistory) : undefined,
           certifications: params.certifications ? buildCertifications(params.certifications) : undefined,
-          narratives: [],
         };
 
         const unsignedVC: UnsignedVC = {
-          '@context': [VC_CONTEXT],
-          id: `urn:uuid:${crypto.randomUUID()}`,
-          type: ['VerifiableCredential', LERRS_TYPE],
+          '@context': [LER_RS_CREDENTIAL_CONTEXT_V1, LER_RS_VC_CONTEXT_V45],
+          id: `urn:uuid:${documentId}`,
+          type: ['VerifiableCredential', LER_RS_TYPE_URI_V45],
           issuer: did,
-          validFrom: new Date().toISOString(),
+          issuanceDate: issuedAt,
           credentialSubject: {
             id: params.person.id,
-            ler: lerRecord,
+            ...lerRecord,
           },
         };
 
@@ -110,11 +149,11 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
         const did = signer.id.did();
 
         if (!params.credentials.length) throw new Error('createLerPresentation: credentials array must contain at least one credential');
-        const containsLer = params.credentials.some(vc => Array.isArray(vc.type) && vc.type.includes(LERRS_TYPE));
+        const containsLer = params.credentials.some(credentialHasLerRsType);
         if (!containsLer) throw new Error('createLerPresentation: credentials must include at least one LER-RS credential');
 
         const vp: UnsignedVP = {
-          '@context': [VC_CONTEXT],
+          '@context': [LER_RS_CREDENTIAL_CONTEXT_V1],
           type: ['VerifiablePresentation'],
           holder: did,
           verifiableCredential: params.credentials.length === 1 ? params.credentials[0] : params.credentials,
@@ -147,7 +186,7 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
             try {
               const credCheck = await initLearnCard.invoke.verifyCredential(credential);
               const issuerDid = typeof credential.issuer === 'string' ? credential.issuer : credential.issuer?.id;
-              const isSelfIssued = (Array.isArray(credential.type) && credential.type.includes(LERRS_TYPE)) || (!!holder && !!issuerDid && issuerDid === holder);
+              const isSelfIssued = credentialHasLerRsType(credential) || (!!holder && !!issuerDid && issuerDid === holder);
 
               credentialResults.push({
                 credential,
