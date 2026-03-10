@@ -8,6 +8,7 @@ export type CredentialConfig = {
 export type ClaimSuccessDetails = {
   credentialId: string;
   consentGiven: boolean;
+  handoffUrl?: string;
 };
 
 export type EmailSubmitResult = { ok: true } | { ok: false; error: string };

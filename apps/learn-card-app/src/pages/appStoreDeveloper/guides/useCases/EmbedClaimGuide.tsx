@@ -30,6 +30,8 @@ import { useDeveloperPortal } from '../../useDeveloperPortal';
 import { TemplateListManager } from '../../components/TemplateListManager';
 import type { ManagedTemplate } from '../../dashboards/hooks/useTemplateDetails';
 import { init as initEmbed } from '@learncard/embed-sdk';
+import { clearFinalizeCache } from '../../../../hooks/useFinalizeInboxCredentials';
+import { autoVerifyStore } from '../../../../stores/autoVerifyStore';
 import type { GuideProps } from '../GuidePage';
 
 const STEPS = [
@@ -863,6 +865,11 @@ const EmbedPreview: React.FC<{
                 ...(apiBaseUrl ? { apiBaseUrl } : {}),
                 onSuccess: details => {
                     console.log('Embed claim success:', details);
+                    // Trigger inbox finalize so the claimed credential appears in the wallet
+                    clearFinalizeCache();
+                    autoVerifyStore.set.markVerifySuccess();
+                    // Open the local wallet (skip handoff token which requires backend verification)
+                    window.open(window.location.origin + '/wallet', '_blank', 'noopener,noreferrer');
                 },
             });
             setIsLoaded(true);
