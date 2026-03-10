@@ -127,8 +127,10 @@
           e.preventDefault();
           var pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '').slice(0, 6);
           if (!pasted) return;
+          var inputs = wrap.querySelectorAll('input');
           for (var j = 0; j < pasted.length && j < 6; j++) {
             digits[j] = pasted[j];
+            if (inputs[j]) inputs[j].value = pasted[j];
           }
           onInput(digits.join(''));
           focusIndex(Math.min(pasted.length, 5));
