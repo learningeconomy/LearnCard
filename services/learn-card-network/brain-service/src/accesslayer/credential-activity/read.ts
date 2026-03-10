@@ -46,9 +46,7 @@ export const getActivitiesForProfile = async (
         whereConditions.push('a.integrationId = $integrationId');
     }
 
-    const whereClause = whereConditions.length > 0 
-        ? `WHERE ${whereConditions.join(' AND ')}`
-        : '';
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
     const boostMatch = boostId
         ? 'MATCH (a)-[:FOR_BOOST]->(b:Boost {id: $boostId})'
@@ -92,15 +90,19 @@ export const getActivitiesForProfile = async (
         return {
             ...activity,
             metadata: parsedMetadata,
-            boost: boost ? {
-                id: boost.id,
-                name: boost.name,
-                category: boost.category,
-            } : undefined,
-            recipientProfile: recipient ? {
-                profileId: recipient.profileId,
-                displayName: recipient.displayName,
-            } : undefined,
+            boost: boost
+                ? {
+                      id: boost.id,
+                      name: boost.name,
+                      category: boost.category,
+                  }
+                : undefined,
+            recipientProfile: recipient
+                ? {
+                      profileId: recipient.profileId,
+                      displayName: recipient.displayName,
+                  }
+                : undefined,
         };
     });
 };
@@ -122,30 +124,27 @@ export const getActivityStatsForProfile = async (
         whereConditions.push('a.integrationId = $integrationId');
     }
 
-    const whereClause = whereConditions.length > 0 
-        ? `WHERE ${whereConditions.join(' AND ')}`
-        : '';
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
-    const boostFilter = boostIds?.length
-        ? 'WHERE b.id IN $boostIds'
-        : '';
+    const boostFilter = boostIds?.length ? 'WHERE b.id IN $boostIds' : '';
 
     const query = `
         MATCH (a:CredentialActivity)
         ${whereClause}
         ${boostIds?.length ? 'MATCH (a)-[:FOR_BOOST]->(b:Boost)' : ''}
         ${boostFilter}
-        WITH a.activityId as aid, COLLECT(a) as events
-        WITH aid, REDUCE(latest = HEAD(events), e IN TAIL(events) |
+        WITH COLLECT(a) as allEvents, a.activityId as aid, COLLECT(a) as events
+        WITH allEvents, aid, REDUCE(latest = HEAD(events), e IN TAIL(events) |
             CASE WHEN e.timestamp > latest.timestamp THEN e ELSE latest END) as latestEvent
         WITH 
+            SUM(SIZE(allEvents)) as totalEvents,
             COUNT(DISTINCT aid) as total,
             SUM(CASE WHEN latestEvent.eventType = 'CREATED' THEN 1 ELSE 0 END) as created,
             SUM(CASE WHEN latestEvent.eventType = 'DELIVERED' THEN 1 ELSE 0 END) as delivered,
             SUM(CASE WHEN latestEvent.eventType = 'CLAIMED' THEN 1 ELSE 0 END) as claimed,
             SUM(CASE WHEN latestEvent.eventType = 'EXPIRED' THEN 1 ELSE 0 END) as expired,
             SUM(CASE WHEN latestEvent.eventType = 'FAILED' THEN 1 ELSE 0 END) as failed
-        RETURN total, created, delivered, claimed, expired, failed
+        RETURN totalEvents, total, created, delivered, claimed, expired, failed
     `;
 
     const result = await neogma.queryRunner.run(query, {
@@ -156,6 +155,7 @@ export const getActivityStatsForProfile = async (
 
     if (result.records.length === 0) {
         return {
+            totalEvents: 0,
             total: 0,
             created: 0,
             delivered: 0,
@@ -170,6 +170,7 @@ export const getActivityStatsForProfile = async (
 
     if (!record) {
         return {
+            totalEvents: 0,
             total: 0,
             created: 0,
             delivered: 0,
@@ -180,6 +181,7 @@ export const getActivityStatsForProfile = async (
         };
     }
 
+    const totalEventsVal = record.get('totalEvents');
     const totalVal = record.get('total');
     const createdVal = record.get('created');
     const deliveredVal = record.get('delivered');
@@ -187,17 +189,27 @@ export const getActivityStatsForProfile = async (
     const expiredVal = record.get('expired');
     const failedVal = record.get('failed');
 
-    const total = typeof totalVal?.toNumber === 'function' ? totalVal.toNumber() : (totalVal ?? 0);
-    const created = typeof createdVal?.toNumber === 'function' ? createdVal.toNumber() : (createdVal ?? 0);
-    const delivered = typeof deliveredVal?.toNumber === 'function' ? deliveredVal.toNumber() : (deliveredVal ?? 0);
-    const claimed = typeof claimedVal?.toNumber === 'function' ? claimedVal.toNumber() : (claimedVal ?? 0);
-    const expired = typeof expiredVal?.toNumber === 'function' ? expiredVal.toNumber() : (expiredVal ?? 0);
-    const failed = typeof failedVal?.toNumber === 'function' ? failedVal.toNumber() : (failedVal ?? 0);
+    const totalEvents =
+        typeof totalEventsVal?.toNumber === 'function'
+            ? totalEventsVal.toNumber()
+            : totalEventsVal ?? 0;
+    const total = typeof totalVal?.toNumber === 'function' ? totalVal.toNumber() : totalVal ?? 0;
+    const created =
+        typeof createdVal?.toNumber === 'function' ? createdVal.toNumber() : createdVal ?? 0;
+    const delivered =
+        typeof deliveredVal?.toNumber === 'function' ? deliveredVal.toNumber() : deliveredVal ?? 0;
+    const claimed =
+        typeof claimedVal?.toNumber === 'function' ? claimedVal.toNumber() : claimedVal ?? 0;
+    const expired =
+        typeof expiredVal?.toNumber === 'function' ? expiredVal.toNumber() : expiredVal ?? 0;
+    const failed =
+        typeof failedVal?.toNumber === 'function' ? failedVal.toNumber() : failedVal ?? 0;
 
     const totalSent = created + delivered + claimed;
     const claimRate = totalSent > 0 ? (claimed / totalSent) * 100 : 0;
 
     return {
+        totalEvents,
         total,
         created,
         delivered,
@@ -243,15 +255,19 @@ export const getActivityChain = async (
         return {
             ...activity,
             metadata: parsedMetadata,
-            boost: boost ? {
-                id: boost.id,
-                name: boost.name,
-                category: boost.category,
-            } : undefined,
-            recipientProfile: recipient ? {
-                profileId: recipient.profileId,
-                displayName: recipient.displayName,
-            } : undefined,
+            boost: boost
+                ? {
+                      id: boost.id,
+                      name: boost.name,
+                      category: boost.category,
+                  }
+                : undefined,
+            recipientProfile: recipient
+                ? {
+                      profileId: recipient.profileId,
+                      displayName: recipient.displayName,
+                  }
+                : undefined,
         };
     });
 };
@@ -302,14 +318,18 @@ export const getActivityById = async (
     return {
         ...activity,
         metadata: parsedMetadata,
-        boost: boost ? {
-            id: boost.id,
-            name: boost.name,
-            category: boost.category,
-        } : undefined,
-        recipientProfile: recipient ? {
-            profileId: recipient.profileId,
-            displayName: recipient.displayName,
-        } : undefined,
+        boost: boost
+            ? {
+                  id: boost.id,
+                  name: boost.name,
+                  category: boost.category,
+              }
+            : undefined,
+        recipientProfile: recipient
+            ? {
+                  profileId: recipient.profileId,
+                  displayName: recipient.displayName,
+              }
+            : undefined,
     };
 };
