@@ -69,6 +69,7 @@ export const PaginatedCredentialActivitiesValidator = z.object({
 export type PaginatedCredentialActivities = z.infer<typeof PaginatedCredentialActivitiesValidator>;
 
 export const CredentialActivityStatsValidator = z.object({
+    totalEvents: z.number(),
     total: z.number(),
     created: z.number(),
     delivered: z.number(),
