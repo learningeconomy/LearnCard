@@ -5,6 +5,7 @@ import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
 import { markInboxCredentialAsIssued } from '@accesslayer/inbox-credential/update';
 import { Context } from '@routes'
+import { getAppDidWeb } from '@helpers/did.helpers';
 import { 
     createDeliveredRelationship,
     createEmailSentRelationship,
@@ -43,7 +44,8 @@ export const claimIntoInbox = async(
     recipient: ContactMethodQueryType,
     credential: VC | UnsignedVC | VP,
     configuration: IssueInboxCredentialType['configuration'] = {},
-    ctx: Context
+    ctx: Context,
+    listingSlug?: string
 ): Promise<{ 
     status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'CLAIMED' | 'DELIVERED'; // DELIVERED & CLAIMED are deprecated, use ISSUED 
     inboxCredential: InboxCredentialType;
@@ -70,12 +72,18 @@ export const claimIntoInbox = async(
         if (isSigned) {
             finalCredential = credential as VC;
         } else {
+            // For app-based SAs (listings), use the app did:web as ownerDid
+            const ownerDidOverride = listingSlug
+                ? getAppDidWeb(ctx.domain, listingSlug)
+                : undefined;
+
             finalCredential = await issueCredentialWithSigningAuthority(
                 issuerProfile,
                 credential as UnsignedVC,
                 signingAuthorityForUser,
                 ctx.domain,
-                false // don't encrypt
+                false, // don't encrypt
+                ownerDidOverride
             ) as VC;
         }
 

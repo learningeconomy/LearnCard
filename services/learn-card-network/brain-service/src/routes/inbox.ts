@@ -544,7 +544,8 @@ export const inboxRouter = t.router({
                 {
                     expiresInDays: 720,
                 },
-                ctx
+                ctx,
+                listing.slug
             );
 
             return {
