@@ -194,7 +194,7 @@ export const getActivityStatsForProfile = async (
     const expired = typeof expiredVal?.toNumber === 'function' ? expiredVal.toNumber() : (expiredVal ?? 0);
     const failed = typeof failedVal?.toNumber === 'function' ? failedVal.toNumber() : (failedVal ?? 0);
 
-    const totalSent = created + delivered;
+    const totalSent = created + delivered + claimed;
     const claimRate = totalSent > 0 ? (claimed / totalSent) * 100 : 0;
 
     return {

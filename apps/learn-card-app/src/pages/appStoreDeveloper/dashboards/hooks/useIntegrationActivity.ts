@@ -249,10 +249,10 @@ export function useIntegrationActivity(
                     const apiStats = statsResult as CredentialActivityStats;
 
                     setStats({
-                        totalSent: apiStats.delivered + apiStats.created,
+                        totalSent: apiStats.delivered + apiStats.created + apiStats.claimed,
                         totalClaimed: apiStats.claimed,
                         totalIssued: apiStats.delivered + apiStats.created + apiStats.claimed,
-                        pendingClaims: apiStats.delivered + apiStats.created - apiStats.claimed,
+                        pendingClaims: apiStats.delivered + apiStats.created,
                         claimRate: apiStats.claimRate,
                     });
                 }
