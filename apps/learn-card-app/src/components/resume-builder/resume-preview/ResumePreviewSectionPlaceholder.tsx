@@ -3,9 +3,11 @@ import React from 'react';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
+import { useModal, ModalTypes } from 'learn-card-base';
 
-import { RESUME_SECTIONS } from '../resume-builder.helpers';
+import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
 import { CredentialCategoryEnum } from 'learn-card-base';
+import ResumeSelfAttestModal from '../ResumeSelfAttestModal';
 
 const EMPTY_SECTION_COPY: Partial<
     Record<
@@ -50,10 +52,11 @@ const EMPTY_SECTION_COPY: Partial<
 };
 
 export const ResumePreviewSectionPlaceholder: React.FC<{
-    category: CredentialCategoryEnum;
+    category: ResumeSectionKey;
     className?: string;
 }> = ({ category, className = '' }) => {
-    const { getThemedCategory, theme } = useTheme();
+    const { getThemedCategory } = useTheme();
+    const { newModal } = useModal();
     const { colors, icons } = getThemedCategory(category);
 
     const section = RESUME_SECTIONS.find(section => section.key === category);
@@ -66,10 +69,7 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
 
     return (
         <div className={className} data-pdf-screen-only>
-            <div
-                className="rounded-[24px] border border-dashed bg-white px-6 py-6 flex flex-col gap-5 md:flex-row md:items-center md:justify-between"
-                style={{ borderColor: 'var(--ion-color-grayscale-200)' }}
-            >
+            <div className="rounded-[24px] border border-dashed bg-white px-6 py-6 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-start gap-4 min-w-0">
                     <div className="h-[86px] w-[86px] rounded-[24px] flex items-center justify-center shrink-0">
                         {IconComponent && <IconComponent className="h-[64px] w-[64px]" />}
@@ -85,7 +85,18 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
                     </div>
                 </div>
                 <div className="shrink-0 w-full md:w-auto">
-                    <div
+                    <button
+                        type="button"
+                        onClick={() =>
+                            newModal(
+                                <ResumeSelfAttestModal category={category} />,
+                                {
+                                    sectionClassName:
+                                        '!max-w-[500px] !bg-transparent !shadow-none !overflow-visible',
+                                },
+                                { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+                            )
+                        }
                         className={`flex w-full md:inline-flex md:w-auto items-center justify-between gap-4 px-4 py-1.5 rounded-full shadow-sm bg-${colors.primaryColor}`}
                     >
                         <span className="text-[15px] font-semibold text-white">
@@ -94,7 +105,7 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
                         <div className="h-[30px] w-[30px] rounded-full flex items-center justify-center shadow-sm">
                             <GearPlusIcon className="h-full w-full text-grayscale-900" />
                         </div>
-                    </div>
+                    </button>
                 </div>
             </div>
         </div>
