@@ -81,7 +81,7 @@ describe('LearnCard Embed SDK', () => {
     expect(cfg.parentOrigin).toBe(window.location.origin);
   });
 
-  test('completes flow on trusted message, calls onSuccess, opens wallet, and closes modal', () => {
+  test('completes flow with onSuccess: skips window.open, passes handoffUrl in details', () => {
     setupTarget();
 
     const onSuccess = jest.fn();
@@ -101,8 +101,30 @@ describe('LearnCard Embed SDK', () => {
     const payload = { __lcEmbed: true, type: 'lc-embed:complete', nonce: cfg.nonce, payload: { credentialId: 'abc', consentGiven: false } };
     window.dispatchEvent(new MessageEvent('message', { data: payload, source: null as any }));
 
+    // When onSuccess is provided, SDK delegates redirect to consumer
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(onSuccess).toHaveBeenCalledWith({ credentialId: 'abc', consentGiven: false, handoffUrl: 'https://learncard.app' });
+    expect(getOverlay()).toBeFalsy();
+  });
+
+  test('completes flow without onSuccess: opens wallet via window.open', () => {
+    setupTarget();
+
+    init({
+      target: '#mount',
+      credential: { name: 'Thing' },
+    });
+
+    (document.querySelector('button.lc-claim-btn') as HTMLButtonElement).click();
+
+    const iframe = getIframe();
+    const cfg = parseEmbedConfigFromSrcdoc(iframe.srcdoc || '');
+
+    const payload = { __lcEmbed: true, type: 'lc-embed:complete', nonce: cfg.nonce, payload: { credentialId: 'abc', consentGiven: false } };
+    window.dispatchEvent(new MessageEvent('message', { data: payload, source: null as any }));
+
+    // Without onSuccess, SDK opens wallet directly
     expect(openSpy).toHaveBeenCalledWith('https://learncard.app', '_blank', 'noopener,noreferrer');
-    expect(onSuccess).toHaveBeenCalledWith({ credentialId: 'abc', consentGiven: false });
     expect(getOverlay()).toBeFalsy();
   });
 
