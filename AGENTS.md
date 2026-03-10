@@ -721,6 +721,262 @@ Partner Connect example apps follow a consistent pattern:
 -   **Logic**: Network admins can issue both Leader IDs and Scout IDs to troops they manage
 -   **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
 
+## TenantConfig System
+
+The TenantConfig system is the **single source of truth** for all tenant-specific configuration — API endpoints, auth providers, branding, feature toggles, observability, native build settings, and more. It replaces all legacy per-environment globals (`LCN_URL`, `CLOUD_URL`, `API_URL`, etc.) with a unified, Zod-validated config object.
+
+### Architecture Overview
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                      Build Time (CI / Local)                     │
+│                                                                  │
+│  environments/<tenant>.json  ──►  prepare-native-config.ts       │
+│       (overrides only)             │                             │
+│                                    ├─► deep-merge onto defaults  │
+│                                    ├─► Zod schema validation     │
+│                                    ├─► public/tenant-config.json │
+│                                    └─► copy tenant assets        │
+└──────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│                      Runtime (App Boot)                          │
+│                                                                  │
+│  resolveTenantConfig()                                           │
+│    1. Baked JSON  (/tenant-config.json — native builds)          │
+│    2. Fresh fetch (/__tenant-config — web CNAME edge function)   │
+│    3. localStorage cache (1h TTL)                                │
+│    4. DEFAULT_LEARNCARD_TENANT_CONFIG fallback                   │
+│                                                                  │
+│  ──► initNetworkStoreFromTenant(config.apis)                     │
+│  ──► <TenantConfigProvider config={config}>                      │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### File Map
+
+```
+packages/learn-card-base/src/config/
+├── tenantConfigSchema.ts       — Zod schema (single source of truth for types + validation)
+├── tenantConfig.ts             — Re-exports types/schemas + getTenantBaseUrl() helper
+├── tenantDefaults.ts           — DEFAULT_LEARNCARD_TENANT_CONFIG (hardcoded defaults)
+├── resolveTenantConfig.ts      — Runtime resolution (baked → fetch → cache → default)
+├── TenantConfigProvider.tsx    — React context + hooks (useTenantConfig, useApiConfig, etc.)
+└── brandingHelpers.ts          — Data-driven branding (getCategoryLabel, getNavBarColor, etc.)
+
+packages/learn-card-base/src/stores/
+└── NetworkStore.ts             — Zustand store for network URLs + initNetworkStoreFromTenant()
+
+apps/learn-card-app/
+├── environments/
+│   ├── learncard.json          — Production LearnCard (minimal — relies on defaults)
+│   ├── local.json              — Local dev overrides (localhost URLs, debug flags)
+│   └── vetpass.json            — VetPass tenant (full override with placeholder creds)
+├── scripts/
+│   ├── prepare-native-config.ts — Build script: merge + validate + write + copy assets
+│   └── generate-tenant-assets.ts — Asset generator: logo → all icon/splash sizes
+└── public/
+    └── tenant-config.json      — Generated output (gitignored)
+```
+
+### Zod Schema
+
+The schema in `tenantConfigSchema.ts` serves three purposes:
+
+1. **Runtime validation** — `parseTenantConfig(raw, source)` validates config from any source
+2. **Type inference** — `TenantConfig = z.infer<typeof tenantConfigSchema>` (no manual interfaces)
+3. **Default values** — `.default()` on fields replaces the need for manual merge logic
+
+All object sub-schemas use `.passthrough()` so newer config fields from the server don't break older clients.
+
+**Root schema sections:**
+
+| Section | Schema | Required | Purpose |
+| --- | --- | --- | --- |
+| `tenantId` | `z.string()` | yes | Unique tenant identifier |
+| `domain` | `z.string()` | yes | Production domain |
+| `devDomain` | `z.string()` | no | Local dev domain (default: `localhost:3000`) |
+| `apis` | `tenantApiConfigSchema` | yes | All service endpoints |
+| `auth` | `tenantAuthConfigSchema` | yes | Auth provider + key derivation |
+| `branding` | `tenantBrandingConfigSchema` | yes | Visual identity + category labels |
+| `features` | `tenantFeatureConfigSchema` | yes | Feature toggles |
+| `observability` | `tenantObservabilityConfigSchema` | yes | Sentry, LaunchDarkly, Userflow |
+| `links` | `tenantLinksConfigSchema` | yes | App Store / Play Store URLs |
+| `native` | `tenantNativeConfigSchema` | no | Bundle ID, deep links, Capgo |
+| `ecosystem` | `tenantEcosystemConfigSchema` | no | Ecosystem / root org IDs |
+
+### Environment Files
+
+Environment files live in `apps/learn-card-app/environments/<tenant>.json`. They contain **only the fields that differ from defaults** — the build script deep-merges them onto `DEFAULT_LEARNCARD_TENANT_CONFIG`.
+
+**Creating a new tenant:**
+
+1. Copy an existing file (e.g., `learncard.json`) as a starting point
+2. Set `tenantId` and `domain` (required)
+3. Override only the sections that differ from defaults
+4. Add Firebase credentials, API endpoints, branding, etc.
+5. Run `npx tsx scripts/prepare-native-config.ts <tenant>` to validate
+
+**Minimal example** (`learncard.json`):
+```json
+{
+    "tenantId": "learncard",
+    "domain": "learncard.app"
+}
+```
+
+**Full override example** (`vetpass.json`):
+```json
+{
+    "tenantId": "vetpass",
+    "domain": "vetpass.app",
+    "devDomain": "localhost:3000",
+    "apis": { "brainService": "https://network.vetpass.app/trpc", ... },
+    "auth": { "firebase": { ... }, ... },
+    "branding": { "name": "VetPass", "categoryLabels": { ... }, ... },
+    "native": { "bundleId": "com.vetpass.app", ... }
+}
+```
+
+### NetworkStore
+
+`NetworkStore` is a persisted Zustand store that holds the active network URLs. It replaces all direct references to legacy globals.
+
+**Initialization flow:**
+1. `resolveTenantConfig()` returns the validated config
+2. `initNetworkStoreFromTenant(config.apis)` populates the store
+3. All code reads URLs via `networkStore.get.networkUrl()`, `networkStore.get.apiEndpoint()`, etc.
+
+**Store fields:**
+
+| Field | Source | Legacy equivalent |
+| --- | --- | --- |
+| `networkUrl` | `apis.brainService` | `LCN_URL` |
+| `networkApiUrl` | `apis.brainServiceApi` | `LCN_API_URL` |
+| `cloudUrl` | `apis.cloudService` | `CLOUD_URL` |
+| `xapiUrl` | `apis.xapi` | `LEARN_CLOUD_XAPI_URL` |
+| `apiEndpoint` | `apis.lcaApi` | `API_URL` |
+
+### React Context & Hooks
+
+`TenantConfigProvider` wraps the app and exposes config via context:
+
+```tsx
+<TenantConfigProvider config={resolvedConfig}>
+    <App />
+</TenantConfigProvider>
+```
+
+**Available hooks:**
+
+| Hook | Returns |
+| --- | --- |
+| `useTenantConfig()` | Full `TenantConfig` |
+| `useApiConfig()` | `TenantApiConfig` |
+| `useAuthTenantConfig()` | `TenantAuthConfig` |
+| `useBrandingConfig()` | `TenantBrandingConfig` |
+| `useFeatureConfig()` | `TenantFeatureConfig` |
+| `useObservabilityConfig()` | `TenantObservabilityConfig` |
+| `useLinksConfig()` | `TenantLinksConfig` |
+| `useNativeConfig()` | `TenantNativeConfig \| undefined` |
+| `useTenantBaseUrl()` | `string` (e.g. `https://learncard.app`) |
+
+### Branding Helpers
+
+Data-driven helpers in `brandingHelpers.ts` replace hard-coded `BrandingEnum` switches:
+
+- `getCategoryLabel(branding, key)` — credential category display name
+- `getCategoryColor(branding, key)` — category color override
+- `getNavBarColorOverride(branding, path)` — per-route nav bar color
+- `getStatusBarColorOverride(branding, path)` — per-route status bar color
+- `getHeaderTextColor(branding, path)` — per-route header text color
+- `getHomeRoute(branding)` — tenant home route (default: `/wallet`)
+- `getHeaderText(branding)` — header display text
+
+### Build Scripts
+
+#### `prepare-native-config.ts`
+
+Generates `public/tenant-config.json` for native (Capacitor) builds and copies tenant assets.
+
+```bash
+# Default LearnCard
+npx tsx scripts/prepare-native-config.ts
+
+# Specific tenant
+npx tsx scripts/prepare-native-config.ts vetpass
+
+# Local dev
+npx tsx scripts/prepare-native-config.ts local
+```
+
+**Steps:**
+1. Load `environments/<tenant>.json` overrides
+2. Deep-merge onto `DEFAULT_LEARNCARD_TENANT_CONFIG`
+3. Validate merged config against the Zod schema (fails the build if invalid)
+4. Write `public/tenant-config.json`
+5. Copy tenant assets from `environments/<tenant>/assets/` into Capacitor dirs
+
+**Docker scripts in `package.json`:**
+- `docker-start` → `prepare-native-config.ts local && vite --host`
+- `docker-start:tenant` → `prepare-native-config.ts ${TENANT:-learncard} && vite --host`
+- `docker-build` → `prepare-native-config.ts local && vite build`
+
+#### `generate-tenant-assets.ts`
+
+Generates all native image assets from a single source logo using `sharp`.
+
+```bash
+npx tsx scripts/generate-tenant-assets.ts <tenant> <logo-path> [options]
+
+# Example
+npx tsx scripts/generate-tenant-assets.ts vetpass ~/vetpass-logo.png --bg "#1A3C5E" --splash-bg "#0D1F30"
+```
+
+**Options:**
+- `--bg <hex>` — Icon background color (default: `#FFFFFF`)
+- `--splash-bg <hex>` — Splash background color (defaults to `--bg`)
+- `--no-splash` — Skip splash screen generation
+
+**Generated assets (~55 files) in `environments/<tenant>/assets/`:**
+
+| Platform | Assets | Sizes |
+| --- | --- | --- |
+| **iOS** | `AppIcon.png` | 1024×1024 |
+| **iOS** | `splash-2732x2732{,-1,-2}.png` | 2732×2732 (×3 copies for 1x/2x/3x) |
+| **Android** | `ic_launcher.webp` | 48–192px (5 densities: mdpi→xxxhdpi) |
+| **Android** | `ic_launcher_foreground.webp` | 108–432px (adaptive icon foreground) |
+| **Android** | `ic_launcher_round.webp` | 48–192px (circular clip) |
+| **Android** | `ic_launcher_background.xml` | Solid color vector + values resource |
+| **Android** | `splash.9.png` | 9-patch PNGs in all drawable-* dirs |
+| **Web** | `favicon.png` | 64×64 |
+| **Web** | `icon.png` | 512×512 (PWA maskable) |
+
+**Full workflow for a new tenant:**
+```bash
+# 1. Create environment file
+# environments/mytenant.json  (only overrides)
+
+# 2. Generate image assets from a logo
+pnpm generate-assets mytenant ~/path/to/logo.png --bg "#123456"
+
+# 3. Build config + copy assets into Capacitor project
+pnpm prepare-config mytenant
+
+# 4. Build the app
+pnpm build
+```
+
+### Important Rules for AI Assistants
+
+- **Never use legacy globals** (`LCN_URL`, `CLOUD_URL`, `API_URL`, `LCN_API_URL`, `LEARN_CLOUD_XAPI_URL`). These have been removed from `vite.config.ts` and `global.d.ts`. Always use `networkStore.get.*()` or the tenant config hooks instead.
+- **Never hardcode URLs** in components. Read from `networkStore` or `useTenantConfig()`.
+- **Environment files are overrides only** — never duplicate defaults. The build script deep-merges onto `DEFAULT_LEARNCARD_TENANT_CONFIG`.
+- **All config is Zod-validated** at build time. Schema violations fail the build, not runtime.
+- **`.passthrough()`** on all Zod sub-schemas means extra fields are preserved, not stripped.
+- **Generated assets are gitignored** (`environments/*/assets/`). They are build artifacts.
+- **`sharp`** is a devDependency of `learn-card-app` used only by the asset generation script.
+
 ## Privacy Preferences & Age-Gate System
 
 GDPR/COPPA-compliant privacy controls based on user age and country. Minors have AI, analytics, and bug reporting disabled by default.

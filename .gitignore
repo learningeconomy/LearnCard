@@ -25,8 +25,9 @@ node_modules
 
 .nx-cache/
 
-# Generated tenant config (from prepare-native-config script)
+# Generated tenant config and assets (from prepare scripts)
 **/public/tenant-config.json
+**/environments/*/assets/
 .aider*
 
 # Personal AI tooling (not shared — teammates may use different setups)

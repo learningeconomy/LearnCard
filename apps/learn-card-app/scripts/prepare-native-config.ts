@@ -24,8 +24,8 @@
  * so schema violations are caught before deploy, not at runtime.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
-import { resolve, dirname } from 'path';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, readdirSync, statSync } from 'fs';
+import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 import { tenantConfigSchema } from 'learn-card-base/src/config/tenantConfigSchema';
@@ -125,3 +125,94 @@ writeFileSync(outPath, JSON.stringify(validatedConfig, null, 2) + '\n', 'utf-8')
 console.log(`\n✅ Wrote validated tenant config to: ${outPath}`);
 console.log(`   Tenant: ${tenantArg}`);
 console.log(`   Sections: ${Object.keys(validatedConfig).join(', ')}`);
+
+// ---------------------------------------------------------------------------
+// 5. Copy tenant-specific image assets (if they exist)
+// ---------------------------------------------------------------------------
+
+const assetsDir = resolve(APP_ROOT, 'environments', tenantArg, 'assets');
+
+if (existsSync(assetsDir)) {
+    console.log(`\n📸 Copying tenant assets from environments/${tenantArg}/assets/...`);
+
+    let copiedCount = 0;
+
+    const copyRecursive = (src: string, dest: string): void => {
+        for (const entry of readdirSync(src, { withFileTypes: true })) {
+            const srcPath = join(src, entry.name);
+            const destPath = join(dest, entry.name);
+
+            if (entry.isDirectory()) {
+                mkdirSync(destPath, { recursive: true });
+                copyRecursive(srcPath, destPath);
+            } else {
+                cpSync(srcPath, destPath);
+                copiedCount++;
+            }
+        }
+    };
+
+    // iOS assets → ios/App/App/Assets.xcassets/
+    const iosSrc = join(assetsDir, 'ios');
+
+    if (existsSync(iosSrc)) {
+        const iosAppIconDest = resolve(APP_ROOT, 'ios/App/App/Assets.xcassets/AppIcon.appiconset');
+        const iosSplashDest = resolve(APP_ROOT, 'ios/App/App/Assets.xcassets/Splash.imageset');
+
+        const appIconSrc = join(iosSrc, 'AppIcon.png');
+
+        if (existsSync(appIconSrc)) {
+            mkdirSync(iosAppIconDest, { recursive: true });
+            cpSync(appIconSrc, join(iosAppIconDest, 'AppIcon.png'));
+            copiedCount++;
+        }
+
+        for (const splashFile of ['splash-2732x2732.png', 'splash-2732x2732-1.png', 'splash-2732x2732-2.png']) {
+            const src = join(iosSrc, splashFile);
+
+            if (existsSync(src)) {
+                mkdirSync(iosSplashDest, { recursive: true });
+                cpSync(src, join(iosSplashDest, splashFile));
+                copiedCount++;
+            }
+        }
+
+        console.log('   ✓ iOS assets');
+    }
+
+    // Android assets → android/app/src/main/res/
+    const androidSrc = join(assetsDir, 'android');
+
+    if (existsSync(androidSrc)) {
+        const androidResDest = resolve(APP_ROOT, 'android/app/src/main/res');
+        copyRecursive(androidSrc, androidResDest);
+        console.log('   ✓ Android assets');
+    }
+
+    // Web assets → public/assets/icon/
+    const webSrc = join(assetsDir, 'web');
+
+    if (existsSync(webSrc)) {
+        const webIconDest = resolve(APP_ROOT, 'public/assets/icon');
+        mkdirSync(webIconDest, { recursive: true });
+
+        const faviconSrc = join(webSrc, 'favicon.png');
+        const iconSrc = join(webSrc, 'icon.png');
+
+        if (existsSync(faviconSrc)) {
+            cpSync(faviconSrc, join(webIconDest, 'favicon.png'));
+            copiedCount++;
+        }
+
+        if (existsSync(iconSrc)) {
+            cpSync(iconSrc, join(webIconDest, 'icon.png'));
+            copiedCount++;
+        }
+
+        console.log('   ✓ Web assets');
+    }
+
+    console.log(`   Copied ${copiedCount} asset files.`);
+} else {
+    console.log(`\nℹ️  No tenant assets found at environments/${tenantArg}/assets/ — skipping asset copy.`);
+}
