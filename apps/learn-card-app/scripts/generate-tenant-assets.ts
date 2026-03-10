@@ -7,14 +7,25 @@
  *   npx tsx scripts/generate-tenant-assets.ts <tenant> <logo-path> [options]
  *
  * Options:
- *   --bg <hex>        Background color for icons (default: #FFFFFF)
- *   --splash-bg <hex> Splash screen background color (defaults to --bg)
- *   --no-splash       Skip splash screen generation
+ *   --bg <hex>              Background color for icons (default: #FFFFFF)
+ *   --splash-bg <hex>       Splash screen background color (defaults to --bg)
+ *   --no-splash             Skip splash screen generation
+ *   --name <text>           Tenant display name for text logo (auto-read from
+ *                           environments/<tenant>.json branding.name if not set)
+ *   --text-logo <path>      Override: use this file instead of auto-generating
+ *   --desktop-bg <path>     Override: use this file instead of auto-generating
+ *   --desktop-bg-alt <path> Override: use this file instead of auto-generating
  *
  * Outputs to: environments/<tenant>/assets/
  *
  * Generated structure:
  *   environments/<tenant>/assets/
+ *   ├── branding/
+ *   │   ├── app-icon.png                    200×200  (auto-generated)
+ *   │   ├── brand-mark.png                  200×200  (auto-generated)
+ *   │   ├── text-logo.svg                   (auto-generated or --text-logo)
+ *   │   ├── desktop-login-bg.png            (auto-generated or --desktop-bg)
+ *   │   └── desktop-login-bg-alt.png        (auto-generated or --desktop-bg-alt)
  *   ├── ios/
  *   │   ├── AppIcon.png                     1024×1024
  *   │   ├── splash-2732x2732.png            2732×2732
@@ -89,6 +100,9 @@ const SPLASH_LOGO_RATIO = 0.25;
 
 /** Padding ratio for legacy/round icons (inset from edge) */
 const ICON_PADDING_RATIO = 0.1;
+
+/** In-app branding icon size (used for app-icon and brand-mark) */
+const BRANDING_ICON_SIZE = 200;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -362,6 +376,175 @@ const generateAndroidBackgroundXml = (bgHex: string, androidDir: string): void =
 };
 
 // ---------------------------------------------------------------------------
+// In-app branding asset generators
+// ---------------------------------------------------------------------------
+
+/** Desktop login background dimensions */
+const DESKTOP_BG_WIDTH = 1920;
+const DESKTOP_BG_HEIGHT = 1080;
+
+interface BrandingOptions {
+    tenantDisplayName: string;
+    textLogoPath?: string;
+    desktopBgPath?: string;
+    desktopBgAltPath?: string;
+}
+
+/**
+ * Generate a text-logo SVG — the tenant name in uppercase, letter-spaced,
+ * using `fill="currentColor"` so it inherits CSS text color (just like the
+ * original LEARNCARD wordmark).
+ *
+ * Uses a system sans-serif font. The viewBox is sized to fit the text with
+ * generous letter-spacing matching the original aesthetic.
+ */
+const generateTextLogoSvg = (name: string): string => {
+    const text = name.toUpperCase();
+    const fontSize = 18;
+    const letterSpacing = 6;
+
+    // Rough width estimate: ~11px per character at font-size 18 + letter-spacing
+    const charWidth = fontSize * 0.62;
+    const totalWidth = Math.ceil(text.length * (charWidth + letterSpacing));
+    const height = 24;
+
+    return [
+        `<svg width="${totalWidth}" height="${height}" viewBox="0 0 ${totalWidth} ${height}"`,
+        '     fill="none" xmlns="http://www.w3.org/2000/svg">',
+        `  <text x="0" y="${fontSize}"`,
+        '        font-family="Poppins, \'Noto Sans\', system-ui, -apple-system, sans-serif"',
+        `        font-size="${fontSize}" font-weight="700"`,
+        `        letter-spacing="${letterSpacing}" fill="currentColor">`,
+        `    ${text}`,
+        '  </text>',
+        '</svg>',
+        '',
+    ].join('\n');
+};
+
+/**
+ * Darken an RGB color by a factor (0 = same, 1 = black).
+ */
+const darkenColor = (color: RGB, factor: number): RGB => ({
+    r: Math.round(color.r * (1 - factor)),
+    g: Math.round(color.g * (1 - factor)),
+    b: Math.round(color.b * (1 - factor)),
+});
+
+/**
+ * Lighten an RGB color by a factor (0 = same, 1 = white).
+ */
+const lightenColor = (color: RGB, factor: number): RGB => ({
+    r: Math.round(color.r + (255 - color.r) * factor),
+    g: Math.round(color.g + (255 - color.g) * factor),
+    b: Math.round(color.b + (255 - color.b) * factor),
+});
+
+const rgbToHex = (c: RGB): string =>
+    `#${c.r.toString(16).padStart(2, '0')}${c.g.toString(16).padStart(2, '0')}${c.b.toString(16).padStart(2, '0')}`;
+
+/**
+ * Generate a gradient desktop login background.
+ * Creates a modern radial gradient from the base color, similar to the
+ * LearnCard default login backgrounds.
+ */
+const generateDesktopBg = async (
+    baseColor: RGB,
+    width: number,
+    height: number,
+    outputPath: string,
+    variant: 'primary' | 'alt' = 'primary',
+): Promise<void> => {
+    const light = lightenColor(baseColor, variant === 'primary' ? 0.15 : 0.25);
+    const dark = darkenColor(baseColor, variant === 'primary' ? 0.3 : 0.15);
+    const mid = variant === 'primary' ? rgbToHex(baseColor) : rgbToHex(lightenColor(baseColor, 0.1));
+
+    // Radial gradient from center (lighter) to edges (darker) with a subtle
+    // offset for visual interest — different angle for the alt variant.
+    const cx = variant === 'primary' ? '40%' : '60%';
+    const cy = variant === 'primary' ? '35%' : '55%';
+
+    const svg = [
+        `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`,
+        '  <defs>',
+        `    <radialGradient id="bg" cx="${cx}" cy="${cy}" r="75%" fx="${cx}" fy="${cy}">`,
+        `      <stop offset="0%" stop-color="${rgbToHex(light)}"/>`,
+        `      <stop offset="50%" stop-color="${mid}"/>`,
+        `      <stop offset="100%" stop-color="${rgbToHex(dark)}"/>`,
+        '    </radialGradient>',
+        '  </defs>',
+        `  <rect width="${width}" height="${height}" fill="url(#bg)"/>`,
+        '</svg>',
+    ].join('\n');
+
+    await sharp(Buffer.from(svg)).png().toFile(outputPath);
+};
+
+const generateBrandingAssets = async (
+    logoBuffer: Buffer,
+    bgColor: RGB,
+    outDir: string,
+    options: BrandingOptions,
+): Promise<void> => {
+    const brandingDir = path.join(outDir, 'branding');
+    ensureDir(brandingDir);
+
+    // 1. App icon + brand mark (always auto-generated from logo)
+    console.log(`  🎨 In-app Branding: app-icon.png + brand-mark.png (${BRANDING_ICON_SIZE}×${BRANDING_ICON_SIZE})...`);
+
+    await Promise.all([
+        generateSquareIcon(logoBuffer, BRANDING_ICON_SIZE, bgColor, path.join(brandingDir, 'app-icon.png')),
+        generateSquareIcon(logoBuffer, BRANDING_ICON_SIZE, bgColor, path.join(brandingDir, 'brand-mark.png')),
+    ]);
+
+    // 2. Text logo — override file or auto-generate SVG from tenant name
+    if (options.textLogoPath) {
+        if (!fs.existsSync(options.textLogoPath)) {
+            console.warn(`  ⚠  --text-logo file not found: ${options.textLogoPath}`);
+        } else {
+            const ext = path.extname(options.textLogoPath);
+            const dest = path.join(brandingDir, `text-logo${ext}`);
+            fs.cpSync(options.textLogoPath, dest);
+            console.log(`  🎨 Copied text-logo${ext} (override)`);
+        }
+    } else {
+        const svg = generateTextLogoSvg(options.tenantDisplayName);
+        fs.writeFileSync(path.join(brandingDir, 'text-logo.svg'), svg, 'utf-8');
+        console.log(`  🎨 Auto-generated text-logo.svg ("${options.tenantDisplayName.toUpperCase()}")`);
+    }
+
+    // 3. Desktop login background — override file or auto-generate gradient
+    if (options.desktopBgPath) {
+        if (!fs.existsSync(options.desktopBgPath)) {
+            console.warn(`  ⚠  --desktop-bg file not found: ${options.desktopBgPath}`);
+        } else {
+            const ext = path.extname(options.desktopBgPath);
+            const dest = path.join(brandingDir, `desktop-login-bg${ext}`);
+            fs.cpSync(options.desktopBgPath, dest);
+            console.log(`  🎨 Copied desktop-login-bg${ext} (override)`);
+        }
+    } else {
+        await generateDesktopBg(bgColor, DESKTOP_BG_WIDTH, DESKTOP_BG_HEIGHT, path.join(brandingDir, 'desktop-login-bg.png'), 'primary');
+        console.log(`  🎨 Auto-generated desktop-login-bg.png (${DESKTOP_BG_WIDTH}×${DESKTOP_BG_HEIGHT} gradient)`);
+    }
+
+    // 4. Desktop login background alt — override file or auto-generate gradient variant
+    if (options.desktopBgAltPath) {
+        if (!fs.existsSync(options.desktopBgAltPath)) {
+            console.warn(`  ⚠  --desktop-bg-alt file not found: ${options.desktopBgAltPath}`);
+        } else {
+            const ext = path.extname(options.desktopBgAltPath);
+            const dest = path.join(brandingDir, `desktop-login-bg-alt${ext}`);
+            fs.cpSync(options.desktopBgAltPath, dest);
+            console.log(`  🎨 Copied desktop-login-bg-alt${ext} (override)`);
+        }
+    } else {
+        await generateDesktopBg(bgColor, DESKTOP_BG_WIDTH, DESKTOP_BG_HEIGHT, path.join(brandingDir, 'desktop-login-bg-alt.png'), 'alt');
+        console.log(`  🎨 Auto-generated desktop-login-bg-alt.png (${DESKTOP_BG_WIDTH}×${DESKTOP_BG_HEIGHT} gradient variant)`);
+    }
+};
+
+// ---------------------------------------------------------------------------
 // Orchestration
 // ---------------------------------------------------------------------------
 
@@ -490,12 +673,17 @@ Usage:
   npx tsx scripts/generate-tenant-assets.ts <tenant> <logo-path> [options]
 
 Options:
-  --bg <hex>        Icon background color      (default: #FFFFFF)
-  --splash-bg <hex> Splash background color    (defaults to --bg)
-  --no-splash       Skip splash screen generation
+  --bg <hex>              Icon background color      (default: #FFFFFF)
+  --splash-bg <hex>       Splash background color    (defaults to --bg)
+  --no-splash             Skip splash screen generation
+  --name <text>           Tenant display name for text logo
+                          (auto-read from environments/<tenant>.json if not set)
+  --text-logo <path>      Override: use this file instead of auto-generating
+  --desktop-bg <path>     Override: use this file instead of auto-generating
+  --desktop-bg-alt <path> Override: use this file instead of auto-generating
 
 Example:
-  npx tsx scripts/generate-tenant-assets.ts vetpass ~/logo.png --bg "#1A3C5E" --splash-bg "#0D1F30"
+  npx tsx scripts/generate-tenant-assets.ts vetpass ~/logo.png --bg "#1A3C5E" --name "VetPass"
 `);
         process.exit(1);
     }
@@ -506,6 +694,10 @@ Example:
     let bgHex = '#FFFFFF';
     let splashBgHex: string | undefined;
     let skipSplash = false;
+    let nameOverride: string | undefined;
+    let textLogoPath: string | undefined;
+    let desktopBgPath: string | undefined;
+    let desktopBgAltPath: string | undefined;
 
     for (let i = 2; i < args.length; i++) {
         if (args[i] === '--bg' && args[i + 1]) {
@@ -514,7 +706,34 @@ Example:
             splashBgHex = args[++i]!;
         } else if (args[i] === '--no-splash') {
             skipSplash = true;
+        } else if (args[i] === '--name' && args[i + 1]) {
+            nameOverride = args[++i]!;
+        } else if (args[i] === '--text-logo' && args[i + 1]) {
+            textLogoPath = path.resolve(args[++i]!);
+        } else if (args[i] === '--desktop-bg' && args[i + 1]) {
+            desktopBgPath = path.resolve(args[++i]!);
+        } else if (args[i] === '--desktop-bg-alt' && args[i + 1]) {
+            desktopBgAltPath = path.resolve(args[++i]!);
         }
+    }
+
+    // Resolve tenant display name: --name flag > tenant JSON branding.name > tenant arg
+    let tenantDisplayName = nameOverride;
+
+    if (!tenantDisplayName) {
+        const tenantJsonPath = path.join(ENVIRONMENTS_DIR, `${tenant}.json`);
+
+        if (fs.existsSync(tenantJsonPath)) {
+            try {
+                const tenantJson = JSON.parse(fs.readFileSync(tenantJsonPath, 'utf-8'));
+                tenantDisplayName = tenantJson?.branding?.name ?? tenantJson?.branding?.headerText;
+            } catch { /* ignore parse errors */ }
+        }
+    }
+
+    if (!tenantDisplayName) {
+        tenantDisplayName = tenant.charAt(0).toUpperCase() + tenant.slice(1);
+        console.log(`  ℹ️  No --name or branding.name found — using "${tenantDisplayName}" for text logo.`);
     }
 
     const splashBg = splashBgHex ?? bgHex;
@@ -551,6 +770,7 @@ Example:
 
     console.log(`\n🎨 Generating assets for tenant "${tenant}"\n`);
     console.log(`  Logo:       ${logoPath} (${logoMeta.width}×${logoMeta.height})`);
+    console.log(`  Name:       ${tenantDisplayName}`);
     console.log(`  Icon BG:    ${bgHex}`);
     console.log(`  Splash BG:  ${splashBg}`);
     console.log(`  Output:     ${outDir}\n`);
@@ -564,6 +784,13 @@ Example:
     }
 
     await generateWebAssets(logoBuffer, bgColor, outDir);
+
+    await generateBrandingAssets(logoBuffer, bgColor, outDir, {
+        tenantDisplayName,
+        textLogoPath,
+        desktopBgPath,
+        desktopBgAltPath,
+    });
 
     // Summary
     const fileCount = countFiles(outDir);

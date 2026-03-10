@@ -102,6 +102,10 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         launchDarklyClientId: '63dabf3982caed12cac3e55c',
         userflowToken: 'ct_qq6z63mixbhyzbzsgmivgrftda',
         googleMapsApiKey: undefined,
+
+        analyticsProvider: 'noop' as const,
+        posthogKey: undefined,
+        posthogHost: undefined,
     },
 
     links: {
@@ -119,35 +123,6 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         ],
         customSchemes: ['dccrequest', 'msprequest', 'asuprequest'],
         capgoChannel: '1.0.4',
-    },
-};
-
-/**
- * @deprecated Use `environments/local.json` instead. Local dev config now flows
- * through TenantConfig via `prepare-native-config.ts` and `resolveTenantConfig()`.
- * This constant is kept temporarily for backward compatibility but will be removed.
- */
-export const DEV_LEARNCARD_OVERRIDES: Partial<TenantConfig> & { apis: Partial<TenantConfig['apis']> } = {
-    apis: {
-        brainService: 'http://localhost:4000/trpc',
-        brainServiceApi: 'http://localhost:4000/api',
-        cloudService: 'http://localhost:4100/trpc',
-        lcaApi: 'http://localhost:5100/trpc',
-        xapi: 'http://localhost:4100/xapi',
-    },
-
-    features: {
-        aiFeatures: true,
-        appStore: true,
-        analytics: false,
-        themeSwitching: true,
-        introSlides: true,
-    },
-
-    observability: {
-        sentryEnv: 'development',
-        launchDarklyClientId: '63dabf3982caed12cac3e55b',
-        userflowToken: 'ct_w53eaxhevvf2vejzrecekeq3nu',
     },
 };
 

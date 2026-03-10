@@ -10,6 +10,9 @@ import type {
     TenantLinksConfig,
     TenantNativeConfig,
 } from './tenantConfig';
+import { getTenantBrandingEnum, getBrandingAssets } from './brandingHelpers';
+export type { BrandingAssets } from './brandingHelpers';
+export { getBrandingAssets } from './brandingHelpers';
 
 // -----------------------------------------------------------------
 // Context
@@ -71,6 +74,35 @@ export const useLinksConfig = (): TenantLinksConfig => useTenantConfig().links;
 
 /** Native build-time config (may be undefined on web) */
 export const useNativeConfig = (): TenantNativeConfig | undefined => useTenantConfig().native;
+
+/**
+ * Derive the legacy BrandingEnum from TenantConfig for backward compat.
+ * Use this when passing `branding` props to components that haven't been
+ * migrated to fully data-driven branding yet.
+ */
+export { getTenantBrandingEnum } from './brandingHelpers';
+
+export const useBrandingEnum = () => {
+    const branding = useTenantConfig().branding;
+
+    return getTenantBrandingEnum(branding);
+};
+
+/**
+ * Get tenant-configured branding asset URLs.
+ *
+ * Returns `undefined` for any asset not configured by the tenant —
+ * callers should provide their own bundled fallback via `??`.
+ *
+ * @example
+ * const assets = useBrandingAssets();
+ * <img src={assets.textLogoUrl ?? BundledTextLogo} />
+ */
+export const useBrandingAssets = () => {
+    const branding = useTenantConfig().branding;
+
+    return getBrandingAssets(branding);
+};
 
 /**
  * Get the tenant's base URL for link generation.

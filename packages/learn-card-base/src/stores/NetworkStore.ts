@@ -14,6 +14,7 @@ export const networkStore = createStore('networkStore')<{
     cloudUrl: string;
     xapiUrl: string;
     apiEndpoint: string;
+    aiServiceUrl: string;
 }>(
     {
         networkUrl: LEARNCARD_NETWORK_URL,
@@ -21,6 +22,7 @@ export const networkStore = createStore('networkStore')<{
         cloudUrl: LEARNCLOUD_URL,
         xapiUrl: '',
         apiEndpoint: LCA_API_ENDPOINT,
+        aiServiceUrl: 'https://api.learncloud.ai',
     },
     { persist: { name: 'networkStore', enabled: true } }
 );
@@ -38,4 +40,5 @@ export const initNetworkStoreFromTenant = (apis: TenantApiConfig): void => {
     networkStore.set.cloudUrl(apis.cloudService);
     networkStore.set.xapiUrl(apis.xapi ?? apis.cloudService.replace(/\/trpc\/?$/, '/xapi'));
     networkStore.set.apiEndpoint(apis.lcaApi);
+    networkStore.set.aiServiceUrl(apis.aiService ?? 'https://api.learncloud.ai');
 };

@@ -7,15 +7,19 @@
  *
  * Usage:
  *   npx tsx scripts/prepare-native-config.ts [tenant]
+ *   npx tsx scripts/prepare-native-config.ts --reset
  *
  * Arguments:
  *   tenant  - The tenant identifier (default: "learncard").
  *             Maps to an environments/<tenant>.json file if it exists,
  *             otherwise falls back to the baked default config.
+ *   --reset - Undo all changes: restore git-tracked files and remove
+ *             generated artifacts (public/branding/, tenant-config.json, etc.)
  *
  * Examples:
  *   npx tsx scripts/prepare-native-config.ts              # default LearnCard
  *   npx tsx scripts/prepare-native-config.ts scoutpass     # ScoutPass tenant
+ *   npx tsx scripts/prepare-native-config.ts --reset       # undo everything
  *
  * The generated file is read by resolveTenantConfig() at runtime via
  * the `loadBakedConfig()` step (fetches /tenant-config.json).
@@ -24,9 +28,10 @@
  * so schema violations are caught before deploy, not at runtime.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, readdirSync, statSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, readdirSync, statSync, rmSync } from 'fs';
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 import { tenantConfigSchema } from 'learn-card-base/src/config/tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/src/config/tenantDefaults';
@@ -37,6 +42,58 @@ const __dirname = dirname(__filename);
 const APP_ROOT = resolve(__dirname, '..');
 
 const tenantArg = process.argv[2] ?? 'learncard';
+
+// ---------------------------------------------------------------------------
+// 0. Handle --reset: undo all changes and exit
+// ---------------------------------------------------------------------------
+
+if (tenantArg === '--reset') {
+    console.log('\n🔄 Resetting all prepare-native-config changes...\n');
+
+    // Git-tracked paths to restore (relative to APP_ROOT)
+    const gitRestorePaths = [
+        'ios/App/App/Assets.xcassets/AppIcon.appiconset',
+        'ios/App/App/Assets.xcassets/Splash.imageset',
+        'ios/App/App/capacitor.config.json',
+        'android/app/src/main/res',
+        'android/app/src/main/assets/capacitor.config.json',
+        'public/assets/icon',
+        'public/manifest.json',
+        'public/manifest.webmanifest',
+    ];
+
+    for (const relPath of gitRestorePaths) {
+        const absPath = resolve(APP_ROOT, relPath);
+
+        if (!existsSync(absPath)) continue;
+
+        try {
+            execSync(`git checkout -- "${relPath}"`, { cwd: APP_ROOT, stdio: 'pipe' });
+            console.log(`   ✓ Restored ${relPath}`);
+        } catch {
+            console.log(`   - ${relPath} (already clean)`);
+        }
+    }
+
+    // Remove generated artifacts
+    const removeTargets = [
+        'public/branding',
+        'public/tenant-config.json',
+        'ios/App/App/tenant-deep-link-domains.json',
+    ];
+
+    for (const relPath of removeTargets) {
+        const absPath = resolve(APP_ROOT, relPath);
+
+        if (existsSync(absPath)) {
+            rmSync(absPath, { recursive: true, force: true });
+            console.log(`   ✓ Removed ${relPath}`);
+        }
+    }
+
+    console.log('\n✅ Reset complete. All files restored to git HEAD.\n');
+    process.exit(0);
+}
 
 // ---------------------------------------------------------------------------
 // 1. Load tenant-specific overrides from environments/<tenant>.json
@@ -108,26 +165,14 @@ if (!validation.success) {
 
 const validatedConfig: TenantConfig = validation.data;
 
-// ---------------------------------------------------------------------------
-// 4. Write to public/tenant-config.json
-// ---------------------------------------------------------------------------
-
 const publicDir = resolve(APP_ROOT, 'public');
 
 if (!existsSync(publicDir)) {
     mkdirSync(publicDir, { recursive: true });
 }
 
-const outPath = resolve(publicDir, 'tenant-config.json');
-
-writeFileSync(outPath, JSON.stringify(validatedConfig, null, 2) + '\n', 'utf-8');
-
-console.log(`\n✅ Wrote validated tenant config to: ${outPath}`);
-console.log(`   Tenant: ${tenantArg}`);
-console.log(`   Sections: ${Object.keys(validatedConfig).join(', ')}`);
-
 // ---------------------------------------------------------------------------
-// 5. Copy tenant-specific image assets (if they exist)
+// 4. Copy tenant-specific image assets (if they exist)
 // ---------------------------------------------------------------------------
 
 const assetsDir = resolve(APP_ROOT, 'environments', tenantArg, 'assets');
@@ -216,3 +261,169 @@ if (existsSync(assetsDir)) {
 } else {
     console.log(`\nℹ️  No tenant assets found at environments/${tenantArg}/assets/ — skipping asset copy.`);
 }
+
+// ---------------------------------------------------------------------------
+// 5. Copy in-app branding images and auto-set branding URL fields
+// ---------------------------------------------------------------------------
+//
+// Convention: place tenant branding images in
+//   environments/<tenant>/assets/branding/
+//
+// Supported filenames (any common image extension):
+//   text-logo.*      → branding.textLogoUrl
+//   brand-mark.*     → branding.brandMarkUrl
+//   app-icon.*       → branding.appIconUrl
+//   desktop-login-bg.*     → branding.desktopLoginBgUrl
+//   desktop-login-bg-alt.* → branding.desktopLoginBgAltUrl
+//
+// Files are copied to public/branding/<filename> and the config field is
+// auto-set to "/branding/<filename>" (relative URL) unless the tenant
+// config already specifies an explicit URL for that field.
+
+const BRANDING_FILE_MAP: Array<{ prefix: string; configKey: keyof typeof validatedConfig.branding }> = [
+    { prefix: 'text-logo', configKey: 'textLogoUrl' },
+    { prefix: 'brand-mark', configKey: 'brandMarkUrl' },
+    { prefix: 'app-icon', configKey: 'appIconUrl' },
+    { prefix: 'desktop-login-bg-alt', configKey: 'desktopLoginBgAltUrl' },
+    { prefix: 'desktop-login-bg', configKey: 'desktopLoginBgUrl' },
+];
+
+const brandingDir = resolve(APP_ROOT, 'environments', tenantArg, 'assets', 'branding');
+
+if (existsSync(brandingDir)) {
+    console.log(`\n🎨 Processing in-app branding images from environments/${tenantArg}/assets/branding/...`);
+
+    const brandingDest = resolve(publicDir, 'branding');
+    mkdirSync(brandingDest, { recursive: true });
+
+    const brandingFiles = readdirSync(brandingDir).filter(f => statSync(join(brandingDir, f)).isFile());
+
+    let brandingCopied = 0;
+
+    for (const { prefix, configKey } of BRANDING_FILE_MAP) {
+        const match = brandingFiles.find(f => {
+            const name = f.substring(0, f.lastIndexOf('.'));
+            return name === prefix;
+        });
+
+        if (match) {
+            cpSync(join(brandingDir, match), join(brandingDest, match));
+            brandingCopied++;
+
+            const currentValue = validatedConfig.branding[configKey];
+
+            if (!currentValue) {
+                (validatedConfig.branding as Record<string, unknown>)[configKey] = `/branding/${match}`;
+                console.log(`   ✓ ${match} → branding.${configKey} = /branding/${match}`);
+            } else {
+                console.log(`   ✓ ${match} copied (branding.${configKey} already set to "${currentValue}")`);
+            }
+        }
+    }
+
+    if (brandingCopied === 0) {
+        console.log('   No matching branding files found.');
+    } else {
+        console.log(`   Copied ${brandingCopied} branding image(s).`);
+    }
+} else {
+    console.log(`\nℹ️  No branding images at environments/${tenantArg}/assets/branding/ — using bundled defaults.`);
+}
+
+// ---------------------------------------------------------------------------
+// 6. Write final config to public/tenant-config.json
+//    (after branding URL fields may have been auto-populated above)
+// ---------------------------------------------------------------------------
+
+const outPath = resolve(publicDir, 'tenant-config.json');
+
+writeFileSync(outPath, JSON.stringify(validatedConfig, null, 2) + '\n', 'utf-8');
+
+console.log(`\n✅ Wrote validated tenant config to: ${outPath}`);
+console.log(`   Tenant: ${tenantArg}`);
+console.log(`   Sections: ${Object.keys(validatedConfig).join(', ')}`);
+
+// ---------------------------------------------------------------------------
+// 7. Patch Capacitor native config JSON files with tenant values
+// ---------------------------------------------------------------------------
+
+const nativeConfig = validatedConfig.native;
+
+if (nativeConfig) {
+    console.log('\n⚙️  Patching Capacitor config with tenant native settings...');
+
+    const patchCapacitorConfigJson = (jsonPath: string): void => {
+        if (!existsSync(jsonPath)) return;
+
+        try {
+            const raw = JSON.parse(readFileSync(jsonPath, 'utf-8'));
+
+            raw.appId = nativeConfig.bundleId;
+            raw.appName = nativeConfig.displayName;
+
+            if (raw.plugins?.CapacitorUpdater) {
+                raw.plugins.CapacitorUpdater.appId = nativeConfig.bundleId;
+
+                if (nativeConfig.capgoChannel) {
+                    raw.plugins.CapacitorUpdater.defaultChannel = nativeConfig.capgoChannel;
+                }
+            }
+
+            writeFileSync(jsonPath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
+            console.log(`   ✓ Patched ${jsonPath}`);
+        } catch (err) {
+            console.warn(`   ⚠️  Failed to patch ${jsonPath}:`, err);
+        }
+    };
+
+    // Patch the native project capacitor config JSON files (generated by `npx cap sync`)
+    patchCapacitorConfigJson(resolve(APP_ROOT, 'ios/App/App/capacitor.config.json'));
+    patchCapacitorConfigJson(resolve(APP_ROOT, 'android/app/src/main/assets/capacitor.config.json'));
+
+    // Also patch the iOS Info.plist deep link domains via a JSON sidecar
+    // that the Fastlane/Xcode build can consume.
+    const deepLinkDomainsPath = resolve(APP_ROOT, 'ios/App/App/tenant-deep-link-domains.json');
+
+    writeFileSync(
+        deepLinkDomainsPath,
+        JSON.stringify({
+            bundleId: nativeConfig.bundleId,
+            displayName: nativeConfig.displayName,
+            deepLinkDomains: nativeConfig.deepLinkDomains,
+            customSchemes: nativeConfig.customSchemes ?? [],
+        }, null, 2) + '\n',
+        'utf-8',
+    );
+
+    console.log(`   ✓ Wrote deep link domains sidecar: ${deepLinkDomainsPath}`);
+    console.log(`   Bundle ID: ${nativeConfig.bundleId}`);
+    console.log(`   Display Name: ${nativeConfig.displayName}`);
+    console.log(`   Deep Link Domains: ${nativeConfig.deepLinkDomains.join(', ')}`);
+}
+
+// ---------------------------------------------------------------------------
+// 8. Patch manifest.json / manifest.webmanifest with tenant branding name
+// ---------------------------------------------------------------------------
+
+const manifestName = validatedConfig.branding.name;
+const manifestShortName = validatedConfig.branding.shortName ?? manifestName;
+
+const patchManifest = (filePath: string): void => {
+    if (!existsSync(filePath)) return;
+
+    try {
+        const raw = JSON.parse(readFileSync(filePath, 'utf-8'));
+
+        raw.name = manifestName;
+        raw.short_name = manifestShortName;
+
+        writeFileSync(filePath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
+        console.log(`   ✓ Patched ${filePath} (name="${manifestName}", short_name="${manifestShortName}")`);
+    } catch (err) {
+        console.warn(`   ⚠️  Failed to patch ${filePath}:`, err);
+    }
+};
+
+console.log('\n📋 Patching web manifests with tenant branding name...');
+patchManifest(resolve(publicDir, 'manifest.json'));
+patchManifest(resolve(publicDir, 'manifest.webmanifest'));

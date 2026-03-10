@@ -8,6 +8,31 @@
  */
 
 import type { TenantBrandingConfig } from './tenantConfig';
+import { BrandingEnum } from '../components/headerBranding/headerBrandingHelpers';
+
+// -----------------------------------------------------------------
+// BrandingEnum compatibility bridge
+// -----------------------------------------------------------------
+
+/**
+ * Derive the legacy BrandingEnum value from a TenantBrandingConfig.
+ *
+ * This lets existing component code that switches on BrandingEnum work
+ * without modification — the enum value is derived from `brandingKey`
+ * in the tenant config.
+ *
+ * For new tenants whose brandingKey doesn't map to an enum member,
+ * defaults to `BrandingEnum.learncard` so all LearnCard-like behavior applies.
+ */
+export const getTenantBrandingEnum = (branding: TenantBrandingConfig): BrandingEnum => {
+    const key = branding.brandingKey;
+
+    if (key && key in BrandingEnum) {
+        return BrandingEnum[key as keyof typeof BrandingEnum];
+    }
+
+    return BrandingEnum.learncard;
+};
 
 /**
  * Get the display label for a credential category.
@@ -103,3 +128,46 @@ export const getHomeRoute = (branding: TenantBrandingConfig): string => {
 export const getHeaderText = (branding: TenantBrandingConfig): string => {
     return branding.headerText ?? branding.name.toUpperCase();
 };
+
+// -----------------------------------------------------------------
+// Branding asset URLs
+// -----------------------------------------------------------------
+
+export interface BrandingAssets {
+    /** Wordmark / text logo (SVG or image URL). Used on login, loading, intro slides, side menu. */
+    textLogoUrl: string | undefined;
+
+    /** Brand mark / app icon used on login page hero. */
+    brandMarkUrl: string | undefined;
+
+    /** Small app icon used in loaders, consent flow, onboarding, etc. */
+    appIconUrl: string | undefined;
+
+    /** Desktop login page background image. */
+    desktopLoginBgUrl: string | undefined;
+
+    /** Alternate desktop login background (endorsement modals, etc.). */
+    desktopLoginBgAltUrl: string | undefined;
+
+    /** Favicon URL for web. */
+    faviconUrl: string | undefined;
+
+    /** General logo URL (og:image, share cards, etc.). */
+    logoUrl: string | undefined;
+}
+
+/**
+ * Extract branding asset URLs from a TenantBrandingConfig.
+ *
+ * Returns `undefined` for any field not configured — callers should
+ * provide their own bundled fallback (e.g. a static import).
+ */
+export const getBrandingAssets = (branding: TenantBrandingConfig): BrandingAssets => ({
+    textLogoUrl: branding.textLogoUrl,
+    brandMarkUrl: branding.brandMarkUrl,
+    appIconUrl: branding.appIconUrl,
+    desktopLoginBgUrl: branding.desktopLoginBgUrl,
+    desktopLoginBgAltUrl: branding.desktopLoginBgAltUrl,
+    faviconUrl: branding.faviconUrl,
+    logoUrl: branding.logoUrl,
+});

@@ -75,6 +75,15 @@ export const tenantBrandingConfigSchema = z.object({
     headerText: z.string().optional(),
     homeRoute: z.string().optional(),
 
+    // Asset URLs — when set, these override the bundled LearnCard images.
+    // Relative paths resolve against the app's public directory; absolute
+    // URLs (https://) are used as-is.
+    textLogoUrl: z.string().optional(),
+    brandMarkUrl: z.string().optional(),
+    appIconUrl: z.string().optional(),
+    desktopLoginBgUrl: z.string().optional(),
+    desktopLoginBgAltUrl: z.string().optional(),
+
     categoryLabels: z.record(z.string(), z.string()).optional(),
     categoryColors: z.record(z.string(), z.string()).optional(),
     navBarColors: z.record(z.string(), z.string()).optional(),
@@ -100,6 +109,10 @@ export const tenantObservabilityConfigSchema = z.object({
     launchDarklyClientId: z.string(),
     userflowToken: z.string(),
     googleMapsApiKey: z.string().optional(),
+
+    analyticsProvider: z.enum(['posthog', 'firebase', 'noop']).default('noop'),
+    posthogKey: z.string().optional(),
+    posthogHost: z.string().optional(),
 }).passthrough();
 
 export const tenantLinksConfigSchema = z.object({

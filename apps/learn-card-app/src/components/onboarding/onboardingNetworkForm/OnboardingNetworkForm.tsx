@@ -21,7 +21,7 @@ import AddUser from '../../svgs/AddUser';
 import X from 'learn-card-base/svgs/X';
 
 import LocationIcon from '../../svgs/LocationIcon';
-import LearnCardLogo from '../../../assets/images/lca-icon-v2.png';
+import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
 import { useFilestack, UploadRes } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -433,8 +433,8 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         <div className="mx-auto mb-3 flex items-center justify-center gap-3 w-full">
                             <div className="h-[56px] w-[56px] rounded-full overflow-hidden border-2 border-white shadow-3xl">
                                 <img
-                                    src={LearnCardLogo}
-                                    alt="LearnCard logo"
+                                    src={useTenantBrandingAssets().appIcon}
+                                    alt="App logo"
                                     className="w-full h-full object-cover"
                                 />
                             </div>

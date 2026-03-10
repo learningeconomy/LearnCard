@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 
 import { IonCol, IonContent, IonPage, IonRow, IonSpinner } from '@ionic/react';
 
-import LearnCardTextLogo from '../../assets/images/learncard-text-logo.svg';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import LoginLoadingPage from '../login/LoginPageLoader/LoginLoader';
 
 import {
@@ -16,6 +16,8 @@ import {
 } from 'learn-card-base';
 
 const LoadingPage: React.FC = () => {
+    const { textLogo } = useTenantBrandingAssets();
+
     return (
         <IonPage>
             <IonContent
@@ -25,7 +27,7 @@ const LoadingPage: React.FC = () => {
             >
                 <IonRow className="h-full w-full flex items-center justify-center">
                     <IonCol className="w-full flex items-center justify-center flex-col">
-                        <img src={LearnCardTextLogo} alt="LearnCard text logo" className="mb-8" />
+                        <img src={textLogo} alt="Logo" className="mb-8" />
                     </IonCol>
                 </IonRow>
             </IonContent>
@@ -36,6 +38,8 @@ const LoadingPage: React.FC = () => {
 export default LoadingPage;
 
 export const LoadingPageDumb: React.FC = () => {
+    const { textLogo } = useTenantBrandingAssets();
+
     return (
         <IonPage>
             <IonContent
@@ -45,7 +49,7 @@ export const LoadingPageDumb: React.FC = () => {
             >
                 <IonRow className="h-full w-full flex items-center justify-center">
                     <IonCol className="w-full flex items-center justify-center flex-col">
-                        <img src={LearnCardTextLogo} alt="LearnCard text logo" className="mb-8" />
+                        <img src={textLogo} alt="Logo" className="mb-8" />
                     </IonCol>
                 </IonRow>
             </IonContent>
