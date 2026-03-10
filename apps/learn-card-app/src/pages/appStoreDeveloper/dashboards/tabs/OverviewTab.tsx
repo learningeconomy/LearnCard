@@ -388,7 +388,7 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                         <div className="min-w-0 flex-1 overflow-hidden">
                                             <p className="text-sm text-gray-500">Template Alias</p>
                                             <p className="font-mono text-xs text-gray-600 break-all">
-                                                {item.metadata.templateAlias}
+                                                {item?.metadata?.templateAlias}
                                             </p>
                                         </div>
                                     </div>
