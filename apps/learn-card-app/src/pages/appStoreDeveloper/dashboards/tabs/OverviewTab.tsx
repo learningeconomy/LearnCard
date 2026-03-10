@@ -555,7 +555,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         const statMap = {
             DELIVERED: activityStats.totalSent,
             CLAIMED: activityStats.totalClaimed,
-            ALL: activityStats.totalIssued,
+            ALL: activityStats.total,
+            FAILED: activityStats.failed,
+            EXPIRED: activityStats.expired,
         };
 
         const total = statMap[eventTypeFilter as keyof typeof statMap];
