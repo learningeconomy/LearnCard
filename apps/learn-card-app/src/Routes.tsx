@@ -134,6 +134,9 @@ const SigningAuthoritiesPage = lazyWithRetry(
 const APITokensPage = lazyWithRetry(
     () => import('./pages/adminToolsPage/api-tokens/APITokensPage')
 );
+const LearnerContextPromptTestPage = lazyWithRetry(
+    () => import('./pages/adminToolsPage/learner-context-test/LearnerContextPromptTestPage')
+);
 
 const DevCli = lazyWithRetry(() => import('./pages/devCli/DevCli'));
 const AiPathwaysDiscovery = lazyWithRetry(
@@ -301,6 +304,11 @@ export const Routes: React.FC = () => {
                             exact
                             path="/admin-tools/api-tokens"
                             component={APITokensPage}
+                        />
+                        <PrivateRoute
+                            exact
+                            path="/admin-tools/learner-context-test"
+                            component={LearnerContextPromptTestPage}
                         />
 
                         <SentryRoute

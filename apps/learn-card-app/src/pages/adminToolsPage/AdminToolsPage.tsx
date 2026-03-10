@@ -115,6 +115,12 @@ const AdminToolsPage: React.FC = () => {
                 </button>
                 <button
                     className="bg-white rounded-[20px] shadow-bottom px-[15px] py-[10px]"
+                    onClick={() => history.push('/admin-tools/learner-context-test')}
+                >
+                    Learner Context Test UX
+                </button>
+                <button
+                    className="bg-white rounded-[20px] shadow-bottom px-[15px] py-[10px]"
                     onClick={() =>
                         newModal(
                             <AdminToolsOptionsContainer
