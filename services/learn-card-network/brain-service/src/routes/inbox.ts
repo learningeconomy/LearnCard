@@ -20,6 +20,8 @@ import {
 } from '@learncard/types';
 import { claimIntoInbox, issueToInbox } from '@helpers/inbox.helpers';
 import { prepareCredentialFromBoost, getBoostUri } from '@helpers/boost.helpers';
+import { hasMustacheVariables, renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
+import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import {
     generateGuardianApprovalToken,
@@ -535,12 +537,30 @@ export const inboxRouter = t.router({
             if (!issuerProfile)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Issuer Profile not found' });
 
+            // Render Mustache template variables in the credential (e.g. {{Recipient_name}})
+            let resolvedCredential = credential;
+            const credentialJson = JSON.stringify(credential);
+            if (hasMustacheVariables(credentialJson)) {
+                const recipientProfile = await getProfileByVerifiedContactMethod(
+                    contactMethod.type,
+                    contactMethod.value
+                );
+                const templateData: Record<string, string> = {
+                    Recipient_name: recipientProfile?.displayName || contactMethod.value,
+                    recipient_name: recipientProfile?.displayName || contactMethod.value,
+                    Recipient_email: contactMethod.value,
+                    recipient_email: contactMethod.value,
+                };
+                const rendered = renderBoostTemplate(credentialJson, templateData);
+                resolvedCredential = parseRenderedTemplate(rendered);
+            }
+
             // Claim Credential into Contact Method's inbox
             const result = await claimIntoInbox(
                 issuerProfile,
                 signingAuthorityRel,
                 contactMethod,
-                credential,
+                resolvedCredential,
                 {
                     expiresInDays: 720,
                 },
