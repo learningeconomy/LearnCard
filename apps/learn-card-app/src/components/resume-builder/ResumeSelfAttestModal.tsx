@@ -107,11 +107,6 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
             if (!alreadySelected) {
                 resumeBuilderStore.set.toggleCredential(category, issuedVcUri);
             }
-
-            presentToast('Credential self issued successfully', {
-                duration: 3000,
-                type: ToastTypeEnum.Success,
-            });
             closeModal();
         } catch (error) {
             console.error('resume self issue error', error);
@@ -176,7 +171,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
                     onClick={handleSelfIssue}
                     disabled={continueDisabled}
                 >
-                    {isLoading ? <IonSpinner name="crescent" className="w-4 h-4" /> : 'Self Issue'}
+                    {isLoading ? <IonSpinner name="crescent" className="w-4 h-4" /> : 'Add'}
                 </button>
             </div>
         </div>
