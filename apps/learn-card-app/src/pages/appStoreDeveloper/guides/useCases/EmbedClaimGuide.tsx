@@ -535,7 +535,7 @@ const ConfigureStep: React.FC<{
 
             {/* Partner Name */}
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Partner Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Partner Name <span className="text-red-500">*</span></label>
 
                 <input
                     type="text"
@@ -799,7 +799,7 @@ const ConfigureStep: React.FC<{
 
                     <button
                         onClick={onComplete}
-                        disabled={!hasTemplates || isBuilderOpen || isTransitioning}
+                        disabled={!hasTemplates || isBuilderOpen || isTransitioning || !partnerName.trim()}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         {isTransitioning ? (
@@ -816,6 +816,12 @@ const ConfigureStep: React.FC<{
                 {isBuilderOpen && (
                     <p className="text-xs text-amber-600 text-center">
                         Save or cancel the template you&apos;re editing before continuing.
+                    </p>
+                )}
+
+                {!isBuilderOpen && hasTemplates && !partnerName.trim() && (
+                    <p className="text-xs text-amber-600 text-center">
+                        Enter a Partner Name to continue.
                     </p>
                 )}
             </div>
@@ -1215,15 +1221,33 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
     }, [selectedIntegration?.id, isLoadingListings, listings?.length]);
 
     const [isTransitioning, setIsTransitioning] = useState(false);
+    const guideTopRef = useRef<HTMLDivElement>(null);
+
+    const scrollToTop = useCallback(() => {
+        setTimeout(() => {
+            guideTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
+    }, []);
 
     const handleStepComplete = useCallback((stepId: string) => {
         if (isTransitioning) return;
         setIsTransitioning(true);
         guideState.markStepComplete(stepId);
         guideState.nextStep();
+        scrollToTop();
         // Brief debounce to prevent double-clicks during step transition
         setTimeout(() => setIsTransitioning(false), 600);
-    }, [isTransitioning, guideState]);
+    }, [isTransitioning, guideState, scrollToTop]);
+
+    const handleBack = useCallback(() => {
+        guideState.prevStep();
+        scrollToTop();
+    }, [guideState, scrollToTop]);
+
+    const handleStepClick = useCallback((step: number) => {
+        guideState.goToStep(step);
+        scrollToTop();
+    }, [guideState, scrollToTop]);
 
     // Integration selection guard — placed after all hooks to respect Rules of Hooks
     if (!selectedIntegration) {
@@ -1249,7 +1273,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                 return (
                     <AddTargetStep
                         onComplete={() => handleStepComplete('add-target')}
-                        onBack={guideState.prevStep}
+                        onBack={handleBack}
                         isTransitioning={isTransitioning}
                     />
                 );
@@ -1258,7 +1282,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                 return (
                     <LoadSdkStep
                         onComplete={() => handleStepComplete('load-sdk')}
-                        onBack={guideState.prevStep}
+                        onBack={handleBack}
                         isTransitioning={isTransitioning}
                     />
                 );
@@ -1267,7 +1291,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                 return (
                     <ConfigureStep
                         onComplete={() => handleStepComplete('configure')}
-                        onBack={guideState.prevStep}
+                        onBack={handleBack}
                         publishableKey={publishableKey}
                         selectedIntegration={selectedIntegration}
                         partnerName={partnerName}
@@ -1292,7 +1316,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
             case 4:
                 return (
                     <TestStep
-                        onBack={guideState.prevStep}
+                        onBack={handleBack}
                         onComplete={() => handleStepComplete('test')}
                         publishableKey={publishableKey}
                         templates={templates}
@@ -1309,7 +1333,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                     <GoLiveStep
                         integration={selectedIntegration}
                         guideType="embed-claim"
-                        onBack={guideState.prevStep}
+                        onBack={handleBack}
                         completedItems={[
                             'Retrieved publishable key',
                             'Added HTML target element',
@@ -1340,14 +1364,14 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
     }, [guideState.currentStep, guideState.isStepComplete]);
 
     return (
-        <div className="max-w-3xl mx-auto py-4">
+        <div ref={guideTopRef} className="max-w-3xl mx-auto py-4">
             <div className="mb-8">
                 <StepProgress
                     currentStep={guideState.currentStep}
                     totalSteps={STEPS.length}
                     steps={STEPS}
                     completedSteps={guideState.state.completedSteps}
-                    onStepClick={guideState.goToStep}
+                    onStepClick={handleStepClick}
                     isStepNavigable={canNavigateToStep}
                 />
             </div>
