@@ -34,6 +34,7 @@ export interface CredentialActivityRecord {
 }
 
 interface CredentialActivityStats {
+    totalEvents: number;
     total: number;
     created: number;
     delivered: number;
@@ -166,6 +167,7 @@ export interface IntegrationActivityResult {
         totalSent: number;
         totalClaimed: number;
         total: number;
+        totalEvents: number;
         expired: number;
         failed: number;
         pendingClaims: number;
@@ -198,6 +200,7 @@ export function useIntegrationActivity(
         totalSent: 0,
         totalClaimed: 0,
         total: 0,
+        totalEvents: 0,
         expired: 0,
         failed: 0,
         pendingClaims: 0,
@@ -256,6 +259,7 @@ export function useIntegrationActivity(
                         totalSent: apiStats.delivered + apiStats.created + apiStats.claimed,
                         totalClaimed: apiStats.claimed,
                         total: apiStats.total,
+                        totalEvents: apiStats.totalEvents,
                         expired: apiStats.expired,
                         failed: apiStats.failed,
                         pendingClaims: apiStats.delivered + apiStats.created,

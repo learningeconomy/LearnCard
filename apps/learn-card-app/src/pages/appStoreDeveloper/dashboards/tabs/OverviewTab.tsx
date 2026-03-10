@@ -555,7 +555,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         const statMap = {
             DELIVERED: activityStats.totalSent,
             CLAIMED: activityStats.totalClaimed,
-            ALL: activityStats.total,
+            ALL: activityStats.totalEvents,
             FAILED: activityStats.failed,
             EXPIRED: activityStats.expired,
         };
