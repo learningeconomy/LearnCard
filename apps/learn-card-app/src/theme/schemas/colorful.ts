@@ -89,6 +89,13 @@ export const colorfulTheme: Theme = validateThemeData({
         },
         {
             labels: {
+                singular: 'Resume',
+                plural: 'Resumes',
+            },
+            categoryId: CredentialCategoryEnum.resume,
+        },
+        {
+            labels: {
                 singular: 'Family',
                 plural: 'Families',
             },

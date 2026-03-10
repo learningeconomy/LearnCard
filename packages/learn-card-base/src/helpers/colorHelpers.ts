@@ -65,6 +65,7 @@ export const getCategorySpilledCupColors = (category: CredentialCategoryEnum) =>
                 cupOutline: '#A16207',
             };
         case CredentialCategoryEnum.workHistory:
+        case CredentialCategoryEnum.resume:
             return {
                 backsplash: '#22D3EE',
                 spill: '#EAB308',

@@ -112,6 +112,7 @@ const WalletPage: React.FC = () => {
         [CredentialCategoryEnum.accomplishment]: '/accomplishments',
         [CredentialCategoryEnum.accommodation]: '/accommodations',
         [CredentialCategoryEnum.workHistory]: '/workhistory',
+        [CredentialCategoryEnum.resume]: '/resumes',
         [CredentialCategoryEnum.family]: '/families',
         [CredentialCategoryEnum.id]: '/ids',
         [CredentialCategoryEnum.membership]: '/memberships',

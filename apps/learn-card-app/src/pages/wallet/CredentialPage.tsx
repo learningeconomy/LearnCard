@@ -61,6 +61,16 @@ const categoryToConfig: Record<string, CategoryConfig> = {
         searchInputColor: 'cyan-300',
         tabBackgroundColor: 'cyan-300',
     },
+    [CredentialCategoryEnum.resume]: {
+        boostCategory: CredentialCategoryEnum.resume, // category
+        subheaderType: SubheaderTypeEnum.Job, // header type
+
+        title: 'Resumes',
+        iconColor: 'text-cyan-701',
+        dividerLineColor: 'cyan-401',
+        searchInputColor: 'cyan-300',
+        tabBackgroundColor: 'cyan-300',
+    },
     [CredentialCategoryEnum.learningHistory]: {
         boostCategory: CredentialCategoryEnum.learningHistory, // category
         subheaderType: SubheaderTypeEnum.Learning, // header type
@@ -128,7 +138,8 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
 
     const { data: currentLCNUser } = useIsCurrentUserLCNUser();
 
-    const config = categoryToConfig[category];
+    const config =
+        categoryToConfig[category] ?? categoryToConfig[CredentialCategoryEnum.workHistory];
 
     const _activeTab = query.get('managed')
         ? CredentialListTabEnum.Managed

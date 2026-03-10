@@ -28,6 +28,7 @@ const LearningHistoryPage = lazyWithRetry(
     () => import('./pages/learninghistory/LearningHistoryPage')
 );
 const WorkHistoryPage = lazyWithRetry(() => import('./pages/workhistory/WorkHistoryPage'));
+const ResumesPage = lazyWithRetry(() => import('./pages/resumes/ResumesPage'));
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 const CurrenciesPage = lazyWithRetry(() => import('./pages/currencies/CurrenciesPage'));
@@ -231,6 +232,7 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/ids" component={IdsPage} />
                         <PrivateRoute exact path="/memberships" component={MembershipPage} />
                         <PrivateRoute exact path="/workhistory" component={WorkHistoryPage} />
+                        <PrivateRoute exact path="/resumes" component={ResumesPage} />
                         <PrivateRoute exact path="/families" component={FamilyPage} />
                         <PrivateRoute exact path="/skills" component={SkillsPage} />
                         <PrivateRoute exact path="/ai/insights" component={AiInsights} />
