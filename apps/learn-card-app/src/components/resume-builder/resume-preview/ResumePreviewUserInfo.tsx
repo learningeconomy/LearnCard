@@ -60,6 +60,10 @@ const ResumePreviewUserInfo: React.FC = () => {
             ? `linkedin.com/in/${getLinkedInHandle(personalDetails.linkedIn)}`
             : '',
     ].filter(Boolean);
+    const exportPrimaryItems = [
+        isFieldVisible(UserInfoEnum.Career) ? personalDetails.career : '',
+        isFieldVisible(UserInfoEnum.Location) ? personalDetails.location : '',
+    ].filter(Boolean);
 
     return (
         <div className="border-b border-solid border-2 border-grayscale-100 bg-grayscale-50 p-4 mb-6 rounded-[20px]">
@@ -97,13 +101,13 @@ const ResumePreviewUserInfo: React.FC = () => {
                                 />
                             ))}
                         </div>
-                        {isFieldVisible(UserInfoEnum.Location) && (
+                        {exportPrimaryItems.length > 0 && (
                             <p
                                 data-pdf-export-block
                                 style={{ display: 'none' }}
                                 className="mt-1 text-sm text-grayscale-600"
                             >
-                                {personalDetails.location}
+                                {exportPrimaryItems.join(' \u00b7 ')}
                             </p>
                         )}
                     </div>
