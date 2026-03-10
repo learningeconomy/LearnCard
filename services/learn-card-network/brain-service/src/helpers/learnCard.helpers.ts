@@ -21,7 +21,7 @@ import { getDidWebPlugin } from '@learncard/did-web-plugin';
 import type { DidWebPlugin } from '@learncard/did-web-plugin';
 
 // Try native plugin first, fall back to WASM
-let didKitPluginPromise: Promise<DIDKitPlugin> | null = null;
+const didKitPluginPromises = new Map<boolean, Promise<DIDKitPlugin>>();
 
 const resolveDidKitPluginFactory = (
     module: Record<string, unknown>
@@ -38,9 +38,11 @@ const resolveDidKitPluginFactory = (
 };
 
 const getDidKitPlugin = async (allowRemoteContexts = false): Promise<DIDKitPlugin> => {
-    if (didKitPluginPromise) return didKitPluginPromise;
+    const cached = didKitPluginPromises.get(allowRemoteContexts);
 
-    didKitPluginPromise = (async () => {
+    if (cached) return cached;
+
+    const promise = (async () => {
         try {
             const didkitModule = await import('@learncard/didkit-plugin-node');
             const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
@@ -56,7 +58,9 @@ const getDidKitPlugin = async (allowRemoteContexts = false): Promise<DIDKitPlugi
         }
     })();
 
-    return didKitPluginPromise;
+    didKitPluginPromises.set(allowRemoteContexts, promise);
+
+    return promise;
 };
 
 export type EmptyLearnCard = LearnCard<
@@ -119,7 +123,9 @@ export const getLearnCard = async (
 ): Promise<SeedLearnCard> => {
     if (!seed) throw new Error('No seed set!');
 
-    if (!learnCards[seed] || IS_OFFLINE) {
+    const cacheKey = `${seed}:${allowRemoteContexts}`;
+
+    if (!learnCards[cacheKey] || IS_OFFLINE) {
         const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
 
         const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(allowRemoteContexts));
@@ -136,10 +142,10 @@ export const getLearnCard = async (
 
         const expirationLc = await templateLc.addPlugin(expirationPlugin(templateLc));
 
-        learnCards[seed] = await expirationLc.addPlugin(getLearnCardPlugin(expirationLc));
+        learnCards[cacheKey] = await expirationLc.addPlugin(getLearnCardPlugin(expirationLc));
     }
 
-    const learnCard = learnCards[seed];
+    const learnCard = learnCards[cacheKey];
 
     if (!learnCard) {
         throw new Error('LearnCard not initialized');
