@@ -16,7 +16,7 @@ See `src/types.ts` for types and `src/ler-rs.ts` for implementation details.
 
 ## Notes
 
-- Follows the Container + Verifiable Proof pattern by wrapping self-asserted containers and embedding VCs in `verifications` arrays.
+- Follows the HR Open LER-RS container + verification pattern by embedding VCs in `verifications` arrays.
 - Ensures credential and presentation `type` fields are non-empty arrays.
 
 ---
@@ -137,55 +137,58 @@ const lerWithProof = await lc.invoke.createLerRecord({
 
 ## Schema mapping guidance
 
-This plugin follows a "Container + Verifiable Proof" model. For `credentialSubject.ler`, we map as follows (see `src/ler-rs.ts`):
+This plugin follows a "Container + Verifiable Proof" model. For `credentialSubject` (LER-RS payload), we map as follows (see `src/ler-rs.ts`):
 
 - __person__
   - From `params.person`
-  - Maps to `ler.person` with `name.givenName`, `name.familyName`, and `name.formattedName`
+  - Maps to `credentialSubject.person` with `name.given`, `name.family`, and `name.formattedName`
 
 - __communication__
-  - If `person.email` is provided, becomes `ler.communication.emails = [{ address: email }]`
+  - If `person.email` is provided, becomes `credentialSubject.communication.email = [{ address: email }]`
 
 - __skills__
-  - `params.skills: string[]` → `ler.skills = [{ name: string }]`
+  - `params.skills: string[]` → `credentialSubject.skills = [{ name: string }]`
 
 - __employmentHistories__ (from `params.workHistory`)
   - `employer` → `container.organization.tradeName`
   - `position`, `start`, `end` → `container.positionHistories = [{ title, start, end }]`
   - `narrative` → `container.narrative`
-  - `verifiableCredential` → `container.verifications = [VC]`
+  - `verifiableCredential` or `verifications` → `container.verifications = [VC]`
   - Any other keys on the item are merged into the container as-is
 
 - __educationAndLearnings__ (from `params.educationHistory`)
-  - `institution`, `start`, `end` → same key names on container
-  - `degree`, `specializations` → `container.educationDegrees = [{ name: degree, specializations }]`
+  - `institution` → `container.institution = { name: institution }`
+  - `start`, `end` → same key names on container
+  - `degree`, `specializations` → `container.educationDegrees = [{ name: degree, specializations: [{ name }] }]`
   - `narrative` → `container.narrative`
-  - `verifiableCredential` → `container.verifications = [VC]`
+  - `verifiableCredential` or `verifications` → `container.verifications = [VC]`
 
 - __certifications__ (from `params.certifications`)
   - All provided keys are copied into the container
   - `narrative` → `container.narrative`
-  - `verifiableCredential` → `container.verifications = [VC]`
+  - `verifiableCredential` or `verifications` → `container.verifications = [VC]`
 
 Resulting VC shape (high-level):
 
 ```ts
 {
-  '@context': ['https://www.w3.org/ns/credentials/v2'],
-  type: ['VerifiableCredential', 'LERRS'],
+  '@context': [
+    'https://www.w3.org/2018/credentials/v1',
+    'http://schema.hropenstandards.org/4.5/recruiting/json/VerifiableCredentialLER-RSType.json',
+  ],
+  type: ['VerifiableCredential', 'http://schema.hropenstandards.org/4.5/recruiting/json/LER-RSType.json'],
   issuer: 'did:...issuer',
+  issuanceDate: '...',
   credentialSubject: {
     id: 'did:...subject',
-    ler: {
-      person: { id, name: { givenName, familyName, formattedName } },
-      communication?: { emails?: [{ address }] },
-      skills?: [{ name }],
-      employmentHistories?: [{ ...container, verifications?: [VC] }],
-      educationAndLearnings?: [{ ...container, verifications?: [VC] }],
-      certifications?: [{ ...container, verifications?: [VC] }],
-      narratives?: string[],
-    }
-  }
+    type: 'http://schema.hropenstandards.org/4.5/recruiting/json/LER-RSType.json',
+    person: { name: { given, family, formattedName } },
+    communication?: { email?: [{ address }] },
+    skills?: [{ name }],
+    employmentHistories?: [{ ...container, verifications?: [VC] }],
+    educationAndLearnings?: [{ ...container, verifications?: [VC] }],
+    certifications?: [{ ...container, verifications?: [VC] }],
+  },
 }
 ```
 
@@ -196,7 +199,7 @@ Resulting VC shape (high-level):
   - The presentation verifies, and
   - Every credential either verifies OR is considered self-issued.
 - A credential is considered __self-issued__ when:
-  - It has type `LERRS`, or
+  - It is recognized as an LER-RS credential by known legacy/current LER-RS types, or
   - Its `issuer` DID equals the VP `holder` DID.
 
 ## Troubleshooting
