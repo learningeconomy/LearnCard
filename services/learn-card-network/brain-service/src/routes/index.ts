@@ -49,7 +49,7 @@ export type Context = {
     };
     contactMethod?: ContactMethodType;
     domain: string;
-    guardianApproval?: string;
+    _guardianApprovalToken?: string;
 };
 
 export type RequiredScope = { requiredScope?: string };
@@ -78,7 +78,7 @@ export const createContext = async (
         'get' in event.headers
             ? (event.headers as Map<string, string>).get('authorization')
             : event.headers.authorization;
-    const guardianApproval =
+    const _guardianApprovalToken =
         'get' in event.headers
             ? (event.headers as Map<string, string>).get('x-guardian-approval')
             : (event.headers as Record<string, string | undefined>)['x-guardian-approval'];
@@ -148,12 +148,12 @@ export const createContext = async (
 
                 Sentry.setUser({ id: did });
 
-                return { user: { did, isChallengeValid, scope }, domain, guardianApproval };
+                return { user: { did, isChallengeValid, scope }, domain, _guardianApprovalToken };
             }
         }
     }
 
-    return { domain, guardianApproval };
+    return { domain, _guardianApprovalToken };
 };
 
 export const openRoute = t.procedure
@@ -333,52 +333,43 @@ export type GuardianApprovalToken = {
 
 export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
     const { profile } = ctx.user;
+    const guardianApprovalToken = ctx._guardianApprovalToken;
 
     const isChildAccount = await isProfileManaged(profile.profileId);
 
     if (!isChildAccount) {
         return next({
-            ctx: { ...ctx, isChildAccount: false, hasGuardianApproval: false, guardian: undefined },
+            ctx: { ...ctx, isChildAccount: false, hasGuardianApproval: false },
         });
     }
 
-    if (!ctx.guardianApproval) {
+    if (!guardianApprovalToken) {
         return next({
-            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false, guardian: undefined },
+            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
         });
     }
 
     try {
         const learnCard = await getEmptyLearnCard();
 
-        const result = await learnCard.invoke.verifyPresentation(ctx.guardianApproval, {
+        const result = await learnCard.invoke.verifyPresentation(guardianApprovalToken, {
             proofFormat: 'jwt',
         });
 
         if (result.errors.length > 0 || !result.checks.includes('JWS')) {
             return next({
-                ctx: {
-                    ...ctx,
-                    isChildAccount: true,
-                    hasGuardianApproval: false,
-                    guardian: undefined,
-                },
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
             });
         }
 
         const jwtPayload = jwtDecode<{ vp?: { proof?: { challenge?: string } }; nonce?: string }>(
-            ctx.guardianApproval
+            guardianApprovalToken
         );
 
         const challengeStr = jwtPayload.vp?.proof?.challenge ?? jwtPayload.nonce;
         if (!challengeStr) {
             return next({
-                ctx: {
-                    ...ctx,
-                    isChildAccount: true,
-                    hasGuardianApproval: false,
-                    guardian: undefined,
-                },
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
             });
         }
 
@@ -387,46 +378,26 @@ export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
             guardianClaims = JSON.parse(challengeStr);
         } catch {
             return next({
-                ctx: {
-                    ...ctx,
-                    isChildAccount: true,
-                    hasGuardianApproval: false,
-                    guardian: undefined,
-                },
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
             });
         }
 
         if (!guardianClaims.exp || guardianClaims.exp * 1000 < Date.now()) {
             return next({
-                ctx: {
-                    ...ctx,
-                    isChildAccount: true,
-                    hasGuardianApproval: false,
-                    guardian: undefined,
-                },
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
             });
         }
 
         if (guardianClaims.scope !== 'guardian-approval') {
             return next({
-                ctx: {
-                    ...ctx,
-                    isChildAccount: true,
-                    hasGuardianApproval: false,
-                    guardian: undefined,
-                },
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
             });
         }
 
         const childDidWeb = getDidWeb(ctx.domain, profile.profileId);
         if (guardianClaims.sub !== childDidWeb) {
             return next({
-                ctx: {
-                    ...ctx,
-                    isChildAccount: true,
-                    hasGuardianApproval: false,
-                    guardian: undefined,
-                },
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
             });
         }
 
@@ -438,26 +409,16 @@ export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
 
         if (!guardianProfile) {
             return next({
-                ctx: {
-                    ...ctx,
-                    isChildAccount: true,
-                    hasGuardianApproval: false,
-                    guardian: undefined,
-                },
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
             });
         }
 
         return next({
-            ctx: {
-                ...ctx,
-                isChildAccount: true,
-                hasGuardianApproval: true,
-                guardian: guardianProfile,
-            },
+            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: true },
         });
     } catch {
         return next({
-            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false, guardian: undefined },
+            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
         });
     }
 });
