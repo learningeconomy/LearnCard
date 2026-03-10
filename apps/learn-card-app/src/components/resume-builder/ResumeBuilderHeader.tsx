@@ -8,7 +8,7 @@ import ShareIcon from 'learn-card-base/svgs/Share';
 import DownloadIcon from 'learn-card-base/svgs/DownloadIcon';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 
-export type ResumeBuilderHeaderAction = 'preview' | 'download' | null;
+export type ResumeBuilderHeaderAction = 'preview' | 'download' | 'publish' | null;
 
 export const ResumeBuilderHeader: React.FC<{
     loadingAction: ResumeBuilderHeaderAction;
@@ -16,12 +16,14 @@ export const ResumeBuilderHeader: React.FC<{
     isDesktopPanelClosed?: boolean;
     onPreview: () => void;
     onDownload: () => void;
+    onPublish: () => void;
 }> = ({
     loadingAction,
     isMobile = false,
     isDesktopPanelClosed = false,
     onPreview,
     onDownload,
+    onPublish,
 }) => {
     const history = useHistory();
 
@@ -73,6 +75,22 @@ export const ResumeBuilderHeader: React.FC<{
                             <IonSpinner name="crescent" className="w-4 h-4" />
                         ) : (
                             <span className={isMobile ? 'sr-only' : ''}>Download PDF</span>
+                        )}
+                    </button>
+                    <button
+                        onClick={onPublish}
+                        disabled={loadingAction !== null}
+                        className={`ml-2 inline-flex items-center gap-2 h-9 rounded-full border border-grayscale-200 border-solid bg-white hover:bg-grayscale-50 disabled:opacity-60 disabled:cursor-not-allowed text-indigo-500 font-semibold text-sm transition-colors ${
+                            isMobile ? 'w-9 justify-center px-0' : 'px-4'
+                        }`}
+                    >
+                        {!(isMobile && loadingAction === 'publish') && (
+                            <ShareIcon className="w-5 h-5" />
+                        )}
+                        {loadingAction === 'publish' ? (
+                            <IonSpinner name="crescent" className="w-4 h-4" />
+                        ) : (
+                            <span className={isMobile ? 'sr-only' : ''}>Publish VC</span>
                         )}
                     </button>
                     {/* <button

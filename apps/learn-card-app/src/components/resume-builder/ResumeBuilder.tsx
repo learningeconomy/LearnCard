@@ -11,9 +11,19 @@ import ResumeConfigDesktopSidePanel from './resume-config-panel/ResumeConfigDesk
 import ResumeBuilderHeader, { ResumeBuilderHeaderAction } from './ResumeBuilderHeader';
 import { ResumePdfPreviewData } from './resume-preview/useResumePdf';
 
-import { useDeviceTypeByWidth, useModal, ModalTypes } from 'learn-card-base';
+import {
+    useDeviceTypeByWidth,
+    useModal,
+    ModalTypes,
+    useToast,
+    ToastTypeEnum,
+    CredentialCategoryEnum,
+} from 'learn-card-base';
 import { useResumePreselection } from './useResumePreselection';
 import ResumeBuilderLoader from './ResumeBuilderLoader';
+import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
+import { useIssueTcpResume } from '../../hooks/useIssueTcpResume';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 export const ResumeBuilder: React.FC = () => {
     useResumePreselection();
@@ -29,6 +39,11 @@ export const ResumeBuilder: React.FC = () => {
     const [inlinePreview, setInlinePreview] = useState<ResumePdfPreviewData | null>(null);
 
     const [loadingAction, setLoadingAction] = useState<ResumeBuilderHeaderAction>(null);
+    const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
+    const hiddenSections = resumeBuilderStore.useTracked.hiddenSections();
+    const flags = useFlags();
+    const { presentToast } = useToast();
+    const { publishTcpResume } = useIssueTcpResume();
 
     const revokePreviewBlobUrl = useCallback((preview: ResumePdfPreviewData | null) => {
         if (preview?.downloadUrl?.startsWith('blob:')) {
@@ -61,6 +76,56 @@ export const ResumeBuilder: React.FC = () => {
             setLoadingAction(null);
         }
     }, [loadingAction]);
+
+    const handlePublish = useCallback(async () => {
+        if (loadingAction) return;
+        setLoadingAction('publish');
+        try {
+            const wrapperId = crypto.randomUUID();
+            const artifact = await resumePreviewRef.current?.createPDFArtifact();
+            if (!artifact) {
+                presentToast('Could not generate a PDF artifact for publishing.', {
+                    type: ToastTypeEnum.Error,
+                });
+                return;
+            }
+
+            const includedCredentials = Object.entries(credentialEntries).flatMap(
+                ([category, entries]) =>
+                    (hiddenSections?.[category as CredentialCategoryEnum] ? [] : entries ?? []).map(
+                        entry => ({
+                            uri: entry.uri,
+                            category: category || CredentialCategoryEnum.workHistory,
+                        })
+                    )
+            );
+
+            const { verificationUrl } = await publishTcpResume({
+                pdfBlob: artifact.blob,
+                fileName: artifact.fileName,
+                pdfHash: artifact.hash,
+                wrapperId,
+                includedCredentials,
+                enableCoSign: Boolean((flags as Record<string, unknown>)?.enableTcpResumeCosign),
+            });
+
+            presentToast('Resume wrapper VC published successfully.', {
+                title: 'Published',
+                details: verificationUrl,
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+                duration: 6000,
+            });
+        } catch (error: any) {
+            presentToast(error?.message ?? 'Failed to publish resume wrapper VC.', {
+                title: 'Publish Failed',
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        } finally {
+            setLoadingAction(null);
+        }
+    }, [credentialEntries, flags, hiddenSections, loadingAction, presentToast, publishTcpResume]);
 
     const openResumeConfigPanel = () => {
         if (isMobile) {
@@ -103,6 +168,7 @@ export const ResumeBuilder: React.FC = () => {
                     isDesktopPanelClosed={!panelOpen}
                     onPreview={handlePreview}
                     onDownload={handleDownload}
+                    onPublish={handlePublish}
                 />
 
                 <div className={previewWrapperStyles}>
