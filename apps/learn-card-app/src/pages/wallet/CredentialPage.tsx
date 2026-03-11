@@ -61,16 +61,6 @@ const categoryToConfig: Record<string, CategoryConfig> = {
         searchInputColor: 'cyan-300',
         tabBackgroundColor: 'cyan-300',
     },
-    [CredentialCategoryEnum.resume]: {
-        boostCategory: CredentialCategoryEnum.resume, // category
-        subheaderType: SubheaderTypeEnum.Job, // header type
-
-        title: 'Resumes',
-        iconColor: 'text-cyan-701',
-        dividerLineColor: 'cyan-401',
-        searchInputColor: 'cyan-300',
-        tabBackgroundColor: 'cyan-300',
-    },
     [CredentialCategoryEnum.learningHistory]: {
         boostCategory: CredentialCategoryEnum.learningHistory, // category
         subheaderType: SubheaderTypeEnum.Learning, // header type

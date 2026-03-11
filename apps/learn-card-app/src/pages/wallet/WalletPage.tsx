@@ -112,7 +112,6 @@ const WalletPage: React.FC = () => {
         [CredentialCategoryEnum.accomplishment]: '/accomplishments',
         [CredentialCategoryEnum.accommodation]: '/accommodations',
         [CredentialCategoryEnum.workHistory]: '/workhistory',
-        [CredentialCategoryEnum.resume]: '/resumes',
         [CredentialCategoryEnum.family]: '/families',
         [CredentialCategoryEnum.id]: '/ids',
         [CredentialCategoryEnum.membership]: '/memberships',
@@ -144,6 +143,10 @@ const WalletPage: React.FC = () => {
         const { categoryId: categoryType } = category;
 
         if (categoryType === CredentialCategoryEnum.family && !canCreateFamilies) {
+            return <React.Fragment key={categoryType}></React.Fragment>;
+        }
+
+        if (categoryType === CredentialCategoryEnum.resume) {
             return <React.Fragment key={categoryType}></React.Fragment>;
         }
 
