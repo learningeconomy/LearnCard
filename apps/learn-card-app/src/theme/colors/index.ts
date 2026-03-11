@@ -1,6 +1,6 @@
 import { ThemeEnum } from '../helpers/theme-helpers';
 import { CredentialCategoryEnum } from 'learn-card-base';
-import { createUniformCategoryColors } from '../shared';
+import { createUniformCategoryColors } from '../shared/createUniformCategoryColors';
 
 export type CategoryColor = {
     primaryColor?: string;

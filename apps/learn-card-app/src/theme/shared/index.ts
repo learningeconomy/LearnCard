@@ -4,5 +4,6 @@ export {
     DEFAULT_SIDE_MENU_SECONDARY_LINKS,
     DEFAULT_NAVBAR,
 } from './defaultNavLinks';
-export { createTheme, createUniformCategoryColors } from './createTheme';
+export { createTheme } from './createTheme';
 export type { CreateThemeConfig } from './createTheme';
+export { createUniformCategoryColors } from './createUniformCategoryColors';
