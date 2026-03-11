@@ -142,6 +142,7 @@
 -   [Apps Overview](apps/README.md)
 -   [LearnCard App](apps/learn-card-app/README.md)
     -   [Analytics](apps/learn-card-app/analytics.md)
+    -   [Resume Builder LER-RS Mapping](apps/learn-card-app/resume-builder-ler-rs-mapping.md)
 -   [ScoutPass](apps/scouts/README.md)
     -   [Credential Revocation](apps/scouts/credential-revocation.md)
 
