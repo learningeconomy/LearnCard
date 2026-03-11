@@ -36,6 +36,7 @@
         "@ionic/react-router": "8.7.2",
         "@learncard/helpers": "workspace:*",
         "@learncard/lca-api-plugin": "workspace:*",
+        "@learncard/ler-rs-plugin": "workspace:*",
         "@learncard/open-badge-v2-plugin": "workspace:*",
         "@learncard/react": "workspace:^",
         "@nanostores/react": "^0.8.4",
