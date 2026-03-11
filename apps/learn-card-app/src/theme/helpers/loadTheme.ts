@@ -1,7 +1,5 @@
-import { formalTheme } from '../schemas/formal';
-import { colorfulTheme } from '../schemas/colorful';
-import { ThemeEnum } from '../helpers/theme-helpers';
 import type { Theme } from '../validators/theme.validators';
+import { loadAllJsonThemes } from './loadJsonTheme';
 
 // ─── Dynamic theme registry ────────────────────────────────────────────
 
@@ -9,15 +7,16 @@ const themeRegistry = new Map<string, Theme>();
 
 /**
  * Register a theme in the global registry.
- * Called at module load time by each theme schema file.
+ * Can be called externally to add themes beyond the JSON-discovered ones.
  */
 export const registerTheme = (theme: Theme): void => {
     themeRegistry.set(theme.id, Object.freeze(theme));
 };
 
-// Register built-in themes
-registerTheme(colorfulTheme);
-registerTheme(formalTheme);
+// Auto-discover and register all JSON themes from schemas/*/theme.json
+for (const theme of loadAllJsonThemes()) {
+    registerTheme(theme);
+}
 
 /**
  * Frozen snapshot of all registered themes, keyed by ID.
@@ -44,7 +43,7 @@ export type ThemeMap = Record<string, Theme>;
  * Load a validated theme by its ID.
  * Falls back to the first registered theme if the ID is unknown.
  */
-export const loadThemeSchema = (theme: ThemeEnum | string): Theme => {
+export const loadThemeSchema = (theme: string): Theme => {
     const found = themeRegistry.get(theme);
 
     if (found) return found;

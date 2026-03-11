@@ -5,7 +5,6 @@ import themeStore, { isThemeSwitchingEnabled } from '../store/themeStore';
 import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
 
 import { useTheme } from '../hooks/useTheme';
-import { ThemeEnum } from '../helpers/theme-helpers';
 import { loadThemeSchema, getRegisteredThemeIds } from '../helpers/loadTheme';
 import { ThemeButton } from '../validators/theme.validators';
 import { ViewMode } from '../types/theme.types';
@@ -45,9 +44,9 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
         }));
     }, [schemas]);
 
-    const handleThemeChange = useCallback((t: ThemeEnum) => setTheme(t), [setTheme]);
+    const handleThemeChange = useCallback((t: string) => setTheme(t), [setTheme]);
 
-    const handleSetViewMode = (themeSelected: ThemeEnum) => {
+    const handleSetViewMode = (themeSelected: string) => {
         const schema = loadThemeSchema(themeSelected);
         if (schema?.defaults?.viewMode === ViewMode.Grid) {
             passportPageStore.set.setViewMode(PassportPageViewMode.grid);
@@ -56,7 +55,7 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
         }
     };
 
-    const handleSetTheme = async (themeSelected: ThemeEnum) => {
+    const handleSetTheme = async (themeSelected: string) => {
         if (!preferences?.theme) {
             await createPreferences({
                 theme: themeSelected,
@@ -77,7 +76,7 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
 
         const cachedTheme = themeStore.get.theme();
         if (cachedTheme !== preferences?.theme && preferences?.theme !== undefined) {
-            handleSetTheme(preferences?.theme as ThemeEnum);
+            handleSetTheme(preferences?.theme as string);
         }
     }, [preferences]);
 

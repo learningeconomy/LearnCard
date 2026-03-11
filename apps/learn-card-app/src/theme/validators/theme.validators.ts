@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { ViewMode } from '../types/theme.types';
-import { ThemeEnum } from '../helpers/theme-helpers';
 import { CredentialCategoryEnum } from 'learn-card-base';
 import { MobileNavBarLinks } from '../../components/mobile-nav-bar/MobileNavBar';
 import { SideMenuLinksEnum } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
@@ -55,7 +54,7 @@ export type NavbarLink = z.infer<typeof NavbarLinkSchema>;
 /* ========= Theme ========= */
 export const ThemeSchema = z
     .object({
-        id: z.nativeEnum(ThemeEnum).describe('Theme ID enum'),
+        id: z.string().describe('Theme ID (matches folder name in schemas/)'),
         name: z.string().describe('Internal theme name'),
         displayName: z.string().describe('Display name for UI'),
         colors: ThemeColorsSchema.describe('Color mappings by category + launchPad'),
@@ -77,7 +76,7 @@ export const validateThemeData = (data: unknown): Theme => ThemeSchema.parse(dat
 /* ========= Theme selector button ========= */
 export const ThemeButtonSchema = z
     .object({
-        theme: z.nativeEnum(ThemeEnum).describe('Theme identifier'),
+        theme: z.string().describe('Theme identifier'),
         label: z.string().describe('Label for selector button'),
         icon: z.string().describe('Icon asset path or reference for selector button'),
     })

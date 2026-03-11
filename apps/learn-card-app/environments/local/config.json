@@ -16,5 +16,8 @@
         "sentryEnv": "development",
         "launchDarklyClientId": "63dabf3982caed12cac3e55b",
         "userflowToken": "ct_w53eaxhevvf2vejzrecekeq3nu"
+    },
+    "auth": {
+        "sssServerUrl": "http://localhost:5100/api"
     }
 }

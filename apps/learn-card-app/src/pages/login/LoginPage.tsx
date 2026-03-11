@@ -49,7 +49,6 @@ import EndorsementSuccessfullRequestModal from '../../components/boost-endorseme
 import { themeStore } from '../../theme/store/themeStore';
 import endorsementRequestStore from '../../stores/endorsementsRequestStore';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
-import { ThemeEnum } from '../../theme/helpers/theme-helpers';
 import { useTheme } from '../../theme/hooks/useTheme';
 
 export const LoginContent: React.FC = () => {
@@ -85,7 +84,7 @@ export const LoginContent: React.FC = () => {
         try {
             const result = await refetchPreferences();
             if (result?.data?.theme) {
-                const theme = result?.data?.theme ?? ThemeEnum.Colorful;
+                const theme = result?.data?.theme ?? 'colorful';
                 themeStore.set.theme(theme);
                 syncThemeDefaults(theme);
             }
