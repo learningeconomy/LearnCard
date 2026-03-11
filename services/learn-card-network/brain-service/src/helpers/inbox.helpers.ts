@@ -43,15 +43,15 @@ export const claimIntoInbox = async(
     signingAuthorityForUser: SigningAuthorityForUserType,
     recipient: ContactMethodQueryType,
     credential: VC | UnsignedVC | VP,
-    configuration: IssueInboxCredentialType['configuration'] = {},
+    configuration: IssueInboxCredentialType['configuration'] & { integrationId?: string; activityId?: string } = {},
     ctx: Context,
     listingSlug?: string
-): Promise<{ 
-    status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'CLAIMED' | 'DELIVERED'; // DELIVERED & CLAIMED are deprecated, use ISSUED 
+): Promise<{
+    status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'CLAIMED' | 'DELIVERED'; // DELIVERED & CLAIMED are deprecated, use ISSUED
     inboxCredential: InboxCredentialType;
     recipientDid?: string;
 }> => {
-    const { webhookUrl, expiresInDays } = configuration;
+    const { webhookUrl, expiresInDays, integrationId, activityId } = configuration;
     
     const isSigned = !!credential?.proof;
 
@@ -95,6 +95,8 @@ export const claimIntoInbox = async(
             recipient,
             issuerProfile,
             webhookUrl,
+            integrationId,
+            activityId,
             expiresInDays,
         });
 
@@ -112,6 +114,8 @@ export const claimIntoInbox = async(
             recipient,
             issuerProfile,
             webhookUrl,
+            integrationId,
+            activityId,
             signingAuthority: {
                 endpoint: signingAuthorityForUser.signingAuthority.endpoint,
                 name: signingAuthorityForUser.relationship.name,

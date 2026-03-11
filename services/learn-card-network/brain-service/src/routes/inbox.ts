@@ -60,7 +60,7 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { getAppDidWeb } from '@helpers/did.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
-import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
+import { logCredentialSent, logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 
 export const inboxRouter = t.router({
     // Request guardian approval via email
@@ -556,6 +556,16 @@ export const inboxRouter = t.router({
                 resolvedCredential = parseRenderedTemplate(rendered);
             }
 
+            // Log initial activity so embed claims appear in the dashboard
+            const activityId = await logCredentialSent({
+                actorProfileId: issuerProfile.profileId,
+                recipientType: contactMethod.type as 'email' | 'phone',
+                recipientIdentifier: contactMethod.value,
+                integrationId: integration.id,
+                source: 'claim',
+                metadata: { templateName: (resolvedCredential as any)?.name },
+            });
+
             // Claim Credential into Contact Method's inbox
             const result = await claimIntoInbox(
                 issuerProfile,
@@ -564,6 +574,8 @@ export const inboxRouter = t.router({
                 resolvedCredential,
                 {
                     expiresInDays: 720,
+                    integrationId: integration.id,
+                    activityId,
                 },
                 ctx,
                 listing.slug
@@ -731,6 +743,7 @@ export const inboxRouter = t.router({
                             recipientProfileId: profile.profileId,
                             inboxCredentialId: inboxCredential.id,
                             boostUri: inboxCredential.boostUri || undefined,
+                            integrationId: (inboxCredential as any).integrationId || undefined,
                             source: 'inbox',
                         });
 
@@ -751,7 +764,7 @@ export const inboxRouter = t.router({
                                 recipientIdentifier: cm.value,
                                 recipientProfileId: profile.profileId,
                                 boostUri: inboxCredential.boostUri || undefined,
-                                integrationId: (inboxCredential as any).integrationId || undefined,
+                                integrationId: inboxCredential.integrationId || undefined,
                                 source: 'claimLink',
                                 metadata: {
                                     error: error instanceof Error ? error.message : 'Unknown error',
