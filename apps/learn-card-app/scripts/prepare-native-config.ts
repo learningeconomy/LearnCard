@@ -31,7 +31,6 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, readdirSync, statSync, rmSync } from 'fs';
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
 
 import { tenantConfigSchema } from 'learn-card-base/src/config/tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/src/config/tenantDefaults';
@@ -48,39 +47,48 @@ const tenantArg = process.argv[2] ?? 'learncard';
 // ---------------------------------------------------------------------------
 
 if (tenantArg === '--reset') {
-    console.log('\n🔄 Resetting all prepare-native-config changes...\n');
+    console.log('\n🔄 Cleaning all platform output files...\n');
 
-    // Git-tracked paths to restore (relative to APP_ROOT)
-    const gitRestorePaths = [
-        'ios/App/App/Assets.xcassets/AppIcon.appiconset',
-        'ios/App/App/Assets.xcassets/Splash.imageset',
+    // All output paths that prepare-native-config.ts populates (gitignored).
+    // These are removed so the next `prepare-native-config.ts <tenant>` starts clean.
+    const removeTargets = [
+        // iOS
+        'ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon.png',
+        'ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png',
+        'ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-1.png',
+        'ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-2.png',
         'ios/App/App/capacitor.config.json',
-        'android/app/src/main/res',
+        'ios/App/App/tenant-deep-link-domains.json',
+
+        // Android — capacitor config
         'android/app/src/main/assets/capacitor.config.json',
-        'public/assets/icon',
+
+        // Web
+        'public/assets/icon/favicon.png',
+        'public/assets/icon/icon.png',
         'public/manifest.json',
         'public/manifest.webmanifest',
+        'public/tenant-config.json',
+        'public/branding',
     ];
 
-    for (const relPath of gitRestorePaths) {
-        const absPath = resolve(APP_ROOT, relPath);
+    // Android icon + splash patterns (resolve dynamically)
+    const densities = ['hdpi', 'ldpi', 'mdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi'];
 
-        if (!existsSync(absPath)) continue;
-
-        try {
-            execSync(`git checkout -- "${relPath}"`, { cwd: APP_ROOT, stdio: 'pipe' });
-            console.log(`   ✓ Restored ${relPath}`);
-        } catch {
-            console.log(`   - ${relPath} (already clean)`);
-        }
+    for (const d of densities) {
+        removeTargets.push(`android/app/src/main/res/mipmap-${d}/ic_launcher.webp`);
+        removeTargets.push(`android/app/src/main/res/mipmap-${d}/ic_launcher_foreground.webp`);
+        removeTargets.push(`android/app/src/main/res/mipmap-${d}/ic_launcher_round.webp`);
+        removeTargets.push(`android/app/src/main/res/drawable-${d}/splash.9.png`);
+        removeTargets.push(`android/app/src/main/res/drawable-land-${d}/splash.9.png`);
+        removeTargets.push(`android/app/src/main/res/drawable-port-${d}/splash.9.png`);
     }
 
-    // Remove generated artifacts
-    const removeTargets = [
-        'public/branding',
-        'public/tenant-config.json',
-        'ios/App/App/tenant-deep-link-domains.json',
-    ];
+    removeTargets.push('android/app/src/main/res/drawable/splash.9.png');
+    removeTargets.push('android/app/src/main/res/drawable/ic_launcher_background.xml');
+    removeTargets.push('android/app/src/main/res/values/ic_launcher_background.xml');
+
+    let removed = 0;
 
     for (const relPath of removeTargets) {
         const absPath = resolve(APP_ROOT, relPath);
@@ -88,10 +96,16 @@ if (tenantArg === '--reset') {
         if (existsSync(absPath)) {
             rmSync(absPath, { recursive: true, force: true });
             console.log(`   ✓ Removed ${relPath}`);
+            removed++;
         }
     }
 
-    console.log('\n✅ Reset complete. All files restored to git HEAD.\n');
+    if (removed === 0) {
+        console.log('   Nothing to clean — already reset.');
+    }
+
+    console.log(`\n✅ Cleaned ${removed} file(s). To restore defaults, run:`);
+    console.log('   npx tsx scripts/prepare-native-config.ts learncard\n');
     process.exit(0);
 }
 
@@ -328,6 +342,43 @@ if (existsSync(brandingDir)) {
     }
 } else {
     console.log(`\nℹ️  No branding images at environments/${tenantArg}/assets/branding/ — using bundled defaults.`);
+}
+
+// ---------------------------------------------------------------------------
+// 5b. Copy base config templates (capacitor config, manifests)
+//     These are gitignored, so we restore them from the tenant's assets/config/
+//     (falling back to learncard defaults if the tenant doesn't supply them).
+// ---------------------------------------------------------------------------
+
+const CONFIG_TEMPLATE_MAP: Array<{ src: string; dests: string[] }> = [
+    {
+        src: 'config/capacitor.config.json',
+        dests: [
+            'ios/App/App/capacitor.config.json',
+            'android/app/src/main/assets/capacitor.config.json',
+        ],
+    },
+    { src: 'config/manifest.json', dests: ['public/manifest.json'] },
+    { src: 'config/manifest.webmanifest', dests: ['public/manifest.webmanifest'] },
+];
+
+const configDir = resolve(APP_ROOT, 'environments', tenantArg, 'assets', 'config');
+const fallbackConfigDir = resolve(APP_ROOT, 'environments', 'learncard', 'assets', 'config');
+
+for (const { src, dests } of CONFIG_TEMPLATE_MAP) {
+    let srcPath = join(configDir, src.replace('config/', ''));
+
+    if (!existsSync(srcPath)) {
+        srcPath = join(fallbackConfigDir, src.replace('config/', ''));
+    }
+
+    if (!existsSync(srcPath)) continue;
+
+    for (const destRel of dests) {
+        const destPath = resolve(APP_ROOT, destRel);
+        mkdirSync(dirname(destPath), { recursive: true });
+        cpSync(srcPath, destPath);
+    }
 }
 
 // ---------------------------------------------------------------------------

@@ -14,7 +14,7 @@
     "auth": {
         "provider": "firebase",
         "keyDerivation": "sss",
-        "sssServerUrl": "http://localhost:5100/trpc",
+        "sssServerUrl": "http://localhost:5100/api",
         "enableEmailBackupShare": true,
         "requireEmailForPhoneUsers": true,
 

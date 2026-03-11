@@ -36,3 +36,58 @@ demoState.json
 /tests/states/*
 
 .env
+
+# ---------------------------------------------------------------------------
+# Platform assets populated by: npx tsx scripts/prepare-native-config.ts
+# Source of truth lives in environments/<tenant>/assets/ (git-tracked).
+# Run `prepare-native-config.ts learncard` to restore defaults.
+# ---------------------------------------------------------------------------
+
+# iOS
+ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png
+ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-1.png
+ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-2.png
+ios/App/App/capacitor.config.json
+ios/App/App/tenant-deep-link-domains.json
+
+# Android — icons
+android/app/src/main/res/mipmap-hdpi/ic_launcher*.webp
+android/app/src/main/res/mipmap-mdpi/ic_launcher*.webp
+android/app/src/main/res/mipmap-xhdpi/ic_launcher*.webp
+android/app/src/main/res/mipmap-xxhdpi/ic_launcher*.webp
+android/app/src/main/res/mipmap-xxxhdpi/ic_launcher*.webp
+android/app/src/main/res/drawable/ic_launcher_background.xml
+android/app/src/main/res/values/ic_launcher_background.xml
+
+# Android — splash screens
+android/app/src/main/res/drawable/splash.9.png
+android/app/src/main/res/drawable-hdpi/splash.9.png
+android/app/src/main/res/drawable-ldpi/splash.9.png
+android/app/src/main/res/drawable-mdpi/splash.9.png
+android/app/src/main/res/drawable-xhdpi/splash.9.png
+android/app/src/main/res/drawable-xxhdpi/splash.9.png
+android/app/src/main/res/drawable-xxxhdpi/splash.9.png
+android/app/src/main/res/drawable-land-hdpi/splash.9.png
+android/app/src/main/res/drawable-land-ldpi/splash.9.png
+android/app/src/main/res/drawable-land-mdpi/splash.9.png
+android/app/src/main/res/drawable-land-xhdpi/splash.9.png
+android/app/src/main/res/drawable-land-xxhdpi/splash.9.png
+android/app/src/main/res/drawable-land-xxxhdpi/splash.9.png
+android/app/src/main/res/drawable-port-hdpi/splash.9.png
+android/app/src/main/res/drawable-port-ldpi/splash.9.png
+android/app/src/main/res/drawable-port-mdpi/splash.9.png
+android/app/src/main/res/drawable-port-xhdpi/splash.9.png
+android/app/src/main/res/drawable-port-xxhdpi/splash.9.png
+android/app/src/main/res/drawable-port-xxxhdpi/splash.9.png
+
+# Android — capacitor config
+android/app/src/main/assets/capacitor.config.json
+
+# Web — icons, manifests, tenant config, branding
+public/assets/icon/favicon.png
+public/assets/icon/icon.png
+public/manifest.json
+public/manifest.webmanifest
+public/tenant-config.json
+public/branding/
