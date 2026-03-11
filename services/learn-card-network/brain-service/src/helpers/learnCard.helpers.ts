@@ -20,7 +20,6 @@ import type { LearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
 import type { DidWebPlugin } from '@learncard/did-web-plugin';
 import { DynamicLoaderPlugin } from '@learncard/dynamic-loader-plugin';
-import type { DynamicLoaderPluginType } from '@learncard/dynamic-loader-plugin';
 
 // Try native plugin first, fall back to WASM
 const didKitPluginPromises = new Map<boolean, Promise<DIDKitPlugin>>();
