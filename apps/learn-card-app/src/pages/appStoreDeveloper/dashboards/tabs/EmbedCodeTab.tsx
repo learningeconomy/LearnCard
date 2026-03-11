@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Copy, Check, Award } from 'lucide-react';
+import { Copy, Check, Award, Globe, X, Plus } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
 import type { LCNIntegration } from '@learncard/types';
 
-import { useToast } from 'learn-card-base/hooks/useToast';
+import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 import { LEARNCARD_NETWORK_API_URL } from 'learn-card-base/constants/Networks';
 import { EmbedPreview } from '../../components/EmbedPreview';
+import { useDeveloperPortal } from '../../useDeveloperPortal';
 import type { CredentialTemplate } from '../types';
 
 declare const LCN_API_URL: string | undefined;
@@ -115,8 +116,39 @@ ${brandingBlock}
 
 export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templates = [] }) => {
     const { presentToast } = useToast();
+    const { useUpdateIntegration } = useDeveloperPortal();
+    const updateIntegrationMutation = useUpdateIntegration();
+
     const [copied, setCopied] = useState<string | null>(null);
     const [selectedTemplateIdx, setSelectedTemplateIdx] = useState<number>(0);
+    const [domainInput, setDomainInput] = useState('');
+
+    const whitelistedDomains = integration.whitelistedDomains || [];
+
+    const addDomain = () => {
+        const domain = domainInput.trim().toLowerCase();
+        if (!domain || whitelistedDomains.includes(domain)) return;
+        updateIntegrationMutation.mutate(
+            { id: integration.id, updates: { whitelistedDomains: [...whitelistedDomains, domain] } },
+            {
+                onSuccess: () => {
+                    setDomainInput('');
+                    presentToast('Domain added', { type: ToastTypeEnum.Success, hasDismissButton: true });
+                },
+            }
+        );
+    };
+
+    const removeDomain = (domain: string) => {
+        updateIntegrationMutation.mutate(
+            { id: integration.id, updates: { whitelistedDomains: whitelistedDomains.filter(d => d !== domain) } },
+            {
+                onSuccess: () => {
+                    presentToast('Domain removed', { hasDismissButton: true });
+                },
+            }
+        );
+    };
 
     // Read persisted config from integration guideState
     const guideState = integration.guideState as
@@ -213,6 +245,64 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                 <div className="px-3 py-2 bg-white border border-pink-200 rounded-lg font-mono text-sm text-gray-700 break-all">
                     {publishableKey}
                 </div>
+            </div>
+
+            {/* Whitelisted Domains */}
+            <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                <div className="flex items-center gap-2 mb-2">
+                    <Globe className="w-4 h-4 text-indigo-600" />
+                    <label className="text-sm font-medium text-indigo-800">Whitelisted Domains</label>
+                </div>
+
+                <p className="text-xs text-indigo-600 mb-3">
+                    The embed will only work on these domains. Add every domain where you plan to use the claim button.
+                </p>
+
+                <div className="flex gap-2 mb-3">
+                    <input
+                        type="text"
+                        value={domainInput}
+                        onChange={e => setDomainInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addDomain(); } }}
+                        placeholder="example.com"
+                        className="flex-1 px-3 py-1.5 bg-white border border-indigo-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                    />
+
+                    <button
+                        type="button"
+                        onClick={addDomain}
+                        disabled={!domainInput.trim() || updateIntegrationMutation.isPending}
+                        className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add
+                    </button>
+                </div>
+
+                {whitelistedDomains.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                        {whitelistedDomains.map(domain => (
+                            <span
+                                key={domain}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-indigo-200 rounded-lg text-xs font-medium text-indigo-700"
+                            >
+                                {domain}
+                                <button
+                                    type="button"
+                                    onClick={() => removeDomain(domain)}
+                                    className="text-indigo-400 hover:text-indigo-700 ml-0.5"
+                                    aria-label={`Remove ${domain}`}
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </span>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-xs text-amber-600">
+                        No domains whitelisted yet. The embed will not work until you add at least one domain.
+                    </p>
+                )}
             </div>
 
             {/* Template Selector (only when multiple templates exist) */}

@@ -101,7 +101,6 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
         case 'embed-claim':
             return {
                 ...baseConfig,
-                showApiTokens: true,
                 showEmbedCode: true,
                 showTemplates: true,
             };

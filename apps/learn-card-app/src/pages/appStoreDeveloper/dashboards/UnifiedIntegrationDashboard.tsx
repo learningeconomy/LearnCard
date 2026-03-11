@@ -129,8 +129,9 @@ function getTabsForConfig(config: DashboardConfig): DashboardTabConfig[] {
         tabs.push({ id: 'app-config', label: 'App Config', icon: Settings });
     }
 
-    // course-catalog specific tabs (API code + CSV upload + testing)
-    if (config.showTemplates && !config.showAppListings) {
+    // API-based integration tabs (code snippets, CSV upload, testing)
+    // Excluded for embed-claim which has its own live preview in the Embed Code tab
+    if (config.showTemplates && !config.showAppListings && !config.showEmbedCode) {
         tabs.push({ id: 'code', label: 'Code', icon: FileCode });
         tabs.push({ id: 'csv-upload', label: 'CSV Upload', icon: FileSpreadsheet });
         tabs.push({ id: 'testing', label: 'Testing', icon: TestTube2 });
