@@ -442,10 +442,21 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             const childAgeUnknown = userAge === null;
             const childTooYoung = userAge !== null && userAge < ageRatingMinAge;
 
-            // Case 2a: No age rating specified - require guardian approval
-            // Case 2b: Child age unknown - require guardian approval
+            // Case 2a: Child age unknown - require guardian to verify age
+            if (childAgeUnknown) {
+                guardedAction(
+                    () => {
+                        showDobEntryModal();
+                    },
+                    { ignorePriorVerification: true }
+                );
+                return;
+            }
+
+            // Case 2b: No age rating specified - require guardian approval
             // Case 2c: Child too young - require guardian approval
-            if (noAgeRating || childAgeUnknown || childTooYoung) {
+            // Case 2d: App with a contract - require guardian approval
+            if (noAgeRating || childTooYoung || contractUri) {
                 guardedAction(
                     () => {
                         showInstallConsentModal();
@@ -455,7 +466,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 return;
             }
 
-            // Case 2d: Child old enough - proceed directly without guardian approval
+            // Case 2e: Child old enough - proceed directly without guardian approval
         }
 
         // Case 3: User is old enough - proceed directly
