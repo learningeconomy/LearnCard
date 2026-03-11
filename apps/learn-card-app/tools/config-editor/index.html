@@ -1346,9 +1346,350 @@ function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
     `;
 }
 
+// ─── Theme Editor ─────────────────────────────────────────────────────────────
+
+const FORMAL_BASE_COLORS = {
+    primaryColor: 'off-white-50',
+    secondaryColor: 'grayscale-800',
+    indicatorColor: 'emerald-500',
+    borderColor: 'grayscale-100',
+    statusBarColor: 'light',
+    headerBrandingTextColor: 'text-grayscale-800',
+    headerTextColor: 'text-grayscale-800',
+    backgroundPrimaryColor: '!bg-white',
+    backgroundSecondaryColor: 'grayscale-100',
+    tabActiveColor: 'bg-grayscale-200',
+};
+
+const COLOR_FIELD_LABELS = {
+    primaryColor: 'Primary Color',
+    secondaryColor: 'Secondary Color',
+    indicatorColor: 'Indicator Color',
+    borderColor: 'Border Color',
+    statusBarColor: 'Status Bar',
+    headerBrandingTextColor: 'Header Brand Text',
+    headerTextColor: 'Header Text',
+    backgroundPrimaryColor: 'Background Primary',
+    backgroundSecondaryColor: 'Background Secondary',
+    tabActiveColor: 'Tab Active Color',
+};
+
+function ThemeColorField({ label, value, onChange }) {
+    return h`
+        <div class="flex items-center gap-3">
+            <label class="text-xs font-medium text-gs-700 w-36 flex-shrink-0">${label}</label>
+            <input
+                type="text"
+                value=${value}
+                onChange=${(e) => onChange(e.target.value)}
+                class="flex-1 py-2 px-3 border border-gs-200 rounded-xl text-xs text-gs-900 bg-white font-mono placeholder:text-gs-400"
+            />
+        </div>
+    `;
+}
+
+function ThemeEditor() {
+    const [themes, setThemes] = useState([]);
+    const [activeTheme, setActiveTheme] = useState(null);
+    const [themeSource, setThemeSource] = useState(null);
+    const [showCreate, setShowCreate] = useState(false);
+
+    // Create form state
+    const [newId, setNewId] = useState('');
+    const [newDisplayName, setNewDisplayName] = useState('');
+    const [newBaseTheme, setNewBaseTheme] = useState('formal');
+    const [newViewMode, setNewViewMode] = useState('list');
+    const [newColors, setNewColors] = useState({ ...FORMAL_BASE_COLORS });
+    const [scaffolding, setScaffolding] = useState(false);
+    const [scaffoldResult, setScaffoldResult] = useState(null);
+
+    // Load themes
+    const loadThemes = useCallback(async () => {
+        const list = await api.get('/api/themes');
+        setThemes(list);
+    }, []);
+
+    useEffect(() => { loadThemes(); }, []);
+
+    // Load theme source
+    const loadThemeSource = useCallback(async (id) => {
+        setActiveTheme(id);
+        setShowCreate(false);
+        setScaffoldResult(null);
+
+        const data = await api.get('/api/themes/' + id + '/source');
+        setThemeSource(data);
+    }, []);
+
+    // Handle create
+    const handleScaffold = useCallback(async () => {
+        if (!newId.trim() || !newDisplayName.trim()) return;
+
+        setScaffolding(true);
+        setScaffoldResult(null);
+
+        try {
+            const result = await api.post('/api/themes/scaffold', {
+                id: newId.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''),
+                displayName: newDisplayName.trim(),
+                baseTheme: newBaseTheme,
+                baseCategoryColor: newColors,
+                viewMode: newViewMode,
+            });
+
+            setScaffoldResult(result);
+
+            if (result.success) {
+                await loadThemes();
+                setNewId('');
+                setNewDisplayName('');
+            }
+        } catch (err) {
+            setScaffoldResult({ success: false, error: String(err) });
+        }
+
+        setScaffolding(false);
+    }, [newId, newDisplayName, newBaseTheme, newViewMode, newColors, loadThemes]);
+
+    const updateColor = useCallback((key, val) => {
+        setNewColors(prev => ({ ...prev, [key]: val }));
+    }, []);
+
+    return h`
+        <div class="h-full flex overflow-hidden">
+            <!-- Theme sidebar -->
+            <aside class="w-56 bg-white border-r border-gs-200 flex flex-col flex-shrink-0">
+                <div class="p-3 border-b border-gs-100">
+                    <div class="text-xs font-semibold text-gs-500 uppercase tracking-wider mb-2 px-2">Themes</div>
+                    <div class="space-y-0.5">
+                        ${themes.map(t => h`
+                            <button
+                                key=${t.id}
+                                onClick=${() => loadThemeSource(t.id)}
+                                class="w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center justify-between
+                                    ${activeTheme === t.id ? 'bg-gs-900 text-white' : 'text-gs-700 hover:bg-gs-50'}"
+                            >
+                                <span class="font-medium">${t.displayName}</span>
+                                <span class="text-xs opacity-60">${t.id}</span>
+                            </button>
+                        `)}
+                    </div>
+                </div>
+                <div class="p-3">
+                    <button
+                        onClick=${() => { setShowCreate(true); setActiveTheme(null); setThemeSource(null); setScaffoldResult(null); }}
+                        class="w-full pill py-2 border border-dashed border-gs-300 text-gs-500 text-sm font-medium hover:border-gs-400 hover:text-gs-700 transition-colors
+                            ${showCreate ? 'bg-gs-900 !text-white !border-gs-900' : ''}"
+                    >+ New Theme</button>
+                </div>
+            </aside>
+
+            <!-- Main content -->
+            <main class="flex-1 overflow-y-auto p-6 scrollbar-thin">
+                ${showCreate ? h`
+                    <!-- Create New Theme form -->
+                    <div class="max-w-xl mx-auto space-y-6 fade-in">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gs-900">Create New Theme</h2>
+                            <p class="text-sm text-gs-500 mt-1">Scaffolds all required source files for a new theme.</p>
+                        </div>
+
+                        <div class="bg-white rounded-2xl border border-gs-200 p-5 space-y-4">
+                            <h3 class="text-sm font-semibold text-gs-700 uppercase tracking-wider">Basic Info</h3>
+
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gs-700 mb-1.5 block">Theme ID</label>
+                                    <input
+                                        type="text"
+                                        value=${newId}
+                                        onChange=${(e) => setNewId(e.target.value)}
+                                        placeholder="e.g. vetpass, midnight, ocean"
+                                        class="w-full py-2.5 px-3 border border-gs-200 rounded-xl text-sm text-gs-900 bg-white placeholder:text-gs-400"
+                                    />
+                                    <div class="text-[10px] text-gs-400 mt-1">Lowercase, no spaces. Used as enum value and file names.</div>
+                                </div>
+
+                                <div>
+                                    <label class="text-xs font-medium text-gs-700 mb-1.5 block">Display Name</label>
+                                    <input
+                                        type="text"
+                                        value=${newDisplayName}
+                                        onChange=${(e) => setNewDisplayName(e.target.value)}
+                                        placeholder="e.g. VetPass, Midnight, Ocean Blue"
+                                        class="w-full py-2.5 px-3 border border-gs-200 rounded-xl text-sm text-gs-900 bg-white placeholder:text-gs-400"
+                                    />
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-xs font-medium text-gs-700 mb-1.5 block">Base Theme</label>
+                                        <select
+                                            value=${newBaseTheme}
+                                            onChange=${(e) => {
+                                                setNewBaseTheme(e.target.value);
+                                                if (e.target.value === 'formal') setNewColors({ ...FORMAL_BASE_COLORS });
+                                            }}
+                                            class="w-full py-2.5 px-3 border border-gs-200 rounded-xl text-sm text-gs-900 bg-white"
+                                        >
+                                            ${themes.map(t => h`<option key=${t.id} value=${t.id}>${t.displayName}</option>`)}
+                                        </select>
+                                        <div class="text-[10px] text-gs-400 mt-1">Icons, styles, and non-category colors will be cloned from this theme.</div>
+                                    </div>
+
+                                    <div>
+                                        <label class="text-xs font-medium text-gs-700 mb-1.5 block">Default View</label>
+                                        <select
+                                            value=${newViewMode}
+                                            onChange=${(e) => setNewViewMode(e.target.value)}
+                                            class="w-full py-2.5 px-3 border border-gs-200 rounded-xl text-sm text-gs-900 bg-white"
+                                        >
+                                            <option value="list">List</option>
+                                            <option value="grid">Grid</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl border border-gs-200 p-5 space-y-4">
+                            <h3 class="text-sm font-semibold text-gs-700 uppercase tracking-wider">Category Base Colors</h3>
+                            <p class="text-xs text-gs-500">These Tailwind class names / color tokens will be applied uniformly across all credential categories. You can customize per-category overrides later in the source.</p>
+
+                            <div class="space-y-2.5">
+                                ${Object.entries(COLOR_FIELD_LABELS).map(([key, label]) => h`
+                                    <${ThemeColorField}
+                                        key=${key}
+                                        label=${label}
+                                        value=${newColors[key] || ''}
+                                        onChange=${(v) => updateColor(key, v)}
+                                    />
+                                `)}
+                            </div>
+                        </div>
+
+                        ${scaffoldResult ? h`
+                            <div class="rounded-2xl border p-4 fade-in ${scaffoldResult.success
+                                ? 'bg-emerald-50 border-emerald-200'
+                                : 'bg-red-50 border-red-200'}">
+                                ${scaffoldResult.success ? h`
+                                    <div class="flex items-start gap-2.5">
+                                        <svg class="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <div>
+                                            <div class="text-sm font-medium text-emerald-800">Theme scaffolded successfully</div>
+                                            <div class="text-xs text-emerald-600 mt-1.5 space-y-0.5">
+                                                ${(scaffoldResult.files || []).map((f, i) => h`
+                                                    <div key=${i} class="font-mono truncate">${f.split('src/theme/').pop() || f.split('apps/learn-card-app/').pop() || f}</div>
+                                                `)}
+                                            </div>
+                                            <div class="text-xs text-emerald-700 mt-2 font-medium">Run a build to verify: pnpm exec nx build learn-card-app</div>
+                                        </div>
+                                    </div>
+                                ` : h`
+                                    <div class="flex items-start gap-2.5">
+                                        <svg class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        <div>
+                                            <div class="text-sm font-medium text-red-800">Scaffold failed</div>
+                                            <div class="text-xs text-red-600 mt-1 font-mono">${scaffoldResult.error}</div>
+                                        </div>
+                                    </div>
+                                `}
+                            </div>
+                        ` : null}
+
+                        <div class="flex gap-3">
+                            <button
+                                onClick=${handleScaffold}
+                                disabled=${scaffolding || !newId.trim() || !newDisplayName.trim()}
+                                class="pill px-6 py-3 bg-gs-900 text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                ${scaffolding ? h`<span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />` : h`
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                `}
+                                ${scaffolding ? 'Scaffolding...' : 'Create Theme'}
+                            </button>
+                            <button
+                                onClick=${() => { setShowCreate(false); setScaffoldResult(null); }}
+                                class="pill px-6 py-3 border border-gs-300 text-gs-700 text-sm font-medium hover:bg-gs-10 transition-colors"
+                            >Cancel</button>
+                        </div>
+                    </div>
+                ` : activeTheme && themeSource ? h`
+                    <!-- Theme detail view -->
+                    <div class="max-w-3xl mx-auto space-y-4 fade-in">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-lg font-semibold text-gs-900">${themes.find(t => t.id === activeTheme)?.displayName || activeTheme}</h2>
+                                <div class="text-sm text-gs-500 mt-0.5 font-mono">${activeTheme}</div>
+                            </div>
+                        </div>
+
+                        ${themeSource.sources?.schema ? h`
+                            <div class="bg-white rounded-2xl border border-gs-200 overflow-hidden">
+                                <div class="px-4 py-3 bg-gs-50 border-b border-gs-200 flex items-center justify-between">
+                                    <span class="text-xs font-semibold text-gs-600 uppercase tracking-wider">Schema</span>
+                                    <span class="text-[10px] text-gs-400 font-mono">schemas/${activeTheme}.ts</span>
+                                </div>
+                                <pre class="p-4 text-xs font-mono leading-relaxed overflow-auto max-h-64 scrollbar-thin text-gs-800">${themeSource.sources.schema}</pre>
+                            </div>
+                        ` : null}
+
+                        <div class="bg-white rounded-2xl border border-gs-200 overflow-hidden">
+                            <div class="px-4 py-3 bg-gs-50 border-b border-gs-200 flex items-center justify-between">
+                                <span class="text-xs font-semibold text-gs-600 uppercase tracking-wider">Styles</span>
+                                <span class="text-[10px] text-gs-400 font-mono">styles/index.ts</span>
+                            </div>
+                            <pre class="p-4 text-xs font-mono leading-relaxed overflow-auto max-h-64 scrollbar-thin text-gs-800">${themeSource.sources?.styles || ''}</pre>
+                        </div>
+
+                        <div class="bg-white rounded-2xl border border-gs-200 overflow-hidden">
+                            <div class="px-4 py-3 bg-gs-50 border-b border-gs-200 flex items-center justify-between">
+                                <span class="text-xs font-semibold text-gs-600 uppercase tracking-wider">Theme Enum</span>
+                                <span class="text-[10px] text-gs-400 font-mono">helpers/theme-helpers.ts</span>
+                            </div>
+                            <pre class="p-4 text-xs font-mono leading-relaxed overflow-auto max-h-32 scrollbar-thin text-gs-800">${themeSource.sources?.themeEnum || ''}</pre>
+                        </div>
+
+                        <div class="bg-white rounded-2xl border border-gs-200 overflow-hidden">
+                            <div class="px-4 py-3 bg-gs-50 border-b border-gs-200 flex items-center justify-between">
+                                <span class="text-xs font-semibold text-gs-600 uppercase tracking-wider">Registry</span>
+                                <span class="text-[10px] text-gs-400 font-mono">helpers/loadTheme.ts</span>
+                            </div>
+                            <pre class="p-4 text-xs font-mono leading-relaxed overflow-auto max-h-48 scrollbar-thin text-gs-800">${themeSource.sources?.loadTheme || ''}</pre>
+                        </div>
+                    </div>
+                ` : h`
+                    <!-- Empty state -->
+                    <div class="h-full flex items-center justify-center">
+                        <div class="text-center space-y-3">
+                            <div class="w-16 h-16 mx-auto bg-gs-100 rounded-2xl flex items-center justify-center">
+                                <svg class="w-8 h-8 text-gs-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-semibold text-gs-900">Theme Editor</h2>
+                                <p class="text-sm text-gs-500 mt-1">Select a theme to view its source files, or create a new one.</p>
+                            </div>
+                        </div>
+                    </div>
+                `}
+            </main>
+        </div>
+    `;
+}
+
 // ─── Main App ────────────────────────────────────────────────────────────────
 
 function App() {
+    const [mode, setMode] = useState('config'); // 'config' | 'themes'
+
     const [tenants, setTenants] = useState([]);
     const [activeTenant, setActiveTenant] = useState(null);
     const [defaults, setDefaults] = useState({});
@@ -1542,8 +1883,22 @@ function App() {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                     </div>
-                    <h1 class="font-bold text-gs-900">Tenant Config Editor</h1>
-                    ${activeTenant ? h`
+
+                    <!-- Mode tabs -->
+                    <div class="flex items-center bg-gs-100 rounded-full p-0.5">
+                        <button
+                            onClick=${() => setMode('config')}
+                            class="px-3 py-1 rounded-full text-xs font-medium transition-colors
+                                ${mode === 'config' ? 'bg-white text-gs-900 shadow-sm' : 'text-gs-500 hover:text-gs-700'}"
+                        >Config</button>
+                        <button
+                            onClick=${() => setMode('themes')}
+                            class="px-3 py-1 rounded-full text-xs font-medium transition-colors
+                                ${mode === 'themes' ? 'bg-white text-gs-900 shadow-sm' : 'text-gs-500 hover:text-gs-700'}"
+                        >Themes</button>
+                    </div>
+
+                    ${mode === 'config' && activeTenant ? h`
                         <span class="text-gs-400 mx-1">/</span>
                         <span class="font-medium text-gs-700">${activeTenant}</span>
                         ${overrideCount > 0 ? h`
@@ -1554,7 +1909,7 @@ function App() {
                     ` : null}
                 </div>
                 <div class="flex items-center gap-3">
-                    ${validationErrors.length === 0 && activeTenant ? h`
+                    ${mode === 'config' && validationErrors.length === 0 && activeTenant ? h`
                         <div class="flex items-center gap-1.5 text-emerald-600">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -1562,7 +1917,7 @@ function App() {
                             <span class="text-xs font-medium">Valid</span>
                         </div>
                     ` : null}
-                    ${validationErrors.length > 0 ? h`
+                    ${mode === 'config' && validationErrors.length > 0 ? h`
                         <div class="flex items-center gap-1.5 text-red-500">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -1570,7 +1925,7 @@ function App() {
                             <span class="text-xs font-medium">${validationErrors.length} error${validationErrors.length > 1 ? 's' : ''}</span>
                         </div>
                     ` : null}
-                    ${activeTenant ? h`
+                    ${mode === 'config' && activeTenant ? h`
                         <button
                             onClick=${handleSave}
                             disabled=${saving || validationErrors.length > 0}
@@ -1583,6 +1938,11 @@ function App() {
                 </div>
             </header>
 
+            ${mode === 'themes' ? h`
+                <div class="flex-1 overflow-hidden">
+                    <${ThemeEditor} />
+                </div>
+            ` : h`
             <div class="flex flex-1 overflow-hidden">
                 <!-- Sidebar: tenant list -->
                 <aside class="w-56 bg-white border-r border-gs-200 flex flex-col flex-shrink-0">
@@ -1710,6 +2070,7 @@ function App() {
                     </main>
                 `}
             </div>
+            `}
         </div>
     `;
 }

@@ -6,7 +6,7 @@ import passportPageStore, { PassportPageViewMode } from '../../stores/passportPa
 
 import { useTheme } from '../hooks/useTheme';
 import { ThemeEnum } from '../helpers/theme-helpers';
-import { loadThemeSchema } from '../helpers/loadTheme';
+import { loadThemeSchema, getRegisteredThemeIds } from '../helpers/loadTheme';
 import { ThemeButton } from '../validators/theme.validators';
 import { ViewMode } from '../types/theme.types';
 import {
@@ -14,8 +14,6 @@ import {
     useGetPreferencesForDid,
     useUpdatePreferences,
 } from 'learn-card-base';
-
-const THEMES: ThemeEnum[] = [ThemeEnum.Colorful, ThemeEnum.Formal];
 
 export enum themeSelectorViewMode {
     Mini = 'mini',
@@ -29,7 +27,7 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     const { theme, syncThemeDefaults } = useTheme();
     const setTheme = themeStore.set.theme;
 
-    const schemas = useMemo(() => THEMES.map(loadThemeSchema), []);
+    const schemas = useMemo(() => getRegisteredThemeIds().map(loadThemeSchema), []);
 
     const { mutateAsync: createPreferences, isPending: isCreatingPreferences } =
         useCreatePreferences();

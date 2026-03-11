@@ -258,6 +258,328 @@ const json = (res: ServerResponse, status: number, data: unknown): void => {
 };
 
 // ---------------------------------------------------------------------------
+// Theme editor helpers
+// ---------------------------------------------------------------------------
+
+const THEME_DIR = resolve(APP_ROOT, 'src/theme');
+const THEME_HELPERS_PATH = resolve(THEME_DIR, 'helpers/theme-helpers.ts');
+const THEME_COLORS_PATH = resolve(THEME_DIR, 'colors/index.ts');
+const THEME_ICONS_PATH = resolve(THEME_DIR, 'icons/index.tsx');
+const THEME_STYLES_PATH = resolve(THEME_DIR, 'styles/index.ts');
+const THEME_SCHEMAS_DIR = resolve(THEME_DIR, 'schemas');
+const THEME_IMAGES_DIR = resolve(THEME_DIR, 'images');
+const THEME_LOAD_PATH = resolve(THEME_DIR, 'helpers/loadTheme.ts');
+
+interface ThemeInfo {
+    id: string;
+    enumKey: string;
+    displayName: string;
+    schemaFile: string;
+}
+
+const parseThemeEnum = (): { id: string; enumKey: string }[] => {
+    const src = readFileSync(THEME_HELPERS_PATH, 'utf-8');
+    const entries: { id: string; enumKey: string }[] = [];
+    const re = /(\w+)\s*=\s*'([^']+)'/g;
+    let m: RegExpExecArray | null;
+
+    while ((m = re.exec(src)) !== null) {
+        entries.push({ enumKey: m[1]!, id: m[2]! });
+    }
+
+    return entries;
+};
+
+const listThemes = (): ThemeInfo[] => {
+    const enumEntries = parseThemeEnum();
+
+    return enumEntries.map(({ id, enumKey }) => {
+        const schemaFile = join(THEME_SCHEMAS_DIR, `${id}.ts`);
+        let displayName = enumKey;
+
+        if (existsSync(schemaFile)) {
+            const src = readFileSync(schemaFile, 'utf-8');
+            const match = src.match(/displayName:\s*'([^']+)'/);
+
+            if (match) displayName = match[1]!;
+        }
+
+        return { id, enumKey, displayName, schemaFile };
+    });
+};
+
+const toPascalCase = (s: string): string =>
+    s.replace(/(^|[-_])(\w)/g, (_, __, c: string) => c.toUpperCase());
+
+const toCamelCase = (s: string): string => {
+    const p = toPascalCase(s);
+
+    return p.charAt(0).toLowerCase() + p.slice(1);
+};
+
+interface ScaffoldOptions {
+    id: string;
+    displayName: string;
+    baseTheme: string; // 'colorful' or 'formal'
+    baseCategoryColor: {
+        primaryColor: string;
+        secondaryColor: string;
+        indicatorColor: string;
+        borderColor: string;
+        statusBarColor: string;
+        headerBrandingTextColor: string;
+        headerTextColor: string;
+        backgroundPrimaryColor: string;
+        backgroundSecondaryColor: string;
+        tabActiveColor: string;
+    };
+    viewMode: 'grid' | 'list';
+}
+
+const scaffoldTheme = (opts: ScaffoldOptions): { success: boolean; files: string[]; error?: string } => {
+    const { id, displayName, baseTheme, baseCategoryColor, viewMode } = opts;
+    const enumKey = toPascalCase(id);
+    const varName = toCamelCase(id) + 'Theme'; // e.g. 'formalTheme', 'vetpassTheme'
+    const files: string[] = [];
+
+    try {
+        // 1. Add to ThemeEnum
+        const helpersPath = THEME_HELPERS_PATH;
+        let helpersSrc = readFileSync(helpersPath, 'utf-8');
+
+        if (helpersSrc.includes(`'${id}'`)) {
+            return { success: false, files: [], error: `Theme '${id}' already exists in ThemeEnum` };
+        }
+
+        helpersSrc = helpersSrc.replace(
+            /^(\s*\w+\s*=\s*'[^']+',?\s*)\n(}\s*)$/m,
+            `$1\n    ${enumKey} = '${id}',\n$2`,
+        );
+        writeFileSync(helpersPath, helpersSrc, 'utf-8');
+        files.push(helpersPath);
+
+        // 2. Create schema file
+        const schemaPath = join(THEME_SCHEMAS_DIR, `${id}.ts`);
+        const vmEnum = viewMode === 'grid' ? 'ViewMode.Grid' : 'ViewMode.List';
+        const schemaCode = `import { ViewMode } from '../types/theme.types';
+import { ThemeEnum } from '../helpers/theme-helpers';
+import type { Theme } from '../validators/theme.validators';
+
+import { createTheme } from '../shared';
+
+import SwitcherIcon from '../../theme/images/${id}-switcher-icon.png';
+import BlocksIcon from '../../theme/images/${id}-blocks-icon.png';
+
+import { colors } from '../colors';
+import { icons } from '../icons';
+import { styles } from '../styles';
+
+export const ${varName}: Theme = createTheme({
+    id: ThemeEnum.${enumKey},
+    name: '${id}',
+    displayName: '${displayName}',
+    colors: colors[ThemeEnum.${enumKey}],
+    icons: icons[ThemeEnum.${enumKey}],
+    styles: styles[ThemeEnum.${enumKey}],
+    defaults: {
+        viewMode: ${vmEnum},
+        switcherIcon: SwitcherIcon,
+        buildMyLCIcon: BlocksIcon,
+    },
+});
+`;
+        writeFileSync(schemaPath, schemaCode, 'utf-8');
+        files.push(schemaPath);
+
+        // 3. Add color entry to colors/index.ts
+        let colorsSrc = readFileSync(THEME_COLORS_PATH, 'utf-8');
+
+        // Read the base theme's non-category colors (launchPad, sideMenu, navbar, etc.)
+        // by finding the base theme block and extracting from launchPad onwards
+        const baseThemeKey = baseTheme === 'colorful' ? 'ThemeEnum.Colorful' : 'ThemeEnum.Formal';
+        const baseBlockRegex = new RegExp(
+            `\\[${baseThemeKey.replace('.', '\\.')}\\]:\\s*\\{([\\s\\S]*?)^    \\}`,
+            'm',
+        );
+        const baseMatch = colorsSrc.match(baseBlockRegex);
+        let nonCategoryBlock = '';
+
+        if (baseMatch) {
+            const inner = baseMatch[1]!;
+            // Extract from launchPad: onwards
+            const lpIdx = inner.indexOf('launchPad:');
+
+            if (lpIdx !== -1) {
+                nonCategoryBlock = inner.substring(lpIdx).trimEnd();
+                // Remove trailing comma if present
+                if (nonCategoryBlock.endsWith(',')) {
+                    nonCategoryBlock = nonCategoryBlock.slice(0, -1);
+                }
+            }
+        }
+
+        const bc = baseCategoryColor;
+        const colorsEntry = `
+    [ThemeEnum.${enumKey}]: {
+        ...createUniformCategoryColors(
+            {
+                primaryColor: '${bc.primaryColor}',
+                secondaryColor: '${bc.secondaryColor}',
+                indicatorColor: '${bc.indicatorColor}',
+                borderColor: '${bc.borderColor}',
+                statusBarColor: '${bc.statusBarColor}',
+                headerBrandingTextColor: '${bc.headerBrandingTextColor}',
+                headerTextColor: '${bc.headerTextColor}',
+                backgroundPrimaryColor: '${bc.backgroundPrimaryColor}',
+                backgroundSecondaryColor: '${bc.backgroundSecondaryColor}',
+                tabActiveColor: '${bc.tabActiveColor}',
+            },
+        ),
+
+        ${nonCategoryBlock}
+    },`;
+
+        // Insert before the closing `};` of the colors object
+        // Find the last `};` which closes the colors export
+        const lastClose = colorsSrc.lastIndexOf('};');
+
+        if (lastClose === -1) {
+            return { success: false, files, error: 'Could not find closing }; in colors/index.ts' };
+        }
+
+        colorsSrc = colorsSrc.slice(0, lastClose) + colorsEntry + '\n' + colorsSrc.slice(lastClose);
+        writeFileSync(THEME_COLORS_PATH, colorsSrc, 'utf-8');
+        files.push(THEME_COLORS_PATH);
+
+        // 4. Add icon entry to icons/index.tsx
+        let iconsSrc = readFileSync(THEME_ICONS_PATH, 'utf-8');
+        // Find the base theme's icon block and clone it for the new theme
+        const baseIconKey = baseTheme === 'colorful' ? 'ThemeEnum.Colorful' : 'ThemeEnum.Formal';
+
+        // Find the full block: [ThemeEnum.Base]: { ... },
+        // Use bracket counting to find the matching closing brace
+        const iconBlockStart = iconsSrc.indexOf(`[${baseIconKey}]: {`);
+
+        if (iconBlockStart === -1) {
+            return { success: false, files, error: `Could not find ${baseIconKey} block in icons/index.tsx` };
+        }
+
+        let braceDepth = 0;
+        let iconBlockEnd = iconBlockStart;
+        let foundOpen = false;
+
+        for (let i = iconBlockStart; i < iconsSrc.length; i++) {
+            if (iconsSrc[i] === '{') {
+                braceDepth++;
+                foundOpen = true;
+            } else if (iconsSrc[i] === '}') {
+                braceDepth--;
+
+                if (foundOpen && braceDepth === 0) {
+                    iconBlockEnd = i + 1;
+                    break;
+                }
+            }
+        }
+
+        const baseIconBlock = iconsSrc.substring(iconBlockStart, iconBlockEnd);
+        const newIconBlock = baseIconBlock.replace(`[${baseIconKey}]`, `[ThemeEnum.${enumKey}]`);
+
+        // Insert before `} as const satisfies`
+        const satisfiesIdx = iconsSrc.indexOf('} as const satisfies ThemeIcons');
+
+        if (satisfiesIdx === -1) {
+            return { success: false, files, error: 'Could not find closing marker in icons/index.tsx' };
+        }
+
+        iconsSrc = iconsSrc.slice(0, satisfiesIdx) + `    ${newIconBlock},\n` + iconsSrc.slice(satisfiesIdx);
+        writeFileSync(THEME_ICONS_PATH, iconsSrc, 'utf-8');
+        files.push(THEME_ICONS_PATH);
+
+        // 5. Add style entry to styles/index.ts
+        let stylesSrc = readFileSync(THEME_STYLES_PATH, 'utf-8');
+        const baseStyleKey = baseTheme === 'colorful' ? 'ThemeEnum.Colorful' : 'ThemeEnum.Formal';
+
+        const styleBlockStart = stylesSrc.indexOf(`[${baseStyleKey}]: {`);
+
+        if (styleBlockStart === -1) {
+            return { success: false, files, error: `Could not find ${baseStyleKey} block in styles/index.ts` };
+        }
+
+        let sBraceDepth = 0;
+        let styleBlockEnd = styleBlockStart;
+        let sFoundOpen = false;
+
+        for (let i = styleBlockStart; i < stylesSrc.length; i++) {
+            if (stylesSrc[i] === '{') {
+                sBraceDepth++;
+                sFoundOpen = true;
+            } else if (stylesSrc[i] === '}') {
+                sBraceDepth--;
+
+                if (sFoundOpen && sBraceDepth === 0) {
+                    styleBlockEnd = i + 1;
+                    break;
+                }
+            }
+        }
+
+        const baseStyleBlock = stylesSrc.substring(styleBlockStart, styleBlockEnd);
+        const newStyleBlock = baseStyleBlock.replace(`[${baseStyleKey}]`, `[ThemeEnum.${enumKey}]`);
+
+        const styleSatisfiesIdx = stylesSrc.indexOf('} as const satisfies');
+
+        if (styleSatisfiesIdx === -1) {
+            return { success: false, files, error: 'Could not find closing marker in styles/index.ts' };
+        }
+
+        stylesSrc = stylesSrc.slice(0, styleSatisfiesIdx) + `    ${newStyleBlock},\n` + stylesSrc.slice(styleSatisfiesIdx);
+        writeFileSync(THEME_STYLES_PATH, stylesSrc, 'utf-8');
+        files.push(THEME_STYLES_PATH);
+
+        // 6. Register in loadTheme.ts
+        let loadSrc = readFileSync(THEME_LOAD_PATH, 'utf-8');
+        const importLine = `import { ${varName} } from '../schemas/${id}';\n`;
+        const registerLine = `registerTheme(${varName});\n`;
+
+        // Add import after last existing theme import
+        const lastImportIdx = loadSrc.lastIndexOf("from '../schemas/");
+        const lastImportEnd = loadSrc.indexOf('\n', lastImportIdx);
+
+        loadSrc = loadSrc.slice(0, lastImportEnd + 1) + importLine + loadSrc.slice(lastImportEnd + 1);
+
+        // Add registerTheme after last existing registerTheme call
+        const lastRegisterIdx = loadSrc.lastIndexOf('registerTheme(');
+        const lastRegisterEnd = loadSrc.indexOf('\n', lastRegisterIdx);
+
+        loadSrc = loadSrc.slice(0, lastRegisterEnd + 1) + registerLine + loadSrc.slice(lastRegisterEnd + 1);
+
+        writeFileSync(THEME_LOAD_PATH, loadSrc, 'utf-8');
+        files.push(THEME_LOAD_PATH);
+
+        // 7. Copy placeholder images from base theme
+        const baseImages = [
+            { src: `${baseTheme}-switcher-icon.png`, dest: `${id}-switcher-icon.png` },
+            { src: `${baseTheme}-blocks-icon.png`, dest: `${id}-blocks-icon.png` },
+        ];
+
+        for (const img of baseImages) {
+            const srcPath = join(THEME_IMAGES_DIR, img.src);
+            const destPath = join(THEME_IMAGES_DIR, img.dest);
+
+            if (existsSync(srcPath)) {
+                writeFileSync(destPath, readFileSync(srcPath));
+                files.push(destPath);
+            }
+        }
+
+        return { success: true, files };
+    } catch (err) {
+        return { success: false, files, error: String(err) };
+    }
+};
+
+// ---------------------------------------------------------------------------
 // Managed dev server process
 // ---------------------------------------------------------------------------
 
@@ -433,7 +755,56 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
     }
 
     try {
-        // --- API routes ---
+        // --- Theme API routes ---
+
+        if (path === '/api/themes' && req.method === 'GET') {
+            json(res, 200, listThemes());
+            return;
+        }
+
+        if (path === '/api/themes/scaffold' && req.method === 'POST') {
+            const body = JSON.parse(await readBody(req)) as ScaffoldOptions;
+
+            if (!body.id || !body.displayName || !body.baseTheme) {
+                json(res, 400, { error: 'Missing required fields: id, displayName, baseTheme' });
+                return;
+            }
+
+            // Sanitize the id
+            const sanitizedId = body.id.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+
+            if (!sanitizedId) {
+                json(res, 400, { error: 'Invalid theme id' });
+                return;
+            }
+
+            const result = scaffoldTheme({ ...body, id: sanitizedId });
+
+            json(res, result.success ? 200 : 400, result);
+            return;
+        }
+
+        const themeSourceMatch = path.match(/^\/api\/themes\/([a-zA-Z0-9_-]+)\/source$/);
+
+        if (themeSourceMatch && req.method === 'GET') {
+            const themeId = themeSourceMatch[1]!;
+            const sources: Record<string, string> = {};
+
+            const schemaPath = join(THEME_SCHEMAS_DIR, `${themeId}.ts`);
+
+            if (existsSync(schemaPath)) sources.schema = readFileSync(schemaPath, 'utf-8');
+
+            sources.colors = readFileSync(THEME_COLORS_PATH, 'utf-8');
+            sources.icons = readFileSync(THEME_ICONS_PATH, 'utf-8');
+            sources.styles = readFileSync(THEME_STYLES_PATH, 'utf-8');
+            sources.themeEnum = readFileSync(THEME_HELPERS_PATH, 'utf-8');
+            sources.loadTheme = readFileSync(THEME_LOAD_PATH, 'utf-8');
+
+            json(res, 200, { themeId, sources });
+            return;
+        }
+
+        // --- Tenant API routes ---
 
         if (path === '/api/defaults') {
             json(res, 200, DEFAULT_LEARNCARD_TENANT_CONFIG);
