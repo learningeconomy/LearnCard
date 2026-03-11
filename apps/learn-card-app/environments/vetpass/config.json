@@ -2,7 +2,6 @@
     "tenantId": "vetpass",
     "domain": "vetpass.app",
     "devDomain": "localhost:3000",
-
     "apis": {
         "brainService": "http://localhost:4000/trpc",
         "brainServiceApi": "http://localhost:4000/api",
@@ -10,14 +9,12 @@
         "lcaApi": "http://localhost:5100/trpc",
         "xapi": "http://localhost:4100/xapi"
     },
-
     "auth": {
         "provider": "firebase",
         "keyDerivation": "sss",
         "sssServerUrl": "http://localhost:5100/api",
         "enableEmailBackupShare": true,
         "requireEmailForPhoneUsers": true,
-
         "firebase": {
             "apiKey": "TODO_FIREBASE_API_KEY",
             "authDomain": "vetpass.firebaseapp.com",
@@ -27,15 +24,13 @@
             "appId": "TODO_APP_ID",
             "measurementId": "TODO_MEASUREMENT_ID"
         },
-
         "firebaseRedirectDomain": "vetpass.app",
         "firebaseDynamicLinkDomain": "vetpass.app"
     },
-
     "branding": {
         "name": "VetPass",
         "shortName": "VP",
-        "defaultTheme": "colorful",
+        "defaultTheme": "Formal",
         "loginRedirectPath": "/waitingsofa?loginCompleted=true",
         "brandingKey": "vetpass",
         "headerText": "VETPASS",
@@ -52,7 +47,6 @@
             "statusBarColor": "light"
         }
     },
-
     "features": {
         "aiFeatures": true,
         "appStore": true,
@@ -60,7 +54,6 @@
         "themeSwitching": false,
         "introSlides": true
     },
-
     "observability": {
         "sentryDsn": "TODO_SENTRY_DSN",
         "sentryEnv": "production",
@@ -72,19 +65,19 @@
         "launchDarklyClientId": "TODO_LD_CLIENT_ID",
         "userflowToken": "TODO_USERFLOW_TOKEN"
     },
-
     "links": {
         "appStoreUrl": "TODO_APP_STORE_URL",
         "playStoreUrl": "TODO_PLAY_STORE_URL"
     },
-
     "native": {
         "bundleId": "com.vetpass.app",
         "displayName": "VetPass",
         "deepLinkDomains": [
             "vetpass.app"
         ],
-        "customSchemes": ["dccrequest"],
+        "customSchemes": [
+            "dccrequest"
+        ],
         "capgoChannel": "1.0.0"
     }
 }

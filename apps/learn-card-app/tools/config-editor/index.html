@@ -402,13 +402,189 @@ function SectionCard({ section, merged, defaults, overrides, onChange, isExpande
     `;
 }
 
-function BrandingPreview({ merged }) {
+function AssetThumb({ src, label, large }) {
+    const [errored, setErrored] = useState(false);
+    const isSvg = src && src.endsWith('.svg');
+
+    if (!src) {
+        return h`
+            <div class="flex flex-col items-center gap-1.5">
+                <div class="flex items-center justify-center rounded-xl border-2 border-dashed border-gs-200 bg-gs-50 text-gs-300 ${large ? 'w-full h-28' : 'w-16 h-16'}">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <span class="text-[10px] text-gs-400 text-center leading-tight">${label}</span>
+            </div>
+        `;
+    }
+
+    if (errored) {
+        return h`
+            <div class="flex flex-col items-center gap-1.5">
+                <div class="flex items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-300 ${large ? 'w-full h-28' : 'w-16 h-16'}">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <span class="text-[10px] text-red-400 text-center leading-tight">${label}</span>
+            </div>
+        `;
+    }
+
+    return h`
+        <div class="flex flex-col items-center gap-1.5">
+            <div class="flex items-center justify-center rounded-xl border border-gs-200 bg-white overflow-hidden ${large ? 'w-full h-28' : 'w-16 h-16'} p-1.5">
+                <img
+                    src=${src}
+                    alt=${label}
+                    onError=${() => setErrored(true)}
+                    class="max-w-full max-h-full object-contain ${isSvg ? '' : 'rounded'}"
+                />
+            </div>
+            <span class="text-[10px] text-gs-500 text-center leading-tight max-w-[80px] truncate" title=${label}>${label}</span>
+        </div>
+    `;
+}
+
+function BrandingPreview({ merged, activeTenant }) {
     const b = merged?.branding || {};
     const cats = b.categoryLabels || {};
+    const [diskAssets, setDiskAssets] = useState([]);
+    const [showAllDisk, setShowAllDisk] = useState(false);
+
+    useEffect(() => {
+        if (!activeTenant) { setDiskAssets([]); return; }
+
+        api.get('/api/tenant/' + activeTenant + '/assets').then(setDiskAssets);
+    }, [activeTenant]);
+
+    // Resolve asset URLs: absolute URLs used as-is, relative paths proxied through server
+    const resolveUrl = (url) => {
+        if (!url) return null;
+        if (url.startsWith('http://') || url.startsWith('https://')) return url;
+        if (url.startsWith('/') && activeTenant) return '/assets/' + activeTenant + url.replace(/^\/branding\//, 'branding/');
+
+        return activeTenant ? '/assets/' + activeTenant + '/branding/' + url : null;
+    };
+
+    // Configured branding asset URLs from the config
+    const configuredAssets = [
+        { key: 'textLogoUrl', label: 'Text Logo', url: b.textLogoUrl, large: true },
+        { key: 'brandMarkUrl', label: 'Brand Mark', url: b.brandMarkUrl },
+        { key: 'appIconUrl', label: 'App Icon', url: b.appIconUrl },
+        { key: 'logoUrl', label: 'Logo', url: b.logoUrl },
+        { key: 'faviconUrl', label: 'Favicon', url: b.faviconUrl },
+        { key: 'desktopLoginBgUrl', label: 'Desktop BG', url: b.desktopLoginBgUrl, large: true },
+        { key: 'desktopLoginBgAltUrl', label: 'Desktop BG Alt', url: b.desktopLoginBgAltUrl, large: true },
+    ];
+
+    const hasAnyConfigured = configuredAssets.some(a => a.url);
+
+    // Group disk assets by top-level directory
+    const diskGroups = useMemo(() => {
+        const groups = {};
+
+        for (const asset of diskAssets) {
+            const parts = asset.path.split('/');
+            const group = parts.length > 1 ? parts[0] : 'root';
+
+            if (!groups[group]) groups[group] = [];
+
+            groups[group].push(asset);
+        }
+
+        return groups;
+    }, [diskAssets]);
+
+    const diskGroupKeys = Object.keys(diskGroups).sort();
 
     return h`
         <div class="space-y-4">
             <h3 class="text-sm font-semibold text-gs-700 uppercase tracking-wider">Live Preview</h3>
+
+            <!-- Branding Assets Preview -->
+            <div class="preview-card rounded-2xl p-4 border border-gs-200">
+                <div class="text-xs text-gs-500 mb-3 font-medium flex items-center justify-between">
+                    <span>Branding Assets</span>
+                    ${hasAnyConfigured ? h`
+                        <span class="px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[10px] font-medium">
+                            ${configuredAssets.filter(a => a.url).length} configured
+                        </span>
+                    ` : null}
+                </div>
+
+                ${hasAnyConfigured ? h`
+                    <div class="space-y-3">
+                        <!-- Large assets (text logo, backgrounds) -->
+                        ${configuredAssets.filter(a => a.large && a.url).map(a => h`
+                            <${AssetThumb} key=${a.key} src=${resolveUrl(a.url)} label=${a.label} large=${true} />
+                        `)}
+
+                        <!-- Small assets grid -->
+                        <div class="flex flex-wrap gap-3">
+                            ${configuredAssets.filter(a => !a.large && a.url).map(a => h`
+                                <${AssetThumb} key=${a.key} src=${resolveUrl(a.url)} label=${a.label} />
+                            `)}
+                        </div>
+
+                        <!-- Unconfigured slots -->
+                        ${configuredAssets.filter(a => !a.url).length > 0 ? h`
+                            <div class="pt-2 border-t border-gs-100">
+                                <div class="text-[10px] text-gs-400 mb-1.5">Not configured:</div>
+                                <div class="flex flex-wrap gap-1">
+                                    ${configuredAssets.filter(a => !a.url).map(a => h`
+                                        <span key=${a.key} class="px-2 py-0.5 bg-gs-50 text-gs-400 text-[10px] rounded-full border border-gs-100">${a.label}</span>
+                                    `)}
+                                </div>
+                            </div>
+                        ` : null}
+                    </div>
+                ` : h`
+                    <div class="text-center py-4">
+                        <div class="text-gs-300 mb-1.5">
+                            <svg class="w-8 h-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div class="text-xs text-gs-400">No branding asset URLs configured.</div>
+                        <div class="text-[10px] text-gs-300 mt-0.5">Set URLs in the Branding Assets section.</div>
+                    </div>
+                `}
+            </div>
+
+            <!-- Disk Assets (on-disk files in environments/<tenant>/assets/) -->
+            ${diskAssets.length > 0 ? h`
+                <div class="preview-card rounded-2xl p-4 border border-gs-200">
+                    <div class="text-xs text-gs-500 mb-2 font-medium flex items-center justify-between">
+                        <span>On-Disk Assets</span>
+                        <span class="text-[10px] text-gs-400">${diskAssets.length} file${diskAssets.length !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="space-y-3">
+                        ${diskGroupKeys.slice(0, showAllDisk ? undefined : 3).map(group => h`
+                            <div key=${group}>
+                                <div class="text-[10px] font-medium text-gs-600 mb-1.5 uppercase tracking-wider">${group}/</div>
+                                <div class="flex flex-wrap gap-2">
+                                    ${diskGroups[group].map(asset => h`
+                                        <${AssetThumb}
+                                            key=${asset.path}
+                                            src=${'/assets/' + activeTenant + '/' + asset.path}
+                                            label=${asset.name}
+                                            large=${asset.name.includes('desktop') || asset.name.includes('splash') || asset.name.includes('bg')}
+                                        />
+                                    `)}
+                                </div>
+                            </div>
+                        `)}
+                    </div>
+                    ${diskGroupKeys.length > 3 && !showAllDisk ? h`
+                        <button
+                            onClick=${() => setShowAllDisk(true)}
+                            class="mt-2 text-xs text-gs-500 hover:text-gs-700 transition-colors"
+                        >Show ${diskGroupKeys.length - 3} more group${diskGroupKeys.length - 3 > 1 ? 's' : ''}...</button>
+                    ` : null}
+                </div>
+            ` : null}
 
             <!-- App Header Preview -->
             <div class="preview-card rounded-2xl p-4 border border-gs-200">
@@ -416,14 +592,20 @@ function BrandingPreview({ merged }) {
                 <div class="bg-white rounded-xl p-3 shadow-sm border border-gs-100">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            ${b.primaryColor ? h`
+                            ${b.appIconUrl ? h`
+                                <img src=${resolveUrl(b.appIconUrl)} class="w-8 h-8 rounded-lg" alt="icon" />
+                            ` : b.primaryColor ? h`
                                 <div class="w-8 h-8 rounded-lg" style=${{ background: b.primaryColor }} />
                             ` : h`
                                 <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600" />
                             `}
-                            <span class="font-bold text-sm tracking-wide" style=${{ color: b.defaultHeaderTextColor || '#18224E' }}>
-                                ${b.headerText || b.name || 'LEARNCARD'}
-                            </span>
+                            ${b.textLogoUrl ? h`
+                                <img src=${resolveUrl(b.textLogoUrl)} class="h-5 max-w-[120px] object-contain" alt="logo" />
+                            ` : h`
+                                <span class="font-bold text-sm tracking-wide" style=${{ color: b.defaultHeaderTextColor || '#18224E' }}>
+                                    ${b.headerText || b.name || 'LEARNCARD'}
+                                </span>
+                            `}
                         </div>
                     </div>
                 </div>
@@ -829,7 +1011,7 @@ function App() {
                         </div>
                         <div class="flex-1 overflow-y-auto p-4 scrollbar-thin">
                             ${rightTab === 'preview'
-                                ? h`<${BrandingPreview} merged=${merged} />`
+                                ? h`<${BrandingPreview} merged=${merged} activeTenant=${activeTenant} />`
                                 : h`<${JsonPanel} overrides=${overrides} validationErrors=${validationErrors} />`
                             }
                         </div>

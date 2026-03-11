@@ -15,7 +15,7 @@
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync } from 'fs';
-import { resolve, dirname, join } from 'path';
+import { resolve, dirname, join, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
 
@@ -163,6 +163,44 @@ const saveTenantConfig = (tenant: string, overrides: Record<string, unknown>): v
     );
 };
 
+const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.svg', '.gif', '.webp', '.ico']);
+
+const MIME_TYPES: Record<string, string> = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.svg': 'image/svg+xml',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.ico': 'image/x-icon',
+};
+
+const listTenantAssets = (tenant: string): { path: string; name: string; size: number }[] => {
+    const assetsDir = join(ENVIRONMENTS_DIR, tenant, 'assets');
+
+    if (!existsSync(assetsDir)) return [];
+
+    const results: { path: string; name: string; size: number }[] = [];
+
+    const walk = (dir: string, prefix: string) => {
+        for (const entry of readdirSync(dir)) {
+            const full = join(dir, entry);
+            const rel = prefix ? `${prefix}/${entry}` : entry;
+            const stat = statSync(full);
+
+            if (stat.isDirectory()) {
+                walk(full, rel);
+            } else if (IMAGE_EXTENSIONS.has(extname(entry).toLowerCase())) {
+                results.push({ path: rel, name: entry, size: stat.size });
+            }
+        }
+    };
+
+    walk(assetsDir, '');
+
+    return results;
+};
+
 // ---------------------------------------------------------------------------
 // HTTP server
 // ---------------------------------------------------------------------------
@@ -246,6 +284,47 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
             );
 
             json(res, 200, validateConfig(merged));
+            return;
+        }
+
+        // List asset files for a tenant
+        const assetsListMatch = path.match(/^\/api\/tenant\/([a-zA-Z0-9_-]+)\/assets$/);
+
+        if (assetsListMatch && req.method === 'GET') {
+            json(res, 200, listTenantAssets(assetsListMatch[1]!));
+            return;
+        }
+
+        // Serve an asset file from a tenant's assets directory
+        const assetFileMatch = path.match(/^\/assets\/([a-zA-Z0-9_-]+)\/(.+)$/);
+
+        if (assetFileMatch && req.method === 'GET') {
+            const tenant = assetFileMatch[1]!;
+            const filePath = assetFileMatch[2]!;
+
+            // Prevent directory traversal
+            if (filePath.includes('..')) {
+                res.writeHead(400, { 'Content-Type': 'text/plain' });
+                res.end('Bad request');
+                return;
+            }
+
+            const fullPath = join(ENVIRONMENTS_DIR, tenant, 'assets', filePath);
+
+            if (!existsSync(fullPath) || !statSync(fullPath).isFile()) {
+                res.writeHead(404, { 'Content-Type': 'text/plain' });
+                res.end('Asset not found');
+                return;
+            }
+
+            const ext = extname(fullPath).toLowerCase();
+            const mime = MIME_TYPES[ext] ?? 'application/octet-stream';
+
+            res.writeHead(200, {
+                'Content-Type': mime,
+                'Cache-Control': 'no-cache',
+            });
+            res.end(readFileSync(fullPath));
             return;
         }
 
