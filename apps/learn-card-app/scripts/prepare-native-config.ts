@@ -11,7 +11,7 @@
  *
  * Arguments:
  *   tenant  - The tenant identifier (default: "learncard").
- *             Maps to an environments/<tenant>.json file if it exists,
+ *             Maps to environments/<tenant>/config.json if it exists,
  *             otherwise falls back to the baked default config.
  *   --reset - Undo all changes: restore git-tracked files and remove
  *             generated artifacts (public/branding/, tenant-config.json, etc.)
@@ -110,17 +110,17 @@ if (tenantArg === '--reset') {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Load tenant-specific overrides from environments/<tenant>.json
+// 1. Load tenant-specific overrides from environments/<tenant>/config.json
 // ---------------------------------------------------------------------------
 
-const envFilePath = resolve(APP_ROOT, 'environments', `${tenantArg}.json`);
+const envFilePath = resolve(APP_ROOT, 'environments', tenantArg, 'config.json');
 let tenantOverrides: Record<string, unknown> = {};
 
 if (existsSync(envFilePath)) {
-    console.log(`📦 Loading tenant overrides from: environments/${tenantArg}.json`);
+    console.log(`📦 Loading tenant overrides from: environments/${tenantArg}/config.json`);
     tenantOverrides = JSON.parse(readFileSync(envFilePath, 'utf-8'));
 } else {
-    console.log(`ℹ️  No override file found at environments/${tenantArg}.json — using defaults.`);
+    console.log(`ℹ️  No override file found at environments/${tenantArg}/config.json — using defaults.`);
 }
 
 // ---------------------------------------------------------------------------

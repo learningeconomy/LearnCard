@@ -11,7 +11,7 @@
  *   --splash-bg <hex>       Splash screen background color (defaults to --bg)
  *   --no-splash             Skip splash screen generation
  *   --name <text>           Tenant display name for text logo (auto-read from
- *                           environments/<tenant>.json branding.name if not set)
+ *                           environments/<tenant>/config.json branding.name if not set)
  *   --text-logo <path>      Override: use this file instead of auto-generating
  *   --desktop-bg <path>     Override: use this file instead of auto-generating
  *   --desktop-bg-alt <path> Override: use this file instead of auto-generating
@@ -677,7 +677,7 @@ Options:
   --splash-bg <hex>       Splash background color    (defaults to --bg)
   --no-splash             Skip splash screen generation
   --name <text>           Tenant display name for text logo
-                          (auto-read from environments/<tenant>.json if not set)
+                          (auto-read from environments/<tenant>/config.json if not set)
   --text-logo <path>      Override: use this file instead of auto-generating
   --desktop-bg <path>     Override: use this file instead of auto-generating
   --desktop-bg-alt <path> Override: use this file instead of auto-generating
@@ -721,7 +721,7 @@ Example:
     let tenantDisplayName = nameOverride;
 
     if (!tenantDisplayName) {
-        const tenantJsonPath = path.join(ENVIRONMENTS_DIR, `${tenant}.json`);
+        const tenantJsonPath = path.join(ENVIRONMENTS_DIR, tenant, 'config.json');
 
         if (fs.existsSync(tenantJsonPath)) {
             try {

@@ -9,6 +9,7 @@ import {
     getHeaderTextColor,
     getHomeRoute,
     getHeaderText,
+    getBrandingAssets,
 } from '../brandingHelpers';
 import { BrandingEnum } from '../../components/headerBranding/headerBrandingHelpers';
 import type { TenantBrandingConfig } from '../tenantConfig';
@@ -180,5 +181,55 @@ describe('getHeaderText', () => {
         const { headerText, ...noHeader } = baseBranding;
 
         expect(getHeaderText(noHeader as TenantBrandingConfig)).toBe('LEARNCARD');
+    });
+});
+
+describe('getBrandingAssets', () => {
+    it('returns all configured asset URLs', () => {
+        const branding: TenantBrandingConfig = {
+            ...baseBranding,
+            textLogoUrl: '/branding/text-logo.svg',
+            brandMarkUrl: '/branding/brand-mark.png',
+            appIconUrl: '/branding/app-icon.png',
+            desktopLoginBgUrl: '/branding/desktop-login-bg.png',
+            desktopLoginBgAltUrl: '/branding/desktop-login-bg-alt.png',
+            faviconUrl: '/favicon.png',
+            logoUrl: '/logo.png',
+        };
+
+        const assets = getBrandingAssets(branding);
+
+        expect(assets.textLogoUrl).toBe('/branding/text-logo.svg');
+        expect(assets.brandMarkUrl).toBe('/branding/brand-mark.png');
+        expect(assets.appIconUrl).toBe('/branding/app-icon.png');
+        expect(assets.desktopLoginBgUrl).toBe('/branding/desktop-login-bg.png');
+        expect(assets.desktopLoginBgAltUrl).toBe('/branding/desktop-login-bg-alt.png');
+        expect(assets.faviconUrl).toBe('/favicon.png');
+        expect(assets.logoUrl).toBe('/logo.png');
+    });
+
+    it('returns undefined for unconfigured asset fields', () => {
+        const assets = getBrandingAssets(baseBranding);
+
+        expect(assets.textLogoUrl).toBeUndefined();
+        expect(assets.brandMarkUrl).toBeUndefined();
+        expect(assets.appIconUrl).toBeUndefined();
+        expect(assets.desktopLoginBgUrl).toBeUndefined();
+        expect(assets.desktopLoginBgAltUrl).toBeUndefined();
+        expect(assets.faviconUrl).toBeUndefined();
+        expect(assets.logoUrl).toBeUndefined();
+    });
+
+    it('supports absolute URLs', () => {
+        const branding: TenantBrandingConfig = {
+            ...baseBranding,
+            textLogoUrl: 'https://cdn.vetpass.app/logo.svg',
+            appIconUrl: 'https://cdn.vetpass.app/icon.png',
+        };
+
+        const assets = getBrandingAssets(branding);
+
+        expect(assets.textLogoUrl).toBe('https://cdn.vetpass.app/logo.svg');
+        expect(assets.appIconUrl).toBe('https://cdn.vetpass.app/icon.png');
     });
 });
