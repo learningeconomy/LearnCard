@@ -200,6 +200,20 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     error?.shape?.code === 'CONFLICT' ||
                     error?.message?.includes('already consented');
 
+                if (
+                    error?.data?.code === 'FORBIDDEN' &&
+                    error?.message?.includes('guardian approval')
+                ) {
+                    // Not 100% sure why we're being intentionally vague about error messages,
+                    //   but we should definitely show this particular one
+                    setIsConsenting(false);
+                    presentToast(error?.message, {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
+                    return;
+                }
+
                 if (!isAlreadyConsented) {
                     setIsConsenting(false);
                     presentToast('Unable to install app, please try again.', {
