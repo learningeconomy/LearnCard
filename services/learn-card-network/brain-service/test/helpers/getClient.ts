@@ -11,12 +11,12 @@ export const getClient = (options?: {
     const { did, isChallengeValid, scope, guardianApproval } = options ?? {};
     const domain = 'localhost%3A3000';
 
-    if (!did) return appRouter.createCaller({ domain, guardianApproval });
+    if (!did) return appRouter.createCaller({ domain, _guardianApprovalToken: guardianApproval });
 
     return appRouter.createCaller({
         domain,
         user: { did, isChallengeValid: Boolean(isChallengeValid), scope },
-        guardianApproval,
+        _guardianApprovalToken: guardianApproval,
     });
 };
 

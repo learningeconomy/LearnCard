@@ -17,6 +17,7 @@ import {
 } from 'learn-card-base/constants/Networks';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { QueryClient } from '@tanstack/react-query';
+import { getGuardianApprovalVP } from 'learn-card-base/stores/guardianApprovalStore';
 
 let LEARN_CARDS: Record<string, BespokeLearnCard> = {};
 
@@ -49,6 +50,7 @@ export const getBespokeLearnCard = async (
         network: network,
         cloud: { url: cloudUrl, automaticallyAssociateDids: !Boolean(didWeb) },
         allowRemoteContexts: true,
+        guardianApprovalGetter: getGuardianApprovalVP,
         ...(didWeb && { didWeb }),
     });
 
