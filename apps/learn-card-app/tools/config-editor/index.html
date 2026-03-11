@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tenant Config Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gs: {
+                            900: '#18224E', 800: '#353E64', 700: '#52597A',
+                            600: '#6F7590', 500: '#8B91A7', 400: '#A8ACBD',
+                            300: '#C5C8D3', 200: '#E2E3E9', 100: '#EFF0F5',
+                            50: '#F7F7FA', 10: '#FBFBFC',
+                        },
+                    },
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                },
+            },
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        [x-cloak] { display: none !important; }
+        .fade-in { animation: fadeIn 0.15s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .json-key { color: #18224E; font-weight: 600; }
+        .json-str { color: #0d9488; }
+        .json-num { color: #7c3aed; }
+        .json-bool { color: #dc2626; }
+        .json-null { color: #8B91A7; }
+        .section-card { transition: all 0.15s ease; }
+        .section-card:hover { box-shadow: 0 2px 8px rgba(24,34,78,0.06); }
+        .field-row:hover { background: #F7F7FA; }
+        .preview-card { background: linear-gradient(135deg, #f0f9ff 0%, #faf5ff 100%); }
+        input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 2px rgba(16,185,129,0.3); border-color: #10b981; }
+        .pill { border-radius: 20px; }
+        .override-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block; margin-right: 6px; flex-shrink: 0; margin-top: 7px; }
+        .scrollbar-thin::-webkit-scrollbar { width: 5px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #C5C8D3; border-radius: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    </style>
+</head>
+<body class="bg-gs-50 text-gs-900 min-h-screen">
+    <div id="root"></div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.3.1",
+            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+            "htm": "https://esm.sh/htm@3.1.1"
+        }
+    }
+    </script>
+
+    <script type="module">
+import React from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { createRoot } from 'react-dom/client';
+import htm from 'htm';
+
+const h = htm.bind(React.createElement);
+
+// ─── API helpers ─────────────────────────────────────────────────────────────
+
+const api = {
+    get: (path) => fetch(path).then(r => r.json()),
+    post: (path, body) => fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
+    put: (path, body) => fetch(path, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
+};
+
+// ─── Schema metadata for form generation ─────────────────────────────────────
+
+const SECTIONS = [
+    {
+        key: 'general', label: 'General', icon: '⚙',
+        fields: [
+            { path: 'tenantId', label: 'Tenant ID', type: 'string', required: true, help: 'Unique identifier for this tenant' },
+            { path: 'domain', label: 'Domain', type: 'string', required: true, help: 'Production domain (e.g. vetpass.app)' },
+            { path: 'devDomain', label: 'Dev Domain', type: 'string', help: 'Local dev domain (e.g. localhost:3000)' },
+        ],
+    },
+    {
+        key: 'apis', label: 'API Endpoints', icon: '🔗',
+        fields: [
+            { path: 'apis.brainService', label: 'Brain Service (tRPC)', type: 'string', required: true },
+            { path: 'apis.brainServiceApi', label: 'Brain Service (REST)', type: 'string', required: true },
+            { path: 'apis.cloudService', label: 'Cloud Service', type: 'string', required: true },
+            { path: 'apis.lcaApi', label: 'LCA API', type: 'string', required: true },
+            { path: 'apis.xapi', label: 'xAPI', type: 'string' },
+            { path: 'apis.aiService', label: 'AI Service', type: 'string' },
+            { path: 'apis.corsProxyApiKey', label: 'CORS Proxy API Key', type: 'string' },
+        ],
+    },
+    {
+        key: 'auth', label: 'Authentication', icon: '🔐',
+        fields: [
+            { path: 'auth.provider', label: 'Provider', type: 'select', options: ['firebase', 'web3auth', 'custom'] },
+            { path: 'auth.keyDerivation', label: 'Key Derivation', type: 'select', options: ['sss', 'web3auth'] },
+            { path: 'auth.sssServerUrl', label: 'SSS Server URL', type: 'string' },
+            { path: 'auth.enableEmailBackupShare', label: 'Email Backup Share', type: 'boolean' },
+            { path: 'auth.requireEmailForPhoneUsers', label: 'Require Email for Phone Users', type: 'boolean' },
+            { path: 'auth.firebaseRedirectDomain', label: 'Firebase Redirect Domain', type: 'string' },
+            { path: 'auth.firebaseDynamicLinkDomain', label: 'Firebase Dynamic Link Domain', type: 'string' },
+        ],
+    },
+    {
+        key: 'firebase', label: 'Firebase', icon: '🔥', parentPath: 'auth.firebase',
+        fields: [
+            { path: 'auth.firebase.apiKey', label: 'API Key', type: 'string' },
+            { path: 'auth.firebase.authDomain', label: 'Auth Domain', type: 'string' },
+            { path: 'auth.firebase.projectId', label: 'Project ID', type: 'string' },
+            { path: 'auth.firebase.storageBucket', label: 'Storage Bucket', type: 'string' },
+            { path: 'auth.firebase.messagingSenderId', label: 'Messaging Sender ID', type: 'string' },
+            { path: 'auth.firebase.appId', label: 'App ID', type: 'string' },
+            { path: 'auth.firebase.measurementId', label: 'Measurement ID', type: 'string' },
+        ],
+    },
+    {
+        key: 'branding', label: 'Branding', icon: '🎨',
+        fields: [
+            { path: 'branding.name', label: 'App Name', type: 'string', required: true, preview: true },
+            { path: 'branding.shortName', label: 'Short Name', type: 'string', preview: true },
+            { path: 'branding.defaultTheme', label: 'Default Theme', type: 'select', options: ['colorful', 'Formal', 'midnight'], preview: true },
+            { path: 'branding.primaryColor', label: 'Primary Color', type: 'color', preview: true },
+            { path: 'branding.secondaryColor', label: 'Secondary Color', type: 'color', preview: true },
+            { path: 'branding.fontFamily', label: 'Font Family', type: 'string' },
+            { path: 'branding.loginRedirectPath', label: 'Login Redirect Path', type: 'string' },
+            { path: 'branding.brandingKey', label: 'Branding Key', type: 'string' },
+            { path: 'branding.headerText', label: 'Header Text', type: 'string', preview: true },
+            { path: 'branding.homeRoute', label: 'Home Route', type: 'string' },
+            { path: 'branding.defaultHeaderTextColor', label: 'Default Header Text Color', type: 'color' },
+        ],
+    },
+    {
+        key: 'brandingAssets', label: 'Branding Assets', icon: '🖼',
+        fields: [
+            { path: 'branding.logoUrl', label: 'Logo URL', type: 'string' },
+            { path: 'branding.faviconUrl', label: 'Favicon URL', type: 'string' },
+            { path: 'branding.textLogoUrl', label: 'Text Logo URL', type: 'string' },
+            { path: 'branding.brandMarkUrl', label: 'Brand Mark URL', type: 'string' },
+            { path: 'branding.appIconUrl', label: 'App Icon URL', type: 'string' },
+            { path: 'branding.desktopLoginBgUrl', label: 'Desktop Login BG URL', type: 'string' },
+            { path: 'branding.desktopLoginBgAltUrl', label: 'Desktop Login BG Alt URL', type: 'string' },
+        ],
+    },
+    {
+        key: 'categories', label: 'Category Labels & Colors', icon: '🏷',
+        fields: [
+            { path: 'branding.categoryLabels.learningHistory', label: 'Learning History Label', type: 'string', preview: true },
+            { path: 'branding.categoryLabels.workHistory', label: 'Work History Label', type: 'string', preview: true },
+            { path: 'branding.categoryLabels.accommodation', label: 'Accommodation Label', type: 'string', preview: true },
+            { path: 'branding.categoryLabels.accomplishment', label: 'Accomplishment Label', type: 'string', preview: true },
+            { path: 'branding.categoryLabels.socialBadge', label: 'Social Badge Label', type: 'string', preview: true },
+        ],
+    },
+    {
+        key: 'features', label: 'Feature Flags', icon: '🚀',
+        fields: [
+            { path: 'features.aiFeatures', label: 'AI Features', type: 'boolean' },
+            { path: 'features.appStore', label: 'App Store', type: 'boolean' },
+            { path: 'features.analytics', label: 'Analytics', type: 'boolean' },
+            { path: 'features.themeSwitching', label: 'Theme Switching', type: 'boolean' },
+            { path: 'features.introSlides', label: 'Intro Slides', type: 'boolean' },
+        ],
+    },
+    {
+        key: 'observability', label: 'Observability', icon: '📊',
+        fields: [
+            { path: 'observability.sentryDsn', label: 'Sentry DSN', type: 'string' },
+            { path: 'observability.sentryEnv', label: 'Sentry Environment', type: 'string' },
+            { path: 'observability.launchDarklyClientId', label: 'LaunchDarkly Client ID', type: 'string', required: true },
+            { path: 'observability.userflowToken', label: 'Userflow Token', type: 'string', required: true },
+            { path: 'observability.analyticsProvider', label: 'Analytics Provider', type: 'select', options: ['noop', 'posthog', 'firebase'] },
+            { path: 'observability.posthogKey', label: 'PostHog Key', type: 'string' },
+            { path: 'observability.posthogHost', label: 'PostHog Host', type: 'string' },
+            { path: 'observability.googleMapsApiKey', label: 'Google Maps API Key', type: 'string' },
+        ],
+    },
+    {
+        key: 'links', label: 'Store Links', icon: '🔗',
+        fields: [
+            { path: 'links.appStoreUrl', label: 'App Store URL', type: 'string' },
+            { path: 'links.playStoreUrl', label: 'Play Store URL', type: 'string' },
+            { path: 'links.externalAuthRedirectBase', label: 'External Auth Redirect Base', type: 'string' },
+        ],
+    },
+    {
+        key: 'native', label: 'Native / Capacitor', icon: '📱',
+        fields: [
+            { path: 'native.bundleId', label: 'Bundle ID', type: 'string', help: 'e.g. com.vetpass.app' },
+            { path: 'native.displayName', label: 'Display Name', type: 'string' },
+            { path: 'native.capgoChannel', label: 'Capgo Channel', type: 'string' },
+        ],
+    },
+    {
+        key: 'ecosystem', label: 'Ecosystem', icon: '🌐',
+        fields: [
+            { path: 'ecosystem.ecosystemId', label: 'Ecosystem ID', type: 'string' },
+            { path: 'ecosystem.rootOrgId', label: 'Root Org ID', type: 'string' },
+        ],
+    },
+];
+
+// ─── Utility functions ───────────────────────────────────────────────────────
+
+const getNestedValue = (obj, path) => {
+    return path.split('.').reduce((o, k) => o?.[k], obj);
+};
+
+const setNestedValue = (obj, path, value) => {
+    const clone = JSON.parse(JSON.stringify(obj));
+    const keys = path.split('.');
+    let current = clone;
+
+    for (let i = 0; i < keys.length - 1; i++) {
+        if (current[keys[i]] === undefined || current[keys[i]] === null) {
+            current[keys[i]] = {};
+        }
+
+        current = current[keys[i]];
+    }
+
+    if (value === '' || value === undefined) {
+        delete current[keys[keys.length - 1]];
+    } else {
+        current[keys[keys.length - 1]] = value;
+    }
+
+    return clone;
+};
+
+const syntaxHighlight = (json) => {
+    if (typeof json !== 'string') json = JSON.stringify(json, null, 2);
+
+    return json.replace(
+        /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+        (match) => {
+            let cls = 'json-num';
+
+            if (/^"/.test(match)) {
+                cls = /:$/.test(match) ? 'json-key' : 'json-str';
+            } else if (/true|false/.test(match)) {
+                cls = 'json-bool';
+            } else if (/null/.test(match)) {
+                cls = 'json-null';
+            }
+
+            return '<span class="' + cls + '">' + match + '</span>';
+        }
+    );
+};
+
+// ─── Components ──────────────────────────────────────────────────────────────
+
+function FieldInput({ field, value, defaultValue, onChange }) {
+    const isOverridden = value !== undefined && value !== '' && JSON.stringify(value) !== JSON.stringify(defaultValue);
+
+    if (field.type === 'boolean') {
+        const checked = value ?? defaultValue ?? false;
+
+        return h`
+            <div class="field-row flex items-center justify-between px-4 py-3 rounded-xl transition-colors">
+                <div class="flex items-center gap-2">
+                    ${isOverridden ? h`<span class="override-dot" title="Overridden from default" />` : h`<span class="w-[6px] mr-[6px]" />`}
+                    <div>
+                        <div class="text-sm font-medium text-gs-800">${field.label}</div>
+                        ${field.help ? h`<div class="text-xs text-gs-400 mt-0.5">${field.help}</div>` : null}
+                    </div>
+                </div>
+                <button
+                    onClick=${() => onChange(field.path, !checked)}
+                    class="relative w-11 h-6 rounded-full transition-colors ${checked ? 'bg-emerald-500' : 'bg-gs-300'}"
+                >
+                    <span class="absolute top-0.5 ${checked ? 'left-[22px]' : 'left-0.5'} w-5 h-5 bg-white rounded-full shadow transition-all" />
+                </button>
+            </div>
+        `;
+    }
+
+    if (field.type === 'select') {
+        return h`
+            <div class="field-row px-4 py-3 rounded-xl transition-colors">
+                <div class="flex items-center gap-2 mb-1.5">
+                    ${isOverridden ? h`<span class="override-dot" title="Overridden from default" />` : h`<span class="w-[6px] mr-[6px]" />`}
+                    <label class="text-sm font-medium text-gs-800">${field.label}</label>
+                </div>
+                <select
+                    value=${value ?? defaultValue ?? ''}
+                    onChange=${(e) => onChange(field.path, e.target.value)}
+                    class="w-full py-2.5 px-3 border border-gs-200 rounded-xl text-sm text-gs-900 bg-white"
+                >
+                    ${(field.options || []).map(opt => h`
+                        <option key=${opt} value=${opt}>${opt}</option>
+                    `)}
+                </select>
+            </div>
+        `;
+    }
+
+    if (field.type === 'color') {
+        const displayValue = value ?? defaultValue ?? '';
+
+        return h`
+            <div class="field-row px-4 py-3 rounded-xl transition-colors">
+                <div class="flex items-center gap-2 mb-1.5">
+                    ${isOverridden ? h`<span class="override-dot" title="Overridden from default" />` : h`<span class="w-[6px] mr-[6px]" />`}
+                    <label class="text-sm font-medium text-gs-800">${field.label}</label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input
+                        type="color"
+                        value=${displayValue || '#000000'}
+                        onChange=${(e) => onChange(field.path, e.target.value)}
+                        class="w-10 h-10 rounded-lg border border-gs-200 cursor-pointer p-0.5"
+                    />
+                    <input
+                        type="text"
+                        value=${displayValue}
+                        onChange=${(e) => onChange(field.path, e.target.value)}
+                        placeholder=${defaultValue || 'e.g. #4F46E5'}
+                        class="flex-1 py-2.5 px-3 border border-gs-200 rounded-xl text-sm text-gs-900 bg-white placeholder:text-gs-400"
+                    />
+                    ${displayValue ? h`
+                        <div class="w-6 h-6 rounded-full border border-gs-200" style=${{ background: displayValue }} />
+                    ` : null}
+                </div>
+            </div>
+        `;
+    }
+
+    // Default: string input
+    return h`
+        <div class="field-row px-4 py-3 rounded-xl transition-colors">
+            <div class="flex items-center gap-2 mb-1.5">
+                ${isOverridden ? h`<span class="override-dot" title="Overridden from default" />` : h`<span class="w-[6px] mr-[6px]" />`}
+                <label class="text-sm font-medium text-gs-800">
+                    ${field.label}
+                    ${field.required ? h`<span class="text-red-400 ml-0.5">*</span>` : null}
+                </label>
+                ${defaultValue && !value ? h`<span class="text-xs text-gs-400 ml-auto">default</span>` : null}
+            </div>
+            <input
+                type="text"
+                value=${value ?? ''}
+                onChange=${(e) => onChange(field.path, e.target.value)}
+                placeholder=${defaultValue || field.help || ''}
+                class="w-full py-2.5 px-3 border border-gs-200 rounded-xl text-sm text-gs-900 bg-white placeholder:text-gs-400"
+            />
+            ${field.help ? h`<div class="text-xs text-gs-400 mt-1 pl-[18px]">${field.help}</div>` : null}
+        </div>
+    `;
+}
+
+function SectionCard({ section, merged, defaults, overrides, onChange, isExpanded, onToggle }) {
+    const overrideCount = section.fields.filter(f => {
+        const val = getNestedValue(overrides, f.path);
+
+        return val !== undefined && val !== '';
+    }).length;
+
+    return h`
+        <div class="section-card bg-white rounded-2xl border border-gs-200 overflow-hidden">
+            <button
+                onClick=${onToggle}
+                class="w-full px-5 py-4 flex items-center justify-between hover:bg-gs-10 transition-colors"
+            >
+                <div class="flex items-center gap-3">
+                    <span class="text-lg">${section.icon}</span>
+                    <span class="font-semibold text-gs-900">${section.label}</span>
+                    ${overrideCount > 0 ? h`
+                        <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full">
+                            ${overrideCount} override${overrideCount > 1 ? 's' : ''}
+                        </span>
+                    ` : null}
+                </div>
+                <svg class="w-5 h-5 text-gs-400 transition-transform ${isExpanded ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            ${isExpanded ? h`
+                <div class="px-2 pb-3 border-t border-gs-100 fade-in">
+                    <div class="space-y-1 mt-2">
+                        ${section.fields.map(field => h`
+                            <${FieldInput}
+                                key=${field.path}
+                                field=${field}
+                                value=${getNestedValue(overrides, field.path)}
+                                defaultValue=${getNestedValue(defaults, field.path)}
+                                onChange=${onChange}
+                            />
+                        `)}
+                    </div>
+                </div>
+            ` : null}
+        </div>
+    `;
+}
+
+function BrandingPreview({ merged }) {
+    const b = merged?.branding || {};
+    const cats = b.categoryLabels || {};
+
+    return h`
+        <div class="space-y-4">
+            <h3 class="text-sm font-semibold text-gs-700 uppercase tracking-wider">Live Preview</h3>
+
+            <!-- App Header Preview -->
+            <div class="preview-card rounded-2xl p-4 border border-gs-200">
+                <div class="text-xs text-gs-500 mb-2 font-medium">App Header</div>
+                <div class="bg-white rounded-xl p-3 shadow-sm border border-gs-100">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            ${b.primaryColor ? h`
+                                <div class="w-8 h-8 rounded-lg" style=${{ background: b.primaryColor }} />
+                            ` : h`
+                                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600" />
+                            `}
+                            <span class="font-bold text-sm tracking-wide" style=${{ color: b.defaultHeaderTextColor || '#18224E' }}>
+                                ${b.headerText || b.name || 'LEARNCARD'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colors Preview -->
+            ${(b.primaryColor || b.secondaryColor) ? h`
+                <div class="preview-card rounded-2xl p-4 border border-gs-200">
+                    <div class="text-xs text-gs-500 mb-2 font-medium">Colors</div>
+                    <div class="flex gap-3">
+                        ${b.primaryColor ? h`
+                            <div class="flex flex-col items-center gap-1">
+                                <div class="w-12 h-12 rounded-xl shadow-sm border border-gs-100" style=${{ background: b.primaryColor }} />
+                                <span class="text-[10px] text-gs-500">Primary</span>
+                            </div>
+                        ` : null}
+                        ${b.secondaryColor ? h`
+                            <div class="flex flex-col items-center gap-1">
+                                <div class="w-12 h-12 rounded-xl shadow-sm border border-gs-100" style=${{ background: b.secondaryColor }} />
+                                <span class="text-[10px] text-gs-500">Secondary</span>
+                            </div>
+                        ` : null}
+                    </div>
+                </div>
+            ` : null}
+
+            <!-- Category Labels Preview -->
+            <div class="preview-card rounded-2xl p-4 border border-gs-200">
+                <div class="text-xs text-gs-500 mb-2 font-medium">Category Labels</div>
+                <div class="flex flex-wrap gap-1.5">
+                    <span class="px-2.5 py-1 bg-violet-100 text-violet-700 text-xs font-medium rounded-full">Achievement</span>
+                    <span class="px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">${cats.learningHistory || 'Study'}</span>
+                    <span class="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">${cats.workHistory || 'Experience'}</span>
+                    <span class="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">${cats.accomplishment || 'Portfolio'}</span>
+                    <span class="px-2.5 py-1 bg-pink-100 text-pink-700 text-xs font-medium rounded-full">${cats.socialBadge || 'Boost'}</span>
+                    <span class="px-2.5 py-1 bg-sky-100 text-sky-700 text-xs font-medium rounded-full">${cats.accommodation || 'Assistance'}</span>
+                </div>
+            </div>
+
+            <!-- Identity Card Preview -->
+            <div class="preview-card rounded-2xl p-4 border border-gs-200">
+                <div class="text-xs text-gs-500 mb-2 font-medium">Identity</div>
+                <div class="space-y-1.5 text-xs">
+                    <div class="flex justify-between"><span class="text-gs-500">Tenant ID</span><span class="font-mono font-medium">${merged?.tenantId || '—'}</span></div>
+                    <div class="flex justify-between"><span class="text-gs-500">Domain</span><span class="font-mono font-medium">${merged?.domain || '—'}</span></div>
+                    <div class="flex justify-between"><span class="text-gs-500">Theme</span><span class="font-medium">${b.defaultTheme || '—'}</span></div>
+                    <div class="flex justify-between"><span class="text-gs-500">Bundle ID</span><span class="font-mono font-medium">${merged?.native?.bundleId || '—'}</span></div>
+                </div>
+            </div>
+
+            <!-- Features Preview -->
+            <div class="preview-card rounded-2xl p-4 border border-gs-200">
+                <div class="text-xs text-gs-500 mb-2 font-medium">Features</div>
+                <div class="flex flex-wrap gap-1.5">
+                    ${Object.entries(merged?.features || {}).map(([k, v]) => h`
+                        <span key=${k} class="px-2.5 py-1 text-xs font-medium rounded-full ${v ? 'bg-emerald-50 text-emerald-700' : 'bg-gs-100 text-gs-400 line-through'}">
+                            ${k.replace(/([A-Z])/g, ' $1').trim()}
+                        </span>
+                    `)}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function JsonPanel({ overrides, validationErrors }) {
+    const jsonStr = JSON.stringify(overrides, null, 2);
+    const highlighted = syntaxHighlight(jsonStr);
+    const lineCount = jsonStr.split('\n').length;
+
+    return h`
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-gs-700 uppercase tracking-wider">Config Output</h3>
+                <button
+                    onClick=${() => { navigator.clipboard.writeText(jsonStr); }}
+                    class="text-xs text-gs-500 hover:text-gs-900 transition-colors flex items-center gap-1"
+                >
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Copy
+                </button>
+            </div>
+            <div class="text-xs text-gs-400">${lineCount} lines · overrides only</div>
+            <pre
+                class="bg-white rounded-2xl border border-gs-200 p-4 text-xs font-mono leading-relaxed overflow-auto max-h-[500px] scrollbar-thin"
+                dangerouslySetInnerHTML=${{ __html: highlighted }}
+            />
+
+            ${validationErrors.length > 0 ? h`
+                <div class="bg-red-50 border border-red-100 rounded-2xl p-3">
+                    <div class="text-xs font-medium text-red-700 mb-1">Validation Errors</div>
+                    ${validationErrors.map((err, i) => h`
+                        <div key=${i} class="text-xs text-red-600 font-mono">${err}</div>
+                    `)}
+                </div>
+            ` : h`
+                <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-3 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span class="text-xs font-medium text-emerald-700">Config is valid</span>
+                </div>
+            `}
+        </div>
+    `;
+}
+
+// ─── Main App ────────────────────────────────────────────────────────────────
+
+function App() {
+    const [tenants, setTenants] = useState([]);
+    const [activeTenant, setActiveTenant] = useState(null);
+    const [defaults, setDefaults] = useState({});
+    const [overrides, setOverrides] = useState({});
+    const [merged, setMerged] = useState({});
+    const [validationErrors, setValidationErrors] = useState([]);
+    const [expandedSections, setExpandedSections] = useState(new Set(['general', 'branding']));
+    const [saving, setSaving] = useState(false);
+    const [saveStatus, setSaveStatus] = useState(null);
+    const [rightTab, setRightTab] = useState('preview');
+    const [newTenantName, setNewTenantName] = useState('');
+    const [showNewTenant, setShowNewTenant] = useState(false);
+    const debounceRef = useRef(null);
+
+    // Load initial data
+    useEffect(() => {
+        api.get('/api/defaults').then(setDefaults);
+        api.get('/api/tenants').then(setTenants);
+    }, []);
+
+    // Load tenant config
+    const loadTenant = useCallback(async (name) => {
+        setActiveTenant(name);
+        setSaveStatus(null);
+
+        const data = await api.get('/api/tenant/' + name);
+
+        setOverrides(data.overrides);
+        setMerged(data.merged);
+        setValidationErrors([]);
+    }, []);
+
+    // Deep merge overrides onto defaults for preview
+    const recomputeMerged = useCallback((newOverrides) => {
+        const deepMergeLocal = (base, over) => {
+            const result = { ...base };
+
+            for (const key of Object.keys(over)) {
+                const bv = base[key];
+                const ov = over[key];
+
+                if (bv && ov && typeof bv === 'object' && !Array.isArray(bv) && typeof ov === 'object' && !Array.isArray(ov)) {
+                    result[key] = deepMergeLocal(bv, ov);
+                } else {
+                    result[key] = ov;
+                }
+            }
+
+            return result;
+        };
+
+        return deepMergeLocal(defaults, newOverrides);
+    }, [defaults]);
+
+    // Validate with debounce
+    const validateDebounced = useCallback((overridesToValidate) => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+
+        debounceRef.current = setTimeout(async () => {
+            const result = await api.post('/api/validate', overridesToValidate);
+
+            setValidationErrors(result.errors || []);
+        }, 300);
+    }, []);
+
+    // Handle field change
+    const handleChange = useCallback((path, value) => {
+        setOverrides(prev => {
+            const next = setNestedValue(prev, path, value);
+            const newMerged = recomputeMerged(next);
+
+            setMerged(newMerged);
+            validateDebounced(next);
+            setSaveStatus(null);
+
+            return next;
+        });
+    }, [recomputeMerged, validateDebounced]);
+
+    // Save
+    const handleSave = useCallback(async () => {
+        if (!activeTenant) return;
+
+        setSaving(true);
+
+        try {
+            const result = await api.put('/api/tenant/' + activeTenant, { overrides });
+
+            if (result.saved) {
+                setSaveStatus('saved');
+                api.get('/api/tenants').then(setTenants);
+            } else {
+                setSaveStatus('error');
+                setValidationErrors(result.errors || ['Unknown error']);
+            }
+        } catch {
+            setSaveStatus('error');
+        }
+
+        setSaving(false);
+    }, [activeTenant, overrides]);
+
+    // Create new tenant
+    const handleCreateTenant = useCallback(async () => {
+        const name = newTenantName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+
+        if (!name) return;
+
+        await api.put('/api/tenant/' + name, {
+            overrides: { tenantId: name, domain: name + '.app' }
+        });
+
+        setNewTenantName('');
+        setShowNewTenant(false);
+
+        const list = await api.get('/api/tenants');
+
+        setTenants(list);
+        loadTenant(name);
+    }, [newTenantName, loadTenant]);
+
+    // Toggle section
+    const toggleSection = useCallback((key) => {
+        setExpandedSections(prev => {
+            const next = new Set(prev);
+
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+
+            return next;
+        });
+    }, []);
+
+    const overrideCount = useMemo(() => {
+        const count = (obj) => {
+            let n = 0;
+
+            for (const v of Object.values(obj || {})) {
+                if (v && typeof v === 'object' && !Array.isArray(v)) n += count(v);
+                else if (v !== undefined && v !== '') n++;
+            }
+
+            return n;
+        };
+
+        return count(overrides);
+    }, [overrides]);
+
+    return h`
+        <div class="h-screen flex flex-col">
+            <!-- Top bar -->
+            <header class="h-14 bg-white border-b border-gs-200 flex items-center justify-between px-5 flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <h1 class="font-bold text-gs-900">Tenant Config Editor</h1>
+                    ${activeTenant ? h`
+                        <span class="text-gs-400 mx-1">/</span>
+                        <span class="font-medium text-gs-700">${activeTenant}</span>
+                        ${overrideCount > 0 ? h`
+                            <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full">
+                                ${overrideCount} override${overrideCount > 1 ? 's' : ''}
+                            </span>
+                        ` : null}
+                    ` : null}
+                </div>
+                <div class="flex items-center gap-3">
+                    ${validationErrors.length === 0 && activeTenant ? h`
+                        <div class="flex items-center gap-1.5 text-emerald-600">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span class="text-xs font-medium">Valid</span>
+                        </div>
+                    ` : null}
+                    ${validationErrors.length > 0 ? h`
+                        <div class="flex items-center gap-1.5 text-red-500">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <span class="text-xs font-medium">${validationErrors.length} error${validationErrors.length > 1 ? 's' : ''}</span>
+                        </div>
+                    ` : null}
+                    ${activeTenant ? h`
+                        <button
+                            onClick=${handleSave}
+                            disabled=${saving || validationErrors.length > 0}
+                            class="pill px-4 py-2 bg-gs-900 text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            ${saving ? h`<span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />` : null}
+                            ${saving ? 'Saving...' : saveStatus === 'saved' ? 'Saved!' : 'Save Config'}
+                        </button>
+                    ` : null}
+                </div>
+            </header>
+
+            <div class="flex flex-1 overflow-hidden">
+                <!-- Sidebar: tenant list -->
+                <aside class="w-56 bg-white border-r border-gs-200 flex flex-col flex-shrink-0">
+                    <div class="p-3 border-b border-gs-100">
+                        <div class="text-xs font-semibold text-gs-500 uppercase tracking-wider mb-2 px-2">Tenants</div>
+                        <div class="space-y-0.5">
+                            ${tenants.map(t => h`
+                                <button
+                                    key=${t.name}
+                                    onClick=${() => loadTenant(t.name)}
+                                    class="w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center justify-between group
+                                        ${activeTenant === t.name ? 'bg-gs-900 text-white' : 'text-gs-700 hover:bg-gs-50'}"
+                                >
+                                    <span class="font-medium">${t.name}</span>
+                                    <div class="flex items-center gap-1.5">
+                                        ${t.hasConfig ? h`
+                                            <span class="w-1.5 h-1.5 rounded-full ${activeTenant === t.name ? 'bg-emerald-400' : 'bg-emerald-500'}" title="Has config" />
+                                        ` : null}
+                                        ${t.hasAssets ? h`
+                                            <span class="w-1.5 h-1.5 rounded-full ${activeTenant === t.name ? 'bg-violet-400' : 'bg-violet-500'}" title="Has assets" />
+                                        ` : null}
+                                    </div>
+                                </button>
+                            `)}
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        ${showNewTenant ? h`
+                            <div class="space-y-2 fade-in">
+                                <input
+                                    type="text"
+                                    value=${newTenantName}
+                                    onChange=${(e) => setNewTenantName(e.target.value)}
+                                    onKeyDown=${(e) => e.key === 'Enter' && handleCreateTenant()}
+                                    placeholder="tenant-name"
+                                    class="w-full py-2 px-3 border border-gs-200 rounded-xl text-sm text-gs-900 bg-white placeholder:text-gs-400"
+                                    autoFocus
+                                />
+                                <div class="flex gap-2">
+                                    <button
+                                        onClick=${handleCreateTenant}
+                                        class="flex-1 pill py-1.5 bg-gs-900 text-white text-xs font-medium"
+                                    >Create</button>
+                                    <button
+                                        onClick=${() => { setShowNewTenant(false); setNewTenantName(''); }}
+                                        class="flex-1 pill py-1.5 border border-gs-300 text-gs-700 text-xs font-medium"
+                                    >Cancel</button>
+                                </div>
+                            </div>
+                        ` : h`
+                            <button
+                                onClick=${() => setShowNewTenant(true)}
+                                class="w-full pill py-2 border border-dashed border-gs-300 text-gs-500 text-sm font-medium hover:border-gs-400 hover:text-gs-700 transition-colors"
+                            >+ New Tenant</button>
+                        `}
+                    </div>
+                </aside>
+
+                ${activeTenant ? h`
+                    <!-- Editor: sections -->
+                    <main class="flex-1 overflow-y-auto p-6 scrollbar-thin">
+                        <div class="max-w-2xl mx-auto space-y-3">
+                            ${SECTIONS.map(section => h`
+                                <${SectionCard}
+                                    key=${section.key}
+                                    section=${section}
+                                    merged=${merged}
+                                    defaults=${defaults}
+                                    overrides=${overrides}
+                                    onChange=${handleChange}
+                                    isExpanded=${expandedSections.has(section.key)}
+                                    onToggle=${() => toggleSection(section.key)}
+                                />
+                            `)}
+                        </div>
+                    </main>
+
+                    <!-- Right panel: preview + JSON -->
+                    <aside class="w-80 bg-white border-l border-gs-200 flex flex-col flex-shrink-0 overflow-hidden">
+                        <div class="flex border-b border-gs-100">
+                            <button
+                                onClick=${() => setRightTab('preview')}
+                                class="flex-1 py-3 text-sm font-medium transition-colors
+                                    ${rightTab === 'preview' ? 'text-gs-900 border-b-2 border-gs-900' : 'text-gs-400 hover:text-gs-700'}"
+                            >Preview</button>
+                            <button
+                                onClick=${() => setRightTab('json')}
+                                class="flex-1 py-3 text-sm font-medium transition-colors
+                                    ${rightTab === 'json' ? 'text-gs-900 border-b-2 border-gs-900' : 'text-gs-400 hover:text-gs-700'}"
+                            >JSON Output</button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-4 scrollbar-thin">
+                            ${rightTab === 'preview'
+                                ? h`<${BrandingPreview} merged=${merged} />`
+                                : h`<${JsonPanel} overrides=${overrides} validationErrors=${validationErrors} />`
+                            }
+                        </div>
+                    </aside>
+                ` : h`
+                    <!-- Empty state -->
+                    <main class="flex-1 flex items-center justify-center">
+                        <div class="text-center space-y-3">
+                            <div class="w-16 h-16 mx-auto bg-gs-100 rounded-2xl flex items-center justify-center">
+                                <svg class="w-8 h-8 text-gs-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-semibold text-gs-900">Select a tenant</h2>
+                                <p class="text-sm text-gs-500 mt-1">Choose a tenant from the sidebar or create a new one.</p>
+                            </div>
+                        </div>
+                    </main>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+// ─── Mount ───────────────────────────────────────────────────────────────────
+
+const root = createRoot(document.getElementById('root'));
+root.render(h`<${App} />`);
+    </script>
+</body>
+</html>
