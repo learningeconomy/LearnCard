@@ -715,6 +715,383 @@ function JsonPanel({ overrides, validationErrors }) {
     `;
 }
 
+// ─── Actions Panel ───────────────────────────────────────────────────────────
+
+function ActionButton({ label, icon, onClick, loading, loadingText, variant, disabled }) {
+    const base = variant === 'danger'
+        ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+        : variant === 'success'
+        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+        : 'bg-white text-gs-800 border-gs-200 hover:bg-gs-10';
+
+    return h`
+        <button
+            onClick=${onClick}
+            disabled=${loading || disabled}
+            class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${base}"
+        >
+            ${loading ? h`
+                <span class="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin flex-shrink-0" />
+            ` : h`
+                <span class="flex-shrink-0">${icon}</span>
+            `}
+            <span class="flex-1 text-left">${loading ? (loadingText || 'Running...') : label}</span>
+            <svg class="w-4 h-4 opacity-40 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
+    `;
+}
+
+function OutputLog({ output, onClose }) {
+    if (!output) return null;
+
+    return h`
+        <div class="mt-3 fade-in">
+            <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[10px] font-medium text-gs-500 uppercase tracking-wider">Output</span>
+                <button onClick=${onClose} class="text-[10px] text-gs-400 hover:text-gs-700 transition-colors">Clear</button>
+            </div>
+            <pre class="bg-gs-900 text-emerald-400 rounded-xl p-3 text-[11px] font-mono leading-relaxed overflow-auto max-h-48 scrollbar-thin whitespace-pre-wrap">${output}</pre>
+        </div>
+    `;
+}
+
+function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
+    const [logoFile, setLogoFile] = useState(null);
+    const [logoPreview, setLogoPreview] = useState(null);
+    const [bgColor, setBgColor] = useState('#FFFFFF');
+    const [displayName, setDisplayName] = useState('');
+
+    const [uploading, setUploading] = useState(false);
+    const [generating, setGenerating] = useState(false);
+    const [applying, setApplying] = useState(false);
+    const [resetting, setResetting] = useState(false);
+    const [starting, setStarting] = useState(false);
+
+    const [actionOutput, setActionOutput] = useState(null);
+    const [actionError, setActionError] = useState(null);
+    const [actionSuccess, setActionSuccess] = useState(null);
+
+    const fileInputRef = useRef(null);
+
+    // Auto-populate display name from merged config
+    useEffect(() => {
+        if (merged?.branding?.name && !displayName) {
+            setDisplayName(merged.branding.name);
+        }
+    }, [merged?.branding?.name]);
+
+    // Auto-populate bg color from merged config
+    useEffect(() => {
+        if (merged?.branding?.primaryColor && bgColor === '#FFFFFF') {
+            setBgColor(merged.branding.primaryColor);
+        }
+    }, [merged?.branding?.primaryColor]);
+
+    const handleFileSelect = (e) => {
+        const file = e.target.files?.[0];
+
+        if (!file) return;
+
+        setLogoFile(file);
+
+        const reader = new FileReader();
+
+        reader.onload = () => setLogoPreview(reader.result);
+        reader.readAsDataURL(file);
+    };
+
+    const clearStatus = () => {
+        setActionOutput(null);
+        setActionError(null);
+        setActionSuccess(null);
+    };
+
+    const handleUploadAndGenerate = async () => {
+        if (!logoFile || !activeTenant) return;
+
+        clearStatus();
+
+        // Step 1: Upload logo
+        setUploading(true);
+
+        try {
+            const reader = new FileReader();
+            const base64 = await new Promise((resolve) => {
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(logoFile);
+            });
+
+            const ext = logoFile.name.split('.').pop() || 'png';
+
+            const uploadResult = await api.post('/api/actions/upload-logo', {
+                tenant: activeTenant,
+                filename: 'logo.' + ext,
+                data: base64,
+            });
+
+            if (!uploadResult.saved) {
+                setActionError('Failed to upload logo');
+                setUploading(false);
+                return;
+            }
+        } catch (err) {
+            setActionError('Upload failed: ' + String(err));
+            setUploading(false);
+            return;
+        }
+
+        setUploading(false);
+
+        // Step 2: Generate assets
+        setGenerating(true);
+
+        try {
+            const result = await api.post('/api/actions/generate-assets', {
+                tenant: activeTenant,
+                bgColor,
+                name: displayName || undefined,
+            });
+
+            setActionOutput(result.output);
+
+            if (result.exitCode === 0) {
+                setActionSuccess('Assets generated successfully!');
+
+                if (onAssetsChanged) onAssetsChanged();
+            } else {
+                setActionError('Asset generation failed (exit code ' + result.exitCode + ')');
+            }
+        } catch (err) {
+            setActionError('Generation failed: ' + String(err));
+        }
+
+        setGenerating(false);
+    };
+
+    const handleApplyConfig = async () => {
+        if (!activeTenant) return;
+
+        clearStatus();
+        setApplying(true);
+
+        try {
+            const result = await api.post('/api/actions/apply-config', { tenant: activeTenant });
+
+            setActionOutput(result.output);
+
+            if (result.exitCode === 0) {
+                setActionSuccess('Config applied for ' + activeTenant);
+            } else {
+                setActionError('Apply failed (exit code ' + result.exitCode + ')');
+            }
+        } catch (err) {
+            setActionError('Apply failed: ' + String(err));
+        }
+
+        setApplying(false);
+    };
+
+    const handleReset = async () => {
+        clearStatus();
+        setResetting(true);
+
+        try {
+            const result = await api.post('/api/actions/reset-config', {});
+
+            setActionOutput(result.output);
+
+            if (result.exitCode === 0) {
+                setActionSuccess('Config reset complete. Run prepare-native-config to restore a tenant.');
+            } else {
+                setActionError('Reset failed (exit code ' + result.exitCode + ')');
+            }
+        } catch (err) {
+            setActionError('Reset failed: ' + String(err));
+        }
+
+        setResetting(false);
+    };
+
+    const handleDockerStart = async () => {
+        if (!activeTenant) return;
+
+        clearStatus();
+        setStarting(true);
+
+        try {
+            const result = await api.post('/api/actions/docker-start', { tenant: activeTenant });
+
+            setActionSuccess(result.message);
+        } catch (err) {
+            setActionError('Start failed: ' + String(err));
+        }
+
+        setStarting(false);
+    };
+
+    return h`
+        <div class="space-y-5">
+            <h3 class="text-sm font-semibold text-gs-700 uppercase tracking-wider">Dev Actions</h3>
+
+            ${actionError ? h`
+                <div class="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 fade-in">
+                    <svg class="w-4 h-4 text-red-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-xs text-red-700 leading-relaxed">${actionError}</span>
+                </div>
+            ` : null}
+
+            ${actionSuccess ? h`
+                <div class="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5 fade-in">
+                    <svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span class="text-xs text-emerald-700 leading-relaxed">${actionSuccess}</span>
+                </div>
+            ` : null}
+
+            <!-- Generate Assets Section -->
+            <div class="space-y-3">
+                <div class="text-xs font-semibold text-gs-600 uppercase tracking-wider flex items-center gap-2">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Generate Assets
+                </div>
+
+                <!-- Logo upload -->
+                <div
+                    onClick=${() => fileInputRef.current?.click()}
+                    class="relative border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors
+                        ${logoPreview ? 'border-emerald-300 bg-emerald-50/50' : 'border-gs-200 hover:border-gs-400 bg-gs-50/50'}"
+                >
+                    <input
+                        ref=${fileInputRef}
+                        type="file"
+                        accept="image/png,image/svg+xml,image/jpeg,image/webp"
+                        onChange=${handleFileSelect}
+                        class="hidden"
+                    />
+                    ${logoPreview ? h`
+                        <img src=${logoPreview} class="mx-auto max-h-16 max-w-[120px] object-contain mb-2 rounded" />
+                        <div class="text-[10px] text-emerald-600 font-medium">${logoFile?.name}</div>
+                        <div class="text-[10px] text-gs-400 mt-0.5">Click to change</div>
+                    ` : h`
+                        <svg class="w-8 h-8 mx-auto text-gs-300 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <div class="text-xs text-gs-500 font-medium">Drop logo here or click to browse</div>
+                        <div class="text-[10px] text-gs-400 mt-0.5">PNG, SVG, JPEG, or WebP</div>
+                    `}
+                </div>
+
+                <!-- Options row -->
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="text-[10px] font-medium text-gs-500 mb-1 block">BG Color</label>
+                        <div class="flex items-center gap-1.5">
+                            <input
+                                type="color"
+                                value=${bgColor}
+                                onChange=${(e) => setBgColor(e.target.value)}
+                                class="w-8 h-8 rounded-lg border border-gs-200 cursor-pointer p-0.5"
+                            />
+                            <input
+                                type="text"
+                                value=${bgColor}
+                                onChange=${(e) => setBgColor(e.target.value)}
+                                class="flex-1 py-1.5 px-2 border border-gs-200 rounded-lg text-xs text-gs-900 bg-white font-mono"
+                            />
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[10px] font-medium text-gs-500 mb-1 block">Display Name</label>
+                        <input
+                            type="text"
+                            value=${displayName}
+                            onChange=${(e) => setDisplayName(e.target.value)}
+                            placeholder=${merged?.branding?.name || 'App Name'}
+                            class="w-full py-1.5 px-2 border border-gs-200 rounded-lg text-xs text-gs-900 bg-white placeholder:text-gs-400"
+                        />
+                    </div>
+                </div>
+
+                <${ActionButton}
+                    label="Upload Logo & Generate All Assets"
+                    icon=${h`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>`}
+                    onClick=${handleUploadAndGenerate}
+                    loading=${uploading || generating}
+                    loadingText=${uploading ? 'Uploading logo...' : 'Generating assets...'}
+                    disabled=${!logoFile}
+                />
+            </div>
+
+            <!-- Divider -->
+            <div class="border-t border-gs-100" />
+
+            <!-- Apply / Switch Config -->
+            <div class="space-y-3">
+                <div class="text-xs font-semibold text-gs-600 uppercase tracking-wider flex items-center gap-2">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    Apply / Switch Config
+                </div>
+                <p class="text-[11px] text-gs-400 leading-relaxed">
+                    Copies assets into platform directories, patches Capacitor configs, and writes tenant-config.json.
+                </p>
+
+                <${ActionButton}
+                    label=${'Apply Config: ' + (activeTenant || '...')}
+                    icon=${h`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>`}
+                    onClick=${handleApplyConfig}
+                    loading=${applying}
+                    loadingText="Applying config..."
+                    variant="success"
+                />
+
+                <${ActionButton}
+                    label="Reset All Platform Files"
+                    icon=${h`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>`}
+                    onClick=${handleReset}
+                    loading=${resetting}
+                    loadingText="Resetting..."
+                    variant="danger"
+                />
+            </div>
+
+            <!-- Divider -->
+            <div class="border-t border-gs-100" />
+
+            <!-- Dev Server -->
+            <div class="space-y-3">
+                <div class="text-xs font-semibold text-gs-600 uppercase tracking-wider flex items-center gap-2">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                    </svg>
+                    Dev Server
+                </div>
+                <p class="text-[11px] text-gs-400 leading-relaxed">
+                    Applies the tenant config then starts Vite dev server on port 3000.
+                </p>
+
+                <${ActionButton}
+                    label=${'Start Dev Server: ' + (activeTenant || '...')}
+                    icon=${h`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`}
+                    onClick=${handleDockerStart}
+                    loading=${starting}
+                    loadingText="Starting..."
+                />
+            </div>
+
+            <${OutputLog} output=${actionOutput} onClose=${() => setActionOutput(null)} />
+        </div>
+    `;
+}
+
 // ─── Main App ────────────────────────────────────────────────────────────────
 
 function App() {
@@ -730,6 +1107,7 @@ function App() {
     const [rightTab, setRightTab] = useState('preview');
     const [newTenantName, setNewTenantName] = useState('');
     const [showNewTenant, setShowNewTenant] = useState(false);
+    const [assetsVersion, setAssetsVersion] = useState(0);
     const debounceRef = useRef(null);
 
     // Load initial data
@@ -1007,11 +1385,18 @@ function App() {
                                 onClick=${() => setRightTab('json')}
                                 class="flex-1 py-3 text-sm font-medium transition-colors
                                     ${rightTab === 'json' ? 'text-gs-900 border-b-2 border-gs-900' : 'text-gs-400 hover:text-gs-700'}"
-                            >JSON Output</button>
+                            >JSON</button>
+                            <button
+                                onClick=${() => setRightTab('actions')}
+                                class="flex-1 py-3 text-sm font-medium transition-colors
+                                    ${rightTab === 'actions' ? 'text-gs-900 border-b-2 border-gs-900' : 'text-gs-400 hover:text-gs-700'}"
+                            >Actions</button>
                         </div>
                         <div class="flex-1 overflow-y-auto p-4 scrollbar-thin">
                             ${rightTab === 'preview'
-                                ? h`<${BrandingPreview} merged=${merged} activeTenant=${activeTenant} />`
+                                ? h`<${BrandingPreview} merged=${merged} activeTenant=${activeTenant} key=${'bp-' + assetsVersion} />`
+                                : rightTab === 'actions'
+                                ? h`<${ActionsPanel} activeTenant=${activeTenant} merged=${merged} onAssetsChanged=${() => setAssetsVersion(v => v + 1)} />`
                                 : h`<${JsonPanel} overrides=${overrides} validationErrors=${validationErrors} />`
                             }
                         </div>

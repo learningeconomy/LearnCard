@@ -17,7 +17,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync } from 'fs';
 import { resolve, dirname, join, extname } from 'path';
 import { fileURLToPath } from 'url';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 
 import { tenantConfigSchema } from 'learn-card-base/src/config/tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/src/config/tenantDefaults';
@@ -214,6 +214,44 @@ const readBody = (req: IncomingMessage): Promise<string> =>
         req.on('error', reject);
     });
 
+const readRawBody = (req: IncomingMessage, maxBytes = 20 * 1024 * 1024): Promise<Buffer> =>
+    new Promise((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        let size = 0;
+
+        req.on('data', (chunk: Buffer) => {
+            size += chunk.length;
+
+            if (size > maxBytes) {
+                req.destroy();
+                reject(new Error('Body too large'));
+                return;
+            }
+
+            chunks.push(chunk);
+        });
+
+        req.on('end', () => resolve(Buffer.concat(chunks)));
+        req.on('error', reject);
+    });
+
+const runScript = (cmd: string, args: string[]): Promise<{ exitCode: number; output: string }> =>
+    new Promise((resolve) => {
+        const child = spawn(cmd, args, { cwd: APP_ROOT, shell: true });
+        let output = '';
+
+        child.stdout.on('data', (d: Buffer) => { output += d.toString(); });
+        child.stderr.on('data', (d: Buffer) => { output += d.toString(); });
+
+        child.on('close', (code) => {
+            resolve({ exitCode: code ?? 1, output });
+        });
+
+        child.on('error', (err) => {
+            resolve({ exitCode: 1, output: output + '\n' + String(err) });
+        });
+    });
+
 const json = (res: ServerResponse, status: number, data: unknown): void => {
     res.writeHead(status, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(data));
@@ -336,6 +374,110 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
             );
 
             json(res, 200, overrides);
+            return;
+        }
+
+        // --- Action endpoints ---
+
+        if (path === '/api/actions/upload-logo' && req.method === 'POST') {
+            const body = JSON.parse(await readBody(req));
+            const { tenant, filename, data } = body;
+
+            if (!tenant || !filename || !data) {
+                json(res, 400, { error: 'Missing tenant, filename, or data' });
+                return;
+            }
+
+            const tenantDir = join(ENVIRONMENTS_DIR, tenant);
+
+            if (!existsSync(tenantDir)) {
+                mkdirSync(tenantDir, { recursive: true });
+            }
+
+            const logoPath = join(tenantDir, filename);
+
+            writeFileSync(logoPath, Buffer.from(data, 'base64'));
+            json(res, 200, { saved: true, path: logoPath });
+            return;
+        }
+
+        if (path === '/api/actions/generate-assets' && req.method === 'POST') {
+            const body = JSON.parse(await readBody(req));
+            const { tenant, bgColor, name } = body;
+
+            if (!tenant) {
+                json(res, 400, { error: 'Missing tenant' });
+                return;
+            }
+
+            const logoPath = join(ENVIRONMENTS_DIR, tenant, 'logo.png');
+
+            if (!existsSync(logoPath)) {
+                json(res, 400, { error: 'No logo.png found. Upload a logo first.' });
+                return;
+            }
+
+            const args = ['scripts/generate-tenant-assets.ts', tenant, logoPath];
+
+            if (bgColor) args.push('--bg', bgColor);
+            if (name) args.push('--name', name);
+
+            const result = await runScript('npx tsx', args);
+
+            json(res, result.exitCode === 0 ? 200 : 500, result);
+            return;
+        }
+
+        if (path === '/api/actions/apply-config' && req.method === 'POST') {
+            const body = JSON.parse(await readBody(req));
+            const { tenant } = body;
+
+            if (!tenant) {
+                json(res, 400, { error: 'Missing tenant' });
+                return;
+            }
+
+            const result = await runScript('npx tsx', ['scripts/prepare-native-config.ts', tenant]);
+
+            json(res, result.exitCode === 0 ? 200 : 500, result);
+            return;
+        }
+
+        if (path === '/api/actions/reset-config' && req.method === 'POST') {
+            const result = await runScript('npx tsx', ['scripts/prepare-native-config.ts', '--reset']);
+
+            json(res, result.exitCode === 0 ? 200 : 500, result);
+            return;
+        }
+
+        if (path === '/api/actions/docker-start' && req.method === 'POST') {
+            const body = JSON.parse(await readBody(req));
+            const { tenant } = body;
+
+            // Spawn in background — this is long-running
+            const child = spawn(
+                'npx',
+                ['tsx', 'scripts/prepare-native-config.ts', tenant || 'learncard'],
+                { cwd: APP_ROOT, shell: true, stdio: 'ignore', detached: true },
+            );
+
+            child.unref();
+
+            // After prepare-config finishes, start vite
+            child.on('close', () => {
+                const vite = spawn('npx', ['vite', '--host'], {
+                    cwd: APP_ROOT,
+                    shell: true,
+                    stdio: 'ignore',
+                    detached: true,
+                });
+
+                vite.unref();
+            });
+
+            json(res, 200, {
+                message: `Starting dev server for ${tenant || 'learncard'}... The app will be available at http://localhost:3000 shortly.`,
+            });
             return;
         }
 

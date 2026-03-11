@@ -90,9 +90,11 @@ See `tenantConfigSchema.ts` for the full schema with defaults.
 
 ## npm scripts
 
-| Script                        | Description                        |
-| ----------------------------- | ---------------------------------- |
-| `pnpm prepare-config`        | Apply default (learncard) config   |
-| `pnpm docker-start`          | Apply local config + start dev     |
-| `pnpm docker-start:tenant`   | Apply `$TENANT` config + start dev |
-| `pnpm generate-assets`       | Generate assets from a logo        |
+| Script                        | Description                          |
+| ----------------------------- | ------------------------------------ |
+| `pnpm prepare-config`        | Apply default (learncard) config     |
+| `pnpm docker-start`          | Apply local config + start dev       |
+| `pnpm docker-start:tenant`   | Apply `$TENANT` config + start dev   |
+| `pnpm generate-assets`       | Generate assets from a logo          |
+| `pnpm validate-configs`      | Validate all tenant configs (CI)     |
+| `pnpm config-editor`         | Launch visual config editor (:4400)  |
