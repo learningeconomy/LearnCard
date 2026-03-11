@@ -22,7 +22,7 @@ import { claimIntoInbox, issueToInbox } from '@helpers/inbox.helpers';
 import { prepareCredentialFromBoost, getBoostUri } from '@helpers/boost.helpers';
 import { hasMustacheVariables, renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
 import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
-import { getBoostByUri } from '@accesslayer/boost/read';
+import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
 import {
     generateGuardianApprovalToken,
     generateGuardianApprovalUrl,
@@ -538,9 +538,36 @@ export const inboxRouter = t.router({
             if (!issuerProfile)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Issuer Profile not found' });
 
-            // Render Mustache template variables in the credential (e.g. {{Recipient_name}})
+            // If credential is a name reference (no @context), resolve the boost template by name
             let resolvedCredential = credential;
-            const credentialJson = JSON.stringify(credential);
+            if (!(credential as any)['@context'] && (credential as any).name) {
+                const matchingBoosts = await getBoostsForProfile(issuerProfile, {
+                    limit: 1,
+                    query: {
+                        name: (credential as any).name,
+                        meta: { integrationId: integration.id },
+                    },
+                });
+
+                if (!matchingBoosts.length) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: `No template found with name "${(credential as any).name}" for this integration`,
+                    });
+                }
+
+                try {
+                    resolvedCredential = JSON.parse(matchingBoosts[0]!.boost);
+                } catch {
+                    throw new TRPCError({
+                        code: 'INTERNAL_SERVER_ERROR',
+                        message: 'Failed to parse credential template',
+                    });
+                }
+            }
+
+            // Render Mustache template variables in the credential (e.g. {{Recipient_name}})
+            const credentialJson = JSON.stringify(resolvedCredential);
             if (hasMustacheVariables(credentialJson)) {
                 const recipientProfile = await getProfileByVerifiedContactMethod(
                     contactMethod.type,
@@ -571,7 +598,7 @@ export const inboxRouter = t.router({
                 issuerProfile,
                 signingAuthorityRel,
                 contactMethod,
-                resolvedCredential,
+                resolvedCredential as UnsignedVC,
                 {
                     expiresInDays: 720,
                     integrationId: integration.id,
