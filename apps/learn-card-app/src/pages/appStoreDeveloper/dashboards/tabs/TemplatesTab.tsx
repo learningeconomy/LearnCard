@@ -63,6 +63,7 @@ export const TemplatesTab: React.FC<TemplatesTabProps> = ({
                 project={project as any}
                 onComplete={handleComplete}
                 onBack={handleBack}
+                hideNavigation
             />
         </div>
     );

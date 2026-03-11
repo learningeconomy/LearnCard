@@ -88,6 +88,7 @@ interface TemplateBuilderStepProps {
     project: PartnerProject | null;
     onComplete: (templates: CredentialTemplate[]) => void;
     onBack: () => void;
+    hideNavigation?: boolean;
 }
 
 export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
@@ -96,6 +97,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     project,
     onComplete,
     onBack,
+    hideNavigation,
 }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
@@ -1036,30 +1038,34 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 </p>
             </div>
 
-            {/* Navigation */}
-            <div className="flex gap-3 pt-4 border-t border-gray-100">
-                <button
-                    onClick={onBack}
-                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back
-                </button>
+            {/* Navigation - hidden in dashboard context */}
+            {!hideNavigation && (
+                <>
+                    <div className="flex gap-3 pt-4 border-t border-gray-100">
+                        <button
+                            onClick={onBack}
+                            className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            Back
+                        </button>
 
-                <button
-                    onClick={() => onComplete(localTemplates)}
-                    disabled={!canProceed}
-                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                    Continue
-                    <ArrowRight className="w-4 h-4" />
-                </button>
-            </div>
+                        <button
+                            onClick={() => onComplete(localTemplates)}
+                            disabled={!canProceed}
+                            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Continue
+                            <ArrowRight className="w-4 h-4" />
+                        </button>
+                    </div>
 
-            {hasUnsavedNewTemplates && (
-                <p className="text-xs text-amber-600 text-center">
-                    Save or cancel the template you're editing before continuing.
-                </p>
+                    {hasUnsavedNewTemplates && (
+                        <p className="text-xs text-amber-600 text-center">
+                            Save or cancel the template you're editing before continuing.
+                        </p>
+                    )}
+                </>
             )}
 
             {/* Import from Catalog Modal */}
