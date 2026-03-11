@@ -257,6 +257,166 @@ const json = (res: ServerResponse, status: number, data: unknown): void => {
     res.end(JSON.stringify(data));
 };
 
+// ---------------------------------------------------------------------------
+// Managed dev server process
+// ---------------------------------------------------------------------------
+
+interface DevServerState {
+    phase: 'preparing' | 'starting' | 'running' | 'stopped' | 'error';
+    tenant: string;
+    output: string[];
+    pid: number | null;
+    startedAt: number;
+    url: string | null;
+    exitCode: number | null;
+    process: ReturnType<typeof spawn> | null;
+}
+
+const MAX_OUTPUT_LINES = 500;
+
+let devServer: DevServerState | null = null;
+
+const appendOutput = (line: string): void => {
+    if (!devServer) return;
+
+    devServer.output.push(line);
+
+    if (devServer.output.length > MAX_OUTPUT_LINES) {
+        devServer.output = devServer.output.slice(-MAX_OUTPUT_LINES);
+    }
+};
+
+const killDevServer = (): void => {
+    if (!devServer?.process) return;
+
+    const proc = devServer.process;
+
+    try {
+        // Kill the process group (negative PID kills the group)
+        if (proc.pid) process.kill(-proc.pid, 'SIGTERM');
+    } catch {
+        // Fallback: kill just the process
+        try { proc.kill('SIGTERM'); } catch { /* already dead */ }
+    }
+
+    devServer.process = null;
+    devServer.phase = 'stopped';
+    devServer.pid = null;
+    appendOutput('\n--- Server stopped ---');
+};
+
+const startDevServer = (tenant: string): void => {
+    // Kill any existing server first
+    if (devServer?.process) killDevServer();
+
+    devServer = {
+        phase: 'preparing',
+        tenant,
+        output: [],
+        pid: null,
+        startedAt: Date.now(),
+        url: null,
+        exitCode: null,
+        process: null,
+    };
+
+    appendOutput(`▸ Applying config for "${tenant}"...`);
+
+    // Phase 1: prepare-native-config
+    const prepare = spawn(
+        'npx',
+        ['tsx', 'scripts/prepare-native-config.ts', tenant],
+        { cwd: APP_ROOT, shell: true, detached: true },
+    );
+
+    devServer.process = prepare;
+    devServer.pid = prepare.pid ?? null;
+
+    prepare.stdout.on('data', (d: Buffer) => {
+        for (const line of d.toString().split('\n')) {
+            if (line.trim()) appendOutput(line);
+        }
+    });
+
+    prepare.stderr.on('data', (d: Buffer) => {
+        for (const line of d.toString().split('\n')) {
+            if (line.trim()) appendOutput(line);
+        }
+    });
+
+    prepare.on('close', (code) => {
+        if (!devServer || devServer.phase === 'stopped') return;
+
+        if (code !== 0) {
+            devServer.phase = 'error';
+            devServer.exitCode = code;
+            devServer.process = null;
+            appendOutput(`\n✗ prepare-native-config exited with code ${code}`);
+            return;
+        }
+
+        appendOutput('\n▸ Starting Vite dev server...');
+        devServer.phase = 'starting';
+
+        // Phase 2: vite dev
+        const vite = spawn('npx', ['vite', '--host'], {
+            cwd: APP_ROOT,
+            shell: true,
+            detached: true,
+        });
+
+        devServer.process = vite;
+        devServer.pid = vite.pid ?? null;
+
+        vite.stdout.on('data', (d: Buffer) => {
+            const text = d.toString();
+
+            for (const line of text.split('\n')) {
+                if (line.trim()) appendOutput(line);
+            }
+
+            // Detect when Vite is ready
+            const urlMatch = text.match(/Local:\s+(https?:\/\/[^\s]+)/);
+
+            if (urlMatch && devServer) {
+                devServer.phase = 'running';
+                devServer.url = urlMatch[1]!;
+            }
+        });
+
+        vite.stderr.on('data', (d: Buffer) => {
+            for (const line of d.toString().split('\n')) {
+                if (line.trim()) appendOutput(line);
+            }
+        });
+
+        vite.on('close', (viteCode) => {
+            if (!devServer || devServer.phase === 'stopped') return;
+
+            devServer.phase = viteCode === 0 ? 'stopped' : 'error';
+            devServer.exitCode = viteCode;
+            devServer.process = null;
+            appendOutput(`\n--- Vite exited (code ${viteCode}) ---`);
+        });
+
+        vite.on('error', (err) => {
+            if (!devServer) return;
+
+            devServer.phase = 'error';
+            devServer.process = null;
+            appendOutput(`\n✗ Vite error: ${String(err)}`);
+        });
+    });
+
+    prepare.on('error', (err) => {
+        if (!devServer) return;
+
+        devServer.phase = 'error';
+        devServer.process = null;
+        appendOutput(`\n✗ Prepare error: ${String(err)}`);
+    });
+};
+
 const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
     const path = url.pathname;
@@ -450,34 +610,54 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
             return;
         }
 
-        if (path === '/api/actions/docker-start' && req.method === 'POST') {
+        if (path === '/api/actions/dev-server/start' && req.method === 'POST') {
             const body = JSON.parse(await readBody(req));
             const { tenant } = body;
 
-            // Spawn in background — this is long-running
-            const child = spawn(
-                'npx',
-                ['tsx', 'scripts/prepare-native-config.ts', tenant || 'learncard'],
-                { cwd: APP_ROOT, shell: true, stdio: 'ignore', detached: true },
-            );
+            if (!tenant) {
+                json(res, 400, { error: 'Missing tenant' });
+                return;
+            }
 
-            child.unref();
+            startDevServer(tenant);
+            json(res, 200, { started: true, tenant });
+            return;
+        }
 
-            // After prepare-config finishes, start vite
-            child.on('close', () => {
-                const vite = spawn('npx', ['vite', '--host'], {
-                    cwd: APP_ROOT,
-                    shell: true,
-                    stdio: 'ignore',
-                    detached: true,
-                });
+        if (path === '/api/actions/dev-server/status' && req.method === 'GET') {
+            if (!devServer) {
+                json(res, 200, { active: false });
+                return;
+            }
 
-                vite.unref();
-            });
+            // Return last N lines requested (default 100)
+            const since = parseInt(url.searchParams.get('since') ?? '0', 10);
+            const lines = devServer.output.slice(since);
 
             json(res, 200, {
-                message: `Starting dev server for ${tenant || 'learncard'}... The app will be available at http://localhost:3000 shortly.`,
+                active: true,
+                phase: devServer.phase,
+                tenant: devServer.tenant,
+                pid: devServer.pid,
+                url: devServer.url,
+                exitCode: devServer.exitCode,
+                startedAt: devServer.startedAt,
+                uptime: Date.now() - devServer.startedAt,
+                totalLines: devServer.output.length,
+                lines,
+                since,
             });
+            return;
+        }
+
+        if (path === '/api/actions/dev-server/stop' && req.method === 'POST') {
+            if (!devServer?.process) {
+                json(res, 200, { stopped: true, wasRunning: false });
+                return;
+            }
+
+            killDevServer();
+            json(res, 200, { stopped: true, wasRunning: true });
             return;
         }
 

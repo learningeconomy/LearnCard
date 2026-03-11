@@ -767,11 +767,17 @@ function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
     const [generating, setGenerating] = useState(false);
     const [applying, setApplying] = useState(false);
     const [resetting, setResetting] = useState(false);
-    const [starting, setStarting] = useState(false);
-
     const [actionOutput, setActionOutput] = useState(null);
     const [actionError, setActionError] = useState(null);
     const [actionSuccess, setActionSuccess] = useState(null);
+
+    // Dev server state
+    const [devStatus, setDevStatus] = useState(null);
+    const [devLines, setDevLines] = useState([]);
+    const [devLineCursor, setDevLineCursor] = useState(0);
+    const [devStarting, setDevStarting] = useState(false);
+    const [devStopping, setDevStopping] = useState(false);
+    const devLogRef = useRef(null);
 
     const fileInputRef = useRef(null);
 
@@ -914,26 +920,219 @@ function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
         setResetting(false);
     };
 
-    const handleDockerStart = async () => {
+    // --- Dev server polling ---
+    const isDevActive = devStatus?.active && (devStatus.phase === 'preparing' || devStatus.phase === 'starting' || devStatus.phase === 'running');
+
+    useEffect(() => {
+        // Poll for dev server status
+        let timer = null;
+
+        const poll = async () => {
+            try {
+                const status = await api.get('/api/actions/dev-server/status?since=' + devLineCursor);
+
+                setDevStatus(status);
+
+                if (status.active && status.lines?.length > 0) {
+                    setDevLines(prev => [...prev, ...status.lines]);
+                    setDevLineCursor(status.totalLines);
+
+                    // Auto-scroll log
+                    requestAnimationFrame(() => {
+                        if (devLogRef.current) {
+                            devLogRef.current.scrollTop = devLogRef.current.scrollHeight;
+                        }
+                    });
+                }
+            } catch { /* ignore poll errors */ }
+        };
+
+        poll();
+
+        // Poll faster when actively running, slower otherwise
+        timer = setInterval(poll, isDevActive ? 1500 : 5000);
+
+        return () => clearInterval(timer);
+    }, [devLineCursor, isDevActive]);
+
+    const handleDevStart = async () => {
         if (!activeTenant) return;
 
-        clearStatus();
-        setStarting(true);
+        setDevStarting(true);
+        setDevLines([]);
+        setDevLineCursor(0);
 
         try {
-            const result = await api.post('/api/actions/docker-start', { tenant: activeTenant });
-
-            setActionSuccess(result.message);
+            await api.post('/api/actions/dev-server/start', { tenant: activeTenant });
         } catch (err) {
-            setActionError('Start failed: ' + String(err));
+            setActionError('Failed to start dev server: ' + String(err));
         }
 
-        setStarting(false);
+        setDevStarting(false);
+    };
+
+    const handleDevStop = async () => {
+        setDevStopping(true);
+
+        try {
+            await api.post('/api/actions/dev-server/stop', {});
+        } catch (err) {
+            setActionError('Failed to stop dev server: ' + String(err));
+        }
+
+        setDevStopping(false);
+    };
+
+    const formatUptime = (ms) => {
+        if (!ms) return '0s';
+
+        const secs = Math.floor(ms / 1000);
+
+        if (secs < 60) return secs + 's';
+
+        const mins = Math.floor(secs / 60);
+        const remSecs = secs % 60;
+
+        if (mins < 60) return mins + 'm ' + remSecs + 's';
+
+        const hrs = Math.floor(mins / 60);
+
+        return hrs + 'h ' + (mins % 60) + 'm';
+    };
+
+    const phaseConfig = {
+        preparing: { label: 'Preparing', color: 'bg-amber-100 text-amber-700', dot: 'bg-amber-400 animate-pulse' },
+        starting:  { label: 'Starting',  color: 'bg-blue-100 text-blue-700',   dot: 'bg-blue-400 animate-pulse' },
+        running:   { label: 'Running',   color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-400' },
+        stopped:   { label: 'Stopped',   color: 'bg-gs-100 text-gs-600',       dot: 'bg-gs-400' },
+        error:     { label: 'Error',     color: 'bg-red-100 text-red-700',     dot: 'bg-red-400' },
     };
 
     return h`
         <div class="space-y-5">
             <h3 class="text-sm font-semibold text-gs-700 uppercase tracking-wider">Dev Actions</h3>
+
+            <!-- Dev Server Monitor -->
+            <div class="space-y-3">
+                <div class="text-xs font-semibold text-gs-600 uppercase tracking-wider flex items-center gap-2">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                    </svg>
+                    Dev Server
+                </div>
+
+                ${devStatus?.active ? h`
+                    <!-- Status card -->
+                    <div class="rounded-xl border ${
+                        devStatus.phase === 'running' ? 'border-emerald-200 bg-emerald-50/30' :
+                        devStatus.phase === 'error' ? 'border-red-200 bg-red-50/30' :
+                        'border-gs-200 bg-gs-50/30'
+                    } p-3 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold ${phaseConfig[devStatus.phase]?.color || 'bg-gs-100 text-gs-600'}">
+                                    <span class="w-1.5 h-1.5 rounded-full ${phaseConfig[devStatus.phase]?.dot || 'bg-gs-400'}" />
+                                    ${phaseConfig[devStatus.phase]?.label || devStatus.phase}
+                                </span>
+                                <span class="text-[10px] text-gs-400 font-mono">${devStatus.tenant}</span>
+                            </div>
+                            <span class="text-[10px] text-gs-400 tabular-nums">${formatUptime(devStatus.uptime)}</span>
+                        </div>
+
+                        ${devStatus.url ? h`
+                            <a
+                                href=${devStatus.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-emerald-200 hover:border-emerald-400 transition-colors group"
+                            >
+                                <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                <span class="text-xs font-medium text-emerald-700 group-hover:underline">${devStatus.url}</span>
+                            </a>
+                        ` : null}
+
+                        <!-- Live log -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[10px] font-medium text-gs-500 uppercase tracking-wider flex items-center gap-1.5">
+                                    ${isDevActive ? h`<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />` : null}
+                                    Output
+                                </span>
+                                <span class="text-[10px] text-gs-400 tabular-nums">${devLines.length} lines</span>
+                            </div>
+                            <pre
+                                ref=${devLogRef}
+                                class="bg-gs-900 text-gs-300 rounded-xl p-3 text-[11px] font-mono leading-relaxed overflow-auto max-h-52 scrollbar-thin whitespace-pre-wrap"
+                            >${devLines.length > 0 ? devLines.join('\n') : 'Waiting for output...'}</pre>
+                        </div>
+
+                        <!-- Controls -->
+                        <div class="flex gap-2">
+                            ${isDevActive ? h`
+                                <button
+                                    onClick=${handleDevStop}
+                                    disabled=${devStopping}
+                                    class="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-red-200 bg-red-50 text-red-700 text-xs font-medium hover:bg-red-100 transition-colors disabled:opacity-40"
+                                >
+                                    ${devStopping ? h`
+                                        <span class="w-3 h-3 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
+                                        Stopping...
+                                    ` : h`
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                                        </svg>
+                                        Stop Server
+                                    `}
+                                </button>
+                            ` : h`
+                                <button
+                                    onClick=${handleDevStart}
+                                    disabled=${devStarting || !activeTenant}
+                                    class="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-gs-200 bg-white text-gs-800 text-xs font-medium hover:bg-gs-10 transition-colors disabled:opacity-40"
+                                >
+                                    ${devStarting ? h`
+                                        <span class="w-3 h-3 border-2 border-gs-300 border-t-gs-600 rounded-full animate-spin" />
+                                        Starting...
+                                    ` : h`
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Restart Server
+                                    `}
+                                </button>
+                            `}
+                            <button
+                                onClick=${() => { setDevLines([]); setDevLineCursor(0); }}
+                                class="py-2 px-3 rounded-xl border border-gs-200 bg-white text-gs-500 text-xs font-medium hover:bg-gs-10 transition-colors"
+                                title="Clear log"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                ` : h`
+                    <p class="text-[11px] text-gs-400 leading-relaxed">
+                        Applies the tenant config then starts Vite dev server.
+                    </p>
+                    <${ActionButton}
+                        label=${'Start Dev Server: ' + (activeTenant || '...')}
+                        icon=${h`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`}
+                        onClick=${handleDevStart}
+                        loading=${devStarting}
+                        loadingText="Starting..."
+                        disabled=${!activeTenant}
+                    />
+                `}
+            </div>
+
+            <!-- Divider -->
+            <div class="border-t border-gs-100" />
 
             ${actionError ? h`
                 <div class="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 fade-in">
@@ -1060,30 +1259,6 @@ function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
                     loading=${resetting}
                     loadingText="Resetting..."
                     variant="danger"
-                />
-            </div>
-
-            <!-- Divider -->
-            <div class="border-t border-gs-100" />
-
-            <!-- Dev Server -->
-            <div class="space-y-3">
-                <div class="text-xs font-semibold text-gs-600 uppercase tracking-wider flex items-center gap-2">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-                    </svg>
-                    Dev Server
-                </div>
-                <p class="text-[11px] text-gs-400 leading-relaxed">
-                    Applies the tenant config then starts Vite dev server on port 3000.
-                </p>
-
-                <${ActionButton}
-                    label=${'Start Dev Server: ' + (activeTenant || '...')}
-                    icon=${h`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`}
-                    onClick=${handleDockerStart}
-                    loading=${starting}
-                    loadingText="Starting..."
                 />
             </div>
 
