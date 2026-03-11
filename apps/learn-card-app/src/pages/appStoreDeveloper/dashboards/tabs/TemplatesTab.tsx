@@ -64,6 +64,7 @@ export const TemplatesTab: React.FC<TemplatesTabProps> = ({
                 onComplete={handleComplete}
                 onBack={handleBack}
                 hideNavigation
+                onTemplateChange={onRefresh}
             />
         </div>
     );

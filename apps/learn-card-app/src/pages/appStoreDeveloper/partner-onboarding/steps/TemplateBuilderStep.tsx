@@ -89,6 +89,7 @@ interface TemplateBuilderStepProps {
     onComplete: (templates: CredentialTemplate[]) => void;
     onBack: () => void;
     hideNavigation?: boolean;
+    onTemplateChange?: () => void;
 }
 
 export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
@@ -98,6 +99,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     onComplete,
     onBack,
     hideNavigation,
+    onTemplateChange,
 }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
@@ -467,6 +469,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     { type: ToastTypeEnum.Success }
                 );
                 setExpandedId(null);
+                onTemplateChange?.();
             }
         } catch (err) {
             console.error('Failed to save template:', err);
@@ -603,6 +606,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true
                 });
+                onTemplateChange?.();
             }
         } catch (err) {
             console.error('Failed to save imported templates:', err);
@@ -678,6 +682,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         setLocalTemplates(localTemplates.filter(t => t.id !== id));
         if (expandedId === id) setExpandedId(null);
         presentToast('Template removed', { type: ToastTypeEnum.Success });
+        onTemplateChange?.();
     };
 
     // Open edit modal for a child template
