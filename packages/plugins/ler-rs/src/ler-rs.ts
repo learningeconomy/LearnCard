@@ -41,6 +41,19 @@ const toArray = <T>(maybe: T | T[] | undefined): T[] =>
     maybe == null ? [] : Array.isArray(maybe) ? maybe : [maybe];
 
 /**
+ * Inline LER-RS JSON-LD context used for signing stability.
+ *
+ * The published HR Open URL is schema-oriented and can trigger additional remote
+ * context resolution during expansion. Inlining this base context avoids network
+ * dependency at issue time while preserving deterministic term expansion.
+ */
+const inlineLerRsContext = {
+    '@version': 1.1,
+    hrrec: 'http://schema.hropenstandards.org/recruiting/',
+    '@vocab': 'http://schema.hropenstandards.org/recruiting/',
+};
+
+/**
  * Determines whether a VC represents a LER-RS credential (legacy and current forms).
  *
  * Checks:
@@ -227,9 +240,70 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
                     },
                 };
 
-                const communication: LerRsRecord['communication'] | undefined = params.person.email
-                    ? { email: [{ address: params.person.email }] }
-                    : undefined;
+                const hasAddress =
+                    !!params.person.address?.formattedAddress ||
+                    !!params.person.address?.line ||
+                    !!params.person.address?.city ||
+                    !!params.person.address?.postalCode ||
+                    !!params.person.address?.countryCode;
+                const webEntries = (params.person.web || []).filter(entry => entry?.url);
+                const socialEntries = (params.person.social || []).filter(entry => entry?.uri);
+
+                const communication: LerRsRecord['communication'] | undefined =
+                    params.person.email ||
+                    params.person.phone ||
+                    hasAddress ||
+                    webEntries.length > 0 ||
+                    socialEntries.length > 0
+                        ? {
+                              ...(params.person.email
+                                  ? { email: [{ address: params.person.email }] }
+                                  : {}),
+                              ...(params.person.phone
+                                  ? { phone: [{ formattedNumber: params.person.phone }] }
+                                  : {}),
+                              ...(webEntries.length
+                                  ? { web: webEntries.map(entry => ({ url: entry.url, name: entry.name })) }
+                                  : {}),
+                              ...(socialEntries.length
+                                  ? {
+                                        social: socialEntries.map(entry => ({
+                                            uri: entry.uri,
+                                            ...(entry.name ? { name: entry.name } : {}),
+                                        })),
+                                    }
+                                  : {}),
+                              ...(hasAddress
+                                  ? {
+                                        address: [
+                                            {
+                                                ...(params.person.address?.formattedAddress
+                                                    ? {
+                                                          formattedAddress:
+                                                              params.person.address.formattedAddress,
+                                                      }
+                                                    : {}),
+                                                ...(params.person.address?.line
+                                                    ? { line: params.person.address.line }
+                                                    : {}),
+                                                ...(params.person.address?.city
+                                                    ? { city: params.person.address.city }
+                                                    : {}),
+                                                ...(params.person.address?.postalCode
+                                                    ? { postalCode: params.person.address.postalCode }
+                                                    : {}),
+                                                ...(params.person.address?.countryCode
+                                                    ? {
+                                                          countryCode:
+                                                              params.person.address.countryCode,
+                                                      }
+                                                    : {}),
+                                            },
+                                        ],
+                                    }
+                                  : {}),
+                          }
+                        : undefined;
 
                 const lerRecord: LerRsRecord = {
                     type: LER_RS_TYPE_URI_V45,
@@ -237,6 +311,7 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
                     person: personSection,
                     ...(communication ? { communication } : {}),
                     skills: (params.skills || []).map(s => ({ name: s })),
+                    narratives: params.narratives,
                     employmentHistories: params.workHistory
                         ? buildEmploymentHistories(params.workHistory)
                         : undefined,
@@ -246,10 +321,11 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
                     certifications: params.certifications
                         ? buildCertifications(params.certifications)
                         : undefined,
+                    attachments: params.attachments,
                 };
 
                 const unsignedVC: UnsignedVC = {
-                    '@context': [LER_RS_CREDENTIAL_CONTEXT_V1, LER_RS_VC_CONTEXT_V45],
+                    '@context': [LER_RS_CREDENTIAL_CONTEXT_V1, inlineLerRsContext],
                     id: `urn:uuid:${documentId}`,
                     type: ['VerifiableCredential', LER_RS_TYPE_URI_V45],
                     issuer: did,
