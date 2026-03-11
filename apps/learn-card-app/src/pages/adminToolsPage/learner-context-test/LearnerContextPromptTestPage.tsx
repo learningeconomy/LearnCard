@@ -109,7 +109,6 @@ const LearnerContextPromptTestPage: FC = () => {
     const [instructions, setInstructions] = useState('');
     const [detailLevel, setDetailLevel] = useState<'compact' | 'expanded'>('compact');
     const [personalDataJson, setPersonalDataJson] = useState('');
-    const [additionalContextJson, setAdditionalContextJson] = useState('');
     const [selectedByCategory, setSelectedByCategory] = useState<Record<string, string[]>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [response, setResponse] = useState<LearnerContextResponse | null>(null);
@@ -223,7 +222,6 @@ const LearnerContextPromptTestPage: FC = () => {
 
         try {
             const personalData = parseJsonObject(personalDataJson, 'Personal data');
-            const additionalContext = parseJsonObject(additionalContextJson, 'Additional context');
             const wallet = await initWallet();
             const credentials = (
                 await Promise.all(selectedUris.map(uri => wallet.read.get(uri)))
@@ -239,7 +237,6 @@ const LearnerContextPromptTestPage: FC = () => {
                 body: JSON.stringify({
                     credentials,
                     personalData,
-                    additionalContext,
                     instructions: instructions.trim() || undefined,
                     detailLevel,
                     includeStructuredContext: true,
@@ -355,19 +352,6 @@ const LearnerContextPromptTestPage: FC = () => {
                                 value={personalDataJson}
                                 onChange={event => setPersonalDataJson(event.target.value)}
                                 placeholder={'{"name":"Taylor"}'}
-                                rows={5}
-                                className="rounded-[14px] border border-grayscale-200 bg-grayscale-50 px-[14px] py-[12px] text-[14px] font-mono text-grayscale-900 outline-none focus:border-emerald-600 resize-y"
-                            />
-                        </label>
-
-                        <label className="flex flex-col gap-[8px]">
-                            <span className="text-[14px] font-[600] font-notoSans text-grayscale-800">
-                                Additional Context JSON
-                            </span>
-                            <textarea
-                                value={additionalContextJson}
-                                onChange={event => setAdditionalContextJson(event.target.value)}
-                                placeholder={'{"goal":"Test tutor context formatting"}'}
                                 rows={5}
                                 className="rounded-[14px] border border-grayscale-200 bg-grayscale-50 px-[14px] py-[12px] text-[14px] font-mono text-grayscale-900 outline-none focus:border-emerald-600 resize-y"
                             />
