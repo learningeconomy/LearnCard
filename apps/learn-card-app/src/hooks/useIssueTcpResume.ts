@@ -2,16 +2,24 @@ import { VC } from '@learncard/types';
 import { CredentialCategoryEnum, useCurrentUser, useFilestack, useWallet } from 'learn-card-base';
 import { resumeBuilderStore } from '../stores/resumeBuilderStore';
 import type { ResumeSectionKey } from '../components/resume-builder/resume-builder.helpers';
-import { LER_RS_CREDENTIAL_CONTEXT_V1, LER_RS_VC_CONTEXT_V45 } from '@learncard/ler-rs-plugin';
 
 type UnknownRecord = Record<string, unknown>;
 
+/**
+ * Normalized per-credential input used to build the final LER-RS payload.
+ *
+ * This shape represents the Resume Builder's client-side interpretation of a selected credential:
+ * the source VC, any edited narrative/metadata, optional date overrides, and the work-only
+ * `current` flag.
+ */
 type LerRecordInput = {
     uri: string;
     category: string;
     vc?: VC;
     narrative?: string;
     metadata?: string[];
+    current?: boolean;
+    startDateOverride?: string;
     endDateOverride?: string;
 };
 
@@ -131,32 +139,10 @@ const buildVerificationReference = (input: LerRecordInput): VerificationReferenc
     };
 };
 
-const getContextUris = (value: unknown): string[] => {
-    const uris: string[] = [];
-
-    const visit = (node: unknown) => {
-        if (!node || typeof node !== 'object') return;
-        if (Array.isArray(node)) {
-            node.forEach(visit);
-            return;
-        }
-
-        const record = node as UnknownRecord;
-        const context = record['@context'];
-        if (typeof context === 'string') uris.push(context);
-        if (Array.isArray(context)) {
-            context.forEach(entry => {
-                if (typeof entry === 'string') uris.push(entry);
-            });
-        }
-
-        Object.values(record).forEach(visit);
-    };
-
-    visit(value);
-    return Array.from(new Set(uris));
-};
-
+/**
+ * Builds a normalized LER-RS work history item from a selected source credential plus
+ * Resume Builder overrides.
+ */
 const buildWorkHistoryItem = (input: LerRecordInput): UnknownRecord => {
     const subject = asRecord(input.vc?.credentialSubject);
     const organization = asRecord(subject?.organization);
@@ -181,7 +167,9 @@ const buildWorkHistoryItem = (input: LerRecordInput): UnknownRecord => {
         asRecord(subject?.issuer)?.name
     );
 
-    const start = firstString(
+    const start =
+        input.startDateOverride ||
+        firstString(
         subject?.start,
         subject?.startDate,
         asRecord(subject?.effectiveTimePeriod)?.validFrom,
@@ -207,6 +195,7 @@ const buildWorkHistoryItem = (input: LerRecordInput): UnknownRecord => {
     return {
         ...(position ? { position } : {}),
         ...(employerName ? { employer: employerName } : {}),
+        ...(typeof input.current === 'boolean' ? { current: input.current } : {}),
         ...(start ? { start } : {}),
         ...(end ? { end } : {}),
         ...(narrative ? { narrative } : {}),
@@ -214,6 +203,10 @@ const buildWorkHistoryItem = (input: LerRecordInput): UnknownRecord => {
     };
 };
 
+/**
+ * Builds a normalized LER-RS education item from a selected source credential plus
+ * Resume Builder overrides.
+ */
 const buildEducationItem = (input: LerRecordInput): UnknownRecord => {
     const subject = asRecord(input.vc?.credentialSubject);
 
@@ -235,7 +228,9 @@ const buildEducationItem = (input: LerRecordInput): UnknownRecord => {
         subject?.program
     );
 
-    const start = firstString(
+    const start =
+        input.startDateOverride ||
+        firstString(
         subject?.start,
         subject?.startDate,
         asRecord(subject?.effectiveTimePeriod)?.validFrom,
@@ -245,6 +240,7 @@ const buildEducationItem = (input: LerRecordInput): UnknownRecord => {
     );
 
     const end = firstString(
+        input.endDateOverride,
         subject?.end,
         subject?.endDate,
         asRecord(subject?.effectiveTimePeriod)?.validTo,
@@ -277,6 +273,10 @@ const buildEducationItem = (input: LerRecordInput): UnknownRecord => {
     };
 };
 
+/**
+ * Builds a normalized LER-RS certification item from a selected source credential plus
+ * Resume Builder overrides.
+ */
 const buildCertificationItem = (input: LerRecordInput): UnknownRecord => {
     const subject = asRecord(input.vc?.credentialSubject);
     const issuer = asRecord(input.vc?.issuer);
@@ -301,7 +301,9 @@ const buildCertificationItem = (input: LerRecordInput): UnknownRecord => {
             issuer?.id
         ) || undefined;
 
-    const validFrom = firstString(
+    const validFrom =
+        input.startDateOverride ||
+        firstString(
         subject?.start,
         subject?.startDate,
         asRecord(subject?.effectiveTimePeriod)?.validFrom,
@@ -311,6 +313,7 @@ const buildCertificationItem = (input: LerRecordInput): UnknownRecord => {
     );
 
     const validTo = firstString(
+        input.endDateOverride,
         subject?.end,
         subject?.endDate,
         asRecord(subject?.effectiveTimePeriod)?.validTo,
@@ -335,6 +338,10 @@ const buildCertificationItem = (input: LerRecordInput): UnknownRecord => {
     };
 };
 
+/**
+ * Builds the final `createLerRecord` payload from selected Resume Builder credentials,
+ * visible personal details, and the uploaded PDF attachment metadata.
+ */
 const buildLerPayloadFromResume = (
     inputs: LerRecordInput[],
     context: {
@@ -458,249 +465,145 @@ export const useIssueTcpResume = () => {
     const publishTcpResume = async (
         input: PublishTcpResumeInput
     ): Promise<PublishTcpResumeResult> => {
-        console.info('[ResumePublish] start', {
-            fileName: input.fileName,
-            includedCredentialCount: input.includedCredentials.length,
+        const wallet = await initWallet();
+
+        const createLerRecord = (wallet.invoke as Record<string, unknown>).createLerRecord;
+        if (typeof createLerRecord !== 'function') {
+            throw new Error('LER-RS plugin is not available on the active wallet');
+        }
+        const createLerRecordInvoker = createLerRecord as CreateLerRecordInvoker;
+
+        const uploader = singleImageUpload as undefined | ((file: File) => Promise<string>);
+        if (!uploader) {
+            throw new Error('Filestack uploader is unavailable');
+        }
+
+        const file = new File([input.pdfBlob], input.fileName, { type: 'application/pdf' });
+        const pdfUrl = await uploader(file);
+        if (!pdfUrl) {
+            throw new Error('Failed to upload resume PDF to Filestack');
+        }
+
+        const generatedAt = input.generatedAt ?? new Date().toISOString();
+        const did = wallet.id.did();
+
+        const credentialEntries = resumeBuilderStore.get.credentialEntries();
+        const credentialStartDates = resumeBuilderStore.get.credentialStartDates();
+        const credentialEndDates = resumeBuilderStore.get.credentialEndDates();
+        const currentJobCredentialUri = resumeBuilderStore.get.currentJobCredentialUri();
+        const personalDetails = resumeBuilderStore.get.personalDetails();
+        const hiddenPersonalDetails = resumeBuilderStore.get.hiddenPersonalDetails();
+
+        const lerInputs = await Promise.all(
+            input.includedCredentials.map(async item => {
+                let vc: VC | undefined;
+                try {
+                    vc = (await wallet.read.get(item.uri)) as VC | undefined;
+                } catch {
+                    vc = undefined;
+                }
+                const sectionEntries = credentialEntries[item.category as ResumeSectionKey] ?? [];
+                const selectedEntry = sectionEntries.find(entry => entry.uri === item.uri);
+
+                const description = selectedEntry?.fields
+                    ?.find(field => field.type === 'description' && !field.hidden)
+                    ?.value?.trim();
+
+                const metadata = (selectedEntry?.fields ?? [])
+                    .filter(field => field.type === 'metadata')
+                    .map(field => field.value.trim())
+                    .filter(Boolean);
+
+                return {
+                    uri: item.uri,
+                    category: item.category,
+                    vc,
+                    narrative: description,
+                    metadata,
+                    current:
+                        item.category === CredentialCategoryEnum.workHistory
+                            ? currentJobCredentialUri === item.uri
+                            : undefined,
+                    startDateOverride: credentialStartDates[item.uri],
+                    endDateOverride: credentialEndDates[item.uri],
+                } satisfies LerRecordInput;
+            })
+        );
+
+        const visibleName = !hiddenPersonalDetails?.name ? personalDetails.name?.trim() : '';
+        const visibleEmail = !hiddenPersonalDetails?.email ? personalDetails.email?.trim() : '';
+        const visibleCareer = !hiddenPersonalDetails?.career ? personalDetails.career?.trim() : '';
+        const visiblePhone = !hiddenPersonalDetails?.phone ? personalDetails.phone?.trim() : '';
+        const visibleLocation = !hiddenPersonalDetails?.location
+            ? personalDetails.location?.trim()
+            : '';
+        const visibleSummary = !hiddenPersonalDetails?.summary
+            ? personalDetails.summary?.trim()
+            : '';
+        const visibleWebsite = !hiddenPersonalDetails?.website
+            ? personalDetails.website?.trim()
+            : '';
+        const visibleLinkedIn = !hiddenPersonalDetails?.linkedIn
+            ? personalDetails.linkedIn?.trim()
+            : '';
+
+        const fullName = visibleName || currentUser?.name?.trim() || 'Unknown User';
+        const email = visibleEmail || currentUser?.email?.trim() || undefined;
+
+        const lerPayload = buildLerPayloadFromResume(lerInputs, {
+            did,
+            fullName,
+            email,
+            phone: visiblePhone || undefined,
+            location: visibleLocation || undefined,
+            career: visibleCareer || undefined,
+            summary: visibleSummary || undefined,
+            website: visibleWebsite || undefined,
+            linkedIn: visibleLinkedIn || undefined,
+            pdfUrl,
+            pdfHash: input.pdfHash,
+            generatedAt,
         });
 
-        try {
-            console.info('[ResumePublish] initWallet');
-            const wallet = await initWallet();
+        const lerVc = await createLerRecordInvoker({
+            learnCard: wallet,
+            ...lerPayload,
+        });
 
-            const createLerRecord = (wallet.invoke as Record<string, unknown>).createLerRecord;
-            if (typeof createLerRecord !== 'function') {
-                console.error('[ResumePublish] createLerRecord missing on wallet.invoke');
-                throw new Error('LER-RS plugin is not available on the active wallet');
-            }
-            const createLerRecordInvoker = createLerRecord as CreateLerRecordInvoker;
-
-            const uploader = singleImageUpload as undefined | ((file: File) => Promise<string>);
-            if (!uploader) {
-                console.error('[ResumePublish] filestack uploader unavailable');
-                throw new Error('Filestack uploader is unavailable');
-            }
-
-            const file = new File([input.pdfBlob], input.fileName, { type: 'application/pdf' });
-            console.info('[ResumePublish] uploading PDF to Filestack', {
-                fileName: file.name,
-                fileSize: file.size,
-            });
-            const pdfUrl = await uploader(file);
-            if (!pdfUrl) {
-                console.error('[ResumePublish] Filestack upload returned empty URL');
-                throw new Error('Failed to upload resume PDF to Filestack');
-            }
-            console.info('[ResumePublish] PDF uploaded', { pdfUrl });
-
-            const generatedAt = input.generatedAt ?? new Date().toISOString();
-            const did = wallet.id.did();
-
-            const credentialEntries = resumeBuilderStore.get.credentialEntries();
-            const workExperienceEndDates = resumeBuilderStore.get.workExperienceEndDates();
-            const personalDetails = resumeBuilderStore.get.personalDetails();
-            const hiddenPersonalDetails = resumeBuilderStore.get.hiddenPersonalDetails();
-
-            console.info('[ResumePublish] resolving source credentials');
-            const lerInputs = await Promise.all(
-                input.includedCredentials.map(async item => {
-                    let vc: VC | undefined;
-                    try {
-                        vc = (await wallet.read.get(item.uri)) as VC | undefined;
-                    } catch (error) {
-                        console.warn('[ResumePublish] failed to read source VC', {
-                            uri: item.uri,
-                            category: item.category,
-                            error,
-                        });
-                        vc = undefined;
-                    }
-                    const sectionEntries =
-                        credentialEntries[item.category as ResumeSectionKey] ?? [];
-                    const selectedEntry = sectionEntries.find(entry => entry.uri === item.uri);
-
-                    const description = selectedEntry?.fields
-                        ?.find(field => field.type === 'description' && !field.hidden)
-                        ?.value?.trim();
-
-                    const metadata = (selectedEntry?.fields ?? [])
-                        .filter(field => field.type === 'metadata')
-                        .map(field => field.value.trim())
-                        .filter(Boolean);
-
-                    return {
-                        uri: item.uri,
-                        category: item.category,
-                        vc,
-                        narrative: description,
-                        metadata,
-                        endDateOverride: workExperienceEndDates[item.uri],
-                    } satisfies LerRecordInput;
-                })
-            );
-            console.info('[ResumePublish] resolved source credentials', {
-                withVcCount: lerInputs.filter(item => Boolean(item.vc)).length,
-                withoutVcCount: lerInputs.filter(item => !item.vc).length,
-            });
-
-            console.info('[ResumePublish] context preflight start', {
-                lerContexts: [LER_RS_CREDENTIAL_CONTEXT_V1, LER_RS_VC_CONTEXT_V45],
-            });
-            for (const contextUri of [LER_RS_CREDENTIAL_CONTEXT_V1, LER_RS_VC_CONTEXT_V45]) {
-                try {
-                    const resolved = await wallet.context.resolveDocument(contextUri, true);
-                    if (!resolved) {
-                        console.warn('[ResumePublish] unresolved LER context', { contextUri });
-                    } else {
-                        console.info('[ResumePublish] resolved LER context', { contextUri });
-                    }
-                } catch (error) {
-                    console.warn('[ResumePublish] error resolving LER context', {
-                        contextUri,
-                        error,
-                    });
-                }
-            }
-
-            for (const inputItem of lerInputs) {
-                if (!inputItem.vc) continue;
-                const contextUris = getContextUris(inputItem.vc);
-                const vcInput = asRecord(inputItem.vc as unknown as Record<string, unknown>)?.input;
-                console.info('[ResumePublish] source VC contexts', {
-                    sourceUri: inputItem.uri,
-                    sourceVcId: inputItem.vc.id,
-                    contextUris,
-                    vcInput,
-                });
-
-                for (const contextUri of contextUris) {
-                    try {
-                        const resolved = await wallet.context.resolveDocument(contextUri, true);
-                        if (!resolved) {
-                            console.warn('[ResumePublish] unresolved source VC context', {
-                                sourceUri: inputItem.uri,
-                                sourceVcId: inputItem.vc.id,
-                                contextUri,
-                            });
-                        }
-                    } catch (error) {
-                        console.warn('[ResumePublish] error resolving source VC context', {
-                            sourceUri: inputItem.uri,
-                            sourceVcId: inputItem.vc.id,
-                            contextUri,
-                            error,
-                        });
-                    }
-                }
-            }
-            console.info('[ResumePublish] context preflight complete');
-
-            const visibleName = !hiddenPersonalDetails?.name ? personalDetails.name?.trim() : '';
-            const visibleEmail = !hiddenPersonalDetails?.email ? personalDetails.email?.trim() : '';
-            const visibleCareer = !hiddenPersonalDetails?.career
-                ? personalDetails.career?.trim()
-                : '';
-            const visiblePhone = !hiddenPersonalDetails?.phone ? personalDetails.phone?.trim() : '';
-            const visibleLocation = !hiddenPersonalDetails?.location
-                ? personalDetails.location?.trim()
-                : '';
-            const visibleSummary = !hiddenPersonalDetails?.summary
-                ? personalDetails.summary?.trim()
-                : '';
-            const visibleWebsite = !hiddenPersonalDetails?.website
-                ? personalDetails.website?.trim()
-                : '';
-            const visibleLinkedIn = !hiddenPersonalDetails?.linkedIn
-                ? personalDetails.linkedIn?.trim()
-                : '';
-
-            const fullName = visibleName || currentUser?.name?.trim() || 'Unknown User';
-            const email = visibleEmail || currentUser?.email?.trim() || undefined;
-
-            const lerPayload = buildLerPayloadFromResume(lerInputs, {
-                did,
-                fullName,
-                email,
-                phone: visiblePhone || undefined,
-                location: visibleLocation || undefined,
-                career: visibleCareer || undefined,
-                summary: visibleSummary || undefined,
-                website: visibleWebsite || undefined,
-                linkedIn: visibleLinkedIn || undefined,
-                pdfUrl,
-                pdfHash: input.pdfHash,
-                generatedAt,
-            });
-
-            const payloadRecord = asRecord(lerPayload);
-            console.info('[ResumePublish] built LER payload', {
-                hasWorkHistory: Array.isArray(payloadRecord?.workHistory),
-                hasEducationHistory: Array.isArray(payloadRecord?.educationHistory),
-                hasCertifications: Array.isArray(payloadRecord?.certifications),
-                hasSkills: Array.isArray(payloadRecord?.skills),
-                hasNarratives: Array.isArray(payloadRecord?.narratives),
-                hasAttachments: Array.isArray(payloadRecord?.attachments),
-            });
-
-            console.info('[ResumePublish] issuing LER VC');
-            const lerVc = await createLerRecordInvoker({
-                learnCard: wallet,
-                ...lerPayload,
-            });
-            console.info('[ResumePublish] issued LER VC', { vcId: lerVc?.id });
-
-            console.info('[ResumePublish] storing LER VC in LearnCloud');
-            const lerUri = await wallet.store.LearnCloud.uploadEncrypted?.(lerVc);
-            if (!lerUri) {
-                console.error('[ResumePublish] uploadEncrypted returned empty URI');
-                throw new Error('Failed to store LER-RS VC in LearnCloud');
-            }
-            console.info('[ResumePublish] stored LER VC', { lerUri });
-
-            const lerRecordId = lerVc.id || `urn:uuid:${crypto.randomUUID()}`;
-            const newIndexId = crypto.randomUUID();
-            const existingResumeRecords = await wallet.index.LearnCloud.get({
-                category: CredentialCategoryEnum.resume,
-            });
-            console.info('[ResumePublish] indexing LER VC', {
-                newIndexId,
-                existingResumeRecordCount: existingResumeRecords.length,
-            });
-
-            await wallet.index.LearnCloud.add({
-                id: newIndexId,
-                uri: lerUri,
-                category: CredentialCategoryEnum.resume,
-                credentialId: lerVc.id,
-                lerRecordId,
-                pdfUrl,
-                pdfHash: input.pdfHash,
-                isCurrent: true,
-                generatedAt,
-            });
-
-            await Promise.all(
-                existingResumeRecords.map(record =>
-                    wallet.index.LearnCloud.update(record.id, {
-                        isCurrent: false,
-                        supersededBy: lerRecordId,
-                        supersededAt: generatedAt,
-                    })
-                )
-            );
-
-            console.info('[ResumePublish] complete', {
-                lerUri,
-                lerRecordId,
-            });
-            return { lerVc, lerUri, pdfUrl };
-        } catch (error) {
-            console.error('[ResumePublish] failed', {
-                error,
-                fileName: input.fileName,
-                includedCredentialCount: input.includedCredentials.length,
-            });
-            throw error;
+        const lerUri = await wallet.store.LearnCloud.uploadEncrypted?.(lerVc);
+        if (!lerUri) {
+            throw new Error('Failed to store LER-RS VC in LearnCloud');
         }
+
+        const lerRecordId = lerVc.id || `urn:uuid:${crypto.randomUUID()}`;
+        const newIndexId = crypto.randomUUID();
+        const existingResumeRecords = await wallet.index.LearnCloud.get({
+            category: CredentialCategoryEnum.resume,
+        });
+
+        await wallet.index.LearnCloud.add({
+            id: newIndexId,
+            uri: lerUri,
+            category: CredentialCategoryEnum.resume,
+            credentialId: lerVc.id,
+            lerRecordId,
+            pdfUrl,
+            pdfHash: input.pdfHash,
+            isCurrent: true,
+            generatedAt,
+        });
+
+        await Promise.all(
+            existingResumeRecords.map(record =>
+                wallet.index.LearnCloud.update(record.id, {
+                    isCurrent: false,
+                    supersededBy: lerRecordId,
+                    supersededAt: generatedAt,
+                })
+            )
+        );
+
+        return { lerVc, lerUri, pdfUrl };
     };
 
     return { publishTcpResume };
