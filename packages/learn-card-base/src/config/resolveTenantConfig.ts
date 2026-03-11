@@ -15,7 +15,7 @@ import type { TenantConfig } from './tenantConfig';
 import { parseTenantConfig } from './tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from './tenantDefaults';
 
-const CACHE_KEY = 'tenant-config-cache';
+const CACHE_KEY_PREFIX = 'tenant-config-cache';
 const CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
 
 interface CachedTenantConfig {
@@ -23,25 +23,37 @@ interface CachedTenantConfig {
     cachedAt: number;
 }
 
+/** Build a tenant-scoped cache key. Falls back to generic key for backward compat reads. */
+const cacheKeyFor = (tenantId: string): string => `${CACHE_KEY_PREFIX}:${tenantId}`;
+
 // -----------------------------------------------------------------
 // Cache helpers
 // -----------------------------------------------------------------
 
-const readCache = (): TenantConfig | null => {
+const readCache = (tenantHint?: string): TenantConfig | null => {
     try {
-        const raw = localStorage.getItem(CACHE_KEY);
+        // Try tenant-scoped key first, then fall back to legacy unscoped key
+        const keys = tenantHint
+            ? [cacheKeyFor(tenantHint), CACHE_KEY_PREFIX]
+            : [CACHE_KEY_PREFIX];
 
-        if (!raw) return null;
+        for (const key of keys) {
+            const raw = localStorage.getItem(key);
 
-        const parsed: CachedTenantConfig = JSON.parse(raw);
-        const age = Date.now() - parsed.cachedAt;
+            if (!raw) continue;
 
-        if (age > CACHE_TTL_MS) {
-            localStorage.removeItem(CACHE_KEY);
-            return null;
+            const parsed: CachedTenantConfig = JSON.parse(raw);
+            const age = Date.now() - parsed.cachedAt;
+
+            if (age > CACHE_TTL_MS) {
+                localStorage.removeItem(key);
+                continue;
+            }
+
+            return parseTenantConfig(parsed.config, `localStorage cache (${key})`);
         }
 
-        return parseTenantConfig(parsed.config, 'localStorage cache');
+        return null;
     } catch {
         return null;
     }
@@ -50,8 +62,12 @@ const readCache = (): TenantConfig | null => {
 const writeCache = (config: TenantConfig): void => {
     try {
         const entry: CachedTenantConfig = { config, cachedAt: Date.now() };
+        const key = cacheKeyFor(config.tenantId);
 
-        localStorage.setItem(CACHE_KEY, JSON.stringify(entry));
+        localStorage.setItem(key, JSON.stringify(entry));
+
+        // Clean up legacy unscoped key if it exists
+        localStorage.removeItem(CACHE_KEY_PREFIX);
     } catch {
         // localStorage may not be available (SSR, private mode quota, etc.)
     }
@@ -144,6 +160,7 @@ export const resolveTenantConfig = async (
 
     // 1. Try baked config (native builds)
     const baked = await loadBakedConfig();
+    const bakedTenantId = baked?.tenantId;
 
     // 2. Try fresh fetch from config service (unless offline-only)
     let fresh: TenantConfig | null = null;
@@ -162,8 +179,8 @@ export const resolveTenantConfig = async (
     // 4. If baked config exists, use it (and try to refresh in background)
     if (baked) return baked;
 
-    // 5. Try cached version
-    const cached = readCache();
+    // 5. Try cached version (use baked tenantId as hint to find the right cache entry)
+    const cached = readCache(bakedTenantId);
 
     if (cached) return cached;
 
