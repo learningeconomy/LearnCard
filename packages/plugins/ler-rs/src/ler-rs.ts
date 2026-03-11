@@ -98,26 +98,32 @@ const buildEmploymentHistories = (
     return items.map(item => {
         const {
             narrative,
+            descriptions,
             verifiableCredential,
             verifications,
             position,
             employer,
             start,
             end,
+            current,
             ...rest
         } = item;
 
         const container: Record<string, unknown> = { ...rest };
+        if (typeof current === 'boolean') container.current = current;
 
         if (employer) container.organization = { tradeName: employer };
-        if (position || start || end) {
+        if (position || start || end || typeof current === 'boolean') {
             const ph: Record<string, unknown> = {};
             if (position) ph.title = position;
             if (start) ph.start = start;
             if (end) ph.end = end;
+            if (typeof current === 'boolean') ph.current = current;
+            if (descriptions?.length) ph.descriptions = descriptions;
             container.positionHistories = [ph];
         }
         if (narrative) container.narrative = narrative;
+        if (descriptions?.length && !container.positionHistories) container.descriptions = descriptions;
 
         const containerVerifications = getItemVerifications({
             verifiableCredential,
@@ -139,11 +145,13 @@ const buildEducationAndLearnings = (
     return items.map(item => {
         const {
             narrative,
+            descriptions,
             verifiableCredential,
             verifications,
             institution,
             start,
             end,
+            current,
             degree,
             specializations,
             ...rest
@@ -153,6 +161,8 @@ const buildEducationAndLearnings = (
         if (institution) container.institution = { name: institution };
         if (start) container.start = start;
         if (end) container.end = end;
+        if (typeof current === 'boolean') container.current = current;
+        if (descriptions?.length) container.descriptions = descriptions;
         if (degree || specializations) {
             container.educationDegrees = [
                 {
@@ -187,10 +197,27 @@ const buildCertifications = (
     items: NonNullable<CreateLerRecordParams['certifications']>
 ): LerRsRecord['certifications'] => {
     return items.map(item => {
-        const { narrative, verifiableCredential, verifications, ...rest } = item;
+        const {
+            narrative,
+            descriptions,
+            start,
+            end,
+            effectiveTimePeriod,
+            verifiableCredential,
+            verifications,
+            ...rest
+        } = item;
 
         const container: Record<string, unknown> = { ...rest };
         if (narrative) container.narrative = narrative;
+        if (descriptions?.length) container.descriptions = descriptions;
+        if (effectiveTimePeriod || start || end) {
+            container.effectiveTimePeriod = {
+                ...(effectiveTimePeriod ?? {}),
+                ...(start ? { validFrom: start } : {}),
+                ...(end ? { validTo: end } : {}),
+            };
+        }
 
         const containerVerifications = getItemVerifications({
             verifiableCredential,

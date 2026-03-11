@@ -94,6 +94,7 @@ export interface LerSkill {
  */
 export interface WorkHistoryItem {
     narrative?: string;
+    descriptions?: string[];
     verifiableCredential?: VerifiableCredential;
     verifications?: VerifiableCredential[];
     // Common self-asserted fields
@@ -101,6 +102,7 @@ export interface WorkHistoryItem {
     employer?: string;
     start?: string;
     end?: string;
+    current?: boolean;
     [key: string]: unknown;
 }
 
@@ -109,11 +111,13 @@ export interface WorkHistoryItem {
  */
 export interface EducationHistoryItem {
     narrative?: string;
+    descriptions?: string[];
     verifiableCredential?: VerifiableCredential;
     verifications?: VerifiableCredential[];
     institution?: string;
     start?: string;
     end?: string;
+    current?: boolean;
     degree?: string;
     specializations?: string[];
     [key: string]: unknown;
@@ -124,11 +128,14 @@ export interface EducationHistoryItem {
  */
 export interface CertificationItem {
     narrative?: string;
+    descriptions?: string[];
     verifiableCredential?: VerifiableCredential;
     verifications?: VerifiableCredential[];
     name?: string;
     issuingAuthority?: string | Record<string, unknown>;
     status?: string;
+    start?: string;
+    end?: string;
     effectiveTimePeriod?: { validFrom?: string; validTo?: string };
     [key: string]: unknown;
 }
