@@ -57,6 +57,7 @@ import {
 } from '@accesslayer/inbox-credential/update';
 import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import { getAppDidWeb } from '@helpers/did.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
@@ -665,12 +666,19 @@ export const inboxRouter = t.router({
                             // Set issuer from signing authority
                             unsignedCredential.issuer = signingAuthorityForUser.relationship.did;
 
+                            // For app-based SAs (listings), use the app did:web as ownerDid
+                            const listingSlug = (inboxCredential.signingAuthority as any)?.listingSlug as string | undefined;
+                            const ownerDidOverride = listingSlug
+                                ? getAppDidWeb(ctx.domain, listingSlug)
+                                : undefined;
+
                             finalCredential = (await issueCredentialWithSigningAuthority(
                                 issuerProfile,
                                 unsignedCredential,
                                 signingAuthorityForUser,
                                 ctx.domain,
-                                false
+                                false,
+                                ownerDidOverride
                             )) as VC;
                         } else {
                             finalCredential = JSON.parse(inboxCredential.credential) as VC;

@@ -115,6 +115,7 @@ export const claimIntoInbox = async(
             signingAuthority: {
                 endpoint: signingAuthorityForUser.signingAuthority.endpoint,
                 name: signingAuthorityForUser.relationship.name,
+                ...(listingSlug ? { listingSlug } : {}),
             },
             expiresInDays,
         });

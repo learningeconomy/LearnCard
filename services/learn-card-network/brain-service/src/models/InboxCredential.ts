@@ -19,6 +19,7 @@ export type InboxCredentialType = {
     activityId?: string; // Links to CredentialActivity for lifecycle tracking
     'signingAuthority.endpoint'?: string;
     'signingAuthority.name'?: string;
+    'signingAuthority.listingSlug'?: string;
 };
 
 export type InboxCredentialRelationships = {
@@ -84,6 +85,7 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
             activityId: { type: 'string', required: false },
             'signingAuthority.endpoint': { type: 'string', required: false },
             'signingAuthority.name': { type: 'string', required: false },
+            'signingAuthority.listingSlug': { type: 'string', required: false },
         },
         relationships: {
             addressedTo: { 
