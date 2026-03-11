@@ -59,6 +59,20 @@ export interface PersonProfile {
     formattedName?: string;
     /** Optional contact email to include in communication block. */
     email?: string;
+    /** Optional contact phone to include in communication block. */
+    phone?: string;
+    /** Optional physical/mailing address to include in communication block. */
+    address?: {
+        formattedAddress?: string;
+        line?: string;
+        city?: string;
+        postalCode?: string;
+        countryCode?: string;
+    };
+    /** Optional website URLs to include in communication block. */
+    web?: Array<{ url: string; name?: string }>;
+    /** Optional social profile URLs to include in communication block. */
+    social?: Array<{ uri: string; name?: string }>;
 }
 
 /**
@@ -147,7 +161,7 @@ export interface LerRsRecord {
         email?: { address: string }[];
         web?: { url: string; name?: string }[];
         phone?: Array<Record<string, unknown>>;
-        address?: unknown;
+        address?: Array<Record<string, unknown>>;
         social?: Array<Record<string, unknown>>;
     };
     skills?: LerSkill[];
@@ -175,6 +189,8 @@ export interface CreateLerRecordParams {
     educationHistory?: EducationHistoryItem[];
     certifications?: CertificationItem[];
     skills?: string[];
+    narratives?: LerNarrative[];
+    attachments?: Array<Record<string, unknown>>;
 }
 
 /**
