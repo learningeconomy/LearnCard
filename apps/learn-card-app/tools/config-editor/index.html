@@ -1283,7 +1283,40 @@ function App() {
     const [newTenantName, setNewTenantName] = useState('');
     const [showNewTenant, setShowNewTenant] = useState(false);
     const [assetsVersion, setAssetsVersion] = useState(0);
+    const [rightWidth, setRightWidth] = useState(320);
+    const isResizing = useRef(false);
     const debounceRef = useRef(null);
+
+    // Right sidebar resize
+    const handleResizeStart = useCallback((e) => {
+        e.preventDefault();
+        isResizing.current = true;
+
+        const startX = e.clientX;
+        const startW = rightWidth;
+
+        const onMove = (ev) => {
+            if (!isResizing.current) return;
+
+            const delta = startX - ev.clientX;
+            const newW = Math.min(Math.max(startW + delta, 280), 800);
+
+            setRightWidth(newW);
+        };
+
+        const onUp = () => {
+            isResizing.current = false;
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    }, [rightWidth]);
 
     // Load initial data
     useEffect(() => {
@@ -1549,7 +1582,12 @@ function App() {
                     </main>
 
                     <!-- Right panel: preview + JSON -->
-                    <aside class="w-80 bg-white border-l border-gs-200 flex flex-col flex-shrink-0 overflow-hidden">
+                    <aside class="bg-white border-l border-gs-200 flex flex-col flex-shrink-0 overflow-hidden relative" style=${{ width: rightWidth + 'px' }}>
+                        <!-- Resize handle -->
+                        <div
+                            onMouseDown=${handleResizeStart}
+                            class="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-10 hover:bg-violet-400/30 active:bg-violet-400/50 transition-colors"
+                        />
                         <div class="flex border-b border-gs-100">
                             <button
                                 onClick=${() => setRightTab('preview')}
