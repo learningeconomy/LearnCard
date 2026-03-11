@@ -12,6 +12,7 @@ import { initNetworkStoreFromTenant } from 'learn-card-base';
 import { initializeFirebaseFromTenant } from '../firebase/firebase';
 import { initSentryFromTenant } from '../constants/sentry';
 import { initUserflowFromTenant } from '../constants/userflow';
+import { enforceDefaultTheme } from '../theme/store/themeStore';
 
 // Module-level singleton so other modules can access config synchronously
 let _resolvedConfig: TenantConfig | null = null;
@@ -67,6 +68,9 @@ export const bootstrapTenantConfig = async (): Promise<TenantConfig> => {
 
     // 5. Initialize Userflow from tenant observability config
     initUserflowFromTenant();
+
+    // 6. Force theme to defaultTheme when tenant disables theme switching
+    enforceDefaultTheme();
 
     return config;
 };
