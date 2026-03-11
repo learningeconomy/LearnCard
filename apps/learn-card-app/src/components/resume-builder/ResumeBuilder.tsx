@@ -23,7 +23,6 @@ import { useResumePreselection } from './useResumePreselection';
 import ResumeBuilderLoader from './ResumeBuilderLoader';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 import { useIssueTcpResume } from '../../hooks/useIssueTcpResume';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 export const ResumeBuilder: React.FC = () => {
     useResumePreselection();
@@ -41,7 +40,6 @@ export const ResumeBuilder: React.FC = () => {
     const [loadingAction, setLoadingAction] = useState<ResumeBuilderHeaderAction>(null);
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
     const hiddenSections = resumeBuilderStore.useTracked.hiddenSections();
-    const flags = useFlags();
     const { presentToast } = useToast();
     const { publishTcpResume } = useIssueTcpResume();
 
@@ -81,7 +79,6 @@ export const ResumeBuilder: React.FC = () => {
         if (loadingAction) return;
         setLoadingAction('publish');
         try {
-            const wrapperId = crypto.randomUUID();
             const artifact = await resumePreviewRef.current?.createPDFArtifact();
             if (!artifact) {
                 presentToast('Could not generate a PDF artifact for publishing.', {
@@ -100,24 +97,22 @@ export const ResumeBuilder: React.FC = () => {
                     )
             );
 
-            const { verificationUrl } = await publishTcpResume({
+            const { lerVc } = await publishTcpResume({
                 pdfBlob: artifact.blob,
                 fileName: artifact.fileName,
                 pdfHash: artifact.hash,
-                wrapperId,
                 includedCredentials,
-                enableCoSign: Boolean((flags as Record<string, unknown>)?.enableTcpResumeCosign),
             });
 
-            presentToast('Resume wrapper VC published successfully.', {
+            presentToast('LER-RS resume credential published successfully.', {
                 title: 'Published',
-                details: verificationUrl,
+                details: lerVc?.id || undefined,
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
                 duration: 6000,
             });
         } catch (error: any) {
-            presentToast(error?.message ?? 'Failed to publish resume wrapper VC.', {
+            presentToast(error?.message ?? 'Failed to publish LER-RS resume credential.', {
                 title: 'Publish Failed',
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -125,7 +120,7 @@ export const ResumeBuilder: React.FC = () => {
         } finally {
             setLoadingAction(null);
         }
-    }, [credentialEntries, flags, hiddenSections, loadingAction, presentToast, publishTcpResume]);
+    }, [credentialEntries, hiddenSections, loadingAction, presentToast, publishTcpResume]);
 
     const openResumeConfigPanel = () => {
         if (isMobile) {
