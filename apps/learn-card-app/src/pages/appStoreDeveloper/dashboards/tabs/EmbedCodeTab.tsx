@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Copy, Check, Award, Globe, X, Plus } from 'lucide-react';
+import { Copy, Check, Award, Globe, X, Plus, ChevronDown } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
 import type { LCNIntegration } from '@learncard/types';
 
@@ -304,6 +304,79 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                     </p>
                 )}
             </div>
+
+            {/* SDK Reference */}
+            <details className="group rounded-xl border border-gray-200 bg-gray-50">
+                <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium text-gray-700 select-none [&::-webkit-details-marker]:hidden list-none">
+                    <span>SDK Reference &mdash; <code className="text-xs font-normal text-gray-500">InitOptions</code></span>
+                    <ChevronDown className="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="px-4 pb-4">
+                    <table className="w-full text-xs border-collapse">
+                        <thead>
+                            <tr className="border-b border-gray-200 text-left text-gray-500">
+                                <th className="py-1.5 pr-2 font-medium">Prop</th>
+                                <th className="py-1.5 pr-2 font-medium">Type</th>
+                                <th className="py-1.5 font-medium">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody className="text-gray-700">
+                            <tr className="border-b border-gray-100">
+                                <td className="py-1.5 pr-2 font-mono">target<span className="text-red-500">*</span></td>
+                                <td className="py-1.5 pr-2 font-mono text-gray-500">string | HTMLElement</td>
+                                <td className="py-1.5">CSS selector or DOM element to render the claim button into.</td>
+                            </tr>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-1.5 pr-2 font-mono">credential<span className="text-red-500">*</span></td>
+                                <td className="py-1.5 pr-2 font-mono text-gray-500">{`{ name: string }`}</td>
+                                <td className="py-1.5">Credential template to issue. Use the template name — the server resolves it.</td>
+                            </tr>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-1.5 pr-2 font-mono">publishableKey</td>
+                                <td className="py-1.5 pr-2 font-mono text-gray-500">string</td>
+                                <td className="py-1.5">Your integration&apos;s publishable key (shown above).</td>
+                            </tr>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-1.5 pr-2 font-mono">partnerName</td>
+                                <td className="py-1.5 pr-2 font-mono text-gray-500">string</td>
+                                <td className="py-1.5">Displayed in the claim modal header.</td>
+                            </tr>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-1.5 pr-2 font-mono">branding</td>
+                                <td className="py-1.5 pr-2 font-mono text-gray-500">BrandingTokens</td>
+                                <td className="py-1.5">
+                                    <code>primaryColor</code>, <code>accentColor</code>, <code>partnerLogoUrl</code>, <code>logoUrl</code>, <code>walletUrl</code>.
+                                </td>
+                            </tr>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-1.5 pr-2 font-mono text-nowrap">requestBackgroundIssuance</td>
+                                <td className="py-1.5 pr-2 font-mono text-gray-500">boolean</td>
+                                <td className="py-1.5">If true, credential is issued in the background without requiring the user to open a wallet.</td>
+                            </tr>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-1.5 pr-2 font-mono">onSuccess</td>
+                                <td className="py-1.5 pr-2 font-mono text-gray-500">{`(details) => void`}</td>
+                                <td className="py-1.5">
+                                    Called after a successful claim. Receives <code>credentialId</code>, <code>consentGiven</code>, and optional <code>handoffUrl</code>.
+                                </td>
+                            </tr>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-1.5 pr-2 font-mono">apiBaseUrl</td>
+                                <td className="py-1.5 pr-2 font-mono text-gray-500">string</td>
+                                <td className="py-1.5">Override the API endpoint. Defaults to <code>https://network.learncard.com/api</code>.</td>
+                            </tr>
+                            <tr>
+                                <td className="py-1.5 pr-2 font-mono">theme</td>
+                                <td className="py-1.5 pr-2 font-mono text-gray-500">{`{ primaryColor }`}</td>
+                                <td className="py-1.5">Legacy — use <code>branding</code> instead.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p className="mt-2 text-xs text-gray-400">
+                        <span className="text-red-500">*</span> Required. All other props are optional.
+                    </p>
+                </div>
+            </details>
 
             {/* Template Selector (only when multiple templates exist) */}
             {snippets.length > 1 && (
