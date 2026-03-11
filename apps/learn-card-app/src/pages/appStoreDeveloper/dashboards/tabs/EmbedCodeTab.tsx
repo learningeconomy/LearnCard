@@ -4,7 +4,11 @@ import { Clipboard } from '@capacitor/clipboard';
 import type { LCNIntegration } from '@learncard/types';
 
 import { useToast } from 'learn-card-base/hooks/useToast';
+import { LEARNCARD_NETWORK_API_URL } from 'learn-card-base/constants/Networks';
+import { EmbedPreview } from '../../components/EmbedPreview';
 import type { CredentialTemplate } from '../types';
+
+declare const LCN_API_URL: string | undefined;
 
 interface EmbedClaimConfig {
     partnerName?: string;
@@ -234,6 +238,18 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                         ))}
                     </div>
                 </div>
+            )}
+
+            {/* Live Preview */}
+            {integration.publishableKey && (
+                <EmbedPreview
+                    publishableKey={publishableKey}
+                    partnerName={partnerName}
+                    credential={{ name: currentSnippet.name }}
+                    branding={branding}
+                    requestBackgroundIssuance={requestBackgroundIssuance}
+                    apiBaseUrl={LCN_API_URL || LEARNCARD_NETWORK_API_URL}
+                />
             )}
 
             {/* HTML Snippet */}
