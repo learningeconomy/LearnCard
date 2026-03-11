@@ -17,7 +17,8 @@ export type ResumeBuilderState = {
     hiddenPersonalDetails: Partial<Record<keyof PersonalDetails, boolean>>;
     hiddenSections: Partial<Record<ResumeSectionKey, boolean>>;
     currentJobCredentialUri: string | null;
-    workExperienceEndDates: Record<string, string>;
+    credentialStartDates: Record<string, string>;
+    credentialEndDates: Record<string, string>;
     documentSetup: {
         showQRCode: boolean;
         fileName: string;
@@ -60,7 +61,8 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
         hiddenPersonalDetails: {},
         hiddenSections: {},
         currentJobCredentialUri: null,
-        workExperienceEndDates: {},
+        credentialStartDates: {},
+        credentialEndDates: {},
         documentSetup: defaultDocumentSetup,
         sectionOrder: defaultSectionOrder,
         credentialEntries: {},
@@ -129,16 +131,27 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     setCurrentJobCredentialUri: (uri: string | null) => {
         set.currentJobCredentialUri(uri);
     },
-    setWorkExperienceEndDate: (uri: string, date: string) => {
-        const prev = resumeBuilderStore.get.workExperienceEndDates();
+    setCredentialStartDate: (uri: string, date: string) => {
+        const prev = resumeBuilderStore.get.credentialStartDates();
         if (!date) {
             const next = { ...prev };
             delete next[uri];
-            set.workExperienceEndDates(next);
+            set.credentialStartDates(next);
             return;
         }
 
-        set.workExperienceEndDates({ ...prev, [uri]: date });
+        set.credentialStartDates({ ...prev, [uri]: date });
+    },
+    setCredentialEndDate: (uri: string, date: string) => {
+        const prev = resumeBuilderStore.get.credentialEndDates();
+        if (!date) {
+            const next = { ...prev };
+            delete next[uri];
+            set.credentialEndDates(next);
+            return;
+        }
+
+        set.credentialEndDates({ ...prev, [uri]: date });
     },
 
     // ── Credential selection & ordering ─────────────────────────────────────
@@ -154,13 +167,17 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
             ) {
                 set.currentJobCredentialUri(null);
             }
-            if (section === CredentialCategoryEnum.workHistory) {
-                const prevEndDates = resumeBuilderStore.get.workExperienceEndDates();
-                if (prevEndDates[uri]) {
-                    const nextEndDates = { ...prevEndDates };
-                    delete nextEndDates[uri];
-                    set.workExperienceEndDates(nextEndDates);
-                }
+            const prevStartDates = resumeBuilderStore.get.credentialStartDates();
+            if (prevStartDates[uri]) {
+                const nextStartDates = { ...prevStartDates };
+                delete nextStartDates[uri];
+                set.credentialStartDates(nextStartDates);
+            }
+            const prevEndDates = resumeBuilderStore.get.credentialEndDates();
+            if (prevEndDates[uri]) {
+                const nextEndDates = { ...prevEndDates };
+                delete nextEndDates[uri];
+                set.credentialEndDates(nextEndDates);
             }
         } else {
             const added: CredentialEntry = { uri, index: entries.length, fields: [] };
@@ -289,7 +306,8 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
         set.hiddenPersonalDetails({});
         set.hiddenSections({});
         set.currentJobCredentialUri(null);
-        set.workExperienceEndDates({});
+        set.credentialStartDates({});
+        set.credentialEndDates({});
         set.documentSetup(defaultDocumentSetup);
         set.credentialEntries({});
         set.sectionOrder(defaultSectionOrder);

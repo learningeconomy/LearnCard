@@ -17,13 +17,7 @@ import ResumePreviewCredentialDateDisplay from './ResumePreviewCredentialDateDis
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
-import {
-    CredentialCategoryEnum,
-    ModalTypes,
-    useGetResolvedCredential,
-    useGetVCInfo,
-    useModal,
-} from 'learn-card-base';
+import { ModalTypes, useGetResolvedCredential, useGetVCInfo, useModal } from 'learn-card-base';
 import { ResumeSectionKey } from '../resume-builder.helpers';
 
 const ResumePreviewCredentialToTextBlock: React.FC<{
@@ -36,14 +30,15 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     const { title, description: vcDescription } = useGetVCInfo(vc || {}, section);
 
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
-    const currentJobCredentialUri = resumeBuilderStore.useTracked.currentJobCredentialUri();
-    const workExperienceEndDates = resumeBuilderStore.useTracked.workExperienceEndDates();
+    const credentialStartDates = resumeBuilderStore.useTracked.credentialStartDates();
+    const credentialEndDates = resumeBuilderStore.useTracked.credentialEndDates();
     const initCredentialFields = resumeBuilderStore.set.initCredentialFields;
     const addCredentialField = resumeBuilderStore.set.addCredentialField;
     const updateCredentialField = resumeBuilderStore.set.updateCredentialField;
     const removeCredentialField = resumeBuilderStore.set.removeCredentialField;
     const setCredentialFieldHidden = resumeBuilderStore.set.setCredentialFieldHidden;
-    const setWorkExperienceEndDate = resumeBuilderStore.set.setWorkExperienceEndDate;
+    const setCredentialStartDate = resumeBuilderStore.set.setCredentialStartDate;
+    const setCredentialEndDate = resumeBuilderStore.set.setCredentialEndDate;
     const { newModal, closeModal } = useModal();
 
     const entry = (credentialEntries[section] ?? []).find(e => e.uri === uri);
@@ -57,37 +52,38 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     const lastMetadataField = metadataFields[metadataFields.length - 1];
 
     const info = vc ? getInfoFromCredential(vc as any, 'MMM yyyy', { uppercaseDate: false }) : null;
-    const selectedEndDate = workExperienceEndDates?.[uri] ?? '';
-    const isWorkExperienceSection = section === CredentialCategoryEnum.workHistory;
-    const isCurrentJob = isWorkExperienceSection && currentJobCredentialUri === uri;
+    const selectedStartDate = credentialStartDates?.[uri] ?? '';
+    const selectedEndDate = credentialEndDates?.[uri] ?? '';
+    const fallbackStartLabel = info?.createdAt ?? '';
+    const formattedStartDate = selectedStartDate
+        ? moment(selectedStartDate, 'YYYY-MM-DD').format('MMM yyyy')
+        : '';
     const formattedEndDate = selectedEndDate
         ? moment(selectedEndDate, 'YYYY-MM-DD').format('MMM yyyy')
         : '';
+    const visibleStartLabel = formattedStartDate || fallbackStartLabel;
     let dateLabel = '';
-    if (info?.createdAt) {
-        dateLabel = info.createdAt;
-
-        if (isCurrentJob) {
-            dateLabel = `${info.createdAt} - Present`;
-        } else if (isWorkExperienceSection && formattedEndDate) {
-            dateLabel = `${info.createdAt} - ${formattedEndDate}`;
-        }
+    if (visibleStartLabel && formattedEndDate) {
+        dateLabel = `${visibleStartLabel} - ${formattedEndDate}`;
+    } else if (!visibleStartLabel && formattedEndDate) {
+        dateLabel = formattedEndDate;
+    } else if (visibleStartLabel) {
+        dateLabel = visibleStartLabel;
     }
 
-    const openInlineDatePicker = () => {
+    const openInlineDatePicker = (mode: 'start' | 'end') => {
         newModal(
             <div className="w-full h-full transparent flex items-center justify-center">
                 <IonDatetime
                     onIonChange={e => {
                         if (e.detail.value) {
-                            setWorkExperienceEndDate(
-                                uri,
-                                moment(e.detail.value).format('YYYY-MM-DD')
-                            );
+                            const formattedDate = moment(e.detail.value).format('YYYY-MM-DD');
+                            if (mode === 'start') setCredentialStartDate(uri, formattedDate);
+                            else setCredentialEndDate(uri, formattedDate);
                             closeModal();
                         }
                     }}
-                    value={selectedEndDate || undefined}
+                    value={(mode === 'start' ? selectedStartDate : selectedEndDate) || undefined}
                     presentation="date"
                     className="bg-white text-black rounded-[20px] w-full shadow-3xl z-50 font-notoSans"
                     showDefaultButtons
@@ -145,12 +141,13 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                             </span>
                             <div className="mt-1 sm:mt-0 min-w-0">
                                 <ResumePreviewCredentialDateDisplay
-                                    isWorkExperienceSection={isWorkExperienceSection}
-                                    createdAt={info?.createdAt}
-                                    isCurrentJob={isCurrentJob}
+                                    isEditing={isEditing}
+                                    startLabel={fallbackStartLabel}
+                                    formattedStartDate={formattedStartDate}
                                     formattedEndDate={formattedEndDate}
                                     dateLabel={dateLabel}
-                                    onOpenInlineDatePicker={openInlineDatePicker}
+                                    onOpenStartDatePicker={() => openInlineDatePicker('start')}
+                                    onOpenEndDatePicker={() => openInlineDatePicker('end')}
                                 />
                             </div>
                         </div>
