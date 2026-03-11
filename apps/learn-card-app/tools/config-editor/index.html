@@ -100,13 +100,14 @@ const SECTIONS = [
     {
         key: 'auth', label: 'Authentication', icon: '🔐',
         fields: [
-            { path: 'auth.provider', label: 'Provider', type: 'select', options: ['firebase', 'web3auth', 'custom'] },
+            { path: 'auth.provider', label: 'Provider', type: 'select', options: ['firebase', 'custom'] },
             { path: 'auth.keyDerivation', label: 'Key Derivation', type: 'select', options: ['sss', 'web3auth'] },
             { path: 'auth.sssServerUrl', label: 'SSS Server URL', type: 'string' },
             { path: 'auth.enableEmailBackupShare', label: 'Email Backup Share', type: 'boolean' },
             { path: 'auth.requireEmailForPhoneUsers', label: 'Require Email for Phone Users', type: 'boolean' },
             { path: 'auth.firebaseRedirectDomain', label: 'Firebase Redirect Domain', type: 'string' },
             { path: 'auth.firebaseDynamicLinkDomain', label: 'Firebase Dynamic Link Domain', type: 'string' },
+            { path: 'auth.allowedSignInMethods', label: 'Allowed Sign-In Methods', type: 'array', help: 'e.g. email, phone, google.com' },
         ],
     },
     {
@@ -122,11 +123,20 @@ const SECTIONS = [
         ],
     },
     {
+        key: 'web3auth', label: 'Web3Auth', icon: '🔑', parentPath: 'auth.web3Auth',
+        fields: [
+            { path: 'auth.web3Auth.clientId', label: 'Client ID', type: 'string' },
+            { path: 'auth.web3Auth.network', label: 'Network', type: 'string' },
+            { path: 'auth.web3Auth.verifierId', label: 'Verifier ID', type: 'string' },
+            { path: 'auth.web3Auth.rpcTarget', label: 'RPC Target', type: 'string' },
+        ],
+    },
+    {
         key: 'branding', label: 'Branding', icon: '🎨',
         fields: [
             { path: 'branding.name', label: 'App Name', type: 'string', required: true, preview: true },
             { path: 'branding.shortName', label: 'Short Name', type: 'string', preview: true },
-            { path: 'branding.defaultTheme', label: 'Default Theme', type: 'select', options: ['colorful', 'Formal', 'midnight'], preview: true },
+            { path: 'branding.defaultTheme', label: 'Default Theme', type: 'select', options: ['colorful', 'formal'], preview: true },
             { path: 'branding.primaryColor', label: 'Primary Color', type: 'color', preview: true },
             { path: 'branding.secondaryColor', label: 'Secondary Color', type: 'color', preview: true },
             { path: 'branding.fontFamily', label: 'Font Family', type: 'string' },
@@ -174,6 +184,7 @@ const SECTIONS = [
         fields: [
             { path: 'observability.sentryDsn', label: 'Sentry DSN', type: 'string' },
             { path: 'observability.sentryEnv', label: 'Sentry Environment', type: 'string' },
+            { path: 'observability.sentryTraceDomains', label: 'Sentry Trace Domains', type: 'array', help: 'Domains to attach Sentry trace headers to' },
             { path: 'observability.launchDarklyClientId', label: 'LaunchDarkly Client ID', type: 'string', required: true },
             { path: 'observability.userflowToken', label: 'Userflow Token', type: 'string', required: true },
             { path: 'observability.analyticsProvider', label: 'Analytics Provider', type: 'select', options: ['noop', 'posthog', 'firebase'] },
@@ -195,7 +206,11 @@ const SECTIONS = [
         fields: [
             { path: 'native.bundleId', label: 'Bundle ID', type: 'string', help: 'e.g. com.vetpass.app' },
             { path: 'native.displayName', label: 'Display Name', type: 'string' },
+            { path: 'native.deepLinkDomains', label: 'Deep Link Domains', type: 'array', help: 'Domains for universal links / app links' },
+            { path: 'native.customSchemes', label: 'Custom URL Schemes', type: 'array', help: 'e.g. dccrequest, msprequest' },
             { path: 'native.capgoChannel', label: 'Capgo Channel', type: 'string' },
+            { path: 'native.iconSource', label: 'Icon Source', type: 'string', help: 'Path to app icon source image' },
+            { path: 'native.splashSource', label: 'Splash Source', type: 'string', help: 'Path to splash screen source image' },
         ],
     },
     {
@@ -299,6 +314,70 @@ function FieldInput({ field, value, defaultValue, onChange }) {
                         <option key=${opt} value=${opt}>${opt}</option>
                     `)}
                 </select>
+            </div>
+        `;
+    }
+
+    if (field.type === 'array') {
+        const items = Array.isArray(value) ? value : (Array.isArray(defaultValue) ? defaultValue : []);
+        const isOverriddenArr = value !== undefined && JSON.stringify(value) !== JSON.stringify(defaultValue);
+        const [draft, setDraft] = useState('');
+
+        const addItem = () => {
+            const trimmed = draft.trim();
+
+            if (!trimmed) return;
+
+            const next = [...(Array.isArray(value) ? value : []), trimmed];
+
+            onChange(field.path, next);
+            setDraft('');
+        };
+
+        const removeItem = (idx) => {
+            const next = items.filter((_, i) => i !== idx);
+
+            onChange(field.path, next.length > 0 ? next : undefined);
+        };
+
+        return h`
+            <div class="field-row px-4 py-3 rounded-xl transition-colors">
+                <div class="flex items-center gap-2 mb-1.5">
+                    ${isOverriddenArr ? h`<span class="override-dot" title="Overridden from default" />` : h`<span class="w-[6px] mr-[6px]" />`}
+                    <label class="text-sm font-medium text-gs-800">${field.label}</label>
+                    ${defaultValue && !value ? h`<span class="text-xs text-gs-400 ml-auto">default</span>` : null}
+                </div>
+                <div class="flex flex-wrap gap-1.5 mb-2 min-h-[28px]">
+                    ${items.map((item, idx) => h`
+                        <span key=${idx} class="inline-flex items-center gap-1 px-2.5 py-1 bg-gs-100 text-gs-800 text-xs font-medium rounded-full">
+                            ${item}
+                            <button
+                                onClick=${() => removeItem(idx)}
+                                class="w-3.5 h-3.5 flex items-center justify-center rounded-full hover:bg-gs-300 transition-colors text-gs-500 hover:text-gs-800"
+                            >
+                                <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </span>
+                    `)}
+                    ${items.length === 0 ? h`<span class="text-xs text-gs-400 py-1">No items</span>` : null}
+                </div>
+                <div class="flex gap-1.5">
+                    <input
+                        type="text"
+                        value=${draft}
+                        onChange=${(e) => setDraft(e.target.value)}
+                        onKeyDown=${(e) => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } }}
+                        placeholder=${field.help || 'Add item...'}
+                        class="flex-1 py-2 px-3 border border-gs-200 rounded-xl text-sm text-gs-900 bg-white placeholder:text-gs-400"
+                    />
+                    <button
+                        onClick=${addItem}
+                        disabled=${!draft.trim()}
+                        class="px-3 py-2 rounded-xl border border-gs-200 text-xs font-medium text-gs-600 hover:bg-gs-10 transition-colors disabled:opacity-30"
+                    >Add</button>
+                </div>
             </div>
         `;
     }
