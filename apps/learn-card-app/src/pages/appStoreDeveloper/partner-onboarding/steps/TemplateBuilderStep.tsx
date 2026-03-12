@@ -324,6 +324,30 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             // Convert to JSON credential
             const credential = templateToJson(obv3Template);
 
+            // Resolve issuer placeholder and issue the credential so the boost
+            // stores a valid signed VC (matches useTemplateDetails.createTemplate)
+            const issuerDid = wallet.id.did();
+            let resolvedIssuer: unknown = credential.issuer;
+            if (typeof credential.issuer === 'string' && credential.issuer === '{{issuer_did}}') {
+                resolvedIssuer = issuerDid;
+            } else if (typeof credential.issuer === 'object' && credential.issuer !== null) {
+                const issuerObj = { ...(credential.issuer as Record<string, unknown>) };
+                if (issuerObj.id === '{{issuer_did}}') {
+                    issuerObj.id = issuerDid;
+                }
+                resolvedIssuer = issuerObj;
+            }
+
+            const preparedCredential = {
+                ...credential,
+                issuer: resolvedIssuer,
+                validFrom: credential.validFrom === '{{issue_date}}' ? new Date().toISOString() : credential.validFrom,
+            };
+
+            const vc = await wallet.invoke.issueCredential(
+                preparedCredential as Parameters<typeof wallet.invoke.issueCredential>[0]
+            );
+
             // Extract dynamic variables for storage
             const dynamicVars = extractDynamicVariables(obv3Template);
 
@@ -357,7 +381,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 await wallet.invoke.updateBoost(
                     template.boostUri,
                     boostMetadata as unknown as Parameters<typeof wallet.invoke.updateBoost>[1],
-                    credential as Parameters<typeof wallet.invoke.updateBoost>[2]
+                    vc as Parameters<typeof wallet.invoke.updateBoost>[2]
                 );
 
                 return template.boostUri;
@@ -365,7 +389,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
             // Otherwise create a new boost
             const boostUri = await wallet.invoke.createBoost(
-                credential as Parameters<typeof wallet.invoke.createBoost>[0],
+                vc as Parameters<typeof wallet.invoke.createBoost>[0],
                 boostMetadata as unknown as Parameters<typeof wallet.invoke.createBoost>[1]
             );
 
