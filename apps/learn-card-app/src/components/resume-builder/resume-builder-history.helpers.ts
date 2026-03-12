@@ -1,7 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
 import { VC } from '@learncard/types';
 import { CredentialCategoryEnum } from 'learn-card-base';
-import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getDefaultCategoryForCredential,
+    getCredentialSubjectAchievementData,
+} from 'learn-card-base/helpers/credentialHelpers';
 import type { ExistingResume } from '../../hooks/useExistingResumes';
 import {
     ResumeBuilderActiveResume,
@@ -99,19 +102,78 @@ const normalizeSnapshot = (snapshot: Partial<ResumeBuilderSnapshot>): ResumeBuil
     sectionOrder: snapshot.sectionOrder?.length ? snapshot.sectionOrder : defaultSectionOrder,
 });
 
-const buildDescriptionFields = (value?: string): ResumeFieldEntry[] => {
-    if (!value?.trim()) return [];
+const normalizeComparableText = (value?: string): string =>
+    (value ?? '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
 
-    return [
+const getSourceCredentialDescription = (vc: VC | null): string | undefined => {
+    if (!vc) return undefined;
+    const achievementData = getCredentialSubjectAchievementData(vc);
+    return asString(achievementData?.description);
+};
+
+const buildResumeRowFields = (
+    value?: string,
+    sourceCredentialDescription?: string
+): ResumeFieldEntry[] => {
+    const lines = (value ?? '')
+        .split('\n')
+        .map(line => line.trim())
+        .filter(Boolean);
+    const fallbackSourceDescription = asString(sourceCredentialDescription);
+
+    if (!lines.length) {
+        if (!fallbackSourceDescription) return [];
+        return [
+            {
+                id: uuidv4(),
+                value: fallbackSourceDescription,
+                source: 'vc',
+                type: 'description',
+                index: 0,
+                hidden: false,
+            },
+        ];
+    }
+
+    const description = lines[0];
+    const metadataValues = lines
+        .slice(1)
+        .flatMap(line => line.split('|'))
+        .map(item => item.replace(/^[-*•]\s*/, '').trim())
+        .filter(Boolean);
+
+    const descriptionSource =
+        fallbackSourceDescription &&
+        normalizeComparableText(description) === normalizeComparableText(fallbackSourceDescription)
+            ? 'vc'
+            : 'selfAttested';
+
+    const fields: ResumeFieldEntry[] = [
         {
             id: uuidv4(),
-            value: value.trim(),
-            source: 'selfAttested',
+            value: description,
+            source: descriptionSource,
             type: 'description',
             index: 0,
             hidden: false,
         },
     ];
+
+    metadataValues.forEach((metadata, index) => {
+        fields.push({
+            id: uuidv4(),
+            value: metadata,
+            source: 'selfAttested',
+            type: 'metadata',
+            index: index + 1,
+            hidden: false,
+        });
+    });
+
+    return fields;
 };
 
 const firstVerificationUri = (item: unknown): string | undefined => {
@@ -140,7 +202,8 @@ const pushEntry = (
     entriesBySection: Partial<Record<ResumeSectionKey, CredentialEntry[]>>,
     section: ResumeSectionKey,
     uri: string,
-    description?: string
+    narrative?: string,
+    sourceCredentialDescription?: string
 ) => {
     const currentEntries = entriesBySection[section] ?? [];
     if (currentEntries.some(entry => entry.uri === uri)) return;
@@ -148,7 +211,7 @@ const pushEntry = (
     currentEntries.push({
         uri,
         index: currentEntries.length,
-        fields: buildDescriptionFields(description),
+        fields: buildResumeRowFields(narrative, sourceCredentialDescription),
     });
     entriesBySection[section] = currentEntries;
 };
@@ -239,13 +302,21 @@ const buildSnapshotFromLerVc = async (
     for (const item of employmentHistories) {
         const uri = firstVerificationUri(item);
         if (!uri) continue;
+        const sourceVc = await readCredential(uri);
+        const sourceCredentialDescription = getSourceCredentialDescription(sourceVc);
 
         const positionHistory = Array.isArray(asRecord(item)?.positionHistories)
             ? asRecord(item)?.positionHistories?.[0]
             : undefined;
         const description = asString(asRecord(item)?.narrative);
 
-        pushEntry(credentialEntries, CredentialCategoryEnum.workHistory, uri, description);
+        pushEntry(
+            credentialEntries,
+            CredentialCategoryEnum.workHistory,
+            uri,
+            description,
+            sourceCredentialDescription
+        );
 
         const start = firstStringFromPaths(positionHistory, [['start']]);
         const end = firstStringFromPaths(positionHistory, [['end']]);
@@ -264,10 +335,18 @@ const buildSnapshotFromLerVc = async (
     for (const item of educationAndLearnings) {
         const uri = firstVerificationUri(item);
         if (!uri) continue;
+        const sourceVc = await readCredential(uri);
+        const sourceCredentialDescription = getSourceCredentialDescription(sourceVc);
 
         const description = asString(asRecord(item)?.narrative);
 
-        pushEntry(credentialEntries, CredentialCategoryEnum.learningHistory, uri, description);
+        pushEntry(
+            credentialEntries,
+            CredentialCategoryEnum.learningHistory,
+            uri,
+            description,
+            sourceCredentialDescription
+        );
 
         const start = firstStringFromPaths(item, [['start']]);
         const end = firstStringFromPaths(item, [['end']]);
@@ -286,9 +365,16 @@ const buildSnapshotFromLerVc = async (
         const category =
             (sourceVc ? getDefaultCategoryForCredential(sourceVc) : undefined) ||
             CredentialCategoryEnum.socialBadge;
+        const sourceCredentialDescription = getSourceCredentialDescription(sourceVc);
 
         const description = asString(asRecord(item)?.narrative);
-        pushEntry(credentialEntries, category as ResumeSectionKey, uri, description);
+        pushEntry(
+            credentialEntries,
+            category as ResumeSectionKey,
+            uri,
+            description,
+            sourceCredentialDescription
+        );
 
         const validFrom = firstStringFromPaths(item, [['effectiveTimePeriod', 'validFrom']]);
         const validTo = firstStringFromPaths(item, [['effectiveTimePeriod', 'validTo']]);
