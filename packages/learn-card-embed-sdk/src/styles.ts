@@ -48,7 +48,7 @@ export function createGlobalStyleEl(primary?: string, accent?: string): HTMLStyl
     .lc-claim-btn {
       appearance: none; border: 0; cursor: pointer;
       padding: 12px 14px; border-radius: 10px; font-weight: 600; font-size: 14px;
-      background: var(--lc-primary); color: white;
+      background: linear-gradient(135deg, var(--lc-primary), var(--lc-accent)); color: white;
       box-shadow: 0 4px 14px rgba(${rgb}, 0.25);
       transition: transform 150ms, box-shadow 150ms;
     }
@@ -70,7 +70,7 @@ export function createGlobalStyleEl(primary?: string, accent?: string): HTMLStyl
     }
     .lc-modal-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 16px; background: #fff; border-bottom: 1px solid #f0f0f0;
+      padding: 12px 16px; background: #fff; border-bottom: 1px solid rgba(${rgb}, 0.12);
     }
     .lc-brand {
       display: flex; align-items: center; gap: 10px;
@@ -100,8 +100,11 @@ export function iframeCss(primary?: string, accent?: string): string {
   const p = (primary || DEFAULT_PRIMARY).replace(/"/g, '');
   const a = (accent || darkenHex(p, 0.2)).replace(/"/g, '');
   const rgb = hexToRgbString(p);
+  const aRgb = hexToRgbString(a);
   const cardStart = lightenHex(p, 0.85);
   const cardEnd = lightenHex(p, 0.7);
+  const cardText = darkenHex(p, 0.5);
+  const cardTextLight = darkenHex(p, 0.3);
 
   return `
   :root { --lc-primary: ${p}; --lc-accent: ${a}; --lc-primary-rgb: ${rgb}; }
@@ -117,20 +120,21 @@ export function iframeCss(primary?: string, accent?: string): string {
   .lc-stepper { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px 6px; }
   .lc-dot { width: 8px; height: 8px; border-radius: 50%; background: #e5e7eb; transition: background 300ms ease, box-shadow 300ms ease, transform 300ms ease; flex-shrink: 0; }
   .lc-dot.active { background: ${p}; box-shadow: 0 0 0 3px rgba(${rgb}, 0.18); transform: scale(1.15); }
-  .lc-dot.done { background: #10b981; }
+  .lc-dot.done { background: ${a}; }
   .lc-bar { width: 24px; height: 2px; background: #e5e7eb; border-radius: 1px; transition: background 300ms ease; flex-shrink: 0; }
-  .lc-bar.done { background: #10b981; }
+  .lc-bar.done { background: ${a}; }
 
   /* Credential card */
   .cred-card {
     margin: 10px 16px 0; border-radius: 12px; padding: 16px 18px;
     position: relative; overflow: hidden;
     background: linear-gradient(135deg, ${cardStart}, ${cardEnd});
-    color: #0c3a2e;
+    border: 1px solid rgba(${aRgb}, 0.15);
+    color: ${cardText};
   }
-  .cred-card-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(12,58,46,0.4); margin-bottom: 6px; }
+  .cred-card-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: ${cardTextLight}; margin-bottom: 6px; }
   .cred-card-name { font-size: 17px; font-weight: 700; position: relative; z-index: 1; }
-  .cred-card-issuer { font-size: 12px; color: rgba(12,58,46,0.45); margin-top: 5px; position: relative; z-index: 1; }
+  .cred-card-issuer { font-size: 12px; color: ${cardTextLight}; margin-top: 5px; position: relative; z-index: 1; }
 
   /* Surface sweep shine */
   .cred-card::after {
@@ -163,7 +167,7 @@ export function iframeCss(primary?: string, accent?: string): string {
     outline: none; transition: border-color 150ms, box-shadow 150ms, background 150ms, transform 150ms;
   }
   .otp input:focus { border-color: ${p}; box-shadow: 0 0 0 3px rgba(${rgb}, 0.1); }
-  .otp input.filled { border-color: ${p}; background: rgba(${rgb}, 0.04); animation: otpPulse 150ms ease; }
+  .otp input.filled { border-color: ${a}; background: rgba(${aRgb}, 0.06); animation: otpPulse 150ms ease; }
   @keyframes otpPulse { 0% { transform: scale(1.03); } 100% { transform: scale(1); } }
 
   /* Buttons */
@@ -171,10 +175,10 @@ export function iframeCss(primary?: string, accent?: string): string {
     appearance: none; border: 0; border-radius: 10px; cursor: pointer;
     padding: 12px 14px; font-weight: 600; font-size: 14px;
     width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
-    transition: transform 150ms, box-shadow 150ms, opacity 150ms;
+    transition: transform 150ms ease, box-shadow 150ms ease, background 200ms ease, opacity 150ms;
   }
   .btn-primary {
-    background: ${p}; color: #fff;
+    background: linear-gradient(135deg, ${p}, ${a}); color: #fff;
     box-shadow: 0 4px 14px rgba(${rgb}, 0.25);
   }
   .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(${rgb}, 0.35); }
@@ -183,10 +187,10 @@ export function iframeCss(primary?: string, accent?: string): string {
   .btn-primary.loading { pointer-events: none; }
 
   .btn-secondary {
-    background: transparent; color: #6b7280; font-weight: 500; font-size: 13px;
-    padding: 8px 14px;
+    background: transparent; color: ${p}; font-weight: 500; font-size: 13px;
+    padding: 8px 14px; border: 1.5px solid rgba(${rgb}, 0.2);
   }
-  .btn-secondary:hover { color: #374151; }
+  .btn-secondary:hover { background: rgba(${rgb}, 0.06); }
 
   /* Spinner */
   .spinner { width: 14px; height: 14px; animation: spin 1s linear infinite; flex-shrink: 0; }
@@ -203,7 +207,7 @@ export function iframeCss(primary?: string, accent?: string): string {
   .success-circle {
     width: 72px; height: 72px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    margin: 8px auto 16px; background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    margin: 8px auto 16px; background: linear-gradient(135deg, rgba(${rgb}, 0.08), rgba(${rgb}, 0.18));
     animation: scaleIn 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
   @keyframes scaleIn { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -233,7 +237,7 @@ export function iframeCss(primary?: string, accent?: string): string {
   .lc-footer {
     text-align: center; padding: 10px 16px 14px; font-size: 11px; color: #b0b8c4;
     display: flex; align-items: center; justify-content: center; gap: 5px;
-    border-top: 1px solid #f3f4f6;
+    border-top: 1px solid rgba(${rgb}, 0.1);
   }
   .lc-footer img { height: 13px; width: auto; border-radius: 2px; opacity: 0.5; }
 
