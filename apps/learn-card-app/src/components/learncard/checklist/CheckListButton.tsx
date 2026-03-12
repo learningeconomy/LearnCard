@@ -49,12 +49,19 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
 
     if (!flags?.enableOnboardingChecklist) return null;
 
+    const progressColors = {
+        25: 'bg-amber-500',
+        50: 'bg-violet-500',
+        75: 'bg-sky-500',
+        100: 'bg-emerald-600',
+    };
+
     if (mode === 'inline') {
         return (
             <div
                 role="button"
                 onClick={handleCheckListButton}
-                className={`w-full h-[150px] max-h-[150px] bg-grayscale-100 rounded-[28px] p-4 flex flex-col justify-center shadow-[0_8px_20px_rgba(15,23,42,0.12)] overflow-hidden ${className}`}
+                className={`w-full h-[150px] max-h-[150px] bg-white rounded-[28px] p-4 flex flex-col justify-center shadow-[0_8px_20px_rgba(15,23,42,0.12)] overflow-hidden ${className}`}
             >
                 <div className="flex justify-center mb-3">
                     <div
@@ -67,7 +74,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                         ) : (
                             <img
                                 src={buildMyLCIcon}
-                                className="w-[34px] h-[34px]"
+                                className="w-[36px] h-[36px]"
                                 alt="Build LearnCard"
                             />
                         )}
@@ -86,11 +93,13 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                     <div className="mt-3">
                         <div className="w-full h-[10px] rounded-full bg-grayscale-200 overflow-hidden">
                             <div
-                                className="h-full rounded-full bg-[#F59E0B]"
+                                className={`h-full rounded-full ${
+                                    progressColors[optimizedPercent as keyof typeof progressColors]
+                                }`}
                                 style={{ width: `${optimizedPercent}%` }}
                             />
                         </div>
-                        <p className="mt-2 text-[13px] leading-[130%] text-grayscale-700 font-poppins">
+                        <p className="mt-2 text-xs leading-[130%] text-grayscale-700 font-poppins">
                             {optimizedPercent}% optimized
                         </p>
                     </div>
@@ -103,7 +112,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
         <div
             role="button"
             onClick={handleCheckListButton}
-            className={`w-full flex items-center justify-between max-w-[900px] bg-grayscale-100 rounded-[15px] p-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.12)] ${className}`}
+            className={`w-full flex items-center justify-between max-w-[900px] bg-white rounded-[15px] p-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.12)] ${className}`}
         >
             <div className="flex items-center gap-[10px]">
                 <div

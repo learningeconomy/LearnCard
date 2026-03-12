@@ -31,14 +31,14 @@ export const ResumeBuilderController: React.FC<{
             <div
                 role="button"
                 onClick={handleResumeBuilderButton}
-                className={`w-full h-[150px] max-h-[150px] bg-grayscale-100 rounded-[28px] p-4 flex flex-col justify-start shadow-[0_8px_20px_rgba(15,23,42,0.12)] overflow-hidden ${className}`}
+                className={`w-full h-[150px] max-h-[150px] bg-white rounded-[28px] p-4 flex flex-col justify-start shadow-[0_8px_20px_rgba(15,23,42,0.12)] overflow-hidden ${className}`}
             >
                 <div className="flex justify-center mb-2">
                     <div className="rounded-[14px] p-[8px] bg-white">
                         <img
                             src={ResumeBuilderIcon}
                             alt="Resume Builder"
-                            className="w-[34px] h-[34px]"
+                            className="w-[36px] h-[36px]"
                         />
                     </div>
                 </div>
@@ -57,7 +57,7 @@ export const ResumeBuilderController: React.FC<{
         <div
             role="button"
             onClick={handleResumeBuilderButton}
-            className={`w-full flex items-center justify-between max-w-[900px] bg-grayscale-100 rounded-[15px] p-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.12)] ${className}`}
+            className={`w-full flex items-center justify-between max-w-[900px] bg-white rounded-[15px] p-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.12)] ${className}`}
         >
             <div className="flex items-center gap-[10px]">
                 <div className={`rounded-[10px] p-[5px] bg-white max-h-[40px] max-w-[40px]`}>
