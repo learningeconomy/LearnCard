@@ -73,7 +73,6 @@ function buildIframeHtml(
     nonce,
     parentOrigin,
     logoUrl,
-    primaryColor: primary,
     ...(loggedInEmail ? { loggedInEmail } : {}),
   } as const;
 
