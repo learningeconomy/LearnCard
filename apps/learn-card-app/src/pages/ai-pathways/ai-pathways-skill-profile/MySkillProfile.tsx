@@ -5,6 +5,10 @@ import X from 'src/components/svgs/X';
 import Pencil from 'src/components/svgs/Pencil';
 import SkillProfileProgressBar from './SkillProfileProgressBar';
 import SkillProfileStep1 from './SkillProfileStep1';
+import SkillProfileStep2 from './SkillProfileStep2';
+import SkillProfileStep3 from './SkillProfileStep3';
+import SkillProfileStep4 from './SkillProfileStep4';
+import SkillProfileStep5 from './SkillProfileStep5';
 
 type MySkillProfileProps = {};
 
@@ -16,8 +20,16 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
         setCurrentStep(currentStep + 1);
     };
 
+    const handleBack = () => {
+        setCurrentStep(currentStep - 1);
+    };
+
     const steps: Record<number, React.ReactNode> = {
         1: <SkillProfileStep1 handleNext={handleNext} />,
+        2: <SkillProfileStep2 handleNext={handleNext} handleBack={handleBack} />,
+        3: <SkillProfileStep3 handleNext={handleNext} handleBack={handleBack} />,
+        4: <SkillProfileStep4 handleNext={handleNext} handleBack={handleBack} />,
+        5: <SkillProfileStep5 handleNext={handleNext} handleBack={handleBack} />,
     };
 
     return (
