@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 
 import { IonIcon } from '@ionic/react';
 import { menuOutline } from 'ionicons/icons';
@@ -28,6 +28,28 @@ import type { ExistingResume } from '../../hooks/useExistingResumes';
 import { buildResumeHydrationState } from './resume-builder-history.helpers';
 import ShareBoostLink from '../boost/boost-options-menu/ShareBoostLink';
 import { VC } from '@learncard/types';
+import type { ResumeBuilderSnapshot } from '../../stores/resumeBuilderStore';
+
+const stableSortObject = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(stableSortObject);
+
+    if (value && typeof value === 'object') {
+        return Object.keys(value as Record<string, unknown>)
+            .sort()
+            .reduce(
+                (acc, key) => {
+                    acc[key] = stableSortObject((value as Record<string, unknown>)[key]);
+                    return acc;
+                },
+                {} as Record<string, unknown>
+            );
+    }
+
+    return value;
+};
+
+const stableSnapshotKey = (snapshot: ResumeBuilderSnapshot): string =>
+    JSON.stringify(stableSortObject(snapshot));
 
 export const ResumeBuilder: React.FC = () => {
     useResumePreselection();
@@ -48,12 +70,56 @@ export const ResumeBuilder: React.FC = () => {
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
     const hiddenSections = resumeBuilderStore.useTracked.hiddenSections();
     const activeResume = resumeBuilderStore.useTracked.activeResume();
+    const personalDetails = resumeBuilderStore.useTracked.personalDetails();
+    const hiddenPersonalDetails = resumeBuilderStore.useTracked.hiddenPersonalDetails();
+    const currentJobCredentialUri = resumeBuilderStore.useTracked.currentJobCredentialUri();
+    const credentialStartDates = resumeBuilderStore.useTracked.credentialStartDates();
+    const credentialEndDates = resumeBuilderStore.useTracked.credentialEndDates();
+    const documentSetup = resumeBuilderStore.useTracked.documentSetup();
+    const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
     const { presentToast } = useToast();
     const { publishTcpResume } = useIssueTcpResume();
     const { data: activeResumeVc } = useGetResolvedCredential(
         activeResume?.uri ?? '',
         Boolean(activeResume?.uri)
     );
+    const [baselineSnapshotByResume, setBaselineSnapshotByResume] = useState<{
+        recordId: string;
+        snapshotKey: string;
+    } | null>(null);
+
+    const currentSnapshot = useMemo<ResumeBuilderSnapshot>(
+        () => ({
+            personalDetails,
+            hiddenPersonalDetails,
+            hiddenSections,
+            currentJobCredentialUri,
+            credentialStartDates,
+            credentialEndDates,
+            documentSetup,
+            credentialEntries,
+            sectionOrder,
+        }),
+        [
+            credentialEndDates,
+            credentialEntries,
+            credentialStartDates,
+            currentJobCredentialUri,
+            documentSetup,
+            hiddenPersonalDetails,
+            hiddenSections,
+            personalDetails,
+            sectionOrder,
+        ]
+    );
+    const currentSnapshotKey = useMemo(
+        () => stableSnapshotKey(currentSnapshot),
+        [currentSnapshot]
+    );
+    const hasUnsavedChanges =
+        Boolean(activeResume?.recordId) &&
+        baselineSnapshotByResume?.recordId === activeResume?.recordId &&
+        baselineSnapshotByResume?.snapshotKey !== currentSnapshotKey;
 
     const revokePreviewBlobUrl = useCallback((preview: ResumePdfPreviewData | null) => {
         if (preview?.downloadUrl?.startsWith('blob:')) {
@@ -116,6 +182,13 @@ export const ResumeBuilder: React.FC = () => {
                 includedCredentials,
             });
 
+            if (activeResume?.recordId) {
+                setBaselineSnapshotByResume({
+                    recordId: activeResume.recordId,
+                    snapshotKey: currentSnapshotKey,
+                });
+            }
+
             presentToast('LER-RS resume credential published successfully.', {
                 title: 'Published',
                 details: lerVc?.id || undefined,
@@ -132,7 +205,15 @@ export const ResumeBuilder: React.FC = () => {
         } finally {
             setLoadingAction(null);
         }
-    }, [credentialEntries, hiddenSections, loadingAction, presentToast, publishTcpResume]);
+    }, [
+        activeResume?.recordId,
+        credentialEntries,
+        currentSnapshotKey,
+        hiddenSections,
+        loadingAction,
+        presentToast,
+        publishTcpResume,
+    ]);
 
     const openResumeConfigPanel = () => {
         if (isMobile) {
@@ -161,6 +242,21 @@ export const ResumeBuilder: React.FC = () => {
         });
     }, [revokePreviewBlobUrl]);
 
+    useEffect(() => {
+        if (!activeResume?.recordId) {
+            setBaselineSnapshotByResume(null);
+            return;
+        }
+
+        setBaselineSnapshotByResume(prev => {
+            if (prev?.recordId === activeResume.recordId) return prev;
+            return {
+                recordId: activeResume.recordId,
+                snapshotKey: currentSnapshotKey,
+            };
+        });
+    }, [activeResume?.recordId, currentSnapshotKey]);
+
     const handleSelectResume = useCallback(
         async (resume: ExistingResume) => {
             setIsHydratingResume(true);
@@ -178,6 +274,10 @@ export const ResumeBuilder: React.FC = () => {
                 );
 
                 resumeBuilderStore.set.hydrateStore(snapshot, nextActiveResume);
+                setBaselineSnapshotByResume({
+                    recordId: nextActiveResume.recordId,
+                    snapshotKey: stableSnapshotKey(snapshot),
+                });
                 closeInlinePreview();
                 presentToast('Loaded resume into edit mode.', {
                     type: ToastTypeEnum.Success,
@@ -230,6 +330,8 @@ export const ResumeBuilder: React.FC = () => {
                     onShareCurrentResume={
                         activeResumeVc && activeResume?.uri ? handleShareCurrentResume : undefined
                     }
+                    disableShareCurrentResume={hasUnsavedChanges}
+                    disablePublish={Boolean(activeResume) ? !hasUnsavedChanges : false}
                     onSelectResume={handleSelectResume}
                     activeResumeRecordId={activeResume?.recordId}
                     isEditingExistingResume={Boolean(activeResume)}

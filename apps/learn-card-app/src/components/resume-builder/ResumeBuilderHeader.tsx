@@ -8,6 +8,7 @@ import DownloadIcon from 'learn-card-base/svgs/DownloadIcon';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import ResumeBuilderHistoryDropdownButton from './ResumeBuilderHistoryDropdownButton';
 import type { ExistingResume } from '../../hooks/useExistingResumes';
+import Checkmark from '../svgs/Checkmark';
 
 export type ResumeBuilderHeaderAction = 'preview' | 'download' | 'publish' | null;
 
@@ -19,6 +20,8 @@ export const ResumeBuilderHeader: React.FC<{
     onDownload: () => void;
     onPublish: () => void;
     onShareCurrentResume?: () => void;
+    disableShareCurrentResume?: boolean;
+    disablePublish?: boolean;
     onSelectResume: (resume: ExistingResume) => Promise<void> | void;
     activeResumeRecordId?: string | null;
     isEditingExistingResume?: boolean;
@@ -30,6 +33,8 @@ export const ResumeBuilderHeader: React.FC<{
     onDownload,
     onPublish,
     onShareCurrentResume,
+    disableShareCurrentResume = false,
+    disablePublish = false,
     onSelectResume,
     activeResumeRecordId,
     isEditingExistingResume = false,
@@ -39,13 +44,7 @@ export const ResumeBuilderHeader: React.FC<{
     return (
         <div className="shrink-0 border-b border-grayscale-200 bg-white/95 backdrop-blur-sm px-2 py-3 safe-area-top-margin">
             <div className="flex items-center justify-between">
-                <div className="flex items-center justify-start gap-2">
-                    <ResumeBuilderHistoryDropdownButton
-                        activeResumeRecordId={activeResumeRecordId}
-                        disabled={loadingAction !== null}
-                        onSelectResume={onSelectResume}
-                    />
-
+                <div className="flex items-center gap-1">
                     {isMobile && (
                         <button
                             aria-label="Go back"
@@ -57,20 +56,27 @@ export const ResumeBuilderHeader: React.FC<{
                         </button>
                     )}
 
-                    <button
-                        onClick={onPreview}
-                        disabled={loadingAction !== null}
-                        className="inline-flex items-center gap-1 h-9 px-4 rounded-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors"
-                    >
-                        <DocumentIcon className="w-5 h-5" />
-                        {loadingAction === 'preview' ? (
-                            <IonSpinner name="crescent" className="w-4 h-4" />
-                        ) : (
-                            'Preview'
-                        )}
-                    </button>
-                </div>
+                    <div className="flex items-center justify-start gap-2">
+                        <ResumeBuilderHistoryDropdownButton
+                            activeResumeRecordId={activeResumeRecordId}
+                            disabled={loadingAction !== null}
+                            onSelectResume={onSelectResume}
+                        />
 
+                        <button
+                            onClick={onPreview}
+                            disabled={loadingAction !== null}
+                            className="inline-flex items-center gap-1 h-9 px-4 rounded-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors"
+                        >
+                            <DocumentIcon className="w-5 h-5" />
+                            {loadingAction === 'preview' ? (
+                                <IonSpinner name="crescent" className="w-4 h-4" />
+                            ) : (
+                                'Preview'
+                            )}
+                        </button>
+                    </div>
+                </div>
                 <div
                     className={`flex items-center ${
                         !isMobile && isDesktopPanelClosed ? 'pr-[60px]' : ''
@@ -89,36 +95,36 @@ export const ResumeBuilderHeader: React.FC<{
                         {loadingAction === 'download' ? (
                             <IonSpinner name="crescent" className="w-4 h-4" />
                         ) : (
-                            <span className={isMobile ? 'sr-only' : ''}>Download PDF</span>
+                            <span className={isMobile ? 'sr-only' : ''}>Download</span>
                         )}
                     </button>
                     {isEditingExistingResume && onShareCurrentResume ? (
                         <button
                             onClick={onShareCurrentResume}
-                            disabled={loadingAction !== null}
+                            disabled={loadingAction !== null || disableShareCurrentResume}
                             className={`ml-2 inline-flex items-center gap-2 h-9 rounded-full border border-grayscale-200 border-solid bg-white hover:bg-grayscale-50 disabled:opacity-60 disabled:cursor-not-allowed text-indigo-500 font-semibold text-sm transition-colors ${
                                 isMobile ? 'w-9 justify-center px-0' : 'px-4'
                             }`}
                         >
                             <ShareIcon className="w-5 h-5" />
-                            <span className={isMobile ? 'sr-only' : ''}>Share Resume</span>
+                            <span className={isMobile ? 'sr-only' : ''}>Share</span>
                         </button>
                     ) : null}
                     <button
                         onClick={onPublish}
-                        disabled={loadingAction !== null}
+                        disabled={loadingAction !== null || disablePublish}
                         className={`ml-2 inline-flex items-center gap-2 h-9 rounded-full border border-grayscale-200 border-solid bg-white hover:bg-grayscale-50 disabled:opacity-60 disabled:cursor-not-allowed text-indigo-500 font-semibold text-sm transition-colors ${
                             isMobile ? 'w-9 justify-center px-0' : 'px-4'
                         }`}
                     >
                         {!(isMobile && loadingAction === 'publish') && (
-                            <ShareIcon className="w-5 h-5" />
+                            <Checkmark className="w-5 h-5" />
                         )}
                         {loadingAction === 'publish' ? (
                             <IonSpinner name="crescent" className="w-4 h-4" />
                         ) : (
                             <span className={isMobile ? 'sr-only' : ''}>
-                                {isEditingExistingResume ? 'Save Resume' : 'Publish VC'}
+                                {isEditingExistingResume ? 'Save' : 'Publish'}
                             </span>
                         )}
                     </button>
