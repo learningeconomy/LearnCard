@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
 
+import { ProfilePicture } from 'learn-card-base';
 import X from 'src/components/svgs/X';
 import Pencil from 'src/components/svgs/Pencil';
 import SkillProfileProgressBar from './SkillProfileProgressBar';
-import { ProfilePicture } from 'learn-card-base';
+import SkillProfileStep1 from './SkillProfileStep1';
 
 type MySkillProfileProps = {};
 
 const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
     const [isExpanded, setIsExpanded] = useState(true); // init = true the first time you land on the page, TODO false otherwise
     const [currentStep, setCurrentStep] = useState(1);
+
+    const handleNext = () => {
+        setCurrentStep(currentStep + 1);
+    };
+
+    const steps: Record<number, React.ReactNode> = {
+        1: <SkillProfileStep1 handleNext={handleNext} />,
+    };
 
     return (
         <div className="w-full max-w-[600px] flex items-center justify-center px-4">
@@ -62,7 +71,7 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
 
                 {isExpanded && (
                     <div className="pt-[20px] border-t border-grayscale-200 w-full mt-[10px]">
-                        Step {currentStep} content...
+                        {steps[currentStep] ?? <div>Step {currentStep} content...</div>}
                     </div>
                 )}
             </div>
