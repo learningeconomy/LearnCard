@@ -39,7 +39,9 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                     setPopoverEvent(event.nativeEvent);
                     setIsOpen(true);
                 }}
-                className="inline-flex items-center gap-2 h-11 px-4 rounded-full border-[3px] border-indigo-500 border-solid bg-white disabled:opacity-60 disabled:cursor-not-allowed"
+                className={`inline-flex items-center gap-2 py-1 px-4 rounded-full border-[1px] border-indigo-500 border-solid  disabled:opacity-60 disabled:cursor-not-allowed ${
+                    isOpen ? 'bg-indigo-50' : 'bg-white'
+                }`}
             >
                 <img src={ResumeHistoryIcon} alt="Resume history" className="w-6 h-6" />
                 <span className="text-[18px] font-semibold text-grayscale-800">
