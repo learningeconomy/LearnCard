@@ -1,5 +1,19 @@
 # @learncard/network-brain-service
 
+## 3.12.5
+
+### Patch Changes
+
+-   [#1072](https://github.com/learningeconomy/LearnCard/pull/1072) [`5cc18a955913e1384d2107e9ba08cd876f2419c0`](https://github.com/learningeconomy/LearnCard/commit/5cc18a955913e1384d2107e9ba08cd876f2419c0) Thanks [@Custard7](https://github.com/Custard7)! - fix: Add DynamicLoaderPlugin to brain service for remote JSON-LD context resolution
+
+-   [#1068](https://github.com/learningeconomy/LearnCard/pull/1068) [`0fd14a6d66f05dc10ba2443ab99b1ca3dd7a6fa0`](https://github.com/learningeconomy/LearnCard/commit/0fd14a6d66f05dc10ba2443ab99b1ca3dd7a6fa0) Thanks [@Custard7](https://github.com/Custard7)! - fix: Singleton caching bug in getLearnCard
+
+## 3.12.4
+
+### Patch Changes
+
+-   [#1061](https://github.com/learningeconomy/LearnCard/pull/1061) [`be053cfa6bbffa8ff34ba65673d1696abe77e5f1`](https://github.com/learningeconomy/LearnCard/commit/be053cfa6bbffa8ff34ba65673d1696abe77e5f1) Thanks [@goblincore](https://github.com/goblincore)! - fix: Derive domain from existing env variable for brain service skill-renderer
+
 ## 3.12.3
 
 ### Patch Changes
