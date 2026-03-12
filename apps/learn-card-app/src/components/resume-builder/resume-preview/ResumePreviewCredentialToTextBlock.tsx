@@ -15,11 +15,18 @@ import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
 import VerticalArrowsIcon from '../../../components/svgs/VerticalArrowsIcon';
 import ResumePreviewEditableTextBlock from './ResumePreviewEditableTextBlock';
 import ResumePreviewCredentialDateDisplay from './ResumePreviewCredentialDateDisplay';
+import BoostPreview from '../../boost/boostCMS/BoostPreview/BoostPreview';
+import NonBoostPreview from '../../boost/boostCMS/BoostPreview/NonBoostPreview';
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 import { ModalTypes, useGetResolvedCredential, useGetVCInfo, useModal } from 'learn-card-base';
 import { ResumeSectionKey } from '../resume-builder.helpers';
+import {
+    getDefaultCategoryForCredential,
+    isBoostCredential,
+    unwrapBoostCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
 
 const ResumePreviewCredentialToTextBlock: React.FC<{
     uri: string;
@@ -136,6 +143,36 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
         addCredentialField(uri, section, '', 'selfAttested', 'metadata');
     };
 
+    const openCredentialPreview = () => {
+        if (!vc || isEditing) return;
+
+        const categoryType =
+            (getDefaultCategoryForCredential(unwrapBoostCredential(vc)) || section) as any;
+        const previewProps = {
+            credential: vc,
+            categoryType,
+            verificationItems: [],
+            customThumbComponent: null,
+            customBodyCardComponent: null,
+            customFooterComponent: <div />,
+            customIssueHistoryComponent: null,
+            handleCloseModal: () => closeModal(),
+        };
+
+        newModal(
+            isBoostCredential(vc) ? (
+                <BoostPreview {...previewProps} />
+            ) : (
+                <NonBoostPreview {...previewProps} />
+            ),
+            undefined,
+            {
+                desktop: ModalTypes.FullScreen,
+                mobile: ModalTypes.FullScreen,
+            }
+        );
+    };
+
     return (
         <div className="flex items-start gap-3">
             <div className="flex flex-col gap-1 flex-1 min-w-0">
@@ -146,9 +183,19 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                     </span>
                     <div className="min-w-0 flex-1">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1">
-                            <span className="text-sm font-semibold text-grayscale-800 leading-tight break-words">
-                                {title || 'Credential'}
-                            </span>
+                            {vc && !isEditing ? (
+                                <button
+                                    type="button"
+                                    onClick={openCredentialPreview}
+                                    className="max-w-full cursor-pointer bg-transparent border-none p-0 text-left text-sm font-semibold text-grayscale-800 leading-tight break-words hover:underline hover:underline-offset-2"
+                                >
+                                    {title || 'Credential'}
+                                </button>
+                            ) : (
+                                <span className="text-sm font-semibold text-grayscale-800 leading-tight break-words">
+                                    {title || 'Credential'}
+                                </span>
+                            )}
                             <div className="mt-1 sm:mt-0 min-w-0">
                                 <ResumePreviewCredentialDateDisplay
                                     isEditing={isEditing}
