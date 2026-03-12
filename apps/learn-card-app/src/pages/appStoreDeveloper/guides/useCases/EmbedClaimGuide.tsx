@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
-import { useToast, useFilestack, ToastTypeEnum } from 'learn-card-base';
+import { useToast, useFilestack, ToastTypeEnum, useGetCurrentLCNUser } from 'learn-card-base';
 import { LEARNCARD_NETWORK_API_URL } from 'learn-card-base/constants/Networks';
 import { Clipboard } from '@capacitor/clipboard';
 
@@ -834,13 +834,14 @@ const TestStep: React.FC<{
     requestBackgroundIssuance: boolean;
     isTransitioning?: boolean;
     apiBaseUrl?: string;
-}> = ({ onBack, onComplete, publishableKey, templates, partnerName, branding, requestBackgroundIssuance, isTransitioning, apiBaseUrl }) => {
+    issuerName?: string;
+    issuerLogoUrl?: string;
+}> = ({ onBack, onComplete, publishableKey, templates, partnerName, branding, requestBackgroundIssuance, isTransitioning, apiBaseUrl, issuerName, issuerLogoUrl }) => {
     const [selectedTemplateIdx, setSelectedTemplateIdx] = useState(0);
 
     const checks = [
         { label: 'Publishable key configured', ok: !!publishableKey },
         { label: 'At least one credential template', ok: templates.length > 0 },
-        { label: 'Partner name set', ok: !!partnerName },
     ];
     const allChecksPass = checks.every(c => c.ok);
 
@@ -916,6 +917,8 @@ const TestStep: React.FC<{
                     branding={branding}
                     requestBackgroundIssuance={requestBackgroundIssuance}
                     apiBaseUrl={apiBaseUrl}
+                    issuerName={issuerName}
+                    issuerLogoUrl={issuerLogoUrl}
                 />
             ) : (
                 <div className="border rounded-lg bg-gray-50 p-6 text-center">
@@ -1057,6 +1060,8 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
 
     // Resolve API base URL for embed preview (local dev uses LCN_API_URL env var)
     const apiBaseUrl = LCN_API_URL || LEARNCARD_NETWORK_API_URL;
+
+    const { currentLCNUser } = useGetCurrentLCNUser();
 
     const [templates, setTemplates] = useState<ManagedTemplate[]>([]);
     const [partnerName, setPartnerName] = useState('');
@@ -1250,6 +1255,8 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                         requestBackgroundIssuance={requestBackgroundIssuance}
                         isTransitioning={isTransitioning}
                         apiBaseUrl={apiBaseUrl}
+                        issuerName={currentLCNUser?.displayName || ''}
+                        issuerLogoUrl={currentLCNUser?.image || undefined}
                     />
                 );
 

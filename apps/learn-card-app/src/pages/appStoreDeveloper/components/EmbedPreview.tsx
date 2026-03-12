@@ -12,6 +12,8 @@ export interface EmbedPreviewProps {
     branding?: { primaryColor?: string; accentColor?: string; partnerLogoUrl?: string };
     requestBackgroundIssuance?: boolean;
     apiBaseUrl?: string;
+    issuerName?: string;
+    issuerLogoUrl?: string;
 }
 
 export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
@@ -21,6 +23,8 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
     branding,
     requestBackgroundIssuance,
     apiBaseUrl,
+    issuerName,
+    issuerLogoUrl,
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [isLoaded, setIsLoaded] = useState(false);
@@ -41,6 +45,8 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
                 target: el,
                 publishableKey,
                 partnerName,
+                issuerName,
+                issuerLogoUrl,
                 credential,
                 branding: { ...branding, walletUrl: '' },
                 requestBackgroundIssuance,
@@ -61,7 +67,7 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
         return () => {
             if (el) el.innerHTML = '';
         };
-    }, [publishableKey, partnerName, credentialKey, brandingKey, requestBackgroundIssuance, apiBaseUrl]);
+    }, [publishableKey, partnerName, issuerName, issuerLogoUrl, credentialKey, brandingKey, requestBackgroundIssuance, apiBaseUrl]);
 
     return (
         <div className="border rounded-lg bg-gray-50 p-6">
