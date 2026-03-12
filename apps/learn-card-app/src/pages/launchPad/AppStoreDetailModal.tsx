@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import numeral from 'numeral';
+import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
 import { IonPage, IonContent, IonSpinner, IonFooter, IonHeader, IonToast } from '@ionic/react';
 import {
@@ -37,6 +37,7 @@ import AiTutorConnectedView from './AiTutorConnectedView';
 import { Settings, ShieldAlert } from 'lucide-react';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
 import DatePickerInput from '../../components/date-picker/DatePickerInput';
+import { checkAppInstallEligibility, AGE_RATING_TO_MIN_AGE } from '@learncard/helpers';
 
 // Extended type to include new fields (until types package is rebuilt)
 type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
@@ -47,14 +48,6 @@ type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
     hero_background_color?: string;
     min_age?: number;
     age_rating?: '4+' | '9+' | '12+' | '17+';
-};
-
-// Map age_rating to numeric minimum age
-const AGE_RATING_TO_MIN_AGE: Record<string, number> = {
-    '4+': 4,
-    '9+': 9,
-    '12+': 12,
-    '17+': 17,
 };
 
 // Helper to convert YouTube/Vimeo URLs to embed URLs
@@ -176,6 +169,8 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     // Separate min_age (hard block) from age_rating (soft block with guardian approval)
     const minAge: number | undefined = listing.min_age;
     const ageRating: string | undefined = listing.age_rating;
+
+    // Map age_rating to numeric value for display purposes
     const ageRatingMinAge = ageRating ? AGE_RATING_TO_MIN_AGE[ageRating] ?? 0 : 0;
 
     // Calculate user's age from DOB
@@ -212,7 +207,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     };
 
     // Show the consent modal and proceed with install
-    const showInstallConsentModal = () => {
+    const showInstallConsentModal = (enteredAge?: number) => {
         const permissions: string[] = launchConfig?.permissions || [];
         const consentContractUri: string | undefined = launchConfig?.contractUri;
 
@@ -223,6 +218,12 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 permissions={permissions}
                 contractUri={consentContractUri}
                 isPreview={isPreview}
+                ageRestriction={{
+                    isChildProfile,
+                    userAge: enteredAge ?? userAge,
+                    minAge,
+                    ageRating: listing.age_rating,
+                }}
                 onAccept={() => {
                     closeModal();
                     doInstall();
@@ -332,7 +333,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     showAgeBlockedModal();
                 } else {
                     // Child meets age requirement - proceed to install
-                    showInstallConsentModal();
+                    showInstallConsentModal(enteredAge);
                 }
             };
 
@@ -430,20 +431,20 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     };
 
     const handleInstall = () => {
-        // Case 1: Hard block - min_age violation (block completely)
-        if (isHardBlocked) {
-            showAgeBlockedModal();
-            return;
-        }
+        const result = checkAppInstallEligibility({
+            isChildProfile,
+            userAge,
+            minAge,
+            ageRating,
+            hasContract: Boolean(contractUri),
+        });
 
-        // Case 2: Child profile - check age restrictions
-        if (isChildProfile) {
-            const noAgeRating = ageRatingMinAge === 0;
-            const childAgeUnknown = userAge === null;
-            const childTooYoung = userAge !== null && userAge < ageRatingMinAge;
+        switch (result.action) {
+            case 'hard_blocked':
+                showAgeBlockedModal();
+                return;
 
-            // Case 2a: Child age unknown - require guardian to verify age
-            if (childAgeUnknown) {
+            case 'require_dob':
                 guardedAction(
                     () => {
                         showDobEntryModal();
@@ -451,12 +452,8 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     { ignorePriorVerification: true }
                 );
                 return;
-            }
 
-            // Case 2b: No age rating specified - require guardian approval
-            // Case 2c: Child too young - require guardian approval
-            // Case 2d: App with a contract - require guardian approval
-            if (noAgeRating || childTooYoung || contractUri) {
+            case 'require_guardian_approval':
                 guardedAction(
                     () => {
                         showInstallConsentModal();
@@ -464,13 +461,11 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     { ignorePriorVerification: true }
                 );
                 return;
-            }
 
-            // Case 2e: Child old enough - proceed directly without guardian approval
+            case 'proceed':
+                showInstallConsentModal();
+                return;
         }
-
-        // Case 3: User is old enough - proceed directly
-        showInstallConsentModal();
     };
 
     const handleUninstall = async () => {
