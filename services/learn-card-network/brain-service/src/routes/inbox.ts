@@ -583,12 +583,19 @@ export const inboxRouter = t.router({
                 resolvedCredential = parseRenderedTemplate(rendered);
             }
 
-            // Ensure the credential's issuer name reflects the owner profile, not the app listing
+            // Ensure the credential's issuer name/image reflects the owner profile, not the app listing
             const rc = resolvedCredential as any;
             if (rc.issuer && typeof rc.issuer === 'object') {
-                rc.issuer.name = rc.issuer.name || issuerProfile.displayName;
+                rc.issuer.name = issuerProfile.displayName;
+                if (issuerProfile.profileImageUrl) {
+                    rc.issuer.image = issuerProfile.profileImageUrl;
+                }
             } else if (typeof rc.issuer === 'string' || !rc.issuer) {
-                rc.issuer = { id: rc.issuer || '', name: issuerProfile.displayName };
+                rc.issuer = {
+                    id: rc.issuer || '',
+                    name: issuerProfile.displayName,
+                    ...(issuerProfile.profileImageUrl && { image: issuerProfile.profileImageUrl }),
+                };
             }
 
             // Log initial activity so embed claims appear in the dashboard
