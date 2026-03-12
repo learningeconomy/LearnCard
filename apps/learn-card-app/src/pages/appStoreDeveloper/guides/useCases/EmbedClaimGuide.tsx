@@ -373,7 +373,7 @@ const ConfigureStep: React.FC<{
     const { presentToast } = useToast();
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
     const [hasTemplates, setHasTemplates] = useState(false);
-    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [showAdvanced, setShowAdvanced] = useState(true);
     const [keyCopied, setKeyCopied] = useState(false);
     const [domainInput, setDomainInput] = useState('');
 
@@ -535,91 +535,59 @@ const ConfigureStep: React.FC<{
 
             {/* Partner Name */}
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Partner Name <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Partner Name <span className="text-gray-400 font-normal">(Optional)</span></label>
 
                 <input
                     type="text"
                     value={partnerName}
                     onChange={(e) => setPartnerName(e.target.value)}
-                    placeholder="e.g., Your Company"
+                    placeholder="Your company name"
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     style={{ colorScheme: 'light' }}
                 />
 
                 <p className="text-xs text-gray-500 mt-1">
-                    Shown in the claim modal as the issuing organization
+                    Shown alongside your logo in the claim modal. Not included on the issued credential — the credential issuer is your account's verified identity.
                 </p>
             </div>
 
-            {/* Whitelisted Domains */}
+            {/* Partner Logo URL */}
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Whitelisted Domains</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Partner Logo <span className="text-gray-400 font-normal">(Optional)</span></label>
 
-                <p className="text-xs text-gray-500 mb-2">
-                    The LearnCard Network domain(s) your integration is authorized to operate on.
-                    For production use <code className="bg-gray-100 px-1 rounded">network.learncard.com</code>,
-                    for local development use <code className="bg-gray-100 px-1 rounded">localhost:4000</code>.
-                    This will be auto-configured when you test, but you can manage it here.
-                </p>
-
-                <div className="flex gap-2 mb-2">
+                <div className="flex gap-2">
                     <input
-                        type="text"
-                        value={domainInput}
-                        onChange={(e) => setDomainInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                const domain = domainInput.trim();
-                                if (domain && !whitelistedDomains.includes(domain)) {
-                                    onWhitelistedDomainsChange([...whitelistedDomains, domain]);
-                                    setDomainInput('');
-                                }
-                            }
-                        }}
-                        placeholder="e.g., network.learncard.com or localhost:4000"
-                        className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        type="url"
+                        value={branding.partnerLogoUrl}
+                        onChange={(e) => setBranding({ ...branding, partnerLogoUrl: e.target.value })}
+                        placeholder="https://example.com/logo.png"
+                        className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        disabled={isUploadingLogo}
                         style={{ colorScheme: 'light' }}
                     />
 
                     <button
                         type="button"
-                        onClick={() => {
-                            const domain = domainInput.trim();
-                            if (domain && !whitelistedDomains.includes(domain)) {
-                                onWhitelistedDomainsChange([...whitelistedDomains, domain]);
-                                setDomainInput('');
-                            }
-                        }}
-                        className="px-3 py-2 bg-cyan-500 text-white text-sm font-medium rounded-lg hover:bg-cyan-600 transition-colors"
+                        onClick={() => handleLogoUpload()}
+                        disabled={isUploadingLogo}
+                        className="px-3 py-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
+                        title="Upload image"
                     >
-                        Add
+                        {isUploadingLogo ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Upload className="w-4 h-4" />
+                        )}
                     </button>
                 </div>
 
-                {whitelistedDomains.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                        {whitelistedDomains.map((domain) => (
-                            <span
-                                key={domain}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-medium text-indigo-700"
-                            >
-                                {domain}
-                                <button
-                                    type="button"
-                                    onClick={() => onWhitelistedDomainsChange(whitelistedDomains.filter(d => d !== domain))}
-                                    className="text-indigo-400 hover:text-indigo-700 ml-0.5"
-                                    aria-label={`Remove ${domain}`}
-                                >
-                                    &times;
-                                </button>
-                            </span>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-xs text-amber-600">
-                        No domains whitelisted yet. The embed will not work until you add at least one domain.
-                    </p>
+                {branding.partnerLogoUrl && (
+                    <img
+                        src={branding.partnerLogoUrl}
+                        alt="Logo preview"
+                        className="mt-2 h-12 object-contain rounded border border-gray-200"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
                 )}
             </div>
 
@@ -686,44 +654,6 @@ const ConfigureStep: React.FC<{
                                 </div>
                             </div>
 
-                            <div className="md:col-span-2">
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Partner Logo URL</label>
-
-                                <div className="flex gap-2">
-                                    <input
-                                        type="url"
-                                        value={branding.partnerLogoUrl}
-                                        onChange={(e) => setBranding({ ...branding, partnerLogoUrl: e.target.value })}
-                                        placeholder="https://example.com/logo.png"
-                                        className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                        disabled={isUploadingLogo}
-                                        style={{ colorScheme: 'light' }}
-                                    />
-
-                                    <button
-                                        type="button"
-                                        onClick={() => handleLogoUpload()}
-                                        disabled={isUploadingLogo}
-                                        className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
-                                        title="Upload image"
-                                    >
-                                        {isUploadingLogo ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <Upload className="w-4 h-4" />
-                                        )}
-                                    </button>
-                                </div>
-
-                                {branding.partnerLogoUrl && (
-                                    <img
-                                        src={branding.partnerLogoUrl}
-                                        alt="Logo preview"
-                                        className="mt-2 h-12 object-contain rounded border border-gray-200"
-                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                    />
-                                )}
-                            </div>
                         </div>
                     </div>
 
@@ -768,6 +698,75 @@ const ConfigureStep: React.FC<{
                 </div>
             )}
 
+            {/* Whitelisted Domains */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Whitelisted Domains</label>
+
+                <p className="text-xs text-gray-500 mb-2">
+                    Add the domains where you'll embed this claim button. The API will only accept claims from these domains.
+                </p>
+
+                <div className="flex gap-2 mb-2">
+                    <input
+                        type="text"
+                        value={domainInput}
+                        onChange={(e) => setDomainInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const domain = domainInput.trim();
+                                if (domain && !whitelistedDomains.includes(domain)) {
+                                    onWhitelistedDomainsChange([...whitelistedDomains, domain]);
+                                    setDomainInput('');
+                                }
+                            }
+                        }}
+                        placeholder="e.g., yourcompany.com"
+                        className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        style={{ colorScheme: 'light' }}
+                    />
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const domain = domainInput.trim();
+                            if (domain && !whitelistedDomains.includes(domain)) {
+                                onWhitelistedDomainsChange([...whitelistedDomains, domain]);
+                                setDomainInput('');
+                            }
+                        }}
+                        className="px-3 py-2 bg-cyan-500 text-white text-sm font-medium rounded-lg hover:bg-cyan-600 transition-colors"
+                    >
+                        Add
+                    </button>
+                </div>
+
+                {whitelistedDomains.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                        {whitelistedDomains.map((domain) => (
+                            <span
+                                key={domain}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-medium text-indigo-700"
+                            >
+                                {domain}
+                                <button
+                                    type="button"
+                                    onClick={() => onWhitelistedDomainsChange(whitelistedDomains.filter(d => d !== domain))}
+                                    className="text-indigo-400 hover:text-indigo-700 ml-0.5"
+                                    aria-label={`Remove ${domain}`}
+                                >
+                                    &times;
+                                </button>
+                            </span>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-xs text-amber-600">
+                        No domains whitelisted yet. The embed will not work until you add at least one domain.
+                    </p>
+                )}
+            </div>
+
             <CodeOutputPanel
                 title="Full Configuration"
                 snippets={{ typescript: getCode() }}
@@ -799,7 +798,7 @@ const ConfigureStep: React.FC<{
 
                     <button
                         onClick={onComplete}
-                        disabled={!hasTemplates || isBuilderOpen || isTransitioning || !partnerName.trim()}
+                        disabled={!hasTemplates || isBuilderOpen || isTransitioning}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         {isTransitioning ? (
@@ -819,11 +818,6 @@ const ConfigureStep: React.FC<{
                     </p>
                 )}
 
-                {!isBuilderOpen && hasTemplates && !partnerName.trim() && (
-                    <p className="text-xs text-amber-600 text-center">
-                        Enter a Partner Name to continue.
-                    </p>
-                )}
             </div>
         </div>
     );
