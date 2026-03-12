@@ -847,7 +847,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     <p className="font-medium mb-1">Create Credential Templates</p>
                     <p>
                         Templates define the structure of credentials you'll issue. Each template is saved 
-                        as a reusable boost that can be issued to recipients.
+                        as a reusable credential that can be issued to recipients.
                     </p>
                 </div>
             </div>

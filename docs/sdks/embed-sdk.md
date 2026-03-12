@@ -102,7 +102,7 @@ init(options: InitOptions): void
 | `branding` | `BrandingTokens` | — | Color and logo customization (see below) |
 | `apiBaseUrl` | `string` | — | Defaults to `https://network.learncard.com/api` |
 | `requestBackgroundIssuance` | `boolean` | — | Issue credential without user interaction (no modal shown) |
-| `onSuccess` | `(details: ClaimSuccessDetails) => void` | — | Called when user accepts. When provided, SDK skips auto-opening the wallet URL. |
+| `onSuccess` | `(details: ClaimSuccessDetails) => void` | — | Called when user accepts. SDK always opens the wallet URL AND calls this callback. To suppress wallet auto-open, set `branding.walletUrl: ''`. |
 | `onEmailSubmit` | `(email: string) => Promise<EmailSubmitResult>` | — | Override default email challenge logic |
 | `onOtpVerify` | `(email: string, code: string) => Promise<OtpVerifyResult>` | — | Override default OTP verification logic |
 | `theme` | `{ primaryColor?: string }` | — | Deprecated — use `branding.primaryColor` instead |
@@ -115,7 +115,7 @@ init(options: InitOptions): void
 | `accentColor` | `string` | Darker accent for hover states. Defaults to `darken(primaryColor, 20%)`. |
 | `partnerLogoUrl` | `string` | URL for your organization's logo in the modal header |
 | `logoUrl` | `string` | Override the LearnCard brand logo |
-| `walletUrl` | `string` | URL to open on success when no `onSuccess` callback is provided |
+| `walletUrl` | `string` | URL to open on success. Defaults to `https://learncard.app`. Set to `''` to suppress auto-open entirely. |
 
 ### `CredentialConfig`
 

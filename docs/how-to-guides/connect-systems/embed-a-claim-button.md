@@ -79,7 +79,7 @@ LearnCard.init({
 
 ## Step 5: Handle Success (Optional)
 
-By default, after claiming, the modal shows a success screen with a "View My LearnCard" button that opens the wallet. You can override this with `onSuccess`:
+By default, after claiming, the SDK opens the wallet in a new tab (deep-linked to the credential via `handoffUrl`) and shows a success screen. You can hook into this with `onSuccess`:
 
 ```js
 LearnCard.init({
@@ -87,13 +87,25 @@ LearnCard.init({
   target: '#claim-credential',
   credential: { name: 'Course Completion' },
   onSuccess: ({ credentialId, handoffUrl }) => {
-    // Show your own success UI
+    // Runs in addition to the wallet auto-open
     document.getElementById('success-message').style.display = 'block';
   },
 });
 ```
 
-When `onSuccess` is provided, the SDK skips the automatic wallet redirect — you control what happens next.
+To suppress the automatic wallet redirect entirely, set `branding.walletUrl: ''`:
+
+```js
+LearnCard.init({
+  publishableKey: 'pk_your_key_here',
+  target: '#claim-credential',
+  credential: { name: 'Course Completion' },
+  branding: { walletUrl: '' },  // Disable auto-open
+  onSuccess: ({ credentialId, handoffUrl }) => {
+    // You fully control what happens next
+    document.getElementById('success-message').style.display = 'block';
+  },
+});
 
 ## Complete Example
 
