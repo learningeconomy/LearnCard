@@ -7,6 +7,7 @@ import { VCPlugin, getVCPlugin } from '@learncard/vc-plugin';
 import { ExpirationPlugin, expirationPlugin } from '@learncard/expiration-plugin';
 import { LearnCardPlugin, getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin, DidWebPlugin } from '@learncard/did-web-plugin';
+import { DynamicLoaderPlugin } from '@learncard/dynamic-loader-plugin';
 import { getLRUCache } from '@cache/in-memory-lru';
 import { getSigningAuthorityForDid } from '@accesslayer/signing-authority/read';
 
@@ -48,28 +49,37 @@ export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
     return emptyLearnCard;
 };
 
-export const getLearnCard = async (seed = process.env.SEED): Promise<SeedLearnCard> => {
+export const getLearnCard = async (
+    seed = process.env.SEED,
+    allowRemoteContexts = false
+): Promise<SeedLearnCard> => {
     if (!seed) throw new Error('No seed set!');
 
-    let cachedValue = learnCardsCache.get(seed);
+    const cacheKey = `${seed}:${allowRemoteContexts}`;
+
+    let cachedValue = learnCardsCache.get(cacheKey);
 
     if (cachedValue) return cachedValue;
 
-    const didkitLc = await (
-        await generateLearnCard()
-    ).addPlugin(await getDidKitPlugin(await didkit));
+    const emptyLc = await generateLearnCard();
 
-    const didkeyLc = await didkitLc.addPlugin(
-        await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')
+    const baseLc = allowRemoteContexts
+        ? await (await emptyLc.addPlugin(DynamicLoaderPlugin)).addPlugin(
+              await getDidKitPlugin(await didkit, allowRemoteContexts)
+          )
+        : await emptyLc.addPlugin(await getDidKitPlugin(await didkit));
+
+    const didkeyLc = await baseLc.addPlugin(
+        await getDidKeyPlugin<DidMethod>(baseLc, seed, 'key')
     );
 
     const didkeyAndVCLc = await didkeyLc.addPlugin(getVCPlugin(didkeyLc));
 
     const expirationLc = await didkeyAndVCLc.addPlugin(expirationPlugin(didkeyAndVCLc));
 
-    const learnCard = await expirationLc.addPlugin(getLearnCardPlugin(expirationLc));
+    const learnCard = await expirationLc.addPlugin(getLearnCardPlugin(expirationLc)) as SeedLearnCard;
 
-    learnCardsCache.add(seed, learnCard);
+    learnCardsCache.add(cacheKey, learnCard);
 
     return learnCard;
 };
@@ -86,7 +96,7 @@ export const getSigningAuthorityLearnCard = async (
 
     if (cachedValue) return cachedValue;
 
-    const learnCard = await getLearnCard(seed);
+    const learnCard = await getLearnCard(seed, true);
 
     const saLearnCard = ownerDID.startsWith('did:web:')
         ? await learnCard.addPlugin(await getDidWebPlugin(learnCard, ownerDID))

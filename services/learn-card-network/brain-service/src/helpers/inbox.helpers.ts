@@ -28,11 +28,11 @@ import { getRegistryService } from '@services/registry/registry.factory';
 export const verifyCredentialCanBeSigned = async (credential: UnsignedVC): Promise<boolean> => {
     try {
         const learnCard = await getLearnCard(undefined, true);
-        const testCredential = credential;
-        testCredential.issuer = learnCard.id.did();
+        const testCredential = { ...credential, issuer: learnCard.id.did() };
         await learnCard.invoke.issueCredential(testCredential);
     } catch (error) {
-       return false;
+        console.error('[verifyCredentialCanBeSigned] Pre-flight signing failed:', error);
+        return false;
     }
     return true;
 }

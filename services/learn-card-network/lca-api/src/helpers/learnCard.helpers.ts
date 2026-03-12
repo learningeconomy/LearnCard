@@ -105,11 +105,13 @@ export const getSigningAuthorityLearnCard = async (
               seed,
               didWeb: ownerDID,
               cloud,
+              allowRemoteContexts: true,
           })
         : await initLearnCard({
               didkit: await getDidKitInit(),
               seed,
               cloud,
+              allowRemoteContexts: true,
           });
 
     saCardsCache.add(seed, saLearnCard);
