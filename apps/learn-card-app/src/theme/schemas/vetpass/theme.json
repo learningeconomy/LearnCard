@@ -26,6 +26,11 @@
         },
         "introSlides": {
             "secondSlideBackground": "slate-600"
+        },
+        "categories": {
+            "socialBadge": {
+                "primaryColor": "lime-600 bg-green-500"
+            }
         }
     }
 }

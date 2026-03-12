@@ -143,16 +143,16 @@ const isCompound = (val) => val && val.includes(' ');
 // ═══════════════════════════════════════════════════════════════════════════
 
 const CATEGORY_COLOR_FIELDS = [
-    { key: 'primaryColor', label: 'Primary', hint: 'Main category color' },
-    { key: 'secondaryColor', label: 'Secondary', hint: 'Darker shade for contrast' },
-    { key: 'indicatorColor', label: 'Indicator', hint: 'Notification dot color' },
-    { key: 'borderColor', label: 'Border', hint: 'Card border color' },
-    { key: 'statusBarColor', label: 'Status Bar', hint: 'Mobile status bar color' },
-    { key: 'headerBrandingTextColor', label: 'Header Brand Text', hint: 'e.g. text-white' },
-    { key: 'headerTextColor', label: 'Header Text', hint: 'e.g. text-white' },
-    { key: 'backgroundPrimaryColor', label: 'Background Primary', hint: 'e.g. !bg-cyan-400' },
-    { key: 'backgroundSecondaryColor', label: 'Background Secondary', hint: 'Lighter background' },
-    { key: 'tabActiveColor', label: 'Tab Active', hint: 'e.g. bg-blue-300' },
+    { key: 'primaryColor', label: 'Primary', hint: 'Wallet card fill — the main bg color of the category tile on the home grid/list' },
+    { key: 'secondaryColor', label: 'Secondary', hint: 'Count badge pill inside the wallet card (grid view)' },
+    { key: 'indicatorColor', label: 'Indicator', hint: '"New" notification dot color and "X New" text on category pages' },
+    { key: 'borderColor', label: 'Border', hint: 'Ring around the notification dot on wallet cards' },
+    { key: 'statusBarColor', label: 'Status Bar', hint: 'Mobile device status bar tint when viewing this category' },
+    { key: 'headerBrandingTextColor', label: 'Header Brand Text', hint: 'Back arrow & branding logo color in the category page header' },
+    { key: 'headerTextColor', label: 'Header Text', hint: 'Category icon & "New Boost" button text in the subheader' },
+    { key: 'backgroundPrimaryColor', label: 'Background Primary', hint: 'Curved header background on the category detail page' },
+    { key: 'backgroundSecondaryColor', label: 'Background Secondary', hint: 'Content area background below the header curve' },
+    { key: 'tabActiveColor', label: 'Tab Active', hint: 'Earned/Managed tab highlight, search input bg, and view toggle bg' },
 ];
 
 const CATEGORY_KEYS = [
@@ -542,10 +542,13 @@ const ColorField = ({ label, value, inheritedValue, onChange, onClear, hint }) =
 
     return (
         <div className="field-group">
-            <div className="field-label" title={hint}>
-                {label}
-                {isInherited && <span className="badge badge-inherited" style={{ marginLeft: 6 }}>inherited</span>}
-                {value !== undefined && inheritedValue !== undefined && <span className="badge badge-override" style={{ marginLeft: 6 }}>override</span>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+                <div className="field-label" style={{ marginBottom: 0 }}>
+                    {label}
+                    {isInherited && <span className="badge badge-inherited" style={{ marginLeft: 6 }}>inherited</span>}
+                    {value !== undefined && inheritedValue !== undefined && <span className="badge badge-override" style={{ marginLeft: 6 }}>override</span>}
+                </div>
+                {hint && <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1.3, maxWidth: 180 }}>{hint}</div>}
             </div>
             <div ref={swatchRef}
                 className={`swatch ${!hex && displayValue ? displayValue : ''}`}
@@ -585,9 +588,12 @@ const TextField = ({ label, value, inheritedValue, onChange, onClear, hint, plac
 
     return (
         <div className="field-group">
-            <div className="field-label" title={hint}>
-                {label}
-                {isInherited && <span className="badge badge-inherited" style={{ marginLeft: 6 }}>inherited</span>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+                <div className="field-label" style={{ marginBottom: 0 }}>
+                    {label}
+                    {isInherited && <span className="badge badge-inherited" style={{ marginLeft: 6 }}>inherited</span>}
+                </div>
+                {hint && <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1.3, maxWidth: 180 }}>{hint}</div>}
             </div>
             <input
                 type="text"
@@ -616,15 +622,18 @@ const SelectField = ({ label, value, options, onChange, hint }) => (
     </div>
 );
 
-const HexColorField = ({ label, value, inheritedValue, onChange, onClear }) => {
+const HexColorField = ({ label, value, inheritedValue, onChange, onClear, hint }) => {
     const displayValue = value ?? inheritedValue ?? '';
     const isInherited = value === undefined && inheritedValue !== undefined;
 
     return (
         <div className="field-group">
-            <div className="field-label">
-                {label}
-                {isInherited && <span className="badge badge-inherited" style={{ marginLeft: 6 }}>inherited</span>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+                <div className="field-label" style={{ marginBottom: 0 }}>
+                    {label}
+                    {isInherited && <span className="badge badge-inherited" style={{ marginLeft: 6 }}>inherited</span>}
+                </div>
+                {hint && <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1.3, maxWidth: 180 }}>{hint}</div>}
             </div>
             <input
                 type="color"
@@ -825,55 +834,55 @@ const UIColorsSection = ({ config, parentConfig, setConfig }) => (
         <ObjectColorEditor title="LaunchPad" path="colors.launchPad" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#f59e0b' }}><path d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z"/></svg>}
             fields={[
-                { key: 'contacts.color', label: 'Contacts Color' },
-                { key: 'aiSessions.color', label: 'AI Sessions Color' },
-                { key: 'alerts.color', label: 'Alerts Color' },
-                { key: 'alerts.indicatorTextColor', label: 'Alerts Indicator Text' },
-                { key: 'alerts.indicatorBgColor', label: 'Alerts Indicator BG' },
-                { key: 'buttons.unconnected', label: 'Button (Unconnected)' },
-                { key: 'buttons.connected', label: 'Button (Connected)' },
+                { key: 'contacts.color', label: 'Contacts Color', hint: 'Text color for the "Contacts" link on the LaunchPad home header' },
+                { key: 'aiSessions.color', label: 'AI Sessions Color', hint: 'Text color for the "AI Sessions" link on the LaunchPad header' },
+                { key: 'alerts.color', label: 'Alerts Color', hint: 'Text color for the "Alerts" link on the LaunchPad header' },
+                { key: 'alerts.indicatorTextColor', label: 'Alerts Indicator Text', hint: 'Text color for the unread alerts count badge' },
+                { key: 'alerts.indicatorBgColor', label: 'Alerts Indicator BG', hint: 'Background color for the unread alerts count badge' },
+                { key: 'buttons.unconnected', label: 'Button (Unconnected)', hint: 'Style for "Connect" buttons on unconnected LaunchPad apps' },
+                { key: 'buttons.connected', label: 'Button (Connected)', hint: 'Style for "View" buttons on already-connected LaunchPad apps' },
             ]} />
 
         <ObjectColorEditor title="Side Menu" path="colors.sideMenu" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#06b6d4' }}><path fillRule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z" clipRule="evenodd"/></svg>}
             fields={[
-                { key: 'linkActiveColor', label: 'Link Active' },
-                { key: 'linkInactiveColor', label: 'Link Inactive' },
-                { key: 'linkActiveBackgroundColor', label: 'Link Active BG' },
-                { key: 'linkInactiveBackgroundColor', label: 'Link Inactive BG' },
-                { key: 'primaryButtonColor', label: 'Primary Button' },
-                { key: 'secondaryButtonColor', label: 'Secondary Button' },
-                { key: 'indicatorColor', label: 'Indicator' },
-                { key: 'syncingColor', label: 'Syncing' },
-                { key: 'completedColor', label: 'Completed' },
+                { key: 'linkActiveColor', label: 'Link Active', hint: 'Text & icon color for the currently selected side menu link' },
+                { key: 'linkInactiveColor', label: 'Link Inactive', hint: 'Text & icon color for unselected side menu links' },
+                { key: 'linkActiveBackgroundColor', label: 'Link Active BG', hint: 'Background highlight on the selected side menu link row' },
+                { key: 'linkInactiveBackgroundColor', label: 'Link Inactive BG', hint: 'Background of unselected side menu link rows' },
+                { key: 'primaryButtonColor', label: 'Primary Button', hint: '"New AI Session" button in the side menu (bg + text classes)' },
+                { key: 'secondaryButtonColor', label: 'Secondary Button', hint: 'Secondary action button in the side menu (bg + text + border)' },
+                { key: 'indicatorColor', label: 'Indicator', hint: 'Notification dot color next to side menu items with updates' },
+                { key: 'syncingColor', label: 'Syncing', hint: 'Text/spinner color for the "Passport" link while wallet is syncing' },
+                { key: 'completedColor', label: 'Completed', hint: 'Text color for the "Passport" link after sync completes' },
             ]} />
 
         <ObjectColorEditor title="Navbar" path="colors.navbar" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#10b981' }}><path fillRule="evenodd" d="M.99 5.24A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25l.01 9.5A2.25 2.25 0 0116.76 17H3.26A2.25 2.25 0 011 14.75l-.01-9.51z" clipRule="evenodd"/></svg>}
             fields={[
-                { key: 'activeColor', label: 'Active' },
-                { key: 'inactiveColor', label: 'Inactive' },
-                { key: 'syncingColor', label: 'Syncing' },
-                { key: 'completedColor', label: 'Completed' },
+                { key: 'activeColor', label: 'Active', hint: 'Icon & text color for the selected tab in the bottom nav bar' },
+                { key: 'inactiveColor', label: 'Inactive', hint: 'Icon & text color for unselected tabs in the bottom nav bar' },
+                { key: 'syncingColor', label: 'Syncing', hint: 'Passport tab icon/spinner color while wallet is syncing' },
+                { key: 'completedColor', label: 'Completed', hint: 'Passport tab icon color after sync completes' },
             ]} />
 
         <ObjectColorEditor title="Intro Slides" path="colors.introSlides" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#8b5cf6' }}><path d="M2 10a8 8 0 1116 0 8 8 0 01-16 0z"/></svg>}
             fields={[
-                { key: 'firstSlideBackground', label: 'Slide 1 Background' },
-                { key: 'secondSlideBackground', label: 'Slide 2 Background' },
-                { key: 'thirdSlideBackground', label: 'Slide 3 Background' },
-                { key: 'textColors.primary', label: 'Text Primary' },
-                { key: 'textColors.secondary', label: 'Text Secondary' },
-                { key: 'pagination.primary', label: 'Pagination Primary' },
-                { key: 'pagination.secondary', label: 'Pagination Secondary' },
+                { key: 'firstSlideBackground', label: 'Slide 1 Background', hint: 'Background color of the first onboarding intro slide' },
+                { key: 'secondSlideBackground', label: 'Slide 2 Background', hint: 'Background color of the second onboarding intro slide' },
+                { key: 'thirdSlideBackground', label: 'Slide 3 Background', hint: 'Background color of the third onboarding intro slide' },
+                { key: 'textColors.primary', label: 'Text Primary', hint: 'Headline text color on intro slides' },
+                { key: 'textColors.secondary', label: 'Text Secondary', hint: 'Body/subtitle text color on intro slides' },
+                { key: 'pagination.primary', label: 'Pagination Primary', hint: 'Active pagination dot on intro slides' },
+                { key: 'pagination.secondary', label: 'Pagination Secondary', hint: 'Inactive pagination dots on intro slides' },
             ]} />
 
         <ObjectColorEditor title="Default Colors" path="colors.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#3b82f6' }}><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.061 1.06a.75.75 0 001.06 1.06l1.06-1.06zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.06 1.06a.75.75 0 001.06 1.06l1.06-1.06zM18 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 015 10zM14.596 13.535a.75.75 0 011.06 1.061l-1.06 1.06a.75.75 0 11-1.061-1.06l1.06-1.06zM5.404 6.464a.75.75 0 011.06-1.06l1.06 1.06a.75.75 0 11-1.06 1.061l-1.06-1.06z"/></svg>}
             fields={[
-                { key: 'primaryColor', label: 'Primary Color' },
-                { key: 'primaryColorShade', label: 'Primary Shade' },
+                { key: 'primaryColor', label: 'Primary Color', hint: 'App-wide accent color used for buttons, links, and highlights' },
+                { key: 'primaryColorShade', label: 'Primary Shade', hint: 'Lighter shade of primary — used for hover states and backgrounds' },
             ]} />
     </>
 );
@@ -883,9 +892,9 @@ const UIColorsSection = ({ config, parentConfig, setConfig }) => (
 // ═══════════════════════════════════════════════════════════════════════════
 
 const SPILLED_CUP_FIELDS = [
-    { key: 'spilledCup.backsplash', label: 'Backsplash' },
-    { key: 'spilledCup.spill', label: 'Spill' },
-    { key: 'spilledCup.cupOutline', label: 'Cup Outline' },
+    { key: 'spilledCup.backsplash', label: 'Backsplash', hint: 'Background splash color behind the empty-state cup illustration' },
+    { key: 'spilledCup.spill', label: 'Spill', hint: 'Liquid spill color in the empty-state cup illustration' },
+    { key: 'spilledCup.cupOutline', label: 'Cup Outline', hint: 'Outline/stroke color of the cup in the empty-state illustration' },
 ];
 
 const PlaceholdersSection = ({ config, parentConfig, setConfig }) => {
@@ -977,22 +986,22 @@ const StylesSection = ({ config, parentConfig, setConfig }) => (
         <ObjectColorEditor title="Wallet Styles" path="styles.wallet" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#8b5cf6' }}><path d="M1 4.25a3.733 3.733 0 012.25-.75h13.5c.844 0 1.623.279 2.25.75A2.25 2.25 0 0016.75 2H3.25A2.25 2.25 0 001 4.25zM1 7.25a3.733 3.733 0 012.25-.75h13.5c.844 0 1.623.279 2.25.75A2.25 2.25 0 0016.75 5H3.25A2.25 2.25 0 001 7.25zM7 8a1 1 0 000 2h6a1 1 0 100-2H7z"/></svg>}
             fields={[
-                { key: 'cardStyles', label: 'Card Styles', hint: 'e.g. h-[240px]' },
-                { key: 'iconStyles', label: 'Icon Styles', hint: 'e.g. w-[100px] h-[100px]' },
+                { key: 'cardStyles', label: 'Card Styles', hint: 'Tailwind utility classes for wallet card sizing (e.g. h-[240px])' },
+                { key: 'iconStyles', label: 'Icon Styles', hint: 'Size classes for the category icon inside wallet cards (e.g. w-[100px] h-[100px])' },
             ]} />
 
         <ObjectColorEditor title="LaunchPad Styles" path="styles.launchPad" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#f59e0b' }}><path d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z"/></svg>}
             fields={[
-                { key: 'textStyles', label: 'Text Styles', hint: 'e.g. text-[16px]' },
-                { key: 'iconStyles', label: 'Icon Styles', hint: 'e.g. w-[75px] h-auto' },
-                { key: 'indicatorStyles', label: 'Indicator Styles', hint: 'e.g. shadow-soft-bottom' },
+                { key: 'textStyles', label: 'Text Styles', hint: 'Text size for LaunchPad header link labels (e.g. text-[16px])' },
+                { key: 'iconStyles', label: 'Icon Styles', hint: 'Size of Contacts/AI/Alerts icons on the LaunchPad header (e.g. w-[75px] h-auto)' },
+                { key: 'indicatorStyles', label: 'Indicator Styles', hint: 'Extra styles for LaunchPad indicator elements (e.g. shadow-soft-bottom)' },
             ]} />
 
         <ObjectColorEditor title="Default Styles" path="styles.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#64748b' }}><path fillRule="evenodd" d="M4.5 2A2.5 2.5 0 002 4.5v3.879a2.5 2.5 0 00.732 1.767l7.5 7.5a2.5 2.5 0 003.536 0l3.878-3.878a2.5 2.5 0 000-3.536l-7.5-7.5A2.5 2.5 0 008.38 2H4.5zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/></svg>}
             fields={[
-                { key: 'tabs.borderRadius', label: 'Tab Border Radius', hint: 'e.g. rounded-[5px]' },
+                { key: 'tabs.borderRadius', label: 'Tab Border Radius', hint: 'Corner rounding for Earned/Managed tabs (e.g. rounded-[5px])' },
             ]} />
     </>
 );
