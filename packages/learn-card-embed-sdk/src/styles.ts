@@ -78,6 +78,12 @@ export function createGlobalStyleEl(primary?: string, accent?: string): HTMLStyl
     }
     .lc-brand img { height: 26px; width: auto; border-radius: 5px; display: block; }
     .lc-brand .lc-sep { color: #d1d5db; font-size: 13px; font-weight: 400; }
+    .lc-brand .lc-issuer-logo { height: 26px; width: 26px; border-radius: 50%; object-fit: cover; display: block; flex-shrink: 0; }
+    .lc-brand .lc-issuer-avatar {
+      width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      background: var(--lc-primary); color: #fff; font-size: 12px; font-weight: 700; flex-shrink: 0;
+    }
+    .lc-brand .lc-issuer-name { font-weight: 600; font-size: 14px; color: #374151; }
     .lc-brand .lc-partner-logo { height: 26px; width: auto; border-radius: 5px; display: block; }
     .lc-brand .lc-partner-name { font-weight: 600; font-size: 14px; color: #374151; }
     .lc-close {

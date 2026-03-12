@@ -65,9 +65,11 @@ function buildIframeHtml(
   const csp = "default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'";
 
   const logoUrl = opts.branding?.logoUrl || DEFAULT_LOGO_URL;
+  const issuerName = escapeHtml(opts.issuerName || '');
   const cfg = {
     partnerLabel,
     partnerName: opts.partnerName || '',
+    issuerName,
     credentialName: credName,
     showConsent,
     nonce,
@@ -106,40 +108,68 @@ function openModal(opts: InitOptions): { close: () => void } {
   const brand = document.createElement('div');
   brand.className = 'lc-brand';
 
-  // LC logo (always shown)
-  const lcLogoUrl = opts.branding?.logoUrl || DEFAULT_LOGO_URL;
-  const lcImg = document.createElement('img');
-  lcImg.alt = 'LearnCard';
-  lcImg.referrerPolicy = 'no-referrer';
-  lcImg.decoding = 'async';
-  lcImg.src = lcLogoUrl;
-  brand.appendChild(lcImg);
-
-  // Separator (decorative, hidden from screen readers — aria-label on brand covers it)
-  const sep = document.createElement('span');
-  sep.className = 'lc-sep';
-  sep.setAttribute('aria-hidden', 'true');
-  sep.textContent = '\u00d7';
-  brand.appendChild(sep);
-
-  // Partner: logo if available, otherwise text
-  const partnerLogoUrl = opts.branding?.partnerLogoUrl;
-  if (partnerLogoUrl) {
-    const pImg = document.createElement('img');
-    pImg.className = 'lc-partner-logo';
-    pImg.alt = opts.partnerName || 'Partner';
-    pImg.referrerPolicy = 'no-referrer';
-    pImg.decoding = 'async';
-    pImg.src = partnerLogoUrl;
-    brand.appendChild(pImg);
+  // Left side: Issuer (logo/avatar + name). Falls back to LC logo if no issuerName provided.
+  const issuerName = opts.issuerName || '';
+  const issuerLogoUrl = opts.issuerLogoUrl;
+  if (issuerName) {
+    if (issuerLogoUrl) {
+      const issuerImg = document.createElement('img');
+      issuerImg.className = 'lc-issuer-logo';
+      issuerImg.alt = issuerName;
+      issuerImg.referrerPolicy = 'no-referrer';
+      issuerImg.decoding = 'async';
+      issuerImg.src = issuerLogoUrl;
+      brand.appendChild(issuerImg);
+    } else {
+      const avatar = document.createElement('span');
+      avatar.className = 'lc-issuer-avatar';
+      avatar.setAttribute('aria-hidden', 'true');
+      avatar.textContent = issuerName.charAt(0).toUpperCase();
+      brand.appendChild(avatar);
+    }
+    const issuerText = document.createElement('span');
+    issuerText.className = 'lc-issuer-name';
+    issuerText.textContent = issuerName;
+    brand.appendChild(issuerText);
   } else {
-    const pText = document.createElement('span');
-    pText.className = 'lc-partner-name';
-    pText.textContent = opts.partnerName || 'Partner';
-    brand.appendChild(pText);
+    // Fallback: LC logo
+    const lcLogoUrl = opts.branding?.logoUrl || DEFAULT_LOGO_URL;
+    const lcImg = document.createElement('img');
+    lcImg.alt = 'LearnCard';
+    lcImg.referrerPolicy = 'no-referrer';
+    lcImg.decoding = 'async';
+    lcImg.src = lcLogoUrl;
+    brand.appendChild(lcImg);
   }
 
-  brand.setAttribute('aria-label', `LearnCard \u00d7 ${opts.partnerName || 'Partner'}`);
+  // Separator + Partner (only shown if partnerName or partnerLogoUrl is set)
+  const partnerLogoUrl = opts.branding?.partnerLogoUrl;
+  const partnerName = opts.partnerName || '';
+  if (partnerName || partnerLogoUrl) {
+    const sep = document.createElement('span');
+    sep.className = 'lc-sep';
+    sep.setAttribute('aria-hidden', 'true');
+    sep.textContent = '\u00d7';
+    brand.appendChild(sep);
+
+    if (partnerLogoUrl) {
+      const pImg = document.createElement('img');
+      pImg.className = 'lc-partner-logo';
+      pImg.alt = partnerName || 'Partner';
+      pImg.referrerPolicy = 'no-referrer';
+      pImg.decoding = 'async';
+      pImg.src = partnerLogoUrl;
+      brand.appendChild(pImg);
+    }
+    if (partnerName) {
+      const pText = document.createElement('span');
+      pText.className = 'lc-partner-name';
+      pText.textContent = partnerName;
+      brand.appendChild(pText);
+    }
+  }
+
+  brand.setAttribute('aria-label', `${issuerName || 'LearnCard'} \u00d7 ${partnerName || 'Partner'}`);
 
   const closeBtn = document.createElement('button');
   closeBtn.className = 'lc-close';
@@ -414,7 +444,7 @@ function openModal(opts: InitOptions): { close: () => void } {
 
 function ensureGlobalStyles(opts: InitOptions) {
   const existing = document.querySelector('style[data-learncard-embed]');
-  if (existing) return;
+  if (existing) existing.remove(); // Always recreate so branding changes are reflected
   const style = createGlobalStyleEl(opts.branding?.primaryColor || opts.theme?.primaryColor, opts.branding?.accentColor);
   document.head.appendChild(style);
 }
