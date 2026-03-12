@@ -15,6 +15,7 @@ import {
     useAiFeatureGate,
     useToast,
     ToastTypeEnum,
+    useDeviceTypeByWidth,
 } from 'learn-card-base';
 
 import ResumeBuilderController from '../../components/resume-builder/ResumeBuilderController';
@@ -48,6 +49,7 @@ const WalletPage: React.FC = () => {
     const location = useLocation();
 
     const { theme } = useTheme();
+    const { isMobile } = useDeviceTypeByWidth();
     const categories = theme.categories;
 
     const [shareCredsIsOpen, setShareCredsIsOpen] = useState(false);
@@ -212,8 +214,17 @@ const WalletPage: React.FC = () => {
                                     </div>
                                 </div>
                             </IonRow>
-                            <CheckListButton className="mb-[10px] mt-[10px]" />
-                            <ResumeBuilderController className="mb-[10px]" />
+                            {isMobile ? (
+                                <>
+                                    <CheckListButton className="mb-[10px] mt-[10px]" />
+                                    <ResumeBuilderController className="mb-[10px]" />
+                                </>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px] my-[10px]">
+                                    <CheckListButton mode="inline" />
+                                    <ResumeBuilderController mode="inline" />
+                                </div>
+                            )}
                             <IonRow className="wallet-squares-wrapper max-w-[600px] mx-auto">
                                 <IonCol
                                     className={`wallet-squares-container ${
