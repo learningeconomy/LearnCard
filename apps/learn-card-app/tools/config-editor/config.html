@@ -136,7 +136,7 @@ const SECTIONS = [
         fields: [
             { path: 'branding.name', label: 'App Name', type: 'string', required: true, preview: true },
             { path: 'branding.shortName', label: 'Short Name', type: 'string', preview: true },
-            { path: 'branding.defaultTheme', label: 'Default Theme', type: 'select', options: ['colorful', 'formal'], preview: true },
+            { path: 'branding.defaultTheme', label: 'Default Theme', type: 'select', optionsFrom: 'themes', preview: true },
             { path: 'branding.primaryColor', label: 'Primary Color', type: 'color', preview: true },
             { path: 'branding.secondaryColor', label: 'Secondary Color', type: 'color', preview: true },
             { path: 'branding.fontFamily', label: 'Font Family', type: 'string' },
@@ -271,6 +271,11 @@ const syntaxHighlight = (json) => {
     );
 };
 
+// ─── Dynamic options (populated on load) ─────────────────────────────────────
+
+let availableThemes = [];
+api.get('/api/themes').then(list => { availableThemes = list; }).catch(() => {});
+
 // ─── Components ──────────────────────────────────────────────────────────────
 
 function FieldInput({ field, value, defaultValue, onChange }) {
@@ -310,7 +315,10 @@ function FieldInput({ field, value, defaultValue, onChange }) {
                     onChange=${(e) => onChange(field.path, e.target.value)}
                     class="w-full py-2.5 px-3 border border-gs-200 rounded-xl text-sm text-gs-900 bg-white"
                 >
-                    ${(field.options || []).map(opt => h`
+                    ${(field.optionsFrom === 'themes' && availableThemes.length
+                        ? availableThemes.map(t => t.id)
+                        : field.options || []
+                    ).map(opt => h`
                         <option key=${opt} value=${opt}>${opt}</option>
                     `)}
                 </select>
