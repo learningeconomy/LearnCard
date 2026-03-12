@@ -11,6 +11,7 @@ export interface DashboardConfig {
     showAppListings: boolean;
     showPartnerConnect: boolean;
     showAppConfig: boolean;
+    showEmbedConfig: boolean;
 }
 
 export interface DashboardStats {
@@ -87,6 +88,7 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
         showAppListings: false,
         showPartnerConnect: false,
         showAppConfig: false,
+        showEmbedConfig: false,
     };
 
     switch (guideType) {
@@ -102,7 +104,9 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
             return {
                 ...baseConfig,
                 showEmbedCode: true,
+                showEmbedConfig: true,
                 showTemplates: true,
+                showBranding: false,
             };
 
         case 'embed-app':

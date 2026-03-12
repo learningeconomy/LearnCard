@@ -43,6 +43,9 @@ const ApiTokensTab = lazy(() =>
 const EmbedCodeTab = lazy(() =>
     import('./tabs/EmbedCodeTab').then(m => ({ default: m.EmbedCodeTab }))
 );
+const EmbedConfigTab = lazy(() =>
+    import('./tabs/EmbedConfigTab').then(m => ({ default: m.EmbedConfigTab }))
+);
 const ContractsTab = lazy(() =>
     import('./tabs/ContractsTab').then(m => ({ default: m.ContractsTab }))
 );
@@ -94,6 +97,10 @@ function getTabsForConfig(config: DashboardConfig): DashboardTabConfig[] {
 
     if (config.showApiTokens) {
         tabs.push({ id: 'tokens', label: 'API Tokens', icon: Key });
+    }
+
+    if (config.showEmbedConfig) {
+        tabs.push({ id: 'embed-config', label: 'Config', icon: Settings });
     }
 
     if (config.showEmbedCode) {
@@ -513,6 +520,10 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                         onRefresh={handleRefresh}
                         guideType={integration.guideType}
                     />
+                )}
+
+                {activeTab === 'embed-config' && (
+                    <EmbedConfigTab integration={integration} templates={templates} />
                 )}
 
                 {activeTab === 'embed-code' && (
