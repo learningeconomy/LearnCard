@@ -26,7 +26,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const APP_ROOT = resolve(__dirname, '..');
 const ENVIRONMENTS_DIR = resolve(APP_ROOT, 'environments');
-const SPA_PATH = resolve(APP_ROOT, 'tools/config-editor/index.html');
+const TOOLS_DIR = resolve(APP_ROOT, 'tools/config-editor');
+const LANDING_PATH = resolve(TOOLS_DIR, 'index.html');
+const CONFIG_SPA_PATH = resolve(TOOLS_DIR, 'config.html');
+const THEMES_SPA_PATH = resolve(TOOLS_DIR, 'themes.html');
 
 const PORT = 4400;
 
@@ -905,13 +908,23 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
             return;
         }
 
-        // --- SPA ---
+        // --- SPA routing ---
 
         if (path === '/' || path === '/index.html') {
-            const html = readFileSync(SPA_PATH, 'utf-8');
-
             res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end(html);
+            res.end(readFileSync(LANDING_PATH, 'utf-8'));
+            return;
+        }
+
+        if (path === '/config') {
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(readFileSync(CONFIG_SPA_PATH, 'utf-8'));
+            return;
+        }
+
+        if (path === '/themes') {
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(readFileSync(THEMES_SPA_PATH, 'utf-8'));
             return;
         }
 
