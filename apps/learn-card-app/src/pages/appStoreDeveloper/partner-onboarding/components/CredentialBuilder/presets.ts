@@ -32,8 +32,8 @@ const createBaseTemplate = (overrides: Partial<OBv3CredentialTemplate>): OBv3Cre
         name: dynamicField('recipient_name', ''),
         id: systemField('recipient_did'),
         achievement: {
-            name: dynamicField('achievement_name', ''),
-            description: dynamicField('achievement_description', ''),
+            name: staticField(''),
+            description: staticField(''),
         },
     },
     validFrom: systemField('issue_date'),
@@ -60,8 +60,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
             credentialSubject: {
                 name: dynamicField('recipient_name', ''),
                 achievement: {
-                    name: dynamicField('course_name', ''),
-                    description: dynamicField('course_description', ''),
+                    name: staticField(''),
+                    description: staticField(''),
                     achievementType: staticField('Course'),
                     humanCode: dynamicField('course_code', ''),
                     criteria: {
@@ -90,8 +90,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
             credentialSubject: {
                 name: dynamicField('recipient_name', ''),
                 achievement: {
-                    name: dynamicField('badge_name', ''),
-                    description: dynamicField('badge_description', ''),
+                    name: staticField(''),
+                    description: staticField(''),
                     achievementType: staticField('Badge'),
                     image: dynamicField('badge_image', ''),
                     criteria: {
@@ -112,8 +112,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
             credentialSubject: {
                 name: dynamicField('recipient_name', ''),
                 achievement: {
-                    name: dynamicField('certificate_name', ''),
-                    description: dynamicField('certificate_description', ''),
+                    name: staticField(''),
+                    description: staticField(''),
                     achievementType: staticField('Certificate'),
                     criteria: {
                         narrative: staticField('Met all requirements for this professional certificate.'),
