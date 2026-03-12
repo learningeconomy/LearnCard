@@ -41,19 +41,10 @@ export const getGuardianApprovalVP = (): string | undefined => {
     const approvals = guardianApprovalStore.get.approvalsByParentDid();
     const now = Date.now();
 
-    console.log(
-        '[guardianApprovalStore] getGuardianApprovalVP called, approvals:',
-        Object.keys(approvals)
-    );
-
-    for (const [parentDid, data] of Object.entries(approvals)) {
+    for (const [_parentDid, data] of Object.entries(approvals)) {
         if (data.expiresAt > now) {
-            console.log('[guardianApprovalStore] Found valid VP for parentDid:', parentDid);
             return data.vp;
-        } else {
-            console.log('[guardianApprovalStore] VP expired for parentDid:', parentDid);
         }
     }
-    console.log('[guardianApprovalStore] No valid VP found');
     return undefined;
 };
