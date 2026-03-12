@@ -8,13 +8,17 @@
  * The output is a validated `Theme` object identical to what the old
  * TS-based schema files produced.
  */
-import { CredentialCategoryEnum } from 'learn-card-base';
+import React from 'react';
+
+import { CredentialCategoryEnum, WALLET_ICON_PALETTE_DEFAULTS } from 'learn-card-base';
+import type { IconPalette } from 'learn-card-base';
 
 import type { Theme } from '../validators/theme.validators';
 import { validateThemeData } from '../validators/theme.validators';
 import { ViewMode } from '../types/theme.types';
 
 import { ICON_SETS } from '../icons/iconSets';
+import type { CategoryIcons } from '../icons';
 import {
     DEFAULT_CATEGORIES,
     DEFAULT_SIDE_MENU_ROOT_LINKS,
@@ -54,6 +58,14 @@ interface ThemeJsonConfig {
 
     /** Icon set name (key into ICON_SETS). Defaults to parent's set. */
     iconSet?: string;
+
+    /**
+     * Per-category icon color overrides.
+     * Keys match the WALLET_ICON_PALETTE_DEFAULTS map keys
+     * (e.g. "Skills", "Boosts", "AiInsights").
+     * Values are partial IconPalette objects merged over the compiled defaults.
+     */
+    iconPalettes?: Record<string, Partial<IconPalette>>;
 
     defaults?: {
         viewMode?: 'list' | 'grid';
@@ -261,6 +273,39 @@ const resolveExtends = (
     return resolved;
 };
 
+// ─── Icon palette wiring ─────────────────────────────────────────────────
+
+/** Map CredentialCategoryEnum values to WALLET_ICON_PALETTE_DEFAULTS keys. */
+const CATEGORY_TO_PALETTE_KEY: Partial<Record<CredentialCategoryEnum, string>> = {
+    [CredentialCategoryEnum.aiTopic]: 'AiSessions',
+    [CredentialCategoryEnum.aiPathway]: 'AiPathways',
+    [CredentialCategoryEnum.aiInsight]: 'AiInsights',
+    [CredentialCategoryEnum.skill]: 'Skills',
+    [CredentialCategoryEnum.socialBadge]: 'Boosts',
+    [CredentialCategoryEnum.achievement]: 'Achievements',
+    [CredentialCategoryEnum.learningHistory]: 'Studies',
+    [CredentialCategoryEnum.accomplishment]: 'Portfolio',
+    [CredentialCategoryEnum.accommodation]: 'Assistance',
+    [CredentialCategoryEnum.workHistory]: 'Experiences',
+    [CredentialCategoryEnum.family]: 'Families',
+    [CredentialCategoryEnum.id]: 'IDs',
+};
+
+/**
+ * Wrap an icon component so it always receives the given `palette` prop.
+ * Existing render-sites that only pass `className` / `version` will
+ * automatically pick up the themed palette.
+ */
+const wrapIconWithPalette = (
+    Component: React.ComponentType<Record<string, unknown>>,
+    palette: Partial<IconPalette>,
+): React.ComponentType<Record<string, unknown>> => {
+    const Wrapped: React.FC<Record<string, unknown>> = props =>
+        React.createElement(Component, { ...props, palette });
+
+    return Wrapped;
+};
+
 // ─── Public API ──────────────────────────────────────────────────────────
 
 /**
@@ -307,12 +352,69 @@ const buildTheme = (config: ThemeJsonConfig): Theme => {
     // Assemble styles
     const styles = config.styles ?? {};
 
+    // Build resolved icon palettes: start from compiled defaults, merge theme overrides
+    const resolvedIconPalettes: Record<string, Required<IconPalette>> = { ...WALLET_ICON_PALETTE_DEFAULTS };
+
+    if (config.iconPalettes) {
+        for (const [key, overrides] of Object.entries(config.iconPalettes)) {
+            const base = resolvedIconPalettes[key] ?? WALLET_ICON_PALETTE_DEFAULTS[key];
+
+            if (base) {
+                resolvedIconPalettes[key] = { ...base, ...overrides };
+            }
+        }
+    }
+
+    // Apply palette overrides to icon components by wrapping them
+    let themedIcons = iconSet;
+
+    if (config.iconPalettes && Object.keys(config.iconPalettes).length > 0) {
+        themedIcons = { ...iconSet };
+
+        for (const cat of ALL_CATEGORIES) {
+            const paletteKey = CATEGORY_TO_PALETTE_KEY[cat];
+
+            if (!paletteKey || !config.iconPalettes[paletteKey]) continue;
+
+            const palette = resolvedIconPalettes[paletteKey];
+            const catIcons = iconSet[cat];
+
+            if (!catIcons) continue;
+
+            const wrapped: CategoryIcons = {};
+
+            if (catIcons.Icon) {
+                wrapped.Icon = wrapIconWithPalette(
+                    catIcons.Icon as React.ComponentType<Record<string, unknown>>,
+                    palette,
+                ) as CategoryIcons['Icon'];
+            }
+
+            if (catIcons.IconWithShape) {
+                wrapped.IconWithShape = wrapIconWithPalette(
+                    catIcons.IconWithShape as React.ComponentType<Record<string, unknown>>,
+                    palette,
+                ) as CategoryIcons['IconWithShape'];
+            }
+
+            if (catIcons.IconWithLightShape) {
+                wrapped.IconWithLightShape = wrapIconWithPalette(
+                    catIcons.IconWithLightShape as React.ComponentType<Record<string, unknown>>,
+                    palette,
+                ) as CategoryIcons['IconWithLightShape'];
+            }
+
+            themedIcons[cat] = wrapped;
+        }
+    }
+
     return validateThemeData({
         id: config.id,
         name: config.id,
         displayName: config.displayName,
         colors: colorTable,
-        icons: iconSet,
+        icons: themedIcons,
+        iconPalettes: resolvedIconPalettes,
         styles,
         defaults: {
             viewMode,

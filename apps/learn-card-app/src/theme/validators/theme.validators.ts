@@ -52,6 +52,13 @@ export const NavbarLinkSchema = z
 export type NavbarLink = z.infer<typeof NavbarLinkSchema>;
 
 /* ========= Theme ========= */
+const IconPaletteSchema = z.object({
+    primary: z.string(),
+    primaryLight: z.string().optional(),
+    accent: z.string().optional(),
+    stroke: z.string().optional(),
+});
+
 export const ThemeSchema = z
     .object({
         id: z.string().describe('Theme ID (matches folder name in schemas/)'),
@@ -59,6 +66,7 @@ export const ThemeSchema = z
         displayName: z.string().describe('Display name for UI'),
         colors: ThemeColorsSchema.describe('Color mappings by category + launchPad'),
         icons: ThemeIconsSchema.describe('Icon mappings by category + launchPad'),
+        iconPalettes: z.record(z.string(), IconPaletteSchema).optional().describe('Per-category icon color palettes'),
         categories: z.array(ThemeCategoriesSchema).describe('Theme credential categories'),
         sideMenuRootLinks: z.array(SideMenuLinkSchema).describe('Theme side menu root links'),
         sideMenuSecondaryLinks: z

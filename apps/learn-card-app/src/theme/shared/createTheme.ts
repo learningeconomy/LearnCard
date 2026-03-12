@@ -58,6 +58,9 @@ export interface CreateThemeConfig {
 
     /** Override mobile navbar links. Falls back to DEFAULT_NAVBAR. */
     navbar?: NavbarLink[];
+
+    /** Per-category icon color palette overrides. */
+    iconPalettes?: Theme['iconPalettes'];
 }
 
 // ─── Factory ────────────────────────────────────────────────────────────
@@ -76,6 +79,7 @@ export const createTheme = (config: CreateThemeConfig): Theme => {
         displayName: config.displayName,
         colors: config.colors,
         icons: config.icons,
+        iconPalettes: config.iconPalettes,
         styles: config.styles,
         defaults: config.defaults,
         categories: config.categories ?? DEFAULT_CATEGORIES,

@@ -91,6 +91,16 @@ export const tenantBrandingConfigSchema = z.object({
     headerTextColors: z.record(z.string(), z.string()).optional(),
     defaultHeaderTextColor: z.string().optional(),
 
+    iconPalettes: z.record(
+        z.string(),
+        z.object({
+            primary: z.string(),
+            primaryLight: z.string().optional(),
+            accent: z.string().optional(),
+            stroke: z.string().optional(),
+        }).partial(),
+    ).optional(),
+
     deleteSuccessStyles: deleteSuccessStylesSchema.optional(),
 }).passthrough();
 

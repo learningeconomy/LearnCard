@@ -210,11 +210,19 @@ const RawThemeStylesSchema = z.object({
     }).optional(),
 }).strict();
 
+const IconPaletteOverrideSchema = z.object({
+    primary: z.string().optional(),
+    primaryLight: z.string().optional(),
+    accent: z.string().optional(),
+    stroke: z.string().optional(),
+});
+
 const RawThemeConfigSchema = z.object({
     id: z.string(),
     displayName: z.string().min(1, 'displayName must not be empty'),
     extends: z.string().optional(),
     iconSet: z.string().optional(),
+    iconPalettes: z.record(z.string(), IconPaletteOverrideSchema).optional(),
     defaults: z.object({
         viewMode: z.enum(['grid', 'list']).optional(),
     }).optional(),
@@ -459,6 +467,269 @@ const json = (res: ServerResponse, status: number, data: unknown): void => {
 
 const THEME_DIR = resolve(APP_ROOT, 'src/theme');
 const THEME_SCHEMAS_DIR = resolve(THEME_DIR, 'schemas');
+
+// ---------------------------------------------------------------------------
+// Icon SVG preview helpers
+// ---------------------------------------------------------------------------
+
+const ICON_SVG_DIR_COLORFUL = resolve(APP_ROOT, '../../packages/learn-card-base/src/svgs/wallet');
+const ICON_SVG_DIR_FORMAL = resolve(APP_ROOT, '../../packages/learn-card-base/src/svgs/walletsIconsFormal');
+
+interface IconMeta {
+    /** Colorful source file (in wallet/) */
+    file: string;
+    /** Which exported component to extract for colorful/WithShape variant */
+    component: string;
+    /** Formal source file (in walletsIconsFormal/), if it exists */
+    formalFile?: string;
+    /** Which exported component to extract for formal variant */
+    formalComponent?: string;
+    /** Hardcoded fill/stroke color in the formal SVG (used for color substitution) */
+    formalColor?: string;
+    defaults: { primary: string; primaryLight: string; accent: string; stroke: string };
+}
+
+const ICON_META: Record<string, IconMeta> = {
+    AiSessions: {
+        file: 'AiSessionsIcon.tsx',
+        component: 'AiSessionsIconWithShape',
+        formalFile: 'AiSessionsIconFormal.tsx',
+        formalComponent: 'AiSessionsIconFormal',
+        formalColor: '#6366F1',
+        defaults: { primary: '#22D3EE', primaryLight: '#A5F3FC', accent: '#6366F1', stroke: '#6366F1' },
+    },
+    AiPathways: {
+        file: 'AiPathwaysIcon.tsx',
+        component: 'AiPathwaysIconWithShape',
+        formalFile: 'AiPathwaysIconFormal.tsx',
+        formalComponent: 'AiPathwaysIconFormal',
+        formalColor: '#14B8A6',
+        defaults: { primary: '#2DD4BF', primaryLight: '#2DD4BF', accent: '#6366F1', stroke: '#0F766E' },
+    },
+    AiInsights: {
+        file: 'AiInsightsIcon.tsx',
+        component: 'AiInsightsIconWithShape',
+        formalFile: 'AiInsightsIconFormal.tsx',
+        formalComponent: 'AiInsightsIconFormal',
+        formalColor: '#84CC16',
+        defaults: { primary: '#A3E635', primaryLight: '#BEF264', accent: '#6366F1', stroke: '#4D7C0F' },
+    },
+    Skills: {
+        file: 'SkillsIcon.tsx',
+        component: 'SkillsIconWithShape',
+        formalFile: 'SkillsIconFormal.tsx',
+        formalComponent: 'SkillsIconFormal',
+        formalColor: '#8B5CF6',
+        defaults: { primary: '#A78BFA', primaryLight: '#C4B5FD', accent: '#8e51ff', stroke: '#6D28D9' },
+    },
+    Boosts: {
+        file: 'BoostsIcon.tsx',
+        component: 'BoostsIconWithShape',
+        formalFile: 'BoostsIconFormal.tsx',
+        formalComponent: 'BoostsIconFormal',
+        formalColor: '#3B82F6',
+        defaults: { primary: '#60A5FA', primaryLight: '#93C5FD', accent: '#22D3EE', stroke: '#1D4ED8' },
+    },
+    Achievements: {
+        file: 'AchievementsIcon.tsx',
+        component: 'AchievementsIconWithShape',
+        formalFile: 'AchievementsIconFormal.tsx',
+        formalComponent: 'AchievementsIconFormal',
+        formalColor: '#F43F5E',
+        defaults: { primary: '#F472B6', primaryLight: '#F9A8D4', accent: '#FDE047', stroke: '#BE185D' },
+    },
+    Studies: {
+        file: 'StudiesIcon.tsx',
+        component: 'StudiesIconWithShape',
+        formalFile: 'StudiesIconFormal.tsx',
+        formalComponent: 'StudiesIconFormal',
+        formalColor: '#10B981',
+        defaults: { primary: '#34D399', primaryLight: '#34D399', accent: '#BEF264', stroke: '#047857' },
+    },
+    Portfolio: {
+        file: 'PortfolioIcon.tsx',
+        component: 'PortfolioIconWithShape',
+        formalFile: 'PortfolioIconFormal.tsx',
+        formalComponent: 'PortfolioIconFormal',
+        formalColor: '#EAB308',
+        defaults: { primary: '#FACC15', primaryLight: '#FDE047', accent: '#34D399', stroke: '#A16207' },
+    },
+    Assistance: {
+        file: 'AssistanceIcon.tsx',
+        component: 'AssistanceIconWithShape',
+        formalFile: 'AssistanceIconFormal.tsx',
+        formalComponent: 'AssistanceIconFormal',
+        formalColor: '#5B21B6',
+        defaults: { primary: '#A78BFA', primaryLight: '#C4B5FD', accent: '#EC4899', stroke: '#5B21B6' },
+    },
+    Experiences: {
+        file: 'ExperiencesIcon.tsx',
+        component: 'ExperiencesIconWithShape',
+        formalFile: 'ExperiencesIconFormal.tsx',
+        formalComponent: 'ExperiencesIconFormal',
+        formalColor: '#06B6D4',
+        defaults: { primary: '#22D3EE', primaryLight: '#A5F3FC', accent: '#FEF08A', stroke: '#0E7490' },
+    },
+    Families: {
+        file: 'FamiliesIcon.tsx',
+        component: 'FamiliesIconWithShape',
+        formalFile: 'FamiliesIconFormal.tsx',
+        formalComponent: 'FamiliesIconFormal',
+        formalColor: '#D97706',
+        defaults: { primary: '#FBBF24', primaryLight: '#FDE047', accent: '#22D3EE', stroke: '#92400E' },
+    },
+    IDs: {
+        file: 'IDsIcon.tsx',
+        component: 'IDsIconWithShape',
+        formalFile: 'IDsIconFormal.tsx',
+        formalComponent: 'IDsIconFormal',
+        formalColor: '#1E40AF',
+        defaults: { primary: '#60A5FA', primaryLight: '#93C5FD', accent: '#EC4899', stroke: '#1E40AF' },
+    },
+    AllBoosts: {
+        file: 'AllBoostsIcon.tsx',
+        component: 'AllBoostsIcon',
+        formalFile: 'AllBoostsIcon.tsx',
+        formalComponent: 'AllBoostsIcon',
+        defaults: { primary: '#353E64', primaryLight: '#353E64', accent: '#18224E', stroke: '#353E64' },
+    },
+};
+
+/** Cache of extracted SVG templates keyed by `iconKey:componentName` */
+const svgTemplateCache = new Map<string, string>();
+
+/**
+ * Extract the SVG from a specific React component in a TSX file.
+ * Returns an SVG string with `{p.primary}` etc. as literal placeholders (colorful)
+ * or hardcoded colors (formal).
+ */
+const extractSvgTemplate = (iconKey: string, variant: 'colorful' | 'formal' = 'colorful'): string | null => {
+    const meta = ICON_META[iconKey];
+
+    if (!meta) return null;
+
+    const isFormal = variant === 'formal';
+    const fileName = isFormal ? meta.formalFile : meta.file;
+    const componentName = isFormal ? meta.formalComponent : meta.component;
+
+    if (!fileName || !componentName) return null;
+
+    const cacheKey = `${iconKey}:${variant}:${componentName}`;
+    const cached = svgTemplateCache.get(cacheKey);
+
+    if (cached) return cached;
+
+    const baseDir = isFormal ? ICON_SVG_DIR_FORMAL : ICON_SVG_DIR_COLORFUL;
+    const filePath = join(baseDir, fileName);
+
+    if (!existsSync(filePath)) return null;
+
+    const source = readFileSync(filePath, 'utf-8');
+
+    // Find the target component declaration
+    const componentPattern = new RegExp(
+        `export\\s+const\\s+${componentName}[^=]*=[^>]*>\\s*\\{`,
+    );
+    const componentMatch = componentPattern.exec(source);
+
+    if (!componentMatch) return null;
+
+    const searchStart = componentMatch.index!;
+
+    // Find the <svg from this component
+    const svgStart = source.indexOf('<svg', searchStart);
+
+    if (svgStart < 0) return null;
+
+    // Find matching </svg> — count nested svg tags
+    let depth = 0;
+    let i = svgStart;
+
+    while (i < source.length) {
+        if (source[i] === '<') {
+            if (source.substring(i, i + 4) === '<svg') {
+                depth++;
+            } else if (source.substring(i, i + 6) === '</svg>') {
+                depth--;
+
+                if (depth === 0) {
+                    const svgRaw = source.substring(svgStart, i + 6);
+
+                    svgTemplateCache.set(cacheKey, svgRaw);
+                    return svgRaw;
+                }
+            }
+        }
+
+        i++;
+    }
+
+    return null;
+};
+
+/**
+ * Convert JSX SVG attributes to valid HTML SVG and substitute palette colors.
+ */
+const renderIconSvg = (
+    iconKey: string,
+    palette: { primary: string; primaryLight: string; accent: string; stroke: string },
+    variant: 'colorful' | 'formal' = 'colorful',
+    hasPrimaryOverride = true,
+): string | null => {
+    const template = extractSvgTemplate(iconKey, variant);
+
+    if (!template) return null;
+
+    const meta = ICON_META[iconKey];
+
+    let svg = template;
+
+    if (variant === 'formal') {
+        // Formal icons use dynamic {fillColor} / {strokeColor} JSX expressions
+        const color = hasPrimaryOverride ? palette.primary : (meta?.formalColor ?? '#666');
+
+        svg = svg.replace(/=\{fillColor\}/g, `="${color}"`);
+        svg = svg.replace(/=\{strokeColor\}/g, `="${color}"`);
+
+        // Also replace any remaining hardcoded hex colors (legacy formal icons)
+        if (meta?.formalColor && hasPrimaryOverride) {
+            const escapedHex = meta.formalColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const hexPattern = new RegExp(escapedHex, 'gi');
+
+            svg = svg.replace(hexPattern, palette.primary);
+        }
+    } else {
+        // Colorful icons use JSX palette expressions: fill={p.primary} → fill="<hex>"
+        svg = svg.replace(/=\{p\.primary\}/g, `="${palette.primary}"`);
+        svg = svg.replace(/=\{p\.primaryLight\}/g, `="${palette.primaryLight}"`);
+        svg = svg.replace(/=\{p\.accent\}/g, `="${palette.accent}"`);
+        svg = svg.replace(/=\{p\.stroke\}/g, `="${palette.stroke}"`);
+    }
+
+    // Replace any remaining {fill} or similar JSX expressions with defaults
+    svg = svg.replace(/=\{fill\}/g, '="white"');
+
+    // Convert JSX camelCase attributes to kebab-case HTML SVG attributes
+    svg = svg.replace(/className=/g, 'class=');
+    svg = svg.replace(/fillRule=/g, 'fill-rule=');
+    svg = svg.replace(/clipRule=/g, 'clip-rule=');
+    svg = svg.replace(/strokeWidth=/g, 'stroke-width=');
+    svg = svg.replace(/strokeLinecap=/g, 'stroke-linecap=');
+    svg = svg.replace(/strokeLinejoin=/g, 'stroke-linejoin=');
+    svg = svg.replace(/strokeMiterlimit=/g, 'stroke-miterlimit=');
+    svg = svg.replace(/strokeDasharray=/g, 'stroke-dasharray=');
+    svg = svg.replace(/strokeDashoffset=/g, 'stroke-dashoffset=');
+    svg = svg.replace(/xlinkHref=/g, 'xlink:href=');
+    svg = svg.replace(/xmlSpace=/g, 'xml:space=');
+
+    // Remove JSX className references like class={className} or class={`... ${className}`}
+    svg = svg.replace(/\s+class=\{[^}]*\}/g, '');
+
+    // Remove any remaining JSX expressions in attributes
+    svg = svg.replace(/=\{[^}]*\}/g, '=""');
+
+    return svg;
+};
 
 interface ThemeInfo {
     id: string;
@@ -803,6 +1074,59 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
             const validation = validateThemeConfig(body);
 
             json(res, 200, validation);
+            return;
+        }
+
+        // Icon SVG preview: GET /api/icon-preview/:key?primary=...&primaryLight=...&accent=...&stroke=...
+        const iconPreviewMatch = path.match(/^\/api\/icon-preview\/([a-zA-Z]+)$/);
+
+        if (iconPreviewMatch && req.method === 'GET') {
+            const iconKey = iconPreviewMatch[1]!;
+            const meta = ICON_META[iconKey];
+
+            if (!meta) {
+                res.writeHead(404, { 'Content-Type': 'text/plain' });
+                res.end(`Unknown icon key: ${iconKey}`);
+                return;
+            }
+
+            const variant = (url.searchParams.get('variant') === 'formal' ? 'formal' : 'colorful') as 'colorful' | 'formal';
+
+            const palette = {
+                primary: url.searchParams.get('primary') || meta.defaults.primary,
+                primaryLight: url.searchParams.get('primaryLight') || meta.defaults.primaryLight,
+                accent: url.searchParams.get('accent') || meta.defaults.accent,
+                stroke: url.searchParams.get('stroke') || meta.defaults.stroke,
+            };
+
+            // For formal icons, only apply color substitution when an explicit primary is given
+            const hasPrimaryOverride = !!url.searchParams.get('primary');
+
+            const svg = renderIconSvg(iconKey, palette, variant, hasPrimaryOverride);
+
+            if (!svg) {
+                res.writeHead(500, { 'Content-Type': 'text/plain' });
+                res.end(`Failed to extract SVG for ${iconKey}`);
+                return;
+            }
+
+            res.writeHead(200, {
+                'Content-Type': 'image/svg+xml',
+                'Cache-Control': 'no-cache',
+            });
+            res.end(svg);
+            return;
+        }
+
+        // List available icon keys and their defaults
+        if (path === '/api/icon-defaults' && req.method === 'GET') {
+            const defaults: Record<string, { primary: string; primaryLight: string; accent: string; stroke: string }> = {};
+
+            for (const [key, meta] of Object.entries(ICON_META)) {
+                defaults[key] = meta.defaults;
+            }
+
+            json(res, 200, defaults);
             return;
         }
 

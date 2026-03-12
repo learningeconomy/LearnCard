@@ -140,9 +140,9 @@
                 "tabActiveColor": "bg-slate-100"
             },
             "aiInsight": {
-                "primaryColor": "slate-50",
-                "secondaryColor": "grayscale-800",
-                "indicatorColor": "slate-500",
+                "primaryColor": "slate-900",
+                "secondaryColor": "slate-800",
+                "indicatorColor": "amber-600",
                 "borderColor": "grayscale-100",
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-800",
@@ -296,6 +296,14 @@
             "tabs": {
                 "borderRadius": "rounded-[5px]"
             }
+        }
+    },
+    "iconPalettes": {
+        "AiSessions": {
+            "primary": "#800000"
+        },
+        "AiInsights": {
+            "primary": "#131f00"
         }
     }
 }
