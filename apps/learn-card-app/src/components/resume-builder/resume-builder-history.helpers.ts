@@ -18,48 +18,14 @@ import {
     ResumeFieldEntry,
     ResumeSectionKey,
 } from './resume-builder.helpers';
-
-type UnknownRecord = Record<string, unknown>;
+import {
+    asRecord,
+    asString,
+    firstStringFromPaths,
+    type ResumeUnknownRecord as UnknownRecord,
+} from './resume-builder-parsing.helpers';
 
 const defaultSectionOrder = RESUME_SECTIONS.map(section => section.key) as ResumeSectionKey[];
-
-const asRecord = (value: unknown): UnknownRecord | undefined =>
-    value && typeof value === 'object' && !Array.isArray(value)
-        ? (value as UnknownRecord)
-        : undefined;
-
-const asString = (value: unknown): string | undefined => {
-    if (typeof value !== 'string') return undefined;
-    const trimmed = value.trim();
-    return trimmed || undefined;
-};
-
-const getNestedValue = (value: unknown, path: string[]): unknown => {
-    let current = value;
-    for (const key of path) {
-        if (Array.isArray(current)) {
-            const index = Number(key);
-            if (Number.isNaN(index)) return undefined;
-            current = current[index];
-            continue;
-        }
-
-        const record = asRecord(current);
-        if (!record) return undefined;
-        current = record[key];
-    }
-
-    return current;
-};
-
-const firstStringFromPaths = (value: unknown, paths: string[][]): string | undefined => {
-    for (const path of paths) {
-        const parsed = asString(getNestedValue(value, path));
-        if (parsed) return parsed;
-    }
-
-    return undefined;
-};
 
 const cloneFields = (fields: ResumeFieldEntry[] = []): ResumeFieldEntry[] =>
     fields.map(field => ({ ...field }));
@@ -216,7 +182,7 @@ const pushEntry = (
     entriesBySection[section] = currentEntries;
 };
 
-const buildSnapshotFromLerVc = async (
+export const buildResumeBuilderSnapshotFromLerVc = async (
     vc: VC,
     fileName: string,
     readCredential: (uri: string) => Promise<VC | null>
@@ -422,9 +388,9 @@ export const buildResumeHydrationState = async (
     const snapshot = storedSnapshot
         ? normalizeSnapshot(storedSnapshot as Partial<ResumeBuilderSnapshot>)
         : resume.vc
-        ? await buildSnapshotFromLerVc(resume.vc, fileName, readCredential)
+        ? await buildResumeBuilderSnapshotFromLerVc(resume.vc, fileName, readCredential)
         : normalizeSnapshot({
-              documentSetup: { fileName },
+              documentSetup: { showQRCode: true, fileName },
           });
 
     return {

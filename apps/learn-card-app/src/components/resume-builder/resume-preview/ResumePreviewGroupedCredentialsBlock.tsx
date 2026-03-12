@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { VC } from '@learncard/types';
 
 import { IonIcon, IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
 import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
@@ -18,14 +19,23 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
     filteredUris?: string[];
     /** When true, render without interactive controls (used for hidden measurement) */
     measureOnly?: boolean;
-}> = ({ section, isMobile = false, filteredUris, measureOnly = false }) => {
+    readOnly?: boolean;
+    resolvedCredentialsByUri?: Record<string, VC | null | undefined>;
+}> = ({
+    section,
+    isMobile = false,
+    filteredUris,
+    measureOnly = false,
+    readOnly = false,
+    resolvedCredentialsByUri,
+}) => {
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
     const currentJobCredentialUri = resumeBuilderStore.useTracked.currentJobCredentialUri();
     const setCurrentJobCredentialUri = resumeBuilderStore.set.setCurrentJobCredentialUri;
 
     const sectionKey = section.key as ResumeSectionKey;
     const isWorkExperienceSection = sectionKey === CredentialCategoryEnum.workHistory;
-    const [isCollapsed, setIsCollapsed] = useState<boolean>(isMobile);
+    const [isCollapsed, setIsCollapsed] = useState<boolean>(isMobile && !readOnly);
     const allEntries = [...(credentialEntries[sectionKey] ?? [])].sort((a, b) => a.index - b.index);
     const entries = filteredUris
         ? allEntries.filter(e => filteredUris.includes(e.uri))
@@ -49,7 +59,9 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
     );
 
     if (!entries.length) {
-        if (measureOnly || sectionKey === CredentialCategoryEnum.socialBadge) return null;
+        if (measureOnly || readOnly || sectionKey === CredentialCategoryEnum.socialBadge) {
+            return null;
+        }
 
         return (
             <div className="mb-6" data-pdf-screen-only>
@@ -91,6 +103,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                             <ResumePreviewCredentialToTextBlock
                                 uri={entry.uri}
                                 section={sectionKey}
+                                resolvedCredential={resolvedCredentialsByUri?.[entry.uri]}
                                 isEditing={false}
                                 setIsEditing={() => {}}
                             />
@@ -103,14 +116,34 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
 
     return (
         <div className="mb-6" data-pdf-break-anchor>
-            {isMobile ? (
+            {isMobile && !readOnly ? (
                 sectionHeader
             ) : (
                 <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 border-solid border-b border-grayscale-100 pb-2.5">
                     {section.label}
                 </h2>
             )}
-            {isMobile && isCollapsed ? null : (
+            {isMobile && !readOnly && isCollapsed ? null : readOnly ? (
+                <div>
+                    {entries.map(entry => (
+                        <div
+                            key={entry.uri}
+                            className="flex items-start gap-2 py-1"
+                            data-pdf-break-anchor
+                        >
+                            <div className="flex-1">
+                                <ResumePreviewCredentialToTextBlock
+                                    uri={entry.uri}
+                                    section={sectionKey}
+                                    resolvedCredential={resolvedCredentialsByUri?.[entry.uri]}
+                                    isEditing={false}
+                                    setIsEditing={() => {}}
+                                />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
                 <IonReorderGroup
                     disabled={false}
                     onIonReorderEnd={(e: ReorderEndCustomEvent) => {
@@ -151,6 +184,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                                     <ResumePreviewCredentialToTextBlock
                                         uri={entry.uri}
                                         section={sectionKey}
+                                        resolvedCredential={resolvedCredentialsByUri?.[entry.uri]}
                                         isEditing
                                         setIsEditing={() => {}}
                                     />

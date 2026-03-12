@@ -51,6 +51,27 @@ export type ResumeBuilderActiveResume = {
     fileName?: string | null;
 };
 
+const stableSortObject = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(stableSortObject);
+
+    if (value && typeof value === 'object') {
+        return Object.keys(value as Record<string, unknown>)
+            .sort()
+            .reduce(
+                (acc, key) => {
+                    acc[key] = stableSortObject((value as Record<string, unknown>)[key]);
+                    return acc;
+                },
+                {} as Record<string, unknown>
+            );
+    }
+
+    return value;
+};
+
+export const getResumeBuilderSnapshotKey = (snapshot: ResumeBuilderSnapshot): string =>
+    JSON.stringify(stableSortObject(snapshot));
+
 const defaultPersonalDetails: PersonalDetails = {
     name: '',
     career: '',

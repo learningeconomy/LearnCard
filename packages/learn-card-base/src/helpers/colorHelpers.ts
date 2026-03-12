@@ -24,6 +24,7 @@ export const getNotificationButtonColor = (path?: string) => {
         path === '/campfire' ||
         path === '/contacts' ||
         path === '/share-boost' ||
+        path === '/verify/resume' ||
         path === '/invite' ||
         path === '/connect' ||
         path?.includes('/admin-tools')

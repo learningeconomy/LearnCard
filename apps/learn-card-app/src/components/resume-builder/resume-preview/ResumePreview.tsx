@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
+import { VC } from '@learncard/types';
 
 import ResumePreviewUserInfo from './ResumePreviewUserInfo';
 import ResumePreviewEmptyPlaceholder from './ResumePreviewEmptyPlaceholder';
@@ -19,8 +20,13 @@ export type ResumePreviewHandle = {
 
 const ResumePreview = forwardRef<
     ResumePreviewHandle,
-    { isMobile?: boolean; isPreviewing?: boolean }
->(function ResumePreview({ isMobile = false }, ref) {
+    {
+        isMobile?: boolean;
+        isPreviewing?: boolean;
+        readOnly?: boolean;
+        resolvedCredentialsByUri?: Record<string, VC | null | undefined>;
+    }
+>(function ResumePreview({ isMobile = false, readOnly = false, resolvedCredentialsByUri }, ref) {
     const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
@@ -44,14 +50,16 @@ const ResumePreview = forwardRef<
     const hasVisibleContent = useMemo(() => {
         const hasPersonal = Object.values(personalDetails).some(v => v.trim());
         const hasCredentials = Object.values(credentialEntries).some(arr => arr && arr.length > 0);
-        const hasVisibleEmptySection = orderedSections.some(section => {
-            const sectionKey = section.key as ResumeSectionKey;
-            if (hiddenSections?.[sectionKey]) return false;
-            return sectionKey !== CredentialCategoryEnum.socialBadge;
-        });
+        const hasVisibleEmptySection = readOnly
+            ? false
+            : orderedSections.some(section => {
+                  const sectionKey = section.key as ResumeSectionKey;
+                  if (hiddenSections?.[sectionKey]) return false;
+                  return sectionKey !== CredentialCategoryEnum.socialBadge;
+              });
 
         return hasPersonal || hasCredentials || hasVisibleEmptySection;
-    }, [credentialEntries, hiddenSections, orderedSections, personalDetails]);
+    }, [credentialEntries, hiddenSections, orderedSections, personalDetails, readOnly]);
 
     useImperativeHandle(ref, () => ({
         createPDFPreviewUrl,
@@ -82,7 +90,7 @@ const ResumePreview = forwardRef<
                         } as React.CSSProperties
                     }
                 >
-                    <ResumePreviewUserInfo />
+                    <ResumePreviewUserInfo readOnly={readOnly} />
                     {orderedSections.map(section => {
                         const sectionKey = section.key as ResumeSectionKey;
                         const entries = [...(credentialEntries[sectionKey] ?? [])].sort(
@@ -94,7 +102,9 @@ const ResumePreview = forwardRef<
                                 key={sectionKey}
                                 section={section}
                                 isMobile={isMobile}
+                                readOnly={readOnly}
                                 filteredUris={entries.map(entry => entry.uri)}
+                                resolvedCredentialsByUri={resolvedCredentialsByUri}
                             />
                         );
                     })}

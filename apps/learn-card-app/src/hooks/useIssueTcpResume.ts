@@ -3,10 +3,13 @@ import { CredentialCategoryEnum, useCurrentUser, useFilestack, useWallet } from 
 import { resumeBuilderStore } from '../stores/resumeBuilderStore';
 import type { ResumeSectionKey } from '../components/resume-builder/resume-builder.helpers';
 import { getResumeBuilderSnapshot } from '../components/resume-builder/resume-builder-history.helpers';
+import {
+    asRecord,
+    asString,
+    type ResumeUnknownRecord as UnknownRecord,
+} from '../components/resume-builder/resume-builder-parsing.helpers';
 import { useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
-
-type UnknownRecord = Record<string, unknown>;
 
 /**
  * Normalized per-credential input used to build the final LER-RS payload.
@@ -61,42 +64,11 @@ type VerificationReference = {
     sourceCredentialUri: string;
 };
 
-const asRecord = (value: unknown): UnknownRecord | undefined =>
-    value && typeof value === 'object' && !Array.isArray(value)
-        ? (value as UnknownRecord)
-        : undefined;
-
-const asString = (value: unknown): string | undefined => {
-    if (typeof value !== 'string') return undefined;
-    const trimmed = value.trim();
-    return trimmed ? trimmed : undefined;
-};
-
 const firstString = (...values: unknown[]): string | undefined => {
     for (const value of values) {
         const parsed = asString(value);
         if (parsed) return parsed;
     }
-    return undefined;
-};
-
-const firstStringFromPaths = (
-    record: UnknownRecord | undefined,
-    paths: string[][]
-): string | undefined => {
-    if (!record) return undefined;
-
-    for (const path of paths) {
-        let current: unknown = record;
-        for (const key of path) {
-            current = asRecord(current)?.[key];
-            if (current == null) break;
-        }
-
-        const parsed = asString(current);
-        if (parsed) return parsed;
-    }
-
     return undefined;
 };
 

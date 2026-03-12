@@ -22,7 +22,7 @@ const CONTACT_CHIP_KEYS: (keyof PersonalDetails)[] = [
     UserInfoEnum.LinkedIn,
 ];
 
-const ResumePreviewUserInfo: React.FC = () => {
+const ResumePreviewUserInfo: React.FC<{ readOnly?: boolean }> = ({ readOnly = false }) => {
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const hiddenPersonalDetails = resumeBuilderStore.useTracked.hiddenPersonalDetails();
     const documentSetup = resumeBuilderStore.useTracked.documentSetup();
@@ -48,7 +48,9 @@ const ResumePreviewUserInfo: React.FC = () => {
         setPersonalDetailHidden(key, false);
     };
 
-    const hasVisibleUserInfo = showThumbnail || resumeUserInfo.some(field => isFieldEnabled(field.key));
+    const hasVisibleUserInfo = readOnly
+        ? showThumbnail || resumeUserInfo.some(field => isFieldVisible(field.key))
+        : showThumbnail || resumeUserInfo.some(field => isFieldEnabled(field.key));
 
     if (!hasVisibleUserInfo) return null;
 
@@ -64,6 +66,11 @@ const ResumePreviewUserInfo: React.FC = () => {
         isFieldVisible(UserInfoEnum.Career) ? personalDetails.career : '',
         isFieldVisible(UserInfoEnum.Location) ? personalDetails.location : '',
     ].filter(Boolean);
+    const showPrimaryChips = !readOnly || exportPrimaryItems.length > 0;
+    const showSummary =
+        isFieldEnabled(UserInfoEnum.Summary) &&
+        (!readOnly || Boolean(personalDetails.summary.trim()));
+    const showContactChips = !readOnly || exportContactItems.length > 0;
 
     return (
         <div className="border-b border-solid border-2 border-grayscale-100 bg-grayscale-50 p-4 mb-6 rounded-[20px]">
@@ -79,28 +86,43 @@ const ResumePreviewUserInfo: React.FC = () => {
                     )}
 
                     <div className="min-w-0">
-                        {isFieldEnabled(UserInfoEnum.Name) && (
-                            <input
-                                value={personalDetails.name}
-                                onChange={event => updateField(UserInfoEnum.Name, event.target.value)}
-                                placeholder={placeholderByKey[UserInfoEnum.Name]}
-                                aria-label={placeholderByKey[UserInfoEnum.Name]}
-                                className="w-full bg-transparent border-none outline-none text-3xl font-bold text-grayscale-900 tracking-tight placeholder:text-grayscale-400"
-                            />
-                        )}
-
-                        <div data-pdf-screen-only className="flex flex-wrap gap-2 mt-2">
-                            {PRIMARY_CHIP_KEYS.filter(isFieldEnabled).map(key => (
-                                <ResumePreviewInfoChip
-                                    key={key}
-                                    detailKey={key}
-                                    placeholder={placeholderByKey[key]}
-                                    value={personalDetails[key]}
-                                    onChange={updateField}
-                                    onRemove={removeField}
+                        {isFieldEnabled(UserInfoEnum.Name) &&
+                            (readOnly ? (
+                                personalDetails.name.trim() ? (
+                                    <h1 className="w-full text-3xl font-bold text-grayscale-900 tracking-tight">
+                                        {personalDetails.name}
+                                    </h1>
+                                ) : null
+                            ) : (
+                                <input
+                                    value={personalDetails.name}
+                                    onChange={event =>
+                                        updateField(UserInfoEnum.Name, event.target.value)
+                                    }
+                                    placeholder={placeholderByKey[UserInfoEnum.Name]}
+                                    aria-label={placeholderByKey[UserInfoEnum.Name]}
+                                    className="w-full bg-transparent border-none outline-none text-3xl font-bold text-grayscale-900 tracking-tight placeholder:text-grayscale-400"
                                 />
                             ))}
-                        </div>
+
+                        {showPrimaryChips && (
+                            <div data-pdf-screen-only className="flex flex-wrap gap-2 mt-2">
+                                {(
+                                    readOnly
+                                        ? PRIMARY_CHIP_KEYS.filter(isFieldVisible)
+                                        : PRIMARY_CHIP_KEYS.filter(isFieldEnabled)
+                                ).map(key => (
+                                    <ResumePreviewInfoChip
+                                        key={key}
+                                        detailKey={key}
+                                        placeholder={placeholderByKey[key]}
+                                        value={personalDetails[key]}
+                                        onChange={readOnly ? undefined : updateField}
+                                        onRemove={readOnly ? undefined : removeField}
+                                    />
+                                ))}
+                            </div>
+                        )}
                         {exportPrimaryItems.length > 0 && (
                             <p
                                 data-pdf-export-block
@@ -124,26 +146,38 @@ const ResumePreviewUserInfo: React.FC = () => {
                 )}
             </div>
 
-            {isFieldEnabled(UserInfoEnum.Summary) && (
+            {showSummary && (
                 <div data-pdf-screen-only className="mt-4 flex items-start gap-3">
                     <div className="flex-1 rounded-xl bg-indigo-50 px-3 py-3 min-h-[96px] flex flex-col justify-between">
-                        <textarea
-                            value={personalDetails.summary}
-                            onChange={event => updateField(UserInfoEnum.Summary, event.target.value)}
-                            placeholder={placeholderByKey[UserInfoEnum.Summary]}
-                            aria-label={placeholderByKey[UserInfoEnum.Summary]}
-                            rows={4}
-                            className="w-full resize-none bg-transparent border-none outline-none text-[13px] text-grayscale-900 leading-relaxed placeholder:text-grayscale-500"
-                        />
+                        {readOnly ? (
+                            personalDetails.summary.trim() ? (
+                                <p className="w-full text-[13px] text-grayscale-900 leading-relaxed whitespace-pre-wrap">
+                                    {personalDetails.summary}
+                                </p>
+                            ) : null
+                        ) : (
+                            <textarea
+                                value={personalDetails.summary}
+                                onChange={event =>
+                                    updateField(UserInfoEnum.Summary, event.target.value)
+                                }
+                                placeholder={placeholderByKey[UserInfoEnum.Summary]}
+                                aria-label={placeholderByKey[UserInfoEnum.Summary]}
+                                rows={4}
+                                className="w-full resize-none bg-transparent border-none outline-none text-[13px] text-grayscale-900 leading-relaxed placeholder:text-grayscale-500"
+                            />
+                        )}
                     </div>
-                    <div data-pdf-hide className="shrink-0 flex flex-col items-center gap-2 pt-0.5">
-                        <ResumeBuilderToggle
-                            checked={!hiddenPersonalDetails?.[UserInfoEnum.Summary]}
-                            onChange={checked =>
-                                setPersonalDetailHidden(UserInfoEnum.Summary, !checked)
-                            }
-                        />
-                    </div>
+                    {!readOnly && (
+                        <div data-pdf-hide className="shrink-0 flex flex-col items-center gap-2 pt-0.5">
+                            <ResumeBuilderToggle
+                                checked={!hiddenPersonalDetails?.[UserInfoEnum.Summary]}
+                                onChange={checked =>
+                                    setPersonalDetailHidden(UserInfoEnum.Summary, !checked)
+                                }
+                            />
+                        </div>
+                    )}
                 </div>
             )}
             {Boolean(personalDetails.summary.trim()) &&
@@ -157,21 +191,27 @@ const ResumePreviewUserInfo: React.FC = () => {
                     </p>
                 )}
 
-            <div
-                data-pdf-screen-only
-                className="mt-4 pt-4 border-t border-grayscale-200 flex flex-wrap gap-2"
-            >
-                {CONTACT_CHIP_KEYS.filter(isFieldEnabled).map(key => (
-                    <ResumePreviewInfoChip
-                        key={key}
-                        detailKey={key}
-                        placeholder={placeholderByKey[key]}
-                        value={personalDetails[key]}
-                        onChange={updateField}
-                        onRemove={removeField}
-                    />
-                ))}
-            </div>
+            {showContactChips && (
+                <div
+                    data-pdf-screen-only
+                    className="mt-4 pt-4 border-t border-grayscale-200 flex flex-wrap gap-2"
+                >
+                    {(
+                        readOnly
+                            ? CONTACT_CHIP_KEYS.filter(isFieldVisible)
+                            : CONTACT_CHIP_KEYS.filter(isFieldEnabled)
+                    ).map(key => (
+                        <ResumePreviewInfoChip
+                            key={key}
+                            detailKey={key}
+                            placeholder={placeholderByKey[key]}
+                            value={personalDetails[key]}
+                            onChange={readOnly ? undefined : updateField}
+                            onRemove={readOnly ? undefined : removeField}
+                        />
+                    ))}
+                </div>
+            )}
             {exportContactItems.length > 0 && (
                 <p
                     data-pdf-export-block

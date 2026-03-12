@@ -3,11 +3,14 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { IonIcon } from '@ionic/react';
 import { menuOutline } from 'ionicons/icons';
 import ResumeIframePreview from './ResumeIframePreview';
+import ResumeBuilderLoader from './ResumeBuilderLoader';
+import ResumeShareLink from './ResumeShareLink';
 import ResumeConfigPanelFAB from './resume-config-panel/ResumeConfigPanelFAB';
 import ResumePreview, { ResumePreviewHandle } from './resume-preview/ResumePreview';
 import ResumeConfigOverlayPanel from './resume-config-panel/ResumeConfigOverlayPanel';
 import ResumeConfigDesktopSidePanel from './resume-config-panel/ResumeConfigDesktopSidePanel';
 import ResumeBuilderHeader, { ResumeBuilderHeaderAction } from './ResumeBuilderHeader';
+
 import { ResumePdfPreviewData } from './resume-preview/useResumePdf';
 
 import {
@@ -21,35 +24,17 @@ import {
     useWallet,
 } from 'learn-card-base';
 import { useResumePreselection } from './useResumePreselection';
-import ResumeBuilderLoader from './ResumeBuilderLoader';
-import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 import { useIssueTcpResume } from '../../hooks/useIssueTcpResume';
+
+import {
+    getResumeBuilderSnapshotKey,
+    resumeBuilderStore,
+    type ResumeBuilderSnapshot,
+} from '../../stores/resumeBuilderStore';
 import type { ExistingResume } from '../../hooks/useExistingResumes';
 import { buildResumeHydrationState } from './resume-builder-history.helpers';
-import ShareBoostLink from '../boost/boost-options-menu/ShareBoostLink';
+
 import { VC } from '@learncard/types';
-import type { ResumeBuilderSnapshot } from '../../stores/resumeBuilderStore';
-
-const stableSortObject = (value: unknown): unknown => {
-    if (Array.isArray(value)) return value.map(stableSortObject);
-
-    if (value && typeof value === 'object') {
-        return Object.keys(value as Record<string, unknown>)
-            .sort()
-            .reduce(
-                (acc, key) => {
-                    acc[key] = stableSortObject((value as Record<string, unknown>)[key]);
-                    return acc;
-                },
-                {} as Record<string, unknown>
-            );
-    }
-
-    return value;
-};
-
-const stableSnapshotKey = (snapshot: ResumeBuilderSnapshot): string =>
-    JSON.stringify(stableSortObject(snapshot));
 
 export const ResumeBuilder: React.FC = () => {
     useResumePreselection();
@@ -113,7 +98,7 @@ export const ResumeBuilder: React.FC = () => {
         ]
     );
     const currentSnapshotKey = useMemo(
-        () => stableSnapshotKey(currentSnapshot),
+        () => getResumeBuilderSnapshotKey(currentSnapshot),
         [currentSnapshot]
     );
     const hasUnsavedChanges =
@@ -262,21 +247,19 @@ export const ResumeBuilder: React.FC = () => {
             setIsHydratingResume(true);
             try {
                 const wallet = await initWallet();
-                const { snapshot, activeResume: nextActiveResume } = await buildResumeHydrationState(
-                    resume,
-                    async uri => {
+                const { snapshot, activeResume: nextActiveResume } =
+                    await buildResumeHydrationState(resume, async uri => {
                         try {
                             return (await wallet.read.get(uri)) as VC;
                         } catch {
                             return null;
                         }
-                    }
-                );
+                    });
 
                 resumeBuilderStore.set.hydrateStore(snapshot, nextActiveResume);
                 setBaselineSnapshotByResume({
                     recordId: nextActiveResume.recordId,
-                    snapshotKey: stableSnapshotKey(snapshot),
+                    snapshotKey: getResumeBuilderSnapshotKey(snapshot),
                 });
                 closeInlinePreview();
                 presentToast('Loaded resume into edit mode.', {
@@ -302,11 +285,7 @@ export const ResumeBuilder: React.FC = () => {
         }
 
         newModal(
-            <ShareBoostLink
-                boost={activeResumeVc as VC}
-                boostUri={activeResume.uri}
-                categoryType={CredentialCategoryEnum.resume}
-            />,
+            <ResumeShareLink resume={activeResumeVc as VC} resumeUri={activeResume.uri} />,
             {},
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );

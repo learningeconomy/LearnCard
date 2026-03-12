@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { add } from 'ionicons/icons';
 import moment from 'moment';
+import { VC } from '@learncard/types';
 
 import {
     IonDatetime,
@@ -23,11 +24,20 @@ import { ResumeSectionKey } from '../resume-builder.helpers';
 const ResumePreviewCredentialToTextBlock: React.FC<{
     uri: string;
     section: ResumeSectionKey;
+    resolvedCredential?: VC | null;
     isEditing: boolean;
     setIsEditing: (val: boolean) => void;
-}> = ({ uri, section, isEditing, setIsEditing: _setIsEditing }) => {
-    const { data: vc } = useGetResolvedCredential(uri);
-    const { title, description: vcDescription } = useGetVCInfo(vc || {}, section);
+}> = ({ uri, section, resolvedCredential, isEditing, setIsEditing: _setIsEditing }) => {
+    const hasResolvedCredentialOverride = resolvedCredential !== undefined;
+    const { data: queriedCredential } = useGetResolvedCredential(
+        uri,
+        !hasResolvedCredentialOverride
+    );
+    const vc = resolvedCredential ?? queriedCredential;
+    const { title, description: vcDescription } = useGetVCInfo(
+        (vc ?? ({ '@context': [], type: [] } as VC)),
+        section
+    );
 
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
     const credentialStartDates = resumeBuilderStore.useTracked.credentialStartDates();
