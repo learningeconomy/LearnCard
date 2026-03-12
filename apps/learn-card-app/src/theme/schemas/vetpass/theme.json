@@ -1,35 +1,300 @@
 {
     "id": "vetpass",
     "displayName": "VetPass",
-    "extends": "formal",
+    "iconSet": "formal",
+    "defaults": {
+        "viewMode": "list"
+    },
     "colors": {
-        "navbar": {
-            "syncingColor": "red-500",
-            "completedColor": "red-600"
-        },
-        "sideMenu": {
-            "primaryButtonColor": "bg-orange-500 !text-violet-500 border-slate-800",
-            "secondaryButtonColor": "bg-teal-500 text-white border-blue-500"
-        },
-        "defaults": {
-            "primaryColor": "purple-400"
+        "categories": {
+            "achievement": {
+                "primaryColor": "slate-50",
+                "secondaryColor": "grayscale-800",
+                "indicatorColor": "slate-500",
+                "borderColor": "grayscale-100",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-slate-100"
+            },
+            "socialBadge": {
+                "primaryColor": "slate-50",
+                "secondaryColor": "grayscale-800",
+                "indicatorColor": "slate-500",
+                "borderColor": "grayscale-100",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-slate-100"
+            },
+            "learningHistory": {
+                "primaryColor": "slate-50",
+                "secondaryColor": "grayscale-800",
+                "indicatorColor": "slate-500",
+                "borderColor": "grayscale-100",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-slate-100"
+            },
+            "workHistory": {
+                "primaryColor": "slate-50",
+                "secondaryColor": "grayscale-800",
+                "indicatorColor": "slate-500",
+                "borderColor": "grayscale-100",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-slate-100"
+            },
+            "accomplishment": {
+                "primaryColor": "slate-50",
+                "secondaryColor": "grayscale-800",
+                "indicatorColor": "slate-500",
+                "borderColor": "grayscale-100",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-slate-100"
+            },
+            "accommodation": {
+                "primaryColor": "slate-50",
+                "secondaryColor": "grayscale-800",
+                "indicatorColor": "slate-500",
+                "borderColor": "grayscale-100",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-slate-100"
+            },
+            "id": {
+                "primaryColor": "slate-50",
+                "secondaryColor": "grayscale-800",
+                "indicatorColor": "slate-500",
+                "borderColor": "grayscale-100",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-slate-100"
+            },
+            "family": {
+                "primaryColor": "slate-50",
+                "secondaryColor": "grayscale-800",
+                "indicatorColor": "slate-500",
+                "borderColor": "grayscale-100",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-slate-100"
+            },
+            "skill": {
+                "primaryColor": "slate-50",
+                "secondaryColor": "grayscale-800",
+                "indicatorColor": "slate-500",
+                "borderColor": "grayscale-100",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-slate-100"
+            },
+            "aiTopic": {
+                "primaryColor": "slate-50",
+                "secondaryColor": "grayscale-800",
+                "indicatorColor": "slate-500",
+                "borderColor": "grayscale-100",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-slate-100"
+            },
+            "aiPathway": {
+                "primaryColor": "slate-50",
+                "secondaryColor": "grayscale-800",
+                "indicatorColor": "slate-500",
+                "borderColor": "grayscale-100",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-slate-100"
+            },
+            "aiInsight": {
+                "primaryColor": "slate-50",
+                "secondaryColor": "grayscale-800",
+                "indicatorColor": "slate-500",
+                "borderColor": "grayscale-100",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-slate-100"
+            }
         },
         "launchPad": {
             "contacts": {
-                "color": "red-700"
+                "color": "slate-700"
+            },
+            "aiSessions": {
+                "color": "red-500"
             },
             "alerts": {
-                "indicatorBgColor": "bg-yellow-500",
-                "indicatorTextColor": "text-white",
-                "color": "yellow"
+                "color": "slate-600",
+                "indicatorTextColor": "text-slate-600",
+                "indicatorBgColor": "bg-white"
+            },
+            "buttons": {
+                "unconnected": "bg-slate-500 text-white",
+                "connected": "bg-grayscale-100 text-slate-500"
             }
         },
-        "introSlides": {
-            "secondSlideBackground": "slate-600"
+        "sideMenu": {
+            "linkActiveColor": "text-grayscale-900",
+            "linkInactiveColor": "text-grayscale-500",
+            "linkActiveBackgroundColor": "bg-grayscale-100/50",
+            "linkInactiveBackgroundColor": "bg-white",
+            "primaryButtonColor": "bg-slate-500 text-white",
+            "secondaryButtonColor": "bg-red-500 text-white border-red-500",
+            "indicatorColor": "text-slate-500",
+            "syncingColor": "!text-slate-500",
+            "completedColor": "!text-emerald-700"
         },
-        "categories": {
+        "navbar": {
+            "activeColor": "text-grayscale-900",
+            "inactiveColor": "text-grayscale-500",
+            "syncingColor": "!text-slate-500",
+            "completedColor": "!text-emerald-700"
+        },
+        "introSlides": {
+            "firstSlideBackground": "slate-500",
+            "secondSlideBackground": "red-400",
+            "thirdSlideBackground": "lime-500",
+            "textColors": {
+                "primary": "white",
+                "secondary": "white"
+            },
+            "pagination": {
+                "primary": "white",
+                "secondary": "#E2E3E9"
+            }
+        },
+        "placeholders": {
+            "achievement": {
+                "spilledCup": {
+                    "backsplash": "#cbd5e1",
+                    "spill": "#f87171",
+                    "cupOutline": "#334155"
+                }
+            },
             "socialBadge": {
-                "primaryColor": "lime-600 bg-green-500"
+                "spilledCup": {
+                    "backsplash": "#cbd5e1",
+                    "spill": "#f87171",
+                    "cupOutline": "#334155"
+                }
+            },
+            "learningHistory": {
+                "spilledCup": {
+                    "backsplash": "#cbd5e1",
+                    "spill": "#f87171",
+                    "cupOutline": "#334155"
+                }
+            },
+            "workHistory": {
+                "spilledCup": {
+                    "backsplash": "#cbd5e1",
+                    "spill": "#f87171",
+                    "cupOutline": "#334155"
+                }
+            },
+            "accomplishment": {
+                "spilledCup": {
+                    "backsplash": "#cbd5e1",
+                    "spill": "#f87171",
+                    "cupOutline": "#334155"
+                }
+            },
+            "accommodation": {
+                "spilledCup": {
+                    "backsplash": "#cbd5e1",
+                    "spill": "#f87171",
+                    "cupOutline": "#334155"
+                }
+            },
+            "id": {
+                "spilledCup": {
+                    "backsplash": "#cbd5e1",
+                    "spill": "#f87171",
+                    "cupOutline": "#334155"
+                }
+            },
+            "family": {
+                "spilledCup": {
+                    "backsplash": "#cbd5e1",
+                    "spill": "#f87171",
+                    "cupOutline": "#334155"
+                }
+            },
+            "skill": {
+                "spilledCup": {
+                    "backsplash": "#cbd5e1",
+                    "spill": "#f87171",
+                    "cupOutline": "#334155"
+                }
+            },
+            "defaults": {
+                "spilledCup": {
+                    "backsplash": "#e2e8f0",
+                    "spill": "#f87171",
+                    "cupOutline": "#334155"
+                }
+            }
+        },
+        "defaults": {
+            "primaryColor": "slate-500",
+            "primaryColorShade": "slate-200",
+            "loaders": [
+                "#64748b",
+                "#ef4444",
+                "#84cc16",
+                "#cbd5e1"
+            ]
+        }
+    },
+    "styles": {
+        "wallet": {
+            "cardStyles": "h-[240px]",
+            "iconStyles": "w-[100px] h-[100px]"
+        },
+        "launchPad": {
+            "textStyles": "text-[16px]",
+            "iconStyles": "w-[75px] h-auto xxs:w-[60px] xxs:h-[60px]",
+            "indicatorStyles": "shadow-soft-bottom"
+        },
+        "defaults": {
+            "tabs": {
+                "borderRadius": "rounded-[5px]"
             }
         }
     }

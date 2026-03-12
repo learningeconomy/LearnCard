@@ -139,6 +139,245 @@ const resolveColorHex = (val) => {
 const isCompound = (val) => val && val.includes(' ');
 
 // ═══════════════════════════════════════════════════════════════════════════
+// THEME GENERATION ENGINE — procedural brand-color palette derivation
+// ═══════════════════════════════════════════════════════════════════════════
+
+const hexToRgb = (hex) => {
+    const h = hex.replace('#', '');
+    return {
+        r: parseInt(h.slice(0, 2), 16) / 255,
+        g: parseInt(h.slice(2, 4), 16) / 255,
+        b: parseInt(h.slice(4, 6), 16) / 255,
+    };
+};
+
+const relativeLuminance = (hex) => {
+    const { r, g, b } = hexToRgb(hex);
+    const lin = (c) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+};
+
+const isLightColor = (hex) => relativeLuminance(hex) > 0.35;
+
+const colorDistSq = (a, b) => {
+    const ra = hexToRgb(a), rb = hexToRgb(b);
+    return (ra.r - rb.r) ** 2 + (ra.g - rb.g) ** 2 + (ra.b - rb.b) ** 2;
+};
+
+const nearestTwToken = (hex) => {
+    let best = null, bestDist = Infinity;
+
+    for (const [token, twHex] of Object.entries(COLOR_LOOKUP)) {
+        if (token === 'white' || token === 'black') continue;
+        const dist = colorDistSq(hex, twHex);
+        if (dist < bestDist) { bestDist = dist; best = token; }
+    }
+
+    return best;
+};
+
+const nearestTwFamily = (hex) => {
+    const token = nearestTwToken(hex);
+    return token ? token.replace(/-\d+$/, '') : 'blue';
+};
+
+// Chromatic TW families sorted by hue angle
+const CHROMATIC_FAMILIES = [
+    'red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald',
+    'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple',
+    'fuchsia', 'pink', 'rose',
+];
+
+// 12 well-spaced families for vibrant category assignment
+const VIBRANT_12 = [
+    'blue', 'violet', 'pink', 'red', 'orange', 'amber',
+    'yellow', 'lime', 'emerald', 'teal', 'cyan', 'indigo',
+];
+
+// Category keys in display-prominence order
+const GEN_CATEGORIES = [
+    'achievement', 'socialBadge', 'learningHistory', 'workHistory',
+    'accomplishment', 'accommodation', 'id', 'family',
+    'skill', 'aiTopic', 'aiPathway', 'aiInsight',
+];
+
+const pickComplementary = (family) => {
+    const idx = CHROMATIC_FAMILIES.indexOf(family);
+    if (idx < 0) return 'emerald';
+    return CHROMATIC_FAMILIES[(idx + Math.floor(CHROMATIC_FAMILIES.length / 2)) % CHROMATIC_FAMILIES.length];
+};
+
+const pickThirdColor = (primary, accent) => {
+    const pi = CHROMATIC_FAMILIES.indexOf(primary);
+    if (pi < 0) return 'lime';
+    const third = (pi + Math.floor(CHROMATIC_FAMILIES.length / 3)) % CHROMATIC_FAMILIES.length;
+    const candidate = CHROMATIC_FAMILIES[third];
+    if (candidate === primary || candidate === accent) {
+        return CHROMATIC_FAMILIES[(third + 2) % CHROMATIC_FAMILIES.length];
+    }
+    return candidate;
+};
+
+// Build vibrant category colors for a given TW family
+const genVibrantCategory = (family, accentFamily) => {
+    const hex400 = COLOR_LOOKUP[`${family}-400`];
+    const light = hex400 ? isLightColor(hex400) : false;
+    const textCls = light ? 'text-grayscale-900' : 'text-white';
+
+    return {
+        primaryColor: `${family}-300`,
+        secondaryColor: `${family}-500`,
+        indicatorColor: `${accentFamily}-200`,
+        borderColor: `${family}-300`,
+        statusBarColor: light ? 'light' : `${family}-400`,
+        headerBrandingTextColor: textCls,
+        headerTextColor: textCls,
+        backgroundPrimaryColor: light ? '!bg-white' : `!bg-${family}-400`,
+        backgroundSecondaryColor: light ? 'grayscale-100' : `${family}-200`,
+        tabActiveColor: `bg-${family}-300`,
+    };
+};
+
+// Build uniform category colors (professional / formal feel)
+const genUniformCategory = (primaryFamily) => ({
+    primaryColor: `${primaryFamily}-50`,
+    secondaryColor: 'grayscale-800',
+    indicatorColor: `${primaryFamily}-500`,
+    borderColor: 'grayscale-100',
+    statusBarColor: 'light',
+    headerBrandingTextColor: 'text-grayscale-800',
+    headerTextColor: 'text-grayscale-800',
+    backgroundPrimaryColor: '!bg-white',
+    backgroundSecondaryColor: 'grayscale-100',
+    tabActiveColor: `bg-${primaryFamily}-100`,
+});
+
+const generateThemeFromBrand = ({ primaryHex, accentHex, style }) => {
+    const primaryFamily = nearestTwFamily(primaryHex);
+    const accentFamily = accentHex ? nearestTwFamily(accentHex) : pickComplementary(primaryFamily);
+    const thirdFamily = pickThirdColor(primaryFamily, accentFamily);
+
+    // --- Categories ---
+    const categories = {};
+
+    if (style === 'vibrant') {
+        const pool = [...VIBRANT_12];
+        const pi = pool.indexOf(primaryFamily);
+        if (pi > 0) { pool.splice(pi, 1); pool.unshift(primaryFamily); }
+        else if (pi < 0) { pool[0] = primaryFamily; }
+
+        const ai = pool.indexOf(accentFamily);
+        if (ai > 1) { pool.splice(ai, 1); pool.splice(1, 0, accentFamily); }
+        else if (ai < 0) { pool[1] = accentFamily; }
+
+        GEN_CATEGORIES.forEach((key, i) => {
+            categories[key] = genVibrantCategory(pool[i % pool.length], accentFamily);
+        });
+    } else {
+        GEN_CATEGORIES.forEach(key => {
+            categories[key] = genUniformCategory(primaryFamily);
+        });
+    }
+
+    // --- LaunchPad ---
+    const launchPad = {
+        contacts: { color: `${primaryFamily}-700` },
+        aiSessions: { color: `${accentFamily}-500` },
+        alerts: {
+            color: `${primaryFamily}-600`,
+            indicatorTextColor: `text-${primaryFamily}-600`,
+            indicatorBgColor: 'bg-white',
+        },
+        buttons: {
+            unconnected: `bg-${primaryFamily}-500 text-white`,
+            connected: `bg-grayscale-100 text-${primaryFamily}-500`,
+        },
+    };
+
+    // --- Side Menu ---
+    const sideMenu = {
+        linkActiveColor: 'text-grayscale-900',
+        linkInactiveColor: style === 'vibrant' ? 'text-grayscale-700' : 'text-grayscale-500',
+        linkActiveBackgroundColor: 'bg-grayscale-100/50',
+        linkInactiveBackgroundColor: 'bg-white',
+        primaryButtonColor: `bg-${primaryFamily}-500 text-white`,
+        secondaryButtonColor: `bg-${accentFamily}-500 text-white border-${accentFamily}-500`,
+        indicatorColor: style === 'vibrant' ? 'text-rose-500' : `text-${primaryFamily}-500`,
+        syncingColor: `!text-${primaryFamily}-500`,
+        completedColor: '!text-emerald-700',
+    };
+
+    // --- Navbar ---
+    const navbar = {
+        activeColor: 'text-grayscale-900',
+        inactiveColor: style === 'vibrant' ? 'text-grayscale-600' : 'text-grayscale-500',
+        syncingColor: `!text-${primaryFamily}-500`,
+        completedColor: '!text-emerald-700',
+    };
+
+    // --- Intro Slides ---
+    const introSlides = {
+        firstSlideBackground: `${primaryFamily}-500`,
+        secondSlideBackground: `${accentFamily}-400`,
+        thirdSlideBackground: `${thirdFamily}-500`,
+        textColors: { primary: 'white', secondary: 'white' },
+        pagination: { primary: 'white', secondary: '#E2E3E9' },
+    };
+
+    // --- Defaults ---
+    const colorDefaults = {
+        primaryColor: `${primaryFamily}-500`,
+        primaryColorShade: `${primaryFamily}-200`,
+        loaders: [
+            COLOR_LOOKUP[`${primaryFamily}-500`],
+            COLOR_LOOKUP[`${accentFamily}-500`],
+            COLOR_LOOKUP[`${thirdFamily}-500`],
+            COLOR_LOOKUP[`${primaryFamily}-300`],
+        ].filter(Boolean),
+    };
+
+    // --- Placeholders ---
+    const placeholders = {};
+
+    for (const key of GEN_CATEGORIES) {
+        if (key.startsWith('ai')) continue;
+
+        const cat = categories[key];
+        const family = cat.primaryColor.replace(/-\d+$/, '');
+
+        placeholders[key] = {
+            spilledCup: {
+                backsplash: COLOR_LOOKUP[`${family}-300`] || '#E2E3E9',
+                spill: COLOR_LOOKUP[`${accentFamily}-400`] || '#3B82F6',
+                cupOutline: COLOR_LOOKUP[`${family}-700`] || '#353E64',
+            },
+        };
+    }
+
+    placeholders.defaults = {
+        spilledCup: {
+            backsplash: COLOR_LOOKUP[`${primaryFamily}-200`] || '#E2E3E9',
+            spill: COLOR_LOOKUP[`${accentFamily}-400`] || '#3B82F6',
+            cupOutline: COLOR_LOOKUP[`${primaryFamily}-700`] || '#353E64',
+        },
+    };
+
+    return {
+        defaults: { viewMode: style === 'vibrant' ? 'grid' : 'list' },
+        colors: { categories, launchPad, sideMenu, navbar, introSlides, placeholders, defaults: colorDefaults },
+        styles: {
+            wallet: { cardStyles: 'h-[240px]', iconStyles: 'w-[100px] h-[100px]' },
+            launchPad: {
+                textStyles: 'text-[16px]',
+                iconStyles: 'w-[75px] h-auto xxs:w-[60px] xxs:h-[60px]',
+                indicatorStyles: 'shadow-soft-bottom',
+            },
+            defaults: { tabs: { borderRadius: 'rounded-[5px]' } },
+        },
+    };
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // THEME SCHEMA DEFINITIONS — documents what fields exist and their purpose
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1157,25 +1396,52 @@ const JSONSection = ({ config, setConfig }) => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const CreateThemeModal = ({ themes, onClose, onCreate }) => {
+    const [mode, setMode] = useState('generate');
     const [id, setId] = useState('');
     const [displayName, setDisplayName] = useState('');
     const [baseTheme, setBaseTheme] = useState(themes[0]?.id || '');
+
+    const [primaryHex, setPrimaryHex] = useState('#4F46E5');
+    const [accentHex, setAccentHex] = useState('#10B981');
+    const [autoAccent, setAutoAccent] = useState(true);
+    const [genStyle, setGenStyle] = useState('vibrant');
+
     const [creating, setCreating] = useState(false);
     const toast = useToast();
 
     const sanitizedId = id.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+
+    const effectiveAccent = autoAccent ? null : accentHex;
+    const resolvedAccentFamily = autoAccent ? pickComplementary(nearestTwFamily(primaryHex)) : nearestTwFamily(accentHex);
+
+    const previewPalette = useMemo(() => {
+        if (mode !== 'generate') return null;
+        try { return generateThemeFromBrand({ primaryHex, accentHex: effectiveAccent, style: genStyle }); }
+        catch { return null; }
+    }, [mode, primaryHex, effectiveAccent, genStyle]);
 
     const handleCreate = async () => {
         if (!sanitizedId || !displayName.trim()) return;
         setCreating(true);
 
         try {
-            const config = {
-                displayName: displayName.trim(),
-                ...(baseTheme ? { extends: baseTheme } : {}),
-            };
+            if (mode === 'extend') {
+                await api.saveTheme(sanitizedId, {
+                    id: sanitizedId,
+                    displayName: displayName.trim(),
+                    ...(baseTheme ? { extends: baseTheme } : {}),
+                });
+            } else {
+                const generated = generateThemeFromBrand({ primaryHex, accentHex: effectiveAccent, style: genStyle });
 
-            await api.createTheme(sanitizedId, config);
+                await api.saveTheme(sanitizedId, {
+                    id: sanitizedId,
+                    displayName: displayName.trim(),
+                    iconSet: genStyle === 'vibrant' ? 'colorful' : 'formal',
+                    ...generated,
+                });
+            }
+
             toast(`Theme "${displayName}" created!`);
             onCreate(sanitizedId);
             onClose();
@@ -1186,43 +1452,174 @@ const CreateThemeModal = ({ themes, onClose, onCreate }) => {
         }
     };
 
+    const lblStyle = { display: 'block', fontSize: 12, fontWeight: 500, color: '#475569', marginBottom: 4 };
+    const fldStyle = { marginBottom: 16 };
+
+    const tabStyle = (active) => ({
+        flex: 1, padding: '8px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
+        fontSize: 13, fontWeight: 500, transition: 'all 0.15s',
+        background: active ? 'white' : 'transparent',
+        color: active ? '#1e293b' : '#64748b',
+        boxShadow: active ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+    });
+
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
                 <h2 style={{ margin: '0 0 4px 0', fontSize: 18, fontWeight: 600, color: '#1e293b' }}>Create New Theme</h2>
-                <p style={{ margin: '0 0 20px 0', fontSize: 13, color: '#64748b' }}>Set up a new theme folder with a theme.json file.</p>
+                <p style={{ margin: '0 0 16px 0', fontSize: 13, color: '#64748b' }}>Generate a brand palette or extend an existing theme.</p>
 
-                <div style={{ marginBottom: 16 }}>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#475569', marginBottom: 4 }}>Theme ID</label>
+                {/* Mode tabs */}
+                <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#f1f5f9', borderRadius: 8, padding: 3 }}>
+                    <button onClick={() => setMode('generate')} style={tabStyle(mode === 'generate')}>
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style={{ verticalAlign: -2, marginRight: 4 }}><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.061 1.06a.75.75 0 001.06 1.06l1.06-1.06zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.06 1.06a.75.75 0 001.06 1.06l1.06-1.06zM18 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 015 10z"/></svg>
+                        Generate from Brand
+                    </button>
+                    <button onClick={() => setMode('extend')} style={tabStyle(mode === 'extend')}>
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style={{ verticalAlign: -2, marginRight: 4 }}><path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z"/><path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.44A1.5 1.5 0 008.378 6H4.5z"/></svg>
+                        Extend Existing
+                    </button>
+                </div>
+
+                {/* Common fields */}
+                <div style={fldStyle}>
+                    <label style={lblStyle}>Theme ID</label>
                     <input className="field-input" value={id} onChange={e => setId(e.target.value)}
-                        placeholder="e.g. dark-mode" style={{ width: '100%' }} />
+                        placeholder="e.g. my-brand" style={{ width: '100%' }} />
                     {sanitizedId && sanitizedId !== id && (
                         <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>Will be saved as: <code>{sanitizedId}</code></div>
                     )}
                 </div>
 
-                <div style={{ marginBottom: 16 }}>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#475569', marginBottom: 4 }}>Display Name</label>
+                <div style={fldStyle}>
+                    <label style={lblStyle}>Display Name</label>
                     <input className="field-input" value={displayName} onChange={e => setDisplayName(e.target.value)}
-                        placeholder="e.g. Dark Mode" style={{ width: '100%' }} />
+                        placeholder="e.g. My Brand Theme" style={{ width: '100%' }} />
                 </div>
 
-                <div style={{ marginBottom: 24 }}>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#475569', marginBottom: 4 }}>Extend From</label>
-                    <select className="field-input" value={baseTheme} onChange={e => setBaseTheme(e.target.value)} style={{ width: '100%' }}>
-                        <option value="">No parent (standalone)</option>
-                        {themes.map(t => <option key={t.id} value={t.id}>{t.displayName}</option>)}
-                    </select>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
-                        Inherited values show as placeholders. Override only what you need.
+                {/* Extend mode */}
+                {mode === 'extend' && (
+                    <div style={{ marginBottom: 24 }}>
+                        <label style={lblStyle}>Extend From</label>
+                        <select className="field-input" value={baseTheme} onChange={e => setBaseTheme(e.target.value)} style={{ width: '100%' }}>
+                            <option value="">No parent (standalone)</option>
+                            {themes.map(t => <option key={t.id} value={t.id}>{t.displayName}</option>)}
+                        </select>
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                            Inherited values show as placeholders. Override only what you need.
+                        </div>
                     </div>
-                </div>
+                )}
+
+                {/* Generate mode */}
+                {mode === 'generate' && (
+                    <>
+                        <div style={fldStyle}>
+                            <label style={lblStyle}>Primary Brand Color</label>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <input type="color" value={primaryHex} onChange={e => setPrimaryHex(e.target.value)}
+                                    style={{ width: 40, height: 40, border: '2px solid #e2e8f0', borderRadius: 8, padding: 0, cursor: 'pointer' }} />
+                                <input className="field-input" value={primaryHex} onChange={e => setPrimaryHex(e.target.value)}
+                                    placeholder="#4F46E5" style={{ flex: 1, fontFamily: 'monospace' }} />
+                                <span style={{ fontSize: 11, color: '#94a3b8', minWidth: 55, textAlign: 'right' }}>
+                                    {nearestTwFamily(primaryHex)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div style={fldStyle}>
+                            <label style={{ ...lblStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <span>Accent Color</span>
+                                <label style={{ fontSize: 11, fontWeight: 400, color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <input type="checkbox" checked={autoAccent} onChange={e => setAutoAccent(e.target.checked)} />
+                                    Auto (complementary)
+                                </label>
+                            </label>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', opacity: autoAccent ? 0.4 : 1, pointerEvents: autoAccent ? 'none' : 'auto', transition: 'opacity 0.15s' }}>
+                                <input type="color" value={autoAccent ? (COLOR_LOOKUP[`${resolvedAccentFamily}-500`] || '#10B981') : accentHex}
+                                    onChange={e => setAccentHex(e.target.value)}
+                                    style={{ width: 40, height: 40, border: '2px solid #e2e8f0', borderRadius: 8, padding: 0, cursor: 'pointer' }} />
+                                <input className="field-input"
+                                    value={autoAccent ? `auto: ${resolvedAccentFamily}` : accentHex}
+                                    onChange={e => setAccentHex(e.target.value)}
+                                    placeholder="#10B981" style={{ flex: 1, fontFamily: 'monospace' }} />
+                                <span style={{ fontSize: 11, color: '#94a3b8', minWidth: 55, textAlign: 'right' }}>
+                                    {resolvedAccentFamily}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div style={fldStyle}>
+                            <label style={lblStyle}>Style</label>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                {[{ value: 'vibrant', label: 'Vibrant', desc: 'Unique color per category' },
+                                  { value: 'uniform', label: 'Uniform', desc: 'Professional, single palette' }]
+                                .map(opt => (
+                                    <button key={opt.value} onClick={() => setGenStyle(opt.value)}
+                                        style={{
+                                            flex: 1, padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                                            border: genStyle === opt.value ? '2px solid #3b82f6' : '2px solid #e2e8f0',
+                                            background: genStyle === opt.value ? '#eff6ff' : 'white',
+                                            textAlign: 'left', transition: 'all 0.15s',
+                                        }}>
+                                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{opt.label}</div>
+                                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{opt.desc}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {previewPalette && (
+                            <div style={{ marginBottom: 20 }}>
+                                <label style={lblStyle}>Category Palette Preview</label>
+                                <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                                    {GEN_CATEGORIES.map(key => {
+                                        const cat = previewPalette.colors.categories[key];
+                                        if (!cat) return null;
+                                        const hex = resolveColorHex(cat.primaryColor);
+                                        return (
+                                            <div key={key} title={`${CATEGORY_LABELS[key] || key}: ${cat.primaryColor}`} style={{
+                                                width: 30, height: 30, borderRadius: 6,
+                                                background: hex || '#e2e8f0',
+                                                border: '2px solid white',
+                                                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                            }} />
+                                        );
+                                    })}
+                                </div>
+                                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>
+                                    {GEN_CATEGORIES.map(k => CATEGORY_LABELS[k] || k).join(' \u00b7 ')}
+                                </div>
+
+                                {/* Non-category color preview */}
+                                <div style={{ display: 'flex', gap: 6, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                                    {[
+                                        { label: 'Primary', token: previewPalette.colors.defaults.primaryColor },
+                                        { label: 'Accent', token: previewPalette.colors.launchPad.aiSessions.color },
+                                        { label: 'Slide 1', token: previewPalette.colors.introSlides.firstSlideBackground },
+                                        { label: 'Slide 2', token: previewPalette.colors.introSlides.secondSlideBackground },
+                                        { label: 'Slide 3', token: previewPalette.colors.introSlides.thirdSlideBackground },
+                                    ].map(({ label, token }) => (
+                                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                            <div style={{
+                                                width: 14, height: 14, borderRadius: 3,
+                                                background: resolveColorHex(token) || '#ccc',
+                                                border: '1px solid rgba(0,0,0,0.1)',
+                                            }} />
+                                            <span style={{ fontSize: 10, color: '#94a3b8' }}>{label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                     <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
                     <button className="btn btn-primary" onClick={handleCreate}
                         disabled={!sanitizedId || !displayName.trim() || creating}>
-                        {creating ? 'Creating...' : 'Create Theme'}
+                        {creating ? 'Creating...' : mode === 'generate' ? 'Generate & Create' : 'Create Theme'}
                     </button>
                 </div>
             </div>
