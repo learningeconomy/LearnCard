@@ -173,12 +173,12 @@ Resulting VC shape (high-level):
 ```ts
 {
   '@context': [
-    'https://www.w3.org/2018/credentials/v1',
+    'https://www.w3.org/ns/credentials/v2',
     'http://schema.hropenstandards.org/4.5/recruiting/json/VerifiableCredentialLER-RSType.json',
   ],
   type: ['VerifiableCredential', 'http://schema.hropenstandards.org/4.5/recruiting/json/LER-RSType.json'],
   issuer: 'did:...issuer',
-  issuanceDate: '...',
+  validFrom: '...',
   credentialSubject: {
     id: 'did:...subject',
     type: 'http://schema.hropenstandards.org/4.5/recruiting/json/LER-RSType.json',

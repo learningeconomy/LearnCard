@@ -12,8 +12,7 @@ import {
     VerifyLerPresentationParams,
     VerificationResult,
     LerRsRecord,
-    LER_RS_CREDENTIAL_CONTEXT_V1,
-    LER_RS_VC_CONTEXT_V45,
+    LER_RS_CREDENTIAL_CONTEXT_V2,
     LER_RS_TYPE_URI_V45,
     LEGACY_LER_RS_TYPE_URI_V44,
     LEGACY_LER_RS_TYPE_TOKEN,
@@ -352,11 +351,11 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
                 };
 
                 const unsignedVC: UnsignedVC = {
-                    '@context': [LER_RS_CREDENTIAL_CONTEXT_V1, inlineLerRsContext],
+                    '@context': [LER_RS_CREDENTIAL_CONTEXT_V2, inlineLerRsContext],
                     id: `urn:uuid:${documentId}`,
                     type: ['VerifiableCredential', LER_RS_TYPE_URI_V45],
                     issuer: did,
-                    issuanceDate: issuedAt,
+                    validFrom: issuedAt,
                     credentialSubject: {
                         id: params.person.id,
                         ...lerRecord,
@@ -390,7 +389,7 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
                     );
 
                 const vp: UnsignedVP = {
-                    '@context': [LER_RS_CREDENTIAL_CONTEXT_V1],
+                    '@context': [LER_RS_CREDENTIAL_CONTEXT_V2],
                     type: ['VerifiablePresentation'],
                     holder: did,
                     verifiableCredential:
@@ -530,11 +529,11 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
                 };
 
                 const unsignedVC: UnsignedVC = {
-                    '@context': [LER_RS_CREDENTIAL_CONTEXT_V1, inlineTcpContext],
+                    '@context': [LER_RS_CREDENTIAL_CONTEXT_V2, inlineTcpContext],
                     type: ['VerifiableCredential', TCP_WRAPPER_TYPE],
                     id: params.wrapperId,
                     issuer: did,
-                    issuanceDate: issuedAt,
+                    validFrom: issuedAt,
                     credentialSubject: {
                         id: subjectDid,
                         type: 'ResumePackage',

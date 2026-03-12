@@ -9,9 +9,13 @@ import {
 import type { VCPluginMethods, VCPluginDependentMethods } from '@learncard/vc-plugin';
 
 /**
- * Base W3C VC context required by issued credentials and presentations.
+ * Legacy W3C VC v1 context kept for interop with previously issued records.
  */
 export const LER_RS_CREDENTIAL_CONTEXT_V1 = 'https://www.w3.org/2018/credentials/v1';
+/**
+ * Base W3C VC v2 context used by newly issued LER-RS credentials and presentations.
+ */
+export const LER_RS_CREDENTIAL_CONTEXT_V2 = 'https://www.w3.org/ns/credentials/v2';
 /**
  * HR Open Standards VC wrapper context for LER-RS v4.5.
  */
@@ -240,6 +244,7 @@ export interface CreateTcpWrapperVcParams {
     pdfHash: string;
     includedCredentials: TcpIncludedCredentialRef[];
     generatedAt?: string;
+    /** Timestamp used as the issued credential's `validFrom` value. */
     issuanceDate?: string;
     coSignerDid?: string;
     enableCoSign?: boolean;
