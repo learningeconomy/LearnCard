@@ -17,6 +17,8 @@ import {
     useGetCurrentLCNUser,
     calculateAge,
     useDeviceTypeByWidth,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
@@ -80,8 +82,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     onInstallSuccess,
     isPreview = false,
 }) => {
-    const { closeModal, replaceModal, newModal } = useModal();
     const confirm = useConfirmation();
+    const { presentToast } = useToast();
+    const { closeModal, replaceModal, newModal } = useModal();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -201,6 +204,12 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             onInstallSuccess?.();
         } catch (error) {
             console.error('Failed to install app:', error);
+            if (error?.message) {
+                presentToast(`Failed to install app: ${error?.message}`, {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+            }
         } finally {
             setIsProcessing(false);
         }
