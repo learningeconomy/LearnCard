@@ -79,6 +79,7 @@ export function createGlobalStyleEl(primary?: string, accent?: string): HTMLStyl
     .lc-brand img { height: 26px; width: auto; border-radius: 5px; display: block; }
     .lc-brand .lc-sep { color: #d1d5db; font-size: 13px; font-weight: 400; }
     .lc-brand .lc-partner-logo { height: 26px; width: auto; border-radius: 5px; display: block; }
+    .lc-brand .lc-partner-name { font-weight: 600; font-size: 14px; color: #374151; }
     .lc-close {
       background: #f5f5f5; border: none; color: #9ca3af; font-size: 14px;
       cursor: pointer; padding: 4px 8px; border-radius: 6px; line-height: 1;

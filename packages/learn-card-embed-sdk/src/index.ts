@@ -6,7 +6,7 @@
 /// <reference path="./ambient.d.ts" />
 
 import islandScript from './iframe/island-vanilla.js';
-import { createGlobalStyleEl, iframeCss, DEFAULT_PRIMARY, DEFAULT_LOGO_URL, darkenHex, hexToRgbString } from './styles';
+import { createGlobalStyleEl, iframeCss, DEFAULT_PRIMARY, DEFAULT_LOGO_URL, darkenHex } from './styles';
 import { getTargetEl } from './dom';
 import { createNonce } from './security';
 import type { InitOptions, KnownMessages, EmailSubmitResult, OtpVerifyResult } from './types';
@@ -116,9 +116,10 @@ function openModal(opts: InitOptions): { close: () => void } {
   lcImg.src = lcLogoUrl;
   brand.appendChild(lcImg);
 
-  // Separator
+  // Separator (decorative, hidden from screen readers — aria-label on brand covers it)
   const sep = document.createElement('span');
   sep.className = 'lc-sep';
+  sep.setAttribute('aria-hidden', 'true');
   sep.textContent = '\u00d7';
   brand.appendChild(sep);
 
@@ -134,6 +135,7 @@ function openModal(opts: InitOptions): { close: () => void } {
     brand.appendChild(pImg);
   } else {
     const pText = document.createElement('span');
+    pText.className = 'lc-partner-name';
     pText.textContent = opts.partnerName || 'Partner';
     brand.appendChild(pText);
   }
