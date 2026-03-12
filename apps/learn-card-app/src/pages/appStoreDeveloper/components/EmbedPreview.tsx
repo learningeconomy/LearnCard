@@ -40,6 +40,10 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
         setError(null);
         setIsLoaded(false);
 
+        // Clear stored session so switching templates starts a fresh claim flow
+        const storageKey = `lcEmbed:v1:${publishableKey || 'anon'}`;
+        try { localStorage.removeItem(storageKey); } catch {}
+
         try {
             initEmbed({
                 target: el,
