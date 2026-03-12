@@ -11,6 +11,7 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
     onSelectResume: (resume: ExistingResume) => Promise<void> | void;
 }> = ({ activeResumeRecordId, disabled = false, onSelectResume }) => {
     const { data: resumes = [], isLoading } = useExistingResumes();
+
     const [isOpen, setIsOpen] = useState(false);
     const [popoverEvent, setPopoverEvent] = useState<Event | undefined>(undefined);
     const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
@@ -18,11 +19,13 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
     const sortedResumes = [...resumes].sort((a, b) => {
         const aDate = new Date(
             (typeof a.record.generatedAt === 'string' && a.record.generatedAt) ||
+                a.vc?.validFrom ||
                 a.vc?.issuanceDate ||
                 0
         ).getTime();
         const bDate = new Date(
             (typeof b.record.generatedAt === 'string' && b.record.generatedAt) ||
+                b.vc?.validFrom ||
                 b.vc?.issuanceDate ||
                 0
         ).getTime();

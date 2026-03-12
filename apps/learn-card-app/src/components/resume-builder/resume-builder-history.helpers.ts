@@ -142,13 +142,30 @@ const buildResumeRowFields = (
     return fields;
 };
 
+const getFirstVerificationCredential = (item: unknown): VC | null => {
+    const itemRecord = asRecord(item);
+    const verifications = itemRecord?.verifications;
+    if (Array.isArray(verifications)) {
+        for (const verification of verifications) {
+            const verificationRecord = asRecord(verification);
+            if (verificationRecord) return verificationRecord as VC;
+        }
+    }
+
+    const verifiableCredential = itemRecord?.verifiableCredential;
+    const verifiableCredentialRecord = asRecord(verifiableCredential);
+    if (verifiableCredentialRecord) return verifiableCredentialRecord as VC;
+
+    return null;
+};
+
 const firstVerificationUri = (item: unknown): string | undefined => {
     const itemRecord = asRecord(item);
     const verifications = itemRecord?.verifications;
     if (Array.isArray(verifications)) {
         for (const verification of verifications) {
-            const uri = asString(asRecord(verification)?.sourceCredentialUri);
-            if (uri) return uri;
+            const embeddedId = asString(asRecord(verification)?.id);
+            if (embeddedId) return embeddedId;
         }
     }
 
@@ -158,10 +175,41 @@ const firstVerificationUri = (item: unknown): string | undefined => {
     }
 
     const verifiableCredentialRecord = asRecord(verifiableCredential);
-    const sourceCredentialUri = asString(verifiableCredentialRecord?.sourceCredentialUri);
-    if (sourceCredentialUri) return sourceCredentialUri;
+    const embeddedId = asString(verifiableCredentialRecord?.id);
+    if (embeddedId) return embeddedId;
 
     return undefined;
+};
+
+export const getEmbeddedVerificationCredentialsByIdFromLerVc = (
+    vc: VC
+): Record<string, VC> => {
+    const credentialSubject = asRecord(vc.credentialSubject);
+    const items = [
+        ...(Array.isArray(credentialSubject?.employmentHistories)
+            ? credentialSubject.employmentHistories
+            : []),
+        ...(Array.isArray(credentialSubject?.workHistory) ? credentialSubject.workHistory : []),
+        ...(Array.isArray(credentialSubject?.educationAndLearnings)
+            ? credentialSubject.educationAndLearnings
+            : []),
+        ...(Array.isArray(credentialSubject?.educationHistory)
+            ? credentialSubject.educationHistory
+            : []),
+        ...(Array.isArray(credentialSubject?.certifications)
+            ? credentialSubject.certifications
+            : []),
+    ];
+
+    return Object.fromEntries(
+        items
+            .map(item => {
+                const verificationCredential = getFirstVerificationCredential(item);
+                const id = verificationCredential?.id;
+                return id ? [id, verificationCredential] : undefined;
+            })
+            .filter((entry): entry is [string, VC] => Boolean(entry))
+    );
 };
 
 const pushEntry = (
@@ -268,7 +316,8 @@ export const buildResumeBuilderSnapshotFromLerVc = async (
     for (const item of employmentHistories) {
         const uri = firstVerificationUri(item);
         if (!uri) continue;
-        const sourceVc = await readCredential(uri);
+        const embeddedVerification = getFirstVerificationCredential(item);
+        const sourceVc = embeddedVerification ?? (await readCredential(uri));
         const sourceCredentialDescription = getSourceCredentialDescription(sourceVc);
 
         const positionHistory = Array.isArray(asRecord(item)?.positionHistories)
@@ -301,7 +350,8 @@ export const buildResumeBuilderSnapshotFromLerVc = async (
     for (const item of educationAndLearnings) {
         const uri = firstVerificationUri(item);
         if (!uri) continue;
-        const sourceVc = await readCredential(uri);
+        const embeddedVerification = getFirstVerificationCredential(item);
+        const sourceVc = embeddedVerification ?? (await readCredential(uri));
         const sourceCredentialDescription = getSourceCredentialDescription(sourceVc);
 
         const description = asString(asRecord(item)?.narrative);
@@ -327,7 +377,8 @@ export const buildResumeBuilderSnapshotFromLerVc = async (
         const uri = firstVerificationUri(item);
         if (!uri) continue;
 
-        const sourceVc = await readCredential(uri);
+        const embeddedVerification = getFirstVerificationCredential(item);
+        const sourceVc = embeddedVerification ?? (await readCredential(uri));
         const category =
             (sourceVc ? getDefaultCategoryForCredential(sourceVc) : undefined) ||
             CredentialCategoryEnum.socialBadge;
@@ -384,11 +435,17 @@ export const buildResumeHydrationState = async (
     const record = asRecord(resume.record) ?? {};
     const storedSnapshot = asRecord(record.resumeBuilderSnapshot);
     const fileName = asString(record.fileName) || 'resume.pdf';
+    const embeddedCredentialsById = resume.vc
+        ? getEmbeddedVerificationCredentialsByIdFromLerVc(resume.vc)
+        : {};
 
     const snapshot = storedSnapshot
         ? normalizeSnapshot(storedSnapshot as Partial<ResumeBuilderSnapshot>)
         : resume.vc
-        ? await buildResumeBuilderSnapshotFromLerVc(resume.vc, fileName, readCredential)
+        ? await buildResumeBuilderSnapshotFromLerVc(resume.vc, fileName, async uri => {
+              if (uri in embeddedCredentialsById) return embeddedCredentialsById[uri] ?? null;
+              return readCredential(uri);
+          })
         : normalizeSnapshot({
               documentSetup: { showQRCode: true, fileName },
           });
@@ -469,6 +526,7 @@ export const getResumeDisplaySummary = (resume: ExistingResume): {
         credentialCount,
         generatedAt:
             (typeof record.generatedAt === 'string' && record.generatedAt) ||
+            resume.vc?.validFrom ||
             resume.vc?.issuanceDate ||
             null,
         status: resume.vc ? 'Published' : 'Draft',

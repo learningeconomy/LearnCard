@@ -14,6 +14,7 @@ import { useDeviceTypeByWidth } from 'learn-card-base';
 import ResumePreview from '../../components/resume-builder/resume-preview/ResumePreview';
 import {
     buildResumeBuilderSnapshotFromLerVc,
+    getEmbeddedVerificationCredentialsByIdFromLerVc,
     getResumeBuilderSnapshot,
 } from '../../components/resume-builder/resume-builder-history.helpers';
 import {
@@ -96,7 +97,11 @@ const VerifySharedResume: React.FC = () => {
                     throw new Error('No resume credential was found in this presentation.');
                 }
 
-                const nextResolvedCredentialsByUri: Record<string, VC | null> = {};
+                const embeddedCredentialsByUri =
+                    getEmbeddedVerificationCredentialsByIdFromLerVc(firstCredential);
+                const nextResolvedCredentialsByUri: Record<string, VC | null> = {
+                    ...embeddedCredentialsByUri,
+                };
                 const snapshot = await buildResumeBuilderSnapshotFromLerVc(
                     firstCredential,
                     'resume.pdf',
@@ -137,11 +142,6 @@ const VerifySharedResume: React.FC = () => {
             resumeBuilderStore.set.hydrateStore(previousSnapshot, previousActiveResume);
         };
     }, [pin, rawUri, seed]);
-
-    const { title, subtitle } = getResumeHeader(resumeCredential);
-    const issuedAt = resumeCredential?.issuanceDate
-        ? moment(resumeCredential.issuanceDate).format('MMM D, YYYY')
-        : '';
 
     return (
         <IonPage>
