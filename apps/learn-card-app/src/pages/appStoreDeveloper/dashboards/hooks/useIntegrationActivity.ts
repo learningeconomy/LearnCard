@@ -207,8 +207,10 @@ export function useIntegrationActivity(
                 });
 
                 // Fetch stats using unified API with integrationId for accurate per-integration stats
+                // When integrationId is provided, don't also filter by boostUris — it's redundant
+                // and excludes activities without a FOR_BOOST relationship (e.g. embed claims)
                 const statsResult = await (wallet.invoke as any).getActivityStats?.({
-                    boostUris: boostUris.length > 0 ? boostUris : undefined,
+                    boostUris: !integrationId && boostUris.length > 0 ? boostUris : undefined,
                     integrationId,
                 });
 
