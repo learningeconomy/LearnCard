@@ -11,6 +11,7 @@ import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
 import ExperimentalFeatureBox from '../../components/generic/ExperimentalFeatureBox';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
+import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
 
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
@@ -109,6 +110,8 @@ const AiPathways: React.FC = () => {
                             <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
                                 <ExperimentalFeatureBox className="shadow-box-bottom" />
                             </div>
+
+                            <MySkillProfile />
 
                             {emptyPathways ? (
                                 <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
