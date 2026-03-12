@@ -583,6 +583,14 @@ export const inboxRouter = t.router({
                 resolvedCredential = parseRenderedTemplate(rendered);
             }
 
+            // Ensure the credential's issuer name reflects the owner profile, not the app listing
+            const rc = resolvedCredential as any;
+            if (rc.issuer && typeof rc.issuer === 'object') {
+                rc.issuer.name = rc.issuer.name || issuerProfile.displayName;
+            } else if (typeof rc.issuer === 'string' || !rc.issuer) {
+                rc.issuer = { id: rc.issuer || '', name: issuerProfile.displayName };
+            }
+
             // Log initial activity so embed claims appear in the dashboard
             const activityId = await logCredentialSent({
                 actorProfileId: issuerProfile.profileId,

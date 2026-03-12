@@ -101,8 +101,9 @@ export const useGetVCInfo = (
     const isCurrentUserIssuer =
         issuerDid === currentUserDidKey || issuerDid === currentLCNUser?.did;
     if (issuerAppSlug) {
+        // Prefer the VC's issuer.name (set at issuance) over the app listing display_name
         issuerName =
-            issuerAppListing?.display_name || (issuerAppLoading ? 'Loading app...' : issuerAppSlug);
+            getIssuerName(vc) || issuerAppListing?.display_name || (issuerAppLoading ? 'Loading app...' : issuerAppSlug);
         issuerLink = issuerAppListing?.listing_id
             ? `/app/${issuerAppListing.listing_id}`
             : undefined;
