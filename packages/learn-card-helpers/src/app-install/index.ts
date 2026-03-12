@@ -129,7 +129,7 @@ export const checkAppInstallEligibility = (input: AppInstallCheckInput): AppInst
 /**
  * Map age_rating strings to numeric minimum ages.
  */
-const AGE_RATING_TO_MIN_AGE: Record<string, number> = {
+export const AGE_RATING_TO_MIN_AGE: Record<string, number> = {
     '4+': 4,
     '9+': 9,
     '12+': 12,
