@@ -2,13 +2,7 @@ import React, { useMemo } from 'react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
 import { IonItem, IonSpinner } from '@ionic/react';
-import {
-    useModal,
-    ModalTypes,
-    useWallet,
-    switchedProfileStore,
-    useGetCurrentLCNUser,
-} from 'learn-card-base';
+import { useModal, ModalTypes, useWallet } from 'learn-card-base';
 import { ShieldAlert } from 'lucide-react';
 import { ThreeDotVertical } from '@learncard/react';
 
@@ -20,14 +14,6 @@ import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 import AiTutorConnectedView from './AiTutorConnectedView';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
-
-// Map age_rating to numeric minimum age
-const AGE_RATING_TO_MIN_AGE: Record<string, number> = {
-    '4+': 4,
-    '9+': 9,
-    '12+': 12,
-    '17+': 17,
-};
 
 type AppStoreListItemProps = {
     listing: AppStoreListing | InstalledApp;
@@ -69,38 +55,16 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     const { initWallet } = useWallet();
 
     // Guardian gate for child profiles
-    const { guardedAction, userAge } = useGuardianGate();
-
-    // Get current user profile for age checking
-    const { currentLCNUser } = useGetCurrentLCNUser();
-    const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
-    const profileType = switchedProfileStore.use.profileType();
-    const isChildProfile = Boolean(isSwitchedProfile && profileType === 'child');
+    const { userAge } = useGuardianGate();
 
     // Separate min_age (hard block) from age_rating (soft block with guardian approval)
     const listingAny = listing as any;
     const minAge: number | undefined = listingAny.min_age;
-    const ageRating: string | undefined = listingAny.age_rating;
-    const ageRatingMinAge = ageRating ? AGE_RATING_TO_MIN_AGE[ageRating] ?? 0 : 0;
 
     // Hard block: min_age violation (hide app entirely, block installation)
     // Only applies when userAge is known
     const isHardBlocked =
         userAge !== null && minAge !== undefined && minAge > 0 && userAge < minAge;
-
-    // Soft block: age_rating violation (child can install with guardian approval)
-    // Only applies when userAge is known
-    const isAgeRatingRestricted =
-        userAge !== null && ageRatingMinAge > 0 && userAge < ageRatingMinAge;
-
-    // Check if child profile is missing DOB
-    const childMissingDob = isChildProfile && !currentLCNUser?.dob;
-
-    // Check if listing has any age restriction (for DOB entry flow)
-    const hasAgeRestriction = (minAge !== undefined && minAge > 0) || ageRatingMinAge > 0;
-
-    // Combined age floor for display purposes
-    const ageFloor = minAge !== undefined ? minAge : ageRatingMinAge;
 
     // Show age restriction blocked modal
     const showAgeBlockedModal = () => {
@@ -139,8 +103,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                             </p>
 
                             <p className="text-sm text-grayscale-600">
-                                This app requires users to be <strong>{ageFloor}+</strong> years
-                                old.
+                                This app requires users to be <strong>{minAge}+</strong> years old.
                             </p>
                         </div>
 
@@ -183,30 +146,6 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                 onInstallSuccess={onInstallSuccess}
             />
         );
-    };
-
-    const handleLaunch = async () => {
-        // Hard block: min_age violation - show blocked modal
-        if (isHardBlocked) {
-            showAgeBlockedModal();
-            return;
-        }
-
-        // Child profile missing DOB with age-restricted app - open detail modal for DOB entry flow
-        if (childMissingDob && hasAgeRestriction) {
-            guardedAction(() => handleOpenDetail());
-            return;
-        }
-
-        // Soft block: age_rating violation for child profiles - require guardian approval
-        if (isAgeRatingRestricted && isChildProfile) {
-            guardedAction(async () => {
-                await proceedWithLaunch();
-            });
-            return;
-        }
-
-        await proceedWithLaunch();
     };
 
     const proceedWithLaunch = async () => {
@@ -302,6 +241,16 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
             // Fallback to opening detail modal if launch type is not configured
             handleOpenDetail();
         }
+    };
+
+    const handleLaunch = async () => {
+        // Hard block: min_age violation - show blocked modal
+        if (isHardBlocked) {
+            showAgeBlockedModal();
+            return;
+        }
+
+        await proceedWithLaunch();
     };
 
     // Check if this is an InstalledApp (has installed_at property)
