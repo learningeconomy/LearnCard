@@ -134,8 +134,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
             credentialSubject: {
                 name: dynamicField('recipient_name', ''),
                 achievement: {
-                    name: dynamicField('skill_name', ''),
-                    description: dynamicField('skill_description', ''),
+                    name: staticField(''),
+                    description: staticField(''),
                     achievementType: staticField('Competency'),
                     criteria: {
                         narrative: dynamicField('skill_criteria', 'Demonstrated proficiency through assessment.'),
@@ -162,8 +162,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
             credentialSubject: {
                 name: dynamicField('recipient_name', ''),
                 achievement: {
-                    name: dynamicField('license_name', ''),
-                    description: dynamicField('license_description', ''),
+                    name: staticField(''),
+                    description: staticField(''),
                     achievementType: staticField('License'),
                     criteria: {
                         narrative: staticField('Met all requirements for licensure.'),
@@ -186,8 +186,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
             credentialSubject: {
                 name: dynamicField('recipient_name', ''),
                 achievement: {
-                    name: dynamicField('membership_name', ''),
-                    description: dynamicField('membership_description', ''),
+                    name: staticField(''),
+                    description: staticField(''),
                     achievementType: staticField('Membership'),
                     criteria: {
                         narrative: staticField('Active member in good standing.'),
@@ -216,8 +216,8 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
             credentialSubject: {
                 name: dynamicField('recipient_name', ''),
                 achievement: {
-                    name: dynamicField('micro_credential_name', ''),
-                    description: dynamicField('micro_credential_description', ''),
+                    name: staticField(''),
+                    description: staticField(''),
                     achievementType: staticField('MicroCredential'),
                     creditsAvailable: dynamicField('duration_hours', ''),
                     criteria: {
