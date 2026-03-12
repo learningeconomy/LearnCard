@@ -13,8 +13,6 @@ import {
     Check,
     Loader2,
     Building2,
-    ChevronDown,
-    ChevronUp,
     Upload,
     Palette,
 } from 'lucide-react';
@@ -373,7 +371,7 @@ const ConfigureStep: React.FC<{
     const { presentToast } = useToast();
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
     const [hasTemplates, setHasTemplates] = useState(false);
-    const [showAdvanced, setShowAdvanced] = useState(true);
+
     const [keyCopied, setKeyCopied] = useState(false);
     const [domainInput, setDomainInput] = useState('');
 
@@ -396,7 +394,7 @@ const ConfigureStep: React.FC<{
     }, [logoUploadError]);
 
     // Check if branding is set
-    const hasBranding = branding.primaryColor !== '#1F51FF' || branding.partnerLogoUrl;
+
 
     // Format branding object for code
     const brandingCode = `{
@@ -451,8 +449,8 @@ const ConfigureStep: React.FC<{
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Configure the SDK</h3>
 
                 <p className="text-gray-600">
-                    Create your credential template and customize branding for the claim experience.
-                    Templates persist as reusable Boosts that you can reference by URI.
+                    Create your credential templates and customize branding for the claim experience.
+                    Templates persist as reusable credentials that you can reference by URI.
                 </p>
             </div>
 
@@ -533,77 +531,8 @@ const ConfigureStep: React.FC<{
                 onBuilderOpenChange={setIsBuilderOpen}
             />
 
-            {/* Partner Name */}
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Partner Name <span className="text-gray-400 font-normal">(Optional)</span></label>
-
-                <input
-                    type="text"
-                    value={partnerName}
-                    onChange={(e) => setPartnerName(e.target.value)}
-                    placeholder="Your company name"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    style={{ colorScheme: 'light' }}
-                />
-
-                <p className="text-xs text-gray-500 mt-1">
-                    Shown alongside your logo in the claim modal. Not included on the issued credential — the credential issuer is your account's verified identity.
-                </p>
-            </div>
-
-            {/* Partner Logo URL */}
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Partner Logo <span className="text-gray-400 font-normal">(Optional)</span></label>
-
-                <div className="flex gap-2">
-                    <input
-                        type="url"
-                        value={branding.partnerLogoUrl}
-                        onChange={(e) => setBranding({ ...branding, partnerLogoUrl: e.target.value })}
-                        placeholder="https://example.com/logo.png"
-                        className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                        disabled={isUploadingLogo}
-                        style={{ colorScheme: 'light' }}
-                    />
-
-                    <button
-                        type="button"
-                        onClick={() => handleLogoUpload()}
-                        disabled={isUploadingLogo}
-                        className="px-3 py-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
-                        title="Upload image"
-                    >
-                        {isUploadingLogo ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <Upload className="w-4 h-4" />
-                        )}
-                    </button>
-                </div>
-
-                {branding.partnerLogoUrl && (
-                    <img
-                        src={branding.partnerLogoUrl}
-                        alt="Logo preview"
-                        className="mt-2 h-12 object-contain rounded border border-gray-200"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
-                )}
-            </div>
-
-            {/* Advanced Options Toggle */}
-            <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-            >
-                {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                {showAdvanced ? 'Hide' : 'Show'} Branding & Advanced Options
-                {hasBranding && <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">Active</span>}
-            </button>
-
-            {/* Advanced Options Panel */}
-            {showAdvanced && (
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
+            {/* Branding & Advanced Options */}
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
                     {/* Branding Section */}
                     <div className="space-y-3">
                         <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
@@ -655,6 +584,64 @@ const ConfigureStep: React.FC<{
                             </div>
 
                         </div>
+
+                        {/* Partner Name */}
+                        <div className="pt-3 border-t border-gray-100">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Partner Name <span className="text-gray-400 font-normal">(Optional)</span></label>
+
+                            <input
+                                type="text"
+                                value={partnerName}
+                                onChange={(e) => setPartnerName(e.target.value)}
+                                placeholder="Your company name"
+                                className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                style={{ colorScheme: 'light' }}
+                            />
+
+                            <p className="text-xs text-gray-500 mt-1">
+                                Shown alongside your logo in the claim modal. Not included on the issued credential.
+                            </p>
+                        </div>
+
+                        {/* Partner Logo */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Partner Logo <span className="text-gray-400 font-normal">(Optional)</span></label>
+
+                            <div className="flex gap-2">
+                                <input
+                                    type="url"
+                                    value={branding.partnerLogoUrl}
+                                    onChange={(e) => setBranding({ ...branding, partnerLogoUrl: e.target.value })}
+                                    placeholder="https://example.com/logo.png"
+                                    className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    disabled={isUploadingLogo}
+                                    style={{ colorScheme: 'light' }}
+                                />
+
+                                <button
+                                    type="button"
+                                    onClick={() => handleLogoUpload()}
+                                    disabled={isUploadingLogo}
+                                    className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
+                                    title="Upload image"
+                                >
+                                    {isUploadingLogo ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Upload className="w-4 h-4" />
+                                    )}
+                                </button>
+                            </div>
+
+                            {branding.partnerLogoUrl && (
+                                <img
+                                    src={branding.partnerLogoUrl}
+                                    alt="Logo preview"
+                                    className="mt-2 h-12 object-contain rounded border border-gray-200"
+                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                />
+                            )}
+                        </div>
                     </div>
 
                     {/* Background Issuance Section */}
@@ -682,21 +669,7 @@ const ConfigureStep: React.FC<{
                         </label>
                     </div>
 
-                    {/* Color Preview */}
-                    <div className="pt-3 border-t border-gray-200">
-                        <p className="text-xs font-medium text-gray-600 mb-2">Button Preview</p>
-
-                        <div 
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-medium"
-                            style={{ 
-                                background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.accentColor} 100%)` 
-                            }}
-                        >
-                            Claim Credential
-                        </div>
-                    </div>
                 </div>
-            )}
 
             {/* Whitelisted Domains */}
             <div>
