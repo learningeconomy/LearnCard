@@ -34,6 +34,7 @@ export interface CredentialActivityRecord {
 }
 
 interface CredentialActivityStats {
+    totalEvents: number;
     total: number;
     created: number;
     delivered: number;
@@ -165,7 +166,10 @@ export interface IntegrationActivityResult {
     stats: {
         totalSent: number;
         totalClaimed: number;
-        totalIssued: number;
+        total: number;
+        totalEvents: number;
+        expired: number;
+        failed: number;
         pendingClaims: number;
         claimRate: number;
     };
@@ -195,7 +199,10 @@ export function useIntegrationActivity(
     const [stats, setStats] = useState<IntegrationActivityResult['stats']>({
         totalSent: 0,
         totalClaimed: 0,
-        totalIssued: 0,
+        total: 0,
+        totalEvents: 0,
+        expired: 0,
+        failed: 0,
         pendingClaims: 0,
         claimRate: 0,
     });
@@ -249,10 +256,13 @@ export function useIntegrationActivity(
                     const apiStats = statsResult as CredentialActivityStats;
 
                     setStats({
-                        totalSent: apiStats.delivered + apiStats.created,
+                        totalSent: apiStats.delivered + apiStats.created + apiStats.claimed,
                         totalClaimed: apiStats.claimed,
-                        totalIssued: apiStats.delivered + apiStats.created + apiStats.claimed,
-                        pendingClaims: apiStats.delivered + apiStats.created - apiStats.claimed,
+                        total: apiStats.total,
+                        totalEvents: apiStats.totalEvents,
+                        expired: apiStats.expired,
+                        failed: apiStats.failed,
+                        pendingClaims: apiStats.delivered + apiStats.created,
                         claimRate: apiStats.claimRate,
                     });
                 }

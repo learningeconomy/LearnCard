@@ -993,6 +993,7 @@ export const InboxCredentialValidator = z.object({
     webhookUrl: z.string().optional(),
     boostUri: z.string().optional(),
     activityId: z.string().optional(),
+    integrationId: z.string().optional(),
     signingAuthority: z
         .object({
             endpoint: z.string().optional(),
