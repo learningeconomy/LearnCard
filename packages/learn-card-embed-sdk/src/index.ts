@@ -389,14 +389,15 @@ function openModal(opts: InitOptions): { close: () => void } {
     // Completion
     if (!isTrustedMessage(data, nonce)) return;
     const details = (data as any).payload;
-    const baseWalletUrl = (opts.branding?.walletUrl || 'https://learncard.app').replace(/\/$/, '');
-    const handoffUrl = sessionJwt
-      ? `${baseWalletUrl}/auth/handoff?token=${encodeURIComponent(sessionJwt)}`
-      : baseWalletUrl;
+    const baseWalletUrl = opts.branding?.walletUrl ?? 'https://learncard.app';
+    const handoffUrl = baseWalletUrl && sessionJwt
+      ? `${baseWalletUrl.replace(/\/$/, '')}/auth/handoff?token=${encodeURIComponent(sessionJwt)}`
+      : baseWalletUrl || undefined;
     if (opts.onSuccess) {
-      // When onSuccess is provided, pass handoff URL and let consumer control redirect
       try { opts.onSuccess({ ...details, handoffUrl }); } catch {}
-    } else {
+    }
+    // Always open wallet unless walletUrl was explicitly set to empty string
+    if (handoffUrl) {
       window.open(handoffUrl, '_blank', 'noopener,noreferrer');
     }
     close();

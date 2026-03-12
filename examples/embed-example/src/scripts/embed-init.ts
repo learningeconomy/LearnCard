@@ -43,6 +43,7 @@ function main(): void {
     onSuccess: () => {
       const el = document.getElementById('success-msg');
       if (el) el.classList.add('show');
+      // SDK automatically opens walletUrl/auth/handoff?token=... in a new tab
     },
   });
 }

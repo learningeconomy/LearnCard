@@ -42,15 +42,14 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
                 publishableKey,
                 partnerName,
                 credential,
-                branding,
+                branding: { ...branding, walletUrl: '' },
                 requestBackgroundIssuance,
                 ...(apiBaseUrl ? { apiBaseUrl } : {}),
-                onSuccess: details => {
-                    console.log('Embed claim success:', details);
+                onSuccess: () => {
                     // Trigger inbox finalize so the claimed credential appears in the wallet
                     clearFinalizeCache();
                     autoVerifyStore.set.markVerifySuccess();
-                    // Open the local wallet (skip handoff token which requires backend verification)
+                    // Open the local wallet directly — walletUrl: '' suppresses SDK's auto-open
                     window.open(window.location.origin + '/wallet', '_blank', 'noopener,noreferrer');
                 },
             });
