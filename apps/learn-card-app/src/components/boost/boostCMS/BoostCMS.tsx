@@ -119,6 +119,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import BoostCMSMediaOptions from './boostCMSForms/boostCMSMedia/BoostCMSMediaOptions';
 import { extractSkillIdsFromAlignments } from '../alignmentHelpers';
+import { invalidateResumeBuilderCredentialQueries } from '../../resume-builder/resume-builder-query-helpers';
 
 const FamilyCMS = lazyWithRetry(() => import('../../familyCMS/FamilyCMS'));
 
@@ -164,7 +165,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
     const { newModal, closeModal } = useModal();
     const { mutateAsync: createBoost } = useCreateBoost();
-    const { mutate: addCredentialToWallet } = useAddCredentialToWallet();
+    const { mutateAsync: addCredentialToWallet } = useAddCredentialToWallet();
 
     const [search, setSearch] = useState<string>('');
     const { data: boostAppearanceBadgeList, isLoading: stylePackLoading } =
@@ -860,6 +861,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                             );
 
                             await addCredentialToWallet({ uri: issuedVcUri });
+                            await invalidateResumeBuilderCredentialQueries(queryClient);
                             return issuedVcUri;
                         }
 

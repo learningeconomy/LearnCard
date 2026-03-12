@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { IonCol, IonContent, IonGrid, IonPage, IonRow, useIonModal } from '@ionic/react';
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
@@ -77,6 +78,7 @@ import BoostIDCardCMSMembersForm from './BoostIDCardCMS/BoostIDCardCMSForms/Boos
 import BoostCMSDisplayTypeSelector from './boostCMSForms/boostCMSAppearance/BoostCMSDisplayTypeSelector';
 import BoostCMSSkillsAttachmentForm from './boostCMSForms/boostCMSSkills/BoostSkillAttachmentsForm';
 import BoostFrameworkSkillSelector from './boostCMSForms/boostCMSSkills/BoostFrameworkSkillSelector';
+import { invalidateResumeBuilderCredentialQueries } from '../../resume-builder/resume-builder-query-helpers';
 
 const UpdateBoostCMS: React.FC = () => {
     const history = useHistory();
@@ -84,6 +86,7 @@ const UpdateBoostCMS: React.FC = () => {
     const query = usePathQuery();
 
     const { track } = useAnalytics();
+    const queryClient = useQueryClient();
 
     const { initWallet, addVCtoWallet } = useWallet();
     const { presentToast } = useToast();
@@ -543,6 +546,7 @@ const UpdateBoostCMS: React.FC = () => {
                                 sentBoost
                             );
                             await addVCtoWallet({ uri: issuedVcUri });
+                            await invalidateResumeBuilderCredentialQueries(queryClient);
                             return issuedVcUri;
                         }
 

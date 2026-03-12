@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { LCNProfile } from '@learncard/types';
+import { useQueryClient } from '@tanstack/react-query';
 
 import useWallet from 'learn-card-base/hooks/useWallet';
 
@@ -11,12 +12,14 @@ import {
     addBoostSomeone,
     updateBoostStatus,
 } from '../boostHelpers';
+import { invalidateResumeBuilderCredentialQueries } from '../../resume-builder/resume-builder-query-helpers';
 
 import { LCNBoostStatusEnum } from '../boost';
 
 const useBoost = (history: RouteComponentProps['history']) => {
     const { initWallet, addVCtoWallet } = useWallet();
     const { presentToast } = useToast();
+    const queryClient = useQueryClient();
     const [loading, setIsLoading] = useState(false);
 
     const boostSomeoneElse = async (issueTo: LCNProfile[], wallet: any, boostUri: string) => {
@@ -87,6 +90,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
 
             const vcUri = await sendAndSaveBoostCredentialSelf(wallet, profileId, boostUri);
             await addVCtoWallet({ uri: vcUri });
+            await invalidateResumeBuilderCredentialQueries(queryClient);
             setIsLoading(false);
             presentToast('Boost issued successfully', {
                 duration: 3000,
