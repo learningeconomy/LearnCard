@@ -139,22 +139,23 @@ sequenceDiagram
     participant User
     participant Modal as Claim Modal
     participant API as LearnCard API
-    participant Wallet as User's Wallet
+    participant Wallet as User Wallet
 
-    User->>Modal: Clicks "Claim Credential"
-    Modal->>User: Shows Email View (progress step 1)
+    User->>Modal: Clicks Claim Credential
+    Note over Modal: Step 1 — Email View
     User->>Modal: Enters email address
-    Modal->>API: Request OTP challenge
-    API-->>User: Sends OTP to email
-    Modal->>User: Shows OTP View (progress step 2)
+    Modal->>API: POST /contact-methods/challenge
+    API-->>User: OTP sent to email
+    Note over Modal: Step 2 — OTP View
     User->>Modal: Enters 6-digit code
-    Modal->>API: Verify OTP → receive session JWT
-    Modal->>User: Shows Accept View — credential preview
-    User->>Modal: Clicks "Accept Credential"
-    Modal->>API: POST /inbox/claim with session JWT
-    API->>Wallet: Issue credential → store in InboxCredential
-    Modal->>User: Shows Success View — confetti + checkmark
-    User->>Wallet: "View My LearnCard" → opens wallet
+    Modal->>API: POST /contact-methods/verify
+    API-->>Modal: Session JWT
+    Note over Modal: Step 3 — Accept View
+    User->>Modal: Clicks Accept Credential
+    Modal->>API: POST /inbox/claim with JWT
+    API->>Wallet: Issue and store credential
+    Note over Modal: Success — confetti + checkmark
+    Modal->>User: View My LearnCard button
 ```
 
 ## Whitelisted Domains

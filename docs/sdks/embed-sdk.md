@@ -49,43 +49,29 @@ Clicking the rendered button opens the claim modal. The user enters their email,
 ```mermaid
 sequenceDiagram
     participant Site as Partner Site
-    participant SDK as Embed SDK (parent)
-    participant IFrame as Claim Modal (sandboxed iframe)
-    participant API as LearnCard Network API
+    participant SDK as Embed SDK
+    participant Modal as Claim Modal
+    participant API as LCN API
     participant LCN as LearnCard Network
 
-    Site->>SDK: init({ publishableKey, target, credential })
-    SDK->>Site: Renders "Claim Credential" button in target element
-
-    Note over Site: User clicks button
-
-    SDK->>IFrame: Opens modal via srcdoc (sandboxed iframe)
-    IFrame-->>SDK: Ready
-
-    Note over IFrame: Email View — user enters email
-
-    IFrame->>SDK: postMessage({ type: 'lc-embed:email-submit', email })
-    SDK->>API: POST /contact-methods/challenge { publishableKey, email }
-    API-->>SDK: 200 OK (OTP sent to email)
-    SDK-->>IFrame: postMessage({ type: 'lc-embed:email-result', ok: true })
-
-    Note over IFrame: OTP View — user enters 6-digit code
-
-    IFrame->>SDK: postMessage({ type: 'lc-embed:otp-verify', email, code })
-    SDK->>API: POST /contact-methods/verify { publishableKey, email, code }
-    API-->>SDK: { jwt: "session token" }
-    SDK-->>IFrame: postMessage({ type: 'lc-embed:otp-result', ok: true })
-
-    Note over IFrame: Accept View — user reviews credential and accepts
-
-    IFrame->>SDK: postMessage({ type: 'lc-embed:complete', credentialId, handoffUrl })
-    SDK->>API: POST /inbox/claim { credential, jwt }
-    API->>LCN: Issue credential via Signing Authority → store in user's InboxCredential
-    API-->>SDK: { credentialId, handoffUrl }
-    SDK-->>IFrame: postMessage success
-    SDK->>Site: onSuccess({ credentialId, consentGiven, handoffUrl })
-
-    Note over IFrame: Success View — confetti + checkmark animation
+    Site->>SDK: init(publishableKey, target, credential)
+    SDK->>Site: Renders claim button in target element
+    Site->>Modal: User clicks — modal opens via srcdoc iframe
+    Note over Modal: Step 1 — Email View
+    Modal->>SDK: postMessage email address
+    SDK->>API: POST /contact-methods/challenge
+    API-->>Site: OTP sent to user email
+    Note over Modal: Step 2 — OTP View
+    Modal->>SDK: postMessage OTP code
+    SDK->>API: POST /contact-methods/verify
+    API-->>SDK: session JWT
+    Note over Modal: Step 3 — Accept View
+    Modal->>SDK: postMessage accepted
+    SDK->>API: POST /inbox/claim with JWT
+    API->>LCN: Issue via Signing Authority and store
+    API-->>SDK: credentialId and handoffUrl
+    SDK->>Site: onSuccess callback fires
+    Note over Modal: Success — confetti and checkmark
 ```
 
 ### Architecture Details
