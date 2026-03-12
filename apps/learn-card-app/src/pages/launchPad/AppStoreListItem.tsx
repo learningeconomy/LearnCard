@@ -14,6 +14,7 @@ import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 import AiTutorConnectedView from './AiTutorConnectedView';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
+import { checkAppInstallEligibility } from '@learncard/helpers';
 
 type AppStoreListItemProps = {
     listing: AppStoreListing | InstalledApp;
@@ -55,16 +56,26 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     const { initWallet } = useWallet();
 
     // Guardian gate for child profiles
-    const { userAge } = useGuardianGate();
+    const { userAge, isChildProfile } = useGuardianGate();
 
     // Separate min_age (hard block) from age_rating (soft block with guardian approval)
     const listingAny = listing as any;
     const minAge: number | undefined = listingAny.min_age;
+    const ageRating: string | undefined = listingAny.age_rating;
 
     // Hard block: min_age violation (hide app entirely, block installation)
     // Only applies when userAge is known
-    const isHardBlocked =
-        userAge !== null && minAge !== undefined && minAge > 0 && userAge < minAge;
+    const isHardBlocked = useMemo(
+        () =>
+            checkAppInstallEligibility({
+                isChildProfile,
+                userAge,
+                minAge,
+                ageRating,
+                hasContract: Boolean(contractUri),
+            }).action === 'hard_blocked',
+        [ageRating, contractUri, isChildProfile, minAge, userAge]
+    );
 
     // Show age restriction blocked modal
     const showAgeBlockedModal = () => {
