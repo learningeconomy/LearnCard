@@ -10,6 +10,7 @@ import ResumeBuilderToggle from '../ResumeBuilderToggle';
 import {
     PersonalDetails,
     UserInfoEnum,
+    formatPhoneNumberForDisplay,
     getLinkedInHandle,
     resumeUserInfo,
 } from '../resume-builder.helpers';
@@ -54,7 +55,9 @@ const ResumePreviewUserInfo: React.FC = () => {
 
     const exportContactItems = [
         isFieldVisible(UserInfoEnum.Email) ? personalDetails.email : '',
-        isFieldVisible(UserInfoEnum.Phone) ? personalDetails.phone : '',
+        isFieldVisible(UserInfoEnum.Phone)
+            ? formatPhoneNumberForDisplay(personalDetails.phone)
+            : '',
         isFieldVisible(UserInfoEnum.Website) ? personalDetails.website : '',
         isFieldVisible(UserInfoEnum.LinkedIn)
             ? `linkedin.com/in/${getLinkedInHandle(personalDetails.linkedIn)}`

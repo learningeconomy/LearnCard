@@ -128,3 +128,29 @@ export const getLinkedInHandle = (value: string): string => {
 
     return lastSegment || cleaned;
 };
+
+export const formatPhoneNumberForDisplay = (value: string): string => {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+
+    const extensionMatch = trimmed.match(/(?:ext\.?|x)\s*(\d+)$/i);
+    const extension = extensionMatch?.[1];
+    const withoutExtension = extensionMatch
+        ? trimmed.slice(0, extensionMatch.index).trim()
+        : trimmed;
+
+    const digits = withoutExtension.replace(/\D/g, '');
+    let formatted = trimmed;
+
+    if (digits.length === 10) {
+        formatted = `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+    } else if (digits.length === 11 && digits.startsWith('1')) {
+        formatted = `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7, 11)}`;
+    }
+
+    if (extension && formatted !== trimmed) {
+        formatted = `${formatted} x${extension}`;
+    }
+
+    return formatted;
+};
