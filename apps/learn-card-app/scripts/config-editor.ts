@@ -14,7 +14,7 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
-import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync, rmSync } from 'fs';
 import { resolve, dirname, join, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { exec, spawn } from 'child_process';
@@ -602,21 +602,79 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
             return;
         }
 
-        const themeSourceMatch = path.match(/^\/api\/themes\/([a-zA-Z0-9_-]+)\/source$/);
+        // Serve theme asset images
+        const themeAssetMatch = path.match(/^\/api\/themes\/([a-zA-Z0-9_-]+)\/assets\/(.+)$/);
 
-        if (themeSourceMatch && req.method === 'GET') {
-            const themeId = themeSourceMatch[1]!;
-            const themeJsonPath = join(THEME_SCHEMAS_DIR, themeId, 'theme.json');
+        if (themeAssetMatch && req.method === 'GET') {
+            const themeId = themeAssetMatch[1]!;
+            const fileName = themeAssetMatch[2]!;
 
-            if (!existsSync(themeJsonPath)) {
-                json(res, 404, { error: `Theme '${themeId}' not found` });
+            if (fileName.includes('..')) {
+                res.writeHead(400, { 'Content-Type': 'text/plain' });
+                res.end('Bad request');
                 return;
             }
 
-            const themeConfig = readFileSync(themeJsonPath, 'utf-8');
+            const fullPath = join(THEME_SCHEMAS_DIR, themeId, 'assets', fileName);
 
-            json(res, 200, { themeId, config: JSON.parse(themeConfig) });
+            if (!existsSync(fullPath) || !statSync(fullPath).isFile()) {
+                res.writeHead(404, { 'Content-Type': 'text/plain' });
+                res.end('Asset not found');
+                return;
+            }
+
+            const ext = extname(fullPath).toLowerCase();
+            const mime = MIME_TYPES[ext] ?? 'application/octet-stream';
+
+            res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': 'no-cache' });
+            res.end(readFileSync(fullPath));
             return;
+        }
+
+        // CRUD for individual themes: GET / PUT / DELETE
+        const themeMatch = path.match(/^\/api\/themes\/([a-zA-Z0-9_-]+)$/);
+
+        if (themeMatch) {
+            const themeId = themeMatch[1]!;
+            const themeDir = join(THEME_SCHEMAS_DIR, themeId);
+            const themeJsonPath = join(themeDir, 'theme.json');
+
+            if (req.method === 'GET') {
+                if (!existsSync(themeJsonPath)) {
+                    json(res, 404, { error: `Theme '${themeId}' not found` });
+                    return;
+                }
+
+                json(res, 200, JSON.parse(readFileSync(themeJsonPath, 'utf-8')));
+                return;
+            }
+
+            if (req.method === 'PUT') {
+                const body = JSON.parse(await readBody(req));
+
+                // Ensure the folder + assets dir exist
+                if (!existsSync(themeDir)) {
+                    mkdirSync(join(themeDir, 'assets'), { recursive: true });
+                }
+
+                // Always force id to match folder name
+                body.id = themeId;
+
+                writeFileSync(themeJsonPath, JSON.stringify(body, null, 4) + '\n', 'utf-8');
+                json(res, 200, { saved: true, themeId, config: body });
+                return;
+            }
+
+            if (req.method === 'DELETE') {
+                if (!existsSync(themeDir)) {
+                    json(res, 404, { error: `Theme '${themeId}' not found` });
+                    return;
+                }
+
+                rmSync(themeDir, { recursive: true, force: true });
+                json(res, 200, { deleted: true, themeId });
+                return;
+            }
         }
 
         // --- Tenant API routes ---
