@@ -6,7 +6,7 @@
 /// <reference path="./ambient.d.ts" />
 
 import islandScript from './iframe/island-vanilla.js';
-import { createGlobalStyleEl, iframeCss } from './styles';
+import { createGlobalStyleEl, iframeCss, DEFAULT_PRIMARY, DEFAULT_LOGO_URL, darkenHex, hexToRgbString } from './styles';
 import { getTargetEl } from './dom';
 import { createNonce } from './security';
 import type { InitOptions, KnownMessages, EmailSubmitResult, OtpVerifyResult } from './types';
@@ -58,18 +58,22 @@ function buildIframeHtml(
   loggedInEmail?: string
 ): string {
   const partnerLabel = escapeHtml(opts.partnerName || 'Partner');
-  const primary = (opts.branding?.primaryColor || opts.theme?.primaryColor || '#1F51FF');
-  const accent = (opts.branding?.accentColor || '#0F3BD9');
+  const primary = (opts.branding?.primaryColor || opts.theme?.primaryColor || DEFAULT_PRIMARY);
+  const accent = (opts.branding?.accentColor || darkenHex(primary, 0.2));
   const credName = escapeHtml(opts.credential?.name || 'Credential');
   const showConsent = !!opts.requestBackgroundIssuance;
   const csp = "default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'";
 
+  const logoUrl = opts.branding?.logoUrl || DEFAULT_LOGO_URL;
   const cfg = {
     partnerLabel,
+    partnerName: opts.partnerName || '',
     credentialName: credName,
     showConsent,
     nonce,
     parentOrigin,
+    logoUrl,
+    primaryColor: primary,
     ...(loggedInEmail ? { loggedInEmail } : {}),
   } as const;
 
@@ -102,31 +106,39 @@ function openModal(opts: InitOptions): { close: () => void } {
 
   const brand = document.createElement('div');
   brand.className = 'lc-brand';
-  brand.setAttribute('aria-label', `LearnCard × ${(opts.partnerName || 'Partner')}`);
-  const logos = document.createElement('div');
-  logos.className = 'lc-brand-logos';
-  const brandText = document.createElement('span');
-  brandText.textContent = `LearnCard × ${(opts.partnerName || 'Partner')}`;
-  const lcLogoUrl = opts.branding?.logoUrl;
+
+  // LC logo (always shown)
+  const lcLogoUrl = opts.branding?.logoUrl || DEFAULT_LOGO_URL;
+  const lcImg = document.createElement('img');
+  lcImg.alt = 'LearnCard';
+  lcImg.referrerPolicy = 'no-referrer';
+  lcImg.decoding = 'async';
+  lcImg.src = lcLogoUrl;
+  brand.appendChild(lcImg);
+
+  // Separator
+  const sep = document.createElement('span');
+  sep.className = 'lc-sep';
+  sep.textContent = '\u00d7';
+  brand.appendChild(sep);
+
+  // Partner: logo if available, otherwise text
   const partnerLogoUrl = opts.branding?.partnerLogoUrl;
-  if (lcLogoUrl) {
-    const img = document.createElement('img');
-    img.alt = 'LearnCard';
-    img.referrerPolicy = 'no-referrer';
-    img.decoding = 'async';
-    img.src = lcLogoUrl;
-    logos.appendChild(img);
-  }
   if (partnerLogoUrl) {
-    const img = document.createElement('img');
-    img.alt = (opts.partnerName || 'Partner');
-    img.referrerPolicy = 'no-referrer';
-    img.decoding = 'async';
-    img.src = partnerLogoUrl;
-    logos.appendChild(img);
+    const pImg = document.createElement('img');
+    pImg.className = 'lc-partner-logo';
+    pImg.alt = opts.partnerName || 'Partner';
+    pImg.referrerPolicy = 'no-referrer';
+    pImg.decoding = 'async';
+    pImg.src = partnerLogoUrl;
+    brand.appendChild(pImg);
+  } else {
+    const pText = document.createElement('span');
+    pText.textContent = opts.partnerName || 'Partner';
+    brand.appendChild(pText);
   }
-  brand.appendChild(logos);
-  brand.appendChild(brandText);
+
+  brand.setAttribute('aria-label', `LearnCard \u00d7 ${opts.partnerName || 'Partner'}`);
 
   const closeBtn = document.createElement('button');
   closeBtn.className = 'lc-close';
