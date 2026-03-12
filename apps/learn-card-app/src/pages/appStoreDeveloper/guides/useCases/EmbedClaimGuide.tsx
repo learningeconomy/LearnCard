@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
-import { useToast, useFilestack, ToastTypeEnum, useGetCurrentLCNUser } from 'learn-card-base';
+import { useWallet, useToast, useFilestack, ToastTypeEnum, useGetCurrentLCNUser } from 'learn-card-base';
 import { LEARNCARD_NETWORK_API_URL } from 'learn-card-base/constants/Networks';
 import { Clipboard } from '@capacitor/clipboard';
 
@@ -1007,14 +1007,9 @@ const TestStep: React.FC<{
 
 // Main component
 const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedIntegration }) => {
-    const { useUpdateIntegration, useListingsForIntegration, useCreateListing } = useDeveloperPortal();
+    const { useUpdateIntegration } = useDeveloperPortal();
     const updateIntegrationMutation = useUpdateIntegration();
-    const {
-        data: listings,
-        isLoading: isLoadingListings,
-        refetch: refetchListings,
-    } = useListingsForIntegration(selectedIntegration?.id || null);
-    const createListingMutation = useCreateListing();
+    const { initWallet } = useWallet();
 
     // Ensure guideType is set to 'embed-claim' when entering this guide
     useEffect(() => {
@@ -1025,6 +1020,23 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
             });
         }
     }, [selectedIntegration?.id, selectedIntegration?.guideType]);
+
+    // Ensure a signing authority exists so credential issuance works
+    useEffect(() => {
+        const ensureSigningAuthority = async () => {
+            const wallet = await initWallet();
+            const existing = await wallet.invoke.getRegisteredSigningAuthorities();
+            if (existing && existing.length > 0) return;
+
+            const saName = `sa-${Date.now().toString(36)}`;
+            const authority = await wallet.invoke.createSigningAuthority(saName);
+            if (!authority?.endpoint || !authority?.name || !authority?.did) return;
+
+            await wallet.invoke.registerSigningAuthority(authority.endpoint, authority.name, authority.did);
+            await wallet.invoke.setPrimaryRegisteredSigningAuthority(authority.endpoint, authority.name);
+        };
+        ensureSigningAuthority().catch(console.error);
+    }, []);
 
     const guideState = useGuideState('embed-claim', STEPS.length, selectedIntegration);
 
@@ -1098,30 +1110,6 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
             }
         } catch {}
     }, [guideState.currentStep, selectedIntegration?.id, apiBaseUrl]);
-
-    // Auto-create a listing for this integration if none exists.
-    // The inbox.claim route requires a listing to determine signing authority.
-    useEffect(() => {
-        if (!selectedIntegration) return;
-        if (isLoadingListings) return;
-        if (listings && listings.length > 0) return;
-        if (createListingMutation.isPending) return;
-
-        createListingMutation.mutate(
-            {
-                integrationId: selectedIntegration.id,
-                listing: {
-                    display_name: selectedIntegration.name || 'Embed Claim',
-                    tagline: `${selectedIntegration.name || 'Embed Claim'} - Embedded credential claim`,
-                    full_description: `Auto-created listing for embed claim integration.`,
-                    icon_url: 'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb',
-                    launch_type: 'EMBEDDED_IFRAME',
-                    launch_config_json: JSON.stringify({ url: '' }),
-                },
-            },
-            { onSuccess: () => refetchListings() }
-        );
-    }, [selectedIntegration?.id, isLoadingListings, listings?.length]);
 
     const [isTransitioning, setIsTransitioning] = useState(false);
     const guideTopRef = useRef<HTMLDivElement>(null);

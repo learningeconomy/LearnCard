@@ -107,6 +107,7 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
                 showEmbedConfig: true,
                 showTemplates: true,
                 showBranding: false,
+                showSigningAuthority: true,
             };
 
         case 'embed-app':

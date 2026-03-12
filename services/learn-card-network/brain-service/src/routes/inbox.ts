@@ -39,6 +39,8 @@ import {
     getPrimarySigningAuthorityForListing,
     getSigningAuthoritiesForListingByName,
     getSigningAuthorityForUserByName,
+    getPrimarySigningAuthorityForIntegration,
+    getPrimarySigningAuthorityForUser,
 } from '@accesslayer/signing-authority/relationships/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 import {
@@ -502,34 +504,35 @@ export const inboxRouter = t.router({
                 }
             } else {
                 const listings = await getListingsForIntegration(integration.id, { limit: 2 });
-                if (!listings.length) {
-                    throw new TRPCError({
-                        code: 'NOT_FOUND',
-                        message: 'No listings found for this integration',
-                    });
+                if (listings.length === 1) {
+                    listing = listings[0] ?? null;
                 }
-                if (listings.length > 1) {
-                    throw new TRPCError({
-                        code: 'BAD_REQUEST',
-                        message:
-                            'Multiple listings found. Provide listingId or listingSlug in configuration.',
-                    });
-                }
-                listing = listings[0] ?? null;
+                // 0 or >1 listings: listing stays null, fall through to SA fallback
             }
 
-            if (!listing) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found' });
+            let signingAuthorityRel;
+
+            if (listing) {
+                signingAuthorityRel = configuration?.signingAuthorityName
+                    ? (
+                          await getSigningAuthoritiesForListingByName(
+                              listing,
+                              configuration.signingAuthorityName.toLowerCase()
+                          )
+                      ).at(0)
+                    : await getPrimarySigningAuthorityForListing(listing);
             }
 
-            const signingAuthorityRel = configuration?.signingAuthorityName
-                ? (
-                      await getSigningAuthoritiesForListingByName(
-                          listing,
-                          configuration.signingAuthorityName.toLowerCase()
-                      )
-                  ).at(0)
-                : await getPrimarySigningAuthorityForListing(listing);
+            if (!signingAuthorityRel) {
+                signingAuthorityRel = await getPrimarySigningAuthorityForIntegration(integration.id);
+            }
+
+            if (!signingAuthorityRel) {
+                const owner = await getOwnerProfileForIntegration(integration.id);
+                if (owner) {
+                    signingAuthorityRel = await getPrimarySigningAuthorityForUser(owner);
+                }
+            }
 
             if (!signingAuthorityRel)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Signing Authority not found' });
@@ -620,7 +623,7 @@ export const inboxRouter = t.router({
                     activityId,
                 },
                 ctx,
-                listing.slug
+                listing?.slug
             );
 
             return {
