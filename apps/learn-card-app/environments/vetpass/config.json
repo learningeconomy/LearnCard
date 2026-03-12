@@ -30,7 +30,7 @@
     "branding": {
         "name": "VetPass",
         "shortName": "VP",
-        "defaultTheme": "formal",
+        "defaultTheme": "vetpass",
         "loginRedirectPath": "/waitingsofa?loginCompleted=true",
         "brandingKey": "vetpass",
         "headerText": "VETPASS",

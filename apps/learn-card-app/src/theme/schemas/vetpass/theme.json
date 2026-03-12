@@ -1,0 +1,31 @@
+{
+    "id": "vetpass",
+    "displayName": "VetPass",
+    "extends": "formal",
+    "colors": {
+        "navbar": {
+            "syncingColor": "red-500",
+            "completedColor": "red-600"
+        },
+        "sideMenu": {
+            "primaryButtonColor": "bg-orange-500 !text-violet-500 border-slate-800",
+            "secondaryButtonColor": "bg-teal-500 text-white border-blue-500"
+        },
+        "defaults": {
+            "primaryColor": "purple-400"
+        },
+        "launchPad": {
+            "contacts": {
+                "color": "red-700"
+            },
+            "alerts": {
+                "indicatorBgColor": "bg-yellow-500",
+                "indicatorTextColor": "text-white",
+                "color": "yellow"
+            }
+        },
+        "introSlides": {
+            "secondSlideBackground": "slate-600"
+        }
+    }
+}

@@ -19,6 +19,8 @@ import { resolve, dirname, join, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { exec, spawn } from 'child_process';
 
+import { z } from 'zod';
+
 import { tenantConfigSchema } from 'learn-card-base/src/config/tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/src/config/tenantDefaults';
 
@@ -101,6 +103,197 @@ const computeOverrides = (
     }
 
     return overrides;
+};
+
+// ---------------------------------------------------------------------------
+// Theme JSON validation (Zod schema for the raw theme.json input format)
+// ---------------------------------------------------------------------------
+
+// Category keys that appear in theme.json (camelCase enum keys from CredentialCategoryEnum)
+const VALID_CATEGORY_KEYS = new Set([
+    'socialBadge', 'achievement', 'accomplishment', 'accommodation',
+    'workHistory', 'experience', 'learningHistory', 'course',
+    'skill', 'events', 'family', 'relationship',
+    'meritBadge', 'troops', 'globalAdminId', 'nationalNetworkAdminId',
+    'troopLeaderId', 'scoutId', 'aiSummary', 'aiTopic', 'aiPathway',
+    'aiInsight', 'aiAssessment', 'membership', 'goals', 'id', 'currency',
+]);
+
+const CategoryColorFieldSchema = z.object({
+    primaryColor: z.string().optional(),
+    secondaryColor: z.string().optional(),
+    indicatorColor: z.string().optional(),
+    borderColor: z.string().optional(),
+    statusBarColor: z.string().optional(),
+    headerBrandingTextColor: z.string().optional(),
+    headerTextColor: z.string().optional(),
+    backgroundPrimaryColor: z.string().optional(),
+    backgroundSecondaryColor: z.string().optional(),
+    tabActiveColor: z.string().optional(),
+}).strict();
+
+const SpilledCupSchema = z.object({
+    backsplash: z.string(),
+    spill: z.string(),
+    cupOutline: z.string(),
+}).strict();
+
+const LaunchPadItemSchema = z.object({
+    color: z.string().optional(),
+    indicatorTextColor: z.string().optional(),
+    indicatorBgColor: z.string().optional(),
+}).strict();
+
+const RawThemeColorsSchema = z.object({
+    categoryBase: CategoryColorFieldSchema.optional(),
+    categories: z.record(z.string(), CategoryColorFieldSchema).optional(),
+
+    launchPad: z.object({
+        contacts: LaunchPadItemSchema.optional(),
+        aiSessions: LaunchPadItemSchema.optional(),
+        alerts: LaunchPadItemSchema.optional(),
+        buttons: z.object({
+            connected: z.string().optional(),
+            unconnected: z.string().optional(),
+        }).optional(),
+    }).optional(),
+
+    sideMenu: z.object({
+        linkActiveColor: z.string().optional(),
+        linkInactiveColor: z.string().optional(),
+        linkActiveBackgroundColor: z.string().optional(),
+        linkInactiveBackgroundColor: z.string().optional(),
+        primaryButtonColor: z.string().optional(),
+        secondaryButtonColor: z.string().optional(),
+        indicatorColor: z.string().optional(),
+        syncingColor: z.string().optional(),
+        completedColor: z.string().optional(),
+    }).optional(),
+
+    navbar: z.object({
+        activeColor: z.string().optional(),
+        inactiveColor: z.string().optional(),
+        syncingColor: z.string().optional(),
+        completedColor: z.string().optional(),
+    }).optional(),
+
+    introSlides: z.object({
+        firstSlideBackground: z.string().optional(),
+        secondSlideBackground: z.string().optional(),
+        thirdSlideBackground: z.string().optional(),
+        textColors: z.object({ primary: z.string(), secondary: z.string() }).optional(),
+        pagination: z.object({ primary: z.string(), secondary: z.string() }).optional(),
+    }).optional(),
+
+    placeholderBase: z.object({ spilledCup: SpilledCupSchema }).optional(),
+    placeholders: z.record(z.string(), z.object({ spilledCup: SpilledCupSchema }).optional()).optional(),
+
+    defaults: z.object({
+        primaryColor: z.string().optional(),
+        primaryColorShade: z.string().optional(),
+        loaders: z.array(z.string()).optional(),
+    }).optional(),
+}).strict();
+
+const RawThemeStylesSchema = z.object({
+    wallet: z.object({
+        cardStyles: z.string(),
+        iconStyles: z.string(),
+    }).optional(),
+    launchPad: z.object({
+        textStyles: z.string(),
+        iconStyles: z.string(),
+        indicatorStyles: z.string().optional(),
+    }).optional(),
+    defaults: z.object({
+        tabs: z.object({ borderRadius: z.string() }).optional(),
+    }).optional(),
+}).strict();
+
+const RawThemeConfigSchema = z.object({
+    id: z.string(),
+    displayName: z.string().min(1, 'displayName must not be empty'),
+    extends: z.string().optional(),
+    iconSet: z.string().optional(),
+    defaults: z.object({
+        viewMode: z.enum(['grid', 'list']).optional(),
+    }).optional(),
+    colors: RawThemeColorsSchema.optional(),
+    styles: RawThemeStylesSchema.optional(),
+}).strict();
+
+interface ThemeValidationResult {
+    valid: boolean;
+    errors: { path: string; message: string }[];
+    warnings: { path: string; message: string }[];
+}
+
+const validateThemeConfig = (config: unknown): ThemeValidationResult => {
+    const errors: { path: string; message: string }[] = [];
+    const warnings: { path: string; message: string }[] = [];
+
+    // 1. Structural + type validation via Zod
+    const result = RawThemeConfigSchema.safeParse(config);
+
+    if (!result.success) {
+        for (const issue of result.error.issues) {
+            errors.push({
+                path: issue.path.join('.'),
+                message: issue.message,
+            });
+        }
+    }
+
+    // 2. Semantic warnings (valid structure but questionable values)
+    if (typeof config === 'object' && config !== null) {
+        const obj = config as Record<string, unknown>;
+
+        // Check category keys in colors.categories
+        const categories = (obj.colors as Record<string, unknown>)?.categories as Record<string, unknown> | undefined;
+
+        if (categories && typeof categories === 'object') {
+            for (const key of Object.keys(categories)) {
+                if (!VALID_CATEGORY_KEYS.has(key)) {
+                    warnings.push({
+                        path: `colors.categories.${key}`,
+                        message: `Unknown category key "${key}" — not in CredentialCategoryEnum`,
+                    });
+                }
+            }
+        }
+
+        // Check placeholders keys
+        const placeholders = (obj.colors as Record<string, unknown>)?.placeholders as Record<string, unknown> | undefined;
+
+        if (placeholders && typeof placeholders === 'object') {
+            for (const key of Object.keys(placeholders)) {
+                if (key !== 'defaults' && !VALID_CATEGORY_KEYS.has(key)) {
+                    warnings.push({
+                        path: `colors.placeholders.${key}`,
+                        message: `Unknown placeholder category "${key}"`,
+                    });
+                }
+            }
+        }
+
+        // Check extends references an existing theme
+        if (obj.extends && typeof obj.extends === 'string') {
+            const parentDir = join(THEME_SCHEMAS_DIR, obj.extends);
+
+            if (!existsSync(join(parentDir, 'theme.json'))) {
+                warnings.push({
+                    path: 'extends',
+                    message: `Parent theme "${obj.extends}" not found on disk`,
+                });
+            }
+        }
+    }
+
+    return {
+        valid: errors.length === 0,
+        errors,
+        warnings,
+    };
 };
 
 // ---------------------------------------------------------------------------
@@ -605,6 +798,14 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
             return;
         }
 
+        if (path === '/api/validate-theme' && req.method === 'POST') {
+            const body = JSON.parse(await readBody(req));
+            const validation = validateThemeConfig(body);
+
+            json(res, 200, validation);
+            return;
+        }
+
         // Serve theme asset images
         const themeAssetMatch = path.match(/^\/api\/themes\/([a-zA-Z0-9_-]+)\/assets\/(.+)$/);
 
@@ -655,16 +856,25 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
             if (req.method === 'PUT') {
                 const body = JSON.parse(await readBody(req));
 
+                // Always force id to match folder name
+                body.id = themeId;
+
+                // Validate before saving
+                const validation = validateThemeConfig(body);
+
                 // Ensure the folder + assets dir exist
                 if (!existsSync(themeDir)) {
                     mkdirSync(join(themeDir, 'assets'), { recursive: true });
                 }
 
-                // Always force id to match folder name
-                body.id = themeId;
+                // Save even with warnings, but block on errors
+                if (!validation.valid) {
+                    json(res, 400, { saved: false, themeId, validation });
+                    return;
+                }
 
                 writeFileSync(themeJsonPath, JSON.stringify(body, null, 4) + '\n', 'utf-8');
-                json(res, 200, { saved: true, themeId, config: body });
+                json(res, 200, { saved: true, themeId, config: body, validation });
                 return;
             }
 

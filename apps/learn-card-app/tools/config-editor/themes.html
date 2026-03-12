@@ -28,7 +28,7 @@
         body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; }
         .fade-in { animation: fadeIn .15s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-        .swatch { width: 28px; height: 28px; border-radius: 6px; border: 2px solid #e2e8f0; flex-shrink: 0; cursor: pointer; transition: box-shadow .15s; }
+        .swatch { width: 28px; height: 28px; border-radius: 6px; border: 2px solid #e2e8f0; flex-shrink: 0; cursor: pointer; transition: box-shadow .15s; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .swatch:hover { box-shadow: 0 0 0 3px rgba(99,102,241,.3); }
         .color-grid-cell { width: 32px; height: 32px; border-radius: 6px; cursor: pointer; transition: transform .1s, box-shadow .1s; position: relative; }
         .color-grid-cell:hover { transform: scale(1.2); z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
@@ -59,7 +59,13 @@
         .btn:disabled { opacity: .5; cursor: not-allowed; }
         .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 500; color: white; z-index: 9999; animation: fadeIn .2s ease-out; }
         .picker-overlay { position: fixed; inset: 0; z-index: 100; }
-        .picker-popup { position: fixed; z-index: 101; background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.2); padding: 16px; width: 420px; max-height: 480px; overflow-y: auto; }
+        .picker-popup { position: fixed; z-index: 101; background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.2); padding: 16px; width: 440px; max-height: 560px; overflow-y: auto; }
+        .channel-tab { padding: 5px 10px; font-size: 11px; font-weight: 600; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: #64748b; transition: all .15s; }
+        .channel-tab:hover { background: #f1f5f9; color: #334155; }
+        .channel-tab.active { border-color: #6366f1; background: #eef2ff; color: #4f46e5; }
+        .channel-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+        .channel-chip button { background: none; border: none; cursor: pointer; color: inherit; opacity: .5; padding: 0; font-size: 12px; line-height: 1; }
+        .channel-chip button:hover { opacity: 1; }
         .json-editor { width: 100%; min-height: 500px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 10px; outline: none; resize: vertical; line-height: 1.6; }
         .json-editor:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; display: flex; align-items: center; justify-content: center; }
@@ -118,14 +124,19 @@ Object.assign(COLOR_LOOKUP, SPECIAL_COLORS);
 
 const FAMILIES = Object.keys(TW);
 
-/** Resolve a theme color string to a displayable hex. Handles prefixes like text-, bg-, !bg- */
+/** Resolve a single-token theme color string to hex. Returns null for compound (multi-class) values. */
 const resolveColorHex = (val) => {
     if (!val) return null;
     if (val.startsWith('#')) return val;
+    // Compound values (e.g. "bg-red-600 text-white") → always render via Tailwind classes
+    if (val.includes(' ')) return null;
     // Strip common prefixes
     const stripped = val.replace(/^(!?)(text|bg|border|ring|fill|stroke)-/, '');
     return COLOR_LOOKUP[stripped] || null;
 };
+
+/** Check if a value is a compound (multi-class) Tailwind string */
+const isCompound = (val) => val && val.includes(' ');
 
 // ═══════════════════════════════════════════════════════════════════════════
 // THEME SCHEMA DEFINITIONS — documents what fields exist and their purpose
@@ -163,10 +174,20 @@ const api = {
     async listThemes() { return (await fetch('/api/themes')).json(); },
     async getTheme(id) { return (await fetch(`/api/themes/${id}`)).json(); },
     async saveTheme(id, config) {
-        return (await fetch(`/api/themes/${id}`, {
+        const resp = await fetch(`/api/themes/${id}`, {
             method: 'PUT', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(config),
-        })).json();
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            const err = new Error(data.error || 'Save failed');
+            err.validation = data.validation;
+            throw err;
+        }
+
+        return data;
     },
     async deleteTheme(id) {
         return (await fetch(`/api/themes/${id}`, { method: 'DELETE' })).json();
@@ -175,6 +196,12 @@ const api = {
         return (await fetch(`/api/themes/${id}`, {
             method: 'PUT', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id, ...config }),
+        })).json();
+    },
+    async validateTheme(config) {
+        return (await fetch('/api/validate-theme', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config),
         })).json();
     },
 };
@@ -263,28 +290,138 @@ const useToast = () => useContext(ToastContext);
 // COLOR PICKER POPUP
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ─── Compound value helpers ──────────────────────────────────────────────────
+
+const CHANNELS = [
+    { key: 'color', label: 'Color', prefix: '' },
+    { key: 'bg', label: 'BG', prefix: 'bg-' },
+    { key: 'text', label: 'Text', prefix: 'text-' },
+    { key: 'border', label: 'Border', prefix: 'border-' },
+];
+
+const parseChannels = (val) => {
+    const ch = { color: '', bg: '', text: '', border: '', imp: false };
+    if (!val) return ch;
+
+    for (const token of val.split(/\s+/)) {
+        const imp = token.startsWith('!');
+        const clean = imp ? token.slice(1) : token;
+
+        if (clean.startsWith('bg-'))          { ch.bg = clean.slice(3); if (imp) ch.imp = true; }
+        else if (clean.startsWith('text-'))    { ch.text = clean.slice(5); }
+        else if (clean.startsWith('border-'))  { ch.border = clean.slice(7); }
+        else                                   { ch.color = clean; }
+    }
+
+    return ch;
+};
+
+const composeChannels = (ch) => {
+    const parts = [];
+
+    if (ch.color)  parts.push(ch.color);
+    if (ch.bg)     parts.push(`${ch.imp ? '!' : ''}bg-${ch.bg}`);
+    if (ch.text)   parts.push(`text-${ch.text}`);
+    if (ch.border) parts.push(`border-${ch.border}`);
+
+    return parts.join(' ');
+};
+
+const CHANNEL_COLORS = { color: '#6366f1', bg: '#4f46e5', text: '#059669', border: '#d97706' };
+
+// ─── Color Picker ────────────────────────────────────────────────────────────
+
 const ColorPicker = ({ value, onSelect, onClose, position }) => {
     const [search, setSearch] = useState('');
-    const [hexInput, setHexInput] = useState(value?.startsWith('#') ? value : '');
+    const [hexInput, setHexInput] = useState('');
+    const [activeChannel, setActiveChannel] = useState(() => {
+        const parsed = parseChannels(value);
+        if (parsed.color) return 'color';
+        if (parsed.bg) return 'bg';
+        if (parsed.text) return 'text';
+        if (parsed.border) return 'border';
+        return 'color';
+    });
+    const [channels, setChannels] = useState(() => parseChannels(value));
     const ref = useRef(null);
 
     const filteredFamilies = search
         ? FAMILIES.filter(f => f.includes(search.toLowerCase()))
         : FAMILIES;
 
-    // Position the popup near the trigger
     const style = useMemo(() => {
         if (!position) return { top: 100, left: 100 };
-        const top = Math.min(position.y, window.innerHeight - 500);
-        const left = Math.min(position.x, window.innerWidth - 440);
+        const top = Math.min(position.y, window.innerHeight - 560);
+        const left = Math.min(position.x, window.innerWidth - 460);
         return { top: Math.max(8, top), left: Math.max(8, left) };
     }, [position]);
+
+    // When channels change, emit the composed value
+    const updateChannel = (key, colorToken) => {
+        setChannels(prev => {
+            const next = { ...prev, [key]: colorToken };
+            onSelect(composeChannels(next));
+            return next;
+        });
+    };
+
+    const clearChannel = (key) => {
+        setChannels(prev => {
+            const next = { ...prev, [key]: '' };
+            if (key === 'bg') next.imp = false;
+            onSelect(composeChannels(next));
+            return next;
+        });
+    };
+
+    const toggleImportant = () => {
+        setChannels(prev => {
+            const next = { ...prev, imp: !prev.imp };
+            onSelect(composeChannels(next));
+            return next;
+        });
+    };
+
+    const handleColorClick = (colorToken) => {
+        updateChannel(activeChannel, colorToken);
+    };
+
+    const composed = composeChannels(channels);
+    const activeColor = channels[activeChannel];
 
     return (
         <>
             <div className="picker-overlay" onClick={onClose} />
             <div className="picker-popup fade-in" style={style} ref={ref}>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+
+                {/* Channel tabs */}
+                <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+                    {CHANNELS.map(ch => (
+                        <button key={ch.key}
+                            className={`channel-tab ${activeChannel === ch.key ? 'active' : ''}`}
+                            style={activeChannel === ch.key ? { borderColor: CHANNEL_COLORS[ch.key], background: CHANNEL_COLORS[ch.key] + '14', color: CHANNEL_COLORS[ch.key] } : {}}
+                            onClick={() => setActiveChannel(ch.key)}
+                        >
+                            {ch.label}
+                            {channels[ch.key] && <span style={{ marginLeft: 4, opacity: .6 }}>{channels[ch.key]}</span>}
+                        </button>
+                    ))}
+
+                    {activeChannel === 'bg' && (
+                        <button
+                            className={`channel-tab ${channels.imp ? 'active' : ''}`}
+                            style={channels.imp ? { borderColor: '#ef4444', background: '#fef2f2', color: '#ef4444', fontWeight: 700 } : { fontWeight: 700 }}
+                            onClick={toggleImportant}
+                            title="Toggle !important prefix"
+                        >!</button>
+                    )}
+
+                    <div style={{ flex: 1 }} />
+                    <button className="btn btn-primary" style={{ padding: '4px 12px', fontSize: 11 }} onClick={onClose}>Done</button>
+                </div>
+
+                {/* Search + hex */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
                     <input
                         type="text"
                         placeholder="Search colors..."
@@ -298,11 +435,11 @@ const ColorPicker = ({ value, onSelect, onClose, position }) => {
                         <input
                             type="color"
                             value={hexInput || '#000000'}
-                            onChange={e => { setHexInput(e.target.value); }}
-                            style={{ width: 32, height: 32, border: 'none', padding: 0, cursor: 'pointer', borderRadius: 6 }}
+                            onChange={e => setHexInput(e.target.value)}
+                            style={{ width: 28, height: 28, border: 'none', padding: 0, cursor: 'pointer', borderRadius: 6 }}
                         />
-                        <button className="btn btn-primary" style={{ padding: '6px 10px', fontSize: 11 }}
-                            onClick={() => { if (hexInput) onSelect(hexInput); }}>
+                        <button className="btn btn-primary" style={{ padding: '4px 8px', fontSize: 10 }}
+                            onClick={() => { if (hexInput) handleColorClick(hexInput); }}>
                             Hex
                         </button>
                     </div>
@@ -314,12 +451,18 @@ const ColorPicker = ({ value, onSelect, onClose, position }) => {
                         <div key={name} className="color-grid-cell"
                             style={{ background: hex, border: name === 'white' ? '1px solid #e2e8f0' : 'none' }}
                             title={name}
-                            onClick={() => onSelect(name)}
-                        />
+                            onClick={() => handleColorClick(name)}
+                        >
+                            {activeColor === name && (
+                                <svg style={{ position: 'absolute', inset: 0, margin: 'auto', width: 14, height: 14 }} viewBox="0 0 20 20" fill="none">
+                                    <path d="M5 10l3.5 3.5L15 7" stroke={name === 'white' ? '#1e293b' : '#fff'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            )}
+                        </div>
                     ))}
                 </div>
 
-                {/* Grid header — shade numbers */}
+                {/* Grid header */}
                 <div style={{ display: 'flex', gap: 2, marginBottom: 4, paddingLeft: 60 }}>
                     {SHADES.map(s => (
                         <div key={s} style={{ width: 32, textAlign: 'center', fontSize: 9, color: '#94a3b8', fontWeight: 500 }}>{s}</div>
@@ -332,30 +475,48 @@ const ColorPicker = ({ value, onSelect, onClose, position }) => {
                         <div style={{ width: 56, fontSize: 11, color: '#64748b', fontWeight: 500, textAlign: 'right', paddingRight: 4 }}>
                             {family}
                         </div>
-                        {TW[family].map((hex, i) => (
-                            <div key={i} className="color-grid-cell"
-                                style={{ background: hex }}
-                                title={`${family}-${SHADES[i]}`}
-                                onClick={() => onSelect(`${family}-${SHADES[i]}`)}
-                            >
-                                {value === `${family}-${SHADES[i]}` && (
-                                    <svg style={{ position: 'absolute', inset: 0, margin: 'auto', width: 14, height: 14 }} viewBox="0 0 20 20" fill="none">
-                                        <path d="M5 10l3.5 3.5L15 7" stroke={SHADES[i] < 400 ? '#1e293b' : '#fff'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                )}
-                            </div>
-                        ))}
+                        {TW[family].map((hex, i) => {
+                            const token = `${family}-${SHADES[i]}`;
+                            return (
+                                <div key={i} className="color-grid-cell"
+                                    style={{ background: hex }}
+                                    title={token}
+                                    onClick={() => handleColorClick(token)}
+                                >
+                                    {activeColor === token && (
+                                        <svg style={{ position: 'absolute', inset: 0, margin: 'auto', width: 14, height: 14 }} viewBox="0 0 20 20" fill="none">
+                                            <path d="M5 10l3.5 3.5L15 7" stroke={SHADES[i] < 400 ? '#1e293b' : '#fff'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 ))}
 
-                {/* Current value display */}
-                {value && (
-                    <div style={{ marginTop: 12, padding: '8px 12px', background: '#f8fafc', borderRadius: 8, fontSize: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div className="swatch" style={{ background: resolveColorHex(value) || '#ddd', width: 20, height: 20, borderRadius: 4 }} />
-                        <code style={{ color: '#475569' }}>{value}</code>
-                        <button className="reset-btn" style={{ marginLeft: 'auto' }} onClick={() => onSelect('')} title="Clear value">
-                            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
-                        </button>
+                {/* Live preview */}
+                {composed && (
+                    <div style={{ marginTop: 12, padding: '10px 12px', background: '#f8fafc', borderRadius: 8, fontSize: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                            <div className={`swatch ${composed}`}
+                                style={{ width: 32, height: 32, borderRadius: 6, border: '2px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>Aa</span>
+                            </div>
+                            <code style={{ color: '#475569', flex: 1, fontSize: 11, wordBreak: 'break-all' }}>{composed}</code>
+                            <button className="reset-btn" onClick={() => { setChannels({ color: '', bg: '', text: '', border: '', imp: false }); onSelect(''); }} title="Clear all">
+                                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
+                            </button>
+                        </div>
+
+                        {/* Channel chips */}
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {CHANNELS.map(ch => channels[ch.key] ? (
+                                <span key={ch.key} className="channel-chip" style={{ background: CHANNEL_COLORS[ch.key] + '18', color: CHANNEL_COLORS[ch.key] }}>
+                                    {ch.prefix}{channels[ch.key]}
+                                    <button onClick={() => clearChannel(ch.key)} title={`Clear ${ch.label}`}>&times;</button>
+                                </span>
+                            ) : null)}
+                        </div>
                     </div>
                 )}
             </div>
@@ -387,11 +548,13 @@ const ColorField = ({ label, value, inheritedValue, onChange, onClear, hint }) =
                 {value !== undefined && inheritedValue !== undefined && <span className="badge badge-override" style={{ marginLeft: 6 }}>override</span>}
             </div>
             <div ref={swatchRef}
-                className="swatch"
-                style={{ background: hex || 'repeating-conic-gradient(#e2e8f0 0% 25%, white 0% 50%) 50%/12px 12px' }}
+                className={`swatch ${!hex && displayValue ? displayValue : ''}`}
+                style={{ background: hex || (!displayValue ? 'repeating-conic-gradient(#e2e8f0 0% 25%, white 0% 50%) 50%/12px 12px' : undefined) }}
                 onClick={openPicker}
                 title={displayValue || 'Click to pick color'}
-            />
+            >
+                {!hex && displayValue && <span style={{ fontSize: 9, fontWeight: 700, lineHeight: 1 }}>{isCompound(displayValue) ? 'Aa' : ''}</span>}
+            </div>
             <input
                 type="text"
                 className={`field-input ${isInherited ? 'inherited' : ''}`}
@@ -409,7 +572,7 @@ const ColorField = ({ label, value, inheritedValue, onChange, onClear, hint }) =
                     value={displayValue}
                     position={pickerOpen}
                     onClose={() => setPickerOpen(false)}
-                    onSelect={(v) => { onChange(v); setPickerOpen(false); }}
+                    onSelect={(v) => { onChange(v); }}
                 />
             )}
         </div>
@@ -597,7 +760,7 @@ const CategoriesSection = ({ config, parentConfig, setConfig }) => {
                                     {/* Color preview dots */}
                                     <div style={{ display: 'flex', gap: 2 }}>
                                         {previewColors.map((c, i) => (
-                                            <div key={i} style={{ width: 12, height: 12, borderRadius: '50%', background: resolveColorHex(c) || '#ddd', border: '1px solid rgba(0,0,0,.1)' }} />
+                                            <div key={i} className={!resolveColorHex(c) ? c : ''} style={{ width: 12, height: 12, borderRadius: '50%', background: resolveColorHex(c) || undefined, border: '1px solid rgba(0,0,0,.1)' }} />
                                         ))}
                                         {previewColors.length === 0 && <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#e2e8f0' }} />}
                                     </div>
@@ -840,22 +1003,75 @@ const StylesSection = ({ config, parentConfig, setConfig }) => (
 
 const JSONSection = ({ config, setConfig }) => {
     const [text, setText] = useState('');
-    const [error, setError] = useState(null);
+    const [parseError, setParseError] = useState(null);
+    const [validation, setValidation] = useState(null); // { valid, errors, warnings }
+    const [validating, setValidating] = useState(false);
+    const timerRef = useRef(null);
 
     useEffect(() => {
         setText(JSON.stringify(config, null, 4));
-        setError(null);
+        setParseError(null);
+        setValidation(null);
     }, [config]);
+
+    // Debounced validation on text change
+    const runValidation = useCallback((jsonText) => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+
+        timerRef.current = setTimeout(async () => {
+            let parsed;
+
+            try {
+                parsed = JSON.parse(jsonText);
+            } catch {
+                return; // parse error shown separately
+            }
+
+            setValidating(true);
+
+            try {
+                const result = await api.validateTheme(parsed);
+                setValidation(result);
+            } catch {
+                // validation endpoint unreachable, ignore
+            } finally {
+                setValidating(false);
+            }
+        }, 500);
+    }, []);
+
+    const handleTextChange = (e) => {
+        const val = e.target.value;
+        setText(val);
+
+        // Quick parse check
+        try {
+            JSON.parse(val);
+            setParseError(null);
+            runValidation(val);
+        } catch (err) {
+            setParseError(err.message);
+            setValidation(null);
+        }
+    };
 
     const apply = () => {
         try {
             const parsed = JSON.parse(text);
+
+            if (validation && !validation.valid) {
+                if (!confirm(`There are ${validation.errors.length} validation error(s). Apply anyway?`)) return;
+            }
+
             setConfig(parsed);
-            setError(null);
+            setParseError(null);
         } catch (e) {
-            setError(e.message);
+            setParseError(e.message);
         }
     };
+
+    const errorCount = validation?.errors?.length || 0;
+    const warnCount = validation?.warnings?.length || 0;
 
     return (
         <div className="section-card">
@@ -865,9 +1081,24 @@ const JSONSection = ({ config, setConfig }) => {
                         <path fillRule="evenodd" d="M6.28 5.22a.75.75 0 010 1.06L2.56 10l3.72 3.72a.75.75 0 01-1.06 1.06L.97 10.53a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 0zm7.44 0a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L17.44 10l-3.72-3.72a.75.75 0 010-1.06zM11.377 2.011a.75.75 0 01.612.867l-2.5 14.5a.75.75 0 01-1.478-.255l2.5-14.5a.75.75 0 01.866-.612z" clipRule="evenodd"/>
                     </svg>
                     Raw JSON
+
+                    {/* Validation status badge */}
+                    {validating && <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>validating...</span>}
+                    {!validating && validation && validation.valid && errorCount === 0 && (
+                        <span style={{ fontSize: 10, color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+                            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd"/></svg>
+                            Valid
+                        </span>
+                    )}
+                    {!validating && errorCount > 0 && (
+                        <span style={{ fontSize: 10, color: '#dc2626', fontWeight: 600 }}>{errorCount} error{errorCount > 1 ? 's' : ''}</span>
+                    )}
+                    {!validating && warnCount > 0 && (
+                        <span style={{ fontSize: 10, color: '#d97706', fontWeight: 600 }}>{warnCount} warning{warnCount > 1 ? 's' : ''}</span>
+                    )}
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-secondary" onClick={() => setText(JSON.stringify(JSON.parse(text), null, 4))} style={{ fontSize: 11, padding: '4px 10px' }}>
+                    <button className="btn btn-secondary" onClick={() => { try { setText(JSON.stringify(JSON.parse(text), null, 4)); } catch {} }} style={{ fontSize: 11, padding: '4px 10px' }}>
                         Format
                     </button>
                     <button className="btn btn-primary" onClick={apply} style={{ fontSize: 11, padding: '4px 10px' }}>
@@ -875,12 +1106,39 @@ const JSONSection = ({ config, setConfig }) => {
                     </button>
                 </div>
             </div>
-            {error && (
-                <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, marginBottom: 12, fontSize: 12, color: '#dc2626' }}>
-                    {error}
+
+            {/* Parse error */}
+            {parseError && (
+                <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, marginBottom: 8, fontSize: 12, color: '#dc2626' }}>
+                    <strong>JSON Parse Error:</strong> {parseError}
                 </div>
             )}
-            <textarea className="json-editor" value={text} onChange={e => setText(e.target.value)} spellCheck={false} />
+
+            {/* Zod validation errors */}
+            {!parseError && errorCount > 0 && (
+                <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, marginBottom: 8, fontSize: 12, color: '#dc2626' }}>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Validation Errors</div>
+                    {validation.errors.map((e, i) => (
+                        <div key={i} style={{ marginBottom: 2 }}>
+                            <code style={{ color: '#991b1b', fontSize: 11 }}>{e.path || '(root)'}</code>: {e.message}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Warnings */}
+            {!parseError && warnCount > 0 && (
+                <div style={{ padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, marginBottom: 8, fontSize: 12, color: '#92400e' }}>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Warnings</div>
+                    {validation.warnings.map((w, i) => (
+                        <div key={i} style={{ marginBottom: 2 }}>
+                            <code style={{ color: '#78350f', fontSize: 11 }}>{w.path}</code>: {w.message}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <textarea className="json-editor" value={text} onChange={handleTextChange} spellCheck={false} />
         </div>
     );
 };
@@ -1084,10 +1342,18 @@ const ThemeEditor = ({ themeId, themes, onDeleted, onSaved }) => {
         try {
             const result = await api.saveTheme(themeId, config);
             setOriginalJson(JSON.stringify(result.config || config));
-            toast('Theme saved!');
+
+            const warnCount = result.validation?.warnings?.length || 0;
+            toast(warnCount > 0 ? `Theme saved with ${warnCount} warning(s)` : 'Theme saved!');
+
             onSaved?.();
         } catch (e) {
-            toast('Failed to save: ' + e.message, 'error');
+            if (e.validation?.errors?.length) {
+                const msgs = e.validation.errors.map(err => `${err.path || '(root)'}: ${err.message}`);
+                toast('Validation failed:\n' + msgs.join('\n'), 'error');
+            } else {
+                toast('Failed to save: ' + e.message, 'error');
+            }
         } finally {
             setSaving(false);
         }
