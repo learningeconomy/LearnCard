@@ -1,12 +1,13 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { IonIcon, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import DocumentIcon from '../svgs/Document';
-import { ellipsisVertical } from 'ionicons/icons';
 import ShareIcon from 'learn-card-base/svgs/Share';
 import DownloadIcon from 'learn-card-base/svgs/DownloadIcon';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
+import ResumeBuilderHistoryDropdownButton from './ResumeBuilderHistoryDropdownButton';
+import type { ExistingResume } from '../../hooks/useExistingResumes';
 
 export type ResumeBuilderHeaderAction = 'preview' | 'download' | 'publish' | null;
 
@@ -17,6 +18,10 @@ export const ResumeBuilderHeader: React.FC<{
     onPreview: () => void;
     onDownload: () => void;
     onPublish: () => void;
+    onShareCurrentResume?: () => void;
+    onSelectResume: (resume: ExistingResume) => Promise<void> | void;
+    activeResumeRecordId?: string | null;
+    isEditingExistingResume?: boolean;
 }> = ({
     loadingAction,
     isMobile = false,
@@ -24,6 +29,10 @@ export const ResumeBuilderHeader: React.FC<{
     onPreview,
     onDownload,
     onPublish,
+    onShareCurrentResume,
+    onSelectResume,
+    activeResumeRecordId,
+    isEditingExistingResume = false,
 }) => {
     const history = useHistory();
 
@@ -31,6 +40,12 @@ export const ResumeBuilderHeader: React.FC<{
         <div className="shrink-0 border-b border-grayscale-200 bg-white/95 backdrop-blur-sm px-2 py-3 safe-area-top-margin">
             <div className="flex items-center justify-between">
                 <div className="flex items-center justify-start gap-2">
+                    <ResumeBuilderHistoryDropdownButton
+                        activeResumeRecordId={activeResumeRecordId}
+                        disabled={loadingAction !== null}
+                        onSelectResume={onSelectResume}
+                    />
+
                     {isMobile && (
                         <button
                             aria-label="Go back"
@@ -77,6 +92,18 @@ export const ResumeBuilderHeader: React.FC<{
                             <span className={isMobile ? 'sr-only' : ''}>Download PDF</span>
                         )}
                     </button>
+                    {isEditingExistingResume && onShareCurrentResume ? (
+                        <button
+                            onClick={onShareCurrentResume}
+                            disabled={loadingAction !== null}
+                            className={`ml-2 inline-flex items-center gap-2 h-9 rounded-full border border-grayscale-200 border-solid bg-white hover:bg-grayscale-50 disabled:opacity-60 disabled:cursor-not-allowed text-indigo-500 font-semibold text-sm transition-colors ${
+                                isMobile ? 'w-9 justify-center px-0' : 'px-4'
+                            }`}
+                        >
+                            <ShareIcon className="w-5 h-5" />
+                            <span className={isMobile ? 'sr-only' : ''}>Share Resume</span>
+                        </button>
+                    ) : null}
                     <button
                         onClick={onPublish}
                         disabled={loadingAction !== null}
@@ -90,24 +117,11 @@ export const ResumeBuilderHeader: React.FC<{
                         {loadingAction === 'publish' ? (
                             <IonSpinner name="crescent" className="w-4 h-4" />
                         ) : (
-                            <span className={isMobile ? 'sr-only' : ''}>Publish VC</span>
+                            <span className={isMobile ? 'sr-only' : ''}>
+                                {isEditingExistingResume ? 'Save Resume' : 'Publish VC'}
+                            </span>
                         )}
                     </button>
-                    {/* <button
-                        className={`inline-flex items-center gap-2 h-9 rounded-full border border-solid border-grayscale-200 bg-white text-grayscale-600 font-semibold text-sm ${
-                            isMobile ? 'w-9 justify-center px-0' : 'px-4'
-                        }`}
-                        aria-label="Share (coming soon)"
-                    >
-                        <ShareIcon className="w-5 h-5" />
-                        <span className={isMobile ? 'sr-only' : ''}>Share</span>
-                    </button> */}
-                    {/* <button
-                        className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-grayscale-200 bg-white text-grayscale-500"
-                        aria-label="More options (coming soon)"
-                    >
-                        <IonIcon icon={ellipsisVertical} className="text-base" />
-                    </button> */}
                 </div>
             </div>
         </div>

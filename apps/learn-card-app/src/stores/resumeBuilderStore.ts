@@ -13,6 +13,7 @@ import {
 } from '../components/resume-builder/resume-builder.helpers';
 
 export type ResumeBuilderState = {
+    activeResume: ResumeBuilderActiveResume | null;
     personalDetails: PersonalDetails;
     hiddenPersonalDetails: Partial<Record<keyof PersonalDetails, boolean>>;
     hiddenSections: Partial<Record<ResumeSectionKey, boolean>>;
@@ -25,6 +26,29 @@ export type ResumeBuilderState = {
     };
     credentialEntries: Partial<Record<ResumeSectionKey, CredentialEntry[]>>;
     sectionOrder: ResumeSectionKey[];
+};
+
+export type ResumeBuilderSnapshot = {
+    personalDetails: PersonalDetails;
+    hiddenPersonalDetails: Partial<Record<keyof PersonalDetails, boolean>>;
+    hiddenSections: Partial<Record<ResumeSectionKey, boolean>>;
+    currentJobCredentialUri: string | null;
+    credentialStartDates: Record<string, string>;
+    credentialEndDates: Record<string, string>;
+    documentSetup: {
+        showQRCode: boolean;
+        fileName: string;
+    };
+    credentialEntries: Partial<Record<ResumeSectionKey, CredentialEntry[]>>;
+    sectionOrder: ResumeSectionKey[];
+};
+
+export type ResumeBuilderActiveResume = {
+    recordId: string;
+    uri: string | null;
+    lerRecordId: string | null;
+    generatedAt?: string | null;
+    fileName?: string | null;
 };
 
 const defaultPersonalDetails: PersonalDetails = {
@@ -57,6 +81,7 @@ const setEntries = (set: any, section: ResumeSectionKey, entries: CredentialEntr
 
 export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilderState>(
     {
+        activeResume: null,
         personalDetails: defaultPersonalDetails,
         hiddenPersonalDetails: {},
         hiddenSections: {},
@@ -69,6 +94,40 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     },
     { persist: { name: 'resumeBuilderStore', enabled: true } }
 ).extendActions(set => ({
+    setActiveResume: (activeResume: ResumeBuilderActiveResume | null) => {
+        set.activeResume(activeResume);
+    },
+    hydrateStore: (
+        snapshot: ResumeBuilderSnapshot,
+        activeResume: ResumeBuilderActiveResume | null = null
+    ) => {
+        set.activeResume(activeResume);
+        set.personalDetails({
+            ...defaultPersonalDetails,
+            ...(snapshot.personalDetails ?? {}),
+        });
+        set.hiddenPersonalDetails({ ...(snapshot.hiddenPersonalDetails ?? {}) });
+        set.hiddenSections({ ...(snapshot.hiddenSections ?? {}) });
+        set.currentJobCredentialUri(snapshot.currentJobCredentialUri ?? null);
+        set.credentialStartDates({ ...(snapshot.credentialStartDates ?? {}) });
+        set.credentialEndDates({ ...(snapshot.credentialEndDates ?? {}) });
+        set.documentSetup({
+            ...defaultDocumentSetup,
+            ...(snapshot.documentSetup ?? {}),
+        });
+        set.credentialEntries(
+            Object.fromEntries(
+                Object.entries(snapshot.credentialEntries ?? {}).map(([section, entries]) => [
+                    section,
+                    (entries ?? []).map(entry => ({
+                        ...entry,
+                        fields: (entry.fields ?? []).map(field => ({ ...field })),
+                    })),
+                ])
+            ) as Partial<Record<ResumeSectionKey, CredentialEntry[]>>
+        );
+        set.sectionOrder(snapshot.sectionOrder?.length ? snapshot.sectionOrder : defaultSectionOrder);
+    },
     setPersonalDetails: (details: Partial<PersonalDetails>) => {
         const prev = resumeBuilderStore.get.personalDetails();
         set.personalDetails({ ...prev, ...details });
@@ -302,6 +361,7 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
 
     // ── Reset ───────────────────────────────────────────────────────────────
     resetStore: () => {
+        set.activeResume(null);
         set.personalDetails(defaultPersonalDetails);
         set.hiddenPersonalDetails({});
         set.hiddenSections({});

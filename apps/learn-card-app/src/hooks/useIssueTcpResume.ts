@@ -2,6 +2,9 @@ import { VC } from '@learncard/types';
 import { CredentialCategoryEnum, useCurrentUser, useFilestack, useWallet } from 'learn-card-base';
 import { resumeBuilderStore } from '../stores/resumeBuilderStore';
 import type { ResumeSectionKey } from '../components/resume-builder/resume-builder.helpers';
+import { getResumeBuilderSnapshot } from '../components/resume-builder/resume-builder-history.helpers';
+import { useQueryClient } from '@tanstack/react-query';
+import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -457,6 +460,7 @@ const buildLerPayloadFromResume = (
 export const useIssueTcpResume = () => {
     const { initWallet } = useWallet();
     const currentUser = useCurrentUser();
+    const queryClient = useQueryClient();
     const { singleImageUpload } = useFilestack({
         fileType: 'application/pdf',
         onUpload: () => undefined,
@@ -466,6 +470,7 @@ export const useIssueTcpResume = () => {
         input: PublishTcpResumeInput
     ): Promise<PublishTcpResumeResult> => {
         const wallet = await initWallet();
+        const switchedDid = switchedProfileStore.get.switchedDid();
 
         const createLerRecord = (wallet.invoke as Record<string, unknown>).createLerRecord;
         if (typeof createLerRecord !== 'function') {
@@ -493,6 +498,7 @@ export const useIssueTcpResume = () => {
         const currentJobCredentialUri = resumeBuilderStore.get.currentJobCredentialUri();
         const personalDetails = resumeBuilderStore.get.personalDetails();
         const hiddenPersonalDetails = resumeBuilderStore.get.hiddenPersonalDetails();
+        const activeResume = resumeBuilderStore.get.activeResume();
 
         const lerInputs = await Promise.all(
             input.includedCredentials.map(async item => {
@@ -576,13 +582,13 @@ export const useIssueTcpResume = () => {
         }
 
         const lerRecordId = lerVc.id || `urn:uuid:${crypto.randomUUID()}`;
-        const newIndexId = crypto.randomUUID();
         const existingResumeRecords = await wallet.index.LearnCloud.get({
             category: CredentialCategoryEnum.resume,
         });
+        const resumeBuilderSnapshot = getResumeBuilderSnapshot();
+        const targetRecordId = activeResume?.recordId || crypto.randomUUID();
 
-        await wallet.index.LearnCloud.add({
-            id: newIndexId,
+        const nextRecord = {
             uri: lerUri,
             category: CredentialCategoryEnum.resume,
             credentialId: lerVc.id,
@@ -591,17 +597,50 @@ export const useIssueTcpResume = () => {
             pdfHash: input.pdfHash,
             isCurrent: true,
             generatedAt,
-        });
+            fileName: input.fileName,
+            resumeBuilderSnapshot,
+        };
+
+        if (activeResume?.recordId) {
+            await wallet.index.LearnCloud.update(activeResume.recordId, nextRecord);
+        } else {
+            await wallet.index.LearnCloud.add({
+                id: targetRecordId,
+                ...nextRecord,
+            });
+        }
 
         await Promise.all(
-            existingResumeRecords.map(record =>
-                wallet.index.LearnCloud.update(record.id, {
-                    isCurrent: false,
-                    supersededBy: lerRecordId,
-                    supersededAt: generatedAt,
-                })
-            )
+            existingResumeRecords
+                .filter(record => record.id !== targetRecordId)
+                .map(record =>
+                    wallet.index.LearnCloud.update(record.id, {
+                        isCurrent: false,
+                        supersededBy: lerRecordId,
+                        supersededAt: generatedAt,
+                    })
+                )
         );
+
+        resumeBuilderStore.set.setActiveResume({
+            recordId: targetRecordId,
+            uri: lerUri,
+            lerRecordId,
+            generatedAt,
+            fileName: input.fileName,
+        });
+
+        await Promise.all([
+            queryClient.invalidateQueries({
+                queryKey: ['existing-resumes', switchedDid ?? ''],
+            }),
+            queryClient.invalidateQueries({
+                queryKey: ['useGetCredentialList', switchedDid ?? '', CredentialCategoryEnum.resume],
+            }),
+            queryClient.invalidateQueries({
+                queryKey: ['useGetCredentials', switchedDid ?? '', CredentialCategoryEnum.resume],
+            }),
+        ]);
 
         return { lerVc, lerUri, pdfUrl };
     };

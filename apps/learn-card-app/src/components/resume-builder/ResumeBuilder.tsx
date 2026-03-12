@@ -3,7 +3,6 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { IonIcon } from '@ionic/react';
 import { menuOutline } from 'ionicons/icons';
 import ResumeIframePreview from './ResumeIframePreview';
-import ResumePreviewFAB from './resume-preview/ResumePreviewFAB';
 import ResumeConfigPanelFAB from './resume-config-panel/ResumeConfigPanelFAB';
 import ResumePreview, { ResumePreviewHandle } from './resume-preview/ResumePreview';
 import ResumeConfigOverlayPanel from './resume-config-panel/ResumeConfigOverlayPanel';
@@ -18,11 +17,17 @@ import {
     useToast,
     ToastTypeEnum,
     CredentialCategoryEnum,
+    useGetResolvedCredential,
+    useWallet,
 } from 'learn-card-base';
 import { useResumePreselection } from './useResumePreselection';
 import ResumeBuilderLoader from './ResumeBuilderLoader';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 import { useIssueTcpResume } from '../../hooks/useIssueTcpResume';
+import type { ExistingResume } from '../../hooks/useExistingResumes';
+import { buildResumeHydrationState } from './resume-builder-history.helpers';
+import ShareBoostLink from '../boost/boost-options-menu/ShareBoostLink';
+import { VC } from '@learncard/types';
 
 export const ResumeBuilder: React.FC = () => {
     useResumePreselection();
@@ -30,18 +35,25 @@ export const ResumeBuilder: React.FC = () => {
     const { newModal } = useModal({ mobile: ModalTypes.FullScreen });
     const resumePreviewRef = useRef<ResumePreviewHandle>(null);
     const { isMobile } = useDeviceTypeByWidth();
+    const { initWallet } = useWallet();
 
     const [panelOpen, setPanelOpen] = useState<boolean>(true); // Desktop side panel
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false); // Mobile drawer
 
     const [isPreviewing, setIsPreviewing] = useState<boolean>(false);
     const [inlinePreview, setInlinePreview] = useState<ResumePdfPreviewData | null>(null);
+    const [isHydratingResume, setIsHydratingResume] = useState<boolean>(false);
 
     const [loadingAction, setLoadingAction] = useState<ResumeBuilderHeaderAction>(null);
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
     const hiddenSections = resumeBuilderStore.useTracked.hiddenSections();
+    const activeResume = resumeBuilderStore.useTracked.activeResume();
     const { presentToast } = useToast();
     const { publishTcpResume } = useIssueTcpResume();
+    const { data: activeResumeVc } = useGetResolvedCredential(
+        activeResume?.uri ?? '',
+        Boolean(activeResume?.uri)
+    );
 
     const revokePreviewBlobUrl = useCallback((preview: ResumePdfPreviewData | null) => {
         if (preview?.downloadUrl?.startsWith('blob:')) {
@@ -149,9 +161,60 @@ export const ResumeBuilder: React.FC = () => {
         });
     }, [revokePreviewBlobUrl]);
 
+    const handleSelectResume = useCallback(
+        async (resume: ExistingResume) => {
+            setIsHydratingResume(true);
+            try {
+                const wallet = await initWallet();
+                const { snapshot, activeResume: nextActiveResume } = await buildResumeHydrationState(
+                    resume,
+                    async uri => {
+                        try {
+                            return (await wallet.read.get(uri)) as VC;
+                        } catch {
+                            return null;
+                        }
+                    }
+                );
+
+                resumeBuilderStore.set.hydrateStore(snapshot, nextActiveResume);
+                closeInlinePreview();
+                presentToast('Loaded resume into edit mode.', {
+                    type: ToastTypeEnum.Success,
+                });
+            } catch (error: any) {
+                presentToast(error?.message ?? 'Failed to load selected resume.', {
+                    type: ToastTypeEnum.Error,
+                });
+            } finally {
+                setIsHydratingResume(false);
+            }
+        },
+        [closeInlinePreview, initWallet, presentToast]
+    );
+
+    const handleShareCurrentResume = useCallback(() => {
+        if (!activeResumeVc || !activeResume?.uri) {
+            presentToast('This resume is not available to share yet.', {
+                type: ToastTypeEnum.Error,
+            });
+            return;
+        }
+
+        newModal(
+            <ShareBoostLink
+                boost={activeResumeVc as VC}
+                boostUri={activeResume.uri}
+                categoryType={CredentialCategoryEnum.resume}
+            />,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    }, [activeResume?.uri, activeResumeVc, newModal, presentToast]);
+
     return (
         <div className="resume-builder flex h-full w-full bg-grayscale-50 overflow-hidden relative">
-            {loadingAction && (
+            {(loadingAction || isHydratingResume) && (
                 <div className="absolute inset-0 h-full w-full z-[100] bg-white/80 backdrop-blur-sm flex items-center justify-center">
                     <ResumeBuilderLoader />
                 </div>
@@ -164,6 +227,12 @@ export const ResumeBuilder: React.FC = () => {
                     onPreview={handlePreview}
                     onDownload={handleDownload}
                     onPublish={handlePublish}
+                    onShareCurrentResume={
+                        activeResumeVc && activeResume?.uri ? handleShareCurrentResume : undefined
+                    }
+                    onSelectResume={handleSelectResume}
+                    activeResumeRecordId={activeResume?.recordId}
+                    isEditingExistingResume={Boolean(activeResume)}
                 />
 
                 <div className={previewWrapperStyles}>

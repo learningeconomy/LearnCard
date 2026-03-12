@@ -32,7 +32,15 @@ export const useExistingResumes = () => {
 
             return Promise.all(
                 records.map(async record => {
-                    const vc = record.uri ? ((await wallet.read.get(record.uri)) as VC) : null;
+                    let vc: VC | null = null;
+                    if (record.uri) {
+                        try {
+                            vc = (await wallet.read.get(record.uri)) as VC;
+                        } catch {
+                            vc = null;
+                        }
+                    }
+
                     const lerRecordId =
                         (typeof record.lerRecordId === 'string' && record.lerRecordId) ||
                         vc?.id ||
