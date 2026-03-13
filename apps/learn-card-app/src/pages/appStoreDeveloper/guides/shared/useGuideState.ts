@@ -52,6 +52,7 @@ export function useGuideState(
     const { useUpdateIntegration } = useDeveloperPortal();
     const updateIntegrationMutation = useUpdateIntegration();
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isSavePending = useRef(false);
 
     // Load initial state from integration's guideState or defaults
     const loadState = useCallback((): GuideState => {
@@ -80,7 +81,10 @@ export function useGuideState(
     const [state, setState] = useState<GuideState>(loadState);
 
     // Sync state when integration changes (e.g., after server refresh)
+    // Skip sync while a save is in flight to prevent stale server data from overwriting local state
     useEffect(() => {
+        if (isSavePending.current) return;
+
         const newState = loadState();
 
         setState(newState);
@@ -90,18 +94,27 @@ export function useGuideState(
     const saveState = useCallback((newState: GuideState) => {
         if (!integration) return;
 
+        isSavePending.current = true;
+
         // Debounce saves to avoid too many API calls
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
 
         saveTimeoutRef.current = setTimeout(() => {
-            updateIntegrationMutation.mutate({
-                id: integration.id,
-                updates: {
-                    guideState: newState,
+            updateIntegrationMutation.mutate(
+                {
+                    id: integration.id,
+                    updates: {
+                        guideState: newState,
+                    },
                 },
-            });
+                {
+                    onSettled: () => {
+                        isSavePending.current = false;
+                    },
+                }
+            );
         }, 500);
     }, [integration, updateIntegrationMutation]);
 
