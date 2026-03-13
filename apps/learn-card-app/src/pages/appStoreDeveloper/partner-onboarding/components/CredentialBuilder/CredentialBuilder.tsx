@@ -490,7 +490,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
             setShowPresetSelector(false);
 
             // Expand relevant sections
-            setExpandedSections(new Set(['credential', 'achievement', 'issuer']));
+            setExpandedSections(new Set(['credential', 'achievement']));
         }
     }, [onChange, issuerName, issuerImage]);
 

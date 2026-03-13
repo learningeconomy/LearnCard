@@ -1,13 +1,12 @@
 /**
- * IssuerSection - Issuer profile fields (name, logo, website, email) + auto-injected DID
+ * IssuerSection - Shows the auto-injected DID (read-only) with explanatory note
  */
 
 import React from 'react';
 import { Building2 } from 'lucide-react';
 
-import { OBv3CredentialTemplate, IssuerTemplate, TemplateFieldValue, systemField, staticField } from '../types';
+import { OBv3CredentialTemplate, systemField } from '../types';
 import { FieldEditor, CollapsibleSection } from '../FieldEditor';
-import { FieldValidationError, getFieldError } from '../utils';
 
 interface IssuerSectionProps {
     template: OBv3CredentialTemplate;
@@ -15,25 +14,14 @@ interface IssuerSectionProps {
     isExpanded: boolean;
     onToggle: () => void;
     disableDynamicFields?: boolean;
-    validationErrors?: FieldValidationError[];
 }
 
 export const IssuerSection: React.FC<IssuerSectionProps> = ({
     template,
-    onChange,
     isExpanded,
     onToggle,
-    disableDynamicFields = false,
-    validationErrors = [],
 }) => {
     const issuer = template.issuer;
-
-    const updateIssuer = (key: keyof IssuerTemplate, value: TemplateFieldValue) => {
-        onChange({
-            ...template,
-            issuer: { ...issuer, [key]: value },
-        });
-    };
 
     return (
         <CollapsibleSection
@@ -46,43 +34,15 @@ export const IssuerSection: React.FC<IssuerSectionProps> = ({
                 label="Issuer (DID)"
                 field={issuer.id ?? systemField('issuer_did')}
                 onChange={() => {}}
-                helpText="Automatically set to your wallet's DID when the credential is issued"
+                helpText="Your organization's Decentralized Identifier (DID) from your LearnCard wallet"
             />
 
-            <FieldEditor
-                label="Organization Name"
-                field={issuer.name}
-                onChange={(value) => updateIssuer('name', value)}
-                showDynamicToggle={!disableDynamicFields}
-                error={getFieldError(validationErrors, 'issuer.name')}
-            />
-
-            <FieldEditor
-                label="Logo / Image URL"
-                field={issuer.image ?? staticField('')}
-                onChange={(value) => updateIssuer('image', value)}
-                showDynamicToggle={!disableDynamicFields}
-                placeholder="https://example.com/logo.png"
-                error={getFieldError(validationErrors, 'issuer.image')}
-            />
-
-            <FieldEditor
-                label="Website URL"
-                field={issuer.url ?? staticField('')}
-                onChange={(value) => updateIssuer('url', value)}
-                showDynamicToggle={!disableDynamicFields}
-                placeholder="https://example.com"
-                error={getFieldError(validationErrors, 'issuer.url')}
-            />
-
-            <FieldEditor
-                label="Email"
-                field={issuer.email ?? staticField('')}
-                onChange={(value) => updateIssuer('email', value)}
-                showDynamicToggle={!disableDynamicFields}
-                placeholder="contact@example.com"
-                error={getFieldError(validationErrors, 'issuer.email')}
-            />
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                    <span className="font-semibold text-amber-700">Note:</span>{' '}
+                    The issuer is automatically set to your wallet&apos;s DID. Recipients can verify the credential was issued by you through this identifier.
+                </p>
+            </div>
         </CollapsibleSection>
     );
 };

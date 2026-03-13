@@ -32,8 +32,8 @@ const createBaseTemplate = (overrides: Partial<OBv3CredentialTemplate>): OBv3Cre
         name: dynamicField('recipient_name', ''),
         id: systemField('recipient_did'),
         achievement: {
-            name: dynamicField('achievement_name', ''),
-            description: dynamicField('achievement_description', ''),
+            name: staticField(''),
+            description: staticField(''),
         },
     },
     validFrom: systemField('issue_date'),
