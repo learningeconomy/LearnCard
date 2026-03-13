@@ -494,9 +494,7 @@ export const getResumeDisplaySummary = (resume: ExistingResume): {
         '';
     const title = career ? `${personName}, ${career}` : personName;
     const subtitle =
-        asString(record.fileName)?.replace(/\.pdf$/i, '') ||
-        summarySnapshot?.documentSetup?.fileName?.replace(/\.pdf$/i, '') ||
-        'resume';
+        asString(record.fileName) || summarySnapshot?.documentSetup?.fileName || 'resume.pdf';
     const credentialCount = summarySnapshot
         ? Object.values(summarySnapshot.credentialEntries).reduce(
               (count, entries) => count + (entries?.length ?? 0),

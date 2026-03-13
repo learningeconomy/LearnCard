@@ -276,6 +276,15 @@ export const ResumeBuilder: React.FC = () => {
         [closeInlinePreview, initWallet, presentToast]
     );
 
+    const handleCreateNewResume = useCallback(() => {
+        resumeBuilderStore.set.resetStore();
+        closeInlinePreview();
+        setBaselineSnapshotByResume(null);
+        presentToast('Started a new resume draft.', {
+            type: ToastTypeEnum.Success,
+        });
+    }, [closeInlinePreview, presentToast]);
+
     const handleShareCurrentResume = useCallback(() => {
         if (!activeResumeVc || !activeResume?.uri) {
             presentToast('This resume is not available to share yet.', {
@@ -316,6 +325,7 @@ export const ResumeBuilder: React.FC = () => {
                     disableShareCurrentResume={hasUnsavedChanges}
                     disablePublish={Boolean(activeResume) ? !hasUnsavedChanges : false}
                     onSelectResume={handleSelectResume}
+                    onCreateNewResume={handleCreateNewResume}
                     activeResumeRecordId={activeResume?.recordId}
                     isEditingExistingResume={Boolean(activeResume)}
                 />

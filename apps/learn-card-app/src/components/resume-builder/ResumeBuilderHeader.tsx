@@ -23,6 +23,7 @@ export const ResumeBuilderHeader: React.FC<{
     disableShareCurrentResume?: boolean;
     disablePublish?: boolean;
     onSelectResume: (resume: ExistingResume) => Promise<void> | void;
+    onCreateNewResume: () => Promise<void> | void;
     activeResumeRecordId?: string | null;
     isEditingExistingResume?: boolean;
 }> = ({
@@ -36,6 +37,7 @@ export const ResumeBuilderHeader: React.FC<{
     disableShareCurrentResume = false,
     disablePublish = false,
     onSelectResume,
+    onCreateNewResume,
     activeResumeRecordId,
     isEditingExistingResume = false,
 }) => {
@@ -61,6 +63,7 @@ export const ResumeBuilderHeader: React.FC<{
                             activeResumeRecordId={activeResumeRecordId}
                             disabled={loadingAction !== null}
                             onSelectResume={onSelectResume}
+                            onCreateNewResume={onCreateNewResume}
                         />
 
                         <button
