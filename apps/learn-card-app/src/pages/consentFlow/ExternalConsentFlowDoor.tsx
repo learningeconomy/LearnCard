@@ -197,7 +197,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                 }
             }
 
-            coordinatorLogout();
+            await coordinatorLogout();
             await queryClient.resetQueries();
 
             await clearDB();
