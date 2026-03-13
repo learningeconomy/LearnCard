@@ -1,11 +1,59 @@
-import React from 'react';
+import React, { useState } from 'react';
 import X from 'src/components/svgs/X';
+import Plus from 'learn-card-base/svgs/Plus';
+import { TextInput, SelectInput } from 'learn-card-base';
 
 type SkillProfileStep1Props = {
     handleNext: () => void;
 };
 
+const YEARS_OPTIONS = [
+    { value: 0, displayText: '0 years' },
+    { value: 1, displayText: '1 year' },
+    { value: 2, displayText: '2 years' },
+    { value: 3, displayText: '3 years' },
+    { value: 4, displayText: '4 years' },
+    { value: 5, displayText: '5 years' },
+    { value: 6, displayText: '6 years' },
+    { value: 7, displayText: '7 years' },
+    { value: 8, displayText: '8 years' },
+    { value: 9, displayText: '9 years' },
+    { value: 10, displayText: '10+ years' },
+];
+
+const MONTHS_OPTIONS = [
+    { value: 0, displayText: '0 months' },
+    { value: 1, displayText: '1 month' },
+    { value: 2, displayText: '2 months' },
+    { value: 3, displayText: '3 months' },
+    { value: 4, displayText: '4 months' },
+    { value: 5, displayText: '5 months' },
+    { value: 6, displayText: '6 months' },
+    { value: 7, displayText: '7 months' },
+    { value: 8, displayText: '8 months' },
+    { value: 9, displayText: '9 months' },
+    { value: 10, displayText: '10 months' },
+    { value: 11, displayText: '11 months' },
+];
+
 const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => {
+    const [goalInput, setGoalInput] = useState('');
+    const [goals, setGoals] = useState<string[]>([]);
+    const [professionalTitle, setProfessionalTitle] = useState('');
+    const [years, setYears] = useState<number | null>(null);
+    const [months, setMonths] = useState<number | null>(null);
+
+    const handleAddGoal = () => {
+        if (goalInput.trim()) {
+            setGoals([...goals, goalInput.trim().slice(0, 35)]);
+            setGoalInput('');
+        }
+    };
+
+    const handleRemoveGoal = (index: number) => {
+        setGoals(goals.filter((_, i) => i !== index));
+    };
+
     return (
         <div className="flex flex-col gap-[20px]">
             <div className="flex flex-col gap-[10px]">
@@ -23,22 +71,43 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                     Goals
                 </span>
 
-                <span>input...</span>
+                <TextInput
+                    value={goalInput}
+                    onChange={value => setGoalInput(value ?? '')}
+                    placeholder="I want to..."
+                    maxLength={35}
+                    onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddGoal();
+                        }
+                    }}
+                    endButton={
+                        <button
+                            type="button"
+                            onClick={handleAddGoal}
+                            className="text-grayscale-600 hover:text-grayscale-700 rounded-[7px] p-[6px] bg-grayscale-200"
+                        >
+                            <Plus className="w-[24px] h-[24px]" />
+                        </button>
+                    }
+                />
 
-                <div className="flex flex-wrap gap-[5px]">
-                    <span className="flex items-center gap-[8px] border-solid border-[2px] border-sky-200 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]">
-                        Goal 1
-                        <button>
-                            <X className="w-[15px] h-[15px]" />
-                        </button>
-                    </span>
-                    <span className="flex items-center gap-[8px] border-solid border-[2px] border-sky-200 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]">
-                        Goal 2
-                        <button>
-                            <X className="w-[15px] h-[15px]" />
-                        </button>
-                    </span>
-                </div>
+                {goals.length > 0 && (
+                    <div className="flex flex-wrap gap-[5px]">
+                        {goals.map((goal, index) => (
+                            <span
+                                key={index}
+                                className="flex items-center gap-[8px] border-solid border-[2px] border-sky-200 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]"
+                            >
+                                {goal}
+                                <button type="button" onClick={() => handleRemoveGoal(index)}>
+                                    <X className="w-[15px] h-[15px]" />
+                                </button>
+                            </span>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <div className="flex flex-col gap-[10px]">
@@ -46,7 +115,11 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                     Professional title
                 </span>
 
-                <span>input...</span>
+                <TextInput
+                    value={professionalTitle}
+                    onChange={value => setProfessionalTitle(value ?? '')}
+                    placeholder="Professional title..."
+                />
             </div>
 
             <div className="flex flex-col gap-[10px]">
@@ -54,7 +127,22 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                     Lifetime experience in this role
                 </span>
 
-                <span>years + months inputs...</span>
+                <div className="flex gap-[10px]">
+                    <SelectInput
+                        value={years}
+                        onChange={value => setYears(value as number)}
+                        options={YEARS_OPTIONS}
+                        placeholder="years"
+                        className="flex-1"
+                    />
+                    <SelectInput
+                        value={months}
+                        onChange={value => setMonths(value as number)}
+                        options={MONTHS_OPTIONS}
+                        placeholder="months"
+                        className="flex-1"
+                    />
+                </div>
             </div>
 
             <button
