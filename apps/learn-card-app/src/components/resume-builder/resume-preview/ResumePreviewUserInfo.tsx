@@ -15,6 +15,7 @@ import {
     getLinkedInHandle,
     resumeUserInfo,
 } from '../resume-builder.helpers';
+import { formatPhoneForDisplay } from './resume-preview.helpers';
 
 const PRIMARY_CHIP_KEYS: (keyof PersonalDetails)[] = [UserInfoEnum.Career, UserInfoEnum.Location];
 const CONTACT_CHIP_KEYS: (keyof PersonalDetails)[] = [
@@ -72,7 +73,7 @@ const ResumePreviewUserInfo: React.FC<{
 
     const exportContactItems = [
         isFieldVisible(UserInfoEnum.Email) ? personalDetails.email : '',
-        isFieldVisible(UserInfoEnum.Phone) ? personalDetails.phone : '',
+        isFieldVisible(UserInfoEnum.Phone) ? formatPhoneForDisplay(personalDetails.phone) : '',
         isFieldVisible(UserInfoEnum.Website) ? personalDetails.website : '',
         isFieldVisible(UserInfoEnum.LinkedIn)
             ? `linkedin.com/in/${getLinkedInHandle(personalDetails.linkedIn)}`

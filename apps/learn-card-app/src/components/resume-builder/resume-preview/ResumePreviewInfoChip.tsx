@@ -4,6 +4,7 @@ import X from '../../svgs/X';
 import { LinkedInIcon } from '../../svgs/LinkedInIcon';
 
 import { PersonalDetails, UserInfoEnum, getLinkedInHandle } from '../resume-builder.helpers';
+import { formatPhoneForDisplay } from './resume-preview.helpers';
 
 export const ResumePreviewInfoChip: React.FC<{
     detailKey: keyof PersonalDetails;
@@ -12,6 +13,9 @@ export const ResumePreviewInfoChip: React.FC<{
     onChange?: (key: keyof PersonalDetails, value: string) => void;
     onRemove?: (key: keyof PersonalDetails) => void;
 }> = ({ detailKey, placeholder, value, onChange, onRemove }) => {
+    const displayValue =
+        !onChange && detailKey === UserInfoEnum.Phone ? formatPhoneForDisplay(value) : value;
+
     return (
         <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 text-grayscale-800 text-xs font-semibold px-3 py-1.5">
             {detailKey === UserInfoEnum.LinkedIn && <LinkedInIcon className="w-4 h-4 shrink-0" />}
@@ -26,7 +30,7 @@ export const ResumePreviewInfoChip: React.FC<{
             ) : detailKey === UserInfoEnum.LinkedIn ? (
                 <span className="truncate max-w-[260px]">/{getLinkedInHandle(value)}</span>
             ) : (
-                <span className="truncate max-w-[260px]">{value}</span>
+                <span className="truncate max-w-[260px]">{displayValue}</span>
             )}
             {onRemove && Boolean(value.trim()) && (
                 <button
