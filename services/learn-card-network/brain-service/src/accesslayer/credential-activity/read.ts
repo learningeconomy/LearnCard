@@ -22,13 +22,15 @@ export type GetActivitiesOptions = {
     boostUri?: string;
     eventType?: CredentialActivityEventType;
     integrationId?: string;
+    startDate?: string;
+    endDate?: string;
 };
 
 export const getActivitiesForProfile = async (
     profileId: string,
     options: GetActivitiesOptions
 ): Promise<CredentialActivityWithDetails[]> => {
-    const { limit, cursor, boostUri, eventType, integrationId } = options;
+    const { limit, cursor, boostUri, eventType, integrationId, startDate, endDate } = options;
 
     const boostId = boostUri ? safeGetIdFromUri(boostUri) : null;
 
@@ -44,6 +46,14 @@ export const getActivitiesForProfile = async (
 
     if (integrationId) {
         whereConditions.push('a.integrationId = $integrationId');
+    }
+
+    if (startDate) {
+        whereConditions.push('a.timestamp >= $startDate');
+    }
+
+    if (endDate) {
+        whereConditions.push('a.timestamp <= $endDate');
     }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
@@ -70,6 +80,8 @@ export const getActivitiesForProfile = async (
         boostId,
         eventType,
         integrationId,
+        startDate,
+        endDate,
     });
 
     return result.records.map(record => {
@@ -112,9 +124,12 @@ export const getActivityStatsForProfile = async (
     options: {
         boostUris?: string[];
         integrationId?: string;
+        eventType?: CredentialActivityEventType;
+        startDate?: string;
+        endDate?: string;
     } = {}
 ): Promise<CredentialActivityStats> => {
-    const { boostUris, integrationId } = options;
+    const { boostUris, integrationId, eventType, startDate, endDate } = options;
 
     const boostIds = boostUris?.map(uri => safeGetIdFromUri(uri)).filter(Boolean) as string[];
 
@@ -122,6 +137,18 @@ export const getActivityStatsForProfile = async (
 
     if (integrationId) {
         whereConditions.push('a.integrationId = $integrationId');
+    }
+
+    if (eventType) {
+        whereConditions.push('a.eventType = $eventType');
+    }
+
+    if (startDate) {
+        whereConditions.push('a.timestamp >= $startDate');
+    }
+
+    if (endDate) {
+        whereConditions.push('a.timestamp <= $endDate');
     }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
@@ -151,6 +178,9 @@ export const getActivityStatsForProfile = async (
         profileId,
         boostIds,
         integrationId,
+        eventType,
+        startDate,
+        endDate,
     });
 
     if (result.records.length === 0) {
