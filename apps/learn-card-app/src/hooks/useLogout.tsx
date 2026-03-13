@@ -17,6 +17,7 @@ import {
     useSQLiteStorage,
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
+import { resumeBuilderStore } from '../stores/resumeBuilderStore';
 
 const useLogout = () => {
     const firebaseAuth = auth();
@@ -81,6 +82,8 @@ const useLogout = () => {
                 }
 
                 try {
+                    resumeBuilderStore.set.resetStore();
+
                     // Clear React Query cache FIRST while SQLite is still available for persistence
                     await queryClient.resetQueries();
 

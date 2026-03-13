@@ -31,6 +31,7 @@ import { auth } from '../../firebase/firebase';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import ConsentFlowError from './ConsentFlowError';
+import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
@@ -198,6 +199,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
             }
 
             logout(redirectUrl);
+            resumeBuilderStore.set.resetStore();
             await queryClient.resetQueries();
 
             await clearDB();
