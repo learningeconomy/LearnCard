@@ -23,6 +23,8 @@ import MainHeader from '../../components/main-header/MainHeader';
 import LaunchPadSearch from './LaunchPadSearch/LaunchPadSearch';
 import LaunchPadAppTabs, { LaunchPadTabEnum } from './LaunchPadHeader/LaunchPadAppTabs';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
+import { RecoveryBanner } from '../../components/recovery/RecoveryBanner';
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
 import {
     aiPassportApps,
@@ -47,6 +49,7 @@ type LaunchPadItem = Partial<LaunchPadAppListItemType> &
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
+    const { recoveryMethodCount, openRecoverySetup, capabilities } = useAppAuth();
     const { isAiEnabled, reason } = useAiFeatureGate();
     const history = useHistory();
     const { search } = useLocation();
@@ -468,6 +471,13 @@ const LaunchPad: React.FC = () => {
                             </div>
                         </LaunchPadHeader>
                         <div className="flex-grow flex flex-col items-center justify-start w-full pb-8 px-4 bg-grayscale-100">
+                            {capabilities.recovery && (
+                                <RecoveryBanner
+                                    recoveryMethodCount={recoveryMethodCount}
+                                    onSetup={openRecoverySetup}
+                                />
+                            )}
+
                             {tab === LaunchPadTabEnum.ai && !isAiEnabled ? (
                                 <div className="w-full max-w-[600px] flex flex-col items-center justify-center text-center px-6 py-12">
                                     <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-6 max-w-[450px]">
