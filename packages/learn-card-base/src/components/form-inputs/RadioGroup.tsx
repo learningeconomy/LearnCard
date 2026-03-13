@@ -35,21 +35,14 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
             {options.map(option => {
                 const isSelected = value === option.value;
                 return (
-                    <label
+                    <button
                         key={option.value}
+                        type="button"
+                        onClick={() => !disabled && onChange(option.value)}
                         className={`flex items-center gap-[10px] cursor-pointer ${
                             disabled ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                     >
-                        <input
-                            type="radio"
-                            name={name}
-                            value={option.value}
-                            checked={isSelected}
-                            onChange={() => !disabled && onChange(option.value)}
-                            disabled={disabled}
-                            className="sr-only"
-                        />
                         <span
                             className={`w-[25px] h-[25px] rounded-full flex items-center justify-center flex-shrink-0
                                 ${isSelected ? 'bg-emerald-500' : 'bg-grayscale-300'}
@@ -66,7 +59,7 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
                         >
                             {option.label}
                         </span>
-                    </label>
+                    </button>
                 );
             })}
         </div>
