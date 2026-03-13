@@ -21,6 +21,7 @@ import {
     ToastTypeEnum,
     CredentialCategoryEnum,
     useGetResolvedCredential,
+    useShareBoostMutation,
     useWallet,
 } from 'learn-card-base';
 import { useResumePreselection } from './useResumePreselection';
@@ -52,6 +53,7 @@ export const ResumeBuilder: React.FC = () => {
     const [isHydratingResume, setIsHydratingResume] = useState<boolean>(false);
 
     const [loadingAction, setLoadingAction] = useState<ResumeBuilderHeaderAction>(null);
+    const [resumeQrCodeLink, setResumeQrCodeLink] = useState<string>('');
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
     const hiddenSections = resumeBuilderStore.useTracked.hiddenSections();
     const activeResume = resumeBuilderStore.useTracked.activeResume();
@@ -64,6 +66,7 @@ export const ResumeBuilder: React.FC = () => {
     const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
     const { presentToast } = useToast();
     const { publishTcpResume } = useIssueTcpResume();
+    const { mutate: shareResume } = useShareBoostMutation();
     const { data: activeResumeVc } = useGetResolvedCredential(
         activeResume?.uri ?? '',
         Boolean(activeResume?.uri)
@@ -112,6 +115,130 @@ export const ResumeBuilder: React.FC = () => {
         }
     }, []);
 
+    const openResumeShareModal = useCallback(
+        (resume: VC, resumeUri: string) => {
+            newModal(
+                <ResumeShareLink
+                    resume={resume}
+                    resumeUri={resumeUri}
+                    handleClose={() => closeModal()}
+                />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        },
+        [closeModal, newModal]
+    );
+
+    const createResumeShareLink = useCallback(
+        (resume: VC, resumeUri: string): Promise<string> =>
+            new Promise((resolve, reject) => {
+                shareResume(
+                    {
+                        credential: resume,
+                        credentialUri: resumeUri,
+                        shareRouteName: 'verify/resume',
+                    },
+                    {
+                        onSuccess: data => {
+                            const link = data?.link;
+                            if (!link) {
+                                reject(new Error('Unable to generate a resume share link.'));
+                                return;
+                            }
+                            resolve(link);
+                        },
+                        onError: () => reject(new Error('Unable to generate a resume share link.')),
+                    }
+                );
+            }),
+        [shareResume]
+    );
+
+    const waitForUiUpdate = useCallback(
+        () =>
+            new Promise<void>(resolve => {
+                requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+            }),
+        []
+    );
+
+    const publishCurrentResume = useCallback(
+        async ({
+            requireShareLinkForQr = false,
+            openShareModalAfterSave = true,
+            successToastTitle = 'Published',
+        }: {
+            requireShareLinkForQr?: boolean;
+            openShareModalAfterSave?: boolean;
+            successToastTitle?: string;
+        }) => {
+            const artifact = await resumePreviewRef.current?.createPDFArtifact();
+            if (!artifact) {
+                throw new Error('Could not generate a PDF artifact for publishing.');
+            }
+
+            const includedCredentials = Object.entries(credentialEntries).flatMap(
+                ([category, entries]) =>
+                    (hiddenSections?.[category as CredentialCategoryEnum] ? [] : entries ?? []).map(
+                        entry => ({
+                            uri: entry.uri,
+                            category: category || CredentialCategoryEnum.workHistory,
+                        })
+                    )
+            );
+
+            const { lerVc, lerUri } = await publishTcpResume({
+                pdfBlob: artifact.blob,
+                fileName: artifact.fileName,
+                pdfHash: artifact.hash,
+                includedCredentials,
+            });
+
+            let shareLink: string | null = null;
+            if (documentSetup?.showQRCode) {
+                try {
+                    shareLink = await createResumeShareLink(lerVc, lerUri);
+                    setResumeQrCodeLink(shareLink);
+                } catch (error) {
+                    if (requireShareLinkForQr) throw error;
+                }
+            }
+
+            if (activeResume?.recordId) {
+                setBaselineSnapshotByResume({
+                    recordId: activeResume.recordId,
+                    snapshotKey: currentSnapshotKey,
+                });
+            }
+
+            presentToast('LER-RS resume credential published successfully.', {
+                title: successToastTitle,
+                details: lerVc?.id || undefined,
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+                duration: 6000,
+            });
+
+            if (openShareModalAfterSave) {
+                openResumeShareModal(lerVc, lerUri);
+            }
+
+            return { lerVc, lerUri, shareLink };
+        },
+        [
+            activeResume?.recordId,
+            createResumeShareLink,
+            credentialEntries,
+            currentSnapshotKey,
+            documentSetup?.showQRCode,
+            hiddenSections,
+            openResumeShareModal,
+            presentToast,
+            publishTcpResume,
+        ]
+    );
+
     const handlePreview = useCallback(async () => {
         if (loadingAction) return;
         setLoadingAction('preview');
@@ -132,54 +259,53 @@ export const ResumeBuilder: React.FC = () => {
         if (loadingAction) return;
         setLoadingAction('download');
         try {
+            let savedResumeForShare: { lerVc: VC; lerUri: string } | null = null;
+            if (documentSetup?.showQRCode) {
+                const publishResult = await publishCurrentResume({
+                    requireShareLinkForQr: true,
+                    openShareModalAfterSave: false,
+                    successToastTitle: 'Saved',
+                });
+                savedResumeForShare = {
+                    lerVc: publishResult.lerVc,
+                    lerUri: publishResult.lerUri,
+                };
+                await waitForUiUpdate();
+            }
             await resumePreviewRef.current?.generatePDF();
+            if (savedResumeForShare) {
+                openResumeShareModal(savedResumeForShare.lerVc, savedResumeForShare.lerUri);
+            }
+            presentToast('Resume downloaded successfully.', {
+                title: 'Downloaded',
+                type: ToastTypeEnum.Success,
+            });
+        } catch (error: any) {
+            presentToast(error?.message ?? 'Failed to save and download resume.', {
+                title: 'Download Failed',
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         } finally {
             setLoadingAction(null);
         }
-    }, [loadingAction]);
+    }, [
+        documentSetup?.showQRCode,
+        loadingAction,
+        openResumeShareModal,
+        presentToast,
+        publishCurrentResume,
+        waitForUiUpdate,
+    ]);
 
     const handlePublish = useCallback(async () => {
         if (loadingAction) return;
         setLoadingAction('publish');
         try {
-            const artifact = await resumePreviewRef.current?.createPDFArtifact();
-            if (!artifact) {
-                presentToast('Could not generate a PDF artifact for publishing.', {
-                    type: ToastTypeEnum.Error,
-                });
-                return;
-            }
-
-            const includedCredentials = Object.entries(credentialEntries).flatMap(
-                ([category, entries]) =>
-                    (hiddenSections?.[category as CredentialCategoryEnum] ? [] : entries ?? []).map(
-                        entry => ({
-                            uri: entry.uri,
-                            category: category || CredentialCategoryEnum.workHistory,
-                        })
-                    )
-            );
-
-            const { lerVc } = await publishTcpResume({
-                pdfBlob: artifact.blob,
-                fileName: artifact.fileName,
-                pdfHash: artifact.hash,
-                includedCredentials,
-            });
-
-            if (activeResume?.recordId) {
-                setBaselineSnapshotByResume({
-                    recordId: activeResume.recordId,
-                    snapshotKey: currentSnapshotKey,
-                });
-            }
-
-            presentToast('LER-RS resume credential published successfully.', {
-                title: 'Published',
-                details: lerVc?.id || undefined,
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-                duration: 6000,
+            await publishCurrentResume({
+                requireShareLinkForQr: false,
+                openShareModalAfterSave: true,
+                successToastTitle: activeResume?.recordId ? 'Saved' : 'Published',
             });
         } catch (error: any) {
             presentToast(error?.message ?? 'Failed to publish LER-RS resume credential.', {
@@ -190,15 +316,7 @@ export const ResumeBuilder: React.FC = () => {
         } finally {
             setLoadingAction(null);
         }
-    }, [
-        activeResume?.recordId,
-        credentialEntries,
-        currentSnapshotKey,
-        hiddenSections,
-        loadingAction,
-        presentToast,
-        publishTcpResume,
-    ]);
+    }, [loadingAction, presentToast, publishCurrentResume, activeResume?.recordId]);
 
     const openResumeConfigPanel = () => {
         if (isMobile) {
@@ -262,6 +380,7 @@ export const ResumeBuilder: React.FC = () => {
                     snapshotKey: getResumeBuilderSnapshotKey(snapshot),
                 });
                 closeInlinePreview();
+                setResumeQrCodeLink('');
                 presentToast('Loaded resume into edit mode.', {
                     type: ToastTypeEnum.Success,
                 });
@@ -279,6 +398,7 @@ export const ResumeBuilder: React.FC = () => {
     const handleCreateNewResume = useCallback(() => {
         resumeBuilderStore.set.resetStore();
         closeInlinePreview();
+        setResumeQrCodeLink('');
         setBaselineSnapshotByResume(null);
         presentToast('Started a new resume draft.', {
             type: ToastTypeEnum.Success,
@@ -293,16 +413,8 @@ export const ResumeBuilder: React.FC = () => {
             return;
         }
 
-        newModal(
-            <ResumeShareLink
-                resume={activeResumeVc as VC}
-                resumeUri={activeResume.uri}
-                handleClose={() => closeModal()}
-            />,
-            {},
-            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-        );
-    }, [activeResume?.uri, activeResumeVc, newModal, presentToast, closeModal]);
+        openResumeShareModal(activeResumeVc as VC, activeResume.uri);
+    }, [activeResume?.uri, activeResumeVc, openResumeShareModal, presentToast]);
 
     return (
         <div className="resume-builder flex h-full w-full bg-grayscale-50 overflow-hidden relative">
@@ -335,6 +447,7 @@ export const ResumeBuilder: React.FC = () => {
                         ref={resumePreviewRef}
                         isMobile={isMobile}
                         isPreviewing={isPreviewing}
+                        qrCodeValue={resumeQrCodeLink}
                     />
                 </div>
             </div>

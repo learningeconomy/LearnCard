@@ -22,7 +22,10 @@ const CONTACT_CHIP_KEYS: (keyof PersonalDetails)[] = [
     UserInfoEnum.LinkedIn,
 ];
 
-const ResumePreviewUserInfo: React.FC<{ readOnly?: boolean }> = ({ readOnly = false }) => {
+const ResumePreviewUserInfo: React.FC<{ readOnly?: boolean; qrCodeValue?: string }> = ({
+    readOnly = false,
+    qrCodeValue,
+}) => {
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const hiddenPersonalDetails = resumeBuilderStore.useTracked.hiddenPersonalDetails();
     const documentSetup = resumeBuilderStore.useTracked.documentSetup();
@@ -107,10 +110,9 @@ const ResumePreviewUserInfo: React.FC<{ readOnly?: boolean }> = ({ readOnly = fa
 
                         {showPrimaryChips && (
                             <div data-pdf-screen-only className="flex flex-wrap gap-2 mt-2">
-                                {(
-                                    readOnly
-                                        ? PRIMARY_CHIP_KEYS.filter(isFieldVisible)
-                                        : PRIMARY_CHIP_KEYS.filter(isFieldEnabled)
+                                {(readOnly
+                                    ? PRIMARY_CHIP_KEYS.filter(isFieldVisible)
+                                    : PRIMARY_CHIP_KEYS.filter(isFieldEnabled)
                                 ).map(key => (
                                     <ResumePreviewInfoChip
                                         key={key}
@@ -141,7 +143,7 @@ const ResumePreviewUserInfo: React.FC<{ readOnly?: boolean }> = ({ readOnly = fa
                             <TrustedIcon className="w-4 h-4" />
                         </div>
 
-                        <QRCodeSVG value="https://learncard.app" size={44} />
+                        <QRCodeSVG value={qrCodeValue || 'https://learncard.app'} size={44} />
                     </div>
                 )}
             </div>
@@ -169,7 +171,10 @@ const ResumePreviewUserInfo: React.FC<{ readOnly?: boolean }> = ({ readOnly = fa
                         )}
                     </div>
                     {!readOnly && (
-                        <div data-pdf-hide className="shrink-0 flex flex-col items-center gap-2 pt-0.5">
+                        <div
+                            data-pdf-hide
+                            className="shrink-0 flex flex-col items-center gap-2 pt-0.5"
+                        >
                             <ResumeBuilderToggle
                                 checked={!hiddenPersonalDetails?.[UserInfoEnum.Summary]}
                                 onChange={checked =>
@@ -196,10 +201,9 @@ const ResumePreviewUserInfo: React.FC<{ readOnly?: boolean }> = ({ readOnly = fa
                     data-pdf-screen-only
                     className="mt-4 pt-4 border-t border-grayscale-200 flex flex-wrap gap-2"
                 >
-                    {(
-                        readOnly
-                            ? CONTACT_CHIP_KEYS.filter(isFieldVisible)
-                            : CONTACT_CHIP_KEYS.filter(isFieldEnabled)
+                    {(readOnly
+                        ? CONTACT_CHIP_KEYS.filter(isFieldVisible)
+                        : CONTACT_CHIP_KEYS.filter(isFieldEnabled)
                     ).map(key => (
                         <ResumePreviewInfoChip
                             key={key}
