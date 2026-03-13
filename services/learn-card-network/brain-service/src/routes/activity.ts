@@ -35,12 +35,14 @@ export const activityRouter = t.router({
                 boostUri: z.string().optional(),
                 eventType: CredentialActivityEventTypeValidator.optional(),
                 integrationId: z.string().optional(),
+                startDate: z.string().optional(),
+                endDate: z.string().optional(),
             })
         )
         .output(PaginatedCredentialActivitiesValidator)
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { limit, cursor, boostUri, eventType, integrationId } = input;
+            const { limit, cursor, boostUri, eventType, integrationId, startDate, endDate } = input;
 
             const records = await getActivitiesForProfile(profile.profileId, {
                 limit: limit + 1,
@@ -48,6 +50,8 @@ export const activityRouter = t.router({
                 boostUri,
                 eventType,
                 integrationId,
+                startDate,
+                endDate,
             });
 
             const hasMore = records.length > limit;
@@ -77,16 +81,22 @@ export const activityRouter = t.router({
             z.object({
                 boostUris: z.array(z.string()).optional(),
                 integrationId: z.string().optional(),
+                eventType: CredentialActivityEventTypeValidator.optional(),
+                startDate: z.string().optional(),
+                endDate: z.string().optional(),
             })
         )
         .output(CredentialActivityStatsValidator)
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUris, integrationId } = input;
+            const { boostUris, integrationId, eventType, startDate, endDate } = input;
 
             return getActivityStatsForProfile(profile.profileId, {
                 boostUris,
                 integrationId,
+                eventType,
+                startDate,
+                endDate,
             });
         }),
 
