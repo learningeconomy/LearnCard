@@ -51,3 +51,5 @@ For detailed architecture, read the relevant AGENTS.md when working in that area
 ## Quick Reference
 
 For common API patterns and key file locations, see `PATTERNS.md` in the repo root.
+
+Please read AGENTS.md
