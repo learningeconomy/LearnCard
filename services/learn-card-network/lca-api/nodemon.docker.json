@@ -11,5 +11,6 @@
     "ignore": ["**/*.d.ts", "**/node_modules/**", "**/coverage/**", "**/*.test.ts", "**/*.spec.ts"],
     "exec": "pnpm build:docker && node dist/docker-entry.js",
     "delay": "500",
-    "verbose": true
+    "verbose": true,
+    "exitcrash": true
 }
