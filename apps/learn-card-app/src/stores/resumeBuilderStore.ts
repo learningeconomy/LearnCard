@@ -13,11 +13,13 @@ import {
 } from '../components/resume-builder/resume-builder.helpers';
 
 export type ResumeBuilderState = {
+    activeResume: ResumeBuilderActiveResume | null;
     personalDetails: PersonalDetails;
     hiddenPersonalDetails: Partial<Record<keyof PersonalDetails, boolean>>;
     hiddenSections: Partial<Record<ResumeSectionKey, boolean>>;
     currentJobCredentialUri: string | null;
-    workExperienceEndDates: Record<string, string>;
+    credentialStartDates: Record<string, string>;
+    credentialEndDates: Record<string, string>;
     documentSetup: {
         showQRCode: boolean;
         fileName: string;
@@ -25,6 +27,50 @@ export type ResumeBuilderState = {
     credentialEntries: Partial<Record<ResumeSectionKey, CredentialEntry[]>>;
     sectionOrder: ResumeSectionKey[];
 };
+
+export type ResumeBuilderSnapshot = {
+    personalDetails: PersonalDetails;
+    hiddenPersonalDetails: Partial<Record<keyof PersonalDetails, boolean>>;
+    hiddenSections: Partial<Record<ResumeSectionKey, boolean>>;
+    currentJobCredentialUri: string | null;
+    credentialStartDates: Record<string, string>;
+    credentialEndDates: Record<string, string>;
+    documentSetup: {
+        showQRCode: boolean;
+        fileName: string;
+    };
+    credentialEntries: Partial<Record<ResumeSectionKey, CredentialEntry[]>>;
+    sectionOrder: ResumeSectionKey[];
+};
+
+export type ResumeBuilderActiveResume = {
+    recordId: string;
+    uri: string | null;
+    lerRecordId: string | null;
+    generatedAt?: string | null;
+    fileName?: string | null;
+};
+
+const stableSortObject = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(stableSortObject);
+
+    if (value && typeof value === 'object') {
+        return Object.keys(value as Record<string, unknown>)
+            .sort()
+            .reduce(
+                (acc, key) => {
+                    acc[key] = stableSortObject((value as Record<string, unknown>)[key]);
+                    return acc;
+                },
+                {} as Record<string, unknown>
+            );
+    }
+
+    return value;
+};
+
+export const getResumeBuilderSnapshotKey = (snapshot: ResumeBuilderSnapshot): string =>
+    JSON.stringify(stableSortObject(snapshot));
 
 const defaultPersonalDetails: PersonalDetails = {
     name: '',
@@ -56,17 +102,53 @@ const setEntries = (set: any, section: ResumeSectionKey, entries: CredentialEntr
 
 export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilderState>(
     {
+        activeResume: null,
         personalDetails: defaultPersonalDetails,
         hiddenPersonalDetails: {},
         hiddenSections: {},
         currentJobCredentialUri: null,
-        workExperienceEndDates: {},
+        credentialStartDates: {},
+        credentialEndDates: {},
         documentSetup: defaultDocumentSetup,
         sectionOrder: defaultSectionOrder,
         credentialEntries: {},
     },
     { persist: { name: 'resumeBuilderStore', enabled: true } }
 ).extendActions(set => ({
+    setActiveResume: (activeResume: ResumeBuilderActiveResume | null) => {
+        set.activeResume(activeResume);
+    },
+    hydrateStore: (
+        snapshot: ResumeBuilderSnapshot,
+        activeResume: ResumeBuilderActiveResume | null = null
+    ) => {
+        set.activeResume(activeResume);
+        set.personalDetails({
+            ...defaultPersonalDetails,
+            ...(snapshot.personalDetails ?? {}),
+        });
+        set.hiddenPersonalDetails({ ...(snapshot.hiddenPersonalDetails ?? {}) });
+        set.hiddenSections({ ...(snapshot.hiddenSections ?? {}) });
+        set.currentJobCredentialUri(snapshot.currentJobCredentialUri ?? null);
+        set.credentialStartDates({ ...(snapshot.credentialStartDates ?? {}) });
+        set.credentialEndDates({ ...(snapshot.credentialEndDates ?? {}) });
+        set.documentSetup({
+            ...defaultDocumentSetup,
+            ...(snapshot.documentSetup ?? {}),
+        });
+        set.credentialEntries(
+            Object.fromEntries(
+                Object.entries(snapshot.credentialEntries ?? {}).map(([section, entries]) => [
+                    section,
+                    (entries ?? []).map(entry => ({
+                        ...entry,
+                        fields: (entry.fields ?? []).map(field => ({ ...field })),
+                    })),
+                ])
+            ) as Partial<Record<ResumeSectionKey, CredentialEntry[]>>
+        );
+        set.sectionOrder(snapshot.sectionOrder?.length ? snapshot.sectionOrder : defaultSectionOrder);
+    },
     setPersonalDetails: (details: Partial<PersonalDetails>) => {
         const prev = resumeBuilderStore.get.personalDetails();
         set.personalDetails({ ...prev, ...details });
@@ -129,16 +211,27 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
     setCurrentJobCredentialUri: (uri: string | null) => {
         set.currentJobCredentialUri(uri);
     },
-    setWorkExperienceEndDate: (uri: string, date: string) => {
-        const prev = resumeBuilderStore.get.workExperienceEndDates();
+    setCredentialStartDate: (uri: string, date: string) => {
+        const prev = resumeBuilderStore.get.credentialStartDates();
         if (!date) {
             const next = { ...prev };
             delete next[uri];
-            set.workExperienceEndDates(next);
+            set.credentialStartDates(next);
             return;
         }
 
-        set.workExperienceEndDates({ ...prev, [uri]: date });
+        set.credentialStartDates({ ...prev, [uri]: date });
+    },
+    setCredentialEndDate: (uri: string, date: string) => {
+        const prev = resumeBuilderStore.get.credentialEndDates();
+        if (!date) {
+            const next = { ...prev };
+            delete next[uri];
+            set.credentialEndDates(next);
+            return;
+        }
+
+        set.credentialEndDates({ ...prev, [uri]: date });
     },
 
     // ── Credential selection & ordering ─────────────────────────────────────
@@ -154,13 +247,17 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
             ) {
                 set.currentJobCredentialUri(null);
             }
-            if (section === CredentialCategoryEnum.workHistory) {
-                const prevEndDates = resumeBuilderStore.get.workExperienceEndDates();
-                if (prevEndDates[uri]) {
-                    const nextEndDates = { ...prevEndDates };
-                    delete nextEndDates[uri];
-                    set.workExperienceEndDates(nextEndDates);
-                }
+            const prevStartDates = resumeBuilderStore.get.credentialStartDates();
+            if (prevStartDates[uri]) {
+                const nextStartDates = { ...prevStartDates };
+                delete nextStartDates[uri];
+                set.credentialStartDates(nextStartDates);
+            }
+            const prevEndDates = resumeBuilderStore.get.credentialEndDates();
+            if (prevEndDates[uri]) {
+                const nextEndDates = { ...prevEndDates };
+                delete nextEndDates[uri];
+                set.credentialEndDates(nextEndDates);
             }
         } else {
             const added: CredentialEntry = { uri, index: entries.length, fields: [] };
@@ -285,11 +382,13 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
 
     // ── Reset ───────────────────────────────────────────────────────────────
     resetStore: () => {
+        set.activeResume(null);
         set.personalDetails(defaultPersonalDetails);
         set.hiddenPersonalDetails({});
         set.hiddenSections({});
         set.currentJobCredentialUri(null);
-        set.workExperienceEndDates({});
+        set.credentialStartDates({});
+        set.credentialEndDates({});
         set.documentSetup(defaultDocumentSetup);
         set.credentialEntries({});
         set.sectionOrder(defaultSectionOrder);

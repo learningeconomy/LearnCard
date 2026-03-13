@@ -1,9 +1,10 @@
 import React, { useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
+import { VC } from '@learncard/types';
 
 import ResumePreviewUserInfo from './ResumePreviewUserInfo';
 import ResumePreviewEmptyPlaceholder from './ResumePreviewEmptyPlaceholder';
 import ResumePreviewGroupedCredentialsBlock from './ResumePreviewGroupedCredentialsBlock';
-import useResumePdf, { ResumePdfPreviewData } from './useResumePdf';
+import useResumePdf, { ResumePdfArtifact, ResumePdfPreviewData } from './useResumePdf';
 
 import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
@@ -14,26 +15,38 @@ const LETTER_HEIGHT_PX = 1056; // US Letter at 96 DPI
 export type ResumePreviewHandle = {
     createPDFPreviewUrl: () => Promise<ResumePdfPreviewData | null>;
     generatePDF: () => Promise<void>;
+    createPDFArtifact: () => Promise<ResumePdfArtifact | null>;
 };
 
 const ResumePreview = forwardRef<
     ResumePreviewHandle,
-    { isMobile?: boolean; isPreviewing?: boolean }
->(function ResumePreview({ isMobile = false }, ref) {
+    {
+        isMobile?: boolean;
+        isPreviewing?: boolean;
+        readOnly?: boolean;
+        resolvedCredentialsByUri?: Record<string, VC | null | undefined>;
+        qrCodeValue?: string;
+        profileDid?: string;
+    }
+>(function ResumePreview(
+    { isMobile = false, readOnly = false, resolvedCredentialsByUri, qrCodeValue, profileDid },
+    ref
+) {
     const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
     const hiddenSections = resumeBuilderStore.useTracked.hiddenSections();
 
     const previewCardRef = useRef<HTMLDivElement>(null);
-    const { createPDFPreviewUrl, generatePDF } = useResumePdf(previewCardRef);
+    const { createPDFPreviewUrl, generatePDF, createPDFArtifact } = useResumePdf(previewCardRef);
 
     const orderedSections = useMemo(() => {
         const sectionsFromSavedOrder = sectionOrder
             .map(key => RESUME_SECTIONS.find(s => s.key === key))
             .filter(Boolean) as (typeof RESUME_SECTIONS)[number][];
         const missingSections = RESUME_SECTIONS.filter(
-            section => !sectionsFromSavedOrder.some(orderedSection => orderedSection.key === section.key)
+            section =>
+                !sectionsFromSavedOrder.some(orderedSection => orderedSection.key === section.key)
         );
 
         return [...sectionsFromSavedOrder, ...missingSections];
@@ -42,18 +55,21 @@ const ResumePreview = forwardRef<
     const hasVisibleContent = useMemo(() => {
         const hasPersonal = Object.values(personalDetails).some(v => v.trim());
         const hasCredentials = Object.values(credentialEntries).some(arr => arr && arr.length > 0);
-        const hasVisibleEmptySection = orderedSections.some(section => {
-            const sectionKey = section.key as ResumeSectionKey;
-            if (hiddenSections?.[sectionKey]) return false;
-            return sectionKey !== CredentialCategoryEnum.socialBadge;
-        });
+        const hasVisibleEmptySection = readOnly
+            ? false
+            : orderedSections.some(section => {
+                  const sectionKey = section.key as ResumeSectionKey;
+                  if (hiddenSections?.[sectionKey]) return false;
+                  return sectionKey !== CredentialCategoryEnum.socialBadge;
+              });
 
         return hasPersonal || hasCredentials || hasVisibleEmptySection;
-    }, [credentialEntries, hiddenSections, orderedSections, personalDetails]);
+    }, [credentialEntries, hiddenSections, orderedSections, personalDetails, readOnly]);
 
     useImperativeHandle(ref, () => ({
         createPDFPreviewUrl,
         generatePDF,
+        createPDFArtifact,
     }));
 
     if (!hasVisibleContent) {
@@ -79,17 +95,25 @@ const ResumePreview = forwardRef<
                         } as React.CSSProperties
                     }
                 >
-                    <ResumePreviewUserInfo />
+                    <ResumePreviewUserInfo
+                        readOnly={readOnly}
+                        qrCodeValue={qrCodeValue}
+                        profileDid={profileDid}
+                    />
                     {orderedSections.map(section => {
                         const sectionKey = section.key as ResumeSectionKey;
-                        const entries = [...(credentialEntries[sectionKey] ?? [])].sort((a, b) => a.index - b.index);
+                        const entries = [...(credentialEntries[sectionKey] ?? [])].sort(
+                            (a, b) => a.index - b.index
+                        );
                         if (hiddenSections?.[sectionKey]) return null;
                         return (
                             <ResumePreviewGroupedCredentialsBlock
                                 key={sectionKey}
                                 section={section}
                                 isMobile={isMobile}
+                                readOnly={readOnly}
                                 filteredUris={entries.map(entry => entry.uri)}
+                                resolvedCredentialsByUri={resolvedCredentialsByUri}
                             />
                         );
                     })}

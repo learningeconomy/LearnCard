@@ -2,21 +2,19 @@ import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonIcon } from '@ionic/react';
 import SlimCaretRight from '../svgs/SlimCaretRight';
-import { documentTextOutline } from 'ionicons/icons';
 import ResumeBuilderIcon from '../../assets/images/resume-builder-icon.png';
 
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
+type ResumeBuilderControllerMode = 'default' | 'inline';
 
-import { useTheme } from '../../theme/hooks/useTheme';
-
-export const ResumeBuilderController: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const ResumeBuilderController: React.FC<{
+    className?: string;
+    mode?: ResumeBuilderControllerMode;
+}> = ({ className = '', mode = 'default' }) => {
     const flags = useFlags();
     const history = useHistory();
     const { gate } = useLCNGatedAction();
-
-    const { theme, colors } = useTheme();
 
     const handleResumeBuilderButton = async () => {
         const { prompted } = await gate();
@@ -28,11 +26,38 @@ export const ResumeBuilderController: React.FC<{ className?: string }> = ({ clas
 
     const resumeExists = false; // TODO: Check if resume exists
 
+    if (mode === 'inline') {
+        return (
+            <div
+                role="button"
+                onClick={handleResumeBuilderButton}
+                className={`w-full h-[150px] max-h-[150px] bg-white rounded-[28px] p-4 flex flex-col justify-start shadow-[0_8px_20px_rgba(15,23,42,0.12)] overflow-hidden ${className}`}
+            >
+                <div className="flex justify-center mb-2">
+                    <div className="rounded-[14px] p-[8px] bg-white">
+                        <img
+                            src={ResumeBuilderIcon}
+                            alt="Resume Builder"
+                            className="w-[36px] h-[36px]"
+                        />
+                    </div>
+                </div>
+
+                <h5 className="text-[17px] leading-[130%] font-poppins font-[600] text-grayscale-900 text-center">
+                    Resume Builder
+                </h5>
+                <p className="mt-1 text-[13px] leading-[125%] text-grayscale-700 font-poppins text-center line-clamp-2">
+                    Create &amp; share your resume built with your LearnCard credentials.
+                </p>
+            </div>
+        );
+    }
+
     return (
         <div
             role="button"
             onClick={handleResumeBuilderButton}
-            className={`w-full flex items-center justify-between max-w-[900px] bg-grayscale-100 rounded-[15px] p-[10px] ${className}`}
+            className={`w-full flex items-center justify-between max-w-[900px] bg-white rounded-[15px] p-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.12)] ${className}`}
         >
             <div className="flex items-center gap-[10px]">
                 <div className={`rounded-[10px] p-[5px] bg-white max-h-[40px] max-w-[40px]`}>

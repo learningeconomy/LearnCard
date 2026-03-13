@@ -94,6 +94,7 @@ Self-assigned skills are **self-attested credentials**. They represent what a us
 
 ## Related Documentation
 
+-   [Resume Builder LER-RS Mapping](resume-builder-ler-rs-mapping.md) — Field/category mapping for resume issuance
 -   [Create a Credential](../../tutorials/create-a-credential.md) — For issuers
 -   [Verify Credentials](../../tutorials/verify-credentials.md) — For verifiers
 -   [ConsentFlow Overview](../../core-concepts/consent-and-permissions/consentflow-overview.md) — Understanding consent

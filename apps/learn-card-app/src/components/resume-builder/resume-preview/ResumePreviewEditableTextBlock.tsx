@@ -9,7 +9,7 @@ type ResumePreviewEditableTextBlockProps = {
     isSelfAttested: boolean;
     showDefaultSummaryDecoration?: boolean;
     onRestoreDefault?: () => void;
-    onChange: (val: string) => void;
+    onChange?: (val: string) => void;
     onRemove?: () => void;
     multiline?: boolean;
 };
@@ -29,7 +29,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
     const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
     const showDecoration = multiline && showDefaultSummaryDecoration;
 
-    const commit = () => onChange(draft.trim());
+    const commit = () => onChange?.(draft.trim());
 
     useEffect(() => {
         setDraft(value);
@@ -50,7 +50,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
             onKeyDown: handleKeyDown,
             onChange: (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
                 setDraft(e.target.value);
-                onChange(e.target.value);
+                onChange?.(e.target.value);
             },
             className: `w-full text-xs text-grayscale-700 px-2 py-1.5 outline-none resize-none leading-relaxed ${
                 showDecoration ? 'bg-transparent rounded-none' : 'bg-indigo-50 rounded-lg'

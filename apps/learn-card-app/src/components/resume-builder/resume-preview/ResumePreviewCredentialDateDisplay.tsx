@@ -3,62 +3,64 @@ import React from 'react';
 import Calendar from '../../svgs/Calendar';
 
 type ResumePreviewCredentialDateDisplayProps = {
-    isWorkExperienceSection: boolean;
-    createdAt?: string;
-    isCurrentJob: boolean;
+    isEditing: boolean;
+    startLabel?: string;
+    formattedStartDate: string;
     formattedEndDate: string;
     dateLabel: string;
-    onOpenInlineDatePicker: () => void;
+    onOpenStartDatePicker: () => void;
+    onOpenEndDatePicker: () => void;
 };
 
 const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDisplayProps> = ({
-    isWorkExperienceSection,
-    createdAt,
-    isCurrentJob,
+    isEditing,
+    startLabel,
+    formattedStartDate,
     formattedEndDate,
     dateLabel,
-    onOpenInlineDatePicker,
+    onOpenStartDatePicker,
+    onOpenEndDatePicker,
 }) => {
-    if (!isWorkExperienceSection) {
-        if (!dateLabel) return null;
-        return (
-            <span className="block sm:inline font-medium text-grayscale-600 leading-tight">
-                • {dateLabel}
-            </span>
-        );
-    }
-
-    if (!createdAt) return null;
+    if (!startLabel && !formattedStartDate && !formattedEndDate && !dateLabel) return null;
 
     return (
         <div className="flex items-center gap-1">
-            <span
-                data-pdf-screen-only
-                className="block sm:inline font-medium text-grayscale-600 leading-tight"
-            >
-                • {createdAt}
-                {isCurrentJob && ' - Present'}
-                {!isCurrentJob && ' -'}
-            </span>
-            {!isCurrentJob && (
-                <button
-                    data-pdf-hide
-                    type="button"
-                    onClick={onOpenInlineDatePicker}
-                    className="ml-1 sm:mt-0 inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
-                >
-                    <span className="font-medium text-grayscale-900">
-                        {formattedEndDate || 'End date'}
-                    </span>
-                    <Calendar className="w-5 h-5 text-grayscale-900" />
-                </button>
+            {!isEditing ? (
+                <span className="block sm:inline font-medium text-grayscale-600 leading-tight">
+                    {dateLabel ? `• ${dateLabel}` : ''}
+                </span>
+            ) : (
+                <>
+                    <button
+                        data-pdf-hide
+                        type="button"
+                        onClick={onOpenStartDatePicker}
+                        className="ml-1 sm:mt-0 inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
+                    >
+                        <span className="font-medium text-sm text-grayscale-900">
+                            {formattedStartDate || startLabel || 'Start date'}
+                        </span>
+                        <Calendar className="w-5 h-5 text-grayscale-900" />
+                    </button>
+                    <button
+                        data-pdf-hide
+                        type="button"
+                        onClick={onOpenEndDatePicker}
+                        className="ml-1 sm:mt-0 inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
+                    >
+                        <span className="font-medium text-sm text-grayscale-900">
+                            {formattedEndDate || 'End date'}
+                        </span>
+                        <Calendar className="w-5 h-5 text-grayscale-900" />
+                    </button>
+                </>
             )}
             <span
                 data-pdf-export-inline
                 style={{ display: 'none' }}
                 className="font-medium text-grayscale-600"
             >
-                • {dateLabel || `${createdAt}${isCurrentJob ? ' - Present' : ''}`}
+                {dateLabel ? `• ${dateLabel}` : ''}
             </span>
         </div>
     );

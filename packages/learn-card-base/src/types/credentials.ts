@@ -44,6 +44,7 @@ export const CREDENTIAL_CATEGORIES = [
     'ID',
     'Learning History',
     'Work History',
+    'Resume',
     // 'Hidden',
     'Membership',
     'Currency',

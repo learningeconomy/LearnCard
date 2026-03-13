@@ -15,6 +15,19 @@ export type ResumePdfPreviewData = {
     url: string;
 };
 
+export type ResumePdfArtifact = {
+    blob: Blob;
+    fileName: string;
+    pageCount: number;
+    bytes: Uint8Array;
+    hash: string;
+};
+
+const toHex = (bytes: ArrayBuffer): string =>
+    Array.from(new Uint8Array(bytes))
+        .map(value => value.toString(16).padStart(2, '0'))
+        .join('');
+
 const toPdfFileName = (raw?: string): string => {
     const trimmed = (raw || '').trim();
     if (!trimmed) return 'resume.pdf';
@@ -70,6 +83,7 @@ export const useResumePdf = (
 ): {
     createPDFPreviewUrl: () => Promise<ResumePdfPreviewData | null>;
     generatePDF: () => Promise<void>;
+    createPDFArtifact: () => Promise<ResumePdfArtifact | null>;
 } => {
     const buildPDF = useCallback(async (): Promise<JsPDFType | null> => {
         const card = previewCardRef.current;
@@ -229,6 +243,26 @@ export const useResumePdf = (
         };
     }, [buildPDF]);
 
+    const createPDFArtifact = useCallback(async (): Promise<ResumePdfArtifact | null> => {
+        const pdf = await buildPDF();
+        if (!pdf) return null;
+
+        const blob = pdf.output('blob');
+        const arrayBuffer = await blob.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+        const hash = toHex(hashBuffer);
+        const fileName = toPdfFileName(resumeBuilderStore.get.documentSetup()?.fileName);
+
+        return {
+            blob,
+            fileName,
+            pageCount: pdf.getNumberOfPages(),
+            bytes,
+            hash,
+        };
+    }, [buildPDF]);
+
     const generatePDF = useCallback(async (): Promise<void> => {
         const pdf = await buildPDF();
         if (!pdf) return;
@@ -248,6 +282,7 @@ export const useResumePdf = (
     return {
         createPDFPreviewUrl,
         generatePDF,
+        createPDFArtifact,
     };
 };
 

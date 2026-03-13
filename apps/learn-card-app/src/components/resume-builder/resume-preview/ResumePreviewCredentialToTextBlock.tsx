@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { add } from 'ionicons/icons';
 import moment from 'moment';
+import { VC } from '@learncard/types';
 
 import {
     IonDatetime,
@@ -14,36 +15,47 @@ import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
 import VerticalArrowsIcon from '../../../components/svgs/VerticalArrowsIcon';
 import ResumePreviewEditableTextBlock from './ResumePreviewEditableTextBlock';
 import ResumePreviewCredentialDateDisplay from './ResumePreviewCredentialDateDisplay';
+import BoostPreview from '../../boost/boostCMS/BoostPreview/BoostPreview';
+import NonBoostPreview from '../../boost/boostCMS/BoostPreview/NonBoostPreview';
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
-import {
-    CredentialCategoryEnum,
-    ModalTypes,
-    useGetResolvedCredential,
-    useGetVCInfo,
-    useModal,
-} from 'learn-card-base';
+import { ModalTypes, useGetResolvedCredential, useGetVCInfo, useModal } from 'learn-card-base';
 import { ResumeSectionKey } from '../resume-builder.helpers';
+import {
+    getDefaultCategoryForCredential,
+    isBoostCredential,
+    unwrapBoostCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
 
 const ResumePreviewCredentialToTextBlock: React.FC<{
     uri: string;
     section: ResumeSectionKey;
+    resolvedCredential?: VC | null;
     isEditing: boolean;
     setIsEditing: (val: boolean) => void;
-}> = ({ uri, section, isEditing, setIsEditing: _setIsEditing }) => {
-    const { data: vc } = useGetResolvedCredential(uri);
-    const { title, description: vcDescription } = useGetVCInfo(vc || {}, section);
+}> = ({ uri, section, resolvedCredential, isEditing, setIsEditing: _setIsEditing }) => {
+    const hasResolvedCredentialOverride = resolvedCredential !== undefined;
+    const { data: queriedCredential } = useGetResolvedCredential(
+        uri,
+        !hasResolvedCredentialOverride
+    );
+    const vc = resolvedCredential ?? queriedCredential;
+    const { title, description: vcDescription } = useGetVCInfo(
+        (vc ?? ({ '@context': [], type: [] } as VC)),
+        section
+    );
 
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
-    const currentJobCredentialUri = resumeBuilderStore.useTracked.currentJobCredentialUri();
-    const workExperienceEndDates = resumeBuilderStore.useTracked.workExperienceEndDates();
+    const credentialStartDates = resumeBuilderStore.useTracked.credentialStartDates();
+    const credentialEndDates = resumeBuilderStore.useTracked.credentialEndDates();
     const initCredentialFields = resumeBuilderStore.set.initCredentialFields;
     const addCredentialField = resumeBuilderStore.set.addCredentialField;
     const updateCredentialField = resumeBuilderStore.set.updateCredentialField;
     const removeCredentialField = resumeBuilderStore.set.removeCredentialField;
     const setCredentialFieldHidden = resumeBuilderStore.set.setCredentialFieldHidden;
-    const setWorkExperienceEndDate = resumeBuilderStore.set.setWorkExperienceEndDate;
+    const setCredentialStartDate = resumeBuilderStore.set.setCredentialStartDate;
+    const setCredentialEndDate = resumeBuilderStore.set.setCredentialEndDate;
     const { newModal, closeModal } = useModal();
 
     const entry = (credentialEntries[section] ?? []).find(e => e.uri === uri);
@@ -57,37 +69,38 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     const lastMetadataField = metadataFields[metadataFields.length - 1];
 
     const info = vc ? getInfoFromCredential(vc as any, 'MMM yyyy', { uppercaseDate: false }) : null;
-    const selectedEndDate = workExperienceEndDates?.[uri] ?? '';
-    const isWorkExperienceSection = section === CredentialCategoryEnum.workHistory;
-    const isCurrentJob = isWorkExperienceSection && currentJobCredentialUri === uri;
+    const selectedStartDate = credentialStartDates?.[uri] ?? '';
+    const selectedEndDate = credentialEndDates?.[uri] ?? '';
+    const fallbackStartLabel = info?.createdAt ?? '';
+    const formattedStartDate = selectedStartDate
+        ? moment(selectedStartDate, 'YYYY-MM-DD').format('MMM yyyy')
+        : '';
     const formattedEndDate = selectedEndDate
         ? moment(selectedEndDate, 'YYYY-MM-DD').format('MMM yyyy')
         : '';
+    const visibleStartLabel = formattedStartDate || fallbackStartLabel;
     let dateLabel = '';
-    if (info?.createdAt) {
-        dateLabel = info.createdAt;
-
-        if (isCurrentJob) {
-            dateLabel = `${info.createdAt} - Present`;
-        } else if (isWorkExperienceSection && formattedEndDate) {
-            dateLabel = `${info.createdAt} - ${formattedEndDate}`;
-        }
+    if (visibleStartLabel && formattedEndDate) {
+        dateLabel = `${visibleStartLabel} - ${formattedEndDate}`;
+    } else if (!visibleStartLabel && formattedEndDate) {
+        dateLabel = formattedEndDate;
+    } else if (visibleStartLabel) {
+        dateLabel = visibleStartLabel;
     }
 
-    const openInlineDatePicker = () => {
+    const openInlineDatePicker = (mode: 'start' | 'end') => {
         newModal(
             <div className="w-full h-full transparent flex items-center justify-center">
                 <IonDatetime
                     onIonChange={e => {
                         if (e.detail.value) {
-                            setWorkExperienceEndDate(
-                                uri,
-                                moment(e.detail.value).format('YYYY-MM-DD')
-                            );
+                            const formattedDate = moment(e.detail.value).format('YYYY-MM-DD');
+                            if (mode === 'start') setCredentialStartDate(uri, formattedDate);
+                            else setCredentialEndDate(uri, formattedDate);
                             closeModal();
                         }
                     }}
-                    value={selectedEndDate || undefined}
+                    value={(mode === 'start' ? selectedStartDate : selectedEndDate) || undefined}
                     presentation="date"
                     className="bg-white text-black rounded-[20px] w-full shadow-3xl z-50 font-notoSans"
                     showDefaultButtons
@@ -130,6 +143,36 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
         addCredentialField(uri, section, '', 'selfAttested', 'metadata');
     };
 
+    const openCredentialPreview = () => {
+        if (!vc || isEditing) return;
+
+        const categoryType =
+            (getDefaultCategoryForCredential(unwrapBoostCredential(vc)) || section) as any;
+        const previewProps = {
+            credential: vc,
+            categoryType,
+            verificationItems: [],
+            customThumbComponent: null,
+            customBodyCardComponent: null,
+            customFooterComponent: <div />,
+            customIssueHistoryComponent: null,
+            handleCloseModal: () => closeModal(),
+        };
+
+        newModal(
+            isBoostCredential(vc) ? (
+                <BoostPreview {...previewProps} />
+            ) : (
+                <NonBoostPreview {...previewProps} />
+            ),
+            undefined,
+            {
+                desktop: ModalTypes.FullScreen,
+                mobile: ModalTypes.FullScreen,
+            }
+        );
+    };
+
     return (
         <div className="flex items-start gap-3">
             <div className="flex flex-col gap-1 flex-1 min-w-0">
@@ -140,17 +183,28 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                     </span>
                     <div className="min-w-0 flex-1">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1">
-                            <span className="text-sm font-semibold text-grayscale-800 leading-tight break-words">
-                                {title || 'Credential'}
-                            </span>
+                            {vc && !isEditing ? (
+                                <button
+                                    type="button"
+                                    onClick={openCredentialPreview}
+                                    className="max-w-full cursor-pointer bg-transparent border-none p-0 text-left text-sm font-semibold text-grayscale-800 leading-tight break-words hover:underline hover:underline-offset-2"
+                                >
+                                    {title || 'Credential'}
+                                </button>
+                            ) : (
+                                <span className="text-sm font-semibold text-grayscale-800 leading-tight break-words">
+                                    {title || 'Credential'}
+                                </span>
+                            )}
                             <div className="mt-1 sm:mt-0 min-w-0">
                                 <ResumePreviewCredentialDateDisplay
-                                    isWorkExperienceSection={isWorkExperienceSection}
-                                    createdAt={info?.createdAt}
-                                    isCurrentJob={isCurrentJob}
+                                    isEditing={isEditing}
+                                    startLabel={fallbackStartLabel}
+                                    formattedStartDate={formattedStartDate}
                                     formattedEndDate={formattedEndDate}
                                     dateLabel={dateLabel}
-                                    onOpenInlineDatePicker={openInlineDatePicker}
+                                    onOpenStartDatePicker={() => openInlineDatePicker('start')}
+                                    onOpenEndDatePicker={() => openInlineDatePicker('end')}
                                 />
                             </div>
                         </div>
