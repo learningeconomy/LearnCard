@@ -751,8 +751,9 @@ export const boostsRouter = t.router({
 
                     // Route to Universal Inbox for email/phone recipients
                     if (inboxRecipient) {
-                        // Try to resolve recipient profile for auto-populating template variables
+                        // Try to resolve recipient profile for auto-populating template variables + recipient DID
                         let inboxRecipientName: string | undefined;
+                        let inboxRecipientDid: string | undefined;
                         if (inboxRecipient.type === 'email' || inboxRecipient.type === 'phone') {
                             const contactMethod = await traceDb('getContactMethodByValue:inbox', () =>
                                 getContactMethodByValue(inboxRecipient.type as 'email' | 'phone', inboxRecipient.value)
@@ -762,6 +763,9 @@ export const boostsRouter = t.router({
                                     getProfileByContactMethod(contactMethod.id)
                                 );
                                 inboxRecipientName = recipientProfile?.displayName;
+                                if (recipientProfile?.profileId) {
+                                    inboxRecipientDid = getDidWeb(domain, recipientProfile.profileId);
+                                }
                             }
                         }
 
@@ -780,6 +784,7 @@ export const boostsRouter = t.router({
                                                 string,
                                                 unknown
                                             >,
+                                            recipientDid: inboxRecipientDid,
                                             recipientName: inboxRecipientName,
                                         })
                                 );
