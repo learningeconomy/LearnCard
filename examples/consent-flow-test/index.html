@@ -81,9 +81,9 @@
 
                 <div class="divider"></div>
 
-                <label for="issuer-seed">Issuer Seed / API Key</label>
-                <input id="issuer-seed" type="password" placeholder="Your 64-char hex seed or API key" />
-                <p class="hint">Used to initialize LearnCard for sending credentials (stored in localStorage, never sent externally)</p>
+                <label for="issuer-seed">API Key or Seed</label>
+                <input id="issuer-seed" type="password" placeholder="eyJhbG... (API key) or 64-char hex seed" />
+                <p class="hint">API key JWT from developer portal, or a 64-char hex seed. Stored in localStorage, never sent externally</p>
 
                 <label for="template-uri">Template URI</label>
                 <input id="template-uri" type="text" placeholder="lc:boost:..." />
@@ -159,8 +159,8 @@
                     Now send a credential to the user who just consented. The DID from the callback is pre-filled.
                 </p>
 
-                <label for="send-seed">Issuer Seed / API Key</label>
-                <input id="send-seed" type="password" placeholder="Your 64-char hex seed" />
+                <label for="send-seed">API Key or Seed</label>
+                <input id="send-seed" type="password" placeholder="eyJhbG... (API key) or 64-char hex seed" />
 
                 <label for="send-recipient">Recipient DID</label>
                 <input id="send-recipient" type="text" readonly style="background: #f8fafc;" />
@@ -296,7 +296,7 @@
             const networkUrl = document.getElementById('network-url').value;
             const statusEl = document.getElementById('init-status');
 
-            if (!seed) { statusEl.innerHTML = '<div class="status-msg error">Enter an issuer seed first</div>'; return; }
+            if (!seed) { statusEl.innerHTML = '<div class="status-msg error">Enter an API key or seed first</div>'; return; }
 
             statusEl.innerHTML = '<div class="status-msg loading"><span class="spinner dark"></span>Initializing LearnCard...</div>';
             document.getElementById('test-init-btn').disabled = true;
@@ -394,7 +394,7 @@ await learnCard.invoke.send({
             const statusEl = document.getElementById('send-status');
             const btn = document.getElementById('send-btn');
 
-            if (!seed) { statusEl.innerHTML = '<div class="status-msg error">Enter your issuer seed</div>'; return; }
+            if (!seed) { statusEl.innerHTML = '<div class="status-msg error">Enter your API key or seed</div>'; return; }
             if (!recipient) { statusEl.innerHTML = '<div class="status-msg error">No recipient DID (did the callback return one?)</div>'; return; }
             if (!contractUri) { statusEl.innerHTML = '<div class="status-msg error">Enter a contract URI</div>'; return; }
             if (!templateUri) { statusEl.innerHTML = '<div class="status-msg error">Enter a template URI</div>'; return; }

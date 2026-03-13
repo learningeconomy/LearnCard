@@ -14,19 +14,43 @@ const PORT = 8899;
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Cache initialized wallets by seed to avoid re-init on every request
+// Cache initialized wallets to avoid re-init on every request
 const walletCache = new Map();
 
-async function getWallet(seed, networkUrl) {
-    const cacheKey = `${seed}:${networkUrl || 'default'}`;
+function isApiKey(key) {
+    // API keys are JWTs (eyJ...), seeds are 64-char hex strings
+    return key.startsWith('eyJ');
+}
+
+async function getWallet(key, networkUrl) {
+    const cacheKey = `${key}:${networkUrl || 'default'}`;
     if (walletCache.has(cacheKey)) return walletCache.get(cacheKey);
 
-    const opts = { seed, network: true };
-    if (networkUrl) opts.networkLearnCardForDomain = networkUrl;
+    const network = networkUrl || true;
 
-    console.log('Initializing LearnCard wallet...');
+    let opts;
+    if (isApiKey(key)) {
+        console.log('Initializing LearnCard wallet with API key...');
+        opts = { apiKey: key, network };
+    } else {
+        console.log('Initializing LearnCard wallet with seed...');
+        opts = { seed: key, network };
+    }
+
     const wallet = await initLearnCard(opts);
-    console.log('Wallet DID:', wallet.id.did());
+
+    // In API key mode, DID comes from the profile query (async).
+    // Give it a moment to resolve, then fall back gracefully.
+    let walletDid = '';
+    try {
+        walletDid = wallet.id.did();
+    } catch {
+        // API key mode: no local DID key, need to wait for profile
+        await new Promise(r => setTimeout(r, 2000));
+        try { walletDid = wallet.id.did(); } catch { /* still pending */ }
+    }
+    console.log('Wallet DID:', walletDid || '(resolving from profile...)');
+
     walletCache.set(cacheKey, wallet);
     return wallet;
 }
@@ -35,7 +59,7 @@ async function getWallet(seed, networkUrl) {
 app.post('/api/send', async (req, res) => {
     const { seed, recipient, contractUri, templateUri, integrationId, networkUrl } = req.body;
 
-    if (!seed) return res.status(400).json({ error: 'seed is required (your issuer seed/API key)' });
+    if (!seed) return res.status(400).json({ error: 'API key or seed is required' });
     if (!recipient) return res.status(400).json({ error: 'recipient DID is required' });
     if (!contractUri) return res.status(400).json({ error: 'contractUri is required' });
     if (!templateUri) return res.status(400).json({ error: 'templateUri is required' });
@@ -60,7 +84,9 @@ app.post('/api/send', async (req, res) => {
         const result = await wallet.invoke.send(sendArgs);
 
         console.log('Send result:', result);
-        res.json({ success: true, result, issuerDid: wallet.id.did() });
+        let issuerDid = '';
+        try { issuerDid = wallet.id.did(); } catch { /* API key mode */ }
+        res.json({ success: true, result, issuerDid });
     } catch (err) {
         console.error('Send failed:', err);
         res.status(500).json({
@@ -73,11 +99,13 @@ app.post('/api/send', async (req, res) => {
 // POST /api/init - Just initialize and return the DID (for testing connection)
 app.post('/api/init', async (req, res) => {
     const { seed, networkUrl } = req.body;
-    if (!seed) return res.status(400).json({ error: 'seed is required' });
+    if (!seed) return res.status(400).json({ error: 'API key or seed is required' });
 
     try {
         const wallet = await getWallet(seed, networkUrl);
-        res.json({ success: true, did: wallet.id.did() });
+        let did = '';
+        try { did = wallet.id.did(); } catch { /* API key mode */ }
+        res.json({ success: true, did: did || '(API key mode — DID resolved server-side)' });
     } catch (err) {
         console.error('Init failed:', err);
         res.status(500).json({ error: err.message });
