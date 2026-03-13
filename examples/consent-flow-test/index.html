@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConsentFlow Test App</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 640px; margin: 40px auto; padding: 20px; }
+        h1 { font-size: 24px; margin-bottom: 8px; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 16px; margin-bottom: 16px; color: #111; }
+        label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+        input, select { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 16px; }
+        input:focus, select:focus { outline: none; border-color: #06b6d4; box-shadow: 0 0 0 3px rgba(6,182,212,0.1); }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; }
+        .btn-primary { background: #06b6d4; color: white; }
+        .btn-primary:hover { background: #0891b2; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .hint { font-size: 12px; color: #888; margin-top: -12px; margin-bottom: 16px; }
+
+        /* Callback result styles */
+        .result { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+        .result.error { background: #fef2f2; border-color: #fecaca; }
+        .result h3 { font-size: 14px; margin-bottom: 8px; }
+        .param { margin-bottom: 12px; }
+        .param-name { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; }
+        .param-value { font-size: 13px; font-family: 'SF Mono', Monaco, monospace; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; word-break: break-all; max-height: 120px; overflow-y: auto; }
+        .copy-btn { font-size: 11px; padding: 4px 10px; background: #e2e8f0; border: none; border-radius: 4px; cursor: pointer; float: right; }
+        .copy-btn:hover { background: #cbd5e1; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef9c3; color: #854d0e; }
+        .badge-error { background: #fee2e2; color: #991b1b; }
+        .hidden { display: none; }
+        .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+        .tab { padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; cursor: pointer; background: white; }
+        .tab.active { background: #06b6d4; color: white; border-color: #06b6d4; }
+        pre { font-size: 12px; background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ConsentFlow Test App</h1>
+        <p class="subtitle">Test the LearnCard consent redirect flow end-to-end</p>
+
+        <!-- SETUP SECTION (shown when no callback params) -->
+        <div id="setup-section">
+            <div class="card">
+                <h2>1. Configure</h2>
+
+                <label for="env">Environment</label>
+                <select id="env" onchange="updateBaseUrl()">
+                    <option value="https://learncard.app">Production (learncard.app)</option>
+                    <option value="http://localhost:3000" selected>Local Dev (localhost:3000)</option>
+                    <option value="https://staging.learncard.app">Staging</option>
+                    <option value="custom">Custom...</option>
+                </select>
+
+                <div id="custom-url-row" class="hidden">
+                    <label for="custom-base">Custom Base URL</label>
+                    <input id="custom-base" type="url" placeholder="https://your-learncard-instance.com" />
+                </div>
+
+                <label for="contract-uri">Contract URI</label>
+                <input id="contract-uri" type="text" placeholder="lc:contract:..." />
+                <p class="hint">Paste the contract URI from the developer portal (Step 1 of the guide)</p>
+
+                <label for="callback-url">Callback URL (returnTo)</label>
+                <input id="callback-url" type="url" />
+                <p class="hint">This page's URL is used by default &mdash; the callback will appear here</p>
+            </div>
+
+            <div class="card">
+                <h2>2. Launch Consent Flow</h2>
+                <p style="font-size: 13px; color: #666; margin-bottom: 16px;">
+                    Clicking below will redirect you to LearnCard's consent screen. After the user
+                    grants consent, they'll be redirected back here with <code>did</code> and <code>vp</code> query params.
+                </p>
+
+                <div id="preview-url" style="font-size: 12px; font-family: monospace; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 16px; word-break: break-all; color: #475569;"></div>
+
+                <button class="btn btn-primary" id="launch-btn" onclick="launchConsentFlow()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    Open Consent Flow
+                </button>
+            </div>
+        </div>
+
+        <!-- CALLBACK SECTION (shown when callback params are present) -->
+        <div id="callback-section" class="hidden">
+            <div class="card">
+                <h2>Callback Received <span class="badge badge-success" id="status-badge">SUCCESS</span></h2>
+
+                <div id="param-did" class="param">
+                    <div class="param-name">
+                        did (User's DID)
+                        <button class="copy-btn" onclick="copyParam('did-value')">Copy</button>
+                    </div>
+                    <div class="param-value" id="did-value"></div>
+                </div>
+
+                <div id="param-vp" class="param">
+                    <div class="param-name">
+                        vp (Verifiable Presentation JWT)
+                        <button class="copy-btn" onclick="copyParam('vp-value')">Copy</button>
+                    </div>
+                    <div class="param-value" id="vp-value"></div>
+                </div>
+            </div>
+
+            <div class="card" id="vp-decoded-card">
+                <h2>Decoded VP (JWT Payload)</h2>
+                <pre id="vp-decoded"></pre>
+            </div>
+
+            <div class="card">
+                <h2>Next Steps</h2>
+                <p style="font-size: 13px; color: #666; margin-bottom: 12px;">
+                    Use the <code>did</code> to send credentials to this user via the LearnCard API:
+                </p>
+                <pre id="send-snippet"></pre>
+            </div>
+
+            <button class="btn btn-primary" onclick="resetApp()" style="margin-top: 8px;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                Test Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // On load: set callback URL to current page, check for callback params
+        window.addEventListener('DOMContentLoaded', () => {
+            const callbackInput = document.getElementById('callback-url');
+            // Use current origin + pathname as default callback (strip existing query params)
+            callbackInput.value = window.location.origin + window.location.pathname;
+
+            // Load saved values from localStorage
+            const saved = JSON.parse(localStorage.getItem('consentFlowTest') || '{}');
+            if (saved.contractUri) document.getElementById('contract-uri').value = saved.contractUri;
+            if (saved.env) document.getElementById('env').value = saved.env;
+            if (saved.customBase) document.getElementById('custom-base').value = saved.customBase;
+
+            updateBaseUrl();
+            updatePreview();
+
+            // Check for callback params
+            const params = new URLSearchParams(window.location.search);
+            const did = params.get('did');
+            const vp = params.get('vp');
+
+            if (did || vp) {
+                showCallbackResults(did, vp);
+            }
+
+            // Live preview updates
+            document.getElementById('contract-uri').addEventListener('input', updatePreview);
+            document.getElementById('callback-url').addEventListener('input', updatePreview);
+            document.getElementById('custom-base').addEventListener('input', updatePreview);
+        });
+
+        function updateBaseUrl() {
+            const env = document.getElementById('env').value;
+            const customRow = document.getElementById('custom-url-row');
+            customRow.classList.toggle('hidden', env !== 'custom');
+            updatePreview();
+        }
+
+        function getBaseUrl() {
+            const env = document.getElementById('env').value;
+            if (env === 'custom') return document.getElementById('custom-base').value;
+            return env;
+        }
+
+        function updatePreview() {
+            const baseUrl = getBaseUrl();
+            const contractUri = document.getElementById('contract-uri').value;
+            const callbackUrl = document.getElementById('callback-url').value;
+
+            const btn = document.getElementById('launch-btn');
+            btn.disabled = !contractUri || !baseUrl;
+
+            if (!contractUri) {
+                document.getElementById('preview-url').textContent = 'Enter a contract URI above...';
+                return;
+            }
+
+            const url = buildConsentUrl(baseUrl, contractUri, callbackUrl);
+            document.getElementById('preview-url').textContent = url;
+
+            // Save to localStorage
+            localStorage.setItem('consentFlowTest', JSON.stringify({
+                contractUri,
+                env: document.getElementById('env').value,
+                customBase: document.getElementById('custom-base').value,
+            }));
+        }
+
+        function buildConsentUrl(baseUrl, contractUri, callbackUrl) {
+            const url = new URL('/consent-flow', baseUrl);
+            url.searchParams.set('uri', contractUri);
+            if (callbackUrl) url.searchParams.set('returnTo', callbackUrl);
+            return url.toString();
+        }
+
+        function launchConsentFlow() {
+            const baseUrl = getBaseUrl();
+            const contractUri = document.getElementById('contract-uri').value;
+            const callbackUrl = document.getElementById('callback-url').value;
+
+            if (!contractUri) {
+                alert('Please enter a contract URI');
+                return;
+            }
+
+            const url = buildConsentUrl(baseUrl, contractUri, callbackUrl);
+            window.location.href = url;
+        }
+
+        function showCallbackResults(did, vp) {
+            document.getElementById('setup-section').classList.add('hidden');
+            document.getElementById('callback-section').classList.remove('hidden');
+
+            const badge = document.getElementById('status-badge');
+
+            if (did) {
+                document.getElementById('did-value').textContent = did;
+            } else {
+                document.getElementById('param-did').classList.add('hidden');
+                badge.className = 'badge badge-warning';
+                badge.textContent = 'PARTIAL';
+            }
+
+            if (vp) {
+                document.getElementById('vp-value').textContent = vp;
+                // Try to decode the JWT payload
+                try {
+                    const parts = vp.split('.');
+                    if (parts.length === 3) {
+                        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+                        document.getElementById('vp-decoded').textContent = JSON.stringify(payload, null, 2);
+                    } else {
+                        document.getElementById('vp-decoded-card').classList.add('hidden');
+                    }
+                } catch (e) {
+                    document.getElementById('vp-decoded').textContent = '(Could not decode JWT: ' + e.message + ')';
+                }
+            } else {
+                document.getElementById('param-vp').classList.add('hidden');
+                document.getElementById('vp-decoded-card').classList.add('hidden');
+                if (!did) {
+                    badge.className = 'badge badge-error';
+                    badge.textContent = 'NO PARAMS';
+                }
+            }
+
+            // Generate send snippet
+            document.getElementById('send-snippet').textContent =
+`await learnCard.invoke.send({
+    type: 'boost',
+    recipient: '${did || 'USER_DID'}',
+    contractUri: 'YOUR_CONTRACT_URI',
+    templateUri: 'YOUR_TEMPLATE_URI',
+});`;
+        }
+
+        function copyParam(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 1500);
+            });
+        }
+
+        function resetApp() {
+            window.location.href = window.location.origin + window.location.pathname;
+        }
+    </script>
+</body>
+</html>
