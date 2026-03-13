@@ -32,7 +32,7 @@ export const IssuerSection: React.FC<IssuerSectionProps> = ({
         >
             <FieldEditor
                 label="Issuer (DID)"
-                field={issuer.id ?? systemField('issuer_did')}
+                field={{ ...(issuer.id ?? systemField('issuer_did')), systemDescription: 'Your organization\'s Decentralized Identifier (DID) from your LearnCard wallet' }}
                 onChange={() => {}}
                 helpText="Your organization's Decentralized Identifier (DID) from your LearnCard wallet"
             />
