@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { TextInput, RadioGroup } from 'learn-card-base';
 
 type SkillProfileStep3Props = {
     handleNext: () => void;
     handleBack: () => void;
 };
 
+const SALARY_TYPE_OPTIONS = [
+    { value: 'per_year', label: 'Per Year' },
+    { value: 'per_hour', label: 'Per Hour' },
+];
+
 const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handleBack }) => {
+    const [salary, setSalary] = useState('');
+    const [salaryType, setSalaryType] = useState<string>('per_year');
+
     return (
         <div className="flex flex-col gap-[20px]">
             <div className="flex flex-col gap-[10px]">
@@ -17,6 +26,26 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
                     role and experience.
                 </p>
             </div>
+
+            <div className="flex flex-col gap-[10px]">
+                <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
+                    Annual Salary
+                </span>
+                <TextInput
+                    value={salary}
+                    onChange={value => setSalary(value ?? '')}
+                    placeholder="$ USD"
+                    type="number"
+                />
+            </div>
+
+            <RadioGroup
+                value={salaryType}
+                onChange={setSalaryType}
+                options={SALARY_TYPE_OPTIONS}
+                name="salary_type"
+                columns={2}
+            />
 
             <div className="flex gap-[10px] w-full">
                 <button
