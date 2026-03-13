@@ -289,6 +289,65 @@ describe('App Store Credential Issuance E2E Tests', () => {
         });
     });
 
+    describe('App Event: check-credential', () => {
+        beforeEach(async () => {
+            await appOwner.invoke.addBoostToApp(listingId, boostUri, 'status-badge');
+        });
+
+        it('should return hasCredential false before issuance', async () => {
+            const result = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'check-credential',
+                templateAlias: 'status-badge',
+            });
+
+            expect(result.hasCredential).toBe(false);
+            expect(result.credentialUri).toBeUndefined();
+        });
+
+        it('should return credential metadata after issuance', async () => {
+            const issued = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'send-credential',
+                templateAlias: 'status-badge',
+            });
+
+            const result = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'check-credential',
+                templateAlias: 'status-badge',
+            });
+
+            expect(result.hasCredential).toBe(true);
+            expect(result.status).toBe('claimed');
+            expect(result.credentialUri).toBe(issued.credentialUri);
+            expect(result.receivedDate).toBeDefined();
+
+            const byBoost = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'check-credential',
+                boostUri,
+            });
+
+            expect(byBoost.hasCredential).toBe(true);
+            expect(byBoost.credentialUri).toBe(issued.credentialUri);
+        });
+
+        it('should prevent duplicate issuance when preventDuplicateClaim is true', async () => {
+            const first = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'send-credential',
+                templateAlias: 'status-badge',
+            });
+
+            const second = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'send-credential',
+                templateAlias: 'status-badge',
+                preventDuplicateClaim: true,
+            });
+
+            expect(second.alreadyClaimed).toBe(true);
+            expect(second.hasCredential).toBe(true);
+            expect(second.credentialUri).toBe(first.credentialUri);
+            expect(second.status).toBe('claimed');
+        });
+    });
+
     describe('Legacy Profile DID Issuer (no slug)', () => {
         // Note: New listings auto-generate slugs from display_name.
         // This test simulates legacy behavior where listings had no slug.

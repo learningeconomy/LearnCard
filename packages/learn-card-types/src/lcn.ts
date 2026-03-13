@@ -1754,12 +1754,28 @@ export const SendCredentialEventValidator = z.object({
     type: z.literal('send-credential'),
     templateAlias: z.string(),
     templateData: z.record(z.string(), z.unknown()).optional(),
+    preventDuplicateClaim: z.boolean().optional(),
 });
 
 export type SendCredentialEvent = z.infer<typeof SendCredentialEventValidator>;
 
+export const CheckCredentialEventValidator = z
+    .object({
+        type: z.literal('check-credential'),
+        templateAlias: z.string().optional(),
+        boostUri: z.string().optional(),
+    })
+    .refine(input => Boolean(input.templateAlias) !== Boolean(input.boostUri), {
+        message: 'Exactly one of templateAlias or boostUri is required',
+    });
+
+export type CheckCredentialEvent = z.infer<typeof CheckCredentialEventValidator>;
+
 // Add new event types here as the union grows
-export const AppEventValidator = z.discriminatedUnion('type', [SendCredentialEventValidator]);
+export const AppEventValidator = z.discriminatedUnion('type', [
+    SendCredentialEventValidator,
+    CheckCredentialEventValidator,
+]);
 
 export type AppEvent = z.infer<typeof AppEventValidator>;
 
