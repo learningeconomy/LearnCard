@@ -12,4 +12,10 @@ describe('Health checks', () => {
 
         expect(result.status).toEqual(200);
     });
+
+    test('LCA API', async () => {
+        const result = await fetch('http://localhost:5200/api/health-check');
+
+        expect(result.status).toEqual(200);
+    });
 });

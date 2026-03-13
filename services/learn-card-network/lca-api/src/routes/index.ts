@@ -27,6 +27,7 @@ export type Context = {
     };
     domain: string;
     debug?: boolean;
+    clientIp?: string;
 };
 
 export const t = initTRPC.context<Context>().meta<OpenApiMeta>().create();
@@ -43,6 +44,18 @@ export const createContext = async (
         !domainName || process.env.IS_OFFLINE
             ? `localhost%3A${process.env.PORT || 3000}`
             : domainName;
+
+    // Extract client IP for rate limiting (available on all return paths)
+    let clientIp: string | undefined;
+
+    if ('event' in options) {
+        const awsEvent = options.event as APIGatewayProxyEventV2;
+        clientIp = awsEvent.requestContext?.http?.sourceIp
+            ?? awsEvent.headers?.['x-forwarded-for']?.split(',')[0]?.trim();
+    } else {
+        clientIp = options.req.ip
+            ?? options.req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim();
+    }
 
     try {
         if (authHeader && authHeader.split(' ').length === 2) {
@@ -76,6 +89,7 @@ export const createContext = async (
                             user: { did, isChallengeValid: false, authorizedDid },
                             domain,
                             debug,
+                            clientIp,
                         };
 
                     const cacheResponse = await isChallengeValidForDid(did, challenge);
@@ -85,6 +99,7 @@ export const createContext = async (
                         user: { did, isChallengeValid: Boolean(cacheResponse), authorizedDid },
                         domain,
                         debug,
+                        clientIp,
                     };
                 }
             }
@@ -93,7 +108,7 @@ export const createContext = async (
         console.error(e);
     }
 
-    return { domain };
+    return { domain, clientIp };
 };
 
 export const openRoute = t.procedure
