@@ -37,7 +37,7 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
                 return (
                     <label
                         key={option.value}
-                        className={`flex items-center gap-[8px] cursor-pointer ${
+                        className={`flex items-center gap-[10px] cursor-pointer ${
                             disabled ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                     >
@@ -51,15 +51,19 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
                             className="sr-only"
                         />
                         <span
-                            className={`w-[20px] h-[20px] rounded-full border-[2px] flex items-center justify-center flex-shrink-0
-                                ${isSelected ? 'border-emerald-500' : 'border-grayscale-300'}
+                            className={`w-[25px] h-[25px] rounded-full flex items-center justify-center flex-shrink-0
+                                ${isSelected ? 'bg-emerald-500' : 'bg-grayscale-300'}
                             `}
                         >
                             {isSelected && (
-                                <span className="w-[10px] h-[10px] rounded-full bg-emerald-500" />
+                                <div className="w-[12.5px] h-[12.5px] bg-white rounded-full shadow-bottom-2-4" />
                             )}
                         </span>
-                        <span className="text-grayscale-900 font-poppins text-[14px] leading-[130%]">
+                        <span
+                            className={`font-poppins text-[14px] leading-[130%] ${
+                                isSelected ? 'text-grayscale-900 font-bold' : 'text-grayscale-600'
+                            }`}
+                        >
                             {option.label}
                         </span>
                     </label>

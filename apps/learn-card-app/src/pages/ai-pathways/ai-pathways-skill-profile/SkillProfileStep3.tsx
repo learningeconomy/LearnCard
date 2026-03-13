@@ -34,8 +34,10 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
                 <TextInput
                     value={salary}
                     onChange={value => setSalary(value ?? '')}
-                    placeholder="$ USD"
+                    placeholder="USD"
                     type="number"
+                    startIcon={<span className="text-grayscale-600 text-[14px]">$</span>}
+                    inputClassName="!pl-[30px]"
                 />
             </div>
 
