@@ -1176,27 +1176,6 @@ importers:
         specifier: ^3.0.24
         version: 3.4.18(tsx@4.20.6)(yaml@2.8.1)
 
-  packages/auth-types:
-    devDependencies:
-      '@esbuild-plugins/node-resolve':
-        specifier: ^0.1.4
-        version: 0.1.4(esbuild@0.27.2)
-      '@types/node':
-        specifier: ^18.7.19
-        version: 18.19.130
-      dts-bundle-generator:
-        specifier: ^6.10.0
-        version: 6.13.0
-      esbuild:
-        specifier: ^0.27.1
-        version: 0.27.2
-      shx:
-        specifier: ^0.3.4
-        version: 0.3.4
-      typescript:
-        specifier: 5.6.2
-        version: 5.6.2
-
   packages/lca-api-client:
     dependencies:
       '@trpc/client':
@@ -1260,9 +1239,6 @@ importers:
       '@koale/useworker':
         specifier: ^4.0.2
         version: 4.1.2(react@18.3.1)
-      '@learncard/auth-types':
-        specifier: workspace:*
-        version: link:../auth-types
       '@learncard/helpers':
         specifier: workspace:*
         version: link:../learn-card-helpers
@@ -1272,6 +1248,9 @@ importers:
       '@learncard/sss-key-manager':
         specifier: workspace:*
         version: link:../sss-key-manager
+      '@learncard/types':
+        specifier: workspace:*
+        version: link:../learn-card-types
       '@radix-ui/react-popover':
         specifier: 1.0.7
         version: 1.0.7(@types/react-dom@18.3.7(@types/react@18.3.27))(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -3152,9 +3131,6 @@ importers:
 
   packages/sss-key-manager:
     dependencies:
-      '@learncard/auth-types':
-        specifier: workspace:*
-        version: link:../auth-types
       '@learncard/types':
         specifier: workspace:*
         version: link:../learn-card-types
@@ -31751,7 +31727,7 @@ snapshots:
   '@esbuild-plugins/node-resolve@0.1.4(esbuild@0.27.2)':
     dependencies:
       '@types/resolve': 1.20.6
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@5.5.0)
       esbuild: 0.27.2
       escape-string-regexp: 4.0.0
       resolve: 1.22.11
@@ -59979,7 +59955,7 @@ snapshots:
   vite-node@1.6.1(@types/node@22.19.1)(less@4.4.2)(lightningcss@1.30.2)(sass@1.94.2)(terser@5.44.1):
     dependencies:
       cac: 6.7.14
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@5.5.0)
       pathe: 1.1.2
       picocolors: 1.1.1
       vite: 5.4.21(@types/node@22.19.1)(less@4.4.2)(lightningcss@1.30.2)(sass@1.94.2)(terser@5.44.1)
@@ -60212,7 +60188,7 @@ snapshots:
       '@vitest/utils': 1.6.1
       acorn-walk: 8.3.4
       chai: 4.5.0
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@5.5.0)
       execa: 8.0.1
       local-pkg: 0.5.1
       magic-string: 0.30.21
@@ -60284,7 +60260,7 @@ snapshots:
       '@vitest/utils': 1.6.1
       acorn-walk: 8.3.4
       chai: 4.5.0
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@5.5.0)
       execa: 8.0.1
       local-pkg: 0.5.1
       magic-string: 0.30.21

@@ -37,7 +37,7 @@ sss-key-manager/
 ├── qr-login.ts             # Cross-device login flow
 ├── atomic-operations.ts    # Split-and-verify with rollback
 ├── api-client.ts           # Typed fetch wrapper for lca-api routes
-└── types.ts                # All types, re-exports from @learncard/auth-types
+└── types.ts                # All types, re-exports from @learncard/types
 ```
 
 ## Key Types

@@ -4,14 +4,14 @@
  * Core types for the unified auth + key derivation orchestration layer.
  * These types are designed to be provider-agnostic.
  *
- * Provider-agnostic interfaces are canonically defined in @learncard/auth-types.
+ * Provider-agnostic interfaces are canonically defined in @learncard/types.
  * SSS-specific types (RecoveryInput, RecoverySetupInput, etc.) are in @learncard/sss-key-manager.
  * Both are re-exported here so consumers only need to import from learn-card-base.
  */
 
-// --- Provider-agnostic (canonical source: @learncard/auth-types) ---
+// --- Provider-agnostic (canonical source: @learncard/types) ---
 
-export { AuthSessionError } from '@learncard/auth-types';
+export { AuthSessionError } from '@learncard/types';
 
 export type {
     KeyDerivationStrategy,
@@ -24,7 +24,7 @@ export type {
     RecoveryResult,
     SignInAdapter,
     PhoneVerificationHandle,
-} from '@learncard/auth-types';
+} from '@learncard/types';
 
 // --- SSS-specific (canonical source: @learncard/sss-key-manager) ---
 
@@ -36,7 +36,7 @@ export type {
     SSSKeyDerivationStrategy,
 } from '@learncard/sss-key-manager';
 
-import type { AuthProvider, AuthUser, KeyDerivationStrategy, RecoveryMethodInfo } from '@learncard/auth-types';
+import type { AuthProvider, AuthUser, KeyDerivationStrategy, RecoveryMethodInfo } from '@learncard/types';
 
 /**
  * Why the coordinator entered `needs_recovery`.

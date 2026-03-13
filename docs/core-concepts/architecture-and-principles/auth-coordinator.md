@@ -62,7 +62,7 @@ The AuthCoordinator depends on two abstract interfaces:
 
 ### AuthProvider
 
-Handles authentication (sign-in, sign-out, token management). Defined in `@learncard/auth-types`:
+Handles authentication (sign-in, sign-out, token management). Defined in `@learncard/types`:
 
 ```typescript
 interface AuthProvider {
@@ -79,7 +79,7 @@ The default implementation wraps Firebase Auth. New providers can be added by im
 
 ### KeyDerivationStrategy
 
-Handles key generation, storage, recovery, and server communication. Defined in `@learncard/auth-types`:
+Handles key generation, storage, recovery, and server communication. Defined in `@learncard/types`:
 
 ```typescript
 interface KeyDerivationStrategy<TRecoveryInput, TSetupInput, TSetupResult> {

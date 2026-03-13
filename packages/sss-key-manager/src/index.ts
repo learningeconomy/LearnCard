@@ -109,8 +109,8 @@ export type {
     NotifyDevicesResult,
 } from './qr-login';
 
-// Provider-agnostic interfaces are re-exported from @learncard/auth-types.
-// Import from '@learncard/auth-types' or 'learn-card-base' for generic types.
+// Provider-agnostic interfaces are re-exported from @learncard/types.
+// Import from '@learncard/types' or 'learn-card-base' for generic types.
 // Import from this package for SSS-specific types.
 
 export { AuthSessionError } from './types';

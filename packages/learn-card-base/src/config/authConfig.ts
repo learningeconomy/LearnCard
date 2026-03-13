@@ -138,7 +138,7 @@ export const getAuthConfig = (): AuthConfig => {
         readEnv('WEB3AUTH_VERIFIER_ID', 'WEB3AUTH_VERIFIER_ID') || '';
 
     const web3AuthRpcTarget =
-        readEnv('WEB3AUTH_RPC_TARGET', 'WEB3AUTH_RPC_TARGET') || 'https://rpc.ankr.com/eth';
+        readEnv('WEB3AUTH_RPC_TARGET', 'WEB3AUTH_RPC_TARGET') || 'https://cloudflare-eth.com';
 
     return {
         authProvider,
@@ -167,12 +167,12 @@ export const shouldUseSSS = (): boolean => {
  *
  * To add a future strategy, just add an entry here.
  */
-const STRATEGY_CAPABILITIES: Record<string, import('@learncard/auth-types').KeyDerivationCapabilities> = {
+const STRATEGY_CAPABILITIES: Record<string, import('@learncard/types').KeyDerivationCapabilities> = {
     sss: { recovery: true, deviceLinking: true, localKeyPersistence: true, contactMethodUpgrade: true },
     web3auth: { recovery: false, deviceLinking: false, localKeyPersistence: false, contactMethodUpgrade: false },
 };
 
-const DEFAULT_CAPABILITIES: import('@learncard/auth-types').KeyDerivationCapabilities = {
+const DEFAULT_CAPABILITIES: import('@learncard/types').KeyDerivationCapabilities = {
     recovery: false,
     deviceLinking: false,
     localKeyPersistence: false,
@@ -183,7 +183,7 @@ const DEFAULT_CAPABILITIES: import('@learncard/auth-types').KeyDerivationCapabil
  * Get key derivation capabilities from config alone (no strategy instance needed).
  * Useful for pre-auth UI gating (e.g. login page public computer toggle).
  */
-export const getConfigCapabilities = (): import('@learncard/auth-types').KeyDerivationCapabilities => {
+export const getConfigCapabilities = (): import('@learncard/types').KeyDerivationCapabilities => {
     const { keyDerivation } = getAuthConfig();
 
     return STRATEGY_CAPABILITIES[keyDerivation] ?? DEFAULT_CAPABILITIES;
