@@ -24,7 +24,7 @@ import type {
     AuthProviderType,
     SignInAdapter,
     PhoneVerificationHandle,
-} from '@learncard/auth-types';
+} from '@learncard/types';
 
 import { ensureRecaptcha, destroyRecaptcha } from '../helpers/recaptcha.helpers';
 

@@ -1,7 +1,6 @@
 ---
 "@learncard/lca-api-service": minor
 "@learncard/network-brain-service": minor
-"@learncard/auth-types": minor
 "@learncard/sss-key-manager": minor
 "@learncard/types": minor
 "@learncard/didkit-plugin": minor
@@ -14,7 +13,7 @@
 ### SSS Key Management & AuthCoordinator
 
 **New packages:**
-- `@learncard/auth-types` — Provider-agnostic auth and key derivation interfaces
+- `@learncard/types` — Added provider-agnostic auth and key derivation interfaces (`src/auth.ts`)
 - `@learncard/sss-key-manager` — Shamir Secret Sharing key manager replacing Web3Auth SFA
 
 **LCA API (`@learncard/lca-api-service`):**

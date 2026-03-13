@@ -19,7 +19,7 @@ import { Web3Auth } from '@web3auth/single-factor-auth';
 import { CHAIN_NAMESPACES } from '@web3auth/base';
 import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 
-import type { KeyDerivationStrategy, ServerKeyStatus } from '@learncard/auth-types';
+import type { KeyDerivationStrategy, ServerKeyStatus } from '@learncard/types';
 
 // ---------------------------------------------------------------------------
 // Config
@@ -114,7 +114,7 @@ export const createWeb3AuthStrategy = (
                 chainConfig: {
                     chainNamespace: CHAIN_NAMESPACES.EIP155,
                     chainId: config.chainConfig?.chainId ?? '0x1',
-                    rpcTarget: config.chainConfig?.rpcTarget ?? 'https://rpc.ankr.com/eth',
+                    rpcTarget: config.chainConfig?.rpcTarget ?? 'https://cloudflare-eth.com',
                 },
             },
         });

@@ -188,9 +188,12 @@ const Section: React.FC<{
 
     return (
         <div className="bg-gray-800/80 rounded-lg overflow-hidden">
-            <button
+            <div
+                role="button"
+                tabIndex={0}
                 onClick={() => setOpen(!open)}
-                className="w-full px-3 py-2 flex items-center justify-between hover:bg-gray-700/40 transition-colors text-left"
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(!open); } }}
+                className="w-full px-3 py-2 flex items-center justify-between hover:bg-gray-700/40 transition-colors text-left cursor-pointer"
             >
                 <div className="flex items-center gap-2">
                     {icon}
@@ -208,7 +211,7 @@ const Section: React.FC<{
                         ? <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
                         : <ChevronRight className="w-3.5 h-3.5 text-gray-500" />}
                 </div>
-            </button>
+            </div>
 
             {open && <div className="px-3 pb-2">{children}</div>}
         </div>

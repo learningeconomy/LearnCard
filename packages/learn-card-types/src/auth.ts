@@ -1,9 +1,5 @@
 /**
- * @learncard/auth-types
- *
  * Provider-agnostic interfaces for authentication and key derivation.
- * This package has zero dependencies and contains only TypeScript types
- * plus the AuthSessionError class.
  *
  * Both @learncard/sss-key-manager and learn-card-base import from here,
  * ensuring a single canonical source for abstract interfaces without

@@ -4,7 +4,7 @@
  * Creates an AuthProvider implementation for Firebase Authentication.
  */
 
-import { AuthSessionError } from '@learncard/auth-types';
+import { AuthSessionError } from '@learncard/types';
 
 import type { AuthProvider, AuthUser, AuthProviderType } from '../auth-coordinator/types';
 
