@@ -2,4 +2,4 @@
 "@learncard/network-brain-service": patch
 ---
 
-fix: p2p badge claims
+fix: Singleton caching bug in getLearnCard
