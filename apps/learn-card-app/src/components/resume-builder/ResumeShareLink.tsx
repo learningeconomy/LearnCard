@@ -113,7 +113,7 @@ const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, 
                             Share your LearnCard resume
                         </p>
                         <p className="text-sky-800 text-sm m-0">
-                            This link and QR code give read-only access to your shared resume.
+                            This link and QR code let others view your shared resume.
                         </p>
                         <p className="text-sky-800 text-sm m-0">
                             Share with recruiters, hiring managers, friends, or anyone you want to
