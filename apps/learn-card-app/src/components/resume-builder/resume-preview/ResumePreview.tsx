@@ -26,9 +26,10 @@ const ResumePreview = forwardRef<
         readOnly?: boolean;
         resolvedCredentialsByUri?: Record<string, VC | null | undefined>;
         qrCodeValue?: string;
+        profileDid?: string;
     }
 >(function ResumePreview(
-    { isMobile = false, readOnly = false, resolvedCredentialsByUri, qrCodeValue },
+    { isMobile = false, readOnly = false, resolvedCredentialsByUri, qrCodeValue, profileDid },
     ref
 ) {
     const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
@@ -94,7 +95,11 @@ const ResumePreview = forwardRef<
                         } as React.CSSProperties
                     }
                 >
-                    <ResumePreviewUserInfo readOnly={readOnly} qrCodeValue={qrCodeValue} />
+                    <ResumePreviewUserInfo
+                        readOnly={readOnly}
+                        qrCodeValue={qrCodeValue}
+                        profileDid={profileDid}
+                    />
                     {orderedSections.map(section => {
                         const sectionKey = section.key as ResumeSectionKey;
                         const entries = [...(credentialEntries[sectionKey] ?? [])].sort(

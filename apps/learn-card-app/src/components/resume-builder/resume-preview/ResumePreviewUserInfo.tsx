@@ -1,7 +1,9 @@
 import React from 'react';
 
 import { QRCodeSVG } from 'qrcode.react';
-import { ProfilePicture } from 'learn-card-base';
+import { ProfilePicture, UserProfilePicture, useIsLoggedIn } from 'learn-card-base';
+import { getProfileIdFromLCNDidWeb } from 'learn-card-base/helpers/credentialHelpers';
+import { useGetProfile } from 'learn-card-base/react-query/queries/queries';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
 import ResumePreviewInfoChip from './ResumePreviewInfoChip';
@@ -22,15 +24,27 @@ const CONTACT_CHIP_KEYS: (keyof PersonalDetails)[] = [
     UserInfoEnum.LinkedIn,
 ];
 
-const ResumePreviewUserInfo: React.FC<{ readOnly?: boolean; qrCodeValue?: string }> = ({
+const ResumePreviewUserInfo: React.FC<{
+    readOnly?: boolean;
+    qrCodeValue?: string;
+    profileDid?: string;
+}> = ({
     readOnly = false,
     qrCodeValue,
+    profileDid,
 }) => {
+    const isLoggedIn = useIsLoggedIn();
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const hiddenPersonalDetails = resumeBuilderStore.useTracked.hiddenPersonalDetails();
     const documentSetup = resumeBuilderStore.useTracked.documentSetup();
     const setPersonalDetails = resumeBuilderStore.set.setPersonalDetails;
     const setPersonalDetailHidden = resumeBuilderStore.set.setPersonalDetailHidden;
+    const showThumbnail = !hiddenPersonalDetails?.[UserInfoEnum.Thumbnail];
+    const profileId = getProfileIdFromLCNDidWeb(profileDid);
+    const { data: sharedProfile } = useGetProfile(
+        profileId,
+        Boolean(profileId) && !isLoggedIn && showThumbnail
+    );
 
     const placeholderByKey = Object.fromEntries(
         resumeUserInfo.map(field => [field.key, field.placeholder])
@@ -39,7 +53,6 @@ const ResumePreviewUserInfo: React.FC<{ readOnly?: boolean; qrCodeValue?: string
     const isFieldEnabled = (key: keyof PersonalDetails) => !hiddenPersonalDetails?.[key];
     const isFieldVisible = (key: keyof PersonalDetails) =>
         isFieldEnabled(key) && Boolean(personalDetails[key]?.trim());
-    const showThumbnail = !hiddenPersonalDetails?.[UserInfoEnum.Thumbnail];
 
     const removeField = (key: keyof PersonalDetails) => {
         setPersonalDetails({ [key]: '' });
@@ -74,6 +87,15 @@ const ResumePreviewUserInfo: React.FC<{ readOnly?: boolean; qrCodeValue?: string
         isFieldEnabled(UserInfoEnum.Summary) &&
         (!readOnly || Boolean(personalDetails.summary.trim()));
     const showContactChips = !readOnly || exportContactItems.length > 0;
+    const sharedUserForPicture =
+        !isLoggedIn && showThumbnail
+            ? {
+                  profileId: sharedProfile?.profileId || profileId || profileDid || '',
+                  displayName: sharedProfile?.displayName || personalDetails.name,
+                  name: sharedProfile?.displayName || personalDetails.name,
+                  image: sharedProfile?.image || personalDetails.thumbnail || undefined,
+              }
+            : undefined;
 
     return (
         <div className="border-b border-solid border-2 border-grayscale-100 bg-grayscale-50 p-4 mb-6 rounded-[20px]">
@@ -81,10 +103,18 @@ const ResumePreviewUserInfo: React.FC<{ readOnly?: boolean; qrCodeValue?: string
                 <div className="flex items-start gap-3 min-w-0">
                     {showThumbnail && (
                         <div className="relative shrink-0">
-                            <ProfilePicture
-                                customContainerClass="text-grayscale-900 h-[60px] w-[60px] min-h-[60px] min-w-[60px] max-h-[60px] max-w-[60px] mt-[0px] mb-0"
-                                customImageClass="w-full h-full object-cover"
-                            />
+                            {isLoggedIn ? (
+                                <ProfilePicture
+                                    customContainerClass="text-grayscale-900 h-[60px] w-[60px] min-h-[60px] min-w-[60px] max-h-[60px] max-w-[60px] mt-[0px] mb-0"
+                                    customImageClass="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <UserProfilePicture
+                                    user={sharedUserForPicture}
+                                    customContainerClass="text-grayscale-900 h-[60px] w-[60px] min-h-[60px] min-w-[60px] max-h-[60px] max-w-[60px] mt-[0px] mb-0"
+                                    customImageClass="w-full h-full object-cover"
+                                />
+                            )}
                         </div>
                     )}
 

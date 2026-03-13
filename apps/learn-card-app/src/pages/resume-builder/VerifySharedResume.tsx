@@ -1,16 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import queryString from 'query-string';
 
-import { IonContent, IonHeader, IonPage, IonSpinner, IonToolbar, useIonModal } from '@ionic/react';
+import {
+    IonContent,
+    IonHeader,
+    IonPage,
+    IonSpinner,
+    IonToolbar,
+    useIonModal,
+} from '@ionic/react';
 import { useLocation } from 'react-router-dom';
-import { VC, VerificationItem, VerificationStatusEnum, VP } from '@learncard/types';
+import { VC, VerificationItem, VP } from '@learncard/types';
 
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
-import { useDeviceTypeByWidth } from 'learn-card-base';
+import { ToastTypeEnum, useDeviceTypeByWidth, useToast } from 'learn-card-base';
+import DownloadIcon from 'learn-card-base/svgs/DownloadIcon';
 
-import ResumePreview from '../../components/resume-builder/resume-preview/ResumePreview';
+import ResumePreview, {
+    ResumePreviewHandle,
+} from '../../components/resume-builder/resume-preview/ResumePreview';
 import SharedBoostVerificationBlock, {
     SharedBoostVerificationBlockViewMode,
 } from '../../components/creds-bundle/SharedBoostVerificationBlock';
@@ -19,6 +29,13 @@ import {
     getEmbeddedVerificationCredentialsByIdFromLerVc,
     getResumeBuilderSnapshot,
 } from '../../components/resume-builder/resume-builder-history.helpers';
+import {
+    buildResumeMetadataVerificationItems,
+    filterOutBoostVerificationItems,
+    getResumeSubjectDid,
+    mapLerVerificationResultToItems,
+    type LerVerificationResultLike,
+} from './shared-resume.helpers';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 
 const getQueryParam = (value: string | string[] | null): string => {
@@ -26,96 +43,11 @@ const getQueryParam = (value: string | string[] | null): string => {
     return value ?? '';
 };
 
-const BOOST_AUTH_CHECK = 'Boost is Authentic. Verified by LearnCard Network.';
-
-const filterOutBoostVerificationItems = (items: VerificationItem[]): VerificationItem[] =>
-    items.filter(item => {
-        const checkText = item.check || '';
-        const messageText = item.message || '';
-        return !checkText.includes(BOOST_AUTH_CHECK) && !messageText.includes(BOOST_AUTH_CHECK);
-    });
-
-type LerVerificationResultLike = {
-    presentationResult?: {
-        verified?: boolean;
-        errors?: string[];
-    };
-    credentialResults?: Array<{
-        verified?: boolean;
-        isSelfIssued?: boolean;
-        errors?: string[];
-    }>;
-};
-
-const mapLerVerificationResultToItems = (
-    lerVerification: LerVerificationResultLike | null | undefined
-): VerificationItem[] => {
-    if (!lerVerification) return [];
-
-    const presentationErrors = Array.isArray(lerVerification.presentationResult?.errors)
-        ? lerVerification.presentationResult?.errors
-        : [];
-    const credentialResults = Array.isArray(lerVerification.credentialResults)
-        ? lerVerification.credentialResults
-        : [];
-
-    return [
-        {
-            check: 'Presentation',
-            status: lerVerification.presentationResult?.verified
-                ? VerificationStatusEnum.Success
-                : VerificationStatusEnum.Failed,
-            message: lerVerification.presentationResult?.verified
-                ? 'valid.'
-                : presentationErrors.join('; ') || 'verification failed.',
-            details: presentationErrors.length ? presentationErrors.join('\n') : undefined,
-        },
-        ...credentialResults.map((result, index) => {
-            const errors = Array.isArray(result.errors) ? result.errors : [];
-            const passed = Boolean(result.verified || result.isSelfIssued);
-            return {
-                check: `Credential`,
-                status: passed ? VerificationStatusEnum.Success : VerificationStatusEnum.Failed,
-                message: passed
-                    ? result.isSelfIssued && !result.verified
-                        ? 'Credential accepted as self-issued for LER validation.'
-                        : 'valid.'
-                    : errors.join('; ') || 'verification failed.',
-                details: errors.length ? errors.join('\n') : undefined,
-            } as VerificationItem;
-        }),
-    ];
-};
-
-const buildResumeMetadataVerificationItems = (credential: VC): VerificationItem[] => {
-    const expiresAt = credential?.expirationDate || credential?.validUntil;
-    const proofValue = credential?.proof;
-    const proofRecord = Array.isArray(proofValue) ? proofValue[0] : proofValue;
-    const proofMethod =
-        typeof proofRecord === 'object' && proofRecord
-            ? (proofRecord as Record<string, unknown>).verificationMethod
-            : undefined;
-
-    return [
-        {
-            check: 'Proof',
-            status: proofValue ? VerificationStatusEnum.Success : VerificationStatusEnum.Error,
-            message: proofValue ? 'valid.' : 'missing.',
-            details: proofMethod ? String(proofMethod) : undefined,
-        },
-        {
-            check: 'Expires',
-            status: expiresAt ? VerificationStatusEnum.Success : VerificationStatusEnum.Error,
-            message: expiresAt
-                ? `has an expiration date: ${String(expiresAt)}.`
-                : 'does not include an expiration date.',
-        },
-    ];
-};
-
 const VerifySharedResume: React.FC = () => {
     const { isMobile } = useDeviceTypeByWidth();
+    const { presentToast } = useToast();
     const location = useLocation();
+    const resumePreviewRef = useRef<ResumePreviewHandle>(null);
     const { uri: rawUriParam, seed: seedParam, pin: pinParam } = queryString.parse(location.search);
     const rawUri = getQueryParam(rawUriParam);
     const seed = getQueryParam(seedParam);
@@ -124,6 +56,7 @@ const VerifySharedResume: React.FC = () => {
     const [error, setError] = useState<string>('');
     const [resumeCredential, setResumeCredential] = useState<VC | null>(null);
     const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
+    const [downloadingResume, setDownloadingResume] = useState(false);
     const [resolvedCredentialsByUri, setResolvedCredentialsByUri] = useState<
         Record<string, VC | null>
     >({});
@@ -137,6 +70,30 @@ const VerifySharedResume: React.FC = () => {
             boost: resumeCredential as VC,
         }
     );
+
+    const handleDownloadResume = useCallback(async () => {
+        if (downloadingResume) return;
+        setDownloadingResume(true);
+
+        try {
+            if (!resumePreviewRef.current) {
+                throw new Error('Resume preview is not ready yet.');
+            }
+            await resumePreviewRef.current.generatePDF();
+            presentToast('Resume downloaded successfully.', {
+                title: 'Downloaded',
+                type: ToastTypeEnum.Success,
+            });
+        } catch (error: any) {
+            presentToast(error?.message ?? 'Failed to download resume.', {
+                title: 'Download Failed',
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        } finally {
+            setDownloadingResume(false);
+        }
+    }, [downloadingResume, presentToast]);
 
     useEffect(() => {
         const previousSnapshot = getResumeBuilderSnapshot();
@@ -271,12 +228,31 @@ const VerifySharedResume: React.FC = () => {
                             branding={BrandingEnum.learncard}
                             className="main-header-branding-public-route"
                         />
-                        <a
-                            href="https://learncard.app/login"
-                            className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white no-underline"
-                        >
-                            Get LearnCard
-                        </a>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={handleDownloadResume}
+                                disabled={downloadingResume || loading || Boolean(error)}
+                                className={`inline-flex items-center gap-2 h-9 rounded-full border border-grayscale-200 border-solid bg-white hover:bg-grayscale-50 disabled:opacity-60 disabled:cursor-not-allowed text-indigo-500 font-semibold text-sm transition-colors ${
+                                    isMobile ? 'w-9 justify-center px-0' : 'px-4'
+                                }`}
+                            >
+                                {!(isMobile && downloadingResume) && (
+                                    <DownloadIcon className="w-5 h-5" />
+                                )}
+                                {downloadingResume ? (
+                                    <IonSpinner name="crescent" className="w-4 h-4" />
+                                ) : (
+                                    <span className={isMobile ? 'sr-only' : ''}>Download</span>
+                                )}
+                            </button>
+                            <a
+                                href="https://learncard.app/login"
+                                className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white no-underline"
+                            >
+                                Get LearnCard
+                            </a>
+                        </div>
                     </div>
                 </IonToolbar>
             </IonHeader>
@@ -314,9 +290,11 @@ const VerifySharedResume: React.FC = () => {
                                     />
                                 )}
                                 <ResumePreview
+                                    ref={resumePreviewRef}
                                     isMobile={isMobile}
                                     readOnly
                                     resolvedCredentialsByUri={resolvedCredentialsByUri}
+                                    profileDid={getResumeSubjectDid(resumeCredential)}
                                 />
                             </>
                         )}
