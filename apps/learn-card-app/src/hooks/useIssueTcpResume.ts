@@ -421,14 +421,6 @@ const buildLerPayloadFromResume = (
     };
 };
 
-const serializeForLog = (value: unknown): string => {
-    try {
-        return JSON.stringify(value, null, 2);
-    } catch (error) {
-        return `[[unserializable: ${error instanceof Error ? error.message : 'unknown error'}]]`;
-    }
-};
-
 /**
  * Hook that publishes a resume as a LER-RS VC with PDF attachment URL.
  */
@@ -453,8 +445,6 @@ export const useIssueTcpResume = () => {
             generatedAt: input.generatedAt,
         };
 
-        console.log('[useIssueTcpResume] start', logContext);
-
         try {
             const wallet = await initWallet();
             const switchedDid = switchedProfileStore.get.switchedDid();
@@ -478,11 +468,6 @@ export const useIssueTcpResume = () => {
             if (!pdfUrl) {
                 throw new Error('Failed to upload resume PDF to Filestack');
             }
-
-            console.log('[useIssueTcpResume] pdf uploaded', {
-                ...logContext,
-                pdfUrl,
-            });
 
             const generatedAt = input.generatedAt ?? new Date().toISOString();
             const did = wallet.id.did();
@@ -538,28 +523,6 @@ export const useIssueTcpResume = () => {
                 })
             );
 
-            console.log('[useIssueTcpResume] resolved selected credentials', {
-                ...logContext,
-                resolvedCredentialCount: lerInputs.filter(item => Boolean(item.vc)).length,
-                lerInputs,
-            });
-            console.log(
-                '[useIssueTcpResume] resolved selected credentials payload',
-                serializeForLog(
-                    lerInputs.map(item => ({
-                        uri: item.uri,
-                        category: item.category,
-                        current: item.current,
-                        startDateOverride: item.startDateOverride,
-                        endDateOverride: item.endDateOverride,
-                        hasResolvedVc: Boolean(item.vc),
-                        resolvedVcId: item.vc?.id,
-                        resolvedVcType: item.vc?.type,
-                        resolvedVcContexts: item.vc?.['@context'],
-                    }))
-                )
-            );
-
             const visibleName = !hiddenPersonalDetails?.name ? personalDetails.name?.trim() : '';
             const visibleEmail = !hiddenPersonalDetails?.email ? personalDetails.email?.trim() : '';
             const visibleCareer = !hiddenPersonalDetails?.career
@@ -600,81 +563,10 @@ export const useIssueTcpResume = () => {
                 generatedAt,
             });
 
-            console.log('[useIssueTcpResume] ler payload prepared', {
-                ...logContext,
-                did,
-                activeResume,
-                lerPayload,
-            });
-            console.log(
-                '[useIssueTcpResume] ler payload summary',
-                serializeForLog({
-                    person: lerPayload.person,
-                    workHistory: Array.isArray(lerPayload.workHistory)
-                        ? lerPayload.workHistory.map(item => ({
-                              hasVerifiableCredential: Boolean(
-                                  asRecord(item)?.verifiableCredential
-                              ),
-                              verifiableCredentialId: asString(
-                                  asRecord(asRecord(item)?.verifiableCredential)?.id
-                              ),
-                              verifiableCredentialContexts: asRecord(item)?.verifiableCredential
-                                  ? (asRecord(asRecord(item)?.verifiableCredential)?.[
-                                        '@context'
-                                    ] as unknown)
-                                  : undefined,
-                          }))
-                        : [],
-                    educationHistory: Array.isArray(lerPayload.educationHistory)
-                        ? lerPayload.educationHistory.map(item => ({
-                              hasVerifiableCredential: Boolean(
-                                  asRecord(item)?.verifiableCredential
-                              ),
-                              verifiableCredentialId: asString(
-                                  asRecord(asRecord(item)?.verifiableCredential)?.id
-                              ),
-                              verifiableCredentialContexts: asRecord(item)?.verifiableCredential
-                                  ? (asRecord(asRecord(item)?.verifiableCredential)?.[
-                                        '@context'
-                                    ] as unknown)
-                                  : undefined,
-                          }))
-                        : [],
-                    certifications: Array.isArray(lerPayload.certifications)
-                        ? lerPayload.certifications.map(item => ({
-                              hasVerifiableCredential: Boolean(
-                                  asRecord(item)?.verifiableCredential
-                              ),
-                              verifiableCredentialId: asString(
-                                  asRecord(asRecord(item)?.verifiableCredential)?.id
-                              ),
-                              verifiableCredentialContexts: asRecord(item)?.verifiableCredential
-                                  ? (asRecord(asRecord(item)?.verifiableCredential)?.[
-                                        '@context'
-                                    ] as unknown)
-                                  : undefined,
-                          }))
-                        : [],
-                    skills: lerPayload.skills,
-                    narratives: lerPayload.narratives,
-                    attachments: lerPayload.attachments,
-                })
-            );
-            console.log(
-                '[useIssueTcpResume] ler payload raw',
-                serializeForLog(lerPayload)
-            );
-
             currentStep = 'createLerRecord';
             const lerVc = await createLerRecordInvoker({
                 learnCard: wallet,
                 ...lerPayload,
-            });
-
-            console.log('[useIssueTcpResume] ler credential created', {
-                ...logContext,
-                lerCredentialId: lerVc.id,
-                lerVc,
             });
 
             currentStep = 'storeLer';
@@ -682,11 +574,6 @@ export const useIssueTcpResume = () => {
             if (!lerUri) {
                 throw new Error('Failed to store LER-RS VC in LearnCloud');
             }
-
-            console.log('[useIssueTcpResume] ler credential stored', {
-                ...logContext,
-                lerUri,
-            });
 
             currentStep = 'updateResumeIndex';
             const lerRecordId = lerVc.id || `urn:uuid:${crypto.randomUUID()}`;
@@ -754,13 +641,6 @@ export const useIssueTcpResume = () => {
                     queryKey: ['useGetCredentials', switchedDid ?? '', CredentialCategoryEnum.resume],
                 }),
             ]);
-
-            console.log('[useIssueTcpResume] success', {
-                ...logContext,
-                lerUri,
-                lerRecordId,
-                targetRecordId,
-            });
 
             return { lerVc, lerUri, pdfUrl };
         } catch (error) {

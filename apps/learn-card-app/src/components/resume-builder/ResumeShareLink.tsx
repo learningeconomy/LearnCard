@@ -61,8 +61,8 @@ const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, 
     };
 
     return (
-        <section className="w-full max-w-[560px] px-5 py-5">
-            <div className="rounded-[28px] border-2 border-white bg-grayscale-900 shadow-[0_20px_50px_rgba(15,23,42,0.35)] overflow-hidden">
+        <section className="flex h-full w-full items-center justify-center p-5">
+            <div className="w-full max-w-[400px] rounded-[28px] border-2 border-white bg-grayscale-900 shadow-[0_20px_50px_rgba(15,23,42,0.35)] overflow-hidden">
                 <div className="flex items-center justify-between px-6 py-5">
                     <ProfilePicture
                         customContainerClass="flex justify-center items-center h-[44px] w-[44px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[44px] min-h-[44px]"
@@ -93,7 +93,9 @@ const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, 
 
                         <div className="mt-4 flex items-center gap-3 rounded-full bg-grayscale-100 px-4 py-3">
                             <p className="min-w-0 flex-1 truncate text-[16px] font-medium text-grayscale-500">
-                                {shareLink ? truncateWithEllipsis(shareLink, 40) : 'Generating link...'}
+                                {shareLink
+                                    ? truncateWithEllipsis(shareLink, 40)
+                                    : 'Generating link...'}
                             </p>
                             <button
                                 type="button"
@@ -104,6 +106,19 @@ const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, 
                                 Copy Link
                             </button>
                         </div>
+                    </div>
+
+                    <div className="mt-3 w-full flex flex-col gap-[10px] bg-sky-50 border border-sky-200 rounded-[15px] p-[14px]">
+                        <p className="text-sky-900 font-poppins text-[16px] font-[600] m-0">
+                            Share your LearnCard resume
+                        </p>
+                        <p className="text-sky-800 text-sm m-0">
+                            This link and QR code give read-only access to your shared resume.
+                        </p>
+                        <p className="text-sky-800 text-sm m-0">
+                            Share with recruiters, hiring managers, friends, or anyone you want to
+                            review your resume.
+                        </p>
                     </div>
                 </div>
             </div>

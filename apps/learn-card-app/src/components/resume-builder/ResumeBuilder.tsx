@@ -39,7 +39,7 @@ import { VC } from '@learncard/types';
 export const ResumeBuilder: React.FC = () => {
     useResumePreselection();
 
-    const { newModal } = useModal({ mobile: ModalTypes.FullScreen });
+    const { newModal, closeModal } = useModal({ mobile: ModalTypes.FullScreen });
     const resumePreviewRef = useRef<ResumePreviewHandle>(null);
     const { isMobile } = useDeviceTypeByWidth();
     const { initWallet } = useWallet();
@@ -285,11 +285,15 @@ export const ResumeBuilder: React.FC = () => {
         }
 
         newModal(
-            <ResumeShareLink resume={activeResumeVc as VC} resumeUri={activeResume.uri} />,
+            <ResumeShareLink
+                resume={activeResumeVc as VC}
+                resumeUri={activeResume.uri}
+                handleClose={() => closeModal()}
+            />,
             {},
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
-    }, [activeResume?.uri, activeResumeVc, newModal, presentToast]);
+    }, [activeResume?.uri, activeResumeVc, newModal, presentToast, closeModal]);
 
     return (
         <div className="resume-builder flex h-full w-full bg-grayscale-50 overflow-hidden relative">
