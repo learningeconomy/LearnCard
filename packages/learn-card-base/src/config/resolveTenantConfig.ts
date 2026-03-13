@@ -12,8 +12,9 @@
  */
 
 import type { TenantConfig } from './tenantConfig';
-import { parseTenantConfig } from './tenantConfigSchema';
+import { parseTenantConfig, parsePartialTenantConfig } from './tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from './tenantDefaults';
+import { deepMerge } from './deepMerge';
 
 const CACHE_KEY_PREFIX = 'tenant-config-cache';
 const CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
@@ -114,7 +115,25 @@ const fetchFreshConfig = async (endpoint?: string): Promise<TenantConfig | null>
 
         const raw: unknown = await response.json();
 
-        return parseTenantConfig(raw, `fetch ${url}`);
+        // Try full config parse first (e.g. a config service returning complete configs)
+        const full = parseTenantConfig(raw, `fetch ${url}`);
+
+        if (full) return full;
+
+        // Fall back to partial parse — edge functions may return only overrides.
+        // Deep-merge onto defaults to produce a complete config.
+        const partial = parsePartialTenantConfig(raw, `fetch ${url} (partial)`);
+
+        if (partial && typeof partial === 'object') {
+            const merged = deepMerge(
+                DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
+                partial as Record<string, unknown>,
+            );
+
+            return parseTenantConfig(merged, `fetch ${url} (merged)`);
+        }
+
+        return null;
     } catch {
         return null;
     }

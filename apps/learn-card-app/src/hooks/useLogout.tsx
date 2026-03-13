@@ -5,9 +5,7 @@ import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import authStore from 'learn-card-base/stores/authStore';
 
 import {
-    BrandingEnum,
     pushUtilities,
-    LOGIN_REDIRECTS,
     SocialLoginTypes,
     useToast,
     useWallet,
@@ -15,6 +13,7 @@ import {
 } from 'learn-card-base';
 
 import { useAuthCoordinator } from '../providers/AuthCoordinatorProvider';
+import { getLoginRedirectUrl } from '../config/bootstrapTenantConfig';
 
 const useLogout = () => {
     const { initWallet } = useWallet();
@@ -25,7 +24,6 @@ const useLogout = () => {
     const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
     const handleLogout = async (
-        branding: BrandingEnum,
         options?: { appendQuery?: Record<string, string>; overrideRedirectUrl?: string }
     ) => {
         setIsLoggingOut(true);
@@ -38,10 +36,7 @@ const useLogout = () => {
             SocialLoginTypes.google,
         ];
 
-        const baseRedirectUrl =
-            IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                ? LOGIN_REDIRECTS[branding].redirectUrl
-                : LOGIN_REDIRECTS[branding].devRedirectUrl;
+        const baseRedirectUrl = getLoginRedirectUrl();
 
         const appendParams = (url: string, params?: Record<string, string>) => {
             if (!params || Object.keys(params).length === 0) return url;

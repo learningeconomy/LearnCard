@@ -1,155 +1,22 @@
 {
     "id": "vetpass",
     "displayName": "VetPass",
+    "extends": "formal",
     "iconSet": "formal",
     "defaults": {
         "viewMode": "list"
     },
     "colors": {
+        "categoryBase": {
+            "primaryColor": "slate-50",
+            "indicatorColor": "slate-500",
+            "tabActiveColor": "bg-slate-100"
+        },
         "categories": {
-            "achievement": {
-                "primaryColor": "slate-50",
-                "secondaryColor": "grayscale-800",
-                "indicatorColor": "slate-500",
-                "borderColor": "grayscale-100",
-                "statusBarColor": "light",
-                "headerBrandingTextColor": "text-grayscale-800",
-                "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
-                "backgroundSecondaryColor": "grayscale-100",
-                "tabActiveColor": "bg-slate-100"
-            },
-            "socialBadge": {
-                "primaryColor": "slate-50",
-                "secondaryColor": "grayscale-800",
-                "indicatorColor": "slate-500",
-                "borderColor": "grayscale-100",
-                "statusBarColor": "light",
-                "headerBrandingTextColor": "text-grayscale-800",
-                "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
-                "backgroundSecondaryColor": "grayscale-100",
-                "tabActiveColor": "bg-slate-100"
-            },
-            "learningHistory": {
-                "primaryColor": "slate-50",
-                "secondaryColor": "grayscale-800",
-                "indicatorColor": "slate-500",
-                "borderColor": "grayscale-100",
-                "statusBarColor": "light",
-                "headerBrandingTextColor": "text-grayscale-800",
-                "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
-                "backgroundSecondaryColor": "grayscale-100",
-                "tabActiveColor": "bg-slate-100"
-            },
-            "workHistory": {
-                "primaryColor": "slate-50",
-                "secondaryColor": "grayscale-800",
-                "indicatorColor": "slate-500",
-                "borderColor": "grayscale-100",
-                "statusBarColor": "light",
-                "headerBrandingTextColor": "text-grayscale-800",
-                "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
-                "backgroundSecondaryColor": "grayscale-100",
-                "tabActiveColor": "bg-slate-100"
-            },
-            "accomplishment": {
-                "primaryColor": "slate-50",
-                "secondaryColor": "grayscale-800",
-                "indicatorColor": "slate-500",
-                "borderColor": "grayscale-100",
-                "statusBarColor": "light",
-                "headerBrandingTextColor": "text-grayscale-800",
-                "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
-                "backgroundSecondaryColor": "grayscale-100",
-                "tabActiveColor": "bg-slate-100"
-            },
-            "accommodation": {
-                "primaryColor": "slate-50",
-                "secondaryColor": "grayscale-800",
-                "indicatorColor": "slate-500",
-                "borderColor": "grayscale-100",
-                "statusBarColor": "light",
-                "headerBrandingTextColor": "text-grayscale-800",
-                "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
-                "backgroundSecondaryColor": "grayscale-100",
-                "tabActiveColor": "bg-slate-100"
-            },
-            "id": {
-                "primaryColor": "slate-50",
-                "secondaryColor": "grayscale-800",
-                "indicatorColor": "slate-500",
-                "borderColor": "grayscale-100",
-                "statusBarColor": "light",
-                "headerBrandingTextColor": "text-grayscale-800",
-                "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
-                "backgroundSecondaryColor": "grayscale-100",
-                "tabActiveColor": "bg-slate-100"
-            },
-            "family": {
-                "primaryColor": "slate-50",
-                "secondaryColor": "grayscale-800",
-                "indicatorColor": "slate-500",
-                "borderColor": "grayscale-100",
-                "statusBarColor": "light",
-                "headerBrandingTextColor": "text-grayscale-800",
-                "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
-                "backgroundSecondaryColor": "grayscale-100",
-                "tabActiveColor": "bg-slate-100"
-            },
-            "skill": {
-                "primaryColor": "slate-50",
-                "secondaryColor": "grayscale-800",
-                "indicatorColor": "slate-500",
-                "borderColor": "grayscale-100",
-                "statusBarColor": "light",
-                "headerBrandingTextColor": "text-grayscale-800",
-                "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
-                "backgroundSecondaryColor": "grayscale-100",
-                "tabActiveColor": "bg-slate-100"
-            },
-            "aiTopic": {
-                "primaryColor": "slate-50",
-                "secondaryColor": "grayscale-800",
-                "indicatorColor": "slate-500",
-                "borderColor": "grayscale-100",
-                "statusBarColor": "light",
-                "headerBrandingTextColor": "text-grayscale-800",
-                "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
-                "backgroundSecondaryColor": "grayscale-100",
-                "tabActiveColor": "bg-slate-100"
-            },
-            "aiPathway": {
-                "primaryColor": "slate-50",
-                "secondaryColor": "grayscale-800",
-                "indicatorColor": "slate-500",
-                "borderColor": "grayscale-100",
-                "statusBarColor": "light",
-                "headerBrandingTextColor": "text-grayscale-800",
-                "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
-                "backgroundSecondaryColor": "grayscale-100",
-                "tabActiveColor": "bg-slate-100"
-            },
             "aiInsight": {
                 "primaryColor": "slate-900",
                 "secondaryColor": "slate-800",
-                "indicatorColor": "amber-600",
-                "borderColor": "grayscale-100",
-                "statusBarColor": "light",
-                "headerBrandingTextColor": "text-grayscale-800",
-                "headerTextColor": "text-grayscale-800",
-                "backgroundPrimaryColor": "!bg-white",
-                "backgroundSecondaryColor": "grayscale-100",
-                "tabActiveColor": "bg-slate-100"
+                "indicatorColor": "amber-600"
             }
         },
         "launchPad": {
@@ -170,21 +37,13 @@
             }
         },
         "sideMenu": {
-            "linkActiveColor": "text-grayscale-900",
-            "linkInactiveColor": "text-grayscale-500",
-            "linkActiveBackgroundColor": "bg-grayscale-100/50",
-            "linkInactiveBackgroundColor": "bg-white",
             "primaryButtonColor": "bg-slate-500 text-white",
-            "secondaryButtonColor": "bg-red-500 text-white border-red-500",
+            "secondaryButtonColor": "bg-lime-700 text-slate-300 border-slate-900",
             "indicatorColor": "text-slate-500",
-            "syncingColor": "!text-slate-500",
-            "completedColor": "!text-emerald-700"
+            "syncingColor": "!text-slate-500"
         },
         "navbar": {
-            "activeColor": "text-grayscale-900",
-            "inactiveColor": "text-grayscale-500",
-            "syncingColor": "!text-slate-500",
-            "completedColor": "!text-emerald-700"
+            "syncingColor": "!text-slate-500"
         },
         "introSlides": {
             "firstSlideBackground": "slate-500",
@@ -199,76 +58,11 @@
                 "secondary": "#E2E3E9"
             }
         },
-        "placeholders": {
-            "achievement": {
-                "spilledCup": {
-                    "backsplash": "#cbd5e1",
-                    "spill": "#f87171",
-                    "cupOutline": "#334155"
-                }
-            },
-            "socialBadge": {
-                "spilledCup": {
-                    "backsplash": "#cbd5e1",
-                    "spill": "#f87171",
-                    "cupOutline": "#334155"
-                }
-            },
-            "learningHistory": {
-                "spilledCup": {
-                    "backsplash": "#cbd5e1",
-                    "spill": "#f87171",
-                    "cupOutline": "#334155"
-                }
-            },
-            "workHistory": {
-                "spilledCup": {
-                    "backsplash": "#cbd5e1",
-                    "spill": "#f87171",
-                    "cupOutline": "#334155"
-                }
-            },
-            "accomplishment": {
-                "spilledCup": {
-                    "backsplash": "#cbd5e1",
-                    "spill": "#f87171",
-                    "cupOutline": "#334155"
-                }
-            },
-            "accommodation": {
-                "spilledCup": {
-                    "backsplash": "#cbd5e1",
-                    "spill": "#f87171",
-                    "cupOutline": "#334155"
-                }
-            },
-            "id": {
-                "spilledCup": {
-                    "backsplash": "#cbd5e1",
-                    "spill": "#f87171",
-                    "cupOutline": "#334155"
-                }
-            },
-            "family": {
-                "spilledCup": {
-                    "backsplash": "#cbd5e1",
-                    "spill": "#f87171",
-                    "cupOutline": "#334155"
-                }
-            },
-            "skill": {
-                "spilledCup": {
-                    "backsplash": "#cbd5e1",
-                    "spill": "#f87171",
-                    "cupOutline": "#334155"
-                }
-            },
-            "defaults": {
-                "spilledCup": {
-                    "backsplash": "#e2e8f0",
-                    "spill": "#f87171",
-                    "cupOutline": "#334155"
-                }
+        "placeholderBase": {
+            "spilledCup": {
+                "backsplash": "#cbd5e1",
+                "spill": "#f87171",
+                "cupOutline": "#334155"
             }
         },
         "defaults": {
@@ -291,19 +85,17 @@
             "textStyles": "text-[16px]",
             "iconStyles": "w-[75px] h-auto xxs:w-[60px] xxs:h-[60px]",
             "indicatorStyles": "shadow-soft-bottom"
-        },
-        "defaults": {
-            "tabs": {
-                "borderRadius": "rounded-[5px]"
-            }
         }
     },
     "iconPalettes": {
         "AiSessions": {
-            "primary": "#800000"
+            "primary": "#59ff00"
         },
         "AiInsights": {
             "primary": "#131f00"
+        },
+        "AiPathways": {
+            "primary": "#005c50"
         }
     }
 }

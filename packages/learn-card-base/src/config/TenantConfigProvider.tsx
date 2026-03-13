@@ -123,5 +123,17 @@ export const useTenantBaseUrl = (): string => {
     return `http://${config.devDomain ?? 'localhost:3000'}`;
 };
 
+/**
+ * Get the tenant's login redirect URL (base URL + loginRedirectPath).
+ * Replaces the legacy `LOGIN_REDIRECTS[BrandingEnum]` + `IS_PRODUCTION` pattern.
+ */
+export const useLoginRedirectUrl = (): string => {
+    const config = useTenantConfig();
+    const baseUrl = useTenantBaseUrl();
+    const path = config.branding.loginRedirectPath ?? '/waitingsofa?loginCompleted=true';
+
+    return `${baseUrl}${path}`;
+};
+
 // Ambient declaration so TypeScript doesn't error on the typeof guard above.
 declare const IS_PRODUCTION: boolean | undefined;

@@ -77,7 +77,12 @@ import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorag
 import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
 import { auth } from '../firebase/firebase';
-import { FIREBASE_REDIRECT_URL } from '../constants/web3AuthConfig';
+import {
+    getAppBaseUrl,
+    getFirebaseRedirectDomain,
+    getFirebaseDynamicLinkDomain,
+    getNativeBundleId,
+} from '../config/bootstrapTenantConfig';
 
 import {
     emitAuthDebugEvent,
@@ -295,12 +300,10 @@ registerSignInAdapterFactory('firebase', () =>
         getNativeAuth: () => FirebaseAuthentication,
         isNativePlatform: () => Capacitor.isNativePlatform(),
         emailLinkSettings: {
-            url: (typeof IS_PRODUCTION !== 'undefined' && IS_PRODUCTION)
-                ? `https://${FIREBASE_REDIRECT_URL}/login`
-                : 'http://localhost:3000/login',
-            iOS: { bundleId: 'com.learncard.app' },
-            android: { packageName: 'com.learncard.app', installApp: true, minimumVersion: '12' },
-            dynamicLinkDomain: 'learncard.app',
+            url: `${getAppBaseUrl()}/login`,
+            iOS: { bundleId: getNativeBundleId() },
+            android: { packageName: getNativeBundleId(), installApp: true, minimumVersion: '12' },
+            dynamicLinkDomain: getFirebaseDynamicLinkDomain(),
         },
     })
 );

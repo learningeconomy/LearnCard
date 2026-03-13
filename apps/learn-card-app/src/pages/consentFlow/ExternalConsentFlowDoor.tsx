@@ -24,9 +24,8 @@ import {
     useModal,
 } from 'learn-card-base';
 import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
-import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
-import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
 import { auth } from '../../firebase/firebase';
+import { getLoginRedirectUrl } from '../../config/bootstrapTenantConfig';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
@@ -177,10 +176,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
             SocialLoginTypes.google,
         ];
 
-        const redirectUrl =
-            IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                ? LOGIN_REDIRECTS[BrandingEnum.learncard].redirectUrl
-                : LOGIN_REDIRECTS[BrandingEnum.learncard].devRedirectUrl;
+        const redirectUrl = getLoginRedirectUrl();
 
         setTimeout(async () => {
             const deviceToken = authStore?.get?.deviceToken();

@@ -38,6 +38,52 @@ export const getAppBaseUrl = (): string => {
 };
 
 /**
+ * Get the full login redirect URL for the current tenant.
+ * Combines the tenant base URL with `branding.loginRedirectPath`.
+ *
+ * Replaces the legacy `LOGIN_REDIRECTS[BrandingEnum.xxx]` + `IS_PRODUCTION` pattern.
+ */
+export const getLoginRedirectUrl = (): string => {
+    const config = getResolvedTenantConfig();
+    const base = getTenantBaseUrl(config);
+    const path = config.branding.loginRedirectPath ?? '/waitingsofa?loginCompleted=true';
+
+    return `${base}${path}`;
+};
+
+/**
+ * Get the Firebase redirect domain for the current tenant.
+ * Falls back to the tenant's production domain.
+ *
+ * Replaces the hardcoded `FIREBASE_REDIRECT_URL` constant.
+ */
+export const getFirebaseRedirectDomain = (): string => {
+    const config = getResolvedTenantConfig();
+
+    return config.auth.firebaseRedirectDomain ?? config.domain;
+};
+
+/**
+ * Get the Firebase dynamic link domain for the current tenant.
+ * Falls back to the tenant's production domain.
+ */
+export const getFirebaseDynamicLinkDomain = (): string => {
+    const config = getResolvedTenantConfig();
+
+    return config.auth.firebaseDynamicLinkDomain ?? config.domain;
+};
+
+/**
+ * Get the native bundle ID for the current tenant.
+ * Falls back to the default LearnCard bundle ID.
+ */
+export const getNativeBundleId = (): string => {
+    const config = getResolvedTenantConfig();
+
+    return config.native?.bundleId ?? 'com.learncard.app';
+};
+
+/**
  * Resolve the TenantConfig and initialize all subsystems.
  *
  * Call this once before ReactDOM.createRoot().render().

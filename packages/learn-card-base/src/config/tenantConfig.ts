@@ -36,6 +36,8 @@ export {
     parsePartialTenantConfig,
 } from './tenantConfigSchema';
 
+export { deepMerge } from './deepMerge';
+
 import type { TenantConfig } from './tenantConfigSchema';
 
 // -----------------------------------------------------------------

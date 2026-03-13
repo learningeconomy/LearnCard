@@ -157,7 +157,7 @@ export const LoginContent: React.FC = () => {
                 if (currentUser && isLoggedIn) {
                     // Child still logged in: set redirect to families and logout to allow parent login
                     redirectStore.set.lcnRedirect('/families?createFamily=true');
-                    handleLogout(BrandingEnum.learncard, {
+                    handleLogout({
                         appendQuery: { redirectTo: '/families?createFamily=true' },
                     });
                     return;

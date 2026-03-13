@@ -20,39 +20,12 @@ import { fileURLToPath } from 'url';
 
 import { tenantConfigSchema } from 'learn-card-base/src/config/tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/src/config/tenantDefaults';
+import { deepMerge } from 'learn-card-base/src/config/deepMerge';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const APP_ROOT = resolve(__dirname, '..');
 const ENVIRONMENTS_DIR = resolve(APP_ROOT, 'environments');
-
-// ---------------------------------------------------------------------------
-// Deep merge (same logic as prepare-native-config.ts)
-// ---------------------------------------------------------------------------
-
-const deepMerge = (base: Record<string, unknown>, overrides: Record<string, unknown>): Record<string, unknown> => {
-    const result = { ...base };
-
-    for (const key of Object.keys(overrides)) {
-        const baseVal = base[key];
-        const overrideVal = overrides[key];
-
-        if (
-            baseVal && overrideVal &&
-            typeof baseVal === 'object' && !Array.isArray(baseVal) &&
-            typeof overrideVal === 'object' && !Array.isArray(overrideVal)
-        ) {
-            result[key] = deepMerge(
-                baseVal as Record<string, unknown>,
-                overrideVal as Record<string, unknown>,
-            );
-        } else {
-            result[key] = overrideVal;
-        }
-    }
-
-    return result;
-};
 
 // ---------------------------------------------------------------------------
 // Discover tenants

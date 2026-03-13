@@ -10,7 +10,7 @@
  */
 import React from 'react';
 
-import { CredentialCategoryEnum, WALLET_ICON_PALETTE_DEFAULTS } from 'learn-card-base';
+import { CredentialCategoryEnum, WALLET_ICON_PALETTE_DEFAULTS, deepMerge } from 'learn-card-base';
 import type { IconPalette } from 'learn-card-base';
 
 import type { Theme } from '../validators/theme.validators';
@@ -104,37 +104,6 @@ for (const [key, value] of Object.entries(CredentialCategoryEnum)) {
 
 /** Resolve a JSON category key to its runtime enum value, falling through as-is if no mapping. */
 const resolveCategoryKey = (key: string): string => CATEGORY_KEY_TO_VALUE[key] ?? key;
-
-/** Deep merge b into a (b wins on conflict). Arrays are replaced, not merged. */
-const deepMerge = (a: Record<string, unknown>, b: Record<string, unknown>): Record<string, unknown> => {
-    const result = { ...a };
-
-    for (const key of Object.keys(b)) {
-        const bVal = b[key];
-
-        if (bVal === undefined) continue;
-
-        const aVal = result[key];
-
-        if (
-            aVal &&
-            bVal &&
-            typeof aVal === 'object' &&
-            typeof bVal === 'object' &&
-            !Array.isArray(aVal) &&
-            !Array.isArray(bVal)
-        ) {
-            result[key] = deepMerge(
-                aVal as Record<string, unknown>,
-                bVal as Record<string, unknown>,
-            );
-        } else {
-            result[key] = bVal;
-        }
-    }
-
-    return result;
-};
 
 /**
  * Expand `categoryBase` + optional `categories` overrides into a full

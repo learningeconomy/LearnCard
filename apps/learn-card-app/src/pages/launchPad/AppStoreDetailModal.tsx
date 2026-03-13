@@ -25,6 +25,7 @@ import { useAnalytics, AnalyticsEvents } from '@analytics';
 import useAppStore from './useAppStore';
 import { EmbedIframeModal } from './EmbedIframeModal';
 import useTheme from '../../theme/hooks/useTheme';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import AppScreenshotsSlider from '../../components/ai-passport-apps/helpers/AppScreenshotSlider';
 import Checkmark from '../../components/svgs/Checkmark';
 import StaticStarRating from '../../components/ai-passport-apps/helpers/StaticStarRating';
@@ -499,9 +500,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const [showCopiedToast, setShowCopiedToast] = useState(false);
 
     const handleShareApp = async () => {
-        const appUrl = !IS_PRODUCTION
-            ? `${window.location.origin}/app/${listing.listing_id}`
-            : `https://learncard.app/app/${listing.listing_id}`;
+        const appUrl = `${getAppBaseUrl()}/app/${listing.listing_id}`;
 
         try {
             await navigator.clipboard.writeText(appUrl);

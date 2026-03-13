@@ -490,7 +490,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                         },
                                         { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                                     );
-                                    handleLogout(BrandingEnum.learncard, {
+                                    handleLogout({
                                         overrideRedirectUrl: `/login?redirectTo=${encodeURIComponent(
                                             '/families?createFamily=true'
                                         )}`,
