@@ -4,12 +4,12 @@ description: Provider-agnostic interfaces for authentication and key derivation
 
 # Auth Types
 
-`@learncard/auth-types` is a zero-dependency package that defines the abstract interfaces used by the [AuthCoordinator](../core-concepts/architecture-and-principles/auth-coordinator.md), auth providers, and key derivation strategies. It exists as a separate package to avoid circular dependencies between `learn-card-base` and `sss-key-manager`.
+The auth types are defined in `@learncard/types` (in `src/auth.ts`) and provide the abstract interfaces used by the [AuthCoordinator](../core-concepts/architecture-and-principles/auth-coordinator.md), auth providers, and key derivation strategies.
 
 ## Installation
 
 ```bash
-pnpm add @learncard/auth-types
+pnpm add @learncard/types
 ```
 
 ## Interfaces
@@ -173,7 +173,7 @@ class AuthSessionError extends Error {
 
 ## Usage
 
-These types are re-exported by both `@learncard/sss-key-manager` and `learn-card-base` for convenience. You typically don't need to import from `@learncard/auth-types` directly unless you're building a new auth provider or key derivation strategy.
+These types are re-exported by both `@learncard/sss-key-manager` and `learn-card-base` for convenience.
 
 ```typescript
 // From sss-key-manager (SSS-specific types + auth-types re-exports)
@@ -183,5 +183,5 @@ import type { AuthProvider, KeyDerivationStrategy, ContactMethod } from '@learnc
 import type { AuthProvider, UnifiedAuthState } from 'learn-card-base';
 
 // Direct import (only needed for new provider/strategy implementations)
-import type { AuthProvider, KeyDerivationStrategy } from '@learncard/auth-types';
+import type { AuthProvider, KeyDerivationStrategy } from '@learncard/types';
 ```

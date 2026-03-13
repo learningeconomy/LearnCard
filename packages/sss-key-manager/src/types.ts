@@ -1,12 +1,12 @@
 /**
  * SSS Key Manager Types
  *
- * Re-exports provider-agnostic interfaces from @learncard/auth-types
+ * Re-exports provider-agnostic interfaces from @learncard/types
  * and defines SSS-specific types (recovery shapes, backup files, etc.).
  */
 
 // ---------------------------------------------------------------------------
-// Re-export provider-agnostic interfaces from @learncard/auth-types
+// Re-export provider-agnostic interfaces from @learncard/types
 // ---------------------------------------------------------------------------
 
 export {
@@ -18,9 +18,9 @@ export {
     type RecoveryResult,
     type ServerKeyStatus,
     type KeyDerivationStrategy,
-} from '@learncard/auth-types';
+} from '@learncard/types';
 
-import type { AuthProvider, AuthProviderType, KeyDerivationStrategy, RecoveryMethodInfo } from '@learncard/auth-types';
+import type { AuthProvider, AuthProviderType, KeyDerivationStrategy, RecoveryMethodInfo } from '@learncard/types';
 
 // ---------------------------------------------------------------------------
 // SSS-specific: Contact & auth provider mapping
