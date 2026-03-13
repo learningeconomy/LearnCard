@@ -20,6 +20,7 @@
 -   [Verify My Issuer](how-to-guides/verify-my-issuer.md)
 -   [Connect Systems](how-to-guides/connect-systems/README.md)
     -   [Connect a Website](how-to-guides/connect-systems/connect-a-website.md)
+    -   [Embed a Claim Button](how-to-guides/connect-systems/embed-a-claim-button.md)
     -   [Connect an Embedded App](how-to-guides/connect-systems/connect-an-embedded-app.md)
     -   [Connect a Game](how-to-guides/connect-systems/connect-a-game.md)
     -   [Connect AI Agent](how-to-guides/connect-systems/connect-ai-agent.md)
@@ -94,6 +95,7 @@
                     spec: learn-cloud-storage-openapi
         ```
     -   [xAPI Reference](sdks/learncloud-storage-api/xapi-reference.md)
+-   [Embed SDK](sdks/embed-sdk.md)
 -   [Partner Connect SDK](sdks/partner-connect.md)
 -   [Plugins](sdks/official-plugins/README.md)
 -   [LearnCard CLI](sdks/learncard-cli.md)

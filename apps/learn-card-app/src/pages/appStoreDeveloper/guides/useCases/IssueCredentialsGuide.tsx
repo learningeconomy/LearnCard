@@ -332,12 +332,13 @@ const SigningAuthorityStep: React.FC<{
         fetchSigningAuthority();
     }, []);
 
-    const createSigningAuthority = async () => {
+    const createOrReplaceSigningAuthority = async () => {
         try {
             setCreating(true);
             const wallet = await initWallet();
 
-            const authority = await wallet.invoke.createSigningAuthority('default-sa');
+            const saName = `sa-${Date.now().toString(36)}`;
+            const authority = await wallet.invoke.createSigningAuthority(saName);
 
             if (!authority) {
                 throw new Error('Failed to create signing authority');
@@ -384,10 +385,10 @@ const SigningAuthorityStep: React.FC<{
                 description={hasSigningAuthority ? `Using: ${primarySA?.name}` : 'Create one to sign credentials'}
             />
 
-            {/* Create button if needed */}
+            {/* Create button if no SA exists */}
             {!loading && !hasSigningAuthority && (
                 <button
-                    onClick={createSigningAuthority}
+                    onClick={createOrReplaceSigningAuthority}
                     disabled={creating}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 disabled:opacity-50 transition-colors"
                 >
@@ -400,6 +401,27 @@ const SigningAuthorityStep: React.FC<{
                         <>
                             <Shield className="w-4 h-4" />
                             Create Signing Authority
+                        </>
+                    )}
+                </button>
+            )}
+
+            {/* Recreate button if SA exists but may be stale */}
+            {!loading && hasSigningAuthority && (
+                <button
+                    onClick={createOrReplaceSigningAuthority}
+                    disabled={creating}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                >
+                    {creating ? (
+                        <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Recreating...
+                        </>
+                    ) : (
+                        <>
+                            <RefreshCw className="w-4 h-4" />
+                            Recreate Signing Authority
                         </>
                     )}
                 </button>

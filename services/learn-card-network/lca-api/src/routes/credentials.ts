@@ -50,7 +50,12 @@ export const credentialsRouter = t.router({
                     signingAuthority.name
                 );
 
-                credential.issuer = learnCard.id.did();
+                // Preserve issuer.name/image if the credential has an object-form issuer
+                if (typeof credential.issuer === 'object' && credential.issuer !== null) {
+                    credential.issuer.id = learnCard.id.did();
+                } else {
+                    credential.issuer = learnCard.id.did();
+                }
                 const verificationMethod = learnCard.id.did().startsWith('did:web')
                     ? `${learnCard.id.did()}#${signingAuthority.name}`
                     : undefined;

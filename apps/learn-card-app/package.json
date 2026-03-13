@@ -34,6 +34,7 @@
         "@ionic/core": "^8.7.2",
         "@ionic/react": "8.7.2",
         "@ionic/react-router": "8.7.2",
+        "@learncard/embed-sdk": "workspace:^",
         "@learncard/helpers": "workspace:*",
         "@learncard/lca-api-plugin": "workspace:*",
         "@learncard/open-badge-v2-plugin": "workspace:*",

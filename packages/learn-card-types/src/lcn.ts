@@ -993,6 +993,7 @@ export const InboxCredentialValidator = z.object({
     webhookUrl: z.string().optional(),
     boostUri: z.string().optional(),
     activityId: z.string().optional(),
+    integrationId: z.string().optional(),
     signingAuthority: z
         .object({
             endpoint: z.string().optional(),
@@ -1181,10 +1182,14 @@ export type IssueInboxCredentialResponseType = z.infer<
     typeof IssueInboxCredentialResponseValidator
 >;
 
+/** A simple name reference that the server resolves to a boost template */
+export const CredentialNameRefValidator = z.object({ name: z.string() }).passthrough();
+
 export const ClaimInboxCredentialValidator = z.object({
     credential: VCValidator.or(VPValidator)
         .or(UnsignedVCValidator)
-        .describe('The credential to issue.'),
+        .or(CredentialNameRefValidator)
+        .describe('The credential to issue, or a { name } reference to resolve a boost template.'),
     configuration: z
         .object({
             publishableKey: z.string(),
