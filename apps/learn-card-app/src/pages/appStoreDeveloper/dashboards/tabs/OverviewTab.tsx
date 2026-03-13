@@ -21,6 +21,7 @@ import {
     Hash,
     Filter,
     ChevronDown,
+    Download,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
@@ -42,6 +43,7 @@ import {
     formatActivitySource,
     EVENT_TYPE_FILTER_OPTIONS,
 } from '../hooks/useIntegrationActivity';
+import { ExportDialog } from '../components/ExportDialog';
 
 import { useWallet } from 'learn-card-base';
 
@@ -489,6 +491,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     }, [refreshKey, refetch]);
 
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
+    const [showExportDialog, setShowExportDialog] = useState(false);
 
     const handleActivityItemClick = (item: CredentialActivityRecord) => {
         newModal(<IssuanceDetailModal item={item} />, { sectionClassName: '!max-w-[450px]' });
@@ -607,16 +610,26 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
 
             <div>
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-gray-800">Recent Activity</h2>
-
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex">
+                        <h2 className="text-lg font-semibold text-gray-800 mb-1 mr-4">
+                            Recent Activity
+                        </h2>
+                        <button
+                            onClick={() => setShowExportDialog(true)}
+                            className="flex items-center text-sm font-medium text-gray-600 p-[5px] border !border-solid border-gray-200 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                            <Download className="w-4 h-4 mr-[5px]" />
+                            Download CSV
+                        </button>
+                    </div>
                     <div className="relative">
                         <select
                             value={eventTypeFilter}
                             onChange={e =>
                                 setEventTypeFilter(e.target.value as CredentialEventType | 'ALL')
                             }
-                            className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-8 py-2 text-sm
+                            className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-8 py-[5px] text-sm
                                        text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500
                                        focus:border-transparent cursor-pointer transition-colors"
                         >
@@ -630,131 +643,143 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                         <ChevronDown className="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
                 </div>
-
-                {activityLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
-                    </div>
-                ) : activity.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                        <Zap className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                        <p>No activity yet</p>
-                        <p className="text-sm mt-1">
-                            Credentials will appear here as they're issued
-                        </p>
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        {activity.map(item => {
-                            const { eventType } = item;
-                            const isInbox = isInboxActivity(item);
-                            const isAutoDeliver = isAutoDelivery(item);
-                            const templateName = getActivityName(item);
-                            const recipientName = getRecipientDisplayName(item);
-                            const statusLabel = getActivityLabel(item);
-
-                            // Determine icon and colors based on event type
-                            let bgColor = 'bg-cyan-100';
-                            let textColor = 'text-cyan-600';
-                            let badgeBg = 'bg-cyan-100';
-                            let badgeText = 'text-cyan-700';
-                            let Icon = Send;
-
-                            if (eventType === 'CLAIMED') {
-                                bgColor = 'bg-emerald-100';
-                                textColor = 'text-emerald-600';
-                                badgeBg = 'bg-emerald-100';
-                                badgeText = 'text-emerald-700';
-                                Icon = CheckCircle2;
-                            } else if (eventType === 'FAILED') {
-                                bgColor = 'bg-red-100';
-                                textColor = 'text-red-600';
-                                badgeBg = 'bg-red-100';
-                                badgeText = 'text-red-700';
-                                Icon = AlertTriangle;
-                            } else if (eventType === 'EXPIRED') {
-                                bgColor = 'bg-gray-100';
-                                textColor = 'text-gray-500';
-                                badgeBg = 'bg-gray-100';
-                                badgeText = 'text-gray-600';
-                                Icon = Clock;
-                            } else if (isAutoDeliver) {
-                                // Auto-delivered to verified user - use User icon, emerald color
-                                bgColor = 'bg-emerald-50';
-                                textColor = 'text-emerald-600';
-                                badgeBg = 'bg-emerald-100';
-                                badgeText = 'text-emerald-700';
-                                Icon = User;
-                            } else if (isInbox) {
-                                // CREATED to inbox - use Mail icon, cyan color
-                                Icon = Mail;
-                            }
-                            // Regular DELIVERED to profile uses cyan (default)
-
-                            return (
-                                <button
-                                    key={item.id}
-                                    onClick={() => handleActivityItemClick(item)}
-                                    className="w-full flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-left"
-                                >
-                                    <div
-                                        className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bgColor}`}
-                                    >
-                                        <Icon className={`w-4 h-4 ${textColor}`} />
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium text-gray-800 truncate">
-                                                {templateName}
-                                            </span>
-
-                                            <span
-                                                className={`text-xs px-1.5 py-0.5 rounded ${badgeBg} ${badgeText}`}
-                                            >
-                                                {statusLabel}
-                                            </span>
-
-                                            {isInbox && (
-                                                <span className="text-xs px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">
-                                                    Email
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <p className="text-sm text-gray-500 truncate">
-                                            To: {recipientName}
-                                        </p>
-                                    </div>
-
-                                    <div className="text-xs text-gray-400 flex items-center gap-1 flex-shrink-0">
-                                        <Clock className="w-3 h-3" />
-                                        {formatRelativeTime(item.timestamp)}
-                                    </div>
-                                </button>
-                            );
-                        })}
-
-                        {hasMore && (
-                            <button
-                                onClick={loadMore}
-                                disabled={isLoadingMore}
-                                className="w-full py-3 text-sm font-medium text-cyan-600 hover:text-cyan-700 
-                                           hover:bg-cyan-50 rounded-xl transition-colors flex items-center 
-                                           justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isLoadingMore ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Loading...
-                                    </>
-                                ) : (
-                                    getActivityStat(eventTypeFilter, activityStats)
-                                )}
-                            </button>
-                        )}
+                {showExportDialog && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <ExportDialog
+                            integrationId={integration.id}
+                            integrationName={integration.name}
+                            initialEventType={eventTypeFilter === 'ALL' ? '' : eventTypeFilter}
+                            onClose={() => setShowExportDialog(false)}
+                        />
                     </div>
                 )}
+
+                <div className="min-h-[300px]">
+                    {activityLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+                        </div>
+                    ) : activity.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                            <Zap className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                            <p>No activity yet</p>
+                            <p className="text-sm mt-1">
+                                Credentials will appear here as they're issued
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {activity.map(item => {
+                                const { eventType } = item;
+                                const isInbox = isInboxActivity(item);
+                                const isAutoDeliver = isAutoDelivery(item);
+                                const templateName = getActivityName(item);
+                                const recipientName = getRecipientDisplayName(item);
+                                const statusLabel = getActivityLabel(item);
+
+                                // Determine icon and colors based on event type
+                                let bgColor = 'bg-cyan-100';
+                                let textColor = 'text-cyan-600';
+                                let badgeBg = 'bg-cyan-100';
+                                let badgeText = 'text-cyan-700';
+                                let Icon = Send;
+
+                                if (eventType === 'CLAIMED') {
+                                    bgColor = 'bg-emerald-100';
+                                    textColor = 'text-emerald-600';
+                                    badgeBg = 'bg-emerald-100';
+                                    badgeText = 'text-emerald-700';
+                                    Icon = CheckCircle2;
+                                } else if (eventType === 'FAILED') {
+                                    bgColor = 'bg-red-100';
+                                    textColor = 'text-red-600';
+                                    badgeBg = 'bg-red-100';
+                                    badgeText = 'text-red-700';
+                                    Icon = AlertTriangle;
+                                } else if (eventType === 'EXPIRED') {
+                                    bgColor = 'bg-gray-100';
+                                    textColor = 'text-gray-500';
+                                    badgeBg = 'bg-gray-100';
+                                    badgeText = 'text-gray-600';
+                                    Icon = Clock;
+                                } else if (isAutoDeliver) {
+                                    // Auto-delivered to verified user - use User icon, emerald color
+                                    bgColor = 'bg-emerald-50';
+                                    textColor = 'text-emerald-600';
+                                    badgeBg = 'bg-emerald-100';
+                                    badgeText = 'text-emerald-700';
+                                    Icon = User;
+                                } else if (isInbox) {
+                                    // CREATED to inbox - use Mail icon, cyan color
+                                    Icon = Mail;
+                                }
+                                // Regular DELIVERED to profile uses cyan (default)
+
+                                return (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => handleActivityItemClick(item)}
+                                        className="w-full flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-left"
+                                    >
+                                        <div
+                                            className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bgColor}`}
+                                        >
+                                            <Icon className={`w-4 h-4 ${textColor}`} />
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-medium text-gray-800 truncate">
+                                                    {templateName}
+                                                </span>
+
+                                                <span
+                                                    className={`text-xs px-1.5 py-0.5 rounded ${badgeBg} ${badgeText}`}
+                                                >
+                                                    {statusLabel}
+                                                </span>
+
+                                                {isInbox && (
+                                                    <span className="text-xs px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">
+                                                        Email
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <p className="text-sm text-gray-500 truncate">
+                                                To: {recipientName}
+                                            </p>
+                                        </div>
+
+                                        <div className="text-xs text-gray-400 flex items-center gap-1 flex-shrink-0">
+                                            <Clock className="w-3 h-3" />
+                                            {formatRelativeTime(item.timestamp)}
+                                        </div>
+                                    </button>
+                                );
+                            })}
+
+                            {hasMore && (
+                                <button
+                                    onClick={loadMore}
+                                    disabled={isLoadingMore}
+                                    className="w-full py-3 text-sm font-medium text-cyan-600 hover:text-cyan-700 
+                                           hover:bg-cyan-50 rounded-xl transition-colors flex items-center 
+                                           justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isLoadingMore ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Loading...
+                                        </>
+                                    ) : (
+                                        getActivityStat(eventTypeFilter, activityStats)
+                                    )}
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
