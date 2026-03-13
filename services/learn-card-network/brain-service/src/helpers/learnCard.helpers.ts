@@ -19,6 +19,7 @@ import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import type { LearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
 import type { DidWebPlugin } from '@learncard/did-web-plugin';
+import { DynamicLoaderPlugin } from '@learncard/dynamic-loader-plugin';
 
 // Try native plugin first, fall back to WASM
 const didKitPluginPromises = new Map<boolean, Promise<DIDKitPlugin>>();
@@ -126,7 +127,11 @@ export const getLearnCard = async (
     const cacheKey = `${seed}:${allowRemoteContexts}`;
 
     if (!learnCards[cacheKey] || IS_OFFLINE) {
-        const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
+        const emptyLc = await generateLearnCard();
+
+        const cryptoLc = allowRemoteContexts
+            ? await (await emptyLc.addPlugin(DynamicLoaderPlugin)).addPlugin(CryptoPlugin)
+            : await emptyLc.addPlugin(CryptoPlugin);
 
         const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(allowRemoteContexts));
 
@@ -142,7 +147,7 @@ export const getLearnCard = async (
 
         const expirationLc = await templateLc.addPlugin(expirationPlugin(templateLc));
 
-        learnCards[cacheKey] = await expirationLc.addPlugin(getLearnCardPlugin(expirationLc));
+        learnCards[cacheKey] = await expirationLc.addPlugin(getLearnCardPlugin(expirationLc)) as SeedLearnCard;
     }
 
     const learnCard = learnCards[cacheKey];
