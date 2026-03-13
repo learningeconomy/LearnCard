@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import queryString from 'query-string';
-import moment from 'moment';
 
-import { IonContent, IonHeader, IonPage, IonSpinner, IonToolbar } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonSpinner, IonToolbar, useIonModal } from '@ionic/react';
 import { useLocation } from 'react-router-dom';
-import { VC, VP } from '@learncard/types';
+import { VC, VerificationItem, VerificationStatusEnum, VP } from '@learncard/types';
 
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
@@ -12,16 +11,14 @@ import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 
 import ResumePreview from '../../components/resume-builder/resume-preview/ResumePreview';
+import SharedBoostVerificationBlock, {
+    SharedBoostVerificationBlockViewMode,
+} from '../../components/creds-bundle/SharedBoostVerificationBlock';
 import {
     buildResumeBuilderSnapshotFromLerVc,
     getEmbeddedVerificationCredentialsByIdFromLerVc,
     getResumeBuilderSnapshot,
 } from '../../components/resume-builder/resume-builder-history.helpers';
-import {
-    asRecord,
-    asString,
-    firstStringFromPaths,
-} from '../../components/resume-builder/resume-builder-parsing.helpers';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 
 const getQueryParam = (value: string | string[] | null): string => {
@@ -29,27 +26,91 @@ const getQueryParam = (value: string | string[] | null): string => {
     return value ?? '';
 };
 
-const getResumeHeader = (credential: VC | null): { title: string; subtitle: string } => {
-    const credentialSubject = asRecord(credential?.credentialSubject);
-    const narratives = Array.isArray(credentialSubject?.narratives)
-        ? credentialSubject.narratives
+const BOOST_AUTH_CHECK = 'Boost is Authentic. Verified by LearnCard Network.';
+
+const filterOutBoostVerificationItems = (items: VerificationItem[]): VerificationItem[] =>
+    items.filter(item => {
+        const checkText = item.check || '';
+        const messageText = item.message || '';
+        return !checkText.includes(BOOST_AUTH_CHECK) && !messageText.includes(BOOST_AUTH_CHECK);
+    });
+
+type LerVerificationResultLike = {
+    presentationResult?: {
+        verified?: boolean;
+        errors?: string[];
+    };
+    credentialResults?: Array<{
+        verified?: boolean;
+        isSelfIssued?: boolean;
+        errors?: string[];
+    }>;
+};
+
+const mapLerVerificationResultToItems = (
+    lerVerification: LerVerificationResultLike | null | undefined
+): VerificationItem[] => {
+    if (!lerVerification) return [];
+
+    const presentationErrors = Array.isArray(lerVerification.presentationResult?.errors)
+        ? lerVerification.presentationResult?.errors
+        : [];
+    const credentialResults = Array.isArray(lerVerification.credentialResults)
+        ? lerVerification.credentialResults
         : [];
 
-    const name =
-        firstStringFromPaths(credentialSubject, [['person', 'name', 'formattedName']]) ||
-        'Shared Resume';
-    const career =
-        firstStringFromPaths(
-            narratives.find(
-                narrative => asString(asRecord(narrative)?.name) === 'Professional Title'
-            ),
-            [['texts', '0', 'lines', '0']]
-        ) || '';
+    return [
+        {
+            check: 'Presentation',
+            status: lerVerification.presentationResult?.verified
+                ? VerificationStatusEnum.Success
+                : VerificationStatusEnum.Failed,
+            message: lerVerification.presentationResult?.verified
+                ? 'valid.'
+                : presentationErrors.join('; ') || 'verification failed.',
+            details: presentationErrors.length ? presentationErrors.join('\n') : undefined,
+        },
+        ...credentialResults.map((result, index) => {
+            const errors = Array.isArray(result.errors) ? result.errors : [];
+            const passed = Boolean(result.verified || result.isSelfIssued);
+            return {
+                check: `Credential`,
+                status: passed ? VerificationStatusEnum.Success : VerificationStatusEnum.Failed,
+                message: passed
+                    ? result.isSelfIssued && !result.verified
+                        ? 'Credential accepted as self-issued for LER validation.'
+                        : 'valid.'
+                    : errors.join('; ') || 'verification failed.',
+                details: errors.length ? errors.join('\n') : undefined,
+            } as VerificationItem;
+        }),
+    ];
+};
 
-    return {
-        title: name,
-        subtitle: career || 'Verifiable Resume',
-    };
+const buildResumeMetadataVerificationItems = (credential: VC): VerificationItem[] => {
+    const expiresAt = credential?.expirationDate || credential?.validUntil;
+    const proofValue = credential?.proof;
+    const proofRecord = Array.isArray(proofValue) ? proofValue[0] : proofValue;
+    const proofMethod =
+        typeof proofRecord === 'object' && proofRecord
+            ? (proofRecord as Record<string, unknown>).verificationMethod
+            : undefined;
+
+    return [
+        {
+            check: 'Proof',
+            status: proofValue ? VerificationStatusEnum.Success : VerificationStatusEnum.Error,
+            message: proofValue ? 'valid.' : 'missing.',
+            details: proofMethod ? String(proofMethod) : undefined,
+        },
+        {
+            check: 'Expires',
+            status: expiresAt ? VerificationStatusEnum.Success : VerificationStatusEnum.Error,
+            message: expiresAt
+                ? `has an expiration date: ${String(expiresAt)}.`
+                : 'does not include an expiration date.',
+        },
+    ];
 };
 
 const VerifySharedResume: React.FC = () => {
@@ -62,9 +123,20 @@ const VerifySharedResume: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string>('');
     const [resumeCredential, setResumeCredential] = useState<VC | null>(null);
+    const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
     const [resolvedCredentialsByUri, setResolvedCredentialsByUri] = useState<
         Record<string, VC | null>
     >({});
+
+    const [presentVerificationModal, dismissVerificationModal] = useIonModal(
+        SharedBoostVerificationBlock,
+        {
+            handleCloseModal: () => dismissVerificationModal(),
+            mode: SharedBoostVerificationBlockViewMode.modal,
+            verificationItems,
+            boost: resumeCredential as VC,
+        }
+    );
 
     useEffect(() => {
         const previousSnapshot = getResumeBuilderSnapshot();
@@ -74,6 +146,7 @@ const VerifySharedResume: React.FC = () => {
         setLoading(true);
         setError('');
         setResumeCredential(null);
+        setVerificationItems([]);
         setResolvedCredentialsByUri({});
 
         const fetchSharedResume = async () => {
@@ -96,6 +169,51 @@ const VerifySharedResume: React.FC = () => {
                 if (!firstCredential) {
                     throw new Error('No resume credential was found in this presentation.');
                 }
+
+                const verifyLerPresentation = (sharedWallet?.invoke as Record<string, unknown>)
+                    ?.verifyLerPresentation;
+                const verifyLerVP = (sharedWallet?.invoke as Record<string, unknown>)?.verifyLerVP;
+
+                let boostLikeVerifications: VerificationItem[] = [];
+                if (
+                    typeof verifyLerVP === 'function' ||
+                    typeof verifyLerPresentation === 'function'
+                ) {
+                    const lerVerification = await (
+                        (verifyLerVP || verifyLerPresentation) as (params: {
+                            presentation: VP;
+                        }) => Promise<LerVerificationResultLike>
+                    )({
+                        presentation: resolvedPresentation,
+                    });
+                    boostLikeVerifications = filterOutBoostVerificationItems(
+                        mapLerVerificationResultToItems(lerVerification)
+                    );
+                } else {
+                    const rawCredentialVerifications = await sharedWallet?.invoke?.verifyCredential(
+                        firstCredential,
+                        {},
+                        true
+                    );
+                    boostLikeVerifications = filterOutBoostVerificationItems(
+                        Array.isArray(rawCredentialVerifications) ? rawCredentialVerifications : []
+                    );
+                }
+
+                const hasProofCheck = boostLikeVerifications.some(item =>
+                    (item.check || '').toLowerCase().includes('proof')
+                );
+                const hasExpiresCheck = boostLikeVerifications.some(item => {
+                    const check = (item.check || '').toLowerCase();
+                    return check.includes('expire') || check.includes('valid until');
+                });
+                const metadataChecks = buildResumeMetadataVerificationItems(firstCredential);
+
+                const verifications: VerificationItem[] = [
+                    ...boostLikeVerifications,
+                    ...(hasProofCheck ? [] : [metadataChecks[0]]),
+                    ...(hasExpiresCheck ? [] : [metadataChecks[1]]),
+                ];
 
                 const embeddedCredentialsByUri =
                     getEmbeddedVerificationCredentialsByIdFromLerVc(firstCredential);
@@ -126,6 +244,7 @@ const VerifySharedResume: React.FC = () => {
                 resumeBuilderStore.set.hydrateStore(snapshot, null);
                 setResolvedCredentialsByUri(nextResolvedCredentialsByUri);
                 setResumeCredential(firstCredential);
+                setVerificationItems(verifications);
             } catch (err) {
                 if (isCancelled) return;
                 setError(
@@ -177,11 +296,29 @@ const VerifySharedResume: React.FC = () => {
                                 <p className="mt-3 text-base text-grayscale-600">{error}</p>
                             </div>
                         ) : (
-                            <ResumePreview
-                                isMobile={isMobile}
-                                readOnly
-                                resolvedCredentialsByUri={resolvedCredentialsByUri}
-                            />
+                            <>
+                                {resumeCredential && (
+                                    <SharedBoostVerificationBlock
+                                        verificationItems={verificationItems}
+                                        boost={resumeCredential}
+                                        handleCloseModal={() => undefined}
+                                    />
+                                )}
+                                {resumeCredential && (
+                                    <SharedBoostVerificationBlock
+                                        mode={SharedBoostVerificationBlockViewMode.mini}
+                                        verificationItems={verificationItems}
+                                        boost={resumeCredential}
+                                        handleOnClick={presentVerificationModal}
+                                        handleCloseModal={() => undefined}
+                                    />
+                                )}
+                                <ResumePreview
+                                    isMobile={isMobile}
+                                    readOnly
+                                    resolvedCredentialsByUri={resolvedCredentialsByUri}
+                                />
+                            </>
                         )}
                     </div>
                 </div>
