@@ -30,31 +30,30 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
 
     return (
         <div className="flex flex-col gap-[20px]">
-            <div className="flex flex-col gap-[10px]">
-                <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
-                    How would you rate your work-life balance?
-                </h3>
-                <RadioGroup
-                    value={workLifeBalance}
-                    onChange={setWorkLifeBalance}
-                    options={WORK_LIFE_BALANCE_OPTIONS}
-                    name="work_life_balance"
-                    columns={2}
-                />
-            </div>
+            <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
+                How would you rate your work-life balance?
+            </h3>
 
-            <div className="flex flex-col gap-[10px]">
-                <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
-                    And how would you rate your job stability?
-                </h3>
-                <RadioGroup
-                    value={jobStability}
-                    onChange={setJobStability}
-                    options={JOB_STABILITY_OPTIONS}
-                    name="job_stability"
-                    columns={2}
-                />
-            </div>
+            <RadioGroup
+                value={workLifeBalance}
+                onChange={setWorkLifeBalance}
+                options={WORK_LIFE_BALANCE_OPTIONS}
+                name="work_life_balance"
+                columns={2}
+                className="pb-[30px] border-b-[1px] border-solid border-grayscale-200"
+            />
+
+            <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
+                And how would you rate your job stability?
+            </h3>
+
+            <RadioGroup
+                value={jobStability}
+                onChange={setJobStability}
+                options={JOB_STABILITY_OPTIONS}
+                name="job_stability"
+                columns={2}
+            />
 
             <div className="flex gap-[10px] w-full">
                 <button
