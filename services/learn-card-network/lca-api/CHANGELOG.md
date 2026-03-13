@@ -1,5 +1,11 @@
 # @welibraryos/lca-api-service
 
+## 1.1.18
+
+### Patch Changes
+
+-   [#1073](https://github.com/learningeconomy/LearnCard/pull/1073) [`bd25921c5a9c06bab25092ebe9485aa2be452d19`](https://github.com/learningeconomy/LearnCard/commit/bd25921c5a9c06bab25092ebe9485aa2be452d19) Thanks [@Custard7](https://github.com/Custard7)! - fix: Enable remote JSON-LD context resolution across all signing services
+
 ## 1.1.17
 
 ### Patch Changes

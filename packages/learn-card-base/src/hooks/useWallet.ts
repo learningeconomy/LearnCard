@@ -134,13 +134,12 @@ export const useWallet = () => {
             return newWallet;
         } catch (e: any) {
             generating = false;
-            if (!e.message.includes('Error, no valid private key found')) {
-                console.warn('Could not initialize wallet', e);
-            } else {
-                console.warn('No private key!');
-            }
 
-            console.warn('Could not initialize wallet', e);
+            if (e.message?.includes('Error, no valid private key found')) {
+                console.debug('No private key — expected before login.');
+            } else {
+                console.warn('Could not initialize wallet', e);
+            }
 
             throw e instanceof Error ? e : new Error(String(e));
         }

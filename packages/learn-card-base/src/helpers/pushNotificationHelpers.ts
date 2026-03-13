@@ -29,6 +29,23 @@ export const handlePushNotificationActionPerformed = (
         case LCNNotificationTypeEnumValidator.enum.PRESENTATION_RECEIVED:
             // TODO: handle VP redirect
             break;
+        case LCNNotificationTypeEnumValidator.enum.DEVICE_LINK_REQUEST:
+            // Store session data so the app can auto-open the approver overlay
+            if (notification.data?.metadata) {
+                const meta = notification.data.metadata as Record<string, string>;
+
+                if (meta.sessionId) {
+                    window.sessionStorage.setItem('device_link_session_id', meta.sessionId);
+                }
+
+                if (meta.shortCode) {
+                    window.sessionStorage.setItem('device_link_short_code', meta.shortCode);
+                }
+            }
+            // Navigate to home — the app's AuthCoordinatorProvider will detect
+            // the sessionStorage flag and auto-open the approver overlay.
+            history.push('/');
+            break;
         default:
             history.push('/');
             break;
