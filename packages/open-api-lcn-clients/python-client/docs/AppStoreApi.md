@@ -6,6 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**app_store_add_boost_to_listing**](AppStoreApi.md#app_store_add_boost_to_listing) | **POST** /app-store/listing/{listingId}/boost/add | Add Boost to Listing
 [**app_store_app_event**](AppStoreApi.md#app_store_app_event) | **POST** /app-store/event | Process App Event
+[**app_store_associate_listing_with_signing_authority**](AppStoreApi.md#app_store_associate_listing_with_signing_authority) | **POST** /app-store/listing/{listingId}/associate-with-signing-authority | Associate Listing with Signing Authority
 [**app_store_browse_listed_apps**](AppStoreApi.md#app_store_browse_listed_apps) | **POST** /app-store/browse | Browse App Store
 [**app_store_count_installed_apps**](AppStoreApi.md#app_store_count_installed_apps) | **GET** /app-store/installed/count | Count Installed Apps
 [**app_store_count_listings_for_integration**](AppStoreApi.md#app_store_count_listings_for_integration) | **GET** /app-store/integration/{integrationId}/listings/count | Count Listings for Integration
@@ -15,8 +16,10 @@ Method | HTTP request | Description
 [**app_store_get_installed_apps**](AppStoreApi.md#app_store_get_installed_apps) | **POST** /app-store/installed | Get Installed Apps
 [**app_store_get_listing**](AppStoreApi.md#app_store_get_listing) | **GET** /app-store/listing/{listingId} | Get App Store Listing (Owner)
 [**app_store_get_listing_install_count**](AppStoreApi.md#app_store_get_listing_install_count) | **GET** /app-store/listing/{listingId}/install-count | Get App Install Count
+[**app_store_get_listing_signing_authority**](AppStoreApi.md#app_store_get_listing_signing_authority) | **GET** /app-store/listing/{listingId}/signing-authority | Get Listing Signing Authority
 [**app_store_get_listings_for_integration**](AppStoreApi.md#app_store_get_listings_for_integration) | **POST** /app-store/integration/{integrationId}/listings | Get Listings for Integration
 [**app_store_get_public_listing**](AppStoreApi.md#app_store_get_public_listing) | **GET** /app-store/public/listing/{listingId} | Get Public App Listing
+[**app_store_get_public_listing_by_slug**](AppStoreApi.md#app_store_get_public_listing_by_slug) | **GET** /app-store/public/listing/slug/{slug} | Get Public App Listing by Slug
 [**app_store_install_app**](AppStoreApi.md#app_store_install_app) | **POST** /app-store/listing/{listingId}/install | Install App
 [**app_store_is_app_installed**](AppStoreApi.md#app_store_is_app_installed) | **GET** /app-store/listing/{listingId}/is-installed | Check if App is Installed
 [**app_store_remove_boost_from_listing**](AppStoreApi.md#app_store_remove_boost_from_listing) | **POST** /app-store/listing/{listingId}/boost/remove | Remove Boost from Listing
@@ -169,6 +172,90 @@ Name | Type | Description  | Notes
 ### Return type
 
 **Dict[str, object]**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **app_store_associate_listing_with_signing_authority**
+> bool app_store_associate_listing_with_signing_authority(listing_id, app_store_associate_listing_with_signing_authority_request)
+
+Associate Listing with Signing Authority
+
+Associate an App Store Listing with a Signing Authority
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.app_store_associate_listing_with_signing_authority_request import AppStoreAssociateListingWithSigningAuthorityRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.AppStoreApi(api_client)
+    listing_id = 'listing_id_example' # str | 
+    app_store_associate_listing_with_signing_authority_request = openapi_client.AppStoreAssociateListingWithSigningAuthorityRequest() # AppStoreAssociateListingWithSigningAuthorityRequest | 
+
+    try:
+        # Associate Listing with Signing Authority
+        api_response = api_instance.app_store_associate_listing_with_signing_authority(listing_id, app_store_associate_listing_with_signing_authority_request)
+        print("The response of AppStoreApi->app_store_associate_listing_with_signing_authority:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AppStoreApi->app_store_associate_listing_with_signing_authority: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **listing_id** | **str**|  | 
+ **app_store_associate_listing_with_signing_authority_request** | [**AppStoreAssociateListingWithSigningAuthorityRequest**](AppStoreAssociateListingWithSigningAuthorityRequest.md)|  | 
+
+### Return type
+
+**bool**
 
 ### Authorization
 
@@ -903,6 +990,89 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **app_store_get_listing_signing_authority**
+> AppStoreGetListingSigningAuthority200Response app_store_get_listing_signing_authority(listing_id)
+
+Get Listing Signing Authority
+
+Get the primary signing authority for an App Store Listing
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.app_store_get_listing_signing_authority200_response import AppStoreGetListingSigningAuthority200Response
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.AppStoreApi(api_client)
+    listing_id = 'listing_id_example' # str | 
+
+    try:
+        # Get Listing Signing Authority
+        api_response = api_instance.app_store_get_listing_signing_authority(listing_id)
+        print("The response of AppStoreApi->app_store_get_listing_signing_authority:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AppStoreApi->app_store_get_listing_signing_authority: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **listing_id** | **str**|  | 
+
+### Return type
+
+[**AppStoreGetListingSigningAuthority200Response**](AppStoreGetListingSigningAuthority200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**404** | Not found |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **app_store_get_listings_for_integration**
 > AppStoreGetListingsForIntegration200Response app_store_get_listings_for_integration(integration_id, app_store_get_listings_for_integration_request)
 
@@ -1034,6 +1204,77 @@ with openapi_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **listing_id** | **str**|  | 
+
+### Return type
+
+[**AppStoreGetListingsForIntegration200ResponseRecordsInner**](AppStoreGetListingsForIntegration200ResponseRecordsInner.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**404** | Not found |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **app_store_get_public_listing_by_slug**
+> AppStoreGetListingsForIntegration200ResponseRecordsInner app_store_get_public_listing_by_slug(slug)
+
+Get Public App Listing by Slug
+
+Get a publicly listed app by slug
+
+### Example
+
+
+```python
+import openapi_client
+from openapi_client.models.app_store_get_listings_for_integration200_response_records_inner import AppStoreGetListingsForIntegration200ResponseRecordsInner
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.AppStoreApi(api_client)
+    slug = 'slug_example' # str | 
+
+    try:
+        # Get Public App Listing by Slug
+        api_response = api_instance.app_store_get_public_listing_by_slug(slug)
+        print("The response of AppStoreApi->app_store_get_public_listing_by_slug:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AppStoreApi->app_store_get_public_listing_by_slug: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **slug** | **str**|  | 
 
 ### Return type
 

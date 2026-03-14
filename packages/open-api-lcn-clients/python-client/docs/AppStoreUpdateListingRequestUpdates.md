@@ -20,6 +20,8 @@ Name | Type | Description | Notes
 **highlights** | **List[str]** |  | [optional] 
 **screenshots** | **List[str]** |  | [optional] 
 **hero_background_color** | **str** |  | [optional] 
+**min_age** | **float** |  | [optional] 
+**age_rating** | **str** |  | [optional] 
 
 ## Example
 

@@ -23,6 +23,7 @@ from openapi_client.models.activity_get_my_activities200_response_records_inner_
 from openapi_client.models.activity_get_my_activities200_response_records_inner_recipient_profile import ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
     """
@@ -63,12 +64,13 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
     @field_validator('source')
     def source_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential']):
-            raise ValueError("must be one of enum values ('send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential')")
+        if value not in set(['send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential', 'appEvent']):
+            raise ValueError("must be one of enum values ('send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential', 'appEvent')")
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -80,8 +82,7 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:

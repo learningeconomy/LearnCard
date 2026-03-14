@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List
 from openapi_client.models.claim_hook_get_claim_hooks_for_boost200_response_records_inner_all_of_one_of1_data import ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf1Data
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf1(BaseModel):
     """
@@ -40,7 +41,8 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf1(BaseModel
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -52,8 +54,7 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf1(BaseModel
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:

@@ -17,31 +17,26 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
-class IntegrationsAssociateIntegrationWithSigningAuthorityRequest(BaseModel):
+class AppStoreGetListingSigningAuthority200Response(BaseModel):
     """
-    IntegrationsAssociateIntegrationWithSigningAuthorityRequest
+    AppStoreGetListingSigningAuthority200Response
     """ # noqa: E501
     endpoint: Optional[StrictStr]
-    name: Annotated[str, Field(strict=True, max_length=15)]
+    name: Optional[StrictStr]
     did: Optional[StrictStr]
-    is_primary: Optional[StrictBool] = Field(default=None, alias="isPrimary")
+    is_primary: StrictBool = Field(alias="isPrimary")
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["endpoint", "name", "did", "isPrimary"]
 
-    @field_validator('name')
-    def name_validate_regular_expression(cls, value):
-        """Validates the regular expression"""
-        if not re.match(r"^[a-z0-9-]+$", value):
-            raise ValueError(r"must validate the regular expression /^[a-z0-9-]+$/")
-        return value
-
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -53,12 +48,11 @@ class IntegrationsAssociateIntegrationWithSigningAuthorityRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of IntegrationsAssociateIntegrationWithSigningAuthorityRequest from a JSON string"""
+        """Create an instance of AppStoreGetListingSigningAuthority200Response from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -70,8 +64,10 @@ class IntegrationsAssociateIntegrationWithSigningAuthorityRequest(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -79,10 +75,20 @@ class IntegrationsAssociateIntegrationWithSigningAuthorityRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
         # set to None if endpoint (nullable) is None
         # and model_fields_set contains the field
         if self.endpoint is None and "endpoint" in self.model_fields_set:
             _dict['endpoint'] = None
+
+        # set to None if name (nullable) is None
+        # and model_fields_set contains the field
+        if self.name is None and "name" in self.model_fields_set:
+            _dict['name'] = None
 
         # set to None if did (nullable) is None
         # and model_fields_set contains the field
@@ -93,7 +99,7 @@ class IntegrationsAssociateIntegrationWithSigningAuthorityRequest(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of IntegrationsAssociateIntegrationWithSigningAuthorityRequest from a dict"""
+        """Create an instance of AppStoreGetListingSigningAuthority200Response from a dict"""
         if obj is None:
             return None
 
@@ -106,6 +112,11 @@ class IntegrationsAssociateIntegrationWithSigningAuthorityRequest(BaseModel):
             "did": obj.get("did"),
             "isPrimary": obj.get("isPrimary")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 
