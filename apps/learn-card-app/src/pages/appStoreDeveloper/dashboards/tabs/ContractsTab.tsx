@@ -56,6 +56,18 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
             });
         }
 
+        // Check for consent-flow guide contract
+        const consentFlowConfig = guideState?.config?.consentFlowConfig as { contractUri?: string } | undefined;
+        if (consentFlowConfig?.contractUri) {
+            contracts.push({
+                uri: consentFlowConfig.contractUri,
+                type: 'data-consent',
+                name: 'Consent Flow Contract',
+                description: 'Used for consent redirect flow',
+                feature: 'Consent Flow',
+            });
+        }
+
         return contracts;
     }, [integration?.guideState]);
 
