@@ -52,6 +52,8 @@ class TestAppStoreGetListing200Response(unittest.TestCase):
                 privacy_policy_url = '',
                 terms_url = '',
                 hero_background_color = '',
+                min_age = 0,
+                age_rating = '4+',
                 highlights = [
                     ''
                     ],

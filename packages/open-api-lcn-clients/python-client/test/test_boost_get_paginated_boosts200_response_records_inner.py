@@ -46,6 +46,7 @@ class TestBoostGetPaginatedBoosts200ResponseRecordsInner(unittest.TestCase):
                     },
                 claim_permissions = openapi_client.models.boost_get_boost_200_response_claim_permissions.boost_getBoost_200_response_claimPermissions(
                     role = '', 
+                    can_view = True, 
                     can_edit = True, 
                     can_issue = True, 
                     can_revoke = True, 
@@ -59,6 +60,7 @@ class TestBoostGetPaginatedBoosts200ResponseRecordsInner(unittest.TestCase):
                     can_view_analytics = True, ),
                 default_permissions = openapi_client.models.boost_get_boost_200_response_claim_permissions.boost_getBoost_200_response_claimPermissions(
                     role = '', 
+                    can_view = True, 
                     can_edit = True, 
                     can_issue = True, 
                     can_revoke = True, 

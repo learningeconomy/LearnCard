@@ -23,6 +23,7 @@ from openapi_client.models.boost_get_paginated_boost_recipients200_response_reco
 from openapi_client.models.contracts_get_consent_flow_contract200_response_contract import ContractsGetConsentFlowContract200ResponseContract
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetConsentFlowContract200Response(BaseModel):
     """
@@ -48,7 +49,8 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
     __properties: ClassVar[List[str]] = ["contract", "owner", "name", "subtitle", "description", "reasonForAccessing", "image", "uri", "needsGuardianConsent", "redirectUrl", "frontDoorBoostUri", "createdAt", "updatedAt", "expiresAt", "autoBoosts", "writers"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -60,8 +62,7 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
