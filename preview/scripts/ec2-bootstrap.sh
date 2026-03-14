@@ -84,7 +84,11 @@ for PROJECT in $(docker compose ls --format json 2>/dev/null | jq -r '.[].Name' 
         continue
     fi
 
-    STARTED_EPOCH=$(date -d "$STARTED_AT" +%s 2>/dev/null || echo "0")
+    STARTED_EPOCH=$(date -d "$STARTED_AT" +%s 2>/dev/null || echo "")
+    if [ -z "$STARTED_EPOCH" ] || [ "$STARTED_EPOCH" -eq 0 ]; then
+        continue
+    fi
+
     AGE_SECONDS=$((NOW - STARTED_EPOCH))
 
     if [ "$AGE_SECONDS" -gt "$IDLE_THRESHOLD" ]; then

@@ -80,14 +80,14 @@ docker compose \
     -f "$COMPOSE_FILE" \
     up --build -d
 
-# --- Release the lock (build is done, images are tagged) ---
-flock -u 200
-echo "Deploy lock released."
-
 # --- Regenerate Caddyfile and reload ---
 echo "Regenerating Caddy routes..."
 chmod +x "$SCRIPT_DIR/regenerate-caddyfile.sh"
 "$SCRIPT_DIR/regenerate-caddyfile.sh" "$BASE_DOMAIN"
+
+# --- Release the lock (after Caddyfile regeneration completes) ---
+flock -u 200
+echo "Deploy lock released."
 
 # --- Wait for services to be healthy ---
 echo "Waiting for services to come up..."
@@ -113,8 +113,9 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
 done
 
 if [ $ELAPSED -ge $MAX_WAIT ]; then
-    echo "WARNING: Preview may not be fully healthy after ${MAX_WAIT}s"
+    echo "ERROR: Preview health check failed after ${MAX_WAIT}s"
     echo "Check logs: docker compose -p ${PROJECT_NAME} -f ${COMPOSE_FILE} logs"
+    exit 1
 fi
 
 # --- Output summary ---
