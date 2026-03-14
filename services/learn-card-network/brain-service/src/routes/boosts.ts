@@ -126,6 +126,7 @@ import {
     isClaimLinkAlreadySetForBoost,
     setValidClaimLinkForBoost,
     getClaimLinkSAInfoForBoost,
+    getClaimLinkGeneratorProfileId,
     useClaimLinkForBoost,
 } from '@cache/claim-links';
 import { getBlockedAndBlockedByIds, isRelationshipBlocked } from '@helpers/connection.helpers';
@@ -2790,7 +2791,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            await setValidClaimLinkForBoost(boostUri, challenge, normalizedClaimLinkSA, options);
+            await setValidClaimLinkForBoost(boostUri, challenge, normalizedClaimLinkSA, options, profile.profileId);
 
             return { boostUri: boostUri, challenge };
         }),
@@ -2812,9 +2813,10 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { boostUri, challenge } = input;
 
-            const [claimLinkSA, boost] = await Promise.all([
+            const [claimLinkSA, boost, generatorProfileId] = await Promise.all([
                 getClaimLinkSAInfoForBoost(boostUri, challenge),
                 getBoostByUri(boostUri),
+                getClaimLinkGeneratorProfileId(boostUri, challenge),
             ]);
 
             if (!claimLinkSA) {
@@ -2839,8 +2841,13 @@ export const boostsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost owner' });
             }
 
+            // Use the generator's profile for SA lookup if available, fall back to boost owner
+            const saOwner = generatorProfileId
+                ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
+                : boostOwner;
+
             const signingAuthority = await getSigningAuthorityForUserByName(
-                boostOwner,
+                saOwner,
                 claimLinkSA.endpoint,
                 claimLinkSA.name
             );
@@ -2854,7 +2861,7 @@ export const boostsRouter = t.router({
 
             // Log DELIVERED activity first to get activityId for chaining (outside try for catch access)
             const activityId = await logCredentialSent({
-                actorProfileId: boostOwner.profileId,
+                actorProfileId: saOwner.profileId,
                 recipientType: 'profile',
                 recipientIdentifier: profile.profileId,
                 recipientProfileId: profile.profileId,
@@ -2866,7 +2873,7 @@ export const boostsRouter = t.router({
                 const sentBoostUri = await issueClaimLinkBoost(
                     boost,
                     ctx.domain,
-                    boostOwner,
+                    saOwner,
                     profile,
                     signingAuthority
                 );
@@ -2874,7 +2881,7 @@ export const boostsRouter = t.router({
                 // Log CLAIMED immediately since autoAcceptCredential: true in issueClaimLinkBoost
                 await logCredentialClaimed({
                     activityId,
-                    actorProfileId: boostOwner.profileId,
+                    actorProfileId: saOwner.profileId,
                     recipientType: 'profile',
                     recipientIdentifier: profile.profileId,
                     recipientProfileId: profile.profileId,
@@ -2897,7 +2904,7 @@ export const boostsRouter = t.router({
                 try {
                     await logCredentialFailed({
                         activityId,
-                        actorProfileId: boostOwner.profileId,
+                        actorProfileId: saOwner.profileId,
                         recipientType: 'profile',
                         recipientIdentifier: profile.profileId,
                         recipientProfileId: profile.profileId,

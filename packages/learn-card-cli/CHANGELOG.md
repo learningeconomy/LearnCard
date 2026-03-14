@@ -1,5 +1,12 @@
 # @learncard/cli
 
+## 3.3.164
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-plugin@1.1.12
+
 ## 3.3.163
 
 ### Patch Changes

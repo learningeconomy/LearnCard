@@ -1,0 +1,105 @@
+name: Service Health Check
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened]
+    workflow_dispatch:
+        inputs:
+            group_id:
+                description: 'UptimeRobot monitor group ID to check'
+                required: false
+                default: '15487'
+                type: string
+            group_name:
+                description: 'Display name for the monitor group (auto-resolved from API if empty)'
+                required: false
+                type: string
+    workflow_call:
+        inputs:
+            group_id:
+                description: 'UptimeRobot monitor group ID to check'
+                required: false
+                default: '15487'
+                type: string
+            group_name:
+                description: 'Display name for the monitor group (auto-resolved from API if empty)'
+                required: false
+                type: string
+        secrets:
+            UPTIMEROBOT_API_KEY:
+                required: true
+
+env:
+    UPTIMEROBOT_GROUP_ID: ${{ inputs.group_id || '15487' }}
+
+jobs:
+    health-check:
+        name: UpTime Health Check
+        if: github.head_ref == 'changeset-release/main' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call'
+        runs-on: ubuntu-latest
+        steps:
+            - name: Resolve group name and check monitors
+              env:
+                  UPTIMEROBOT_API_KEY: ${{ secrets.UPTIMEROBOT_API_KEY }}
+                  INPUT_GROUP_NAME: ${{ inputs.group_name }}
+              run: |
+                  if [ -z "$UPTIMEROBOT_API_KEY" ]; then
+                    echo "::error::UPTIMEROBOT_API_KEY secret is not set"
+                    exit 1
+                  fi
+
+                  GROUP_ID="${UPTIMEROBOT_GROUP_ID}"
+
+                  # Resolve group name: use input if provided, otherwise fetch from API
+                  if [ -n "$INPUT_GROUP_NAME" ]; then
+                    GROUP_NAME="$INPUT_GROUP_NAME"
+                  else
+                    echo "Resolving group name for ID $GROUP_ID..."
+
+                    GROUPS_RESPONSE=$(curl -s -f -X GET \
+                      "https://api.uptimerobot.com/v3/monitor-groups" \
+                      -H 'accept: application/json' \
+                      -H "authorization: Bearer ${UPTIMEROBOT_API_KEY}")
+
+                    GROUP_NAME=$(echo "$GROUPS_RESPONSE" | jq -r --arg gid "$GROUP_ID" '.data[] | select(.id == ($gid | tonumber)) | .name' 2>/dev/null)
+
+                    if [ -z "$GROUP_NAME" ] || [ "$GROUP_NAME" = "null" ]; then
+                      GROUP_NAME="Group $GROUP_ID"
+                    fi
+                  fi
+
+                  echo "### Checking: $GROUP_NAME (ID: $GROUP_ID)" >> $GITHUB_STEP_SUMMARY
+
+                  echo "Querying UptimeRobot for DOWN monitors in \"$GROUP_NAME\" (ID: $GROUP_ID)..."
+
+                  RESPONSE=$(curl -s -f -X GET \
+                    "https://api.uptimerobot.com/v3/monitors?limit=50&groupId=${GROUP_ID}&status=DOWN" \
+                    -H 'accept: application/json' \
+                    -H "authorization: Bearer ${UPTIMEROBOT_API_KEY}")
+
+                  CURL_EXIT=$?
+                  if [ $CURL_EXIT -ne 0 ]; then
+                    echo "::error::UptimeRobot API request failed (curl exit code: $CURL_EXIT)"
+                    exit 1
+                  fi
+
+                  echo "Response: $RESPONSE"
+
+                  # Check if data array is empty (no monitors down)
+                  DOWN_COUNT=$(echo "$RESPONSE" | jq '.data | length')
+
+                  if [ "$DOWN_COUNT" = "0" ]; then
+                    echo "✅ All monitors in \"$GROUP_NAME\" are UP"
+                    echo "Result: All monitors UP" >> $GITHUB_STEP_SUMMARY
+                  else
+                    echo "::error::$DOWN_COUNT monitor(s) in \"$GROUP_NAME\" are DOWN"
+
+                    # List the down monitors for visibility
+                    echo "$RESPONSE" | jq -r '.data[] | "  - \(.name) (ID: \(.id)) — down since \(.downDatetime)"' 2>/dev/null || true
+
+                    echo "" >> $GITHUB_STEP_SUMMARY
+                    echo "**$DOWN_COUNT monitor(s) DOWN:**" >> $GITHUB_STEP_SUMMARY
+                    echo "$RESPONSE" | jq -r '.data[] | "- \(.name) (ID: \(.id))"' >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+
+                    exit 1
+                  fi

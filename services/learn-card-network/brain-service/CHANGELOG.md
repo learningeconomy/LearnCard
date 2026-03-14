@@ -1,5 +1,31 @@
 # @learncard/network-brain-service
 
+## 3.12.5
+
+### Patch Changes
+
+-   [#1072](https://github.com/learningeconomy/LearnCard/pull/1072) [`5cc18a955913e1384d2107e9ba08cd876f2419c0`](https://github.com/learningeconomy/LearnCard/commit/5cc18a955913e1384d2107e9ba08cd876f2419c0) Thanks [@Custard7](https://github.com/Custard7)! - fix: Add DynamicLoaderPlugin to brain service for remote JSON-LD context resolution
+
+-   [#1068](https://github.com/learningeconomy/LearnCard/pull/1068) [`0fd14a6d66f05dc10ba2443ab99b1ca3dd7a6fa0`](https://github.com/learningeconomy/LearnCard/commit/0fd14a6d66f05dc10ba2443ab99b1ca3dd7a6fa0) Thanks [@Custard7](https://github.com/Custard7)! - fix: Singleton caching bug in getLearnCard
+
+## 3.12.4
+
+### Patch Changes
+
+-   [#1061](https://github.com/learningeconomy/LearnCard/pull/1061) [`be053cfa6bbffa8ff34ba65673d1696abe77e5f1`](https://github.com/learningeconomy/LearnCard/commit/be053cfa6bbffa8ff34ba65673d1696abe77e5f1) Thanks [@goblincore](https://github.com/goblincore)! - fix: Derive domain from existing env variable for brain service skill-renderer
+
+## 3.12.3
+
+### Patch Changes
+
+-   [#1053](https://github.com/learningeconomy/LearnCard/pull/1053) [`329ef8ef5c35d5a45635d426057c248ae0a66325`](https://github.com/learningeconomy/LearnCard/commit/329ef8ef5c35d5a45635d426057c248ae0a66325) Thanks [@Custard7](https://github.com/Custard7)! - fix: p2p badge claims
+
+## 3.12.2
+
+### Patch Changes
+
+-   [#1046](https://github.com/learningeconomy/LearnCard/pull/1046) [`36cd4d51908084c0775958014c18f7f0886898b1`](https://github.com/learningeconomy/LearnCard/commit/36cd4d51908084c0775958014c18f7f0886898b1) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix: remove auth check for searching skill frameworks
+
 ## 3.12.1
 
 ### Patch Changes

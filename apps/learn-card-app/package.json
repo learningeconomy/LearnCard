@@ -1,6 +1,6 @@
 {
     "name": "learn-card-app",
-    "version": "1.94.29",
+    "version": "1.94.33",
     "private": true,
     "dependencies": {
         "@capacitor-community/media": "^9.0.0",
@@ -37,6 +37,7 @@
         "@learncard/lca-api-plugin": "workspace:*",
         "@learncard/open-badge-v2-plugin": "workspace:*",
         "@learncard/react": "workspace:^",
+        "@learncard/sss-key-manager": "workspace:*",
         "@nanostores/react": "^0.8.4",
         "@sentry/browser": "8.34.0",
         "@sentry/react": "8.34.0",

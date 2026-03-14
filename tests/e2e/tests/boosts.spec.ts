@@ -43,6 +43,47 @@ describe('Boosts', () => {
         expect(receivedBoost).toBeDefined();
     });
 
+    test('Non-owner with defaultPermissions.canIssue can generate a claim link and have it claimed', async () => {
+        // User A creates a boost with defaultPermissions.canIssue = true
+        const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
+            defaultPermissions: { canIssue: true },
+        });
+
+        // User B (non-owner) creates and registers their own signing authority
+        const sa = await b.invoke.createSigningAuthority('b-claim-sa');
+        expect(sa).toBeDefined();
+
+        await b.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
+
+        const saResult = await b.invoke.getRegisteredSigningAuthority(sa.endpoint, sa.name);
+        expect(saResult).toBeDefined();
+
+        if (!saResult) throw new Error('Type Safety. This error should never be thrown.');
+
+        const claimLinkSA = {
+            endpoint: saResult.signingAuthority.endpoint,
+            name: saResult.relationship.name,
+        };
+
+        // User B generates a claim link using their own SA
+        const claimLink = await b.invoke.generateClaimLink(boostUri, claimLinkSA);
+        expect(claimLink.boostUri).toBe(boostUri);
+        expect(typeof claimLink.challenge).toBe('string');
+
+        // User C claims the boost - should succeed because SA is looked up
+        // on B's profile (the generator), not A's (the owner)
+        const credentialUri = await c.invoke.claimBoostWithLink(
+            claimLink.boostUri,
+            claimLink.challenge
+        );
+        expect(credentialUri).toBeDefined();
+        expect(typeof credentialUri).toBe('string');
+
+        // Verify C actually received the credential
+        const received = await c.invoke.getReceivedCredentials();
+        expect(received.some(cred => cred.uri === credentialUri)).toBe(true);
+    });
+
     test('Boost claim links require public visibility', async () => {
         const boostUri = await a.invoke.createBoost(testUnsignedBoost);
 

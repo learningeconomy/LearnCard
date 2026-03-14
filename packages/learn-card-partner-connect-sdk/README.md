@@ -10,7 +10,7 @@ The LearnCard Partner Connect SDK transforms complex `postMessage` communication
 - 🎯 **Type-safe**: Full TypeScript support with comprehensive types
 - ⚡ **Promise-based**: Modern async/await API
 - 🧹 **Clean**: Abstracts away all postMessage complexity
-- 📦 **Lightweight**: Zero dependencies
+- 📦 **Lightweight**: Zero runtime dependencies
 - 🛡️ **Robust**: Built-in timeout handling and error management
 
 ## Installation
@@ -56,11 +56,17 @@ try {
 ```typescript
 interface PartnerConnectOptions {
   /**
-   * The origin of the LearnCard host (e.g., 'https://learncard.app')
-   * All messages will be validated against this origin for security
-   * (default: 'https://learncard.app')
+   * The origin(s) of the LearnCard host
+   * Single string or array for query parameter whitelist
+   * @default 'https://learncard.app'
    */
-  hostOrigin?: string;
+  hostOrigin?: string | string[];
+
+  /**
+   * Whether to allow native app origins (Capacitor/Ionic)
+   * @default true
+   */
+  allowNativeAppOrigins?: boolean;
 
   /**
    * Protocol identifier (default: 'LEARNCARD_V1')

@@ -21,6 +21,7 @@ COPY packages/plugins/crypto packages/plugins/crypto
 COPY packages/plugins/did-web-plugin packages/plugins/did-web-plugin
 COPY packages/plugins/didkey packages/plugins/didkey
 COPY packages/plugins/didkit packages/plugins/didkit
+COPY packages/plugins/dynamic-loader packages/plugins/dynamic-loader
 COPY packages/plugins/didkit-plugin-node packages/plugins/didkit-plugin-node
 COPY packages/plugins/encryption packages/plugins/encryption
 COPY packages/plugins/expiration packages/plugins/expiration
