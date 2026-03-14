@@ -38,3 +38,7 @@ node_modules
 .env
 .env.local
 .env.*.local
+
+# Google services configuration - contains API keys and secrets
+**/google-services.json
+**/GoogleService-Info.plist
