@@ -75,6 +75,12 @@ const AppConfigTab = lazy(() =>
 const CsvUploadTab = lazy(() =>
     import('./tabs/CsvUploadTab').then(m => ({ default: m.CsvUploadTab }))
 );
+const ConsentFlowCodeTab = lazy(() =>
+    import('./tabs/ConsentFlowCodeTab').then(m => ({ default: m.ConsentFlowCodeTab }))
+);
+const ConsentFlowTestingTab = lazy(() =>
+    import('./tabs/ConsentFlowTestingTab').then(m => ({ default: m.ConsentFlowTestingTab }))
+);
 import {
     DashboardConfig,
     DashboardStats,
@@ -140,7 +146,10 @@ function getTabsForConfig(config: DashboardConfig): DashboardTabConfig[] {
     // Excluded for embed-claim which has its own live preview in the Embed Code tab
     if (config.showTemplates && !config.showAppListings && !config.showEmbedCode) {
         tabs.push({ id: 'code', label: 'Code', icon: FileCode });
-        tabs.push({ id: 'csv-upload', label: 'CSV Upload', icon: FileSpreadsheet });
+        // CSV upload only for non-consent-flow (consent-flow sends via API after redirect)
+        if (!config.showConnections) {
+            tabs.push({ id: 'csv-upload', label: 'CSV Upload', icon: FileSpreadsheet });
+        }
         tabs.push({ id: 'testing', label: 'Testing', icon: TestTube2 });
     }
 
@@ -315,19 +324,17 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
 
                 setTemplates(basicTemplates);
 
-                // Fetch consent contracts if needed
+                // Count contracts configured for this integration (from guide state)
                 let activeContractsCount = 0;
                 if (config.showContracts) {
-                    try {
-                        const contractsResult = await wallet.invoke.getConsentedContracts?.({
-                            limit: 50,
-                        });
-                        const contractList = contractsResult?.records || [];
-                        setContracts(contractList);
-                        activeContractsCount = contractList.length;
-                    } catch (err) {
-                        console.warn('Could not load contracts:', err);
-                    }
+                    const guideState = integration?.guideState as any;
+                    const gsConfig = guideState?.config || {};
+
+                    // Count contracts from different guide type configs
+                    if (gsConfig.consentFlowConfig?.contractUri) activeContractsCount++;
+                    const embedFeatures = gsConfig.embedAppConfig?.featureConfig || {};
+                    if (embedFeatures['request-data-consent']?.contractUri) activeContractsCount++;
+                    if (embedFeatures['issue-credentials']?.contractUri) activeContractsCount++;
                 }
 
                 // Load branding from profile
@@ -348,6 +355,22 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                     }
                 }
 
+                // Fetch connection count for consent-flow dashboards
+                let connectionCount = 0;
+                if (config.showConnections && integration.guideType === 'consent-flow') {
+                    try {
+                        const guideState = integration?.guideState as any;
+                        const contractUri = guideState?.config?.consentFlowConfig?.contractUri;
+                        if (contractUri) {
+                            const consentData = await wallet.invoke.getConsentFlowData(contractUri, { limit: 100 });
+                            const records = Array.isArray(consentData) ? consentData : consentData?.records || [];
+                            connectionCount = records.length;
+                        }
+                    } catch (err) {
+                        console.warn('Could not load consent flow data:', err);
+                    }
+                }
+
                 // Stats for credential activity are fetched via useIntegrationActivity hook
                 // Only set non-activity stats here
                 setStats(prev => ({
@@ -355,7 +378,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                     activeTokens: activeTokenCount,
                     templateCount: templates.length || boostsResult?.records?.length || 0,
                     activeContracts: activeContractsCount,
-                    totalConnections: 0,
+                    totalConnections: connectionCount,
                 }));
             } catch (err) {
                 console.error('Failed to load dashboard data:', err);
@@ -414,37 +437,68 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
         claimRate: activityStats.claimRate,
     };
 
-    // Stats use event type terminology: Created + Delivered = Sent, then Claimed, Pending (unclaimed), Claim Rate
-    const quickStats: StatItem[] = [
-        {
-            label: 'Credentials Sent',
-            value: mergedStats.totalIssued,
-            icon: Zap,
-            iconBgColor: 'bg-cyan-100',
-            iconColor: 'text-cyan-600',
-        },
-        {
-            label: 'Claimed',
-            value: mergedStats.totalClaimed,
-            icon: CheckCircle2,
-            iconBgColor: 'bg-emerald-100',
-            iconColor: 'text-emerald-600',
-        },
-        {
-            label: 'Pending',
-            value: mergedStats.pendingClaims,
-            icon: AlertCircle,
-            iconBgColor: 'bg-amber-100',
-            iconColor: 'text-amber-600',
-        },
-        {
-            label: 'Claim Rate',
-            value: `${mergedStats.claimRate.toFixed(1)}%`,
-            icon: BarChart3,
-            iconBgColor: 'bg-violet-100',
-            iconColor: 'text-violet-600',
-        },
-    ];
+    // Build stats bar — consent-flow uses connection-based metrics, others use credential metrics
+    const quickStats: StatItem[] = integration.guideType === 'consent-flow'
+        ? [
+            {
+                label: 'Connections',
+                value: mergedStats.totalConnections,
+                icon: Users,
+                iconBgColor: 'bg-blue-100',
+                iconColor: 'text-blue-600',
+            },
+            {
+                label: 'Contracts',
+                value: mergedStats.activeContracts,
+                icon: FileText,
+                iconBgColor: 'bg-emerald-100',
+                iconColor: 'text-emerald-600',
+            },
+            {
+                label: 'API Tokens',
+                value: mergedStats.activeTokens,
+                icon: Key,
+                iconBgColor: 'bg-cyan-100',
+                iconColor: 'text-cyan-600',
+            },
+            {
+                label: 'Templates',
+                value: mergedStats.templateCount,
+                icon: Award,
+                iconBgColor: 'bg-violet-100',
+                iconColor: 'text-violet-600',
+            },
+        ]
+        : [
+            {
+                label: 'Credentials Sent',
+                value: mergedStats.totalIssued,
+                icon: Zap,
+                iconBgColor: 'bg-cyan-100',
+                iconColor: 'text-cyan-600',
+            },
+            {
+                label: 'Claimed',
+                value: mergedStats.totalClaimed,
+                icon: CheckCircle2,
+                iconBgColor: 'bg-emerald-100',
+                iconColor: 'text-emerald-600',
+            },
+            {
+                label: 'Pending',
+                value: mergedStats.pendingClaims,
+                icon: AlertCircle,
+                iconBgColor: 'bg-amber-100',
+                iconColor: 'text-amber-600',
+            },
+            {
+                label: 'Claim Rate',
+                value: `${mergedStats.claimRate.toFixed(1)}%`,
+                icon: BarChart3,
+                iconBgColor: 'bg-violet-100',
+                iconColor: 'text-violet-600',
+            },
+        ];
 
     if (isLoading) {
         return (
@@ -532,7 +586,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
 
                 {activeTab === 'contracts' && <ContractsTab integration={integration} />}
 
-                {activeTab === 'connections' && <ConnectionsTab />}
+                {activeTab === 'connections' && <ConnectionsTab integration={integration} />}
 
                 {activeTab === 'signing' && <SigningTab integration={integration} />}
 
@@ -547,7 +601,11 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                 {activeTab === 'app-config' && <AppConfigTab integration={integration} />}
 
                 {activeTab === 'code' && (
-                    <IntegrationCodeTab integration={integration} templates={templates} />
+                    integration.guideType === 'consent-flow' ? (
+                        <ConsentFlowCodeTab integration={integration} templates={templates} />
+                    ) : (
+                        <IntegrationCodeTab integration={integration} templates={templates} />
+                    )
                 )}
 
                 {activeTab === 'csv-upload' && (
@@ -555,11 +613,15 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                 )}
 
                 {activeTab === 'testing' && (
-                    <TestingTab
-                        integration={integration}
-                        templates={templates}
-                        branding={branding}
-                    />
+                    integration.guideType === 'consent-flow' ? (
+                        <ConsentFlowTestingTab integration={integration} templates={templates} />
+                    ) : (
+                        <TestingTab
+                            integration={integration}
+                            templates={templates}
+                            branding={branding}
+                        />
+                    )
                 )}
 
                 {/* Analytics tab hidden for now

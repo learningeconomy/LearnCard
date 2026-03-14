@@ -19,6 +19,7 @@ import {
     AlertTriangle,
     Activity,
     Hash,
+    Users,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
@@ -483,6 +484,17 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             title: 'Manage Contracts',
             description: `${stats.activeContracts || 0} active contracts`,
             hoverColor: 'hover:border-emerald-300 hover:bg-emerald-50',
+        });
+    }
+
+    if (config.showConnections) {
+        quickActions.push({
+            id: 'connections',
+            icon: Users,
+            iconColor: 'text-blue-600',
+            title: 'View Connections',
+            description: `${stats.totalConnections || 0} connected users`,
+            hoverColor: 'hover:border-blue-300 hover:bg-blue-50',
         });
     }
 
