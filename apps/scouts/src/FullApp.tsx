@@ -10,7 +10,6 @@ import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 const AppRouter = lazyWithRetry(() => import('./AppRouter'));
 
 import {
-    useInitLoading,
     sqliteInit,
     QRCodeScannerOverlay,
     PushNotificationListener,
@@ -26,6 +25,8 @@ import {
     lazyWithRetry,
     Toast,
 } from 'learn-card-base';
+import { AuthCoordinatorProvider } from './providers/AuthCoordinatorProvider';
+import AuthKeyDebugWidget from './components/debug/AuthKeyDebugWidget';
 import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
@@ -98,7 +99,6 @@ networkStore.set.apiEndpoint(SCOUTPASS_API_ENDPOINT);
 const FullApp: React.FC = () => {
     useSQLiteInitWeb(); // initializes SQLite on web
     sqliteInit(); // initializes SQLite on native
-    const initLoading = useInitLoading();
     const showScannerOverlay = QRCodeScannerStore?.use?.showScanner();
 
     return (
@@ -110,18 +110,20 @@ const FullApp: React.FC = () => {
             <IonReactRouter>
                 <Suspense fallback={<LoadingPageDumb />}>
                     <IonApp>
-                        <ModalsProvider>
-                            <div id="modal-mid-root"></div>
-                            <Toast />
-                            <NetworkListener />
-                            <AppUrlListener />
-                            <PushNotificationListener />
-                            <PresentVcModalListener />
-                            {/* <UserProfileSetupListener loading={initLoading} /> */}
-                            <AppRouter initLoading={initLoading} />
-                            <QRCodeScannerListener />
-                            {showScannerOverlay && <QRCodeScannerOverlay />}
-                        </ModalsProvider>
+                        <AuthCoordinatorProvider>
+                            <ModalsProvider>
+                                <div id="modal-mid-root"></div>
+                                <Toast />
+                                <NetworkListener />
+                                <AppUrlListener />
+                                <PushNotificationListener />
+                                <PresentVcModalListener />
+                                <AppRouter />
+                                <QRCodeScannerListener />
+                                {showScannerOverlay && <QRCodeScannerOverlay />}
+                                <AuthKeyDebugWidget />
+                            </ModalsProvider>
+                        </AuthCoordinatorProvider>
                     </IonApp>
                 </Suspense>
             </IonReactRouter>

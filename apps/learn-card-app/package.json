@@ -37,6 +37,7 @@
         "@learncard/lca-api-plugin": "workspace:*",
         "@learncard/open-badge-v2-plugin": "workspace:*",
         "@learncard/react": "workspace:^",
+        "@learncard/sss-key-manager": "workspace:*",
         "@nanostores/react": "^0.8.4",
         "@sentry/browser": "8.34.0",
         "@sentry/react": "8.34.0",

@@ -4,6 +4,7 @@ import { auth } from '../stores/nanoStores/authStore';
 import { LCNProfile } from '@learncard/types';
 
 import { useIsLoggedIn, useCurrentUser, switchedProfileStore } from 'learn-card-base';
+import currentUserStore from 'learn-card-base/stores/currentUserStore';
 
 import { useGetProfile } from 'learn-card-base';
 
@@ -35,6 +36,11 @@ export const useGetCurrentLCNUser = () => {
         if (next) {
             setLcnProfile(next);
             auth.set({ did: next.did });
+
+            currentUserStore.set.updateCurrentUserNameAndImage(
+                next.displayName ?? '',
+                next.image ?? ''
+            );
         }
 
         if (error) setLcnProfile(null);

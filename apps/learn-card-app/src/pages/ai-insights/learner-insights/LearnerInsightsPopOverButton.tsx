@@ -81,7 +81,7 @@ export const LearnerInsightsPopOverButton: React.FC<RequestInsightsPopOverButton
                     }`}
                 />
             </button>
-            <IonPopover
+            {!isMobile && <IonPopover
                 onDidDismiss={() => setShowSortPopover(false)}
                 reference="trigger"
                 trigger="trigger-button"
@@ -132,7 +132,7 @@ export const LearnerInsightsPopOverButton: React.FC<RequestInsightsPopOverButton
                         );
                     })}
                 </IonList>
-            </IonPopover>
+            </IonPopover>}
         </>
     );
 };
