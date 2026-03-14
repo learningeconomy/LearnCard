@@ -17,6 +17,7 @@ export type InboxCredentialType = {
     webhookUrl?: string;
     boostUri?: string; // URI of the boost this credential is an instance of
     activityId?: string; // Links to CredentialActivity for lifecycle tracking
+    integrationId?: string; // Links to the integration that issued this credential
     'signingAuthority.endpoint'?: string;
     'signingAuthority.name'?: string;
 };
