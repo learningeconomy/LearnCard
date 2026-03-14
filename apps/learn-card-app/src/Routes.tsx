@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { Redirect, Route, Switch, useLocation } from 'react-router-dom';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     DIDAuthModal,
     VCClaimModalController,
@@ -134,6 +135,9 @@ const SigningAuthoritiesPage = lazyWithRetry(
 const APITokensPage = lazyWithRetry(
     () => import('./pages/adminToolsPage/api-tokens/APITokensPage')
 );
+const LearnerContextPromptTestPage = lazyWithRetry(
+    () => import('./pages/adminToolsPage/learner-context-test/LearnerContextPromptTestPage')
+);
 
 const DevCli = lazyWithRetry(() => import('./pages/devCli/DevCli'));
 const AiPathwaysDiscovery = lazyWithRetry(
@@ -169,6 +173,7 @@ const PrivateRoute = ({ component: Component, ...rest }) => {
 export const Routes: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
+    const flags = useFlags();
 
     // The `backgroundLocation` state is the location that we were at when one of
     // it's what is displayed in the background when we open the modal route
@@ -302,6 +307,13 @@ export const Routes: React.FC = () => {
                             path="/admin-tools/api-tokens"
                             component={APITokensPage}
                         />
+                        {flags.enableLearnerContextTest && (
+                            <PrivateRoute
+                                exact
+                                path="/admin-tools/learner-context-test"
+                                component={LearnerContextPromptTestPage}
+                            />
+                        )}
 
                         <SentryRoute
                             path="/claim-credential/:uri"
