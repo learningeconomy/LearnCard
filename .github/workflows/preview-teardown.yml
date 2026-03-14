@@ -47,37 +47,42 @@ jobs:
             - name: Teardown preview on EC2
               if: steps.ec2.outputs.ip != ''
               uses: appleboy/ssh-action@v1.0.3
+              env:
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
               with:
                   host: ${{ steps.ec2.outputs.ip }}
                   username: ${{ secrets.PREVIEW_EC2_USERNAME }}
                   key: ${{ secrets.PREVIEW_EC2_SSH_KEY }}
                   script_stop: false
                   command_timeout: 5m
+                  envs: PR_NUMBER
                   script: |
                       cd ~/preview-workspace/LearnCard
                       chmod +x preview/scripts/teardown-preview.sh
-                      preview/scripts/teardown-preview.sh ${{ github.event.pull_request.number }}
+                      preview/scripts/teardown-preview.sh "$PR_NUMBER"
 
             - name: Check if any previews remain
               if: steps.ec2.outputs.ip != ''
               id: remaining
-              uses: appleboy/ssh-action@v1.0.3
-              with:
-                  host: ${{ steps.ec2.outputs.ip }}
-                  username: ${{ secrets.PREVIEW_EC2_USERNAME }}
-                  key: ${{ secrets.PREVIEW_EC2_SSH_KEY }}
-                  script_stop: false
-                  script: |
-                      # Count remaining preview stacks
-                      REMAINING=$(docker compose ls --format json 2>/dev/null | jq -r '.[].Name' | grep -c '^pr-' || echo "0")
-                      echo "Remaining previews: $REMAINING"
-                      if [ "$REMAINING" = "0" ]; then
-                          echo "No active previews — EC2 can be stopped"
-                          echo "STOP_EC2=true"
-                      fi
+              env:
+                  EC2_IP: ${{ steps.ec2.outputs.ip }}
+                  EC2_USER: ${{ secrets.PREVIEW_EC2_USERNAME }}
+                  EC2_KEY: ${{ secrets.PREVIEW_EC2_SSH_KEY }}
+              run: |
+                  # Write SSH key to temp file
+                  KEY_FILE=$(mktemp)
+                  echo "$EC2_KEY" > "$KEY_FILE"
+                  chmod 600 "$KEY_FILE"
+
+                  REMAINING=$(ssh -o StrictHostKeyChecking=no -i "$KEY_FILE" "${EC2_USER}@${EC2_IP}" \
+                      "docker compose ls --format json 2>/dev/null | jq -r '.[].Name' | grep -c '^pr-' || echo 0")
+                  rm -f "$KEY_FILE"
+
+                  echo "Remaining previews: $REMAINING"
+                  echo "remaining=$REMAINING" >> "$GITHUB_OUTPUT"
 
             - name: Stop EC2 if no previews remain
-              if: contains(steps.remaining.outputs.*, 'STOP_EC2=true')
+              if: steps.remaining.outputs.remaining == '0'
               continue-on-error: true
               run: |
                   echo "No active previews, stopping EC2 to save costs..."

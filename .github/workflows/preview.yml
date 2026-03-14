@@ -187,23 +187,38 @@ jobs:
 
             - name: Deploy preview on EC2
               uses: appleboy/ssh-action@v1.0.3
+              env:
+                  PR_NUMBER: ${{ needs.should-deploy.outputs.pr_number }}
+                  BRANCH: ${{ needs.should-deploy.outputs.branch }}
+                  BASE_DOMAIN: ${{ env.PREVIEW_BASE_DOMAIN }}
               with:
                   host: ${{ steps.ec2.outputs.ip }}
                   username: ${{ secrets.PREVIEW_EC2_USERNAME }}
                   key: ${{ secrets.PREVIEW_EC2_SSH_KEY }}
                   script_stop: true
                   command_timeout: 25m
+                  envs: PR_NUMBER,BRANCH,BASE_DOMAIN
                   script: |
                       cd ~/preview-workspace/LearnCard
+
+                      # Validate inputs to prevent command injection
+                      if ! echo "$PR_NUMBER" | grep -qE '^[0-9]+$'; then
+                          echo "::error::Invalid PR number: $PR_NUMBER"
+                          exit 1
+                      fi
+                      if ! echo "$BRANCH" | grep -qE '^[a-zA-Z0-9_./-]+$'; then
+                          echo "::error::Invalid branch name: $BRANCH"
+                          exit 1
+                      fi
 
                       # Ensure the preview scripts are executable
                       chmod +x preview/scripts/*.sh
 
                       # Deploy the preview
                       preview/scripts/deploy-preview.sh \
-                          ${{ needs.should-deploy.outputs.pr_number }} \
-                          ${{ needs.should-deploy.outputs.branch }} \
-                          ${{ env.PREVIEW_BASE_DOMAIN }}
+                          "$PR_NUMBER" \
+                          "$BRANCH" \
+                          "$BASE_DOMAIN"
 
             - name: Read preview URL
               id: preview-url
