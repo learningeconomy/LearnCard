@@ -489,6 +489,7 @@ export const boostsRouter = t.router({
                     name: framework.name,
                     description: framework.description,
                     sourceURI: framework.sourceURI,
+                    isPublic: (framework as any).isPublic ?? false,
                     status: (framework.status as any) ?? 'active',
                     createdAt: (framework as any).createdAt,
                     updatedAt: (framework as any).updatedAt,
@@ -1260,6 +1261,7 @@ export const boostsRouter = t.router({
                     name: framework.name,
                     description: framework.description ?? undefined,
                     sourceURI: framework.sourceURI ?? undefined,
+                    isPublic: (framework as any).isPublic ?? false,
                     status: framework.status ?? 'active',
                     createdAt: framework.createdAt,
                     updatedAt: framework.updatedAt,
@@ -2791,7 +2793,13 @@ export const boostsRouter = t.router({
                 });
             }
 
-            await setValidClaimLinkForBoost(boostUri, challenge, normalizedClaimLinkSA, options, profile.profileId);
+            await setValidClaimLinkForBoost(
+                boostUri,
+                challenge,
+                normalizedClaimLinkSA,
+                options,
+                profile.profileId
+            );
 
             return { boostUri: boostUri, challenge };
         }),
