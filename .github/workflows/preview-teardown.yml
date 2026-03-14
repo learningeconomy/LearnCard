@@ -1,0 +1,105 @@
+name: Teardown PR Preview
+
+# Automatically tear down the preview when a PR is closed or merged,
+# or when the "preview" label is removed
+on:
+    pull_request:
+        types: [closed, unlabeled]
+
+jobs:
+    teardown:
+        name: Teardown Preview
+        # Only run if the PR had a preview label (for close events)
+        # or if the "preview" label was specifically removed (for unlabel events)
+        if: |
+            (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'preview')) ||
+            (github.event.action == 'unlabeled' && github.event.label.name == 'preview')
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        environment: preview
+        steps:
+            - name: Start EC2 instance (if stopped)
+              continue-on-error: true
+              run: |
+                  curl -sf "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/start" || true
+                  # Brief wait for instance to be reachable
+                  sleep 15
+
+            - name: Get EC2 IP
+              id: ec2
+              run: |
+                  for i in {1..12}; do
+                      STATUS=$(curl -s "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/status" || echo "")
+                      IP=$(echo "$STATUS" | grep -i "^Public IP:" | awk '{print $3}')
+                      STATE=$(echo "$STATUS" | grep -i "^State:" | awk '{print $2}')
+
+                      if [ "$STATE" = "running" ] && [ -n "$IP" ]; then
+                          if nc -z -w5 "$IP" 22 2>/dev/null; then
+                              echo "ip=$IP" >> "$GITHUB_OUTPUT"
+                              exit 0
+                          fi
+                      fi
+                      sleep 10
+                  done
+                  echo "::warning::Could not reach EC2 — preview may need manual cleanup"
+                  echo "ip=" >> "$GITHUB_OUTPUT"
+
+            - name: Teardown preview on EC2
+              if: steps.ec2.outputs.ip != ''
+              uses: appleboy/ssh-action@v1.0.3
+              env:
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+              with:
+                  host: ${{ steps.ec2.outputs.ip }}
+                  username: ${{ secrets.PREVIEW_EC2_USERNAME }}
+                  key: ${{ secrets.PREVIEW_EC2_SSH_KEY }}
+                  script_stop: false
+                  command_timeout: 5m
+                  envs: PR_NUMBER
+                  script: |
+                      cd ~/preview-workspace/LearnCard
+                      chmod +x preview/scripts/teardown-preview.sh
+                      preview/scripts/teardown-preview.sh "$PR_NUMBER"
+
+            - name: Check if any previews remain
+              if: steps.ec2.outputs.ip != ''
+              id: remaining
+              env:
+                  EC2_IP: ${{ steps.ec2.outputs.ip }}
+                  EC2_USER: ${{ secrets.PREVIEW_EC2_USERNAME }}
+                  EC2_KEY: ${{ secrets.PREVIEW_EC2_SSH_KEY }}
+              run: |
+                  # Write SSH key to temp file
+                  KEY_FILE=$(mktemp)
+                  echo "$EC2_KEY" > "$KEY_FILE"
+                  chmod 600 "$KEY_FILE"
+
+                  REMAINING=$(ssh -o StrictHostKeyChecking=no -i "$KEY_FILE" "${EC2_USER}@${EC2_IP}" \
+                      "docker compose ls --format json 2>/dev/null | jq -r '.[].Name' | grep -c '^pr-' || echo 0")
+                  rm -f "$KEY_FILE"
+
+                  echo "Remaining previews: $REMAINING"
+                  echo "remaining=$REMAINING" >> "$GITHUB_OUTPUT"
+
+            - name: Stop EC2 if no previews remain
+              if: steps.remaining.outputs.remaining == '0'
+              continue-on-error: true
+              run: |
+                  echo "No active previews, stopping EC2 to save costs..."
+                  curl -sf "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/stop" || true
+
+            - name: Post teardown comment
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const prNumber = context.payload.pull_request.number;
+                      const reason = context.payload.action === 'closed'
+                          ? (context.payload.pull_request.merged ? 'PR merged' : 'PR closed')
+                          : 'preview label removed';
+
+                      await github.rest.issues.createComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: prNumber,
+                          body: `### 🧹 Preview Torn Down\nReason: ${reason}`,
+                      });
