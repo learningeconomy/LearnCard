@@ -30,3 +30,11 @@ node_modules
 .claude/
 .vexp/
 .github/copilot-instructions.md
+
+# Local Netlify folder
+.netlify
+
+# Environment variables - NEVER commit credentials
+.env
+.env.local
+.env.*.local
