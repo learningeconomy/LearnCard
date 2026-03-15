@@ -38,7 +38,16 @@ export const useDeveloperPortal = () => {
     };
 
     const buildFallbackSigningAuthorityName = (baseName: string): string => {
-        const suffix = `-${Math.floor(Math.random() * 1000)}`;
+        let suffixNum: number;
+        if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+            const arr = new Uint32Array(1);
+            crypto.getRandomValues(arr);
+            suffixNum = arr[0] % 1000;
+        } else {
+            // Fallback: use timestamp for uniqueness
+            suffixNum = Date.now() % 1000;
+        }
+        const suffix = `-${suffixNum}`;
         const trimmed = baseName.slice(0, MAX_SIGNING_AUTHORITY_NAME_LENGTH - suffix.length);
         const base = trimmed || 'app';
 

@@ -92,7 +92,19 @@ export const useFinalizeInboxCredentials = () => {
                         const id = vc?.id ||
                             (typeof crypto !== 'undefined' && crypto.randomUUID
                                 ? crypto.randomUUID()
-                                : `${Date.now()}-${Math.random().toString(36).slice(2, 18)}-${Math.random().toString(36).slice(2, 18)}-${performance.now()}`);
+                                : (() => {
+                                    const arr = new Uint32Array(4);
+                                    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+                                        crypto.getRandomValues(arr);
+                                    } else {
+                                        // Fallback: use timestamp + counter for uniqueness
+                                        arr[0] = Date.now() >>> 0;
+                                        arr[1] = performance.now() >>> 0;
+                                        arr[2] = (Date.now() / 1000) >>> 0;
+                                        arr[3] = Math.floor(performance.now() * 1000) >>> 0;
+                                    }
+                                    return `${arr[0].toString(36)}-${arr[1].toString(36)}-${arr[2].toString(36)}-${arr[3].toString(36)}`;
+                                })());
 
                         await wallet.index.LearnCloud.add({
                             id,

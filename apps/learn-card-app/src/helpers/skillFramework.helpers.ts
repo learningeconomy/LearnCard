@@ -140,7 +140,10 @@ export const handleDownloadTemplate = () => {
 };
 
 export const generateSkillId = () => {
-    return `skill-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const randomSuffix = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID().replace(/-/g, '').slice(0, 9)
+        : `${Date.now()}`;
+    return `skill-${Date.now()}-${randomSuffix}`;
 };
 
 export const convertSkillToBackendFormat = (node: SkillFrameworkNode): any => {
