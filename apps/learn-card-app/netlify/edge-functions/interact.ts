@@ -1,9 +1,60 @@
 import type { Config, Context } from "@netlify/edge-functions";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET",
-  "Access-Control-Allow-Headers": "Content-Type",
+// Allowed origins for CORS - configurable via environment variable
+// Format: comma-separated list of origins (e.g., "https://app.learncard.com,https://staging.learncard.app")
+const getAllowedOrigins = (): string[] => {
+  const originsEnv = Netlify.env.get("ALLOWED_ORIGINS");
+  if (originsEnv) {
+    return originsEnv.split(',').map(origin => origin.trim());
+  }
+  // Default allowed origins for production and staging
+  return [
+    'https://learncard.app',
+    'https://staging.learncard.app',
+    'https://app.learncard.com',
+    'https://network.learncard.com',
+    'https://computer8004.github.io', // Space Dodger game on GitHub Pages
+  ];
+};
+
+const getCorsOrigin = (requestOrigin: string | null): string | null => {
+  const allowedOrigins = getAllowedOrigins();
+  // Fallback origin in case allowedOrigins is empty
+  const fallbackOrigin = 'https://learncard.app';
+  const defaultOrigin = allowedOrigins[0] || fallbackOrigin;
+
+  if (!requestOrigin) return defaultOrigin;
+  
+  // Check if the request origin is in our allowed list
+  if (allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+  
+  // Allow localhost for development
+  if (
+    requestOrigin.startsWith('http://localhost:') ||
+    requestOrigin.startsWith('https://localhost:')
+  ) {
+    return requestOrigin;
+  }
+  
+  // Return null if origin is not allowed (no CORS headers will be sent)
+  return null;
+};
+
+const getCorsHeaders = (requestOrigin: string | null) => {
+  const corsOrigin = getCorsOrigin(requestOrigin);
+  
+  // If origin is not allowed, return empty headers
+  if (!corsOrigin) {
+    return {};
+  }
+  
+  return {
+    "Access-Control-Allow-Origin": corsOrigin,
+    "Access-Control-Allow-Methods": "GET",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
 };
 
 // Function to extract the workflowId and interactionId from the URL
@@ -38,6 +89,7 @@ function getDefaultLCNApiUrl(context: Context): string {
 export default async (request: Request, context: Context) => {
   const acceptHeader = request.headers.get("Accept");
   const interactionUrl = request.url; // e.g., https://learncard.app/interactions/claim/z8n38Dp7a?iuv=1
+  const requestOrigin = request.headers.get("Origin");
 
   const parsedData = parseInteractionUrl(interactionUrl);
   const LCN_API_URL = getDefaultLCNApiUrl(context);
@@ -46,7 +98,7 @@ export default async (request: Request, context: Context) => {
     // If the URL format is not as expected, return a 400 Bad Request
     return new Response("Invalid interaction URL format.", { 
         status: 400,
-        headers: { "Content-Type": "text/plain", ...corsHeaders },
+        headers: { "Content-Type": "text/plain", ...getCorsHeaders(requestOrigin) },
     });
   }
 
@@ -62,7 +114,7 @@ export default async (request: Request, context: Context) => {
       }
     };
     return new Response(JSON.stringify(protocols), {
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+      headers: { "Content-Type": "application/json", ...getCorsHeaders(requestOrigin) },
     });
   }
 
