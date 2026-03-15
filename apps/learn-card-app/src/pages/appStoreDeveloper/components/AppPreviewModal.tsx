@@ -5,6 +5,7 @@ import { X, Maximize2, Play, AlertCircle } from 'lucide-react';
 import { useModal } from 'learn-card-base';
 import { useLearnCardPostMessage } from '../../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../../hooks/post-message/useLearnCardMessageHandlers';
+import { getAllTrustedOrigins } from '../../../constants/trustedOrigins';
 
 import { DiagnosticsPanel, DiagnosticEvent, ACTION_TO_PERMISSION } from './DiagnosticsPanel';
 import { CredentialClaimModal } from '../../launchPad/CredentialClaimModal';
@@ -156,7 +157,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
 
     // Initialize the PostMessage listener
     useLearnCardPostMessage({
-        trustedOrigins: embedOrigin ? [embedOrigin] : [],
+        trustedOrigins: getAllTrustedOrigins(embedOrigin ? [embedOrigin] : []),
         handlers: wrappedHandlers,
         debug: true, // Enable detailed logging for preview diagnostics
     });

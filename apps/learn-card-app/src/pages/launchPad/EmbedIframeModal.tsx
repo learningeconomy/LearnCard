@@ -8,6 +8,7 @@ import { IonPage, IonContent, IonToast, IonHeader, IonToolbar } from '@ionic/rea
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
+import { getAllTrustedOrigins } from '../../constants/trustedOrigins';
 import { CredentialClaimModal } from './CredentialClaimModal';
 import { AppCredentialDashboard } from './AppCredentialDashboard';
 import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
@@ -126,7 +127,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
 
     // Initialize the PostMessage listener with trusted origins
     useLearnCardPostMessage({
-        trustedOrigins: embedOrigin ? [embedOrigin] : [],
+        trustedOrigins: getAllTrustedOrigins(embedOrigin ? [embedOrigin] : []),
         handlers,
         debug: false, // Disable detailed logging
     });

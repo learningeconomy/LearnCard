@@ -12,6 +12,7 @@ import {
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
+import { getAllTrustedOrigins } from '../../constants/trustedOrigins';
 import { CredentialClaimModal } from './CredentialClaimModal';
 import { AppCredentialDashboard } from './AppCredentialDashboard';
 import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
@@ -135,7 +136,7 @@ export const EmbedAppFullScreen: React.FC = () => {
 
     // Initialize the PostMessage listener with trusted origins
     useLearnCardPostMessage({
-        trustedOrigins: embedOrigin ? [embedOrigin] : [],
+        trustedOrigins: getAllTrustedOrigins(embedOrigin ? [embedOrigin] : []),
         handlers,
         debug: true, // Disable detailed logging
     });
