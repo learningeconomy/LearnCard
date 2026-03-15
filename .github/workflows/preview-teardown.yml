@@ -21,7 +21,8 @@ jobs:
             - name: Start EC2 instance (if stopped)
               continue-on-error: true
               run: |
-                  curl -sf "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/start" || true
+                  curl -sf -H "x-api-key: ${{ secrets.PREVIEW_EC2_API_KEY }}" \
+                      "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/start" || true
                   # Brief wait for instance to be reachable
                   sleep 15
 
@@ -29,7 +30,8 @@ jobs:
               id: ec2
               run: |
                   for i in {1..12}; do
-                      STATUS=$(curl -s "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/status" || echo "")
+                      STATUS=$(curl -s -H "x-api-key: ${{ secrets.PREVIEW_EC2_API_KEY }}" \
+                          "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/status" || echo "")
                       IP=$(echo "$STATUS" | grep -i "^Public IP:" | awk '{print $3}')
                       STATE=$(echo "$STATUS" | grep -i "^State:" | awk '{print $2}')
 
@@ -86,7 +88,8 @@ jobs:
               continue-on-error: true
               run: |
                   echo "No active previews, stopping EC2 to save costs..."
-                  curl -sf "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/stop" || true
+                  curl -sf -H "x-api-key: ${{ secrets.PREVIEW_EC2_API_KEY }}" \
+                      "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/stop" || true
 
             - name: Post teardown comment
               uses: actions/github-script@v7

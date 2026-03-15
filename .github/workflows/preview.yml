@@ -150,7 +150,8 @@ jobs:
             - name: Start EC2 instance
               run: |
                   echo "Starting EC2 preview server..."
-                  curl -sf "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/start" || {
+                  curl -sf -H "x-api-key: ${{ secrets.PREVIEW_EC2_API_KEY }}" \
+                      "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/start" || {
                       echo "::warning::EC2 start request failed — instance may already be running"
                   }
 
@@ -159,7 +160,8 @@ jobs:
               run: |
                   echo "Waiting for EC2 instance to be ready..."
                   for i in {1..30}; do
-                      STATUS=$(curl -s "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/status" || echo "")
+                      STATUS=$(curl -s -H "x-api-key: ${{ secrets.PREVIEW_EC2_API_KEY }}" \
+                          "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/status" || echo "")
                       STATE=$(echo "$STATUS" | grep -i "^State:" | awk '{print $2}')
                       IP=$(echo "$STATUS" | grep -i "^Public IP:" | awk '{print $3}')
 

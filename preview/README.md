@@ -105,44 +105,62 @@ Each PR stack has its own Docker network (`learn-card`) for internal communicati
 
 ## One-Time Setup
 
-### 1. EC2 Instance
+All AWS infrastructure is managed via Terraform in `preview/infra/`.
 
-Provision an EC2 instance (recommended: `m5.xlarge`, 4 vCPU, 16 GB RAM, 100 GB EBS):
+### 1. Provision Infrastructure with Terraform
 
 ```bash
-# Bootstrap the instance
-ssh ubuntu@<EC2_IP> 'bash -s' < preview/scripts/ec2-bootstrap.sh
+cd preview/infra
+
+# Generate an SSH key pair for the EC2 instance
+ssh-keygen -t ed25519 -f preview-server -N ""
+
+# Generate an API key for Lambda authentication
+API_KEY=$(openssl rand -hex 32)
+echo "Save this API key for GitHub secrets: $API_KEY"
+
+# Configure Terraform variables
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your values:
+#   - ssh_public_key: paste contents of preview-server.pub
+#   - api_key: paste the generated API key
+#   - route53_zone_id: your Route53 hosted zone ID
+
+# Deploy
+terraform init
+terraform plan
+terraform apply
 ```
 
-### 2. DNS
+Terraform provisions: EC2 + Elastic IP, security group, wildcard DNS, Lambda (start/stop/status), and IAM roles.
 
-Add a wildcard DNS record:
+### 2. Bootstrap the EC2
 
+After `terraform apply`, run the one-time bootstrap script:
+
+```bash
+EC2_IP=$(terraform output -raw ec2_public_ip)
+ssh -i preview-server "ubuntu@${EC2_IP}" 'bash -s' < ../scripts/ec2-bootstrap.sh
 ```
-*.preview.learncard.com → <EC2 Elastic IP>
-```
 
-Caddy will auto-provision TLS certificates via Let's Encrypt.
+This installs Docker, git, jq, clones the repo, and sets up the idle cleanup cron.
 
-### 3. EC2 Start/Stop Lambda
+### 3. GitHub Configuration
 
-Set up a Lambda function (similar to the existing E2E one) that can start/stop the EC2 instance via HTTP. This keeps the instance off when not in use.
+**Create a `preview` environment** in repo Settings → Environments.
 
-### 4. GitHub Secrets
+**Add these secrets** to the `preview` environment:
 
-Add these secrets to the repo (under a `preview` environment):
+| Secret | Value | How to Get |
+|--------|-------|------------|
+| `PREVIEW_EC2_LAMBDA_URL` | Lambda Function URL | `terraform output -raw lambda_function_url` |
+| `PREVIEW_EC2_USERNAME` | `ubuntu` | Default for Ubuntu AMI |
+| `PREVIEW_EC2_SSH_KEY` | SSH private key | Contents of `preview-server` file |
+| `PREVIEW_EC2_API_KEY` | API key | The key you generated in step 1 |
 
-| Secret | Description |
-|--------|-------------|
-| `PREVIEW_EC2_LAMBDA_URL` | URL of the Lambda that starts/stops the EC2 |
-| `PREVIEW_EC2_USERNAME` | SSH username (e.g., `ubuntu`) |
-| `PREVIEW_EC2_SSH_KEY` | SSH private key for the EC2 instance |
+**Create a `preview` label** in the repository (any color).
 
-> **Tip:** You can reuse the existing E2E EC2 instance and Lambda if capacity allows. Just update the secrets to point to the same instance, or set up a separate one for isolation.
-
-### 5. GitHub Label
-
-Create a `preview` label in the repository (any color — purple is nice).
+> **Tip:** Run `terraform output github_secrets_summary` for a quick reference of all required values.
 
 ## Files
 
@@ -153,6 +171,13 @@ preview/
 ├── Caddyfile                     # Template/reference (actual config is dynamic-caddyfile)
 ├── .gitignore                    # Ignores dynamic-caddyfile (generated at runtime)
 ├── README.md                     # This file
+├── infra/                        # Terraform IaC for AWS resources
+│   ├── main.tf                   # EC2, security group, EIP, Route53, Lambda, IAM
+│   ├── variables.tf              # Input variables
+│   ├── outputs.tf                # Outputs (Lambda URL, EC2 IP, GitHub secrets summary)
+│   ├── terraform.tfvars.example  # Example variable values
+│   └── lambda/
+│       └── index.mjs             # Lambda handler (start/stop/status with API key auth)
 └── scripts/
     ├── ec2-bootstrap.sh          # One-time EC2 setup
     ├── deploy-preview.sh         # Deploy a PR preview
