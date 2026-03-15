@@ -558,8 +558,11 @@ export const generateChildBoostForCourse = (
 
     const dynamicVars = extractDynamicVariables(template);
 
+    const randomSuffix = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID().replace(/-/g, '').slice(0, 8)
+        : `${Date.now()}`;
     return {
-        id: `child_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        id: `child_${Date.now()}_${randomSuffix}`,
         name: `${boostName} Completion`,
         description: boostDescription,
         achievementType: 'Course Completion',
