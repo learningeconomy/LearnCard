@@ -12,10 +12,10 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/netlify": "5.5.4",
+    "@astrojs/netlify": "^6.3.2",
     "@learncard/init": "workspace:*",
     "@learncard/partner-connect": "workspace:*",
-    "astro": "4.16.19"
+    "astro": "^5.15.8"
   },
   "devDependencies": {
     "prettier-plugin-astro": "^0.5.4"
