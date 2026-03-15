@@ -53,25 +53,7 @@ Cache-Control = "public, max-age=0"
 Content-Type = "application/json"
 X-Content-Type-Options = "nosniff"
 
-[[headers]]
-for = "/manifest.json"
-[headers.values]
-Access-Control-Allow-Origin = "*"
 
-[[headers]]
-for = "/*"
-[headers.values]
-Access-Control-Allow-Origin = "*"
-
-[[headers]]
-for = "/assets/icon/icon.png"
-[headers.values]
-Access-Control-Allow-Origin = "*"
-
-[[headers]]
-for = "/assets/icon/favicon.png"
-[headers.values]
-Access-Control-Allow-Origin = "*"
 
 [[headers]]
   for = "/assets/*.wasm"
@@ -82,8 +64,7 @@ Access-Control-Allow-Origin = "*"
 [[headers]]
   for = "/assets/*"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-    Access-Control-Allow-Origin = "*"    
+    Cache-Control = "public, max-age=31536000, immutable"    
 
 # Never cache HTML so a full reload picks up the latest shell
 [[headers]]
