@@ -1,0 +1,103 @@
+# Gitleaks configuration for LearnCard repository
+# This file defines patterns to detect secrets and credentials
+
+# Title for the configuration
+title = "LearnCard Secret Detection Configuration"
+
+[extend]
+# Use the default gitleaks configuration as a base
+useDefault = true
+
+[allowlist]
+# Files to ignore during scanning
+paths = [
+    # Documentation files
+    '''README\.md$''',
+    '''CONTRIBUTING\.md$''',
+    '''AGENTS\.md$''',
+    '''CLAUDE\.md$''',
+    '''REPO_MAP_AND_OWNERSHIP\.md$''',
+    '''QA_TESTING_PLAN\.md$''',
+    '''QA_TEST_RESULTS\.md$''',
+    '''RETRO\.md$''',
+    
+    # Test files that may contain mock secrets
+    '''_test\.go$''',
+    '''\.test\.(ts|tsx|js|jsx)$''',
+    '''__tests__/.*''',
+    '''test/.*''',
+    '''tests/.*''',
+    '''\.spec\.(ts|tsx|js|jsx)$''',
+    
+    # Example files (may contain dummy credentials)
+    '''example.*\.json$''',
+    '''example.*\.env.*$''',
+    '''\.env\.example$''',
+    
+    # Lock files
+    '''pnpm-lock\.yaml$''',
+    '''package-lock\.json$''',
+    '''yarn\.lock$''',
+    
+    # Build artifacts and analysis
+    '''dist/.*''',
+    '''build/.*''',
+    '''\.nx-cache/.*''',
+    '''node_modules/.*''',
+    '''.*bundle-analysis.*\.html$''',
+    '''.*\.chunk\.js$''',
+    '''.*\.min\.js$'''
+    
+    # Images and assets
+    '''.*\.png$''',
+    '''.*\.jpg$''',
+    '''.*\.jpeg$''',
+    '''.*\.gif$''',
+    '''.*\.svg$''',
+    '''.*\.ico$''',
+    
+    # Logs
+    '''.*\.log$''',
+]
+
+# Regex patterns to ignore (for false positives)
+regexes = [
+    # Allow dummy/example API keys in comments
+    '''AIzaSy[A-Za-z0-9_-]{33}''',  # Google API key pattern - will be caught by rules but allowed in examples
+]
+
+# Stopwords - if a match contains these words, it's likely not a real secret
+stopwords = [
+    "example",
+    "EXAMPLE",
+    "sample",
+    "SAMPLE",
+    "test",
+    "TEST",
+    "dummy",
+    "DUMMY",
+    "mock",
+    "MOCK",
+    "placeholder",
+    "PLACEHOLDER",
+    "your-api-key-here",
+    "xxx",
+    "XXX",
+    "***",
+    "00000000-0000-0000-0000-000000000000",
+    "0000000000000000000000000000000000000000",
+]
+
+# Additional custom rules for this repository
+[[rules]]
+id = "google-services-json"
+description = "Google Services Configuration File"
+regex = '''google-services\.json'''
+path = '''.*google-services\.json$'''
+tags = ["api-key", "google", "mobile"]
+
+[[rules]]
+id = "firebase-config"
+description = "Firebase Configuration"
+regex = '''firebaseConfig\s*=\s*\{[^}]*apiKey'''
+tags = ["api-key", "firebase"]

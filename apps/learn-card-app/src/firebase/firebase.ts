@@ -15,13 +15,13 @@ export type RawFirebaseConfig = {
 };
 
 export const firebaseConfig: RawFirebaseConfig = {
-    apiKey: 'AIzaSyDQJcEDxhxdxRAVdIDBzcE1x6D-KOj6N4o',
-    authDomain: 'learncard.firebaseapp.com',
-    projectId: 'learncard',
-    storageBucket: 'learncard.appspot.com',
-    messagingSenderId: '776298253175',
-    appId: '1:776298253175:web:dd996767bf1a2a37a2ef72',
-    measurementId: 'G-XPHGSD6Q59',
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
