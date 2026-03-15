@@ -1,0 +1,26 @@
+{
+  "name": "@learncard/app-store-demo-high-score-game",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/netlify": "^6.3.2",
+    "@astrojs/node": "^9.2.1",
+    "@learncard/partner-connect": "workspace:*",
+    "astro": "^5.15.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8",
+    "prettier-plugin-astro": "^0.5.4",
+    "tailwindcss": "^4.2.1"
+  }
+}

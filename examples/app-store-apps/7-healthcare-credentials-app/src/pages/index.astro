@@ -1,0 +1,839 @@
+---
+// Healthcare Credentials Demo App - Issue medical licenses, certifications, and provider credentials
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Healthcare Credentials - Issue Verifiable Credentials</title>
+  <meta name="description" content="Demo app for issuing healthcare credentials using LearnCard - medical licenses, training certifications, provider credentials">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --primary: #dc2626;
+      --primary-light: #ef4444;
+      --secondary: #059669;
+      --accent: #2563eb;
+      --danger: #991b1b;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-600: #4b5563;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, var(--gray-50) 0%, #ffffff 100%);
+      min-height: 100vh;
+      color: var(--gray-800);
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--danger) 100%);
+      color: white;
+      padding: 2rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+
+    .auth-status {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: white;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      z-index: 100;
+    }
+
+    .auth-status.connected {
+      border-left: 4px solid var(--secondary);
+      color: var(--secondary);
+    }
+
+    .auth-status.disconnected {
+      border-left: 4px solid var(--danger);
+      color: var(--danger);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .intro {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border-left: 4px solid var(--primary);
+    }
+
+    .intro h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--gray-900);
+    }
+
+    .intro p {
+      color: var(--gray-600);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .credential-types {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .credential-card {
+      background: white;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .credential-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .credential-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    }
+
+    .credential-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .credential-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--gray-900);
+    }
+
+    .credential-description {
+      color: var(--gray-600);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .form-section {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      display: none;
+    }
+
+    .form-section.active {
+      display: block;
+    }
+
+    .form-section h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--gray-700);
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid var(--gray-200);
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-light);
+    }
+
+    .form-group textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #b91c1c;
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: var(--gray-100);
+      color: var(--gray-700);
+    }
+
+    .btn-secondary:hover {
+      background: var(--gray-200);
+    }
+
+    .btn-connect {
+      background: var(--secondary);
+      color: white;
+      margin-bottom: 2rem;
+    }
+
+    .btn-connect:hover {
+      background: #047857;
+    }
+
+    .actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--gray-200);
+    }
+
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert-success {
+      background: #d1fae5;
+      border-left: 4px solid var(--secondary);
+      color: #065f46;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      border-left: 4px solid var(--danger);
+      color: #991b1b;
+    }
+
+    .alert-info {
+      background: #dbeafe;
+      border-left: 4px solid var(--accent);
+      color: var(--accent);
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 1.5rem;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-status disconnected" id="auth-status">
+    <span>●</span>
+    <span>Not Connected</span>
+  </div>
+
+  <header class="header">
+    <div class="header-content">
+      <h1>🏥 Healthcare Credentials</h1>
+      <p>Issue verifiable healthcare credentials - medical licenses, certifications, provider credentials</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="intro">
+      <h2>Welcome to Healthcare Credentials Demo</h2>
+      <p>
+        This demo application showcases how healthcare organizations can issue verifiable credentials 
+        using LearnCard. Issue medical licenses, training certifications, healthcare provider credentials, 
+        and patient education certificates that professionals and patients can own and share securely.
+      </p>
+      <p>
+        <strong>Get Started:</strong> Connect your LearnCard wallet to begin issuing credentials.
+        Use <code>demo@learningeconomy.io</code> to skip traditional auth.
+      </p>
+    </section>
+
+    <button class="btn btn-connect" id="connect-btn">
+      🔗 Connect LearnCard Wallet
+    </button>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="credential-types" id="credential-types">
+      <div class="credential-card" data-type="medicalLicense">
+        <div class="credential-icon">🏥</div>
+        <div class="credential-name">Medical License</div>
+        <div class="credential-description">
+          Issue and verify professional medical licenses. Track license numbers, specialties, and expiration dates.
+        </div>
+      </div>
+
+      <div class="credential-card" data-type="trainingCert">
+        <div class="credential-icon">🎓</div>
+        <div class="credential-name">Medical Training Certification</div>
+        <div class="credential-description">
+          Award certifications for completed medical training programs. Document continuing education and specialized training.
+        </div>
+      </div>
+
+      <div class="credential-card" data-type="provider">
+        <div class="credential-icon">👨‍⚕️</div>
+        <div class="credential-name">Healthcare Provider Credential</div>
+        <div class="credential-description">
+          Create healthcare provider identification and employment credentials. Verify employment at healthcare facilities.
+        </div>
+      </div>
+
+      <div class="credential-card" data-type="patientEducation">
+        <div class="credential-icon">📚</div>
+        <div class="credential-name">Patient Education Certificate</div>
+        <div class="credential-description">
+          Issue completion certificates for patient education programs. Track patient learning and compliance.
+        </div>
+      </div>
+    </div>
+
+    <!-- Medical License Form -->
+    <div class="form-section" id="form-medicalLicense">
+      <h3>🏥 Issue Medical License</h3>
+      <form id="license-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="provider-name">Provider Name *</label>
+            <input type="text" id="provider-name" required placeholder="e.g., Dr. Jane Smith">
+          </div>
+          <div class="form-group">
+            <label for="provider-did">Recipient DID *</label>
+            <input type="text" id="provider-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="license-type">License Type *</label>
+            <input type="text" id="license-type" required placeholder="e.g., Medical Doctor, RN, PA">
+          </div>
+          <div class="form-group">
+            <label for="license-number">License Number *</label>
+            <input type="text" id="license-number" required placeholder="e.g., MD123456">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="issuing-board">Issuing Medical Board *</label>
+          <input type="text" id="issuing-board" required placeholder="e.g., State Medical Board of California">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="license-issue-date">Issue Date *</label>
+            <input type="date" id="license-issue-date" required>
+          </div>
+          <div class="form-group">
+            <label for="license-expiration">Expiration Date *</label>
+            <input type="date" id="license-expiration" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="specialties">Specialties (Optional)</label>
+            <input type="text" id="specialties" placeholder="e.g., Cardiology, Internal Medicine">
+          </div>
+          <div class="form-group">
+            <label for="restrictions">Restrictions (Optional)</label>
+            <input type="text" id="restrictions" placeholder="e.g., No controlled substances">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Medical License</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Training Certification Form -->
+    <div class="form-section" id="form-trainingCert">
+      <h3>🎓 Issue Training Certification</h3>
+      <form id="training-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="training-provider-name">Provider Name *</label>
+            <input type="text" id="training-provider-name" required placeholder="e.g., Dr. John Doe">
+          </div>
+          <div class="form-group">
+            <label for="training-provider-did">Recipient DID *</label>
+            <input type="text" id="training-provider-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="program-name">Training Program Name *</label>
+          <input type="text" id="program-name" required placeholder="e.g., Advanced Cardiac Life Support (ACLS)">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="certification-type">Certification Type *</label>
+            <input type="text" id="certification-type" required placeholder="e.g., ACLS Provider, BLS">
+          </div>
+          <div class="form-group">
+            <label for="training-institution">Training Institution *</label>
+            <input type="text" id="training-institution" required placeholder="e.g., American Heart Association">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="training-completion-date">Completion Date *</label>
+            <input type="date" id="training-completion-date" required>
+          </div>
+          <div class="form-group">
+            <label for="training-expiration">Expiration Date (Optional)</label>
+            <input type="date" id="training-expiration">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="training-hours">Training Hours (Optional)</label>
+          <input type="text" id="training-hours" placeholder="e.g., 16 hours">
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Training Certification</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Provider Credential Form -->
+    <div class="form-section" id="form-provider">
+      <h3>👨‍⚕️ Issue Provider Credential</h3>
+      <form id="provider-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="hcp-provider-name">Provider Name *</label>
+            <input type="text" id="hcp-provider-name" required placeholder="e.g., Dr. Sarah Johnson">
+          </div>
+          <div class="form-group">
+            <label for="hcp-provider-did">Recipient DID *</label>
+            <input type="text" id="hcp-provider-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="provider-id">Provider ID *</label>
+            <input type="text" id="provider-id" required placeholder="e.g., EMP12345">
+          </div>
+          <div class="form-group">
+            <label for="facility">Healthcare Facility *</label>
+            <input type="text" id="facility" required placeholder="e.g., General Hospital">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="department">Department *</label>
+            <input type="text" id="department" required placeholder="e.g., Cardiology, Emergency">
+          </div>
+          <div class="form-group">
+            <label for="role">Role *</label>
+            <input type="text" id="role" required placeholder="e.g., Attending Physician, Charge Nurse">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="provider-issue-date">Issue Date *</label>
+          <input type="date" id="provider-issue-date" required>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Provider Credential</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Patient Education Form -->
+    <div class="form-section" id="form-patientEducation">
+      <h3>📚 Issue Patient Education Certificate</h3>
+      <form id="education-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="patient-name">Patient Name *</label>
+            <input type="text" id="patient-name" required placeholder="e.g., Michael Brown">
+          </div>
+          <div class="form-group">
+            <label for="patient-did">Recipient DID *</label>
+            <input type="text" id="patient-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="education-program">Education Program Name *</label>
+          <input type="text" id="education-program" required placeholder="e.g., Diabetes Self-Management">
+        </div>
+
+        <div class="form-group">
+          <label for="topics">Topics Covered *</label>
+          <textarea id="topics" required placeholder="List the topics covered in this education program..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="education-completion-date">Completion Date *</label>
+            <input type="date" id="education-completion-date" required>
+          </div>
+          <div class="form-group">
+            <label for="validity-period">Validity Period (Optional)</label>
+            <input type="text" id="validity-period" placeholder="e.g., 1 year, Valid indefinitely">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="education-provider">Healthcare Provider *</label>
+            <input type="text" id="education-provider" required placeholder="e.g., Dr. Jane Smith, RN">
+          </div>
+          <div class="form-group">
+            <label for="education-facility">Healthcare Facility *</label>
+            <input type="text" id="education-facility" required placeholder="e.g., Community Health Center">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Education Certificate</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    import { createPartnerConnect } from '@learncard/partner-connect';
+    import { actions } from 'astro:actions';
+
+    const learnCard = createPartnerConnect();
+    let isAuthenticated = false;
+    let currentUser = null;
+
+    // DOM Elements
+    const authStatus = document.getElementById('auth-status');
+    const connectBtn = document.getElementById('connect-btn');
+    const alert = document.getElementById('alert');
+    const credentialCards = document.querySelectorAll('.credential-card');
+    const credentialTypes = document.getElementById('credential-types');
+
+    // Alert functions
+    function showAlert(message, type = 'info') {
+      alert.textContent = message;
+      alert.className = `alert alert-${type} show`;
+      setTimeout(() => {
+        alert.classList.remove('show');
+      }, 5000);
+    }
+
+    // Auth functions
+    async function connectWallet() {
+      try {
+        showAlert('Connecting to LearnCard...', 'info');
+        const identity = await learnCard.requestIdentity();
+        currentUser = identity.user;
+        isAuthenticated = true;
+        
+        authStatus.className = 'auth-status connected';
+        authStatus.innerHTML = `<span>●</span><span>Connected: ${identity.user.did.substring(0, 20)}...</span>`;
+        connectBtn.style.display = 'none';
+        
+        showAlert('Successfully connected to LearnCard!', 'success');
+      } catch (error) {
+        console.error('Connection error:', error);
+        showAlert(`Connection failed: ${error.message || 'Please try again'}`, 'error');
+      }
+    }
+
+    // Credential type selection
+    function showCredentialTypes() {
+      credentialTypes.style.display = 'grid';
+      document.querySelectorAll('.form-section').forEach(form => {
+        form.classList.remove('active');
+      });
+      credentialCards.forEach(card => card.classList.remove('active'));
+    }
+
+    function showForm(type) {
+      if (!isAuthenticated) {
+        showAlert('Please connect your LearnCard wallet first', 'error');
+        return;
+      }
+
+      credentialTypes.style.display = 'none';
+      document.querySelectorAll('.form-section').forEach(form => {
+        form.classList.remove('active');
+      });
+      document.getElementById(`form-${type}`).classList.add('active');
+    }
+
+    // Form submissions
+    document.getElementById('license-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issueMedicalLicense({
+          recipientDid: document.getElementById('provider-did').value,
+          providerName: document.getElementById('provider-name').value,
+          licenseType: document.getElementById('license-type').value,
+          licenseNumber: document.getElementById('license-number').value,
+          issuingBoard: document.getElementById('issuing-board').value,
+          issueDate: document.getElementById('license-issue-date').value,
+          expirationDate: document.getElementById('license-expiration').value,
+          specialties: document.getElementById('specialties').value,
+          restrictions: document.getElementById('restrictions').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Medical license issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue medical license');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Medical License';
+      }
+    });
+
+    document.getElementById('training-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issueTrainingCertification({
+          recipientDid: document.getElementById('training-provider-did').value,
+          providerName: document.getElementById('training-provider-name').value,
+          programName: document.getElementById('program-name').value,
+          certificationType: document.getElementById('certification-type').value,
+          trainingInstitution: document.getElementById('training-institution').value,
+          completionDate: document.getElementById('training-completion-date').value,
+          expirationDate: document.getElementById('training-expiration').value,
+          trainingHours: document.getElementById('training-hours').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Training certification issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue training certification');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Training Certification';
+      }
+    });
+
+    document.getElementById('provider-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issueProviderCredential({
+          recipientDid: document.getElementById('hcp-provider-did').value,
+          providerName: document.getElementById('hcp-provider-name').value,
+          providerId: document.getElementById('provider-id').value,
+          facility: document.getElementById('facility').value,
+          department: document.getElementById('department').value,
+          role: document.getElementById('role').value,
+          issueDate: document.getElementById('provider-issue-date').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Provider credential issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue provider credential');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Provider Credential';
+      }
+    });
+
+    document.getElementById('education-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issuePatientEducation({
+          recipientDid: document.getElementById('patient-did').value,
+          patientName: document.getElementById('patient-name').value,
+          programName: document.getElementById('education-program').value,
+          topicsCovered: document.getElementById('topics').value,
+          completionDate: document.getElementById('education-completion-date').value,
+          provider: document.getElementById('education-provider').value,
+          facility: document.getElementById('education-facility').value,
+          validityPeriod: document.getElementById('validity-period').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Patient education certificate issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue patient education certificate');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Education Certificate';
+      }
+    });
+
+    // Event listeners
+    connectBtn.addEventListener('click', connectWallet);
+
+    credentialCards.forEach(card => {
+      card.addEventListener('click', () => {
+        credentialCards.forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        showForm(card.dataset.type);
+      });
+    });
+
+    window.showCredentialTypes = showCredentialTypes;
+  </script>
+</body>
+</html>

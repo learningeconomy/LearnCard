@@ -7,8 +7,3 @@
 [build]
 command = "pnpm exec nx build embed-example"
 publish = "dist/"
-
-[[headers]]
-for = "/*"
-[headers.values]
-Access-Control-Allow-Origin = "*"

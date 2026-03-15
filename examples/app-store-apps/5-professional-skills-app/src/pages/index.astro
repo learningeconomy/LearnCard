@@ -1,0 +1,944 @@
+---
+// Professional Skills Certification Demo App - Issue workplace certifications and skill badges
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Professional Skills Certification - Issue Workplace Credentials</title>
+  <meta name="description" content="Demo app for issuing professional certifications, skill badges, and continuing education credentials using LearnCard">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --primary: #1e40af;
+      --primary-light: #3b82f6;
+      --secondary: #059669;
+      --accent: #7c3aed;
+      --danger: #dc2626;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-600: #4b5563;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, var(--gray-50) 0%, #ffffff 100%);
+      min-height: 100vh;
+      color: var(--gray-800);
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 2rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+
+    .auth-status {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: white;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      z-index: 100;
+    }
+
+    .auth-status.connected {
+      border-left: 4px solid var(--secondary);
+      color: var(--secondary);
+    }
+
+    .auth-status.disconnected {
+      border-left: 4px solid var(--danger);
+      color: var(--danger);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .intro {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border-left: 4px solid var(--primary);
+    }
+
+    .intro h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--gray-900);
+    }
+
+    .intro p {
+      color: var(--gray-600);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .credential-types {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .credential-card {
+      background: white;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .credential-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .credential-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+    }
+
+    .credential-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .credential-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--gray-900);
+    }
+
+    .credential-description {
+      color: var(--gray-600);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .form-section {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      display: none;
+    }
+
+    .form-section.active {
+      display: block;
+    }
+
+    .form-section h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--gray-700);
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid var(--gray-200);
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-light);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1e3a8a;
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: var(--gray-100);
+      color: var(--gray-700);
+    }
+
+    .btn-secondary:hover {
+      background: var(--gray-200);
+    }
+
+    .btn-connect {
+      background: var(--secondary);
+      color: white;
+      margin-bottom: 2rem;
+    }
+
+    .btn-connect:hover {
+      background: #047857;
+    }
+
+    .actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--gray-200);
+    }
+
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert-success {
+      background: #d1fae5;
+      border-left: 4px solid var(--secondary);
+      color: #065f46;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      border-left: 4px solid var(--danger);
+      color: #991b1b;
+    }
+
+    .alert-info {
+      background: #dbeafe;
+      border-left: 4px solid var(--primary-light);
+      color: var(--primary);
+    }
+
+    .competencies-section {
+      background: var(--gray-50);
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .competencies-section h4 {
+      margin-bottom: 1rem;
+      color: var(--gray-700);
+    }
+
+    .competency-item {
+      background: white;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+      border: 1px solid var(--gray-200);
+    }
+
+    .competency-fields {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .btn-small {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+
+    .add-competency-btn {
+      margin-top: 1rem;
+      width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 1.5rem;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+
+      .competency-fields {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-status disconnected" id="auth-status">
+    <span>●</span>
+    <span>Not Connected</span>
+  </div>
+
+  <header class="header">
+    <div class="header-content">
+      <h1>🏆 Professional Skills Certification</h1>
+      <p>Issue workplace certifications, skill badges, and professional development credentials</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="intro">
+      <h2>Welcome to Professional Skills Certification Demo</h2>
+      <p>
+        This demo application showcases how organizations can issue verifiable professional credentials 
+        using LearnCard. Issue certifications, skill assessment badges, continuing education credits, 
+        and professional development records that professionals can own and share.
+      </p>
+      <p>
+        <strong>Get Started:</strong> Connect your LearnCard wallet to begin issuing credentials.
+        Use <code>demo@learningeconomy.io</code> to skip traditional auth.
+      </p>
+    </section>
+
+    <button class="btn btn-connect" id="connect-btn">
+      🔗 Connect LearnCard Wallet
+    </button>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="credential-types" id="credential-types">
+      <div class="credential-card" data-type="professionalCertification">
+        <div class="credential-icon">🏆</div>
+        <div class="credential-name">Professional Certification</div>
+        <div class="credential-description">
+          Issue official professional certifications for workplace skills, competencies, and industry credentials.
+        </div>
+      </div>
+
+      <div class="credential-card" data-type="skillBadge">
+        <div class="credential-icon">🎯</div>
+        <div class="credential-name">Skill Assessment Badge</div>
+        <div class="credential-description">
+          Award digital badges recognizing demonstrated skill proficiency and competency assessments.
+        </div>
+      </div>
+
+      <div class="credential-card" data-type="continuingEducation">
+        <div class="credential-icon">📚</div>
+        <div class="credential-name">Continuing Education Credit</div>
+        <div class="credential-description">
+          Track and verify continuing education credits for professional development requirements.
+        </div>
+      </div>
+
+      <div class="credential-card" data-type="professionalDevelopment">
+        <div class="credential-icon">📈</div>
+        <div class="credential-name">Professional Development</div>
+        <div class="credential-description">
+          Record professional development activities, training milestones, and career achievements.
+        </div>
+      </div>
+    </div>
+
+    <!-- Professional Certification Form -->
+    <div class="form-section" id="form-professionalCertification">
+      <h3>🏆 Issue Professional Certification</h3>
+      <form id="certification-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cert-professional-name">Professional Name *</label>
+            <input type="text" id="cert-professional-name" required placeholder="e.g., Jane Smith">
+          </div>
+          <div class="form-group">
+            <label for="cert-recipient-did">Recipient DID *</label>
+            <input type="text" id="cert-recipient-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cert-name">Certification Name *</label>
+            <input type="text" id="cert-name" required placeholder="e.g., Project Management Professional">
+          </div>
+          <div class="form-group">
+            <label for="cert-organization">Issuing Organization *</label>
+            <input type="text" id="cert-organization" required placeholder="e.g., PMI">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cert-level">Certification Level</label>
+            <input type="text" id="cert-level" placeholder="e.g., Associate, Professional, Expert">
+          </div>
+          <div class="form-group">
+            <label for="cert-id">Credential ID</label>
+            <input type="text" id="cert-id" placeholder="e.g., PMP-2024-12345">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cert-issue-date">Issue Date *</label>
+            <input type="date" id="cert-issue-date" required>
+          </div>
+          <div class="form-group">
+            <label for="cert-expiry">Expiration Date</label>
+            <input type="date" id="cert-expiry">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Certification</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Skill Badge Form -->
+    <div class="form-section" id="form-skillBadge">
+      <h3>🎯 Issue Skill Badge</h3>
+      <form id="skill-badge-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="skill-professional-name">Professional Name *</label>
+            <input type="text" id="skill-professional-name" required placeholder="e.g., John Doe">
+          </div>
+          <div class="form-group">
+            <label for="skill-recipient-did">Recipient DID *</label>
+            <input type="text" id="skill-recipient-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="skill-name">Skill Name *</label>
+            <input type="text" id="skill-name" required placeholder="e.g., Data Analysis">
+          </div>
+          <div class="form-group">
+            <label for="skill-category">Skill Category *</label>
+            <input type="text" id="skill-category" required placeholder="e.g., Technical, Leadership, Communication">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="skill-organization">Assessment Organization *</label>
+            <input type="text" id="skill-organization" required placeholder="e.g., Tech Skills Institute">
+          </div>
+          <div class="form-group">
+            <label for="skill-date">Assessment Date *</label>
+            <input type="date" id="skill-date" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="skill-proficiency">Proficiency Level</label>
+            <select id="skill-proficiency">
+              <option value="">Select level...</option>
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
+              <option value="Expert">Expert</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="skill-score">Assessment Score</label>
+            <input type="text" id="skill-score" placeholder="e.g., 95%, 850/1000">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Skill Badge</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Continuing Education Form -->
+    <div class="form-section" id="form-continuingEducation">
+      <h3>📚 Issue Continuing Education Credit</h3>
+      <form id="ce-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ce-professional-name">Professional Name *</label>
+            <input type="text" id="ce-professional-name" required placeholder="e.g., Alex Johnson">
+          </div>
+          <div class="form-group">
+            <label for="ce-recipient-did">Recipient DID *</label>
+            <input type="text" id="ce-recipient-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ce-course">Course Title *</label>
+            <input type="text" id="ce-course" required placeholder="e.g., Advanced Ethics in Healthcare">
+          </div>
+          <div class="form-group">
+            <label for="ce-provider">Provider Organization *</label>
+            <input type="text" id="ce-provider" required placeholder="e.g., Medical Education Center">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ce-hours">Credit Hours *</label>
+            <input type="number" id="ce-hours" required min="0.5" step="0.5" placeholder="e.g., 4">
+          </div>
+          <div class="form-group">
+            <label for="ce-completion">Completion Date *</label>
+            <input type="date" id="ce-completion" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ce-type">Credit Type</label>
+            <input type="text" id="ce-type" placeholder="e.g., CEU, CME, CNE">
+          </div>
+          <div class="form-group">
+            <label for="ce-subject">Subject Area</label>
+            <input type="text" id="ce-subject" placeholder="e.g., Ethics, Safety, Technology">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="ce-accreditation">Accreditation Body</label>
+          <input type="text" id="ce-accreditation" placeholder="e.g., ACCME, ANCC">
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue CE Credit</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Professional Development Form -->
+    <div class="form-section" id="form-professionalDevelopment">
+      <h3>📈 Issue Professional Development Record</h3>
+      <form id="pd-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pd-professional-name">Professional Name *</label>
+            <input type="text" id="pd-professional-name" required placeholder="e.g., Sarah Williams">
+          </div>
+          <div class="form-group">
+            <label for="pd-recipient-did">Recipient DID *</label>
+            <input type="text" id="pd-recipient-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pd-title">Development Title *</label>
+            <input type="text" id="pd-title" required placeholder="e.g., Leadership Development Program">
+          </div>
+          <div class="form-group">
+            <label for="pd-organization">Organization *</label>
+            <input type="text" id="pd-organization" required placeholder="e.g., Corporate Training Institute">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pd-type">Development Type *</label>
+            <select id="pd-type" required>
+              <option value="">Select type...</option>
+              <option value="Training Program">Training Program</option>
+              <option value="Workshop">Workshop</option>
+              <option value="Conference">Conference</option>
+              <option value="Seminar">Seminar</option>
+              <option value="Mentorship">Mentorship</option>
+              <option value="Coaching">Coaching</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="pd-completion">Completion Date *</label>
+            <input type="date" id="pd-completion" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="pd-hours">Hours Completed</label>
+          <input type="number" id="pd-hours" min="0" step="0.5" placeholder="e.g., 16">
+        </div>
+
+        <div class="competencies-section">
+          <h4>Key Competencies Developed</h4>
+          <div id="competencies-list"></div>
+          <button type="button" class="btn btn-secondary add-competency-btn" onclick="addCompetency()">
+            + Add Competency
+          </button>
+        </div>
+
+        <div class="form-group" style="margin-top: 1.5rem;">
+          <label for="pd-next">Recommended Next Steps</label>
+          <textarea id="pd-next" rows="3" placeholder="e.g., Apply learned skills in project management role, Complete advanced module"></textarea>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue PD Record</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    import { createPartnerConnect } from '@learncard/partner-connect';
+    import { actions } from 'astro:actions';
+
+    const learnCard = createPartnerConnect();
+    let isAuthenticated = false;
+    let currentUser = null;
+
+    // DOM Elements
+    const authStatus = document.getElementById('auth-status');
+    const connectBtn = document.getElementById('connect-btn');
+    const alert = document.getElementById('alert');
+    const credentialCards = document.querySelectorAll('.credential-card');
+    const credentialTypes = document.getElementById('credential-types');
+
+    // Alert functions
+    function showAlert(message, type = 'info') {
+      alert.textContent = message;
+      alert.className = `alert alert-${type} show`;
+      setTimeout(() => {
+        alert.classList.remove('show');
+      }, 5000);
+    }
+
+    // Auth functions
+    async function connectWallet() {
+      try {
+        showAlert('Connecting to LearnCard...', 'info');
+        const identity = await learnCard.requestIdentity();
+        currentUser = identity.user;
+        isAuthenticated = true;
+        
+        authStatus.className = 'auth-status connected';
+        authStatus.innerHTML = `<span>●</span><span>Connected: ${identity.user.did.substring(0, 20)}...</span>`;
+        connectBtn.style.display = 'none';
+        
+        showAlert('Successfully connected to LearnCard!', 'success');
+      } catch (error) {
+        console.error('Connection error:', error);
+        showAlert(`Connection failed: ${error.message || 'Please try again'}`, 'error');
+      }
+    }
+
+    // Credential type selection
+    function showCredentialTypes() {
+      credentialTypes.style.display = 'grid';
+      document.querySelectorAll('.form-section').forEach(form => {
+        form.classList.remove('active');
+      });
+      credentialCards.forEach(card => card.classList.remove('active'));
+    }
+
+    function showForm(type) {
+      if (!isAuthenticated) {
+        showAlert('Please connect your LearnCard wallet first', 'error');
+        return;
+      }
+
+      credentialTypes.style.display = 'none';
+      document.querySelectorAll('.form-section').forEach(form => {
+        form.classList.remove('active');
+      });
+      document.getElementById(`form-${type}`).classList.add('active');
+    }
+
+    // Competency management for PD
+    let competencyCount = 0;
+    window.addCompetency = function() {
+      competencyCount++;
+      const competencyHtml = `
+        <div class="competency-item" data-competency="${competencyCount}">
+          <div class="competency-fields">
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="text" class="competency-name" placeholder="e.g., Leadership, Project Management" required>
+            </div>
+            <button type="button" class="btn btn-danger btn-small" onclick="removeCompetency(${competencyCount})">Remove</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('competencies-list').insertAdjacentHTML('beforeend', competencyHtml);
+    };
+
+    window.removeCompetency = function(id) {
+      const competency = document.querySelector(`[data-competency="${id}"]`);
+      if (competency) competency.remove();
+    };
+
+    // Form submissions
+    document.getElementById('certification-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issueProfessionalCertification({
+          recipientDid: document.getElementById('cert-recipient-did').value,
+          professionalName: document.getElementById('cert-professional-name').value,
+          certificationName: document.getElementById('cert-name').value,
+          issuingOrganization: document.getElementById('cert-organization').value,
+          issueDate: document.getElementById('cert-issue-date').value,
+          expirationDate: document.getElementById('cert-expiry').value,
+          certificationLevel: document.getElementById('cert-level').value,
+          credentialId: document.getElementById('cert-id').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Professional certification issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue certification');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Certification';
+      }
+    });
+
+    document.getElementById('skill-badge-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issueSkillBadge({
+          recipientDid: document.getElementById('skill-recipient-did').value,
+          professionalName: document.getElementById('skill-professional-name').value,
+          skillName: document.getElementById('skill-name').value,
+          skillCategory: document.getElementById('skill-category').value,
+          assessmentOrganization: document.getElementById('skill-organization').value,
+          assessmentDate: document.getElementById('skill-date').value,
+          proficiencyLevel: document.getElementById('skill-proficiency').value,
+          assessmentScore: document.getElementById('skill-score').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Skill badge issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue skill badge');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Skill Badge';
+      }
+    });
+
+    document.getElementById('ce-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issueContinuingEducation({
+          recipientDid: document.getElementById('ce-recipient-did').value,
+          professionalName: document.getElementById('ce-professional-name').value,
+          courseTitle: document.getElementById('ce-course').value,
+          providerOrganization: document.getElementById('ce-provider').value,
+          completionDate: document.getElementById('ce-completion').value,
+          creditHours: parseFloat(document.getElementById('ce-hours').value),
+          creditType: document.getElementById('ce-type').value,
+          subjectArea: document.getElementById('ce-subject').value,
+          accreditationBody: document.getElementById('ce-accreditation').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Continuing education credit issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue CE credit');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue CE Credit';
+      }
+    });
+
+    document.getElementById('pd-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      const competencyItems = document.querySelectorAll('.competency-item');
+      const keyCompetencies = Array.from(competencyItems).map(item => 
+        item.querySelector('.competency-name').value
+      ).filter(Boolean);
+
+      try {
+        const { data, error } = await actions.issueProfessionalDevelopment({
+          recipientDid: document.getElementById('pd-recipient-did').value,
+          professionalName: document.getElementById('pd-professional-name').value,
+          developmentTitle: document.getElementById('pd-title').value,
+          organization: document.getElementById('pd-organization').value,
+          completionDate: document.getElementById('pd-completion').value,
+          developmentType: document.getElementById('pd-type').value,
+          hoursCompleted: document.getElementById('pd-hours').value ? parseFloat(document.getElementById('pd-hours').value) : undefined,
+          keyCompetencies: keyCompetencies.length > 0 ? keyCompetencies : undefined,
+          nextSteps: document.getElementById('pd-next').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Professional development record issued successfully!', 'success');
+          e.target.reset();
+          document.getElementById('competencies-list').innerHTML = '';
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue PD record');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue PD Record';
+      }
+    });
+
+    // Event listeners
+    connectBtn.addEventListener('click', connectWallet);
+
+    credentialCards.forEach(card => {
+      card.addEventListener('click', () => {
+        credentialCards.forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        showForm(card.dataset.type);
+      });
+    });
+
+    window.showCredentialTypes = showCredentialTypes;
+  </script>
+</body>
+</html>

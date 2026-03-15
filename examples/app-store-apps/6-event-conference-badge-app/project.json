@@ -1,0 +1,29 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "6-event-conference-badge-app",
+  "sourceRoot": "examples/app-store-apps/6-event-conference-badge-app/src",
+  "projectType": "application",
+  "root": "examples/app-store-apps/6-event-conference-badge-app",
+  "tags": ["example", "partner-app"],
+  "implicitDependencies": ["partner-connect-sdk"],
+  "namedInputs": {
+    "source": ["{projectRoot}/src/**/*"],
+    "dist": ["{projectRoot}/dist/**/*"]
+  },
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "inputs": ["source"],
+      "options": {
+        "script": "build"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-script",
+      "inputs": ["source"],
+      "options": {
+        "script": "dev"
+      }
+    }
+  }
+}

@@ -1,0 +1,923 @@
+---
+// Event & Conference Badge App - Issue attendance badges, speaker credentials, and workshop certificates
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event & Conference Badges - Issue Verifiable Credentials</title>
+  <meta name="description" content="Demo app for issuing event and conference credentials using LearnCard - attendance badges, speaker credentials, workshop certificates">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --primary: #0ea5e9;
+      --primary-light: #38bdf8;
+      --secondary: #10b981;
+      --accent: #8b5cf6;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-600: #4b5563;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, var(--gray-50) 0%, #ffffff 100%);
+      min-height: 100vh;
+      color: var(--gray-800);
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      color: white;
+      padding: 2rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+
+    .auth-status {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: white;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      z-index: 100;
+    }
+
+    .auth-status.connected {
+      border-left: 4px solid var(--secondary);
+      color: var(--secondary);
+    }
+
+    .auth-status.disconnected {
+      border-left: 4px solid var(--danger);
+      color: var(--danger);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .intro {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border-left: 4px solid var(--primary);
+    }
+
+    .intro h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--gray-900);
+    }
+
+    .intro p {
+      color: var(--gray-600);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .credential-types {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .credential-card {
+      background: white;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .credential-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .credential-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+    }
+
+    .credential-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .credential-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--gray-900);
+    }
+
+    .credential-description {
+      color: var(--gray-600);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .form-section {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      display: none;
+    }
+
+    .form-section.active {
+      display: block;
+    }
+
+    .form-section h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--gray-700);
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid var(--gray-200);
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-light);
+    }
+
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0284c7;
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: var(--gray-100);
+      color: var(--gray-700);
+    }
+
+    .btn-secondary:hover {
+      background: var(--gray-200);
+    }
+
+    .btn-connect {
+      background: var(--secondary);
+      color: white;
+      margin-bottom: 2rem;
+    }
+
+    .btn-connect:hover {
+      background: #059669;
+    }
+
+    .actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--gray-200);
+    }
+
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert-success {
+      background: #d1fae5;
+      border-left: 4px solid var(--secondary);
+      color: #065f46;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      border-left: 4px solid var(--danger);
+      color: #991b1b;
+    }
+
+    .alert-info {
+      background: #dbeafe;
+      border-left: 4px solid var(--primary-light);
+      color: var(--primary);
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 1.5rem;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-status disconnected" id="auth-status">
+    <span>●</span>
+    <span>Not Connected</span>
+  </div>
+
+  <header class="header">
+    <div class="header-content">
+      <h1>🎫 Event & Conference Badges</h1>
+      <p>Issue verifiable event credentials - attendance badges, speaker credentials, workshop certificates</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="intro">
+      <h2>Welcome to Event & Conference Badge Demo</h2>
+      <p>
+        This demo application showcases how event organizers can issue verifiable credentials 
+        using LearnCard. Issue attendance badges, speaker credentials, workshop certificates, 
+        networking contacts, and session check-ins that attendees can own and share securely.
+      </p>
+      <p>
+        <strong>Get Started:</strong> Connect your LearnCard wallet to begin issuing credentials.
+        Use <code>demo@learningeconomy.io</code> to skip traditional auth.
+      </p>
+    </section>
+
+    <button class="btn btn-connect" id="connect-btn">
+      🔗 Connect LearnCard Wallet
+    </button>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="credential-types" id="credential-types">
+      <div class="credential-card" data-type="attendance">
+        <div class="credential-icon">🎫</div>
+        <div class="credential-name">Event Attendance</div>
+        <div class="credential-description">
+          Issue attendance badges for events and conferences. Perfect for verifying participation at meetups, conferences, and seminars.
+        </div>
+      </div>
+
+      <div class="credential-card" data-type="speaker">
+        <div class="credential-icon">🎤</div>
+        <div class="credential-name">Speaker Credential</div>
+        <div class="credential-description">
+          Create speaker badges with bios and session details. Recognize presenters and keynote speakers at your events.
+        </div>
+      </div>
+
+      <div class="credential-card" data-type="workshop">
+        <div class="credential-icon">🛠️</div>
+        <div class="credential-name">Workshop Certificate</div>
+        <div class="credential-description">
+          Award certificates for workshop participation. Track skills learned and recognize hands-on learning experiences.
+        </div>
+      </div>
+
+      <div class="credential-card" data-type="networking">
+        <div class="credential-icon">🤝</div>
+        <div class="credential-name">Networking Contact</div>
+        <div class="credential-description">
+          Enable professional contact exchange. Create verifiable networking credentials for meaningful connections.
+        </div>
+      </div>
+
+      <div class="credential-card" data-type="session">
+        <div class="credential-icon">📍</div>
+        <div class="credential-name">Session Check-in</div>
+        <div class="credential-description">
+          Track attendance for specific sessions with timestamp verification. Perfect for multi-track conferences.
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance Form -->
+    <div class="form-section" id="form-attendance">
+      <h3>🎫 Issue Attendance Badge</h3>
+      <form id="attendance-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="attendee-name">Attendee Name *</label>
+            <input type="text" id="attendee-name" required placeholder="e.g., Jane Smith">
+          </div>
+          <div class="form-group">
+            <label for="attendee-did">Recipient DID *</label>
+            <input type="text" id="attendee-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="event-name">Event Name *</label>
+            <input type="text" id="event-name" required placeholder="e.g., Tech Conference 2024">
+          </div>
+          <div class="form-group">
+            <label for="event-date">Event Date *</label>
+            <input type="date" id="event-date" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ticket-type">Ticket Type *</label>
+            <input type="text" id="ticket-type" required placeholder="e.g., General Admission, VIP">
+          </div>
+          <div class="form-group">
+            <label for="organizer">Organizer Name *</label>
+            <input type="text" id="organizer" required placeholder="e.g., Tech Events Inc.">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="location">Location (Optional)</label>
+          <input type="text" id="location" placeholder="e.g., Convention Center, San Francisco">
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Attendance Badge</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Speaker Form -->
+    <div class="form-section" id="form-speaker">
+      <h3>🎤 Issue Speaker Credential</h3>
+      <form id="speaker-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="speaker-name">Speaker Name *</label>
+            <input type="text" id="speaker-name" required placeholder="e.g., Dr. Sarah Johnson">
+          </div>
+          <div class="form-group">
+            <label for="speaker-did">Recipient DID *</label>
+            <input type="text" id="speaker-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="speaker-event">Event Name *</label>
+            <input type="text" id="speaker-event" required placeholder="e.g., Tech Conference 2024">
+          </div>
+          <div class="form-group">
+            <label for="session-title">Session Title *</label>
+            <input type="text" id="session-title" required placeholder="e.g., The Future of AI">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="session-date">Session Date *</label>
+            <input type="date" id="session-date" required>
+          </div>
+          <div class="form-group">
+            <label for="speaker-organizer">Organizer Name *</label>
+            <input type="text" id="speaker-organizer" required placeholder="e.g., Tech Events Inc.">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="bio">Speaker Bio *</label>
+          <textarea id="bio" required placeholder="Brief biography and background..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="expertise">Areas of Expertise (Optional)</label>
+          <input type="text" id="expertise" placeholder="e.g., Machine Learning, Web Development">
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Speaker Credential</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Workshop Form -->
+    <div class="form-section" id="form-workshop">
+      <h3>🛠️ Issue Workshop Certificate</h3>
+      <form id="workshop-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="participant-name">Participant Name *</label>
+            <input type="text" id="participant-name" required placeholder="e.g., Alex Chen">
+          </div>
+          <div class="form-group">
+            <label for="participant-did">Recipient DID *</label>
+            <input type="text" id="participant-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="workshop-title">Workshop Title *</label>
+          <input type="text" id="workshop-title" required placeholder="e.g., Advanced React Patterns">
+        </div>
+
+        <div class="form-group">
+          <label for="workshop-desc">Workshop Description *</label>
+          <textarea id="workshop-desc" required placeholder="Description of the workshop content and objectives..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="instructor">Instructor Name *</label>
+            <input type="text" id="instructor" required placeholder="e.g., Jane Smith">
+          </div>
+          <div class="form-group">
+            <label for="completion-date">Completion Date *</label>
+            <input type="date" id="completion-date" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="duration">Duration (Optional)</label>
+            <input type="text" id="duration" placeholder="e.g., 4 hours, 2 days">
+          </div>
+          <div class="form-group">
+            <label for="skills">Skills Acquired (Optional)</label>
+            <input type="text" id="skills" placeholder="e.g., React Hooks, State Management">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Workshop Certificate</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Networking Form -->
+    <div class="form-section" id="form-networking">
+      <h3>🤝 Issue Networking Contact</h3>
+      <form id="networking-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contact-name">Contact Name *</label>
+            <input type="text" id="contact-name" required placeholder="e.g., Michael Brown">
+          </div>
+          <div class="form-group">
+            <label for="contact-did">Recipient DID *</label>
+            <input type="text" id="contact-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="professional-title">Professional Title *</label>
+            <input type="text" id="professional-title" required placeholder="e.g., Senior Developer">
+          </div>
+          <div class="form-group">
+            <label for="company">Company *</label>
+            <input type="text" id="company" required placeholder="e.g., Tech Corp">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="networking-event">Event Name *</label>
+            <input type="text" id="networking-event" required placeholder="e.g., Tech Conference 2024">
+          </div>
+          <div class="form-group">
+            <label for="exchange-date">Exchange Date *</label>
+            <input type="date" id="exchange-date" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="contact-info">Contact Info (Optional)</label>
+          <input type="text" id="contact-info" placeholder="e.g., LinkedIn, Email, Phone">
+        </div>
+
+        <div class="form-group">
+          <label for="notes">Notes (Optional)</label>
+          <textarea id="notes" placeholder="Any additional notes about the connection..."></textarea>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Networking Contact</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Session Check-in Form -->
+    <div class="form-section" id="form-session">
+      <h3>📍 Issue Session Check-in</h3>
+      <form id="session-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="session-attendee-name">Attendee Name *</label>
+            <input type="text" id="session-attendee-name" required placeholder="e.g., Emily Davis">
+          </div>
+          <div class="form-group">
+            <label for="session-attendee-did">Recipient DID *</label>
+            <input type="text" id="session-attendee-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="session-name">Session Name *</label>
+            <input type="text" id="session-name" required placeholder="e.g., Building Scalable APIs">
+          </div>
+          <div class="form-group">
+            <label for="session-event">Event Name *</label>
+            <input type="text" id="session-event" required placeholder="e.g., Tech Conference 2024">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="session-time">Session Time *</label>
+            <input type="datetime-local" id="session-time" required>
+          </div>
+          <div class="form-group">
+            <label for="session-location">Location (Optional)</label>
+            <input type="text" id="session-location" placeholder="e.g., Room 301, Hall A">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="session-speaker">Speaker (Optional)</label>
+          <input type="text" id="session-speaker" placeholder="e.g., Dr. Sarah Johnson">
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Session Check-in</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    import { createPartnerConnect } from '@learncard/partner-connect';
+    import { actions } from 'astro:actions';
+
+    const learnCard = createPartnerConnect();
+    let isAuthenticated = false;
+    let currentUser = null;
+
+    // DOM Elements
+    const authStatus = document.getElementById('auth-status');
+    const connectBtn = document.getElementById('connect-btn');
+    const alert = document.getElementById('alert');
+    const credentialCards = document.querySelectorAll('.credential-card');
+    const credentialTypes = document.getElementById('credential-types');
+
+    // Alert functions
+    function showAlert(message, type = 'info') {
+      alert.textContent = message;
+      alert.className = `alert alert-${type} show`;
+      setTimeout(() => {
+        alert.classList.remove('show');
+      }, 5000);
+    }
+
+    // Auth functions
+    async function connectWallet() {
+      try {
+        showAlert('Connecting to LearnCard...', 'info');
+        const identity = await learnCard.requestIdentity();
+        currentUser = identity.user;
+        isAuthenticated = true;
+        
+        authStatus.className = 'auth-status connected';
+        authStatus.innerHTML = `<span>●</span><span>Connected: ${identity.user.did.substring(0, 20)}...</span>`;
+        connectBtn.style.display = 'none';
+        
+        showAlert('Successfully connected to LearnCard!', 'success');
+      } catch (error) {
+        console.error('Connection error:', error);
+        showAlert(`Connection failed: ${error.message || 'Please try again'}`, 'error');
+      }
+    }
+
+    // Credential type selection
+    function showCredentialTypes() {
+      credentialTypes.style.display = 'grid';
+      document.querySelectorAll('.form-section').forEach(form => {
+        form.classList.remove('active');
+      });
+      credentialCards.forEach(card => card.classList.remove('active'));
+    }
+
+    function showForm(type) {
+      if (!isAuthenticated) {
+        showAlert('Please connect your LearnCard wallet first', 'error');
+        return;
+      }
+
+      credentialTypes.style.display = 'none';
+      document.querySelectorAll('.form-section').forEach(form => {
+        form.classList.remove('active');
+      });
+      document.getElementById(`form-${type}`).classList.add('active');
+    }
+
+    // Form submissions
+    document.getElementById('attendance-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issueAttendanceBadge({
+          recipientDid: document.getElementById('attendee-did').value,
+          attendeeName: document.getElementById('attendee-name').value,
+          eventName: document.getElementById('event-name').value,
+          eventDate: document.getElementById('event-date').value,
+          ticketType: document.getElementById('ticket-type').value,
+          organizerName: document.getElementById('organizer').value,
+          location: document.getElementById('location').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Attendance badge issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue attendance badge');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Attendance Badge';
+      }
+    });
+
+    document.getElementById('speaker-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issueSpeakerCredential({
+          recipientDid: document.getElementById('speaker-did').value,
+          speakerName: document.getElementById('speaker-name').value,
+          eventName: document.getElementById('speaker-event').value,
+          sessionTitle: document.getElementById('session-title').value,
+          bio: document.getElementById('bio').value,
+          expertise: document.getElementById('expertise').value,
+          sessionDate: document.getElementById('session-date').value,
+          organizerName: document.getElementById('speaker-organizer').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Speaker credential issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue speaker credential');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Speaker Credential';
+      }
+    });
+
+    document.getElementById('workshop-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issueWorkshopCertificate({
+          recipientDid: document.getElementById('participant-did').value,
+          participantName: document.getElementById('participant-name').value,
+          workshopTitle: document.getElementById('workshop-title').value,
+          workshopDescription: document.getElementById('workshop-desc').value,
+          instructorName: document.getElementById('instructor').value,
+          completionDate: document.getElementById('completion-date').value,
+          skills: document.getElementById('skills').value,
+          duration: document.getElementById('duration').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Workshop certificate issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue workshop certificate');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Workshop Certificate';
+      }
+    });
+
+    document.getElementById('networking-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issueNetworkingCredential({
+          recipientDid: document.getElementById('contact-did').value,
+          contactName: document.getElementById('contact-name').value,
+          professionalTitle: document.getElementById('professional-title').value,
+          company: document.getElementById('company').value,
+          eventName: document.getElementById('networking-event').value,
+          exchangeDate: document.getElementById('exchange-date').value,
+          contactInfo: document.getElementById('contact-info').value,
+          notes: document.getElementById('notes').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Networking credential issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue networking credential');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Networking Contact';
+      }
+    });
+
+    document.getElementById('session-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issueSessionCheckin({
+          recipientDid: document.getElementById('session-attendee-did').value,
+          attendeeName: document.getElementById('session-attendee-name').value,
+          sessionName: document.getElementById('session-name').value,
+          eventName: document.getElementById('session-event').value,
+          sessionTime: document.getElementById('session-time').value,
+          location: document.getElementById('session-location').value,
+          speaker: document.getElementById('session-speaker').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Session check-in issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue session check-in');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Session Check-in';
+      }
+    });
+
+    // Event listeners
+    connectBtn.addEventListener('click', connectWallet);
+
+    credentialCards.forEach(card => {
+      card.addEventListener('click', () => {
+        credentialCards.forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        showForm(card.dataset.type);
+      });
+    });
+
+    window.showCredentialTypes = showCredentialTypes;
+  </script>
+</body>
+</html>

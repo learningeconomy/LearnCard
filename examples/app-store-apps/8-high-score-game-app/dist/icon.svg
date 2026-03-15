@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a1a;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1a0a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0d1b2a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="shipGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0080ff;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" fill="url(#bgGrad)" rx="80" />
+  
+  <!-- Stars -->
+  <circle cx="50" cy="80" r="2" fill="white" opacity="0.8" />
+  <circle cx="120" cy="40" r="1.5" fill="white" opacity="0.6" />
+  <circle cx="450" cy="60" r="2" fill="white" opacity="0.9" />
+  <circle cx="480" cy="150" r="1" fill="white" opacity="0.7" />
+  <circle cx="40" cy="200" r="1.5" fill="white" opacity="0.5" />
+  <circle cx="400" cy="100" r="1" fill="white" opacity="0.6" />
+  
+  <!-- Asteroid -->
+  <polygon points="380,150 400,130 430,140 440,170 420,190 390,180" 
+           fill="none" stroke="#ff6b6b" stroke-width="3" opacity="0.6" />
+  
+  <!-- Spaceship -->
+  <g transform="translate(256, 280)" filter="url(#glow)">
+    <!-- Ship body -->
+    <polygon points="0,-80 -50,40 0,20 50,40" 
+             fill="url(#shipGrad)" />
+    
+    <!-- Cockpit -->
+    <polygon points="0,-50 -20,20 0,10 20,20" 
+             fill="#ffffff" />
+    
+    <!-- Engine flame -->
+    <polygon points="-15,25 0,60 15,25" 
+             fill="#ff6600" opacity="0.9" />
+    <polygon points="-8,30 0,50 8,30" 
+             fill="#ffcc00" opacity="0.8" />
+  </g>
+  
+  <!-- Score particles -->
+  <text x="180" y="150" font-family="Arial" font-size="24" fill="#ffd700" opacity="0.8">+100</text>
+  <text x="320" y="120" font-family="Arial" font-size="20" fill="#00ff00" opacity="0.6">+50</text>
+</svg>

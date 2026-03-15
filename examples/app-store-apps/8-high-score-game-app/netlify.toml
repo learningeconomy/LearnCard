@@ -1,0 +1,5 @@
+[build]
+  command = "pnpm build"
+  publish = "dist"
+
+# No redirects needed - Astro Netlify adapter handles SSR routing

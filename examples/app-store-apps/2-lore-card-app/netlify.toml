@@ -7,8 +7,3 @@
 [build]
 command = "pnpm exec nx build 2-lore-card-app"
 publish = "dist/"
-
-[[headers]]
-for = "/*"
-[headers.values]
-Access-Control-Allow-Origin = "*"

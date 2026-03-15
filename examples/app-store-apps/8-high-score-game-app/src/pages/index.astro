@@ -1,0 +1,2237 @@
+---
+import '../styles/global.css';
+// Server-side host origin is no longer needed - client uses dynamic detection
+// const hostOrigin = import.meta.env.LEARNCARD_HOST_ORIGIN || 'https://learncard.app';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Space Dodger - LearnCard High Score Game</title>
+  <meta name="description" content="An arcade-style space dodger game that issues verifiable credentials for high scores">
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+    
+    :root {
+      --color-primary: #00d4ff;
+      --color-primary-dark: #00a8cc;
+      --color-secondary: #8b5cf6;
+      --color-accent: #f472b6;
+      --color-success: #22c55e;
+      --color-warning: #f59e0b;
+      --color-danger: #ef4444;
+      --color-gold: #ffd700;
+      --color-silver: #c0c0c0;
+      --color-bronze: #cd7f32;
+      --color-platinum: #e5e4e2;
+      --glow-primary: 0 0 20px rgba(0, 212, 255, 0.6), 0 0 40px rgba(0, 212, 255, 0.3);
+      --glow-secondary: 0 0 20px rgba(139, 92, 246, 0.6), 0 0 40px rgba(139, 92, 246, 0.3);
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0d1b2a 100%);
+      font-family: 'Rajdhani', sans-serif;
+      overflow-x: hidden;
+      color: #e2e8f0;
+    }
+    
+    .neon-text {
+      font-family: 'Orbitron', sans-serif;
+      text-shadow: 0 0 10px var(--color-primary), 0 0 30px var(--color-primary), 0 0 60px rgba(0, 212, 255, 0.5);
+      letter-spacing: 0.05em;
+    }
+    
+    .neon-border {
+      box-shadow: var(--glow-primary), inset 0 0 20px rgba(0, 212, 255, 0.1);
+    }
+    
+    /* Enhanced Button Styles - Redesigned */
+    .btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.75rem;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 0.9375rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform: translateZ(0);
+      will-change: transform, box-shadow;
+    }
+    
+    /* Button shine effect */
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+      );
+      transition: left 0.5s ease;
+    }
+    
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-secondary), var(--color-accent));
+      border-radius: 16px;
+      z-index: -1;
+      opacity: 0;
+      filter: blur(8px);
+      transition: opacity 0.3s ease;
+    }
+    
+    .btn:hover {
+      transform: translateY(-3px) scale(1.03);
+    }
+    
+    .btn:hover::before {
+      left: 100%;
+    }
+    
+    .btn:hover::after {
+      opacity: 0.4;
+    }
+    
+    .btn:active {
+      transform: translateY(-1px) scale(0.97);
+      transition-duration: 0.1s;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      filter: grayscale(0.5);
+    }
+    
+    .btn:disabled::before,
+    .btn:disabled::after {
+      display: none;
+    }
+    
+    /* Primary Button - Cyan */
+    .btn-primary {
+      background: linear-gradient(145deg, #00d4ff 0%, #0099cc 50%, #0077aa 100%);
+      color: white;
+      box-shadow: 
+        0 8px 20px rgba(0, 212, 255, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    
+    .btn-primary:hover {
+      box-shadow: 
+        0 12px 30px rgba(0, 212, 255, 0.6),
+        0 6px 12px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        0 0 30px rgba(0, 212, 255, 0.4);
+    }
+    
+    .btn-primary:active {
+      box-shadow: 
+        0 4px 12px rgba(0, 212, 255, 0.3),
+        inset 0 2px 4px rgba(0, 0, 0, 0.2);
+      background: linear-gradient(145deg, #0099cc 0%, #0077aa 100%);
+    }
+    
+    /* Secondary Button - Purple */
+    .btn-secondary {
+      background: linear-gradient(145deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%);
+      color: white;
+      box-shadow: 
+        0 8px 20px rgba(139, 92, 246, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    
+    .btn-secondary:hover {
+      box-shadow: 
+        0 12px 30px rgba(139, 92, 246, 0.6),
+        0 6px 12px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        0 0 30px rgba(139, 92, 246, 0.4);
+    }
+    
+    .btn-secondary:active {
+      background: linear-gradient(145deg, #8b5cf6 0%, #7c3aed 100%);
+      box-shadow: 
+        0 4px 12px rgba(139, 92, 246, 0.3),
+        inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Success Button - Green */
+    .btn-success {
+      background: linear-gradient(145deg, #4ade80 0%, #22c55e 50%, #16a34a 100%);
+      color: white;
+      box-shadow: 
+        0 8px 20px rgba(34, 197, 94, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    
+    .btn-success:hover {
+      box-shadow: 
+        0 12px 30px rgba(34, 197, 94, 0.6),
+        0 6px 12px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        0 0 30px rgba(34, 197, 94, 0.4);
+    }
+    
+    /* Gold Button - Premium */
+    .btn-gold {
+      background: linear-gradient(145deg, #fcd34d 0%, #fbbf24 50%, #f59e0b 100%);
+      color: #1a1a2e;
+      box-shadow: 
+        0 8px 20px rgba(251, 191, 36, 0.5),
+        0 4px 8px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+      font-weight: 800;
+    }
+    
+    .btn-gold:hover {
+      box-shadow: 
+        0 12px 30px rgba(251, 191, 36, 0.7),
+        0 6px 12px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        0 0 30px rgba(251, 191, 36, 0.5);
+    }
+    
+    /* Outline Button */
+    .btn-outline {
+      background: rgba(0, 212, 255, 0.08);
+      color: var(--color-primary);
+      border: 2px solid rgba(0, 212, 255, 0.5);
+      box-shadow: 0 0 0 rgba(0, 212, 255, 0);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn-outline::before {
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 212, 255, 0.2),
+        transparent
+      );
+    }
+    
+    .btn-outline:hover {
+      background: rgba(0, 212, 255, 0.15);
+      border-color: var(--color-primary);
+      box-shadow: 
+        0 0 20px rgba(0, 212, 255, 0.3),
+        inset 0 0 20px rgba(0, 212, 255, 0.1);
+      color: #00f0ff;
+    }
+    
+    .btn-outline::after {
+      display: none;
+    }
+    
+    /* Small Button */
+    .btn-sm {
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      border-radius: 10px;
+      letter-spacing: 0.06em;
+    }
+    
+    /* Large Button */
+    .btn-lg {
+      padding: 1.125rem 2.5rem;
+      font-size: 1.0625rem;
+      border-radius: 16px;
+      letter-spacing: 0.1em;
+    }
+    
+    .game-container {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    #gameCanvas {
+      border: 2px solid var(--color-primary);
+      border-radius: 16px;
+      box-shadow: var(--glow-primary), 0 20px 60px rgba(0, 0, 0, 0.5);
+      background: radial-gradient(ellipse at center, #0a1628 0%, #000000 100%);
+      transition: all var(--transition-normal);
+    }
+
+    #gameCanvas:hover {
+      box-shadow: 0 0 30px rgba(0, 212, 255, 0.8), 0 0 60px rgba(0, 212, 255, 0.4), 0 25px 70px rgba(0, 0, 0, 0.6);
+    }
+
+    /* Enhanced Container */
+    .game-container {
+      padding: 0 0.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .game-container {
+        padding: 0;
+      }
+    }
+
+    /* Smooth transitions for game canvas */
+    #gameCanvas {
+      transition: box-shadow var(--transition-normal), transform var(--transition-normal);
+    }
+
+    /* Claim button visibility fix */
+    .claim-btn {
+      display: inline-flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+
+    /* Ensure credential offers are visible */
+    #credential-offers {
+      display: block !important;
+      visibility: visible !important;
+    }
+
+    #credential-offers .credential-card {
+      display: block !important;
+      visibility: visible !important;
+    }
+
+    /* Achievement Badge */
+    .achievement-badge {
+      animation: achievementPulse 3s ease-in-out infinite;
+      filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+    }
+
+    @keyframes achievementPulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5)); }
+      50% { transform: scale(1.08); filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)); }
+    }
+
+    /* Stars */
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle 4s infinite ease-in-out;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(20px);
+    }
+
+    /* Boost Meter */
+    #boost-meter-container {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9));
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      backdrop-filter: blur(10px);
+    }
+
+    /* Auth Panel */
+    #auth-panel {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9));
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+    }
+
+    /* Loading/Status Indicators */
+    .status-dot {
+      box-shadow: 0 0 10px currentColor;
+    }
+
+    /* Touch zone active states */
+    .touch-zone.active {
+      border-color: var(--color-primary);
+      background: rgba(0, 212, 255, 0.2);
+      box-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+      transform: scale(0.98);
+    }
+    
+    /* Enhanced Score Display - Modern Design */
+    .score-display {
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      border-radius: 20px;
+      box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.4), 
+        0 2px 8px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(12px);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .score-display::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 212, 255, 0.05),
+        transparent
+      );
+      transition: left 0.6s ease;
+    }
+    
+    .score-display:hover::before {
+      left: 100%;
+    }
+    
+    .score-display:hover {
+      border-color: rgba(0, 212, 255, 0.5);
+      box-shadow: 
+        0 16px 48px rgba(0, 0, 0, 0.5), 
+        0 0 30px rgba(0, 212, 255, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      transform: translateY(-4px) scale(1.02);
+    }
+    
+    .score-display.score-highlight {
+      animation: scorePulse 0.5s ease-out;
+    }
+    
+    @keyframes scorePulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+    
+    .score-label {
+      font-size: 0.625rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.9;
+      margin-bottom: 0.25rem;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    
+    .score-value {
+      font-size: 1.875rem;
+      font-weight: 900;
+      text-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.4),
+        0 0 20px currentColor;
+      letter-spacing: 0.02em;
+      line-height: 1;
+    }
+    
+    @media (min-width: 640px) {
+      .score-value {
+        font-size: 2.5rem;
+      }
+      .score-label {
+        font-size: 0.6875rem;
+      }
+    }
+    
+    @media (min-width: 768px) {
+      .score-value {
+        font-size: 3rem;
+      }
+    }
+    
+    /* Achievement Badge */
+    .achievement-badge {
+      animation: achievementPulse 3s ease-in-out infinite;
+      filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+    }
+    
+    @keyframes achievementPulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5)); }
+      50% { transform: scale(1.08); filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)); }
+    }
+    
+    /* Stars */
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle 4s infinite ease-in-out;
+    }
+    
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+    
+    /* Modal Overlay */
+    .modal-overlay {
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(20px);
+    }
+    
+    /* Touch Control Zones - Enhanced */
+    .touch-zone {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.85));
+      border: 2px solid rgba(71, 85, 105, 0.4);
+      border-radius: 20px;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      backdrop-filter: blur(12px);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .touch-zone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(0, 212, 255, 0.1) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .touch-zone:hover {
+      border-color: rgba(0, 212, 255, 0.5);
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
+      transform: translateY(-2px);
+    }
+    
+    .touch-zone:active,
+    .touch-zone.active {
+      border-color: var(--color-primary);
+      background: rgba(0, 212, 255, 0.2);
+      box-shadow: 
+        0 0 30px rgba(0, 212, 255, 0.4),
+        inset 0 0 20px rgba(0, 212, 255, 0.1);
+      transform: scale(0.96);
+    }
+    
+    .touch-zone.active::before {
+      opacity: 1;
+    }
+    
+    .touch-zone svg {
+      transition: all 0.2s ease;
+    }
+    
+    .touch-zone:hover svg {
+      transform: scale(1.1);
+      color: rgba(0, 212, 255, 0.9);
+    }
+    
+    .touch-zone.active svg {
+      transform: scale(1.15);
+      color: var(--color-primary);
+      filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.8));
+    }
+    
+    /* Credential Card - Premium Design */
+    .credential-card {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98));
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      border-radius: 20px;
+      box-shadow: 
+        0 12px 48px rgba(0, 0, 0, 0.5),
+        0 4px 12px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .credential-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 212, 255, 0.05),
+        transparent
+      );
+      transition: left 0.6s ease;
+    }
+    
+    .credential-card:hover {
+      border-color: rgba(0, 212, 255, 0.45);
+      box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.6), 
+        0 0 40px rgba(0, 212, 255, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      transform: translateY(-4px) scale(1.01);
+    }
+    
+    .credential-card:hover::before {
+      left: 100%;
+    }
+    
+    /* Tier Milestones - Interactive Cards */
+    .tier-milestone {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.8));
+      border: 1px solid rgba(71, 85, 105, 0.4);
+      border-radius: 16px;
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .tier-milestone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .tier-milestone:hover {
+      border-color: rgba(0, 212, 255, 0.5);
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 212, 255, 0.1);
+    }
+    
+    .tier-milestone:hover::before {
+      opacity: 1;
+    }
+    
+    .tier-milestone .emoji {
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    .tier-milestone:hover .emoji {
+      transform: scale(1.2);
+    }
+    
+    /* Boost Meter */
+    #boost-meter-container {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9));
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      backdrop-filter: blur(10px);
+    }
+    
+    /* Auth Panel */
+    #auth-panel {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9));
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+    }
+    
+    /* Screen Overlays - Premium Dark */
+    .screen-overlay {
+      background: linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(10,10,35,0.96) 50%, rgba(5,5,25,0.98) 100%);
+      backdrop-filter: blur(40px) saturate(180%);
+    }
+    
+    .screen-overlay::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse at 50% 0%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    
+    /* Key/Button Hints - 3D Effect */
+    .key-hint {
+      background: linear-gradient(145deg, #3d4f6f, #1e293b);
+      border: 1px solid rgba(71, 85, 105, 0.6);
+      border-radius: 8px;
+      box-shadow: 
+        0 4px 0 #0f172a, 
+        0 6px 8px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    
+    .key-hint:hover {
+      background: linear-gradient(145deg, #4a5d7f, #334155);
+      transform: translateY(-2px);
+      box-shadow: 
+        0 5px 0 #0f172a, 
+        0 8px 12px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+    
+    .key-hint:active {
+      transform: translateY(2px);
+      box-shadow: 
+        0 1px 0 #0f172a, 
+        0 2px 4px rgba(0,0,0,0.3),
+        inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Loading/Status Indicators */
+    .status-dot {
+      box-shadow: 0 0 10px currentColor;
+    }
+    
+    /* Enhanced Animations */
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.6); }
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    .animate-pulse-glow {
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    
+    .shimmer-text {
+      background: linear-gradient(
+        90deg,
+        currentColor 0%,
+        #fff 50%,
+        currentColor 100%
+      );
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 3s linear infinite;
+    }
+    
+    /* Responsive Improvements - Mobile First */
+    @media (max-width: 640px) {
+      body {
+        padding: 0.5rem;
+      }
+      
+      .btn {
+        padding: 0.875rem 1.5rem;
+        font-size: 0.8125rem;
+        letter-spacing: 0.06em;
+      }
+      
+      .btn-lg {
+        padding: 1rem 2rem;
+        font-size: 0.9375rem;
+      }
+      
+      .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 0.6875rem;
+      }
+      
+      .score-display {
+        padding: 0.875rem 0.5rem;
+        border-radius: 16px;
+      }
+      
+      .score-value {
+        font-size: 1.5rem;
+      }
+      
+      .score-label {
+        font-size: 0.5625rem;
+        letter-spacing: 0.15em;
+      }
+      
+      .neon-text {
+        font-size: 2.5rem;
+        letter-spacing: 0.03em;
+      }
+      
+      .tier-milestone {
+        padding: 0.5rem;
+      }
+      
+      .tier-milestone .emoji {
+        font-size: 1.5rem;
+      }
+      
+      .touch-zone {
+        padding: 0.75rem;
+        min-height: 80px;
+      }
+      
+      #gameCanvas {
+        border-radius: 12px;
+      }
+    }
+    
+    @media (max-width: 400px) {
+      .btn {
+        padding: 0.75rem 1.25rem;
+        font-size: 0.75rem;
+      }
+      
+      .btn-lg {
+        padding: 0.875rem 1.5rem;
+      }
+      
+      .score-value {
+        font-size: 1.25rem;
+      }
+      
+      .neon-text {
+        font-size: 2rem;
+      }
+    }
+    
+    /* Animations */
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes glowPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.4); }
+      50% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.8); }
+    }
+    
+    .animate-slide-up {
+      animation: slideInUp 0.5s ease-out;
+    }
+    
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-out;
+    }
+    
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(20px); }
+    }
+    
+    /* Touch zone active states */
+    .touch-zone.active {
+      border-color: var(--color-primary);
+      background: rgba(0, 212, 255, 0.2);
+      box-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+      transform: scale(0.98);
+    }
+    
+    /* Smooth transitions for game canvas */
+    #gameCanvas {
+      transition: box-shadow var(--transition-normal), transform var(--transition-normal);
+    }
+    
+    /* Container improvements */
+    .game-container {
+      padding: 0 0.5rem;
+    }
+    
+    @media (min-width: 640px) {
+      .game-container {
+        padding: 0;
+      }
+    }
+    
+    /* Claim button visibility fix */
+    .claim-btn {
+      display: inline-flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+    
+    /* Ensure credential offers are visible */
+    #credential-offers {
+      display: block !important;
+      visibility: visible !important;
+    }
+    
+    #credential-offers .credential-card {
+      display: block !important;
+      visibility: visible !important;
+    }
+  </style>
+</head>
+
+<body class="text-white">
+  <!-- Animated stars background -->
+  <div id="stars-container" class="fixed inset-0 pointer-events-none z-0"></div>
+  
+  <div class="relative z-10 min-h-screen flex flex-col items-center justify-center px-3 py-4 sm:p-4 md:p-6">
+    <!-- Header -->
+    <header class="text-center mb-6 animate-slide-up">
+      <h1 class="neon-text text-4xl sm:text-5xl md:text-7xl font-black mb-3 tracking-wider bg-gradient-to-b from-white via-cyan-200 to-cyan-400 bg-clip-text text-transparent">SPACE DODGER</h1>
+      <p class="text-cyan-300/90 text-base sm:text-lg md:text-xl tracking-widest font-medium">Earn Verifiable Credentials for High Scores</p>
+    </header>
+    
+    <!-- Auth Status -->
+    <div id="auth-panel" class="mb-4 p-4 max-w-2xl w-full animate-fade-in">
+      <div class="flex items-center gap-3">
+        <div id="auth-indicator" class="status-dot w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></div>
+        <span id="auth-text" class="text-cyan-200/90 font-medium">Connecting to LearnCard...</span>
+      </div>
+    </div>
+    
+    <!-- Score Board -->
+    <div class="grid grid-cols-3 gap-3 sm:gap-4 mb-4 w-full max-w-2xl">
+      <div class="score-display p-3 sm:p-4 text-center">
+        <div class="score-label text-cyan-400">Score</div>
+        <div id="score" class="score-value text-white mt-1">0</div>
+      </div>
+      <div class="score-display p-3 sm:p-4 text-center">
+        <div class="score-label text-yellow-400">High Score</div>
+        <div id="high-score" class="score-value text-yellow-400 mt-1">0</div>
+      </div>
+      <div class="score-display p-3 sm:p-4 text-center">
+        <div class="score-label text-purple-400">Level</div>
+        <div id="level" class="score-value text-purple-400 mt-1">1</div>
+      </div>
+    </div>
+    
+    <!-- Game Container -->
+    <div class="game-container relative rounded-2xl overflow-hidden">
+      <canvas id="gameCanvas" width="800" height="600" class="w-full h-auto rounded-2xl"></canvas>
+      
+      <!-- Start Screen Overlay -->
+      <div id="start-screen" class="screen-overlay absolute flex flex-col items-center justify-center rounded-2xl" style="pointer-events: auto; top: 0; left: 0; right: 0; bottom: 0;">
+        <div class="text-center p-6 sm:p-8 max-w-lg animate-slide-up">
+          <h2 class="neon-text text-3xl sm:text-4xl md:text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-b from-white to-cyan-300">READY PILOT?</h2>
+          <p class="text-gray-300/90 mb-6 max-w-sm mx-auto text-sm sm:text-base leading-relaxed">
+            Dodge asteroids and collect power-ups. Reach score milestones to earn credentials!
+          </p>
+          <div class="grid grid-cols-4 gap-2 sm:gap-3 mb-8">
+            <div class="tier-milestone p-3 text-center cursor-pointer">
+              <div class="emoji text-2xl sm:text-3xl mb-1 filter drop-shadow-lg">🥉</div>
+              <div class="text-xs font-bold text-cyan-400">BRONZE</div>
+              <div class="text-xs text-cyan-600/80">1,000</div>
+            </div>
+            <div class="tier-milestone p-3 text-center cursor-pointer">
+              <div class="emoji text-2xl sm:text-3xl mb-1 filter drop-shadow-lg">🥈</div>
+              <div class="text-xs font-bold text-gray-300">SILVER</div>
+              <div class="text-xs text-gray-500">5,000</div>
+            </div>
+            <div class="tier-milestone p-3 text-center cursor-pointer">
+              <div class="emoji text-2xl sm:text-3xl mb-1 filter drop-shadow-lg">🥇</div>
+              <div class="text-xs font-bold text-yellow-400">GOLD</div>
+              <div class="text-xs text-yellow-600/80">10,000</div>
+            </div>
+            <div class="tier-milestone p-3 text-center cursor-pointer">
+              <div class="emoji text-2xl sm:text-3xl mb-1 filter drop-shadow-lg">💎</div>
+              <div class="text-xs font-bold text-purple-300">PLATINUM</div>
+              <div class="text-xs text-purple-500">25,000</div>
+            </div>
+          </div>
+          <button id="start-btn" class="btn btn-primary btn-lg neon-border">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>START MISSION</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Game Over Overlay -->
+      <div id="game-over-screen" class="screen-overlay absolute flex flex-col items-center justify-center rounded-2xl hidden" style="top: 0; left: 0; right: 0; bottom: 0;">
+        <div class="text-center p-6 max-w-lg w-full animate-slide-up">
+          <h2 class="neon-text text-4xl sm:text-5xl md:text-6xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-b from-red-400 to-red-600" style="filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.5));">MISSION FAILED</h2>
+          
+          <div class="mb-6">
+            <div class="text-lg sm:text-xl mb-1 text-gray-300">Final Score</div>
+            <div id="final-score" class="text-4xl sm:text-5xl md:text-6xl font-black text-cyan-400 neon-text">0</div>
+            <div id="achievements-earned" class="flex gap-3 justify-center mt-4"></div>
+          </div>
+          
+          <div id="credential-offers" class="mb-6 w-full max-w-md mx-auto"></div>
+          
+          <button id="restart-btn" class="btn btn-primary btn-lg">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span>RETRY MISSION</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Boost Meter UI -->
+    <div id="boost-meter-container" class="hidden w-full max-w-2xl mt-4 mb-2">
+      <div class="flex items-center gap-3 sm:gap-4">
+        <div class="text-cyan-400 font-black text-sm tracking-wider">BOOST</div>
+        <div class="flex-1 h-4 sm:h-5 bg-gray-800/80 rounded-full overflow-hidden border border-cyan-500/30 shadow-inner">
+          <div id="boost-meter" class="h-full bg-gradient-to-r from-cyan-500 to-purple-500 w-full transition-all duration-300 shadow-lg"></div>
+        </div>
+        <div id="boost-status" class="text-xs sm:text-sm font-bold text-gray-400 min-w-[60px] text-right">READY</div>
+      </div>
+    </div>
+
+    <!-- Mobile Touch Controls (hidden on desktop) -->
+    <div id="mobile-controls" class="hidden lg:hidden mt-4 w-full max-w-2xl">
+      <div class="flex justify-between items-stretch gap-2 sm:gap-4">
+        <!-- Left Touch Zone -->
+        <div class="touch-zone flex-1 flex flex-col items-center justify-center p-3 sm:p-4 select-none cursor-pointer" id="touch-left">
+          <svg class="w-6 h-6 sm:w-8 sm:h-8 text-cyan-400/60 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          <div class="text-[10px] sm:text-xs text-cyan-400/80 font-bold tracking-wider">LEFT</div>
+          <div class="text-[9px] sm:text-[10px] text-gray-500 mt-1">Touch & Hold</div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex flex-col gap-2 sm:gap-3 justify-center">
+          <button id="mobile-boost-btn" class="btn btn-secondary btn-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+            <span>🚀 BOOST</span>
+          </button>
+          <button id="mobile-pause-btn" class="btn btn-outline btn-sm whitespace-nowrap">
+            <span>⏸️ PAUSE</span>
+          </button>
+        </div>
+        
+        <!-- Right Touch Zone -->
+        <div class="touch-zone flex-1 flex flex-col items-center justify-center p-3 sm:p-4 select-none cursor-pointer" id="touch-right">
+          <svg class="w-6 h-6 sm:w-8 sm:h-8 text-cyan-400/60 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+          <div class="text-[10px] sm:text-xs text-cyan-400/80 font-bold tracking-wider">RIGHT</div>
+          <div class="text-[9px] sm:text-[10px] text-gray-500 mt-1">Touch & Hold</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls Info -->
+    <div class="mt-4 sm:mt-6 flex flex-wrap justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-400">
+      <div class="flex items-center gap-1 sm:gap-2">
+        <span class="key-hint px-1.5 sm:px-2 py-1 text-xs font-bold text-cyan-300">←</span>
+        <span class="key-hint px-1.5 sm:px-2 py-1 text-xs font-bold text-cyan-300">→</span>
+        <span class="text-gray-500">/</span>
+        <span class="key-hint px-1.5 sm:px-2 py-1 text-xs font-bold text-cyan-300">A</span>
+        <span class="key-hint px-1.5 sm:px-2 py-1 text-xs font-bold text-cyan-300">D</span>
+        <span class="ml-1 font-medium">Move</span>
+      </div>
+      <div class="flex items-center gap-1 sm:gap-2">
+        <span class="key-hint px-1.5 sm:px-2 py-1 text-xs font-bold text-purple-300">↑</span>
+        <span class="key-hint px-1.5 sm:px-2 py-1 text-xs font-bold text-purple-300">W</span>
+        <span class="ml-1 font-medium">Boost</span>
+      </div>
+      <div class="flex items-center gap-1 sm:gap-2">
+        <span class="key-hint px-3 sm:px-4 py-1 text-xs font-bold text-yellow-300">SPACE</span>
+        <span class="ml-1 font-medium">Pause</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { actions } from 'astro:actions';
+    import { createPartnerConnect } from '@learncard/partner-connect';
+    
+    // --- LEARNCARD SDK SETUP ---
+    // Use default configuration - SDK auto-detects host origin from lc_host_override query param
+    const learnCard = createPartnerConnect();
+    
+    let isAuthenticated = false;
+    let userDid = null;
+    let earnedTiers = new Set();
+    let availableCredentials = []; // Credentials available to claim at game end
+    
+    // --- GAME CONSTANTS ---
+    const CANVAS_WIDTH = 800;
+    const CANVAS_HEIGHT = 600;
+    const PLAYER_SIZE = 40;
+    const PLAYER_SPEED = 7;
+    const ASTEROID_BASE_SPEED = 3;
+    const POWERUP_CHANCE = 0.01;
+    
+    // --- BOOST CONSTANTS ---
+    const BOOST_DURATION = 1500; // 1.5 seconds
+    const BOOST_COOLDOWN = 3000; // 3 seconds
+    const BOOST_SPEED_MULTIPLIER = 2.5; // Speed multiplier during boost
+    
+    // --- GAME STATE ---
+    let canvas, ctx;
+    let gameLoop;
+    let gameState = 'start'; // start, playing, paused, gameover
+    let score = 0;
+    let highScore = parseInt(localStorage.getItem('spaceDodgerHighScore') || '0');
+    let level = 1;
+    let frames = 0;
+    let difficultyMultiplier = 1;
+
+    // --- BOOST STATE ---
+    let isBoosting = false;
+    let boostTimer = 0;
+    let boostCooldownTimer = 0;
+    let boostReady = true;
+
+    // --- TIME-BASED ANIMATION ---
+    let lastTime = 0;
+    let asteroidSpawnTimer = 0;
+    const TARGET_FPS = 60;
+    const TARGET_FRAME_TIME = 1000 / TARGET_FPS; // ~16.67ms
+    
+    // --- ENTITIES ---
+    let player = {
+      x: CANVAS_WIDTH / 2 - PLAYER_SIZE / 2,
+      y: CANVAS_HEIGHT - 100,
+      width: PLAYER_SIZE,
+      height: PLAYER_SIZE,
+      velocity: 0,
+      trail: []
+    };
+    
+    let asteroids = [];
+    let particles = [];
+    let powerUps = [];
+    let stars = [];
+    
+    // --- INPUT HANDLING ---
+    const keys = {};
+    let touchState = { left: false, right: false };
+    
+    // --- INITIALIZATION ---
+    function init() {
+      canvas = document.getElementById('gameCanvas');
+      ctx = canvas.getContext('2d');
+      
+      // Create background stars
+      for (let i = 0; i < 100; i++) {
+        stars.push({
+          x: Math.random() * CANVAS_WIDTH,
+          y: Math.random() * CANVAS_HEIGHT,
+          size: Math.random() * 2 + 0.5,
+          speed: Math.random() * 0.5 + 0.1,
+          brightness: Math.random()
+        });
+      }
+      
+      // Event listeners
+      document.addEventListener('keydown', (e) => {
+        keys[e.key] = true;
+        if (e.key === ' ' && gameState === 'playing') {
+          e.preventDefault();
+          togglePause();
+        }
+        if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') && gameState === 'playing') {
+          e.preventDefault();
+          activateBoost();
+        }
+      });
+      
+      document.addEventListener('keyup', (e) => {
+        keys[e.key] = false;
+      });
+      
+      // Button listeners
+      document.getElementById('start-btn').addEventListener('click', startGame);
+      document.getElementById('restart-btn').addEventListener('click', resetGame);
+      document.getElementById('mobile-pause-btn').addEventListener('click', togglePause);
+      document.getElementById('mobile-boost-btn').addEventListener('click', activateBoost);
+      
+      // Setup touch controls for mobile
+      setupTouchControls();
+      
+      // Show mobile controls on touch devices, always show boost meter
+      if (isTouchDevice()) {
+        document.getElementById('mobile-controls').classList.remove('hidden');
+      }
+      document.getElementById('boost-meter-container').classList.remove('hidden');
+      
+      // Update high score display
+      document.getElementById('high-score').textContent = highScore;
+      
+      // Create background stars animation
+      createBackgroundStars();
+      
+      // Authenticate with LearnCard
+      authenticate();
+    }
+    
+    // --- TOUCH CONTROLS ---
+    function isTouchDevice() {
+      return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    }
+    
+    function setupTouchControls() {
+      // Prevent default touch behaviors during gameplay
+      document.addEventListener('touchstart', (e) => {
+        if (gameState === 'playing') {
+          e.preventDefault();
+        }
+      }, { passive: false });
+      
+      document.addEventListener('touchmove', (e) => {
+        if (gameState === 'playing') {
+          e.preventDefault();
+        }
+      }, { passive: false });
+      
+      // Canvas touch controls
+      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+      canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+      canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+      
+      // Touch zone controls for mobile UI
+      const touchLeft = document.getElementById('touch-left');
+      const touchRight = document.getElementById('touch-right');
+      
+      if (touchLeft && touchRight) {
+        // Left zone
+        touchLeft.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          touchState.left = true;
+          touchState.right = false;
+          touchLeft.classList.add('active');
+        }, { passive: false });
+        
+        touchLeft.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          touchState.left = false;
+          touchLeft.classList.remove('active');
+        }, { passive: false });
+        
+        touchLeft.addEventListener('touchcancel', (e) => {
+          e.preventDefault();
+          touchState.left = false;
+          touchLeft.classList.remove('active');
+        }, { passive: false });
+        
+        // Right zone
+        touchRight.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          touchState.right = true;
+          touchState.left = false;
+          touchRight.classList.add('active');
+        }, { passive: false });
+        
+        touchRight.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          touchState.right = false;
+          touchRight.classList.remove('active');
+        }, { passive: false });
+        
+        touchRight.addEventListener('touchcancel', (e) => {
+          e.preventDefault();
+          touchState.right = false;
+          touchRight.classList.remove('active');
+        }, { passive: false });
+      }
+    }
+    
+    function handleTouchStart(e) {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        
+        // Scale touch coordinates to canvas coordinates
+        const scaleX = CANVAS_WIDTH / rect.width;
+        const canvasX = x * scaleX;
+        
+        // Left half = move left, Right half = move right
+        if (canvasX < CANVAS_WIDTH / 2) {
+          touchState.left = true;
+          touchState.right = false;
+        } else {
+          touchState.right = true;
+          touchState.left = false;
+        }
+      }
+    }
+    
+    function handleTouchEnd(e) {
+      e.preventDefault();
+      touchState.left = false;
+      touchState.right = false;
+    }
+    
+    function createBackgroundStars() {
+      const container = document.getElementById('stars-container');
+      for (let i = 0; i < 50; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.width = Math.random() * 3 + 1 + 'px';
+        star.style.height = star.style.width;
+        star.style.animationDelay = Math.random() * 3 + 's';
+        container.appendChild(star);
+      }
+    }
+    
+    // --- AUTHENTICATION ---
+    async function authenticate() {
+      const indicator = document.getElementById('auth-indicator');
+      const text = document.getElementById('auth-text');
+      
+      try {
+        text.textContent = 'Connecting to LearnCard...';
+        indicator.className = 'w-3 h-3 rounded-full bg-yellow-500 animate-pulse';
+        
+        const identity = await learnCard.requestIdentity();
+        userDid = identity.user.did;
+        isAuthenticated = true;
+        
+        indicator.className = 'w-3 h-3 rounded-full bg-green-500';
+        text.innerHTML = `Connected: <span class="font-mono text-xs">${userDid.slice(0, 20)}...</span>`;
+        
+        // If game is over, refresh the credential offers UI
+        if (gameState === 'gameover') {
+          updateCredentialOffersUI();
+        }
+      } catch (error) {
+        if (error.code === 'LC_UNAUTHENTICATED') {
+          indicator.className = 'w-3 h-3 rounded-full bg-red-500';
+          text.textContent = 'Not logged into LearnCard';
+        } else {
+          indicator.className = 'w-3 h-3 rounded-full bg-red-500';
+          text.textContent = 'Connection failed';
+        }
+      }
+    }
+    
+    // --- GAME LOOP ---
+    function startGame() {
+      document.getElementById('start-screen').classList.add('hidden');
+      document.getElementById('game-over-screen').classList.add('hidden');
+      gameState = 'playing';
+      resetEntities();
+      lastTime = 0;
+      asteroidSpawnTimer = 0;
+      gameLoop = requestAnimationFrame(update);
+    }
+    
+    function resetGame() {
+      score = 0;
+      level = 1;
+      frames = 0;
+      difficultyMultiplier = 1;
+      earnedTiers.clear();
+      availableCredentials = [];
+      lastTime = 0;
+      asteroidSpawnTimer = 0;
+      updateUI();
+      // Show start screen instead of immediately starting
+      document.getElementById('game-over-screen').classList.add('hidden');
+      document.getElementById('start-screen').classList.remove('hidden');
+      gameState = 'start';
+    }
+    
+    function resetEntities() {
+      player.x = CANVAS_WIDTH / 2 - PLAYER_SIZE / 2;
+      player.y = CANVAS_HEIGHT - 100;
+      player.velocity = 0;
+      player.trail = [];
+      asteroids = [];
+      particles = [];
+      powerUps = [];
+      asteroidSpawnTimer = 0;
+      lastTime = 0;
+      
+      // Reset boost state
+      isBoosting = false;
+      boostTimer = 0;
+      boostCooldownTimer = 0;
+      boostReady = true;
+      updateBoostUI();
+    }
+    
+    // --- BOOST FUNCTIONS ---
+    function activateBoost() {
+      if (!boostReady || isBoosting || gameState !== 'playing') return;
+      
+      isBoosting = true;
+      boostTimer = BOOST_DURATION;
+      boostReady = false;
+      
+      // Create boost activation particles
+      createExplosion(player.x + PLAYER_SIZE / 2, player.y + PLAYER_SIZE, '0, 255, 255');
+      
+      updateBoostUI();
+    }
+    
+    function updateBoost(deltaTime) {
+      if (!isBoosting && !boostReady) {
+        // Update cooldown
+        boostCooldownTimer -= deltaTime;
+        if (boostCooldownTimer <= 0) {
+          boostReady = true;
+          boostCooldownTimer = 0;
+        }
+        updateBoostUI();
+        return;
+      }
+      
+      if (isBoosting) {
+        // Update boost timer
+        boostTimer -= deltaTime;
+        if (boostTimer <= 0) {
+          // Boost ended, start cooldown
+          isBoosting = false;
+          boostTimer = 0;
+          boostCooldownTimer = BOOST_COOLDOWN;
+        }
+        updateBoostUI();
+      }
+    }
+    
+    function updateBoostUI() {
+      const boostMeter = document.getElementById('boost-meter');
+      const boostStatus = document.getElementById('boost-status');
+      const boostBtn = document.getElementById('mobile-boost-btn');
+      
+      if (!boostMeter || !boostStatus) return;
+      
+      if (isBoosting) {
+        // Boost active - show remaining boost time
+        const remainingPercent = (boostTimer / BOOST_DURATION) * 100;
+        boostMeter.style.width = `${remainingPercent}%`;
+        boostMeter.className = 'h-full bg-gradient-to-r from-yellow-400 to-orange-500 w-full transition-all duration-100';
+        boostStatus.textContent = 'ACTIVE!';
+        boostStatus.className = 'text-xs text-yellow-400 font-bold animate-pulse';
+        if (boostBtn) {
+          boostBtn.disabled = true;
+          boostBtn.textContent = '🚀 BOOSTING!';
+        }
+      } else if (!boostReady) {
+        // Cooldown - show charging
+        const cooldownPercent = ((BOOST_COOLDOWN - boostCooldownTimer) / BOOST_COOLDOWN) * 100;
+        boostMeter.style.width = `${cooldownPercent}%`;
+        boostMeter.className = 'h-full bg-gradient-to-r from-gray-600 to-gray-500 w-full transition-all duration-100';
+        boostStatus.textContent = 'CHARGING...';
+        boostStatus.className = 'text-xs text-gray-400';
+        if (boostBtn) {
+          boostBtn.disabled = true;
+          boostBtn.textContent = '🚀 CHARGING...';
+        }
+      } else {
+        // Ready
+        boostMeter.style.width = '100%';
+        boostMeter.className = 'h-full bg-gradient-to-r from-cyan-500 to-purple-500 w-full transition-all duration-300';
+        boostStatus.textContent = 'READY';
+        boostStatus.className = 'text-xs text-cyan-400 font-bold';
+        if (boostBtn) {
+          boostBtn.disabled = false;
+          boostBtn.textContent = '🚀 BOOST';
+        }
+      }
+    }
+    
+    function togglePause() {
+      const pauseBtn = document.getElementById('mobile-pause-btn');
+      
+      if (gameState === 'playing') {
+        gameState = 'paused';
+        cancelAnimationFrame(gameLoop);
+        if (pauseBtn) pauseBtn.innerHTML = '▶️ RESUME';
+      } else if (gameState === 'paused') {
+        gameState = 'playing';
+        lastTime = 0; // Reset to avoid large delta after pause
+        gameLoop = requestAnimationFrame(update);
+        if (pauseBtn) pauseBtn.innerHTML = '⏸️ PAUSE';
+      }
+    }
+    
+    function update(timestamp) {
+      if (gameState !== 'playing') return;
+      
+      // Calculate delta time for frame-rate independent animation
+      if (lastTime === 0) lastTime = timestamp;
+      const deltaTime = timestamp - lastTime;
+      lastTime = timestamp;
+      
+      // Normalize delta to target frame rate (60fps)
+      const deltaMultiplier = deltaTime / TARGET_FRAME_TIME;
+      
+      frames++;
+      
+      // Clear canvas
+      ctx.fillStyle = 'rgba(10, 22, 40, 0.3)';
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      
+      // Draw stars
+      drawStars();
+      
+      // Update difficulty
+      difficultyMultiplier = 1 + (score / 5000);
+      level = Math.floor(score / 1000) + 1;
+      
+      // Update boost
+      updateBoost(deltaTime);
+      
+      // Player movement
+      updatePlayer(deltaMultiplier);
+
+      // Spawn asteroids (time-based instead of frame-based)
+      asteroidSpawnTimer += deltaTime;
+      const spawnInterval = Math.max(20, Math.floor(60 / difficultyMultiplier)) * TARGET_FRAME_TIME;
+      if (asteroidSpawnTimer >= spawnInterval) {
+        spawnAsteroid();
+        asteroidSpawnTimer = 0;
+      }
+
+      // Spawn power-ups
+      if (Math.random() < POWERUP_CHANCE * deltaMultiplier) {
+        spawnPowerUp();
+      }
+
+      // Update entities with delta time
+      updateAsteroids(deltaMultiplier);
+      updatePowerUps(deltaMultiplier);
+      updateParticles(deltaMultiplier);
+      updateStars(deltaMultiplier);
+
+      // Check collisions
+      checkCollisions();
+
+      // Draw entities
+      drawPlayer();
+      drawAsteroids();
+      drawPowerUps();
+      drawParticles();
+
+      // Draw touch zone indicators on mobile
+      if (isTouchDevice() && (touchState.left || touchState.right)) {
+        drawTouchIndicators();
+      }
+
+      // Update score (time-based)
+      score += Math.round(10 * deltaMultiplier);
+      if (frames % 10 === 0) {
+        updateUI();
+        checkAchievements();
+      }
+
+      gameLoop = requestAnimationFrame(update);
+    }
+    
+    // --- UPDATE FUNCTIONS ---
+    function updatePlayer(deltaMultiplier) {
+      // Calculate current speed (boost applies multiplier)
+      const currentSpeed = isBoosting ? PLAYER_SPEED * BOOST_SPEED_MULTIPLIER : PLAYER_SPEED;
+      
+      // Movement - support both keyboard and touch
+      if (keys['ArrowLeft'] || keys['a'] || keys['A'] || touchState.left) {
+        player.velocity = -currentSpeed * deltaMultiplier;
+      } else if (keys['ArrowRight'] || keys['d'] || keys['D'] || touchState.right) {
+        player.velocity = currentSpeed * deltaMultiplier;
+      } else {
+        player.velocity *= 0.9; // Friction (applied per frame, not time-based for feel)
+      }
+
+      player.x += player.velocity;
+
+      // Boundaries
+      if (player.x < 0) player.x = 0;
+      if (player.x > CANVAS_WIDTH - PLAYER_SIZE) player.x = CANVAS_WIDTH - PLAYER_SIZE;
+
+      // Trail effect (enhanced during boost)
+      const trailLength = isBoosting ? 20 : 10;
+      const trailAlphaDecay = isBoosting ? 0.05 : 0.1;
+      player.trail.push({ x: player.x, y: player.y + PLAYER_SIZE, alpha: 1 });
+      if (player.trail.length > trailLength) player.trail.shift();
+      player.trail.forEach(t => t.alpha -= trailAlphaDecay * deltaMultiplier);
+      player.trail = player.trail.filter(t => t.alpha > 0);
+    }
+    
+    function spawnAsteroid() {
+      const size = Math.random() * 30 + 20;
+      asteroids.push({
+        x: Math.random() * (CANVAS_WIDTH - size),
+        y: -size,
+        width: size,
+        height: size,
+        speed: (ASTEROID_BASE_SPEED + Math.random() * 2) * difficultyMultiplier,
+        rotation: 0,
+        rotationSpeed: (Math.random() - 0.5) * 0.1,
+        vertices: generateAsteroidVertices(size)
+      });
+    }
+    
+    function generateAsteroidVertices(size) {
+      const vertices = [];
+      const numVertices = 6 + Math.floor(Math.random() * 4);
+      for (let i = 0; i < numVertices; i++) {
+        const angle = (i / numVertices) * Math.PI * 2;
+        const radius = size * (0.5 + Math.random() * 0.5);
+        vertices.push({
+          x: Math.cos(angle) * radius,
+          y: Math.sin(angle) * radius
+        });
+      }
+      return vertices;
+    }
+    
+    function spawnPowerUp() {
+      const types = ['score', 'shield', 'speed'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      powerUps.push({
+        x: Math.random() * (CANVAS_WIDTH - 30),
+        y: -30,
+        width: 30,
+        height: 30,
+        speed: 2,
+        type: type,
+        pulse: 0
+      });
+    }
+    
+    function updateAsteroids(deltaMultiplier) {
+      asteroids.forEach((asteroid, index) => {
+        asteroid.y += asteroid.speed * deltaMultiplier;
+        asteroid.rotation += asteroid.rotationSpeed * deltaMultiplier;
+
+        if (asteroid.y > CANVAS_HEIGHT) {
+          asteroids.splice(index, 1);
+        }
+      });
+    }
+    
+    function updatePowerUps(deltaMultiplier) {
+      powerUps.forEach((powerUp, index) => {
+        powerUp.y += powerUp.speed * deltaMultiplier;
+        powerUp.pulse += 0.1 * deltaMultiplier;
+
+        if (powerUp.y > CANVAS_HEIGHT) {
+          powerUps.splice(index, 1);
+        }
+      });
+    }
+    
+    function updateParticles(deltaMultiplier) {
+      particles.forEach((particle, index) => {
+        particle.x += particle.vx * deltaMultiplier;
+        particle.y += particle.vy * deltaMultiplier;
+        particle.life -= 0.02 * deltaMultiplier;
+        particle.alpha = particle.life;
+
+        if (particle.life <= 0) {
+          particles.splice(index, 1);
+        }
+      });
+    }
+    
+    // --- DRAW FUNCTIONS ---
+    function updateStars(deltaMultiplier) {
+      stars.forEach(star => {
+        star.y += star.speed * deltaMultiplier;
+        if (star.y > CANVAS_HEIGHT) {
+          star.y = 0;
+          star.x = Math.random() * CANVAS_WIDTH;
+        }
+      });
+    }
+
+    function drawStars() {
+      stars.forEach(star => {
+        ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness})`;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+    
+    function drawPlayer() {
+      // Trail (enhanced during boost)
+      player.trail.forEach((t, i) => {
+        const alpha = isBoosting ? t.alpha * 0.5 : t.alpha * 0.3;
+        const width = isBoosting ? 25 - (i * 0.5) : 20;
+        ctx.fillStyle = `rgba(0, 255, 255, ${alpha})`;
+        ctx.fillRect(t.x + (PLAYER_SIZE - width) / 2, t.y, width, isBoosting ? 8 : 5);
+      });
+      
+      // Ship body
+      ctx.save();
+      ctx.translate(player.x + PLAYER_SIZE / 2, player.y + PLAYER_SIZE / 2);
+      
+      // Glow effect (intense during boost)
+      if (isBoosting) {
+        ctx.shadowColor = '#ff00ff';
+        ctx.shadowBlur = 30;
+        
+        // Boost aura
+        ctx.strokeStyle = `rgba(255, 0, 255, ${0.3 + Math.random() * 0.3})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, PLAYER_SIZE * 0.8, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 20;
+      }
+      
+      // Main body (purple tint during boost)
+      ctx.fillStyle = isBoosting ? '#ff00ff' : '#00ffff';
+      ctx.beginPath();
+      ctx.moveTo(0, -PLAYER_SIZE / 2);
+      ctx.lineTo(-PLAYER_SIZE / 2, PLAYER_SIZE / 2);
+      ctx.lineTo(0, PLAYER_SIZE / 3);
+      ctx.lineTo(PLAYER_SIZE / 2, PLAYER_SIZE / 2);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Inner glow
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(0, -PLAYER_SIZE / 3);
+      ctx.lineTo(-PLAYER_SIZE / 4, PLAYER_SIZE / 3);
+      ctx.lineTo(0, PLAYER_SIZE / 4);
+      ctx.lineTo(PLAYER_SIZE / 4, PLAYER_SIZE / 3);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Engine flame (enhanced during boost)
+      const baseFlameHeight = isBoosting ? 20 : 10;
+      const flameVariation = isBoosting ? 15 : 10;
+      const flameHeight = baseFlameHeight + Math.random() * flameVariation;
+      
+      // Outer flame (yellow during boost)
+      ctx.fillStyle = isBoosting ? '#ffff00' : '#ff6600';
+      ctx.beginPath();
+      ctx.moveTo(-10, PLAYER_SIZE / 3);
+      ctx.lineTo(0, PLAYER_SIZE / 3 + flameHeight * 1.2);
+      ctx.lineTo(10, PLAYER_SIZE / 3);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Inner flame
+      ctx.fillStyle = isBoosting ? '#ff6600' : '#ffaa00';
+      ctx.beginPath();
+      ctx.moveTo(-6, PLAYER_SIZE / 3);
+      ctx.lineTo(0, PLAYER_SIZE / 3 + flameHeight * 0.8);
+      ctx.lineTo(6, PLAYER_SIZE / 3);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.restore();
+    }
+    
+    function drawAsteroids() {
+      asteroids.forEach(asteroid => {
+        ctx.save();
+        ctx.translate(asteroid.x + asteroid.width / 2, asteroid.y + asteroid.height / 2);
+        ctx.rotate(asteroid.rotation);
+        
+        ctx.strokeStyle = '#ff6b6b';
+        ctx.fillStyle = 'rgba(255, 107, 107, 0.2)';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#ff6b6b';
+        ctx.shadowBlur = 10;
+        
+        ctx.beginPath();
+        asteroid.vertices.forEach((vertex, i) => {
+          if (i === 0) ctx.moveTo(vertex.x, vertex.y);
+          else ctx.lineTo(vertex.x, vertex.y);
+        });
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.restore();
+      });
+    }
+    
+    function drawPowerUps() {
+      powerUps.forEach(powerUp => {
+        ctx.save();
+        ctx.translate(powerUp.x + 15, powerUp.y + 15);
+        
+        const pulse = Math.sin(powerUp.pulse) * 3;
+        
+        let color, icon;
+        switch (powerUp.type) {
+          case 'score':
+            color = '#ffd700';
+            icon = '+';
+            break;
+          case 'shield':
+            color = '#00ff00';
+            icon = '🛡️';
+            break;
+          case 'speed':
+            color = '#ff00ff';
+            icon = '⚡';
+            break;
+        }
+        
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 15 + pulse;
+        ctx.fillStyle = color;
+        
+        ctx.beginPath();
+        ctx.arc(0, 0, 12, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#000';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(icon, 0, 0);
+        
+        ctx.restore();
+      });
+    }
+    
+    function drawParticles() {
+      particles.forEach(particle => {
+        ctx.fillStyle = `rgba(${particle.color}, ${particle.alpha})`;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+    
+    function drawTouchIndicators() {
+      ctx.save();
+      ctx.globalAlpha = 0.15;
+      
+      // Left zone
+      if (touchState.left) {
+        ctx.fillStyle = '#00ffff';
+        ctx.fillRect(0, 0, CANVAS_WIDTH / 2, CANVAS_HEIGHT);
+      }
+      
+      // Right zone
+      if (touchState.right) {
+        ctx.fillStyle = '#00ffff';
+        ctx.fillRect(CANVAS_WIDTH / 2, 0, CANVAS_WIDTH / 2, CANVAS_HEIGHT);
+      }
+      
+      ctx.restore();
+    }
+    
+    function createExplosion(x, y, color = '255, 100, 100') {
+      for (let i = 0; i < 20; i++) {
+        const angle = (Math.PI * 2 / 20) * i;
+        const speed = Math.random() * 5 + 2;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1,
+          alpha: 1,
+          size: Math.random() * 3 + 1,
+          color: color
+        });
+      }
+    }
+    
+    // --- COLLISION DETECTION ---
+    function checkCollisions() {
+      // Asteroid collisions
+      asteroids.forEach((asteroid, asteroidIndex) => {
+        if (rectIntersect(
+          player.x + 5, player.y + 5, PLAYER_SIZE - 10, PLAYER_SIZE - 10,
+          asteroid.x, asteroid.y, asteroid.width, asteroid.height
+        )) {
+          createExplosion(player.x + PLAYER_SIZE / 2, player.y + PLAYER_SIZE / 2, '0, 255, 255');
+          gameOver();
+        }
+      });
+      
+      // Power-up collisions
+      powerUps.forEach((powerUp, index) => {
+        if (rectIntersect(
+          player.x, player.y, PLAYER_SIZE, PLAYER_SIZE,
+          powerUp.x, powerUp.y, powerUp.width, powerUp.height
+        )) {
+          collectPowerUp(powerUp, index);
+        }
+      });
+    }
+    
+    function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) {
+      return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+    }
+    
+    function collectPowerUp(powerUp, index) {
+      powerUps.splice(index, 1);
+      createExplosion(powerUp.x + 15, powerUp.y + 15, '255, 215, 0');
+      
+      switch (powerUp.type) {
+        case 'score':
+          score += 500;
+          break;
+        case 'shield':
+          // Shield effect would go here
+          score += 200;
+          break;
+        case 'speed':
+          // Speed boost would go here
+          score += 200;
+          break;
+      }
+      
+      updateUI();
+    }
+    
+    // --- UI UPDATES ---
+    let lastScore = 0;
+    let lastLevel = 1;
+    
+    function updateUI() {
+      const scoreEl = document.getElementById('score');
+      const highScoreEl = document.getElementById('high-score');
+      const levelEl = document.getElementById('level');
+      
+      // Update score with highlight animation on significant changes
+      const scoreDisplay = document.querySelector('.score-display');
+      if (score > lastScore && (score - lastScore) >= 100) {
+        scoreDisplay.classList.add('score-highlight');
+        setTimeout(() => scoreDisplay.classList.remove('score-highlight'), 500);
+      }
+      
+      scoreEl.textContent = score.toLocaleString();
+      levelEl.textContent = level;
+      
+      // Highlight on new high score
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('spaceDodgerHighScore', highScore);
+        highScoreEl.textContent = highScore.toLocaleString();
+        highScoreEl.parentElement.classList.add('score-highlight');
+        setTimeout(() => highScoreEl.parentElement.classList.remove('score-highlight'), 600);
+      }
+      
+      // Highlight on level up
+      if (level > lastLevel) {
+        levelEl.parentElement.classList.add('score-highlight');
+        setTimeout(() => levelEl.parentElement.classList.remove('score-highlight'), 600);
+      }
+      
+      lastScore = score;
+      lastLevel = level;
+    }
+    
+    // --- ACHIEVEMENTS ---
+    // Track which tiers were achieved during gameplay (for display purposes)
+    function checkAchievements() {
+      const tiers = [
+        { key: 'bronze', minScore: 1000, name: 'Bronze Space Pilot', emoji: '🥉' },
+        { key: 'silver', minScore: 5000, name: 'Silver Space Pilot', emoji: '🥈' },
+        { key: 'gold', minScore: 10000, name: 'Gold Space Pilot', emoji: '🥇' },
+        { key: 'platinum', minScore: 25000, name: 'Platinum Space Ace', emoji: '💎' }
+      ];
+      
+      for (const tier of tiers) {
+        if (score >= tier.minScore && !earnedTiers.has(tier.key)) {
+          earnedTiers.add(tier.key);
+          // Add to available credentials for claiming at game end
+          availableCredentials.push({
+            key: tier.key,
+            name: tier.name,
+            emoji: tier.emoji,
+            score: score,
+            claimed: false
+          });
+        }
+      }
+    }
+    
+    async function claimCredential(tierKey) {
+      const credential = availableCredentials.find(c => c.key === tierKey && !c.claimed);
+      if (!credential) return;
+      
+      try {
+        // First validate the achievement on the backend
+        const { data, error } = await actions.validateAchievement({
+          score: credential.score,
+          tier: tierKey
+        });
+
+        if (error) {
+          console.error('Failed to validate achievement:', error);
+          showClaimError(tierKey, 'Validation failed');
+          return;
+        }
+
+        // Issue credential using Partner Connect SDK template-based approach
+        const templateAliases = {
+          bronze: import.meta.env.LEARNCARD_TEMPLATE_BRONZE || 'bronze-space-pilot',
+          silver: import.meta.env.LEARNCARD_TEMPLATE_SILVER || 'silver-space-pilot',
+          gold: import.meta.env.LEARNCARD_TEMPLATE_GOLD || 'gold-space-pilot',
+          platinum: import.meta.env.LEARNCARD_TEMPLATE_PLATINUM || 'platinum-space-ace'
+        };
+
+        const templateAlias = templateAliases[tierKey];
+        
+        const response = await learnCard.sendCredential({
+          templateAlias: templateAlias,
+          templateData: {
+            score: credential.score.toString(),
+            tierName: data.name,
+            tierDescription: data.description,
+            achievementDate: new Date().toISOString()
+          }
+        });
+        
+        if (response.credentialUri) {
+          credential.claimed = true;
+          showClaimedConfirmation(tierKey);
+          updateCredentialOffersUI();
+        }
+      } catch (err) {
+        console.error('Credential claim error:', err);
+        showClaimError(tierKey, err.message || 'Failed to claim');
+      }
+    }
+    
+    function showClaimedConfirmation(tierKey) {
+      const tierEmojis = {
+        bronze: '🥉',
+        silver: '🥈',
+        gold: '🥇',
+        platinum: '💎'
+      };
+      
+      const tierNames = {
+        bronze: 'BRONZE PILOT',
+        silver: 'SILVER PILOT',
+        gold: 'GOLD PILOT',
+        platinum: 'PLATINUM ACE'
+      };
+      
+      const tierColors = {
+        bronze: 'from-orange-600 to-amber-600',
+        silver: 'from-gray-500 to-slate-500',
+        gold: 'from-yellow-500 to-amber-500',
+        platinum: 'from-purple-600 to-pink-600'
+      };
+      
+      const notification = document.createElement('div');
+      notification.className = `fixed top-4 right-4 bg-gradient-to-r ${tierColors[tierKey]} p-4 rounded-2xl shadow-2xl z-50 animate-slide-up border border-white/10`;
+      notification.id = `claim-notification-${tierKey}`;
+      notification.innerHTML = `
+        <div class="flex items-center gap-4">
+          <span class="text-5xl filter drop-shadow-lg">${tierEmojis[tierKey]}</span>
+          <div>
+            <div class="font-black text-white tracking-wider flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+              </svg>
+              CREDENTIAL CLAIMED!
+            </div>
+            <div class="text-white/90 font-semibold">${tierNames[tierKey]} added to your wallet</div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
+      }, 4000);
+    }
+    
+    function showClaimError(tierKey, message) {
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-gradient-to-r from-red-600 to-rose-600 p-4 rounded-2xl shadow-2xl z-50 animate-slide-up border border-white/10';
+      notification.innerHTML = `
+        <div class="flex items-center gap-4">
+          <span class="text-4xl">⚠️</span>
+          <div>
+            <div class="font-black text-white tracking-wider flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              CLAIM FAILED
+            </div>
+            <div class="text-white/90 font-medium">${message}</div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
+      }, 4000);
+    }
+    
+    // --- GAME OVER ---
+    function gameOver() {
+      gameState = 'gameover';
+      cancelAnimationFrame(gameLoop);
+      
+      document.getElementById('final-score').textContent = score.toLocaleString();
+      
+      // Show earned achievements
+      const achievementsContainer = document.getElementById('achievements-earned');
+      achievementsContainer.innerHTML = '';
+      
+      const tierEmojis = {
+        bronze: '🥉',
+        silver: '🥈',
+        gold: '🥇',
+        platinum: '💎'
+      };
+      
+      earnedTiers.forEach(tier => {
+        const badge = document.createElement('span');
+        badge.className = 'text-3xl achievement-badge';
+        badge.textContent = tierEmojis[tier];
+        achievementsContainer.appendChild(badge);
+      });
+      
+      // Show credential claim UI
+      updateCredentialOffersUI();
+      
+      document.getElementById('game-over-screen').classList.remove('hidden');
+    }
+    
+    function updateCredentialOffersUI() {
+      const offersContainer = document.getElementById('credential-offers');
+      offersContainer.innerHTML = '';
+      
+      if (!isAuthenticated && score >= 1000) {
+        offersContainer.innerHTML = `
+          <div class="credential-card p-4 text-center">
+            <div class="text-yellow-300/90 mb-3 font-semibold">Connect LearnCard to claim your credentials!</div>
+            <button id="connect-wallet-btn" class="btn btn-gold btn-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              <span>Connect Now</span>
+            </button>
+          </div>
+        `;
+        document.getElementById('connect-wallet-btn').addEventListener('click', authenticate);
+      } else if (isAuthenticated && availableCredentials.length > 0) {
+        // Group by claimed status
+        const unclaimed = availableCredentials.filter(c => !c.claimed);
+        const claimed = availableCredentials.filter(c => c.claimed);
+        
+        if (unclaimed.length > 0) {
+          const unclaimedSection = document.createElement('div');
+          unclaimedSection.className = 'credential-card p-4 mb-3';
+          unclaimedSection.innerHTML = `
+            <div class="text-cyan-300/90 mb-3 font-black text-sm tracking-wider uppercase flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Credentials Available to Claim
+            </div>
+            <div id="unclaimed-list" class="space-y-2"></div>
+          `;
+          offersContainer.appendChild(unclaimedSection);
+          
+          const unclaimedList = unclaimedSection.querySelector('#unclaimed-list');
+          unclaimed.forEach(cred => {
+            const claimRow = document.createElement('div');
+            claimRow.className = 'flex items-center justify-between bg-black/40 rounded-xl p-3 border border-cyan-500/20';
+            claimRow.innerHTML = `
+              <div class="flex items-center gap-3">
+                <span class="text-3xl filter drop-shadow-lg">${cred.emoji}</span>
+                <div>
+                  <div class="text-white font-bold text-sm">${cred.name}</div>
+                  <div class="text-xs text-cyan-400/70">Score: ${cred.score.toLocaleString()}</div>
+                </div>
+              </div>
+              <button class="claim-btn btn btn-primary btn-sm" data-tier="${cred.key}" style="display:inline-flex;visibility:visible;opacity:1;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>Claim</span>
+              </button>
+            `;
+            unclaimedList.appendChild(claimRow);
+            
+            claimRow.querySelector('.claim-btn').addEventListener('click', () => claimCredential(cred.key));
+          });
+        }
+        
+        if (claimed.length > 0) {
+          const claimedSection = document.createElement('div');
+          claimedSection.className = 'credential-card p-4 border-green-500/30 bg-green-900/10';
+          claimedSection.innerHTML = `
+            <div class="text-green-300/90 mb-2 text-sm font-black tracking-wider uppercase flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              Claimed Credentials
+            </div>
+            <div id="claimed-list" class="flex flex-wrap gap-2 justify-center"></div>
+          `;
+          offersContainer.appendChild(claimedSection);
+          
+          const claimedList = claimedSection.querySelector('#claimed-list');
+          claimed.forEach(cred => {
+            const badge = document.createElement('span');
+            badge.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500/20 rounded-full text-sm border border-green-500/30';
+            badge.innerHTML = `<span class="text-lg">${cred.emoji}</span> <span class="text-green-200 font-semibold">${cred.name}</span>`;
+            claimedList.appendChild(badge);
+          });
+        }
+      } else if (isAuthenticated && score < 1000) {
+        offersContainer.innerHTML = `
+          <div class="credential-card p-4 text-center border-gray-500/30 bg-gray-800/30">
+            <div class="text-gray-400/90 flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              Reach 1,000 points to earn your first credential!
+            </div>
+          </div>
+        `;
+      }
+    }
+    
+    // Start initialization when DOM is ready
+    window.onload = init;
+  </script>
+</body>
+</html>

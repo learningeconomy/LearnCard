@@ -1,0 +1,911 @@
+---
+// Academic Credentials Demo App - Issue diplomas, certificates, and student IDs
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic Credentials - Issue Verifiable Credentials</title>
+  <meta name="description" content="Demo app for issuing academic credentials using LearnCard - diplomas, certificates, student IDs, and transcripts">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #3b82f6;
+      --secondary: #059669;
+      --accent: #7c3aed;
+      --danger: #dc2626;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-600: #4b5563;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, var(--gray-50) 0%, #ffffff 100%);
+      min-height: 100vh;
+      color: var(--gray-800);
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 2rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+
+    .auth-status {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: white;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      z-index: 100;
+    }
+
+    .auth-status.connected {
+      border-left: 4px solid var(--secondary);
+      color: var(--secondary);
+    }
+
+    .auth-status.disconnected {
+      border-left: 4px solid var(--danger);
+      color: var(--danger);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .intro {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border-left: 4px solid var(--primary);
+    }
+
+    .intro h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--gray-900);
+    }
+
+    .intro p {
+      color: var(--gray-600);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .credential-types {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .credential-card {
+      background: white;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .credential-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .credential-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+    }
+
+    .credential-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .credential-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--gray-900);
+    }
+
+    .credential-description {
+      color: var(--gray-600);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .form-section {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      display: none;
+    }
+
+    .form-section.active {
+      display: block;
+    }
+
+    .form-section h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--gray-700);
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid var(--gray-200);
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-light);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1e40af;
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: var(--gray-100);
+      color: var(--gray-700);
+    }
+
+    .btn-secondary:hover {
+      background: var(--gray-200);
+    }
+
+    .btn-connect {
+      background: var(--secondary);
+      color: white;
+      margin-bottom: 2rem;
+    }
+
+    .btn-connect:hover {
+      background: #047857;
+    }
+
+    .actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--gray-200);
+    }
+
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert-success {
+      background: #d1fae5;
+      border-left: 4px solid var(--secondary);
+      color: #065f46;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      border-left: 4px solid var(--danger);
+      color: #991b1b;
+    }
+
+    .alert-info {
+      background: #dbeafe;
+      border-left: 4px solid var(--primary-light);
+      color: var(--primary);
+    }
+
+    .courses-section {
+      background: var(--gray-50);
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .courses-section h4 {
+      margin-bottom: 1rem;
+      color: var(--gray-700);
+    }
+
+    .course-item {
+      background: white;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+      border: 1px solid var(--gray-200);
+    }
+
+    .course-fields {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
+      gap: 0.75rem;
+      align-items: end;
+    }
+
+    .btn-small {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+
+    .add-course-btn {
+      margin-top: 1rem;
+      width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 1.5rem;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+
+      .course-fields {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-status disconnected" id="auth-status">
+    <span>●</span>
+    <span>Not Connected</span>
+  </div>
+
+  <header class="header">
+    <div class="header-content">
+      <h1>🎓 Academic Credentials</h1>
+      <p>Issue verifiable academic credentials - diplomas, certificates, student IDs, and transcripts</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="intro">
+      <h2>Welcome to Academic Credentials Demo</h2>
+      <p>
+        This demo application showcases how educational institutions can issue verifiable academic credentials 
+        using LearnCard. Issue diplomas, course certificates, student ID cards, and academic transcripts 
+        that students can own and share securely.
+      </p>
+      <p>
+        <strong>Get Started:</strong> Connect your LearnCard wallet to begin issuing credentials to students.
+        Use <code>demo@learningeconomy.io</code> to skip traditional auth.
+      </p>
+    </section>
+
+    <button class="btn btn-connect" id="connect-btn">
+      🔗 Connect LearnCard Wallet
+    </button>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="credential-types" id="credential-types">
+      <div class="credential-card" data-type="diploma">
+        <div class="credential-icon">🎓</div>
+        <div class="credential-name">Diploma</div>
+        <div class="credential-description">
+          Issue official diploma credentials for degree completion. Includes degree name, major, honors, and graduation date.
+        </div>
+      </div>
+
+      <div class="credential-card" data-type="courseCertificate">
+        <div class="credential-icon">📜</div>
+        <div class="credential-name">Course Certificate</div>
+        <div class="credential-description">
+          Award certificates for individual course completion. Perfect for professional development and continuing education.
+        </div>
+      </div>
+
+      <div class="credential-card" data-type="studentId">
+        <div class="credential-icon">🪪</div>
+        <div class="credential-name">Student ID Card</div>
+        <div class="credential-description">
+          Issue digital student identification cards for campus access and verification purposes.
+        </div>
+      </div>
+
+      <div class="credential-card" data-type="transcript">
+        <div class="credential-icon">📊</div>
+        <div class="credential-name">Academic Transcript</div>
+        <div class="credential-description">
+          Generate official academic transcripts with course history, grades, credits, and GPA.
+        </div>
+      </div>
+    </div>
+
+    <!-- Diploma Form -->
+    <div class="form-section" id="form-diploma">
+      <h3>🎓 Issue Diploma</h3>
+      <form id="diploma-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="diploma-student-name">Student Name *</label>
+            <input type="text" id="diploma-student-name" required placeholder="e.g., Jane Smith">
+          </div>
+          <div class="form-group">
+            <label for="diploma-recipient-did">Recipient DID *</label>
+            <input type="text" id="diploma-recipient-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="diploma-degree">Degree Name *</label>
+            <input type="text" id="diploma-degree" required placeholder="e.g., Bachelor of Science">
+          </div>
+          <div class="form-group">
+            <label for="diploma-major">Major/Field</label>
+            <input type="text" id="diploma-major" placeholder="e.g., Computer Science">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="diploma-institution">Institution *</label>
+            <input type="text" id="diploma-institution" required placeholder="e.g., University of Technology">
+          </div>
+          <div class="form-group">
+            <label for="diploma-date">Graduation Date *</label>
+            <input type="date" id="diploma-date" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="diploma-honors">Honors/Distinctions</label>
+          <input type="text" id="diploma-honors" placeholder="e.g., Summa Cum Laude, Honors">
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Diploma</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Course Certificate Form -->
+    <div class="form-section" id="form-courseCertificate">
+      <h3>📜 Issue Course Certificate</h3>
+      <form id="certificate-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cert-student-name">Student Name *</label>
+            <input type="text" id="cert-student-name" required placeholder="e.g., John Doe">
+          </div>
+          <div class="form-group">
+            <label for="cert-recipient-did">Recipient DID *</label>
+            <input type="text" id="cert-recipient-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cert-course">Course Name *</label>
+            <input type="text" id="cert-course" required placeholder="e.g., Advanced Web Development">
+          </div>
+          <div class="form-group">
+            <label for="cert-institution">Institution *</label>
+            <input type="text" id="cert-institution" required placeholder="e.g., Tech Academy">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cert-instructor">Instructor Name</label>
+            <input type="text" id="cert-instructor" placeholder="e.g., Dr. Smith">
+          </div>
+          <div class="form-group">
+            <label for="cert-date">Completion Date *</label>
+            <input type="date" id="cert-date" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="cert-grade">Grade/Score</label>
+          <input type="text" id="cert-grade" placeholder="e.g., A+, 95%, Pass with Distinction">
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Certificate</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Student ID Form -->
+    <div class="form-section" id="form-studentId">
+      <h3>🪪 Issue Student ID Card</h3>
+      <form id="studentid-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="id-student-name">Student Name *</label>
+            <input type="text" id="id-student-name" required placeholder="e.g., Alex Johnson">
+          </div>
+          <div class="form-group">
+            <label for="id-recipient-did">Recipient DID *</label>
+            <input type="text" id="id-recipient-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="id-institution">Institution *</label>
+            <input type="text" id="id-institution" required placeholder="e.g., State University">
+          </div>
+          <div class="form-group">
+            <label for="id-number">Student ID Number *</label>
+            <input type="text" id="id-number" required placeholder="e.g., S12345678">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="id-program">Program/Degree</label>
+            <input type="text" id="id-program" placeholder="e.g., MBA, Computer Science BS">
+          </div>
+          <div class="form-group">
+            <label for="id-enrollment">Enrollment Date *</label>
+            <input type="date" id="id-enrollment" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="id-expiration">Expiration Date</label>
+          <input type="date" id="id-expiration">
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Student ID</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Transcript Form -->
+    <div class="form-section" id="form-transcript">
+      <h3>📊 Issue Academic Transcript</h3>
+      <form id="transcript-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="transcript-student-name">Student Name *</label>
+            <input type="text" id="transcript-student-name" required placeholder="e.g., Sarah Williams">
+          </div>
+          <div class="form-group">
+            <label for="transcript-recipient-did">Recipient DID *</label>
+            <input type="text" id="transcript-recipient-did" required placeholder="did:example:123...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="transcript-institution">Institution *</label>
+            <input type="text" id="transcript-institution" required placeholder="e.g., Engineering College">
+          </div>
+          <div class="form-group">
+            <label for="transcript-program">Program *</label>
+            <input type="text" id="transcript-program" required placeholder="e.g., Bachelor of Engineering">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="transcript-gpa">Cumulative GPA *</label>
+            <input type="text" id="transcript-gpa" required placeholder="e.g., 3.85, 4.0">
+          </div>
+          <div class="form-group">
+            <label for="transcript-date">Issue Date *</label>
+            <input type="date" id="transcript-date" required>
+          </div>
+        </div>
+
+        <div class="courses-section">
+          <h4>Courses</h4>
+          <div id="courses-list"></div>
+          <button type="button" class="btn btn-secondary add-course-btn" onclick="addCourse()">
+            + Add Course
+          </button>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Issue Transcript</button>
+          <button type="button" class="btn btn-secondary" onclick="showCredentialTypes()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    import { createPartnerConnect } from '@learncard/partner-connect';
+    import { actions } from 'astro:actions';
+
+    const learnCard = createPartnerConnect();
+    let isAuthenticated = false;
+    let currentUser = null;
+
+    // DOM Elements
+    const authStatus = document.getElementById('auth-status');
+    const connectBtn = document.getElementById('connect-btn');
+    const alert = document.getElementById('alert');
+    const credentialCards = document.querySelectorAll('.credential-card');
+    const credentialTypes = document.getElementById('credential-types');
+
+    // Alert functions
+    function showAlert(message, type = 'info') {
+      alert.textContent = message;
+      alert.className = `alert alert-${type} show`;
+      setTimeout(() => {
+        alert.classList.remove('show');
+      }, 5000);
+    }
+
+    // Auth functions
+    async function connectWallet() {
+      try {
+        showAlert('Connecting to LearnCard...', 'info');
+        const identity = await learnCard.requestIdentity();
+        currentUser = identity.user;
+        isAuthenticated = true;
+        
+        authStatus.className = 'auth-status connected';
+        authStatus.innerHTML = `<span>●</span><span>Connected: ${identity.user.did.substring(0, 20)}...</span>`;
+        connectBtn.style.display = 'none';
+        
+        showAlert('Successfully connected to LearnCard!', 'success');
+      } catch (error) {
+        console.error('Connection error:', error);
+        showAlert(`Connection failed: ${error.message || 'Please try again'}`, 'error');
+      }
+    }
+
+    // Credential type selection
+    function showCredentialTypes() {
+      credentialTypes.style.display = 'grid';
+      document.querySelectorAll('.form-section').forEach(form => {
+        form.classList.remove('active');
+      });
+      credentialCards.forEach(card => card.classList.remove('active'));
+    }
+
+    function showForm(type) {
+      if (!isAuthenticated) {
+        showAlert('Please connect your LearnCard wallet first', 'error');
+        return;
+      }
+
+      credentialTypes.style.display = 'none';
+      document.querySelectorAll('.form-section').forEach(form => {
+        form.classList.remove('active');
+      });
+      document.getElementById(`form-${type}`).classList.add('active');
+    }
+
+    // Course management for transcripts
+    let courseCount = 0;
+    window.addCourse = function() {
+      courseCount++;
+      const courseHtml = `
+        <div class="course-item" data-course="${courseCount}">
+          <div class="course-fields">
+            <div class="form-group">
+              <label>Course Name</label>
+              <input type="text" class="course-name" placeholder="e.g., Calculus I" required>
+            </div>
+            <div class="form-group">
+              <label>Code</label>
+              <input type="text" class="course-code" placeholder="MATH101" required>
+            </div>
+            <div class="form-group">
+              <label>Credits</label>
+              <input type="number" class="course-credits" placeholder="3" required>
+            </div>
+            <div class="form-group">
+              <label>Grade</label>
+              <input type="text" class="course-grade" placeholder="A" required>
+            </div>
+            <div class="form-group">
+              <label>Semester</label>
+              <input type="text" class="course-semester" placeholder="Fall 2024" required>
+            </div>
+            <button type="button" class="btn btn-danger btn-small" onclick="removeCourse(${courseCount})">Remove</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('courses-list').insertAdjacentHTML('beforeend', courseHtml);
+    };
+
+    window.removeCourse = function(id) {
+      const course = document.querySelector(`[data-course="${id}"]`);
+      if (course) course.remove();
+    };
+
+    // Form submissions
+    document.getElementById('diploma-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issueDiploma({
+          recipientDid: document.getElementById('diploma-recipient-did').value,
+          studentName: document.getElementById('diploma-student-name').value,
+          degreeName: document.getElementById('diploma-degree').value,
+          institution: document.getElementById('diploma-institution').value,
+          graduationDate: document.getElementById('diploma-date').value,
+          major: document.getElementById('diploma-major').value,
+          honors: document.getElementById('diploma-honors').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Diploma issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue diploma');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Diploma';
+      }
+    });
+
+    document.getElementById('certificate-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issueCourseCertificate({
+          recipientDid: document.getElementById('cert-recipient-did').value,
+          studentName: document.getElementById('cert-student-name').value,
+          courseName: document.getElementById('cert-course').value,
+          institution: document.getElementById('cert-institution').value,
+          completionDate: document.getElementById('cert-date').value,
+          instructor: document.getElementById('cert-instructor').value,
+          grade: document.getElementById('cert-grade').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Certificate issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue certificate');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Certificate';
+      }
+    });
+
+    document.getElementById('studentid-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      try {
+        const { data, error } = await actions.issueStudentId({
+          recipientDid: document.getElementById('id-recipient-did').value,
+          studentName: document.getElementById('id-student-name').value,
+          institution: document.getElementById('id-institution').value,
+          studentNumber: document.getElementById('id-number').value,
+          enrollmentDate: document.getElementById('id-enrollment').value,
+          expirationDate: document.getElementById('id-expiration').value,
+          program: document.getElementById('id-program').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Student ID issued successfully!', 'success');
+          e.target.reset();
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue student ID');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Student ID';
+      }
+    });
+
+    document.getElementById('transcript-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing...';
+
+      const courseItems = document.querySelectorAll('.course-item');
+      const courses = Array.from(courseItems).map(item => ({
+        name: item.querySelector('.course-name').value,
+        code: item.querySelector('.course-code').value,
+        credits: parseFloat(item.querySelector('.course-credits').value),
+        grade: item.querySelector('.course-grade').value,
+        semester: item.querySelector('.course-semester').value,
+      }));
+
+      try {
+        const { data, error } = await actions.issueTranscript({
+          recipientDid: document.getElementById('transcript-recipient-did').value,
+          studentName: document.getElementById('transcript-student-name').value,
+          institution: document.getElementById('transcript-institution').value,
+          program: document.getElementById('transcript-program').value,
+          courses,
+          cumulativeGpa: document.getElementById('transcript-gpa').value,
+          issueDate: document.getElementById('transcript-date').value,
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.success) {
+          showAlert('Transcript issued successfully!', 'success');
+          e.target.reset();
+          document.getElementById('courses-list').innerHTML = '';
+          showCredentialTypes();
+        } else {
+          throw new Error(data?.error || 'Failed to issue transcript');
+        }
+      } catch (error) {
+        showAlert(`Error: ${error.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Issue Transcript';
+      }
+    });
+
+    // Event listeners
+    connectBtn.addEventListener('click', connectWallet);
+
+    credentialCards.forEach(card => {
+      card.addEventListener('click', () => {
+        credentialCards.forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        showForm(card.dataset.type);
+      });
+    });
+
+    window.showCredentialTypes = showCredentialTypes;
+  </script>
+</body>
+</html>

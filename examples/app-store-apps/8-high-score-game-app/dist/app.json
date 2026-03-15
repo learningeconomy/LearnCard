@@ -1,0 +1,50 @@
+{
+  "name": "Space Dodger",
+  "short_name": "Space Dodger",
+  "description": "An arcade-style space dodger game that issues verifiable credentials for high scores",
+  "version": "0.0.1",
+  "author": "LearnCard Team",
+  "license": "MIT",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a1a",
+  "theme_color": "#00ffff",
+  "categories": ["games", "education"],
+  "keywords": ["game", "arcade", "credentials", "achievements", "space"],
+  "features": [
+    "Single Sign-On (SSO) via LearnCard",
+    "Real-time arcade gameplay",
+    "Achievement credential issuance",
+    "Bronze, Silver, Gold, and Platinum tiers",
+    "High score tracking",
+    "Particle effects and smooth animations"
+  ],
+  "tech_stack": {
+    "framework": "Astro",
+    "styling": "Tailwind CSS + Canvas",
+    "sdk": "@learncard/partner-connect",
+    "backend": "@learncard/init with Astro Actions"
+  },
+  "screenshots": [
+    {
+      "src": "/screenshots/gameplay.png",
+      "alt": "Space Dodger gameplay with spaceship dodging asteroids"
+    },
+    {
+      "src": "/screenshots/achievement.png", 
+      "alt": "Achievement unlocked notification with credential issuance"
+    }
+  ],
+  "repository": "https://github.com/learningeconomy/LearnCard",
+  "app_store_category": "Games",
+  "age_rating": "Everyone",
+  "privacy_policy": "No personal data collection. Only verifiable credentials are issued to the user's LearnCard wallet.",
+  "support_email": "support@learncard.com"
+}
