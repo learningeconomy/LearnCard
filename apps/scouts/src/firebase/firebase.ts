@@ -15,13 +15,13 @@ export type RawFirebaseConfig = {
 };
 
 export const firebaseConfig: RawFirebaseConfig = {
-    apiKey: 'AIzaSyCdh1fKaZgk3lKbMkzmiQ26k8aKRQQemjM',
-    authDomain: 'scoutpass-9a67e.firebaseapp.com',
-    projectId: 'scoutpass-9a67e',
-    storageBucket: 'scoutpass-9a67e.appspot.com',
-    messagingSenderId: '792471921493',
-    appId: '1:792471921493:web:93ef24f3287ef63faec5dc',
-    measurementId: 'G-BJR327CKF8',
+    apiKey: process.env.FIREBASE_API_KEY || '',
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN || '',
+    projectId: process.env.FIREBASE_PROJECT_ID || '',
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || '',
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '',
+    appId: process.env.FIREBASE_APP_ID || '',
+    measurementId: process.env.FIREBASE_MEASUREMENT_ID || '',
 };
 
 const app = initializeApp(firebaseConfig);

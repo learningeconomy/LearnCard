@@ -1,0 +1,61 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop, master ]
+  pull_request:
+    branches: [ main, develop, master ]
+  schedule:
+    # Run daily at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  gitleaks:
+    name: Secret Detection Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for comprehensive scanning
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+          GITLEAKS_ENABLE_COMMENTS: true
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
+          GITLEAKS_ENABLE_SUMMARY: true
+
+  # Additional security checks can be added here
+  # dependency-scan:
+  #   name: Dependency Vulnerability Scan
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Run npm audit
+  #       run: npm audit --audit-level=moderate
+
+# Workflow documentation
+# This workflow uses gitleaks to scan for secrets in the codebase
+# It runs on every push, PR, and daily via schedule
+# 
+# Features:
+# - Scans entire git history
+# - Posts PR comments with findings
+# - Uploads results as artifacts
+# - Generates workflow summary
+#
+# To view results:
+# 1. Check the Actions tab in GitHub
+# 2. Look at PR comments for inline feedback
+# 3. Download artifacts for detailed reports
+#
+# For false positives, update .gitleaks.toml

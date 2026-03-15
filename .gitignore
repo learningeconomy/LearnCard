@@ -30,3 +30,15 @@ node_modules
 .claude/
 .vexp/
 .github/copilot-instructions.md
+
+# Local Netlify folder
+.netlify
+
+# Environment variables - NEVER commit credentials
+.env
+.env.local
+.env.*.local
+
+# Google services configuration - contains API keys and secrets
+**/google-services.json
+**/GoogleService-Info.plist

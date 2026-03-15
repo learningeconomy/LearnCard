@@ -54,6 +54,29 @@ export default defineConfig(async ({ mode }) => {
             'process.env.REACT_APP_SSS_SERVER_URL': env.REACT_APP_SSS_SERVER_URL
                 ? JSON.stringify(env.REACT_APP_SSS_SERVER_URL)
                 : 'undefined',
+
+            // Firebase Configuration
+            'process.env.FIREBASE_API_KEY': env.FIREBASE_API_KEY
+                ? JSON.stringify(env.FIREBASE_API_KEY)
+                : '""',
+            'process.env.FIREBASE_AUTH_DOMAIN': env.FIREBASE_AUTH_DOMAIN
+                ? JSON.stringify(env.FIREBASE_AUTH_DOMAIN)
+                : '""',
+            'process.env.FIREBASE_PROJECT_ID': env.FIREBASE_PROJECT_ID
+                ? JSON.stringify(env.FIREBASE_PROJECT_ID)
+                : '""',
+            'process.env.FIREBASE_STORAGE_BUCKET': env.FIREBASE_STORAGE_BUCKET
+                ? JSON.stringify(env.FIREBASE_STORAGE_BUCKET)
+                : '""',
+            'process.env.FIREBASE_MESSAGING_SENDER_ID': env.FIREBASE_MESSAGING_SENDER_ID
+                ? JSON.stringify(env.FIREBASE_MESSAGING_SENDER_ID)
+                : '""',
+            'process.env.FIREBASE_APP_ID': env.FIREBASE_APP_ID
+                ? JSON.stringify(env.FIREBASE_APP_ID)
+                : '""',
+            'process.env.FIREBASE_MEASUREMENT_ID': env.FIREBASE_MEASUREMENT_ID
+                ? JSON.stringify(env.FIREBASE_MEASUREMENT_ID)
+                : '""',
         },
         resolve: {
             alias: [
