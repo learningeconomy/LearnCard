@@ -10,7 +10,7 @@ output "ec2_instance_id" {
 
 output "lambda_function_url" {
   description = "Lambda Function URL (use as PREVIEW_EC2_LAMBDA_URL secret)"
-  value       = trimright(aws_lambda_function_url.preview_manager.function_url, "/")
+  value       = trimsuffix(aws_lambda_function_url.preview_manager.function_url, "/")
 }
 
 output "ssh_command" {
@@ -26,7 +26,7 @@ output "wildcard_dns" {
 output "github_secrets_summary" {
   description = "Values to configure as GitHub secrets in the 'preview' environment"
   value = {
-    PREVIEW_EC2_LAMBDA_URL = trimright(aws_lambda_function_url.preview_manager.function_url, "/")
+    PREVIEW_EC2_LAMBDA_URL = trimsuffix(aws_lambda_function_url.preview_manager.function_url, "/")
     PREVIEW_EC2_USERNAME   = "ubuntu"
     PREVIEW_EC2_SSH_KEY    = "<contents of your private key file>"
     PREVIEW_EC2_API_KEY    = "<the api_key you set in terraform.tfvars>"
