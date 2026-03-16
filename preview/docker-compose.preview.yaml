@@ -66,7 +66,7 @@ services:
             IS_OFFLINE: true
             IS_E2E_TEST: true
             SKIP_DIDKIT_NAPI: '1'
-            DOMAIN_NAME: localhost%3A4000
+            DOMAIN_NAME: ${PREVIEW_DOMAIN:-localhost%3A4000}:brain
             NEO4J_URI: bolt://neo4j:7687
             NEO4J_USERNAME: neo4j
             NEO4J_PASSWORD: this-is-the-password
@@ -131,7 +131,7 @@ services:
             IS_OFFLINE: true
             SKIP_DIDKIT_NAPI: '1'
             SEED: c
-            AUTHORIZED_DIDS: did:web:localhost%3A4000
+            AUTHORIZED_DIDS: did:web:${PREVIEW_DOMAIN:-localhost%3A4000}:brain
             MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
             MONGO_DB_NAME: simple-signing
             REDIS_HOST: redis3
@@ -159,7 +159,7 @@ services:
             IS_OFFLINE: true
             IS_E2E_TEST: true
             SEED: d
-            AUTHORIZED_DIDS: did:web:localhost%3A4000
+            AUTHORIZED_DIDS: did:web:${PREVIEW_DOMAIN:-localhost%3A4000}:brain
             MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
             MONGO_DB_NAME: lca-api
             REDIS_HOST: redis3
