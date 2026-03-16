@@ -441,6 +441,59 @@ Partner Connect example apps follow a consistent pattern:
 -   **Logic**: Network admins can issue both Leader IDs and Scout IDs to troops they manage
 -   **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
 
+## Generic Form Inputs (`learn-card-base`)
+
+The `packages/learn-card-base` package provides reusable, styled form components for use in LearnCard applications. Import from `learn-card-base`:
+
+```typescript
+import { TextInput, TextArea, Toggle, SelectInput, RadioGroup } from 'learn-card-base';
+```
+
+### Available Components
+
+| Component     | Purpose                                  | Key Props                                                                      |
+| ------------- | ---------------------------------------- | ------------------------------------------------------------------------------ |
+| `TextInput`   | Single-line text input (uses IonInput)   | `value`, `onChange`, `placeholder`, `type`, `disabled`, `startIcon`, `endIcon` |
+| `TextArea`    | Multi-line text input (uses IonTextarea) | `value`, `onChange`, `placeholder`, `rows`, `autoGrow`, `disabled`             |
+| `Toggle`      | Boolean toggle switch                    | `checked`, `onChange`, `label`, `labelPosition`, `size`                        |
+| `SelectInput` | Dropdown select                          | `value`, `onChange`, `options`, `placeholder`                                  |
+| `RadioGroup`  | Radio button group                       | `value`, `onChange`, `options`                                                 |
+
+### Usage Examples
+
+```tsx
+// TextInput with icons
+<TextInput
+    value={location}
+    onChange={value => setLocation(value ?? '')}
+    placeholder="Enter location"
+    endIcon={<MapPin className="w-5 h-5" />}
+/>
+
+// TextArea for longer content
+<TextArea
+    value={description}
+    onChange={value => setDescription(value ?? '')}
+    placeholder="Describe your experience"
+    rows={2}
+/>
+
+// Toggle with label
+<Toggle
+    checked={isEnabled}
+    onChange={setIsEnabled}
+    label="Enable feature"
+    labelPosition="left"
+    size="sm"
+/>
+```
+
+### Adding New Form Components
+
+1. Create component in `packages/learn-card-base/src/components/form-inputs/`
+2. Export from `packages/learn-card-base/src/components/form-inputs/index.ts`
+3. Follow existing patterns: use Ionic components, grayscale-100 backgrounds, rounded-[10px] styling
+
 ## Privacy Preferences & Age-Gate System
 
 GDPR/COPPA-compliant privacy controls based on user age and country. Minors have AI, analytics, and bug reporting disabled by default.
