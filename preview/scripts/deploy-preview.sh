@@ -116,6 +116,7 @@ services:
 $([ -n "${BRAIN_SEED:-}" ] && echo "      SEED: ${BRAIN_SEED}" || true)
   cloud:
     environment:
+      DOMAIN_NAME: ${PREVIEW_DOMAIN}:cloud
       IS_OFFLINE: ''
 $([ -n "${CLOUD_SEED:-}" ] && echo "      LEARN_CLOUD_SEED: ${CLOUD_SEED}" || true)
   signing:

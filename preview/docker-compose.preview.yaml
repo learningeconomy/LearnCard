@@ -101,6 +101,7 @@ services:
             PORT: 4100
             LEARN_CLOUD_SEED: b
             SKIP_DIDKIT_NAPI: '1'
+            DOMAIN_NAME: ${PREVIEW_DOMAIN:-localhost%3A4100}:cloud
             LEARN_CLOUD_MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
             LEARN_CLOUD_MONGO_DB_NAME: learn-cloud
             REDIS_HOST: redis2
