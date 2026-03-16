@@ -94,7 +94,7 @@ git show origin/main:preview/scripts/cleanup-idle-previews.sh > "$CRON_SCRIPT" 2
 if [ -s "$CRON_SCRIPT" ]; then
     chmod +x "$CRON_SCRIPT"
     CRON_LINE="0 * * * * $CRON_SCRIPT >> $WORKSPACE_DIR/cleanup.log 2>&1"
-    ( crontab -l 2>/dev/null | grep -v "cleanup-idle-previews" ; echo "$CRON_LINE" ) | crontab -
+    ( crontab -l 2>/dev/null | { grep -v "cleanup-idle-previews" || true; }; echo "$CRON_LINE" ) | crontab -
 else
     echo "Warning: Cleanup script is empty or missing, skipping cron installation"
 fi
