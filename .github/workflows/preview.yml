@@ -248,6 +248,23 @@ jobs:
                   script: |
                       cat ~/preview-workspace/preview-${{ needs.should-deploy.outputs.pr_number }}.env 2>/dev/null || echo "PREVIEW_URL=https://pr-${{ needs.should-deploy.outputs.pr_number }}.${{ env.PREVIEW_BASE_DOMAIN }}"
 
+            - name: Add preview label to PR
+              if: success()
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const prNumber = ${{ needs.should-deploy.outputs.pr_number }};
+                      try {
+                          await github.rest.issues.addLabels({
+                              owner: context.repo.owner,
+                              repo: context.repo.repo,
+                              issue_number: prNumber,
+                              labels: ['preview'],
+                          });
+                      } catch (e) {
+                          console.log(`Could not add label: ${e.message}`);
+                      }
+
             - name: Update comment with preview URL
               if: always()
               uses: actions/github-script@v7
