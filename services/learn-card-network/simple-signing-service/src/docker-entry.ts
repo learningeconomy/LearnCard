@@ -11,7 +11,27 @@ import { didFastifyPlugin } from './dids';
 
 const server = Fastify({ maxParamLength: 5000 });
 
-server.register(fastifyCors);
+server.register(fastifyCors, {
+    origin: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+});
+
+// Safety-net: ensure CORS headers are present on every response, even if
+// @fastify/cors misses them (e.g. error responses from trpc-to-openapi).
+server.addHook('onSend', (_request, reply, payload, done) => {
+    if (!reply.getHeader('access-control-allow-origin')) {
+        const origin = _request.headers.origin;
+
+        if (origin) {
+            reply.header('access-control-allow-origin', origin);
+            reply.header('vary', 'Origin');
+        }
+    }
+
+    done(null, payload);
+});
 
 server.register(fastifyTRPCPlugin, {
     prefix: '/trpc',
