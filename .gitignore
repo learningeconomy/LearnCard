@@ -33,3 +33,6 @@ node_modules
 .claude/
 .vexp/
 .github/copilot-instructions.md
+
+# Local Netlify folder
+.netlify

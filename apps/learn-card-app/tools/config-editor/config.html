@@ -864,6 +864,7 @@ function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
     const [devLineCursor, setDevLineCursor] = useState(0);
     const [devStarting, setDevStarting] = useState(false);
     const [devStopping, setDevStopping] = useState(false);
+    const [netlifyMode, setNetlifyMode] = useState(false);
     const devLogRef = useRef(null);
 
     const fileInputRef = useRef(null);
@@ -1050,7 +1051,7 @@ function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
         setDevLineCursor(0);
 
         try {
-            await api.post('/api/actions/dev-server/start', { tenant: activeTenant });
+            await api.post('/api/actions/dev-server/start', { tenant: activeTenant, netlify: netlifyMode });
         } catch (err) {
             setActionError('Failed to start dev server: ' + String(err));
         }
@@ -1122,6 +1123,9 @@ function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
                                     ${phaseConfig[devStatus.phase]?.label || devStatus.phase}
                                 </span>
                                 <span class="text-[10px] text-gs-400 font-mono">${devStatus.tenant}</span>
+                                ${devStatus.netlify ? h`
+                                    <span class="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-sky-100 text-sky-700">Netlify</span>
+                                ` : null}
                             </div>
                             <span class="text-[10px] text-gs-400 tabular-nums">${formatUptime(devStatus.uptime)}</span>
                         </div>
@@ -1207,8 +1211,28 @@ function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
                     <p class="text-[11px] text-gs-400 leading-relaxed">
                         Applies the tenant config then starts Vite dev server.
                     </p>
+
+                    <!-- Netlify toggle -->
+                    <div class="flex items-center justify-between px-3 py-2.5 rounded-xl border border-gs-200 bg-white">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-sky-600" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M13.39 11.73l-1.47-.06-.74.74.17 1.68-.08.07-2.35-2.43.07-.07 1.65.17.74-.75-.06-1.48.5-.5 2.07 2.13zm3.55-3.66l-1.1-.07-.15-.16.43-1.4-.7-.72-1.4.44-.17-.14-.06-1.11-.95-.28-.68.92-.24-.01-.79-.79-1 .12-.05 1.1.16.16-.43 1.41.7.71 1.41-.43.15.14.07 1.11.95.27.68-.92.22.02.8.79 1-.13.05-1.1-.16-.16.44-1.4-.72-.71-1.4.43-.16-.14-.06-1.11-.95-.27-.69.92-.23-.01-.79-.8-1 .13z"/>
+                            </svg>
+                            <div>
+                                <div class="text-xs font-medium text-gs-800">Netlify Edge Functions</div>
+                                <div class="text-[10px] text-gs-400">Proxy through Netlify to test edge functions locally</div>
+                            </div>
+                        </div>
+                        <button
+                            onClick=${() => setNetlifyMode(!netlifyMode)}
+                            class="relative w-9 h-5 rounded-full transition-colors ${netlifyMode ? 'bg-sky-500' : 'bg-gs-300'}"
+                        >
+                            <span class="absolute top-0.5 ${netlifyMode ? 'left-[18px]' : 'left-0.5'} w-4 h-4 bg-white rounded-full shadow transition-all" />
+                        </button>
+                    </div>
+
                     <${ActionButton}
-                        label=${'Start Dev Server: ' + (activeTenant || '...')}
+                        label=${'Start Dev Server: ' + (activeTenant || '...') + (netlifyMode ? ' (Netlify)' : '')}
                         icon=${h`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`}
                         onClick=${handleDevStart}
                         loading=${devStarting}

@@ -871,6 +871,7 @@ const scaffoldTheme = (opts: ScaffoldOptions): { success: boolean; files: string
 interface DevServerState {
     phase: 'preparing' | 'starting' | 'running' | 'stopped' | 'error';
     tenant: string;
+    netlify: boolean;
     output: string[];
     pid: number | null;
     startedAt: number;
@@ -912,13 +913,17 @@ const killDevServer = (): void => {
     appendOutput('\n--- Server stopped ---');
 };
 
-const startDevServer = (tenant: string): void => {
+const NETLIFY_DEV_PORT = 8888;
+const VITE_TARGET_PORT = 3001;
+
+const startDevServer = (tenant: string, netlify = false): void => {
     // Kill any existing server first
     if (devServer?.process) killDevServer();
 
     devServer = {
         phase: 'preparing',
         tenant,
+        netlify,
         output: [],
         pid: null,
         startedAt: Date.now(),
@@ -962,57 +967,130 @@ const startDevServer = (tenant: string): void => {
             return;
         }
 
-        appendOutput('\n▸ Starting Vite dev server...');
         devServer.phase = 'starting';
 
-        // Phase 2: vite dev
-        const vite = spawn('npx', ['vite', '--host'], {
-            cwd: APP_ROOT,
-            shell: true,
-            detached: true,
-        });
+        if (netlify) {
+            // Phase 2a: netlify dev wrapping vite
+            appendOutput(`\n▸ Starting Netlify dev server (edge functions enabled)...`);
+            appendOutput(`  Vite on :${VITE_TARGET_PORT} → Netlify proxy on :${NETLIFY_DEV_PORT}`);
 
-        devServer.process = vite;
-        devServer.pid = vite.pid ?? null;
+            // Use a single shell string so quotes are preserved around the --command value
+            const ndev = spawn(
+                `npx netlify dev --command="npx vite --port ${VITE_TARGET_PORT}" --target-port ${VITE_TARGET_PORT}`,
+                [],
+                { cwd: APP_ROOT, shell: true, detached: true },
+            );
 
-        vite.stdout.on('data', (d: Buffer) => {
-            const text = d.toString();
+            devServer.process = ndev;
+            devServer.pid = ndev.pid ?? null;
 
-            for (const line of text.split('\n')) {
-                if (line.trim()) appendOutput(line);
-            }
+            ndev.stdout.on('data', (d: Buffer) => {
+                const text = d.toString();
 
-            // Detect when Vite is ready
-            const urlMatch = text.match(/Local:\s+(https?:\/\/[^\s]+)/);
+                for (const line of text.split('\n')) {
+                    if (line.trim()) appendOutput(line);
+                }
 
-            if (urlMatch && devServer) {
-                devServer.phase = 'running';
-                devServer.url = urlMatch[1]!;
-            }
-        });
+                // Netlify CLI prints "Server now ready on http://localhost:8888"
+                const netlifyReady = text.match(/ready on (https?:\/\/[^\s]+)/) ||
+                    text.match(/Server now ready on (https?:\/\/[^\s]+)/) ||
+                    text.match(new RegExp(`localhost:${NETLIFY_DEV_PORT}`));
 
-        vite.stderr.on('data', (d: Buffer) => {
-            for (const line of d.toString().split('\n')) {
-                if (line.trim()) appendOutput(line);
-            }
-        });
+                if (netlifyReady && devServer && devServer.phase !== 'running') {
+                    devServer.phase = 'running';
+                    devServer.url = typeof netlifyReady[1] === 'string'
+                        ? netlifyReady[1]
+                        : `http://localhost:${NETLIFY_DEV_PORT}`;
+                }
+            });
 
-        vite.on('close', (viteCode) => {
-            if (!devServer || devServer.phase === 'stopped') return;
+            ndev.stderr.on('data', (d: Buffer) => {
+                const text = d.toString();
 
-            devServer.phase = viteCode === 0 ? 'stopped' : 'error';
-            devServer.exitCode = viteCode;
-            devServer.process = null;
-            appendOutput(`\n--- Vite exited (code ${viteCode}) ---`);
-        });
+                for (const line of text.split('\n')) {
+                    if (line.trim()) appendOutput(line);
+                }
 
-        vite.on('error', (err) => {
-            if (!devServer) return;
+                // Some Netlify CLI versions print ready message to stderr
+                const netlifyReady = text.match(/ready on (https?:\/\/[^\s]+)/) ||
+                    text.match(/Server now ready on (https?:\/\/[^\s]+)/);
 
-            devServer.phase = 'error';
-            devServer.process = null;
-            appendOutput(`\n✗ Vite error: ${String(err)}`);
-        });
+                if (netlifyReady && devServer && devServer.phase !== 'running') {
+                    devServer.phase = 'running';
+                    devServer.url = typeof netlifyReady[1] === 'string'
+                        ? netlifyReady[1]
+                        : `http://localhost:${NETLIFY_DEV_PORT}`;
+                }
+            });
+
+            ndev.on('close', (nCode) => {
+                if (!devServer || devServer.phase === 'stopped') return;
+
+                devServer.phase = nCode === 0 ? 'stopped' : 'error';
+                devServer.exitCode = nCode;
+                devServer.process = null;
+                appendOutput(`\n--- Netlify dev exited (code ${nCode}) ---`);
+            });
+
+            ndev.on('error', (err) => {
+                if (!devServer) return;
+
+                devServer.phase = 'error';
+                devServer.process = null;
+                appendOutput(`\n✗ Netlify dev error: ${String(err)}`);
+            });
+        } else {
+            // Phase 2b: raw vite dev
+            appendOutput('\n▸ Starting Vite dev server...');
+
+            const vite = spawn('npx', ['vite', '--host'], {
+                cwd: APP_ROOT,
+                shell: true,
+                detached: true,
+            });
+
+            devServer.process = vite;
+            devServer.pid = vite.pid ?? null;
+
+            vite.stdout.on('data', (d: Buffer) => {
+                const text = d.toString();
+
+                for (const line of text.split('\n')) {
+                    if (line.trim()) appendOutput(line);
+                }
+
+                // Detect when Vite is ready
+                const urlMatch = text.match(/Local:\s+(https?:\/\/[^\s]+)/);
+
+                if (urlMatch && devServer) {
+                    devServer.phase = 'running';
+                    devServer.url = urlMatch[1]!;
+                }
+            });
+
+            vite.stderr.on('data', (d: Buffer) => {
+                for (const line of d.toString().split('\n')) {
+                    if (line.trim()) appendOutput(line);
+                }
+            });
+
+            vite.on('close', (viteCode) => {
+                if (!devServer || devServer.phase === 'stopped') return;
+
+                devServer.phase = viteCode === 0 ? 'stopped' : 'error';
+                devServer.exitCode = viteCode;
+                devServer.process = null;
+                appendOutput(`\n--- Vite exited (code ${viteCode}) ---`);
+            });
+
+            vite.on('error', (err) => {
+                if (!devServer) return;
+
+                devServer.phase = 'error';
+                devServer.process = null;
+                appendOutput(`\n✗ Vite error: ${String(err)}`);
+            });
+        }
     });
 
     prepare.on('error', (err) => {
@@ -1393,15 +1471,15 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
 
         if (path === '/api/actions/dev-server/start' && req.method === 'POST') {
             const body = JSON.parse(await readBody(req));
-            const { tenant } = body;
+            const { tenant, netlify: useNetlify } = body;
 
             if (!tenant) {
                 json(res, 400, { error: 'Missing tenant' });
                 return;
             }
 
-            startDevServer(tenant);
-            json(res, 200, { started: true, tenant });
+            startDevServer(tenant, !!useNetlify);
+            json(res, 200, { started: true, tenant, netlify: !!useNetlify });
             return;
         }
 
@@ -1419,6 +1497,7 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
                 active: true,
                 phase: devServer.phase,
                 tenant: devServer.tenant,
+                netlify: devServer.netlify,
                 pid: devServer.pid,
                 url: devServer.url,
                 exitCode: devServer.exitCode,
