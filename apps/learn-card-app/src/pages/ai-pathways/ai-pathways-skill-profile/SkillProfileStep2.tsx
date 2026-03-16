@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextInput, Toggle, useDeviceTypeByWidth } from 'learn-card-base';
+import { TextInput, TextArea, Toggle, useDeviceTypeByWidth } from 'learn-card-base';
 // import Plus from 'learn-card-base/svgs/Plus';
 // import MapPin from 'learn-card-base/svgs/MapPin';
 import DatePickerInput from 'src/components/date-picker/DatePickerInput';
@@ -85,10 +85,11 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                         <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
                             Job Summary
                         </span>
-                        <TextInput
+                        <TextArea
                             value={experience.jobSummary}
                             onChange={value => updateExperience(index, 'jobSummary', value ?? '')}
                             placeholder="What do you do?"
+                            rows={2}
                         />
                     </div>
 
