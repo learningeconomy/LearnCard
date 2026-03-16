@@ -79,9 +79,8 @@ const AdminToolsLearnerContextCredentialSelectorModal: FC<
     const handleSelectAll = async () => {
         let currentHasNextPage = hasNextPage;
         while (currentHasNextPage) {
-            await fetchNextPage();
-            await new Promise(resolve => setTimeout(resolve, 100));
-            currentHasNextPage = hasNextPage;
+            const { hasNextPage: newHasNextPage } = await fetchNextPage();
+            currentHasNextPage = newHasNextPage;
         }
         const allLoadedUris = allCreds.map(record => record.uri);
         setWorkingSelection(Array.from(new Set(allLoadedUris)));
