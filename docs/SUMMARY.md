@@ -35,6 +35,7 @@
             -   [Wallets](how-to-guides/implement-flows/chapi/cheat-sheets/wallets.md)
 -   [Deploy Infrastructure](how-to-guides/deploy-infrastructure/README.md)
     -   [Remote Key Management](how-to-guides/deploy-infrastructure/managing-seed-phrases.md)
+    -   [SSS Key Management Config](how-to-guides/deploy-infrastructure/sss-key-management-config.md)
     -   [Generate API Tokens](how-to-guides/deploy-infrastructure/generate-api-tokens.md)
     -   [Signing Authority](how-to-guides/deploy-infrastructure/signing-authority.md)
     -   [Deploy Your Own Network](how-to-guides/deploy-infrastructure/deploy-your-own-network.md)
@@ -65,6 +66,7 @@
 -   [LearnCloud Network API](sdks/learncard-network/README.md)
     -   [Authentication](sdks/learncard-network/authentication.md)
     -   [Usage Examples](sdks/learncard-network/usage-examples.md)
+    -   [Key Management & QR Login API](sdks/learncard-network/lca-api-key-management.md)
     -   [Skill Frameworks & OpenSALT](sdks/learncard-network/skills-and-opensalt.md)
     -   [Architecture](sdks/learncard-network/architecture.md)
     -   [Notifications & Webhooks](sdks/learncard-network/notifications.md)
@@ -94,6 +96,8 @@
                     spec: learn-cloud-storage-openapi
         ```
     -   [xAPI Reference](sdks/learncloud-storage-api/xapi-reference.md)
+-   [SSS Key Manager](sdks/sss-key-manager.md)
+-   [Auth Types](sdks/auth-types.md)
 -   [Partner Connect SDK](sdks/partner-connect.md)
 -   [Plugins](sdks/official-plugins/README.md)
 -   [LearnCard CLI](sdks/learncard-cli.md)
@@ -103,6 +107,9 @@
 -   [Identities & Keys](core-concepts/identities-and-keys/README.md)
     -   [Decentralized Identifiers (DIDs)](core-concepts/identities-and-keys/decentralized-identifiers-dids.md)
     -   [Seed Phrases](core-concepts/identities-and-keys/seed-phrases.md)
+    -   [Key Management (SSS)](core-concepts/identities-and-keys/key-management-sss.md)
+    -   [Account Recovery](core-concepts/identities-and-keys/account-recovery.md)
+    -   [Cross-Device Login (QR)](core-concepts/identities-and-keys/cross-device-login.md)
     -   [Network Profiles](core-concepts/identities-and-keys/network-profiles.md)
     -   [Signing Authorities](core-concepts/identities-and-keys/signing-authorities.md)
     -   [Trust Registries](core-concepts/identities-and-keys/trust-registries.md)
@@ -134,6 +141,7 @@
 -   [Architecture & Principles](core-concepts/architecture-and-principles/README.md)
     -   [Control Planes](core-concepts/architecture-and-principles/control-planes.md)
     -   [Plugin System](core-concepts/architecture-and-principles/plugins.md)
+    -   [Auth Coordinator](core-concepts/architecture-and-principles/auth-coordinator.md)
     -   [Auth Grants and API Tokens](core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md)
     -   [U.S. State API](core-concepts/architecture-and-principles/u.s.-state-api.md)
 

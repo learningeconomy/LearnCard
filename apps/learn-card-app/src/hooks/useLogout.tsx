@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
-import { auth } from '../firebase/firebase';
 import authStore from 'learn-card-base/stores/authStore';
 
 import {
@@ -10,21 +9,17 @@ import {
     pushUtilities,
     LOGIN_REDIRECTS,
     SocialLoginTypes,
-    useWeb3AuthSFA,
     useToast,
     useWallet,
     ToastTypeEnum,
-    useSQLiteStorage,
 } from 'learn-card-base';
-import { useQueryClient } from '@tanstack/react-query';
 import { resumeBuilderStore } from '../stores/resumeBuilderStore';
 
+import { useAuthCoordinator } from '../providers/AuthCoordinatorProvider';
+
 const useLogout = () => {
-    const firebaseAuth = auth();
     const { initWallet } = useWallet();
-    const queryClient = useQueryClient();
-    const { clearDB } = useSQLiteStorage();
-    const { logout, loggingOut: web3AuthLoggingOut } = useWeb3AuthSFA();
+    const { logout: coordinatorLogout } = useAuthCoordinator();
 
     const { presentToast } = useToast();
 
@@ -35,6 +30,7 @@ const useLogout = () => {
         options?: { appendQuery?: Record<string, string>; overrideRedirectUrl?: string }
     ) => {
         setIsLoggingOut(true);
+
         const typeOfLogin = authStore?.get?.typeOfLogin();
         const nativeSocialLogins = [
             SocialLoginTypes.apple,
@@ -70,34 +66,30 @@ const useLogout = () => {
                     }
                 }
 
-                await firebaseAuth.signOut(); // sign out of web layer
+                // Native Firebase sign-out for Capacitor social logins.
+                // The coordinator's onSignOut also calls this, but we do it here first
+                // to ensure native session is cleared before the coordinator runs.
+                // Double-calling FirebaseAuthentication.signOut() is harmless.
                 const isNativeSocialLogin =
                     !!typeOfLogin && nativeSocialLogins.includes(typeOfLogin as SocialLoginTypes);
+
                 if (isNativeSocialLogin && Capacitor.isNativePlatform()) {
                     try {
                         await FirebaseAuthentication?.signOut?.();
                     } catch (e) {
-                        console.log('firebase::signout::error', e);
+                        console.warn('firebase::signout::error', e);
                     }
                 }
 
-                try {
-                    resumeBuilderStore.set.resetStore();
+                // Coordinator handles: authProvider.signOut, clearLocalKeys, onLogout callback
+                resumeBuilderStore.set.resetStore();
+                // (onLogout clears stores, queryClient, SQLite, localStorage, IndexedDB, etc.)
+                await coordinatorLogout();
 
-                    // Clear React Query cache FIRST while SQLite is still available for persistence
-                    await queryClient.resetQueries();
-
-                    // Then clear the database
-                    await clearDB();
-
-                    // Clear CLI-related localStorage
-                    localStorage.removeItem('learncard-cli-welcomed');
-                    localStorage.removeItem('learncard-cli-chains');
-                } catch (e) {
-                    console.error(e);
-                }
-
-                await logout(redirectUrl);
+                // Hard redirect — localStorage.clear() in the logout callback wipes
+                // Ionic's internal router state, so client-side history.push would
+                // land on a white screen. A full page reload reinitializes cleanly.
+                window.location.href = '/login';
             } catch (e) {
                 console.error('There was an issue logging out', e);
                 setIsLoggingOut(false);
@@ -109,7 +101,7 @@ const useLogout = () => {
         }, 1000);
     };
 
-    return { handleLogout, isLoggingOut: isLoggingOut || web3AuthLoggingOut };
+    return { handleLogout, isLoggingOut };
 };
 
 export default useLogout;

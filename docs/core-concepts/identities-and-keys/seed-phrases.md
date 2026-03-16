@@ -95,9 +95,22 @@ It's important to distinguish LearnCard's direct use of a hexadecimal seed strin
 
 While you _could_ technically generate a 32-byte entropy, convert it to a BIP-39 mnemonic phrase for user backup, and then convert that mnemonic _back_ to its 32-byte hex representation to pass to `initLearnCard`, LearnCard's `seed` parameter itself does not directly consume the list of words. It consumes the resulting hex string.
 
+#### Relationship to SSS Key Management
+
+In the LearnCard App and other end-user applications, private keys are no longer stored or managed as raw seeds by the user. Instead, the [SSS Key Management](key-management-sss.md) system automatically generates the key, splits it into three shares using Shamir Secret Sharing, and handles storage and recovery transparently.
+
+The seed-based initialization described on this page is primarily relevant for:
+
+- **Backend services** and **bots** that manage their own identity programmatically.
+- **Self-hosted deployments** where you control the key material directly.
+- **Plugin development** and **testing** scenarios.
+
+For end-user applications, see [Key Management (SSS)](key-management-sss.md) and [Account Recovery](account-recovery.md) for how keys are protected and recovered.
+
 #### Key Takeaways
 
 * A LearnCard Key Generation Seed is a **64-character hexadecimal string** representing 32 bytes of randomness.
 * It is the **foundational secret** used to deterministically derive all cryptographic keys for a LearnCard identity.
 * **Secure generation and extremely careful storage** of this seed are critical for maintaining control and enabling recovery of an identity.
 * This direct hexadecimal seed is distinct from, though related to the concept of, mnemonic seed phrases commonly used for wallet backups.
+* For end-user applications, **SSS key management** handles key protection automatically — users do not need to manage raw seeds.
