@@ -4,13 +4,13 @@ import {
     BoostClaimLinkOptionsType,
     BoostClaimLinkCacheValueValidator,
 } from 'types/boost';
-import { escapeLocalhostInUri } from '@helpers/uri.helpers';
+import { escapeColonsInDomain } from '@helpers/uri.helpers';
 
 const normalizeBoostUriForClaimLinkKey = (boostUri: string): string => {
     try {
-        return escapeLocalhostInUri(decodeURIComponent(boostUri));
+        return escapeColonsInDomain(decodeURIComponent(boostUri));
     } catch {
-        return escapeLocalhostInUri(boostUri);
+        return escapeColonsInDomain(boostUri);
     }
 };
 
