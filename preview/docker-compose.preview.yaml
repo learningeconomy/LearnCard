@@ -223,7 +223,7 @@ services:
 
     mongodb:
         command: ['--replSet', 'rs0', '--bind_ip_all', '--port', '27017', '--quiet', '--logpath', '/var/log/mongodb/mongod.log']
-        image: mongo:latest
+        image: mongo:7.0
         extra_hosts:
             - 'localhost:host-gateway'
         healthcheck:

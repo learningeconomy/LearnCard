@@ -90,7 +90,7 @@ Each PR stack is a fully isolated Docker Compose project:
 | **Signing Service** | `Dockerfile.monorepo` | 4200 |
 | **LCA API** | `lca-api/Dockerfile` | 5100 |
 | **Neo4j** | `neo4j:latest` | 7687 |
-| **MongoDB** (replica set) | `mongo:latest` | 27017 |
+| **MongoDB** (replica set) | `mongo:7.0` | 27017 |
 | **Redis** ×3 | `redis:alpine` | 6379 |
 | **ElasticMQ** | `softwaremill/elasticmq-native` | 9324 |
 | **Postgres** | `postgres` | 5432 |
