@@ -114,6 +114,7 @@ services:
   brain:
     environment:
       DOMAIN_NAME: ${PREVIEW_DOMAIN}:brain
+      IS_OFFLINE: ''
   signing:
     environment:
       AUTHORIZED_DIDS: did:web:${PREVIEW_DOMAIN}:brain
