@@ -155,8 +155,10 @@ describe('Credential Activity Tracking', () => {
             expect(stats.claimRate).toBeLessThanOrEqual(100);
 
             // If there are delivered credentials, claim rate should be calculated
-            if (stats.delivered > 0) {
-                const expectedRate = (stats.claimed / stats.delivered) * 100;
+            const totalSent = stats.created + stats.delivered + stats.claimed;
+
+            if (totalSent > 0) {
+                const expectedRate = (stats.claimed / totalSent) * 100;
 
                 expect(Math.abs(stats.claimRate - expectedRate)).toBeLessThan(1);
             }
