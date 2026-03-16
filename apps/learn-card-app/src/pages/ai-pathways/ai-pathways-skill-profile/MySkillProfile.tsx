@@ -20,6 +20,10 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
         setCurrentStep(currentStep + 1);
     };
 
+    const handleFinish = () => {
+        setIsExpanded(false);
+    };
+
     const handleBack = () => {
         setCurrentStep(currentStep - 1);
     };
@@ -29,7 +33,7 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
         2: <SkillProfileStep2 handleNext={handleNext} handleBack={handleBack} />,
         3: <SkillProfileStep3 handleNext={handleNext} handleBack={handleBack} />,
         4: <SkillProfileStep4 handleNext={handleNext} handleBack={handleBack} />,
-        5: <SkillProfileStep5 handleNext={handleNext} handleBack={handleBack} />,
+        5: <SkillProfileStep5 handleNext={handleFinish} handleBack={handleBack} />,
     };
 
     return (
