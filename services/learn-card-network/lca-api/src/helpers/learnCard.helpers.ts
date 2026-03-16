@@ -124,7 +124,7 @@ export const getServerDidWebDID = (): string => {
     const domain =
         !domainName || process.env.IS_OFFLINE
             ? `localhost%3A${process.env.PORT || 3000}`
-            : domainName.replace(/:/g, '%3A');
+            : domainName;
     return `did:web:${domain}`;
 };
 

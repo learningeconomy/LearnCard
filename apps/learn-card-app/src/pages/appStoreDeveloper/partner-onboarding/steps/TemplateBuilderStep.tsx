@@ -106,7 +106,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [pendingDeletes, setPendingDeletes] = useState<string[]>([]);
+    const [savingTemplateId, setSavingTemplateId] = useState<string | null>(null);
 
     // Validation status tracking for each template (ValidationStatus type imported from templateBuilderUtils)
     const [validationStatuses, setValidationStatuses] = useState<Record<string, { status: ValidationStatus; error?: string }>>({});
@@ -443,116 +443,43 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         }
     };
 
-    // Save all templates
-    // OPTIMIZED: Uses parallel API calls for much faster saving (especially for CSV imports)
-    const handleSaveAll = async () => {
-        if (!integrationId) {
-            presentToast('No project selected', { type: ToastTypeEnum.Error, hasDismissButton: true });
-            return;
-        }
+    // Save a single template individually (create or update)
+    const handleSaveIndividual = async (templateId: string) => {
+        const template = localTemplates.find(t => t.id === templateId);
+        if (!template) return;
 
-        setIsSaving(true);
+        setSavingTemplateId(templateId);
 
         try {
-            // PARALLEL: Delete all pending deletes at once
-            if (pendingDeletes.length > 0) {
-                await Promise.all(pendingDeletes.map(uri => deleteBoost(uri).catch(e => {
-                    console.warn('Failed to delete boost:', uri, e);
-                })));
-                setPendingDeletes([]);
+            const boostUri = await saveTemplateAsBoost(template);
+
+            if (boostUri) {
+                setLocalTemplates(prev => prev.map(t =>
+                    t.id === templateId
+                        ? { ...t, id: boostUri, boostUri, isNew: false, isDirty: false } as ExtendedTemplate
+                        : t
+                ));
+
+                presentToast(
+                    template.isNew ? 'Template created!' : 'Template updated!',
+                    { type: ToastTypeEnum.Success }
+                );
+                setExpandedId(null);
             }
-
-            // Separate templates into categories for optimal parallel processing
-            const masterTemplates = localTemplates.filter(t => t.isMasterTemplate && t.childTemplates?.length);
-            const standaloneTemplates = localTemplates.filter(t => !t.isMasterTemplate || !t.childTemplates?.length);
-
-            // Helper to save a single child template
-            const saveChild = async (child: ExtendedTemplate, parentBoostUri: string): Promise<ExtendedTemplate> => {
-                if (child.isNew || child.isDirty || !child.boostUri) {
-                    try {
-                        const childBoostUri = await saveChildTemplateAsBoost(child, parentBoostUri);
-                        return {
-                            ...child,
-                            id: childBoostUri || child.id,
-                            boostUri: childBoostUri || undefined,
-                            isNew: false,
-                            isDirty: false,
-                        };
-                    } catch (e) {
-                        console.error('Failed to save child boost:', e);
-                        return child;
-                    }
-                }
-                return child;
-            };
-
-            // Helper to save a master template and all its children
-            const saveMasterWithChildren = async (template: ExtendedTemplate): Promise<ExtendedTemplate> => {
-                const hasChildUpdates = template.childTemplates?.some(c => c.isNew || c.isDirty || !c.boostUri);
-
-                if (template.isNew || template.isDirty || !template.boostUri || hasChildUpdates) {
-                    // First, save the master template (must complete before children)
-                    const parentBoostUri = await saveTemplateAsBoost(template);
-
-                    if (parentBoostUri) {
-                        // PARALLEL: Save all children at once
-                        const savedChildren = await Promise.all(
-                            (template.childTemplates || []).map(child => saveChild(child, parentBoostUri))
-                        );
-
-                        return {
-                            ...template,
-                            id: parentBoostUri,
-                            boostUri: parentBoostUri,
-                            isNew: false,
-                            isDirty: false,
-                            childTemplates: savedChildren,
-                        } as ExtendedTemplate;
-                    }
-                }
-
-                return template;
-            };
-
-            // Helper to save a standalone template
-            const saveStandalone = async (template: ExtendedTemplate): Promise<ExtendedTemplate> => {
-                if (template.isNew || template.isDirty || !template.boostUri) {
-                    const boostUri = await saveTemplateAsBoost(template);
-                    return {
-                        ...template,
-                        id: boostUri || template.id,
-                        boostUri: boostUri || undefined,
-                        isNew: false,
-                        isDirty: false,
-                    };
-                }
-                return template;
-            };
-
-            // PARALLEL: Save all master templates (each saves its children in parallel internally)
-            // and all standalone templates at the same time
-            const [savedMasters, savedStandalones] = await Promise.all([
-                Promise.all(masterTemplates.map(saveMasterWithChildren)),
-                Promise.all(standaloneTemplates.map(saveStandalone)),
-            ]);
-
-            // Reconstruct the saved templates in original order
-            const savedTemplates = localTemplates.map(template => {
-                if (template.isMasterTemplate && template.childTemplates?.length) {
-                    return savedMasters.find(m => m.id === template.id || m.boostUri === template.boostUri) || template;
-                }
-                return savedStandalones.find(s => s.id === template.id || s.boostUri === template.boostUri) || template;
-            });
-
-            setLocalTemplates(savedTemplates as ExtendedTemplate[]);
-            presentToast('Templates saved successfully!', { type: ToastTypeEnum.Success, hasDismissButton: true });
-            onComplete(savedTemplates);
         } catch (err) {
-            console.error('Failed to save templates:', err);
-            presentToast('Failed to save templates', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            console.error('Failed to save template:', err);
+            presentToast(`Failed to ${template.isNew ? 'create' : 'update'} template`, {
+                type: ToastTypeEnum.Error,
+            });
         } finally {
-            setIsSaving(false);
+            setSavingTemplateId(null);
         }
+    };
+
+    // Cancel a new unsaved template (remove from list)
+    const handleCancelNew = (templateId: string) => {
+        setLocalTemplates(prev => prev.filter(t => t.id !== templateId));
+        if (expandedId === templateId) setExpandedId(null);
     };
 
     const handleAddTemplate = () => {
@@ -624,28 +551,69 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         }
     };
 
-    // Handle import confirmation - generate master template + child boosts
-    const handleImportConfirm = () => {
+    // Handle import confirmation - generate master template + child boosts, then save immediately
+    const handleImportConfirm = async () => {
         // Generate master template first (using imported utility)
         const masterTemplate = generateMasterTemplate(columnMappings, issuanceFieldsIncluded, branding);
 
         // Generate child boosts for each course, linked to master (using imported utility)
-        const childTemplates = csvAllRows.map(row => 
+        const childTemplates = csvAllRows.map(row =>
             generateChildBoostForCourse(row, masterTemplate.id, columnMappings, issuanceFieldsIncluded, branding, defaultImage)
         );
 
         // Attach children to master for UI display
         masterTemplate.childTemplates = childTemplates;
 
-        // Add master template (children are nested within it for display)
-        setLocalTemplates([...localTemplates, masterTemplate]);
-        setExpandedId(masterTemplate.id);
         setShowImportModal(false);
-        
-        presentToast(`Created master template + ${childTemplates.length} course boosts!`, { 
-            type: ToastTypeEnum.Success, 
-            hasDismissButton: true 
-        });
+        setIsSaving(true);
+
+        try {
+            // Save master template first
+            const parentBoostUri = await saveTemplateAsBoost(masterTemplate as ExtendedTemplate);
+
+            if (parentBoostUri) {
+                // Save all children in parallel
+                const savedChildren = await Promise.all(
+                    childTemplates.map(async (child) => {
+                        try {
+                            const childBoostUri = await saveChildTemplateAsBoost(child as ExtendedTemplate, parentBoostUri);
+                            return { ...child, boostUri: childBoostUri || undefined, isNew: false, isDirty: false };
+                        } catch (e) {
+                            console.error('Failed to save child boost:', e);
+                            return child;
+                        }
+                    })
+                );
+
+                const savedMaster = {
+                    ...masterTemplate,
+                    id: parentBoostUri,
+                    boostUri: parentBoostUri,
+                    isNew: false,
+                    isDirty: false,
+                    childTemplates: savedChildren,
+                } as ExtendedTemplate;
+
+                setLocalTemplates(prev => [...prev, savedMaster]);
+                setExpandedId(parentBoostUri);
+
+                presentToast(`Created master template + ${childTemplates.length} course boosts!`, {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true
+                });
+            }
+        } catch (err) {
+            console.error('Failed to save imported templates:', err);
+            // Fall back to adding unsaved to local state so user can retry
+            setLocalTemplates(prev => [...prev, masterTemplate as ExtendedTemplate]);
+            setExpandedId(masterTemplate.id);
+            presentToast('Import generated but failed to save. Please save each template manually.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        } finally {
+            setIsSaving(false);
+        }
 
         // Reset import state
         setCsvColumns([]);
@@ -671,13 +639,13 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         ));
     };
 
-    const handleDeleteTemplate = (id: string) => {
+    const handleDeleteTemplate = async (id: string) => {
         const template = localTemplates.find(t => t.id === id);
 
         if (template) {
             const urisToDelete: string[] = [];
 
-            // For master templates, queue children for deletion first
+            // For master templates, collect children for deletion first
             if (template.isMasterTemplate && template.childTemplates?.length) {
                 for (const child of template.childTemplates) {
                     if (child.boostUri) {
@@ -686,19 +654,28 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 }
             }
 
-            // Then queue the master/parent template itself
+            // Then the master/parent template itself
             if (template.boostUri) {
                 urisToDelete.push(template.boostUri);
             }
 
+            // Delete from backend immediately
             if (urisToDelete.length > 0) {
-                setPendingDeletes([...pendingDeletes, ...urisToDelete]);
+                try {
+                    await Promise.all(urisToDelete.map(uri => deleteBoost(uri).catch(e => {
+                        console.warn('Failed to delete boost:', uri, e);
+                    })));
+                } catch (err) {
+                    console.error('Failed to delete template:', err);
+                    presentToast('Failed to remove template', { type: ToastTypeEnum.Error });
+                    return;
+                }
             }
         }
 
         setLocalTemplates(localTemplates.filter(t => t.id !== id));
-
         if (expandedId === id) setExpandedId(null);
+        presentToast('Template removed', { type: ToastTypeEnum.Success });
     };
 
     // Open edit modal for a child template
@@ -838,18 +815,12 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         }
     }, []);
 
-    const hasUnsavedChanges = localTemplates.some(t => t.isNew || t.isDirty) || pendingDeletes.length > 0;
+    // Check if any template is still being edited (unsaved new template open)
+    const hasUnsavedNewTemplates = localTemplates.some(t => t.isNew);
 
-    // Check if any templates have invalid validation status
-    const hasInvalidTemplates = localTemplates.some(t => validationStatuses[t.id]?.status === 'invalid');
-    const hasUnvalidatedTemplates = localTemplates.some(t => {
-        const status = validationStatuses[t.id]?.status;
-        return !status || status === 'unknown' || status === 'dirty';
-    });
+    const hasSavedTemplates = localTemplates.some(t => !t.isNew && t.boostUri);
 
-    const canProceed = localTemplates.length > 0 && 
-        localTemplates.every(t => t.name.trim()) && 
-        !hasInvalidTemplates;
+    const canProceed = hasSavedTemplates && !hasUnsavedNewTemplates;
 
     if (isLoading) {
         return (
@@ -874,32 +845,11 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 </div>
             </div>
 
-            {/* Unsaved Changes Warning */}
-            {hasUnsavedChanges && (
-                <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>You have unsaved changes. Click "Save & Continue" to save your templates.</span>
-                </div>
-            )}
-
-            {/* Validation Warnings */}
-            {hasInvalidTemplates && (
-                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm">
-                    <XCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>
-                        <strong>Validation failed:</strong> One or more templates failed validation. 
-                        Expand the template and click the validation badge to see details.
-                    </span>
-                </div>
-            )}
-
-            {!hasInvalidTemplates && hasUnvalidatedTemplates && (
+            {/* Editing hint when a template is expanded */}
+            {expandedId && localTemplates.some(t => t.id === expandedId && t.isNew) && (
                 <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm">
-                    <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>
-                        <strong>Tip:</strong> Click the "Validate" button in each template to verify your credentials 
-                        will issue correctly before saving.
-                    </span>
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>Fill in your template details, then click <strong>"Create Template"</strong> to save it.</span>
                 </div>
             )}
 
@@ -1048,6 +998,10 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 onTestIssue={handleTestIssue}
                                 onValidationChange={handleValidationChange}
                                 validationStatus={validationStatuses[template.id]?.status || 'unknown'}
+                                onSave={() => handleSaveIndividual(template.id)}
+                                onCancel={template.isNew ? () => handleCancelNew(template.id) : undefined}
+                                isSaving={savingTemplateId === template.id}
+                                isNew={!!template.isNew}
                             />
                         )}
                     </div>
@@ -1086,32 +1040,27 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             <div className="flex gap-3 pt-4 border-t border-gray-100">
                 <button
                     onClick={onBack}
-                    disabled={isSaving}
-                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     Back
                 </button>
 
                 <button
-                    onClick={handleSaveAll}
-                    disabled={!canProceed || isSaving}
+                    onClick={() => onComplete(localTemplates)}
+                    disabled={!canProceed}
                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    {isSaving ? (
-                        <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Saving...
-                        </>
-                    ) : (
-                        <>
-                            <Save className="w-4 h-4" />
-                            Save & Continue
-                            <ArrowRight className="w-4 h-4" />
-                        </>
-                    )}
+                    Continue
+                    <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
+
+            {hasUnsavedNewTemplates && (
+                <p className="text-xs text-amber-600 text-center">
+                    Save or cancel the template you're editing before continuing.
+                </p>
+            )}
 
             {/* Import from Catalog Modal */}
             {showImportModal && (

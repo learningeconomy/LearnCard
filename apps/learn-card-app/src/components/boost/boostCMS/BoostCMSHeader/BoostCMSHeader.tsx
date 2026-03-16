@@ -122,6 +122,7 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
                             )}
                             {currentStep === BoostCMSStepsEnum.issueTo && (
                                 <button
+                                    data-testid="boost-cms-save"
                                     disabled={isLoading || issueToLength === 0}
                                     onClick={() => handleSaveAndIssue(publishedBoostUri)}
                                     className="rounded-full ion-no-padding p-0 shadow-3xl font-poppins text-xl bg-white text-grayscale-800 px-[20px] py-[4px] disabled:opacity-50"

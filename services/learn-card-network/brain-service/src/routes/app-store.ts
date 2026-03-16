@@ -8,6 +8,7 @@ import { t, openRoute, profileRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
+import { getCredentialUri } from '@helpers/credential.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
@@ -42,6 +43,8 @@ import {
     getBoostForListingByTemplateAlias,
     getBoostsForListing,
     hasTemplateAliasForListing,
+    getCredentialsSentByListingToProfile,
+    countCredentialsSentByListingToProfile,
 } from '@accesslayer/app-store-listing/relationships/read';
 import { readIntegrationById } from '@accesslayer/integration/read';
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
@@ -383,6 +386,23 @@ const PaginatedInstalledAppsValidator = z.object({
     hasMore: z.boolean(),
     cursor: z.string().optional(),
     records: z.array(InstalledAppValidator),
+});
+
+const AppCredentialRecordValidator = z.object({
+    credentialId: z.string(),
+    credentialUri: z.string(),
+    date: z.string(),
+    status: z.enum(['pending', 'claimed', 'revoked']),
+    boostName: z.string().optional(),
+    boostCategory: z.string().optional(),
+    activityId: z.string().optional(),
+});
+
+const PaginatedAppCredentialsValidator = z.object({
+    hasMore: z.boolean(),
+    cursor: z.string().optional(),
+    records: z.array(AppCredentialRecordValidator),
+    totalCount: z.number(),
 });
 
 // Helper to verify integration ownership
@@ -1529,6 +1549,69 @@ export const appStoreRouter = t.router({
         .output(z.boolean())
         .query(async ({ input, ctx }) => {
             return checkIfProfileInstalledApp(ctx.user.profile.profileId, input.listingId);
+        }),
+
+    getMyCredentialsFromApp: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/{listingId}/my-credentials',
+                tags: ['App Store'],
+                summary: 'Get credentials earned from an app',
+                description: 'Get all credentials that have been sent to you from a specific app',
+            },
+            requiredScope: 'credentials:read',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                limit: z.number().int().min(1).max(100).default(25),
+                cursor: z.string().optional(),
+            })
+        )
+        .output(PaginatedAppCredentialsValidator)
+        .query(async ({ input, ctx }) => {
+            const { listingId, limit, cursor } = input;
+            const profileId = ctx.user.profile.profileId;
+
+            // Verify listing exists
+            const listing = await readAppStoreListingByIdOrSlug(listingId);
+            if (!listing) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+            }
+
+            const resolvedListingId = listing.listing_id;
+
+            // Get credentials with pagination
+            const results = await getCredentialsSentByListingToProfile(
+                resolvedListingId,
+                profileId,
+                { limit: limit + 1, cursor }
+            );
+
+            // Get total count
+            const totalCount = await countCredentialsSentByListingToProfile(
+                resolvedListingId,
+                profileId
+            );
+
+            const hasMore = results.length > limit;
+            const slicedResults = hasMore ? results.slice(0, limit) : results;
+            const nextCursor = hasMore ? slicedResults[slicedResults.length - 1]?.date : undefined;
+
+            // Construct credential URIs from IDs using the domain
+            const records = slicedResults.map(record => ({
+                ...record,
+                credentialUri: getCredentialUri(record.credentialId, ctx.domain),
+            }));
+
+            return {
+                hasMore,
+                cursor: nextCursor,
+                records,
+                totalCount,
+            };
         }),
 
     // ==================== App Boost Management Routes ====================

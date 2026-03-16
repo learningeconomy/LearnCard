@@ -70,7 +70,9 @@ export const fieldToJson = (field: TemplateFieldValue | undefined): string | und
         return `{{${field.variableName}}}`;
     }
 
-    return field.value || undefined;
+    // Trim whitespace/newlines to avoid backend parsing errors from textarea inputs
+    const trimmed = field.value?.trim();
+    return trimmed || undefined;
 };
 
 /**
@@ -121,7 +123,9 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
         credential.id = fieldToJson(template.id);
     }
 
-    credential.name = fieldToJson(template.name) || 'Untitled Credential';
+    // Credential name mirrors achievement name (static or dynamic)
+    const achievementName = template.credentialSubject.achievement.name;
+    credential.name = fieldToJson(achievementName) || fieldToJson(template.name) || 'Untitled Credential';
 
     if (template.description?.value || template.description?.isDynamic) {
         credential.description = fieldToJson(template.description);
@@ -131,9 +135,34 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
         credential.image = fieldToJson(template.image);
     }
 
-    // Issuer - just use the issuer ID (DID) as a string, not an object
-    // This will be replaced with wallet.id.did() during actual issuance
-    credential.issuer = fieldToJson(template.issuer.id) || '{{issuer_did}}';
+    // Issuer - use string DID when only ID is present, object when extra fields are filled
+    // The DID placeholder will be replaced with wallet.id.did() during actual issuance
+    const issuerHasExtraFields = (template.issuer.name?.value || template.issuer.name?.isDynamic)
+        || (template.issuer.url?.value || template.issuer.url?.isDynamic)
+        || (template.issuer.image?.value || template.issuer.image?.isDynamic)
+        || (template.issuer.email?.value || template.issuer.email?.isDynamic);
+
+    if (issuerHasExtraFields) {
+        const issuerObj: Record<string, unknown> = {
+            id: fieldToJson(template.issuer.id) || '{{issuer_did}}',
+            type: ['Profile'],
+        };
+        if (template.issuer.name?.value || template.issuer.name?.isDynamic) {
+            issuerObj.name = fieldToJson(template.issuer.name);
+        }
+        if (template.issuer.url?.value || template.issuer.url?.isDynamic) {
+            issuerObj.url = fieldToJson(template.issuer.url);
+        }
+        if (template.issuer.image?.value || template.issuer.image?.isDynamic) {
+            issuerObj.image = fieldToJson(template.issuer.image);
+        }
+        if (template.issuer.email?.value || template.issuer.email?.isDynamic) {
+            issuerObj.email = fieldToJson(template.issuer.email);
+        }
+        credential.issuer = issuerObj;
+    } else {
+        credential.issuer = fieldToJson(template.issuer.id) || '{{issuer_did}}';
+    }
 
     // Dates (VC v2 syntax)
     credential.validFrom = fieldToJson(template.validFrom) || '{{issue_date}}';
@@ -349,12 +378,20 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
         });
     }
 
-    // Evidence
+    credential.credentialSubject = credentialSubject;
+
+    // Evidence is a top-level credential property (VC v2 context), NOT inside credentialSubject
+    // Fields: id (URL), type, name, description, narrative, genre, audience
+    // name/description/narrative resolve via top-level OBv3 context (not Evidence's scoped context)
     if (template.credentialSubject.evidence && template.credentialSubject.evidence.length > 0) {
-        credentialSubject.evidence = template.credentialSubject.evidence.map(e => {
+        credential.evidence = template.credentialSubject.evidence.map(e => {
             const evidence: Record<string, unknown> = {
                 type: [fieldToJson(e.type) || 'Evidence'],
             };
+
+            if (e.evidenceUrl?.value || e.evidenceUrl?.isDynamic) {
+                evidence.id = fieldToJson(e.evidenceUrl);
+            }
 
             if (e.name?.value || e.name?.isDynamic) {
                 evidence.name = fieldToJson(e.name);
@@ -380,17 +417,24 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
         });
     }
 
-    credential.credentialSubject = credentialSubject;
-
     return credential;
 };
 
 /**
  * Parse a JSON credential object back to OBv3CredentialTemplate
  */
+// Contexts injected by the signing process — not part of the template definition
+const SIGNING_ARTIFACT_CONTEXTS = new Set([
+    'https://w3id.org/security/suites/ed25519-2020/v1',
+    'https://w3id.org/security/suites/ed25519-2018/v1',
+    'https://w3id.org/security/suites/jws-2020/v1',
+]);
+
 export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTemplate => {
     const schemaType = detectSchemaType(json);
-    const contexts = Array.isArray(json['@context']) ? json['@context'] as string[] : DEFAULT_CONTEXTS;
+    const rawContexts = Array.isArray(json['@context']) ? json['@context'] as string[] : DEFAULT_CONTEXTS;
+    // Strip signing artifact contexts that get injected by issueCredential()
+    const contexts = rawContexts.filter(c => !SIGNING_ARTIFACT_CONTEXTS.has(c));
     const types = Array.isArray(json.type) ? json.type as string[] : DEFAULT_TYPES;
 
     // For non-OBv3 credentials, store raw JSON and create minimal template
@@ -419,17 +463,24 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
     const achievementObj = (typeof subjectObj.achievement === 'object' && subjectObj.achievement !== null) ? subjectObj.achievement as Record<string, unknown> : {};
     const criteriaObj = (typeof achievementObj.criteria === 'object' && achievementObj.criteria !== null) ? achievementObj.criteria as Record<string, unknown> : undefined;
     const alignmentArr = Array.isArray(achievementObj.alignment) ? achievementObj.alignment as Record<string, unknown>[] : [];
-    const evidenceArr = Array.isArray(subjectObj.evidence) ? subjectObj.evidence as Record<string, unknown>[] : [];
+    // Evidence is a top-level credential property (VC v2), but also check subjectObj for backwards compat
+    const evidenceArr = Array.isArray(json.evidence) ? json.evidence as Record<string, unknown>[]
+        : Array.isArray(subjectObj.evidence) ? subjectObj.evidence as Record<string, unknown>[] : [];
     const resultArr = Array.isArray(subjectObj.result) ? subjectObj.result as Record<string, unknown>[] : [];
     const resultDescArr = Array.isArray(achievementObj.resultDescription) ? achievementObj.resultDescription as Record<string, unknown>[] : [];
     const otherIdArr = Array.isArray(achievementObj.otherIdentifier) ? achievementObj.otherIdentifier as Record<string, unknown>[] : [];
     const subjectIdArr = Array.isArray(subjectObj.identifier) ? subjectObj.identifier as Record<string, unknown>[] : [];
 
-    // Parse issuer - can be a string (DID) or an object
+    // Parse issuer - can be a string (DID) or an object with name/url/image/email
     const issuerValue = json.issuer;
+    const issuerObj = (typeof issuerValue === 'object' && issuerValue !== null) ? issuerValue as Record<string, unknown> : null;
     const issuer: IssuerTemplate = {
-        id: issuerValue ? jsonToField(typeof issuerValue === 'string' ? issuerValue : (issuerValue as Record<string, unknown>).id) : undefined,
-        name: staticField(''),
+        id: issuerValue ? jsonToField(typeof issuerValue === 'string' ? issuerValue : issuerObj?.id) : undefined,
+        name: issuerObj?.name ? jsonToField(issuerObj.name) : staticField(''),
+        url: issuerObj?.url ? jsonToField(issuerObj.url) : undefined,
+        image: issuerObj?.image ? jsonToField(issuerObj.image) : undefined,
+        email: issuerObj?.email ? jsonToField(issuerObj.email) : undefined,
+        description: issuerObj?.description ? jsonToField(issuerObj.description) : undefined,
     };
 
     // Parse achievement with all OBv3 fields
@@ -478,8 +529,10 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
         id: subjectObj.id ? jsonToField(subjectObj.id) : undefined,
         name: subjectObj.name ? jsonToField(subjectObj.name) : undefined,
         achievement,
+        // Evidence fields: id (URL), type, name, description, narrative, genre, audience
         evidence: evidenceArr.map((e, i) => ({
             id: `evidence_${i}`,
+            evidenceUrl: e.id ? jsonToField(e.id) : undefined,
             type: e.type ? jsonToField(Array.isArray(e.type) ? e.type[0] : e.type) : undefined,
             name: e.name ? jsonToField(e.name) : undefined,
             description: e.description ? jsonToField(e.description) : undefined,
@@ -679,8 +732,9 @@ export const extractVariablesByType = (template: OBv3CredentialTemplate): Extrac
         checkField(r.achievedLevel);
     });
 
-    // Evidence
+    // Evidence fields
     template.credentialSubject.evidence?.forEach(e => {
+        checkField(e.evidenceUrl);
         checkField(e.type);
         checkField(e.name);
         checkField(e.description);
@@ -824,8 +878,9 @@ export const extractDynamicVariables = (template: OBv3CredentialTemplate): strin
         checkField(r.achievedLevel);
     });
 
-    // Evidence
+    // Evidence fields
     template.credentialSubject.evidence?.forEach(e => {
+        checkField(e.evidenceUrl);
         checkField(e.type);
         checkField(e.name);
         checkField(e.description);
@@ -844,24 +899,67 @@ export const extractDynamicVariables = (template: OBv3CredentialTemplate): strin
 };
 
 /**
- * Validate a template and return any errors
+ * A field-level validation error with a path identifier for inline display
  */
-export const validateTemplate = (template: OBv3CredentialTemplate): string[] => {
-    const errors: string[] = [];
+export interface FieldValidationError {
+    /** Dot-path identifying the field, e.g. 'achievement.name', 'achievement.criteria.id' */
+    field: string;
+    /** Human-readable error message */
+    message: string;
+}
 
-    if (!template.name.value && !template.name.isDynamic) {
-        errors.push('Credential name is required');
-    }
+/**
+ * Validate a template and return field-level errors
+ */
+export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidationError[] => {
+    const errors: FieldValidationError[] = [];
 
-    if (!template.issuer.name.value && !template.issuer.name.isDynamic) {
-        errors.push('Issuer name is required');
-    }
+    // Credential name is auto-derived from achievement name during serialization
+
+    // Issuer name is optional — derived from wallet profile at issuance time
 
     if (!template.credentialSubject.achievement.name.value && !template.credentialSubject.achievement.name.isDynamic) {
-        errors.push('Achievement name is required');
+        errors.push({ field: 'achievement.name', message: 'Achievement name is required' });
+    }
+
+    // Criteria ID must be a valid URI (JSON-LD @id field)
+    const criteriaId = template.credentialSubject.achievement.criteria?.id;
+    if (criteriaId?.value && !criteriaId.isDynamic) {
+        if (!/^https?:\/\//i.test(criteriaId.value) && !/^urn:/i.test(criteriaId.value)) {
+            errors.push({ field: 'achievement.criteria.id', message: 'Must be a valid URL (e.g., https://example.com)' });
+        }
+    }
+
+    // Alignment targetUrl must be a valid URI (JSON-LD @id field)
+    const alignments = template.credentialSubject.achievement.alignment || [];
+    for (let i = 0; i < alignments.length; i++) {
+        const a = alignments[i];
+        if (a.targetUrl?.value && !a.targetUrl.isDynamic) {
+            if (!/^https?:\/\//i.test(a.targetUrl.value) && !/^urn:/i.test(a.targetUrl.value)) {
+                errors.push({ field: `achievement.alignment.${i}.targetUrl`, message: 'Must be a valid URL (e.g., https://example.com)' });
+            }
+        }
+    }
+
+    // Evidence URL must be a valid URI (JSON-LD @id field)
+    const evidenceItems = template.credentialSubject.evidence || [];
+    for (let i = 0; i < evidenceItems.length; i++) {
+        const e = evidenceItems[i];
+        if (e.evidenceUrl?.value && !e.evidenceUrl.isDynamic) {
+            if (!/^https?:\/\//i.test(e.evidenceUrl.value) && !/^urn:/i.test(e.evidenceUrl.value)) {
+                errors.push({ field: `evidence.${i}.evidenceUrl`, message: 'Must be a valid URL (e.g., https://example.com)' });
+            }
+        }
     }
 
     return errors;
+};
+
+/**
+ * Get the error message for a specific field from validation errors
+ */
+export const getFieldError = (errors: FieldValidationError[], field: string): string | undefined => {
+    return errors.find(e => e.field === field)?.message;
 };
 
 /**

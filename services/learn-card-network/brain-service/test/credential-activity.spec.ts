@@ -333,8 +333,8 @@ describe('Credential Activity', () => {
 
             const stats = await getActivityStatsForProfile('usera');
 
-            expect(stats.delivered).toBeGreaterThanOrEqual(2);
-            expect(stats.claimed).toBeGreaterThanOrEqual(1);
+            expect(stats.delivered).toBe(1);
+            expect(stats.claimed).toBe(1);
         });
 
         it('should count FAILED events in stats', async () => {
@@ -361,8 +361,8 @@ describe('Credential Activity', () => {
 
             const stats = await getActivityStatsForProfile('usera');
 
-            expect(stats.failed).toBeGreaterThanOrEqual(1);
-            expect(stats.created).toBeGreaterThanOrEqual(1);
+            expect(stats.failed).toBe(1);
+            expect(stats.created).toBe(0);
         });
 
         it('should filter stats by integrationId', async () => {
