@@ -17,6 +17,7 @@ import {
     Users,
     Layers,
     CheckCircle,
+    CheckCircle2,
     AlertTriangle,
     XCircle,
     Loader2,
@@ -255,6 +256,8 @@ interface CredentialBuilderProps {
     initialValidationStatus?: ValidationStatus;
     /** When true, hides the "Dynamic" field mode option (useful for peer-to-peer badges) */
     disableDynamicFields?: boolean;
+    /** When true, hides the Recipient & Activity section (templates don't need recipient info) */
+    hideRecipientSection?: boolean;
 }
 
 export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
@@ -266,6 +269,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
     onValidationChange,
     initialValidationStatus = 'unknown',
     disableDynamicFields = false,
+    hideRecipientSection = false,
 }) => {
     const { initWallet } = useWallet();
     const [userDid, setUserDid] = useState<string>('did:web:preview');
@@ -291,10 +295,34 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
     const runValidation = useCallback(async () => {
         if (!onTestIssue) return;
 
+        // Check structural errors first (invalid URLs, missing required fields)
+        const structuralErrors = validateTemplate(template);
+        if (structuralErrors.length > 0) {
+            const errorMessages = structuralErrors.map(e => `${e.field}: ${e.message}`).join('; ');
+            updateValidationStatus('invalid', errorMessages);
+            return;
+        }
+
         updateValidationStatus('validating');
 
         try {
             const json = templateToJson(template);
+
+            // Client-side JSON-LD validation first (catches key expansion errors locally)
+            try {
+                const { validateCredentialJsonLd } = await import('./validateJsonLd');
+                const jsonLdResult = await validateCredentialJsonLd(json);
+                if (!jsonLdResult.valid) {
+                    const changes = diffTemplates(lastValidTemplate, template);
+                    setChangedFields(changes);
+                    updateValidationStatus('invalid', jsonLdResult.errors.join('; '));
+                    return;
+                }
+            } catch (jsonLdErr) {
+                // If JSON-LD validation itself fails to load, fall through to server validation
+                console.warn('[CredentialBuilder] Client-side JSON-LD validation unavailable:', jsonLdErr);
+            }
+
             const result = await onTestIssue(json);
 
             if (result.success) {
@@ -305,7 +333,6 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
             } else {
                 // Track what changed since last valid state
                 const changes = diffTemplates(lastValidTemplate, template);
-                console.log("Changes", changes)
                 setChangedFields(changes);
                 updateValidationStatus('invalid', result.error || 'Validation failed');
             }
@@ -424,6 +451,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
         template.credentialSubject?.achievement?.image?.value,
     ]);
     const [showPresetSelector, setShowPresetSelector] = useState(false);
+    const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
 
     // Toggle section expansion
     const toggleSection = useCallback((section: SectionId) => {
@@ -458,10 +486,11 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
             }
 
             onChange(newTemplate);
+            setSelectedPresetId(presetId);
             setShowPresetSelector(false);
 
             // Expand relevant sections
-            setExpandedSections(new Set(['credential', 'achievement', 'issuer']));
+            setExpandedSections(new Set(['credential', 'achievement']));
         }
     }, [onChange, issuerName, issuerImage]);
 
@@ -481,6 +510,11 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
 
                     if (lowerVar.includes('date') || lowerVar.includes('time')) {
                         return new Date().toISOString();
+                    }
+
+                    // Image-like fields: return empty to avoid broken <img> tags
+                    if (lowerVar.includes('image') || lowerVar.includes('logo') || lowerVar.includes('photo') || lowerVar.includes('icon') || lowerVar.includes('thumbnail') || lowerVar.includes('avatar')) {
+                        return '';
                     }
 
                     const humanized = varName.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
@@ -507,10 +541,16 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
 
         const rendered = replaceDynamicVariables(json) as Record<string, unknown>;
 
-        // Add preview issuer info
+        // Add preview issuer info — preserve issuer object structure if present
+        const renderedIssuer = rendered.issuer;
+        let previewIssuer: unknown = userDid;
+        if (typeof renderedIssuer === 'object' && renderedIssuer !== null) {
+            previewIssuer = { ...(renderedIssuer as Record<string, unknown>), id: userDid };
+        }
+
         return {
             ...rendered,
-            issuer: userDid,
+            issuer: previewIssuer,
             validFrom: new Date().toISOString(),
         };
     }, [template, userDid]);
@@ -632,10 +672,16 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         <button
                             type="button"
                             onClick={() => setShowPresetSelector(!showPresetSelector)}
-                            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                            className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                selectedPresetId
+                                    ? 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
                         >
                             <Sparkles className="w-4 h-4" />
-                            Templates
+                            {selectedPresetId
+                                ? TEMPLATE_PRESETS.find(p => p.id === selectedPresetId)?.name || 'Templates'
+                                : 'Templates'}
                             <ChevronDown className={`w-4 h-4 transition-transform ${showPresetSelector ? 'rotate-180' : ''}`} />
                         </button>
 
@@ -654,26 +700,37 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                     <div className="max-h-80 overflow-y-auto p-2">
                                         {TEMPLATE_PRESETS.map(preset => {
                                             const IconComponent = PRESET_ICONS[preset.icon] || FileText;
+                                            const isActive = selectedPresetId === preset.id;
 
                                             return (
                                                 <button
                                                     key={preset.id}
                                                     type="button"
                                                     onClick={() => applyPreset(preset.id)}
-                                                    className="w-full flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                                                    className={`w-full flex items-start gap-3 p-2 rounded-lg transition-colors text-left ${
+                                                        isActive
+                                                            ? 'bg-cyan-50 ring-1 ring-cyan-200'
+                                                            : 'hover:bg-gray-50'
+                                                    }`}
                                                 >
-                                                    <div className="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                                        isActive ? 'bg-cyan-200' : 'bg-cyan-100'
+                                                    }`}>
                                                         <IconComponent className="w-4 h-4 text-cyan-600" />
                                                     </div>
 
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium text-gray-800">
+                                                        <p className={`text-sm font-medium ${isActive ? 'text-cyan-800' : 'text-gray-800'}`}>
                                                             {preset.name}
                                                         </p>
                                                         <p className="text-xs text-gray-500 truncate">
                                                             {preset.description}
                                                         </p>
                                                     </div>
+
+                                                    {isActive && (
+                                                        <CheckCircle2 className="w-4 h-4 text-cyan-600 flex-shrink-0 mt-0.5" />
+                                                    )}
                                                 </button>
                                             );
                                         })}
@@ -694,15 +751,6 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                     <p className="text-xs text-violet-600 mt-1">
                         This credential uses a {template.schemaType === 'clr2' ? 'CLR 2.0' : 'custom'} schema. 
                         The Builder UI is not available for this credential type. Use the <strong>JSON</strong> tab to edit directly.
-                    </p>
-                </div>
-            )}
-
-            {/* Validation Errors */}
-            {validationErrors.length > 0 && activeTab === 'builder' && template.schemaType === 'obv3' && (
-                <div className="px-4 py-2 bg-amber-50 border-b border-amber-200">
-                    <p className="text-xs text-amber-700">
-                        <strong>Missing required fields:</strong> {validationErrors.join(', ')}
                     </p>
                 </div>
             )}
@@ -811,17 +859,22 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         {/* CredentialInfoSection hidden - fields auto-populated from Achievement */}
 
                         <IssuerSection
-                            isExpanded={expandedSections.has('issuer')}
-                            onToggle={() => toggleSection('issuer')}
-                        />
-
-                        <RecipientSection
                             template={template}
                             onChange={onChange}
-                            isExpanded={expandedSections.has('recipient')}
-                            onToggle={() => toggleSection('recipient')}
+                            isExpanded={expandedSections.has('issuer')}
+                            onToggle={() => toggleSection('issuer')}
                             disableDynamicFields={disableDynamicFields}
                         />
+
+                        {!hideRecipientSection && (
+                            <RecipientSection
+                                template={template}
+                                onChange={onChange}
+                                isExpanded={expandedSections.has('recipient')}
+                                onToggle={() => toggleSection('recipient')}
+                                disableDynamicFields={disableDynamicFields}
+                            />
+                        )}
 
                         <AchievementSection
                             template={template}
@@ -829,6 +882,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             isExpanded={expandedSections.has('achievement')}
                             onToggle={() => toggleSection('achievement')}
                             disableDynamicFields={disableDynamicFields}
+                            validationErrors={validationErrors}
                         />
 
                         <EvidenceSection
@@ -837,6 +891,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             isExpanded={expandedSections.has('evidence')}
                             onToggle={() => toggleSection('evidence')}
                             disableDynamicFields={disableDynamicFields}
+                            validationErrors={validationErrors}
                         />
 
                         <DatesSection

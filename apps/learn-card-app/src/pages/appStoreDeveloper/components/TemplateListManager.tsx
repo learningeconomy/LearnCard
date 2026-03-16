@@ -10,7 +10,7 @@
  * - PartnerConnectTab (Dashboard)
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
     Plus,
     Loader2,
@@ -23,9 +23,10 @@ import {
     Sparkles,
     Pencil,
     Send,
+    AlertCircle,
 } from 'lucide-react';
 
-import { useToast, ToastTypeEnum } from 'learn-card-base';
+import { useToast, ToastTypeEnum, useGetCurrentLCNUser } from 'learn-card-base';
 
 import {
     useTemplateManager,
@@ -38,19 +39,23 @@ import {
     getBlankTemplate,
     templateToJson,
     jsonToTemplate,
+    validateTemplate,
     type OBv3CredentialTemplate,
+    type ValidationStatus,
 } from '../partner-onboarding/components/CredentialBuilder';
 
 import { CodeBlock } from './CodeBlock';
 
 export interface TemplateListManagerProps {
-    listingId: string;
+    listingId?: string;
     integrationId?: string;
     featureType?: 'issue-credentials' | 'peer-badges';
     showCodeSnippets?: boolean;
     editable?: boolean;
     compact?: boolean;
     onTemplateChange?: (templates: ManagedTemplate[]) => void;
+    /** Fires when builder opens/closes — true means unsaved template work in progress */
+    onBuilderOpenChange?: (isOpen: boolean) => void;
 }
 
 export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
@@ -61,8 +66,10 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     editable = true,
     compact = false,
     onTemplateChange,
+    onBuilderOpenChange,
 }) => {
     const { presentToast } = useToast();
+    const { currentLCNUser } = useGetCurrentLCNUser();
 
     // Use the shared template manager hook
     const {
@@ -75,6 +82,18 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
         refetch,
     } = useTemplateManager({ listingId, integrationId, featureType });
 
+    // Create a blank template pre-filled with org issuer info
+    const createBlankWithIssuer = useCallback(() => {
+        const blank = getBlankTemplate();
+        if (currentLCNUser?.displayName) {
+            blank.issuer.name.value = currentLCNUser.displayName;
+        }
+        if (currentLCNUser?.image) {
+            blank.issuer.image = { value: currentLCNUser.image, isDynamic: false, variableName: '' };
+        }
+        return blank;
+    }, [currentLCNUser]);
+
     // Local UI state
     const [showBuilder, setShowBuilder] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState<ManagedTemplate | null>(null);
@@ -83,17 +102,42 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     const [editingAlias, setEditingAlias] = useState<string | null>(null);
     const [tempAliasValue, setTempAliasValue] = useState('');
     const [selectedTemplateForCode, setSelectedTemplateForCode] = useState<ManagedTemplate | null>(null);
+    const [saveError, setSaveError] = useState<string | null>(null);
+    const [builderValidationStatus, setBuilderValidationStatus] = useState<ValidationStatus>('unknown');
+    const builderRef = useRef<HTMLDivElement>(null);
+
+    // Structural validation errors (required fields, URL format)
+    const structuralErrors = React.useMemo(
+        () => (showBuilder ? validateTemplate(currentBuildingTemplate) : []),
+        [showBuilder, currentBuildingTemplate]
+    );
+
+    // Block save when there are structural errors or JSON-LD validation failed
+    const canSave = structuralErrors.length === 0 && builderValidationStatus !== 'invalid';
+
+    // Pre-fill issuer info on initial blank template when user data loads
+    React.useEffect(() => {
+        if (currentLCNUser && !showBuilder && !editingTemplate) {
+            setCurrentBuildingTemplate(createBlankWithIssuer());
+        }
+    }, [currentLCNUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Reset local state when context changes (listingId, featureType)
     React.useEffect(() => {
         setShowBuilder(false);
         setEditingTemplate(null);
-        setCurrentBuildingTemplate(getBlankTemplate());
+        setCurrentBuildingTemplate(createBlankWithIssuer());
         setIsSaving(false);
         setEditingAlias(null);
         setTempAliasValue('');
         setSelectedTemplateForCode(null);
-    }, [listingId, featureType]);
+        setBuilderValidationStatus('unknown');
+    }, [listingId, integrationId, featureType]);
+
+    // Notify parent when builder opens/closes
+    React.useEffect(() => {
+        onBuilderOpenChange?.(showBuilder);
+    }, [showBuilder, onBuilderOpenChange]);
 
     // Notify parent when templates change
     React.useEffect(() => {
@@ -116,6 +160,13 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
             setCurrentBuildingTemplate(obv3Template);
             setEditingTemplate(template);
             setShowBuilder(true);
+            setBuilderValidationStatus('unknown');
+            setSaveError(null);
+
+            // Scroll to builder after React renders it
+            requestAnimationFrame(() => {
+                builderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
         } catch (err) {
             console.error('Failed to load template for editing:', err);
             presentToast('Failed to load template for editing', { type: ToastTypeEnum.Error });
@@ -125,6 +176,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     // Save from builder (create or update)
     const handleSaveFromBuilder = useCallback(async () => {
         setIsSaving(true);
+        setSaveError(null);
 
         try {
             const credentialData = templateToJson(currentBuildingTemplate);
@@ -147,9 +199,11 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
 
             setShowBuilder(false);
             setEditingTemplate(null);
-            setCurrentBuildingTemplate(getBlankTemplate());
+            setCurrentBuildingTemplate(createBlankWithIssuer());
         } catch (err) {
             console.error('Failed to save template:', err);
+            const errMsg = err instanceof Error ? err.message : String(err);
+            setSaveError(errMsg);
             presentToast(`Failed to ${editingTemplate ? 'update' : 'create'} template`, { type: ToastTypeEnum.Error });
         } finally {
             setIsSaving(false);
@@ -187,7 +241,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     const handleCancelBuilder = useCallback(() => {
         setShowBuilder(false);
         setEditingTemplate(null);
-        setCurrentBuildingTemplate(getBlankTemplate());
+        setCurrentBuildingTemplate(createBlankWithIssuer());
     }, []);
 
     // Generate code snippet
@@ -203,12 +257,17 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
 const result = await learnCard.initiateTemplateIssue('${template.boostUri}');`;
         }
 
+        // Use templateAlias when available (listing-based), boostUri otherwise
+        const templateRef = template.templateAlias
+            ? `    templateAlias: '${template.templateAlias}'`
+            : `    templateUri: '${template.boostUri}'`;
+
         if (hasVariables) {
             const templateDataLines = template.variables!.map(v => `        ${v}: 'value', // Replace with actual value`).join('\n');
 
             return `// Issue "${template.name}" credential to user
 const result = await learnCard.sendCredential({
-    templateAlias: '${template.templateAlias}',
+${templateRef},
     templateData: {
 ${templateDataLines}
     }
@@ -221,7 +280,7 @@ if (result.credentialUri) {
 
         return `// Issue "${template.name}" credential to user
 const result = await learnCard.sendCredential({
-    templateAlias: '${template.templateAlias}'
+${templateRef}
 });
 
 if (result.credentialUri) {
@@ -248,9 +307,11 @@ if (result.credentialUri) {
                         <div
                             key={template.boostUri}
                             className={`p-4 rounded-xl border transition-colors ${
-                                selectedTemplateForCode?.boostUri === template.boostUri
-                                    ? 'border-emerald-300 bg-emerald-50'
-                                    : 'border-gray-200 bg-white hover:border-gray-300'
+                                editingTemplate?.boostUri === template.boostUri
+                                    ? 'border-blue-300 bg-blue-50'
+                                    : showCodeSnippets && selectedTemplateForCode?.boostUri === template.boostUri
+                                        ? 'border-emerald-300 bg-emerald-50'
+                                        : 'border-gray-200 bg-white hover:border-gray-300'
                             }`}
                         >
                             <div className="flex items-start gap-3">
@@ -275,8 +336,8 @@ if (result.credentialUri) {
                                 <div className="flex-1 min-w-0">
                                     <h5 className="font-medium text-gray-900 truncate">{template.name}</h5>
 
-                                    {/* Alias - only for issue-credentials templates */}
-                                    {featureType === 'issue-credentials' && (
+                                    {/* Alias - only for issue-credentials templates with a listing */}
+                                    {featureType === 'issue-credentials' && listingId && (
                                         <div className="flex items-center gap-2 mt-1">
                                             <span className="text-xs text-gray-500">Alias:</span>
 
@@ -343,7 +404,11 @@ if (result.credentialUri) {
                                     {editable && (
                                         <button
                                             onClick={() => handleStartEdit(template)}
-                                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            className={`p-2 rounded-lg transition-colors ${
+                                                editingTemplate?.boostUri === template.boostUri
+                                                    ? 'bg-blue-100 text-blue-700'
+                                                    : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                                            }`}
                                             title="Edit template"
                                         >
                                             <Edit3 className="w-4 h-4" />
@@ -384,7 +449,7 @@ if (result.credentialUri) {
             {editable && (
                 <>
                     {showBuilder ? (
-                        <div className={`border rounded-xl overflow-hidden ${editingTemplate ? 'border-blue-200' : 'border-emerald-200'}`}>
+                        <div ref={builderRef} className={`border rounded-xl overflow-hidden ${editingTemplate ? 'border-blue-200' : 'border-emerald-200'}`}>
                             <div className={`p-3 border-b flex items-center justify-between ${editingTemplate ? 'bg-blue-50 border-blue-200' : 'bg-emerald-50 border-emerald-200'}`}>
                                 <h5 className={`font-medium flex items-center gap-2 ${editingTemplate ? 'text-blue-800' : 'text-emerald-800'}`}>
                                     {editingTemplate ? (
@@ -412,11 +477,57 @@ if (result.credentialUri) {
                                 <CredentialBuilder
                                     template={currentBuildingTemplate}
                                     onChange={setCurrentBuildingTemplate}
+                                    onValidationChange={(status) => setBuilderValidationStatus(status)}
                                     disableDynamicFields={featureType === 'peer-badges'}
+                                    hideRecipientSection={false}
+                                    issuerName={currentLCNUser?.displayName}
+                                    issuerImage={currentLCNUser?.image}
                                 />
                             </div>
 
-                            <div className="p-3 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
+                            {saveError && (
+                                <div className="px-4 py-3 bg-red-50 border-t border-red-200">
+                                    <div className="flex items-start gap-2">
+                                        <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-red-800">
+                                                Failed to save template
+                                            </p>
+                                            <p className="text-xs text-red-600 mt-1 break-words">
+                                                {saveError}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => setSaveError(null)}
+                                            className="text-red-400 hover:text-red-600 flex-shrink-0"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="p-3 bg-gray-50 border-t border-gray-200 space-y-2">
+                                {/* Validation errors near save button */}
+                                {structuralErrors.length > 0 && (
+                                    <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                                        <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-red-700">
+                                            {structuralErrors.map(e => e.message).join('. ')}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {builderValidationStatus === 'invalid' && structuralErrors.length === 0 && (
+                                    <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                                        <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-red-700">
+                                            Template has validation errors. Fix the issues shown above before saving.
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-end gap-2">
                                 <button
                                     onClick={handleCancelBuilder}
                                     className="px-4 py-2 text-gray-600 hover:text-gray-800 rounded-lg text-sm font-medium"
@@ -426,7 +537,7 @@ if (result.credentialUri) {
 
                                 <button
                                     onClick={handleSaveFromBuilder}
-                                    disabled={isSaving}
+                                    disabled={isSaving || !canSave}
                                     className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors ${
                                         editingTemplate
                                             ? 'bg-blue-500 hover:bg-blue-600'
@@ -450,11 +561,18 @@ if (result.credentialUri) {
                                         </>
                                     )}
                                 </button>
+                                </div>
                             </div>
                         </div>
                     ) : (
                         <button
-                            onClick={() => setShowBuilder(true)}
+                            onClick={() => {
+                                setCurrentBuildingTemplate(createBlankWithIssuer());
+                                setEditingTemplate(null);
+                                setShowBuilder(true);
+                                setBuilderValidationStatus('unknown');
+                                setSaveError(null);
+                            }}
                             className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-emerald-300 text-emerald-600 rounded-xl hover:bg-emerald-50 transition-colors"
                         >
                             <Plus className="w-5 h-5" />

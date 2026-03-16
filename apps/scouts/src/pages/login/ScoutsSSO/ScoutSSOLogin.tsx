@@ -3,18 +3,8 @@ import { z } from 'zod';
 
 import { IonCol, IonInput, IonInputPasswordToggle } from '@ionic/react';
 
-import {
-    authStore,
-    BrandingEnum,
-    useWeb3AuthSFA,
-    EMAIL_REGEX,
-    SocialLoginTypes,
-    firebaseAuthStore,
-    useWallet,
-} from 'learn-card-base';
 import { useScoutsSSOLogin } from './useScoutsSSOLogin';
 import useFirebase from '../../../hooks/useFirebase';
-import { userInfo } from 'os';
 
 const StateValidator = z.object({
     username: z.string().nonempty('Username is Required'),
@@ -22,10 +12,7 @@ const StateValidator = z.object({
 });
 
 export const ScoutsSSOLogin: React.FC = () => {
-    const { initWallet } = useWallet();
-    const { web3AuthSFAInit } = useWeb3AuthSFA();
-    const { signInWithCustomFirebaseToken, signInWithCustomOAuthProvider } = useFirebase();
-    const setInitLoading = authStore.set.initLoading;
+    const { signInWithCustomOAuthProvider } = useFirebase();
 
     const { scoutsUserLogin, getScoutsUserInfo } = useScoutsSSOLogin();
 
@@ -56,9 +43,6 @@ export const ScoutsSSOLogin: React.FC = () => {
 
     const handleLogin = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         e.preventDefault();
-        const wallet = await initWallet('aaa');
-
-        // const web3Auth = await web3AuthSFAInit(BrandingEnum.scoutPass);
 
         if (validate()) {
             try {
@@ -66,49 +50,14 @@ export const ScoutsSSOLogin: React.FC = () => {
                 const response = await scoutsUserLogin(username, password);
                 const token = response?.access_token;
 
-                // # server side account merge
-                // const { firebaseToken } = await wallet.invoke.authenticateWithKeycloak(token);
-
-                // if (firebaseToken) {
-                //     const userInfo = await getScoutsUserInfo(token);
-                //     await signInWithCustomFirebaseToken(firebaseToken);
-                // }
-
-                // # client side account merge
-                // !! clientId: set to 'account' on firebase OIDC config, based on token aud: mismatch
-                // !! if this becomes a problem in the future, fallback to the server handling the merge
                 await signInWithCustomOAuthProvider(token);
 
-                // # direct keycloak -> web3Auth login
-                // if (token) {
-                //     const userInfo = await getScoutsUserInfo(token);
-
-                //     authStore.set.typeOfLogin(SocialLoginTypes.scoutsSSO);
-                //     // map scouts user info into the auth store
-                //     firebaseAuthStore.set.currentUser({
-                //         uid: userInfo?.sub,
-                //         email: userInfo?.email,
-                //         displayName: userInfo?.name,
-                //         phoneNumber: null,
-                //         photoUrl: null,
-                //     });
-
-                //     if (userInfo?.sub) {
-                //         setInitLoading(true);
-
-                //         await web3Auth.connect({
-                //             verifier: 'scoutpass-world-scouts-sso',
-                //             verifierId: userInfo?.sub,
-                //             idToken: token,
-                //         });
-                //     }
-                // }
+                // AuthCoordinator auto-handles key derivation when firebaseUser changes
                 setUsername('');
                 setPassword('');
             } catch (error) {
                 setLoginError(error?.message);
                 setLoading(false);
-                setInitLoading(false);
             }
 
             return;

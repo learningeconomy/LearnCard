@@ -9,6 +9,8 @@ import { DidKeyPlugin, DependentMethods, Algorithm } from './types';
 
 export * from './types';
 
+let _shortSeedWarned = false;
+
 /**
  *
  * @group Plugins
@@ -22,7 +24,9 @@ export const getDidKeyPlugin = async <DidMethod extends string>(
     if (!isHex(key)) throw new Error('Key must be a hexadecimal string!');
     if (key.length > 64) throw new Error('Key must be less than 64 characters');
 
-    if (key.length < 64) {
+    if (key.length < 64 && !_shortSeedWarned) {
+        _shortSeedWarned = true;
+
         console.warn(
             'Warning: A LearnCard has been initialized with a seed that is less than 32 bytes, and will be padded with zeroes'
         );
