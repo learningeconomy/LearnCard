@@ -52,6 +52,7 @@ https://pr-<NUMBER>.preview.learncard.ai/brain/*   → Brain Service (Network AP
 https://pr-<NUMBER>.preview.learncard.ai/cloud/*   → LearnCloud Service
 https://pr-<NUMBER>.preview.learncard.ai/lca-api/* → LCA API Service
 https://pr-<NUMBER>.preview.learncard.ai/preview-health → Health check
+https://logs.preview.learncard.ai                  → Dozzle log viewer (all PRs)
 ```
 
 Caddy strips the path prefix before forwarding to each service, so `/brain/trpc` becomes `/trpc` when it hits the brain service.
@@ -157,6 +158,8 @@ This installs Docker, git, jq, clones the repo, and sets up the idle cleanup cro
 | `PREVIEW_EC2_USERNAME` | `ubuntu` | Default for Ubuntu AMI |
 | `PREVIEW_EC2_SSH_KEY` | SSH private key | Contents of `preview-server` file |
 | `PREVIEW_EC2_API_KEY` | API key | The key you generated in step 1 |
+| `DOZZLE_USERNAME` | Log viewer username | Choose any username |
+| `DOZZLE_PASSWORD` | Log viewer password | Choose a shared team password |
 
 **Create a `preview` label** in the repository (any color).
 
@@ -180,6 +183,7 @@ preview/
 │       └── index.mjs             # Lambda handler (start/stop/status with API key auth)
 └── scripts/
     ├── ec2-bootstrap.sh          # One-time EC2 setup
+    ├── cleanup-idle-previews.sh  # Hourly cron: tear down idle stacks, auto-stop EC2
     ├── deploy-preview.sh         # Deploy a PR preview
     ├── teardown-preview.sh       # Tear down a PR preview
     ├── regenerate-caddyfile.sh   # Regenerate Caddy routes from active previews
@@ -202,6 +206,10 @@ For this to work, the E2E tests need to support configurable service URLs via en
 - `E2E_MANAGE_DOCKER=false` — Skip Docker Compose management (the preview is already running)
 
 ## Troubleshooting
+
+### Log Viewer
+
+Dozzle provides a web-based Docker log viewer at `https://logs.preview.learncard.ai`. It shows live logs from all `pr-*` containers and is protected by simple username/password auth (configured via `DOZZLE_USERNAME` and `DOZZLE_PASSWORD` GitHub secrets). The link is included in the PR comment after a successful deploy.
 
 ### Preview won't start
 

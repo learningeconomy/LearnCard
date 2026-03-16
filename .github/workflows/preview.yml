@@ -193,13 +193,15 @@ jobs:
                   PR_NUMBER: ${{ needs.should-deploy.outputs.pr_number }}
                   BRANCH: ${{ needs.should-deploy.outputs.branch }}
                   BASE_DOMAIN: ${{ env.PREVIEW_BASE_DOMAIN }}
+                  DOZZLE_USERNAME: ${{ secrets.DOZZLE_USERNAME }}
+                  DOZZLE_PASSWORD: ${{ secrets.DOZZLE_PASSWORD }}
               with:
                   host: ${{ steps.ec2.outputs.ip }}
                   username: ${{ secrets.PREVIEW_EC2_USERNAME }}
                   key: ${{ secrets.PREVIEW_EC2_SSH_KEY }}
                   script_stop: true
                   command_timeout: 25m
-                  envs: PR_NUMBER,BRANCH,BASE_DOMAIN
+                  envs: PR_NUMBER,BRANCH,BASE_DOMAIN,DOZZLE_USERNAME,DOZZLE_PASSWORD
                   script: |
                       cd ~/preview-workspace/LearnCard
 
@@ -244,6 +246,8 @@ jobs:
                       const previewDomain = `pr-${prNumber}.${{ env.PREVIEW_BASE_DOMAIN }}`;
                       const previewUrl = `https://${previewDomain}`;
 
+                      const logsUrl = `https://logs.${{ env.PREVIEW_BASE_DOMAIN }}`;
+
                       const body = success ? [
                           '## 🚀 Full-Stack Preview',
                           '',
@@ -251,6 +255,7 @@ jobs:
                           '|--------|---------|',
                           '| **State** | ✅ Ready |',
                           `| **URL** | [${previewUrl}](${previewUrl}) |`,
+                          `| **Logs** | [${logsUrl}](${logsUrl}) |`,
                           `| **Branch** | \`${{ needs.should-deploy.outputs.branch }}\` |`,
                           `| **PR** | #${prNumber} |`,
                           '',

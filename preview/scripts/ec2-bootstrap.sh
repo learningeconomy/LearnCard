@@ -107,6 +107,15 @@ fi
 
 # Prune dangling images older than 24h
 docker image prune -f --filter "until=24h" > /dev/null 2>&1
+
+# --- Auto-stop EC2 if no preview stacks remain ---
+ACTIVE_PREVIEWS=$(docker compose ls --format json 2>/dev/null | jq -r '.[].Name' | grep -c '^pr-' || true)
+if [ "$ACTIVE_PREVIEWS" -eq 0 ]; then
+    echo "$(date): No active previews — shutting down EC2 to save costs."
+    # Stop the edge proxy too (will be restarted on next deploy)
+    docker compose -p preview-edge -f "$REPO_DIR/preview/docker-compose.edge.yaml" down 2>/dev/null || true
+    sudo shutdown -h now
+fi
 IDLE_EOF
 chmod +x "$CRON_SCRIPT"
 

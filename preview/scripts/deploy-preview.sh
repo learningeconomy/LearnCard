@@ -38,10 +38,42 @@ echo "Ensuring shared preview network and edge proxy..."
 # Create the shared Docker network (idempotent)
 docker network create preview-net 2>/dev/null || true
 
-# Start the edge Caddy proxy if not running
+# --- Generate Dozzle users.yml for log viewer auth ---
+DOZZLE_USERS_FILE="$REPO_DIR/preview/dozzle-users.yml"
+if [ -n "${DOZZLE_USERNAME:-}" ] && [ -n "${DOZZLE_PASSWORD:-}" ]; then
+    PASS_HASH=$(echo -n "$DOZZLE_PASSWORD" | sha256sum | awk '{print $1}')
+    cat > "$DOZZLE_USERS_FILE" << USERS_EOF
+users:
+  ${DOZZLE_USERNAME}:
+    name: "${DOZZLE_USERNAME}"
+    password: "${PASS_HASH}"
+USERS_EOF
+    echo "  Dozzle auth configured for user: ${DOZZLE_USERNAME}"
+elif [ ! -f "$DOZZLE_USERS_FILE" ]; then
+    # Fallback: create a default user so Dozzle can start
+    DEFAULT_HASH=$(echo -n "previewlogs" | sha256sum | awk '{print $1}')
+    cat > "$DOZZLE_USERS_FILE" << USERS_EOF
+users:
+  admin:
+    name: "admin"
+    password: "${DEFAULT_HASH}"
+USERS_EOF
+    echo "  Dozzle auth: using default credentials (set DOZZLE_USERNAME/DOZZLE_PASSWORD to override)"
+fi
+
+# Start the edge proxy (Caddy + Dozzle) if not running
+EDGE_NEEDS_RESTART=false
 if ! docker inspect preview-caddy &>/dev/null || \
    [ "$(docker inspect --format='{{.State.Status}}' preview-caddy 2>/dev/null)" != "running" ]; then
-    echo "  Starting Caddy edge proxy..."
+    EDGE_NEEDS_RESTART=true
+fi
+if ! docker inspect preview-dozzle &>/dev/null || \
+   [ "$(docker inspect --format='{{.State.Status}}' preview-dozzle 2>/dev/null)" != "running" ]; then
+    EDGE_NEEDS_RESTART=true
+fi
+
+if [ "$EDGE_NEEDS_RESTART" = "true" ]; then
+    echo "  Starting edge proxy (Caddy + Dozzle)..."
     # Create a placeholder Caddyfile if it doesn't exist
     DYNAMIC_CADDYFILE="$REPO_DIR/preview/dynamic-caddyfile"
     if [ ! -f "$DYNAMIC_CADDYFILE" ]; then
@@ -62,14 +94,47 @@ echo "  Lock acquired."
 # --- Update repo and checkout branch ---
 cd "$REPO_DIR"
 git fetch --all --prune
+
+# --- Install/update cleanup cron from main (before switching to PR branch) ---
+CRON_SCRIPT="$WORKSPACE_DIR/cleanup-idle-previews.sh"
+git show origin/main:preview/scripts/cleanup-idle-previews.sh > "$CRON_SCRIPT" 2>/dev/null \
+    || echo "Warning: Failed to update cleanup script from main"
+
+if [ -s "$CRON_SCRIPT" ]; then
+    chmod +x "$CRON_SCRIPT"
+    CRON_LINE="0 * * * * $CRON_SCRIPT >> $WORKSPACE_DIR/cleanup.log 2>&1"
+    ( crontab -l 2>/dev/null | grep -v "cleanup-idle-previews" ; echo "$CRON_LINE" ) | crontab -
+else
+    echo "Warning: Cleanup script is empty or missing, skipping cron installation"
+fi
+
 git checkout "$BRANCH_NAME" || git checkout "origin/$BRANCH_NAME" --detach
 git pull origin "$BRANCH_NAME" 2>/dev/null || true
+
+# --- Generate compose override for DID resolution ---
+# The PR branch may not have the DOMAIN_NAME fix, so we generate an
+# override file that ensures did:web identifiers resolve through Caddy.
+OVERRIDE_FILE="$WORKSPACE_DIR/docker-compose.preview.override.yaml"
+cat > "$OVERRIDE_FILE" <<YAML
+services:
+  brain:
+    environment:
+      DOMAIN_NAME: ${PREVIEW_DOMAIN}:brain
+      IS_OFFLINE: ''
+  signing:
+    environment:
+      AUTHORIZED_DIDS: did:web:${PREVIEW_DOMAIN}:brain
+  api:
+    environment:
+      AUTHORIZED_DIDS: did:web:${PREVIEW_DOMAIN}:brain
+YAML
 
 # --- Tear down existing preview for this PR (if any) ---
 echo "Stopping existing preview (if running)..."
 PREVIEW_DOMAIN="$PREVIEW_DOMAIN" docker compose \
     -p "$PROJECT_NAME" \
     -f "$COMPOSE_FILE" \
+    -f "$OVERRIDE_FILE" \
     down --remove-orphans 2>/dev/null || true
 
 # --- Build and start the PR stack ---
@@ -78,6 +143,7 @@ PREVIEW_DOMAIN="$PREVIEW_DOMAIN" \
 docker compose \
     -p "$PROJECT_NAME" \
     -f "$COMPOSE_FILE" \
+    -f "$OVERRIDE_FILE" \
     up --build -d
 
 # --- Regenerate Caddyfile and reload ---

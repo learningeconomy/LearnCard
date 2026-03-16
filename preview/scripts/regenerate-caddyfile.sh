@@ -77,6 +77,21 @@ ${PREVIEW_DOMAIN} {
 ROUTE
 done
 
+# --- Dozzle log viewer (always present) ---
+cat >> "$CADDYFILE" << DOZZLE
+
+logs.${BASE_DOMAIN} {
+    reverse_proxy preview-dozzle:8080
+
+    encode gzip zstd
+
+    log {
+        output stdout
+    }
+}
+DOZZLE
+echo "  Added route: logs.${BASE_DOMAIN} → dozzle"
+
 if [ "$FOUND" = "false" ]; then
     # No active previews — add a placeholder so Caddy doesn't error on empty config
     cat >> "$CADDYFILE" << 'PLACEHOLDER'

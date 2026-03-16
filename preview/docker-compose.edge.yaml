@@ -23,6 +23,22 @@ services:
             - preview-net
         restart: unless-stopped
 
+    dozzle:
+        image: amir20/dozzle:latest
+        container_name: preview-dozzle
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - ./dozzle-users.yml:/data/users.yml:ro
+        environment:
+            DOZZLE_AUTH_PROVIDER: simple
+            DOZZLE_FILTER: "name=pr-"
+            DOZZLE_BASE: /
+        expose:
+            - 8080
+        networks:
+            - preview-net
+        restart: unless-stopped
+
 networks:
     preview-net:
         external: true

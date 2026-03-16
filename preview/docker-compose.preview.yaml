@@ -63,7 +63,7 @@ services:
         environment:
             PORT: 4000
             SEED: a
-            IS_OFFLINE: true
+            IS_OFFLINE: ''
             IS_E2E_TEST: true
             SKIP_DIDKIT_NAPI: '1'
             DOMAIN_NAME: ${PREVIEW_DOMAIN:-localhost%3A4000}:brain
