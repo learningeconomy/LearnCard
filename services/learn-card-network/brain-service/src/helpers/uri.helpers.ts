@@ -75,8 +75,14 @@ export const getIdFromUri = (uri: string): string => getUriParts(uri).id;
 export const getDomainFromUri = (uri: string): string =>
     getUriParts(uri).domain.replace(/\/trpc$/, '');
 
-export const constructUri = (type: URIType, id: string, domain: string): string =>
-    `lc:network:${domain.replace(/:/g, '%3A')}/trpc:${type}:${id}`;
+export const constructUri = (type: URIType, id: string, domain: string): string => {
+    const isLocal = domain.includes('localhost');
+    const encodedDomain = isLocal
+        ? domain.replace(/:/g, '%3A')
+        : domain.replace(/:/g, '/');
+
+    return `lc:network:${encodedDomain}/trpc:${type}:${id}`;
+};
 
 // Helper specifically for skill URIs which must be of the form
 // lc:network:<domain>/trpc:skill:<frameworkId>:<skillId>
@@ -107,7 +113,7 @@ export const resolveUri = async (uri: string) => {
     if (method === 'cloud') {
         const isLocal = domain.includes('localhost');
         const url = `http${isLocal ? '' : 's'}://${domain
-            .replace('%3A', ':')
+            .replace(/%3A/g, isLocal ? ':' : '/')
             .replace('/trpc', '/api')}/storage/resolve?uri=${encodeURIComponent(uri)}`;
 
         const res = await fetch(url);

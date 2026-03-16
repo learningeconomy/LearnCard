@@ -59,5 +59,11 @@ export const getUriParts = (_uri: string): URIParts => {
 
 export const getIdFromUri = (uri: string): string => getUriParts(uri).id;
 
-export const constructUri = (type: URIType, id: string, domain: string): string =>
-    `lc:cloud:${domain.replace(/:/g, '%3A')}/trpc:${type}:${id}`;
+export const constructUri = (type: URIType, id: string, domain: string): string => {
+    const isLocal = domain.includes('localhost');
+    const encodedDomain = isLocal
+        ? domain.replace(/:/g, '%3A')
+        : domain.replace(/:/g, '/');
+
+    return `lc:cloud:${encodedDomain}/trpc:${type}:${id}`;
+};
