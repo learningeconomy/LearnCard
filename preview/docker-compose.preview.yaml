@@ -167,6 +167,20 @@ services:
             REDIS_PORT: 6379
             METABASE_SECRET_KEY: test-key
 
+    test-embed-app:
+        image: learncard-monorepo-local
+        build:
+            context: ../
+            dockerfile: Dockerfile.monorepo
+        expose:
+            - 8888
+        command: ['node', 'tests/test-embed-app/serve.js']
+        networks:
+            - learn-card
+            - preview-net
+        environment:
+            PREVIEW_URL: https://${PREVIEW_DOMAIN:-localhost:8888}/test-embed
+
     # --- Infrastructure ---
 
     neo4j:
