@@ -22,7 +22,7 @@ concurrency:
     cancel-in-progress: true
 
 env:
-    PREVIEW_BASE_DOMAIN: preview.learncard.com
+    PREVIEW_BASE_DOMAIN: preview.learncard.ai
 
 jobs:
     # =========================================================================

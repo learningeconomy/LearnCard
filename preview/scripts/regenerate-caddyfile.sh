@@ -10,7 +10,7 @@
 # =============================================================================
 set -euo pipefail
 
-BASE_DOMAIN="${1:-preview.learncard.com}"
+BASE_DOMAIN="${1:-preview.learncard.ai}"
 WORKSPACE_DIR="$HOME/preview-workspace"
 REPO_DIR="$WORKSPACE_DIR/LearnCard"
 CADDYFILE="$REPO_DIR/preview/dynamic-caddyfile"

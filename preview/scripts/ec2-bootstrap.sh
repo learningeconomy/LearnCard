@@ -5,7 +5,7 @@
 # Prerequisites:
 #   - Ubuntu 22.04+ EC2 instance (m5.xlarge recommended)
 #   - Elastic IP attached
-#   - Wildcard DNS record: *.preview.learncard.com → <Elastic IP>
+#   - Wildcard DNS record: *.preview.learncard.ai → <Elastic IP>
 #   - Security group allowing inbound 80, 443, 22
 #
 # Usage:
@@ -119,7 +119,7 @@ echo ""
 echo "=== Bootstrap complete ==="
 echo ""
 echo "Next steps:"
-echo "  1. Ensure wildcard DNS: *.preview.learncard.com → $(curl -s ifconfig.me)"
+echo "  1. Ensure wildcard DNS: *.preview.learncard.ai → $(curl -s ifconfig.me)"
 echo "  2. Open ports 80 and 443 in the EC2 security group"
 echo "  3. The GitHub Actions workflow will handle the rest"
 echo ""

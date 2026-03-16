@@ -8,7 +8,7 @@
 set -euo pipefail
 
 PR_NUMBER="${1:?Usage: teardown-preview.sh <PR_NUMBER> [BASE_DOMAIN]}"
-BASE_DOMAIN="${2:-preview.learncard.com}"
+BASE_DOMAIN="${2:-preview.learncard.ai}"
 
 PROJECT_NAME="pr-${PR_NUMBER}"
 WORKSPACE_DIR="$HOME/preview-workspace"
