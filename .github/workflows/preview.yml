@@ -215,7 +215,13 @@ jobs:
                           exit 1
                       fi
 
-                      # Ensure the preview scripts are executable
+                      # Update repo to PR branch BEFORE running the deploy script.
+                      # This ensures bash loads the current version of the script,
+                      # avoiding stale code from the previous deploy's checkout.
+                      git fetch origin "$BRANCH"
+                      git checkout "$BRANCH" 2>/dev/null || git checkout "origin/$BRANCH" --detach
+                      git pull origin "$BRANCH" 2>/dev/null || true
+
                       chmod +x preview/scripts/*.sh
 
                       # Deploy the preview

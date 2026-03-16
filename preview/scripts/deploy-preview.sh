@@ -39,25 +39,16 @@ echo "Ensuring shared preview network and edge proxy..."
 docker network create preview-net 2>/dev/null || true
 
 # --- Generate Dozzle users.yml for log viewer auth ---
+# Dozzle uses its own password hashing format, so we must use `dozzle generate`
 DOZZLE_USERS_FILE="$REPO_DIR/preview/dozzle-users.yml"
 if [ -n "${DOZZLE_USERNAME:-}" ] && [ -n "${DOZZLE_PASSWORD:-}" ]; then
-    PASS_HASH=$(echo -n "$DOZZLE_PASSWORD" | sha256sum | awk '{print $1}')
-    cat > "$DOZZLE_USERS_FILE" << USERS_EOF
-users:
-  ${DOZZLE_USERNAME}:
-    name: "${DOZZLE_USERNAME}"
-    password: "${PASS_HASH}"
-USERS_EOF
+    docker run --rm amir20/dozzle generate "$DOZZLE_USERNAME" --password "$DOZZLE_PASSWORD" \
+        > "$DOZZLE_USERS_FILE"
     echo "  Dozzle auth configured for user: ${DOZZLE_USERNAME}"
 elif [ ! -f "$DOZZLE_USERS_FILE" ]; then
     # Fallback: create a default user so Dozzle can start
-    DEFAULT_HASH=$(echo -n "previewlogs" | sha256sum | awk '{print $1}')
-    cat > "$DOZZLE_USERS_FILE" << USERS_EOF
-users:
-  admin:
-    name: "admin"
-    password: "${DEFAULT_HASH}"
-USERS_EOF
+    docker run --rm amir20/dozzle generate admin --password previewlogs \
+        > "$DOZZLE_USERS_FILE"
     echo "  Dozzle auth: using default credentials (set DOZZLE_USERNAME/DOZZLE_PASSWORD to override)"
 fi
 
