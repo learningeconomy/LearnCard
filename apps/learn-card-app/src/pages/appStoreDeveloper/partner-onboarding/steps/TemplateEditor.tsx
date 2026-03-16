@@ -6,17 +6,23 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import {
     Award,
+    Check,
     ChevronDown,
     ChevronUp,
+    Loader2,
+    Plus,
     Trash2,
+    X,
     Zap,
 } from 'lucide-react';
 
 import { BrandingConfig } from '../types';
-import { 
-    CredentialBuilder, 
-    OBv3CredentialTemplate, 
+import {
+    CredentialBuilder,
+    OBv3CredentialTemplate,
     extractDynamicVariables,
+    validateTemplate,
+    type ValidationStatus as BuilderValidationStatus,
 } from '../components/CredentialBuilder';
 import { ExtendedTemplate, ValidationStatus, legacyToOBv3, obv3ToLegacy } from './templateBuilderUtils';
 
@@ -30,6 +36,14 @@ interface TemplateEditorProps {
     onTestIssue?: (credential: Record<string, unknown>) => Promise<{ success: boolean; error?: string; result?: unknown }>;
     onValidationChange?: (templateId: string, status: ValidationStatus, error?: string) => void;
     validationStatus?: ValidationStatus;
+    /** Called when user explicitly saves this template */
+    onSave?: () => void;
+    /** Called when user cancels editing (for new unsaved templates) */
+    onCancel?: () => void;
+    /** Whether this template is currently being saved */
+    isSaving?: boolean;
+    /** Whether this is a new unsaved template */
+    isNew?: boolean;
 }
 
 export const TemplateEditor: React.FC<TemplateEditorProps> = ({
@@ -42,6 +56,10 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
     onTestIssue,
     onValidationChange,
     validationStatus = 'unknown',
+    onSave,
+    onCancel,
+    isSaving = false,
+    isNew = false,
 }) => {
     // Initialize OBv3 template from legacy or existing
     const [obv3Template, setObv3Template] = useState<OBv3CredentialTemplate>(() => {
@@ -54,6 +72,17 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
     const dynamicVars = useMemo(() => extractDynamicVariables(obv3Template), [obv3Template]);
 
+    // Track builder validation status locally
+    const [builderValidationStatus, setBuilderValidationStatus] = useState<BuilderValidationStatus>('unknown');
+
+    // Structural validation errors
+    const structuralErrors = useMemo(
+        () => (isExpanded ? validateTemplate(obv3Template) : []),
+        [isExpanded, obv3Template]
+    );
+
+    const canSave = structuralErrors.length === 0 && builderValidationStatus !== 'invalid';
+
     const handleTemplateChange = useCallback((newObv3: OBv3CredentialTemplate) => {
         setObv3Template(newObv3);
 
@@ -64,8 +93,9 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
     }, [template, onChange]);
 
     // Handle validation status changes from CredentialBuilder
-    const handleValidationChange = useCallback((status: ValidationStatus, error?: string) => {
-        onValidationChange?.(template.id, status, error);
+    const handleValidationChange = useCallback((status: BuilderValidationStatus, error?: string) => {
+        setBuilderValidationStatus(status);
+        onValidationChange?.(template.id, status as unknown as ValidationStatus, error);
     }, [template.id, onValidationChange]);
 
     return (
@@ -112,16 +142,75 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
             {/* Content - Full CredentialBuilder - only render when expanded */}
             {isExpanded && (
-                <div className="h-[600px] border-t border-gray-200">
-                    <CredentialBuilder
-                        template={obv3Template}
-                        onChange={handleTemplateChange}
-                        issuerName={branding?.displayName}
-                        issuerImage={branding?.image}
-                        onTestIssue={onTestIssue}
-                        onValidationChange={handleValidationChange}
-                        initialValidationStatus={validationStatus}
-                    />
+                <div className="border-t border-gray-200">
+                    <div className="h-[600px]">
+                        <CredentialBuilder
+                            template={obv3Template}
+                            onChange={handleTemplateChange}
+                            issuerName={branding?.displayName}
+                            issuerImage={branding?.image}
+                            onTestIssue={onTestIssue}
+                            onValidationChange={handleValidationChange}
+                            initialValidationStatus={validationStatus}
+                        />
+                    </div>
+
+                    {/* Save / Cancel buttons */}
+                    {onSave && (
+                        <div className="p-3 bg-gray-50 border-t border-gray-200 space-y-2">
+                            {structuralErrors.length > 0 && (
+                                <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                                    <X className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                    <p className="text-xs text-red-700">
+                                        {structuralErrors.map(e => e.message).join('. ')}
+                                    </p>
+                                </div>
+                            )}
+
+                            {builderValidationStatus === 'invalid' && structuralErrors.length === 0 && (
+                                <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                                    <X className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                    <p className="text-xs text-red-700">
+                                        Template has validation errors. Fix the issues shown above before saving.
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-2">
+                                {onCancel && (
+                                    <button
+                                        onClick={onCancel}
+                                        className="px-4 py-2 text-gray-600 hover:text-gray-800 rounded-lg text-sm font-medium"
+                                    >
+                                        Cancel
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={onSave}
+                                    disabled={isSaving || !canSave}
+                                    className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                                >
+                                    {isSaving ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            {isNew ? 'Creating...' : 'Saving...'}
+                                        </>
+                                    ) : isNew ? (
+                                        <>
+                                            <Plus className="w-4 h-4" />
+                                            Create Template
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check className="w-4 h-4" />
+                                            Save Changes
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
