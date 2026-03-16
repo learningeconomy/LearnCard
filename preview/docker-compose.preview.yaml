@@ -101,6 +101,7 @@ services:
             PORT: 4100
             LEARN_CLOUD_SEED: b
             SKIP_DIDKIT_NAPI: '1'
+            DOMAIN_NAME: ${PREVIEW_DOMAIN:-localhost%3A4100}:cloud
             LEARN_CLOUD_MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
             LEARN_CLOUD_MONGO_DB_NAME: learn-cloud
             REDIS_HOST: redis2
@@ -166,6 +167,20 @@ services:
             REDIS_PORT: 6379
             METABASE_SECRET_KEY: test-key
 
+    test-embed-app:
+        image: learncard-monorepo-local
+        build:
+            context: ../
+            dockerfile: Dockerfile.monorepo
+        expose:
+            - 8888
+        command: ['node', 'tests/test-embed-app/serve.js']
+        networks:
+            - learn-card
+            - preview-net
+        environment:
+            PREVIEW_URL: https://${PREVIEW_DOMAIN:-localhost:8888}/test-embed
+
     # --- Infrastructure ---
 
     neo4j:
@@ -213,7 +228,7 @@ services:
             - 'localhost:host-gateway'
         healthcheck:
             test: >
-                mongosh --host localhost --port 27017 --quiet --eval "try { rs.status().ok } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}) }"
+                mongosh --host 127.0.0.1 --port 27017 --quiet --eval "try { rs.status().ok } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}) }"
             interval: 5s
             timeout: 30s
             start_period: 0s
