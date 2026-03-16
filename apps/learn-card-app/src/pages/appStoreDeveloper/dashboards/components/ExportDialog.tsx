@@ -31,8 +31,6 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     const { initWallet } = useWallet();
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
-    console.log('integrationId', integrationId);
-    console.log('integrationName', integrationName);
     const { exportCsv, cancelExport, state } = useActivityExport();
 
     const [totalRecords, setTotalRecords] = useState<number | null>(null);
@@ -59,10 +57,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                         ? new Date(endDate + 'T23:59:59.999Z').toISOString()
                         : undefined,
                 });
-                console.log('stats', stats);
                 if (cancelled) return;
 
-                setTotalRecords(stats?.totalEvents ?? stats?.total ?? 0);
+                setTotalRecords(stats?.total ?? 0);
             } catch (err) {
                 if (cancelled) return;
                 console.error('Failed to fetch stats:', err);
