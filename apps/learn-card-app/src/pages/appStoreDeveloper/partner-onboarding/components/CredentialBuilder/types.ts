@@ -99,6 +99,7 @@ export interface AlignmentTemplate {
 // OBv3 Evidence structure
 export interface EvidenceTemplate {
     id: string; // Internal ID for React keys
+    evidenceUrl?: TemplateFieldValue; // OBv3 "id" field — URL to the evidence artifact
     type?: TemplateFieldValue;
     name?: TemplateFieldValue;
     description?: TemplateFieldValue;
@@ -236,7 +237,7 @@ export const OBV3_ACHIEVEMENT_TYPES = [
 // Default OBv3 contexts (VC v2)
 export const DEFAULT_CONTEXTS = [
     'https://www.w3.org/ns/credentials/v2',
-    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
+    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
 ];
 
 // Default types

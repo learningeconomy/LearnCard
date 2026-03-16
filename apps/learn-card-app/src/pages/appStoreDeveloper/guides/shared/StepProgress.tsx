@@ -7,6 +7,7 @@ interface StepProgressProps {
     steps: { id: string; title: string }[];
     completedSteps: string[];
     onStepClick?: (index: number) => void;
+    isStepNavigable?: (index: number) => boolean;
 }
 
 export const StepProgress: React.FC<StepProgressProps> = ({
@@ -15,6 +16,7 @@ export const StepProgress: React.FC<StepProgressProps> = ({
     steps,
     completedSteps,
     onStepClick,
+    isStepNavigable,
 }) => {
     return (
         <div className="w-full">
@@ -35,23 +37,25 @@ export const StepProgress: React.FC<StepProgressProps> = ({
                     const isComplete = completedSteps.includes(step.id);
                     const isCurrent = index === currentStep;
                     const isPast = index < currentStep;
+                    const isNavigable = !isStepNavigable || isStepNavigable(index);
+                    const isClickable = onStepClick && isNavigable;
 
                     return (
                         <React.Fragment key={step.id}>
                             <button
-                                onClick={() => onStepClick?.(index)}
-                                disabled={!onStepClick}
+                                onClick={() => isClickable && onStepClick(index)}
+                                disabled={!isClickable}
                                 className={`
                                     relative flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium transition-all
-                                    ${isCurrent 
-                                        ? 'bg-cyan-500 text-white ring-4 ring-cyan-100' 
-                                        : isComplete 
-                                            ? 'bg-emerald-500 text-white' 
-                                            : isPast 
+                                    ${isCurrent
+                                        ? 'bg-cyan-500 text-white ring-4 ring-cyan-100'
+                                        : isComplete
+                                            ? 'bg-emerald-500 text-white'
+                                            : isPast
                                                 ? 'bg-gray-300 text-gray-600'
                                                 : 'bg-gray-100 text-gray-400'
                                     }
-                                    ${onStepClick ? 'cursor-pointer hover:scale-105' : 'cursor-default'}
+                                    ${isClickable ? 'cursor-pointer hover:scale-105' : 'cursor-default opacity-80'}
                                 `}
                                 title={step.title}
                             >
