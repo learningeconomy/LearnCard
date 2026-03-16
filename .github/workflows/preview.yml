@@ -280,6 +280,7 @@ jobs:
                           `| **Brain API** | [${previewUrl}/brain/trpc](${previewUrl}/brain/trpc) |`,
                           `| **Cloud API** | [${previewUrl}/cloud/trpc](${previewUrl}/cloud/trpc) |`,
                           `| **LCA API** | [${previewUrl}/lca-api/trpc](${previewUrl}/lca-api/trpc) |`,
+                          `| **Test Embed** | [${previewUrl}/test-embed/](${previewUrl}/test-embed/) |`,
                           `| **Health** | [${previewUrl}/preview-health](${previewUrl}/preview-health) |`,
                           '',
                           '> **Note:** Preview will auto-shutdown after 4 hours of inactivity.',
