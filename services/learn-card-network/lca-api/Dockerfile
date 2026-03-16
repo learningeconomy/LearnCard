@@ -49,6 +49,7 @@ COPY packages/plugins/vc/package.json packages/plugins/vc/
 COPY packages/plugins/vc-api/package.json packages/plugins/vc-api/
 COPY packages/plugins/vc-templates/package.json packages/plugins/vc-templates/
 COPY packages/plugins/vpqr/package.json packages/plugins/vpqr/
+COPY packages/sss-key-manager/package.json packages/sss-key-manager/
 
 RUN pnpm install --no-frozen-lockfile
 
@@ -82,6 +83,7 @@ COPY packages/plugins/vc packages/plugins/vc
 COPY packages/plugins/vc-api packages/plugins/vc-api
 COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY packages/plugins/vpqr packages/plugins/vpqr
+COPY packages/sss-key-manager packages/sss-key-manager
 
 RUN rm -rf node_modules/.cache/nx
 

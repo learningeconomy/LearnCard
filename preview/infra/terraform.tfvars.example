@@ -1,0 +1,21 @@
+# Copy this to terraform.tfvars and fill in the values
+# terraform.tfvars is gitignored and should never be committed
+
+aws_region       = "us-east-1"
+instance_type    = "m5.xlarge"
+ebs_volume_size  = 100
+base_domain      = "preview.learncard.ai"
+
+# Required: Route53 hosted zone ID for your domain
+route53_zone_id = "Z0123456789ABCDEFGHIJ"
+
+# Required: SSH public key (paste the contents of your .pub file)
+ssh_public_key = "ssh-ed25519 AAAA... preview-server"
+
+# Required: API key for Lambda authentication (generate a random string)
+# e.g.: openssl rand -hex 32
+api_key = "your-secret-api-key-here"
+
+# Optional: Restrict SSH access to specific CIDRs
+# GitHub Actions IP ranges: https://api.github.com/meta (look for "actions" key)
+# ssh_allowed_cidrs = ["140.82.112.0/20", "185.199.108.0/22"]
