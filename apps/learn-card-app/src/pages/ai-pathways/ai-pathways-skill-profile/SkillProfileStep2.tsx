@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
-import { TextInput, TextArea, Checkbox, useDeviceTypeByWidth } from 'learn-card-base';
-// import Plus from 'learn-card-base/svgs/Plus';
-// import MapPin from 'learn-card-base/svgs/MapPin';
+
+import {
+    TextInput,
+    TextArea,
+    Checkbox,
+    useDeviceTypeByWidth,
+    useModal,
+    ModalTypes,
+} from 'learn-card-base';
+
+import SelectFrameworkToManageModal from 'src/pages/SkillFrameworks/SelectFrameworkToManageModal';
+import BrowseFrameworkPage from 'src/pages/SkillFrameworks/BrowseFrameworkPage';
 import DatePickerInput from 'src/components/date-picker/DatePickerInput';
+import CompetencyIcon from 'src/pages/SkillFrameworks/CompetencyIcon';
 import Plus from 'src/components/svgs/Plus';
+import X from 'src/components/svgs/X';
 import { MapPin } from 'lucide-react';
 
 type SkillProfileStep2Props = {
@@ -35,7 +46,9 @@ const emptyExperience: WorkExperience = {
 
 const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handleBack }) => {
     const { isMobile } = useDeviceTypeByWidth();
+    const { newModal, closeModal } = useModal();
     const [experiences, setExperiences] = useState<WorkExperience[]>([{ ...emptyExperience }]);
+    const [selectedSkills, setSelectedSkills] = useState<any[]>([]);
 
     const updateExperience = (index: number, field: keyof WorkExperience, value: any) => {
         setExperiences(prev => {
@@ -49,6 +62,39 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
         setExperiences(prev => [...prev, { ...emptyExperience }]);
     };
 
+    const handleSelectSkills = () => {
+        newModal(
+            <SelectFrameworkToManageModal
+                hideCreateFramework
+                isBoostSkillSelection
+                onFrameworkSelectOverride={framework => {
+                    newModal(
+                        <BrowseFrameworkPage
+                            isSelectSkillsFlow
+                            selectedSkills={selectedSkills}
+                            setSelectedSkills={setSelectedSkills}
+                            frameworkInfo={framework}
+                            handleClose={closeModal}
+                        />,
+                        undefined,
+                        {
+                            desktop: ModalTypes.FullScreen,
+                            mobile: ModalTypes.FullScreen,
+                        }
+                    );
+                }}
+            />,
+            {
+                sectionClassName: '!bg-transparent !shadow-none !overflow-visible',
+            },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+        );
+    };
+
+    const handleRemoveSkill = (skill: any) => {
+        setSelectedSkills(prev => prev.filter(s => s.id !== skill.id));
+    };
+
     return (
         <div className="flex flex-col gap-[20px]">
             <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
@@ -56,7 +102,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
             </h3>
 
             {experiences.map((experience, index) => (
-                <div key={index} className="flex flex-col gap-[15px]">
+                <div key={index} className="flex flex-col gap-[20px]">
                     {index > 0 && <hr className="border-grayscale-200" />}
 
                     <div className="flex flex-col gap-[10px]">
@@ -163,14 +209,46 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                     </div>
 
                     <div className="flex flex-col gap-[10px]">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-start justify-between py-[10px] border-t-[1px] border-t-grayscale-200 border-solid">
                             <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
                                 Attach Skills
+                                {selectedSkills.length > 0 && ` • ${selectedSkills.length}`}
                             </span>
-                            <button type="button" className="text-grayscale-600">
+                            <button
+                                type="button"
+                                className="text-grayscale-900 p-[10px] bg-grayscale-100 rounded-full"
+                                onClick={handleSelectSkills}
+                            >
                                 <Plus className="w-[20px] h-[20px]" />
                             </button>
                         </div>
+
+                        {selectedSkills.length > 0 && (
+                            <div className="flex gap-[10px] flex-wrap">
+                                {selectedSkills.map((skill, index) => (
+                                    <div
+                                        key={index}
+                                        className="bg-violet-100 text-grayscale-900 pl-[3px] pr-[10px] py-[3px] rounded-[40px] flex items-center gap-[5px]"
+                                    >
+                                        <CompetencyIcon
+                                            icon={skill.icon}
+                                            size="small"
+                                            withWhiteBackground
+                                        />
+                                        <span className="font-poppins text-[13px] font-bold leading-[130%]">
+                                            {skill.targetName}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            className="text-grayscale-700 p-[3px] rounded-full"
+                                            onClick={() => handleRemoveSkill(skill)}
+                                        >
+                                            <X className="w-[23px] h-[23px]" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             ))}
