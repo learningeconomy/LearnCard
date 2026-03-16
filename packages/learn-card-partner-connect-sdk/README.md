@@ -248,6 +248,63 @@ await learnCard.checkUserHasCredential({
 
 **Returns:** `{ hasCredential: boolean, credentialUri?: string, receivedDate?: string, status?: 'pending' | 'claimed' | 'revoked' }`
 
+### `getTemplateIssuanceStatus(input)`
+
+Check if the current user has issued/sent a specific template to someone. Returns issuance status including sent date and claim status.
+
+```typescript
+const status = await learnCard.getTemplateIssuanceStatus({
+    templateAlias: 'achievement-badge',
+    recipient: 'user123', // Can be a profileId or DID (did:web:...)
+});
+
+if (status.sent) {
+    console.log('Issued on:', status.sentDate);
+    console.log('Status:', status.status); // 'pending', 'claimed', or 'revoked'
+    if (status.claimedDate) {
+        console.log('Claimed on:', status.claimedDate);
+    }
+}
+```
+
+You can also use a DID as the recipient:
+
+```typescript
+await learnCard.getTemplateIssuanceStatus({
+    boostUri: 'lc:network:network.learncard.com/trpc:boost:abc123',
+    recipient: 'did:web:network.learncard.com:users:user456',
+});
+```
+
+**Returns:** `{ sent: boolean, credentialUri?: string, sentDate?: string, claimedDate?: string, status?: 'pending' | 'claimed' | 'revoked' }`
+
+### `getTemplateRecipients(input)`
+
+Get the list of all recipients for a specific template/boost. Useful for dashboards showing who has received a credential.
+
+```typescript
+const recipients = await learnCard.getTemplateRecipients({
+    templateAlias: 'achievement-badge',
+    limit: 10,
+});
+
+console.log(`Found ${recipients.records.length} recipients`);
+recipients.records.forEach(r => {
+    console.log(`${r.recipientDisplayName}: ${r.status}`);
+});
+
+// Paginate if more results available
+if (recipients.hasMore) {
+    const nextPage = await learnCard.getTemplateRecipients({
+        templateAlias: 'achievement-badge',
+        limit: 10,
+        cursor: recipients.cursor,
+    });
+}
+```
+
+**Returns:** `{ records: TemplateRecipientRecord[], hasMore: boolean, cursor?: string, total?: number }`
+
 ### `launchFeature(featurePath, initialPrompt?)`
 
 Launch a feature in the LearnCard host application.

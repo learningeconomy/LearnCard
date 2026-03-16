@@ -220,6 +220,54 @@ export interface CheckCredentialResponse {
 }
 
 /**
+ * Input for checking template issuance status to a specific recipient.
+ * The recipient can be either a DID (did:web:...) or a profileId.
+ */
+export type CheckIssuanceStatusInput =
+    | { templateAlias: string; recipient: string }
+    | { boostUri: string; recipient: string };
+
+/**
+ * Response from getTemplateIssuanceStatus
+ */
+export interface TemplateIssuanceStatusResponse {
+    sent: boolean;
+    credentialUri?: string;
+    sentDate?: string;
+    claimedDate?: string;
+    status?: 'pending' | 'claimed' | 'revoked';
+}
+
+/**
+ * Input for getting template recipients list
+ */
+export type GetTemplateRecipientsInput =
+    | { templateAlias: string; limit?: number; cursor?: string }
+    | { boostUri: string; limit?: number; cursor?: string };
+
+/**
+ * Individual recipient record in the template recipients response
+ */
+export interface TemplateRecipientRecord {
+    recipientProfileId: string;
+    recipientDisplayName?: string;
+    sentDate: string;
+    claimedDate?: string;
+    credentialUri?: string;
+    status: 'pending' | 'claimed' | 'revoked';
+}
+
+/**
+ * Response from getTemplateRecipients
+ */
+export interface TemplateRecipientsResponse {
+    records: TemplateRecipientRecord[];
+    hasMore: boolean;
+    cursor?: string;
+    total?: number;
+}
+
+/**
  * Error codes that can be returned by the LearnCard host
  */
 export type ErrorCode =

@@ -1772,10 +1772,39 @@ export const CheckCredentialEventValidator = z
 
 export type CheckCredentialEvent = z.infer<typeof CheckCredentialEventValidator>;
 
+export const CheckIssuanceStatusEventValidator = z
+    .object({
+        type: z.literal('check-issuance-status'),
+        templateAlias: z.string().optional(),
+        boostUri: z.string().optional(),
+        recipient: z.string(),
+    })
+    .refine(input => Boolean(input.templateAlias) !== Boolean(input.boostUri), {
+        message: 'Exactly one of templateAlias or boostUri is required',
+    });
+
+export type CheckIssuanceStatusEvent = z.infer<typeof CheckIssuanceStatusEventValidator>;
+
+export const GetTemplateRecipientsEventValidator = z
+    .object({
+        type: z.literal('get-template-recipients'),
+        templateAlias: z.string().optional(),
+        boostUri: z.string().optional(),
+        limit: z.number().optional(),
+        cursor: z.string().optional(),
+    })
+    .refine(input => Boolean(input.templateAlias) !== Boolean(input.boostUri), {
+        message: 'Exactly one of templateAlias or boostUri is required',
+    });
+
+export type GetTemplateRecipientsEvent = z.infer<typeof GetTemplateRecipientsEventValidator>;
+
 // Add new event types here as the union grows
 export const AppEventValidator = z.discriminatedUnion('type', [
     SendCredentialEventValidator,
     CheckCredentialEventValidator,
+    CheckIssuanceStatusEventValidator,
+    GetTemplateRecipientsEventValidator,
 ]);
 
 export type AppEvent = z.infer<typeof AppEventValidator>;
