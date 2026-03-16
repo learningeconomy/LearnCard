@@ -604,7 +604,16 @@ export const inboxRouter = t.router({
 
                     // Look up the sender/issuer profile outside try/catch so it's
                     // available for activity logging in both success and failure paths
-                    const senderProfile = await getProfileByDid(inboxCredential.issuerDid);
+                    let senderProfile;
+                    try {
+                        senderProfile = await getProfileByDid(inboxCredential.issuerDid);
+                    } catch (error) {
+                        console.warn(
+                            `Failed to fetch sender profile for DID ${inboxCredential.issuerDid}:`,
+                            error
+                        );
+                        senderProfile = null;
+                    }
 
                     try {
                         let finalCredential: VC;
