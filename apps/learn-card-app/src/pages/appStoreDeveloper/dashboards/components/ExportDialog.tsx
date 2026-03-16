@@ -160,6 +160,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                         <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl min-h-[76px]">
                             <Download className="w-6 h-6 text-gray-600 flex-shrink-0" />
                             <div className="min-w-0">
+                                <p className="text-sm text-gray-500">Export Credential Data</p>
                                 <p className="font-medium text-gray-900 flex items-center gap-2 h-6">
                                     {statsError ? (
                                         <span className="text-amber-600 flex items-center gap-2">
@@ -174,7 +175,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                                 }`}
                                             >
                                                 {totalRecords !== null
-                                                    ? `${totalRecords.toLocaleString()} records available`
+                                                    ? `${totalRecords.toLocaleString()} results`
                                                     : 'Loading...'}
                                             </span>
                                             {isLoadingStats && totalRecords !== null && (
@@ -182,9 +183,6 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                             )}
                                         </>
                                     )}
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                    Export credential activity data
                                 </p>
                             </div>
                         </div>
