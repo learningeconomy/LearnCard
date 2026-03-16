@@ -96,10 +96,6 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
         });
     };
 
-    const addExperience = () => {
-        setExperiences(prev => [...prev, { ...emptyExperience }]);
-    };
-
     const handleSelectSkills = () => {
         newModal(
             <SelectFrameworkToManageModal
