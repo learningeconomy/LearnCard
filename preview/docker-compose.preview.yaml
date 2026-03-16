@@ -168,13 +168,13 @@ services:
             METABASE_SECRET_KEY: test-key
 
     test-embed-app:
-        image: learncard-monorepo-local
-        build:
-            context: ../
-            dockerfile: Dockerfile.monorepo
+        image: node:20-alpine
+        working_dir: /app
+        volumes:
+            - ../tests/test-embed-app:/app:ro
         expose:
             - 8888
-        command: ['node', 'tests/test-embed-app/serve.js']
+        command: ['node', 'serve.js']
         networks:
             - learn-card
             - preview-net
