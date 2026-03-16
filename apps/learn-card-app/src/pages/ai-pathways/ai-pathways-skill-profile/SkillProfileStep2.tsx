@@ -7,6 +7,7 @@ import {
     useDeviceTypeByWidth,
     useModal,
     ModalTypes,
+    GearPlusIcon,
 } from 'learn-card-base';
 
 import SelectFrameworkToManageModal from 'src/pages/SkillFrameworks/SelectFrameworkToManageModal';
@@ -256,10 +257,10 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
             <button
                 type="button"
                 onClick={addExperience}
-                className="bg-cyan-700 text-white rounded-full px-[20px] py-[10px] text-[17px] font-bold leading-[24px] tracking-[0.25px] h-[44px] flex items-center justify-center gap-[8px]"
+                className="bg-cyan-501 text-white rounded-full pl-[30px] pr-[10px] py-[7px] text-[15px] font-bold leading-[24px] tracking-[0.25px] h-[44px] flex items-center justify-center gap-[10px]"
             >
                 Add Experience
-                <Plus className="w-[20px] h-[20px]" />
+                <GearPlusIcon className="w-[30px] h-[30px] text-cyan-601" />
             </button>
 
             <div className="flex gap-[10px] w-full">
