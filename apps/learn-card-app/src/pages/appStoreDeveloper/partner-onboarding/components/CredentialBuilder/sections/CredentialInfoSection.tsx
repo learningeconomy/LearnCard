@@ -35,16 +35,6 @@ export const CredentialInfoSection: React.FC<CredentialInfoSectionProps> = ({
             onToggle={onToggle}
         >
             <FieldEditor
-                label="Credential Name"
-                field={template.name}
-                onChange={(f) => updateField('name', f)}
-                placeholder="e.g., Course Completion Certificate"
-                helpText="The name displayed on the credential"
-                required
-                showDynamicToggle={!disableDynamicFields}
-            />
-
-            <FieldEditor
                 label="Description"
                 field={template.description || staticField('')}
                 onChange={(f) => updateField('description', f)}

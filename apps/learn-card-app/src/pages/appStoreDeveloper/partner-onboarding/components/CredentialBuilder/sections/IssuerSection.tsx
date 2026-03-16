@@ -1,22 +1,28 @@
 /**
- * IssuerSection - Issuer information (DID only - injected by system)
+ * IssuerSection - Shows the auto-injected DID (read-only) with explanatory note
  */
 
 import React from 'react';
 import { Building2 } from 'lucide-react';
 
-import { systemField } from '../types';
+import { OBv3CredentialTemplate, systemField } from '../types';
 import { FieldEditor, CollapsibleSection } from '../FieldEditor';
 
 interface IssuerSectionProps {
+    template: OBv3CredentialTemplate;
+    onChange: (template: OBv3CredentialTemplate) => void;
     isExpanded: boolean;
     onToggle: () => void;
+    disableDynamicFields?: boolean;
 }
 
 export const IssuerSection: React.FC<IssuerSectionProps> = ({
+    template,
     isExpanded,
     onToggle,
 }) => {
+    const issuer = template.issuer;
+
     return (
         <CollapsibleSection
             title="Issuer"
@@ -26,15 +32,15 @@ export const IssuerSection: React.FC<IssuerSectionProps> = ({
         >
             <FieldEditor
                 label="Issuer (DID)"
-                field={systemField('Your organization\'s Decentralized Identifier (DID) from your LearnCard wallet')}
+                field={{ ...(issuer.id ?? systemField('issuer_did')), systemDescription: 'Your organization\'s Decentralized Identifier (DID) from your LearnCard wallet' }}
                 onChange={() => {}}
-                helpText="Automatically set to your wallet's DID when the credential is issued"
+                helpText="Your organization's Decentralized Identifier (DID) from your LearnCard wallet"
             />
 
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mt-2">
-                <p className="text-xs text-blue-700">
-                    <strong>Note:</strong> The issuer is automatically set to your wallet's DID. 
-                    Recipients can verify the credential was issued by you through this identifier.
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                    <span className="font-semibold text-amber-700">Note:</span>{' '}
+                    The issuer is automatically set to your wallet&apos;s DID. Recipients can verify the credential was issued by you through this identifier.
                 </p>
             </div>
         </CollapsibleSection>
