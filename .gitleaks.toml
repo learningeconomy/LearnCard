@@ -46,8 +46,8 @@ paths = [
     '''node_modules/.*''',
     '''.*bundle-analysis.*\.html$''',
     '''.*\.chunk\.js$''',
-    '''.*\.min\.js$'''
-    
+    '''.*\.min\.js$''',
+
     # Images and assets
     '''.*\.png$''',
     '''.*\.jpg$''',
