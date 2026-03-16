@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import useWallet from 'learn-card-base/hooks/useWallet';
-import { currentUserStore, getRandomBaseColor, useSQLiteStorage } from 'learn-card-base';
+import { currentUserStore, getRandomBaseColor, getNotificationsEndpoint, useSQLiteStorage } from 'learn-card-base';
 import { walletStore } from 'learn-card-base/stores/walletStore';
 
 import { IonCol, IonInput } from '@ionic/react';
@@ -12,6 +12,7 @@ import { setPlatformPrivateKey } from 'learn-card-base/security/platformPrivateK
 
 const LoginWithSeed: React.FC = () => {
     const history = useHistory();
+    const location = useLocation();
     const { initWallet } = useWallet();
     const { setCurrentUser } = useSQLiteStorage();
     const [seed, setSeed] = useState('');
@@ -50,6 +51,22 @@ const LoginWithSeed: React.FC = () => {
             const currentUser = currentUserStore.get.currentUser();
 
             if (currentUser) setAuthToken('dummy');
+
+            // If profileId query param is set, create a network profile
+            const params = new URLSearchParams(location.search);
+            const profileId = params.get('profileId');
+            if (profileId && wallet) {
+                try {
+                    await wallet.invoke.createProfile({
+                        did: wallet.id.did(),
+                        profileId,
+                        displayName: `User From Seed`,
+                        notificationsWebhook: getNotificationsEndpoint(),
+                    });
+                } catch (err) {
+                    console.log('createProfile::error (may already exist)', err);
+                }
+            }
 
             history.push('/wallet');
         } catch (e) {

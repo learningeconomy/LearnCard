@@ -6,15 +6,16 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Trophy, Plus, X, ChevronDown, Folder } from 'lucide-react';
 import { constructCustomBoostType, isCustomBoostType, getCategoryTypeFromCustomType, getAchievementTypeFromCustomType, replaceUnderscoresWithWhiteSpace } from 'learn-card-base/helpers/boostCustomTypeHelpers';
 
-import { 
-    OBv3CredentialTemplate, 
-    AchievementTemplate, 
-    TemplateFieldValue, 
+import {
+    OBv3CredentialTemplate,
+    AchievementTemplate,
+    TemplateFieldValue,
     AlignmentTemplate,
     staticField,
     OBV3_ACHIEVEMENT_TYPES,
 } from '../types';
 import { FieldEditor, CollapsibleSection } from '../FieldEditor';
+import { FieldValidationError, getFieldError } from '../utils';
 
 interface AchievementSectionProps {
     template: OBv3CredentialTemplate;
@@ -22,6 +23,7 @@ interface AchievementSectionProps {
     isExpanded: boolean;
     onToggle: () => void;
     disableDynamicFields?: boolean;
+    validationErrors?: FieldValidationError[];
 }
 
 export const AchievementSection: React.FC<AchievementSectionProps> = ({
@@ -30,6 +32,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
     isExpanded,
     onToggle,
     disableDynamicFields = false,
+    validationErrors = [],
 }) => {
     const achievement = template.credentialSubject.achievement;
 
@@ -159,6 +162,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                 helpText="The name of the achievement being recognized"
                 required
                 showDynamicToggle={!disableDynamicFields}
+                error={getFieldError(validationErrors, 'achievement.name')}
             />
 
             <FieldEditor
@@ -323,8 +327,35 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                         label="Language"
                         field={achievement.inLanguage || staticField('')}
                         onChange={(f) => updateAchievement('inLanguage', f)}
-                        placeholder="e.g., en"
-                        helpText="Language code (ISO 639-1)"
+                        type="select"
+                        options={[
+                            { value: 'en-US', label: 'English (US)' },
+                            { value: 'en-GB', label: 'English (UK)' },
+                            { value: 'es-ES', label: 'Spanish (Spain)' },
+                            { value: 'es-MX', label: 'Spanish (Mexico)' },
+                            { value: 'fr-FR', label: 'French (France)' },
+                            { value: 'fr-CA', label: 'French (Canada)' },
+                            { value: 'de-DE', label: 'German' },
+                            { value: 'pt-BR', label: 'Portuguese (Brazil)' },
+                            { value: 'pt-PT', label: 'Portuguese (Portugal)' },
+                            { value: 'zh-CN', label: 'Chinese (Simplified)' },
+                            { value: 'zh-TW', label: 'Chinese (Traditional)' },
+                            { value: 'ja-JP', label: 'Japanese' },
+                            { value: 'ko-KR', label: 'Korean' },
+                            { value: 'ar-SA', label: 'Arabic' },
+                            { value: 'hi-IN', label: 'Hindi' },
+                            { value: 'it-IT', label: 'Italian' },
+                            { value: 'nl-NL', label: 'Dutch' },
+                            { value: 'ru-RU', label: 'Russian' },
+                            { value: 'sv-SE', label: 'Swedish' },
+                            { value: 'pl-PL', label: 'Polish' },
+                            { value: 'tr-TR', label: 'Turkish' },
+                            { value: 'vi-VN', label: 'Vietnamese' },
+                            { value: 'th-TH', label: 'Thai' },
+                            { value: 'id-ID', label: 'Indonesian' },
+                            { value: 'he-IL', label: 'Hebrew' },
+                        ]}
+                        helpText="Language of this achievement"
                         showDynamicToggle={!disableDynamicFields}
                     />
                 </div>
@@ -411,6 +442,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                         helpText="URL to detailed criteria documentation"
                         type="url"
                         showDynamicToggle={!disableDynamicFields}
+                        error={getFieldError(validationErrors, 'achievement.criteria.id')}
                     />
                 </div>
             </div>
@@ -471,6 +503,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                                     helpText="URL to the standard or framework"
                                     type="url"
                                     showDynamicToggle={!disableDynamicFields}
+                                    error={getFieldError(validationErrors, `achievement.alignment.${index}.targetUrl`)}
                                 />
 
                                 <FieldEditor
