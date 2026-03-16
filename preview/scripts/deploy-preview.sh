@@ -38,10 +38,42 @@ echo "Ensuring shared preview network and edge proxy..."
 # Create the shared Docker network (idempotent)
 docker network create preview-net 2>/dev/null || true
 
-# Start the edge Caddy proxy if not running
+# --- Generate Dozzle users.yml for log viewer auth ---
+DOZZLE_USERS_FILE="$REPO_DIR/preview/dozzle-users.yml"
+if [ -n "${DOZZLE_USERNAME:-}" ] && [ -n "${DOZZLE_PASSWORD:-}" ]; then
+    PASS_HASH=$(echo -n "$DOZZLE_PASSWORD" | sha256sum | awk '{print $1}')
+    cat > "$DOZZLE_USERS_FILE" << USERS_EOF
+users:
+  ${DOZZLE_USERNAME}:
+    name: "${DOZZLE_USERNAME}"
+    password: "${PASS_HASH}"
+USERS_EOF
+    echo "  Dozzle auth configured for user: ${DOZZLE_USERNAME}"
+elif [ ! -f "$DOZZLE_USERS_FILE" ]; then
+    # Fallback: create a default user so Dozzle can start
+    DEFAULT_HASH=$(echo -n "previewlogs" | sha256sum | awk '{print $1}')
+    cat > "$DOZZLE_USERS_FILE" << USERS_EOF
+users:
+  admin:
+    name: "admin"
+    password: "${DEFAULT_HASH}"
+USERS_EOF
+    echo "  Dozzle auth: using default credentials (set DOZZLE_USERNAME/DOZZLE_PASSWORD to override)"
+fi
+
+# Start the edge proxy (Caddy + Dozzle) if not running
+EDGE_NEEDS_RESTART=false
 if ! docker inspect preview-caddy &>/dev/null || \
    [ "$(docker inspect --format='{{.State.Status}}' preview-caddy 2>/dev/null)" != "running" ]; then
-    echo "  Starting Caddy edge proxy..."
+    EDGE_NEEDS_RESTART=true
+fi
+if ! docker inspect preview-dozzle &>/dev/null || \
+   [ "$(docker inspect --format='{{.State.Status}}' preview-dozzle 2>/dev/null)" != "running" ]; then
+    EDGE_NEEDS_RESTART=true
+fi
+
+if [ "$EDGE_NEEDS_RESTART" = "true" ]; then
+    echo "  Starting edge proxy (Caddy + Dozzle)..."
     # Create a placeholder Caddyfile if it doesn't exist
     DYNAMIC_CADDYFILE="$REPO_DIR/preview/dynamic-caddyfile"
     if [ ! -f "$DYNAMIC_CADDYFILE" ]; then
