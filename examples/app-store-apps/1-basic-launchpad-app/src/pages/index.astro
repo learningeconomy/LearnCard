@@ -209,7 +209,7 @@ const config = {
         });
 
         if (result.hasCredential) {
-          updateStatus(`Already earned! Status: ${result.status || 'claimed'} (${result.credentialUri || 'no URI'})`, 'success');
+          updateStatus(`Already earned! Status: ${result.status} (${result.credentialUri})`, 'success');
         } else if (result.status === 'revoked') {
           updateStatus('Credential was previously issued but is now revoked.', 'error');
         } else {

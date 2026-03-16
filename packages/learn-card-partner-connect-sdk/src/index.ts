@@ -307,12 +307,12 @@ export class PartnerConnect {
         ) {
             const templateInput = input as TemplateCredentialInput;
 
-            return this.sendAppEvent({
+            return this.sendAppEvent<TemplateCredentialResponse>({
                 type: 'send-credential',
                 templateAlias: templateInput.templateAlias,
                 templateData: templateInput.templateData,
                 preventDuplicateClaim: templateInput.preventDuplicateClaim,
-            }) as Promise<TemplateCredentialResponse>;
+            });
         }
 
         return this.sendMessage<SendCredentialResponse>('SEND_CREDENTIAL', { credential: input });
@@ -323,10 +323,10 @@ export class PartnerConnect {
      * This is a silent, non-interactive status check for installed app integrations.
      */
     public checkUserHasCredential(input: CheckCredentialInput): Promise<CheckCredentialResponse> {
-        return this.sendAppEvent({
+        return this.sendAppEvent<CheckCredentialResponse>({
             type: 'check-credential',
             ...input,
-        }) as unknown as Promise<CheckCredentialResponse>;
+        });
     }
 
     /**
@@ -483,8 +483,8 @@ export class PartnerConnect {
      * }
      * ```
      */
-    public sendAppEvent(event: AppEvent): Promise<AppEventResponse> {
-        return this.sendMessage<AppEventResponse>('APP_EVENT', event);
+    public sendAppEvent<T = AppEventResponse>(event: AppEvent): Promise<T> {
+        return this.sendMessage<T>('APP_EVENT', event);
     }
 
     /**

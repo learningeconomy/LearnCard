@@ -118,6 +118,18 @@ export interface TemplateCredentialResponse {
     /** URI of the boost template used */
     boostUri: string;
 
+    /** Whether the credential was already claimed (when preventDuplicateClaim is true) */
+    alreadyClaimed?: boolean;
+
+    /** Whether the user has the credential (when preventDuplicateClaim is true) */
+    hasCredential?: boolean;
+
+    /** The status of the credential (when preventDuplicateClaim is true) */
+    status?: 'pending' | 'claimed' | 'revoked';
+
+    /** The date the credential was received (when preventDuplicateClaim is true) */
+    receivedDate?: string;
+
     [key: string]: unknown;
 }
 
