@@ -11,7 +11,27 @@ export type URIParts = {
 export const isURIType = (type: string): type is URIType =>
     ['credential', 'presentation', 'boost'].includes(type);
 
-export const getUriParts = (uri: string): URIParts => {
+// Encode colons within the domain portion of a URI so they don't conflict
+// with the colon-delimited lc:method:domain/trpc:type:id format.
+// Handles preview domains with path prefixes (e.g. domain:cloud/trpc).
+export const escapeColonsInDomain = (uri: string): string => {
+    const trpcIdx = uri.indexOf('/trpc:');
+
+    if (trpcIdx === -1) return uri;
+
+    const secondColon = uri.indexOf(':', uri.indexOf(':') + 1);
+
+    if (secondColon === -1) return uri;
+
+    const header = uri.substring(0, secondColon + 1);
+    const domain = uri.substring(secondColon + 1, trpcIdx);
+    const suffix = uri.substring(trpcIdx);
+
+    return header + domain.replace(/:/g, '%3A') + suffix;
+};
+
+export const getUriParts = (_uri: string): URIParts => {
+    const uri = escapeColonsInDomain(_uri);
     const parts = uri.split(':');
 
     if (parts.length !== 5) {
@@ -40,4 +60,4 @@ export const getUriParts = (uri: string): URIParts => {
 export const getIdFromUri = (uri: string): string => getUriParts(uri).id;
 
 export const constructUri = (type: URIType, id: string, domain: string): string =>
-    `lc:cloud:${domain}/trpc:${type}:${id}`;
+    `lc:cloud:${domain.replace(/:/g, '%3A')}/trpc:${type}:${id}`;
