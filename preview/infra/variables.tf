@@ -28,9 +28,9 @@ variable "api_key" {
 }
 
 variable "base_domain" {
-  description = "Base domain for preview URLs (e.g., preview.learncard.com)"
+  description = "Base domain for preview URLs (e.g., preview.learncard.ai)"
   type        = string
-  default     = "preview.learncard.com"
+  default     = "preview.learncard.ai"
 }
 
 variable "route53_zone_id" {

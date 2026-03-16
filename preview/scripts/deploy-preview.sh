@@ -17,7 +17,7 @@ set -euo pipefail
 
 PR_NUMBER="${1:?Usage: deploy-preview.sh <PR_NUMBER> <BRANCH_NAME> [BASE_DOMAIN]}"
 BRANCH_NAME="${2:?Usage: deploy-preview.sh <PR_NUMBER> <BRANCH_NAME> [BASE_DOMAIN]}"
-BASE_DOMAIN="${3:-preview.learncard.com}"
+BASE_DOMAIN="${3:-preview.learncard.ai}"
 
 PREVIEW_DOMAIN="pr-${PR_NUMBER}.${BASE_DOMAIN}"
 PROJECT_NAME="pr-${PR_NUMBER}"

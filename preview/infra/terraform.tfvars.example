@@ -4,7 +4,7 @@
 aws_region       = "us-east-1"
 instance_type    = "m5.xlarge"
 ebs_volume_size  = 100
-base_domain      = "preview.learncard.com"
+base_domain      = "preview.learncard.ai"
 
 # Required: Route53 hosted zone ID for your domain
 route53_zone_id = "Z0123456789ABCDEFGHIJ"

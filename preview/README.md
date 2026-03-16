@@ -12,7 +12,7 @@ Comment "/preview"  ──────────►  Start EC2 instance
    or add label                  SSH into EC2            ──────────►  git checkout <branch>
                                                                      docker compose up --build
                                                                      Caddy reverse proxy
-                                 Post URL to PR  ◄──────────────────  https://pr-123.preview.learncard.com
+                                 Post URL to PR  ◄──────────────────  https://pr-123.preview.learncard.ai
                                                                            
 Reviewer clicks URL  ─────────────────────────────────────────────►  Caddy routes to services
                                                                            
@@ -47,11 +47,11 @@ Previews are automatically torn down when:
 ### Preview URL Structure
 
 ```
-https://pr-<NUMBER>.preview.learncard.com          → Frontend app
-https://pr-<NUMBER>.preview.learncard.com/brain/*   → Brain Service (Network API)
-https://pr-<NUMBER>.preview.learncard.com/cloud/*   → LearnCloud Service
-https://pr-<NUMBER>.preview.learncard.com/lca-api/* → LCA API Service
-https://pr-<NUMBER>.preview.learncard.com/preview-health → Health check
+https://pr-<NUMBER>.preview.learncard.ai          → Frontend app
+https://pr-<NUMBER>.preview.learncard.ai/brain/*   → Brain Service (Network API)
+https://pr-<NUMBER>.preview.learncard.ai/cloud/*   → LearnCloud Service
+https://pr-<NUMBER>.preview.learncard.ai/lca-api/* → LCA API Service
+https://pr-<NUMBER>.preview.learncard.ai/preview-health → Health check
 ```
 
 Caddy strips the path prefix before forwarding to each service, so `/brain/trpc` becomes `/trpc` when it hits the brain service.
@@ -63,7 +63,7 @@ Caddy strips the path prefix before forwarding to each service, so `/brain/trpc`
 The system uses a **shared Caddy edge proxy** that handles TLS and routes traffic to per-PR Docker Compose stacks:
 
 ```
-Internet → *.preview.learncard.com (wildcard DNS → EC2 Elastic IP)
+Internet → *.preview.learncard.ai (wildcard DNS → EC2 Elastic IP)
     │
     ▼
 ┌─────────────────────────────────────────────┐

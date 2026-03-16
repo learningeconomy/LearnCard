@@ -9,15 +9,15 @@
 #   /*          → pr-<N>-app-1:3000     (frontend, catch-all)
 #
 # Frontend env vars are set to:
-#   LCN_URL=https://pr-<N>.preview.learncard.com/brain/trpc
-#   LCN_API_URL=https://pr-<N>.preview.learncard.com/brain/api
-#   CLOUD_URL=https://pr-<N>.preview.learncard.com/cloud/trpc
-#   LEARN_CLOUD_XAPI_URL=https://pr-<N>.preview.learncard.com/cloud/xapi
-#   API_URL=https://pr-<N>.preview.learncard.com/lca-api/trpc
+#   LCN_URL=https://pr-<N>.preview.learncard.ai/brain/trpc
+#   LCN_API_URL=https://pr-<N>.preview.learncard.ai/brain/api
+#   CLOUD_URL=https://pr-<N>.preview.learncard.ai/cloud/trpc
+#   LEARN_CLOUD_XAPI_URL=https://pr-<N>.preview.learncard.ai/cloud/xapi
+#   API_URL=https://pr-<N>.preview.learncard.ai/lca-api/trpc
 #
 # Example generated block for PR #123:
 #
-# pr-123.preview.learncard.com {
+# pr-123.preview.learncard.ai {
 #     handle_path /brain/* {
 #         reverse_proxy pr-123-brain-1:4000
 #     }

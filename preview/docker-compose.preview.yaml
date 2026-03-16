@@ -1,7 +1,7 @@
 # Per-PR full-stack preview environment (no Caddy — uses the shared edge proxy)
 #
 # Usage:
-#   PREVIEW_DOMAIN=pr-123.preview.learncard.com docker compose -p pr-123 -f docker-compose.preview.yaml up --build -d
+#   PREVIEW_DOMAIN=pr-123.preview.learncard.ai docker compose -p pr-123 -f docker-compose.preview.yaml up --build -d
 #
 # The shared Caddy edge proxy (docker-compose.edge.yaml) handles TLS and routes
 # traffic to this stack's containers by name on the shared "preview-net" network.
