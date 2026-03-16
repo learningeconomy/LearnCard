@@ -154,3 +154,50 @@ App store tests seed data directly into Neo4j (`app-store.helpers.ts`):
 - Profile creation uses `waitForAuthenticatedState(page, { profileId: 'testa' })` — no direct Neo4j needed
 
 The embed URL is mocked via `mockEmbedRoute(page)` to serve a simple HTML page instead of making real network requests.
+
+## Partner Onboarding & CredentialBuilder
+
+### CredentialBuilder Component
+Location: `src/pages/appStoreDeveloper/partner-onboarding/components/CredentialBuilder/`
+
+A form-based OBv3 credential template builder used by partner onboarding guides. Key files:
+
+| File | Purpose |
+|------|---------|
+| `CredentialBuilder.tsx` | Main component — form mode, JSON mode, validation |
+| `types.ts` | Template types: `OBv3CredentialTemplate`, `TemplateFieldValue` (static/dynamic/system) |
+| `utils.ts` | `templateToJson()` / `jsonToTemplate()` serialization, `validateTemplate()` structural checks |
+| `validateJsonLd.ts` | Client-side JSON-LD expansion validation using bundled contexts |
+| `contexts/` | Bundled VC v2 + OBv3 3.0.3 context JSON + document loader |
+| `presets.ts` | Template presets (badge, certificate, etc.) |
+| `sections/` | Form sections: Achievement, Evidence, Dates, CustomFields, etc. |
+
+### JSON-LD Validation Architecture
+
+The CredentialBuilder validates templates in three layers via `runValidation()` (debounced 2s after edits):
+1. **Structural** (`validateTemplate()`) — required fields, URL format. If errors, sets status to `'invalid'` immediately and stops.
+2. **JSON-LD** (`validateCredentialJsonLd()`) — runs `jsonld.expand()` with bundled contexts. If errors, sets `'invalid'` and stops.
+3. **Server** (`onTestIssue()`) — actual test issuance via backend. Only runs if both previous layers pass.
+
+All three layers feed into `onValidationChange(status, error)` which parent components use to block save/continue. Bundled contexts avoid network fetches. The `@digitalcredentials/jsonld` library is dynamically imported to keep it out of the initial bundle. Mustache `{{variables}}` are replaced with placeholder URIs before expansion.
+
+**Note:** `issueCredential()` injects signing contexts (e.g., `ed25519-2020/v1`) into the credential's `@context`. `jsonToTemplate()` strips these via `SIGNING_ARTIFACT_CONTEXTS` to avoid validation failures when loading saved templates.
+
+### Credential Context Layers
+
+```
+@context array in a credential:
+┌─────────────────────────────────────────────┐
+│ 1. W3C VC v2                                │  ← VerifiableCredential, issuer, credentialSubject, proof
+│ 2. OBv3 3.0.3                               │  ← Achievement, criteria, alignment, evidence
+│ 3. LearnCard Boost (optional, internal only) │  ← BoostCredential, display, skills, attachments
+└─────────────────────────────────────────────┘
+Each layer defines its own terms; later layers rely on earlier ones being present.
+Properties not defined in ANY loaded context → "key expansion failed" error.
+Boost contexts: packages/learn-card-contexts/boosts/ (lcn: namespace)
+```
+
+### Consumers of CredentialBuilder
+- `TemplateListManager.tsx` — used by IssueCredentialsGuide (LC-1635), tracks validation status, blocks save on errors
+- `TemplateBuilderStep.tsx` — used by other partner guides (CourseCatalog, Embed), multi-template support
+- `ChildEditModal.tsx` — inline editing in template lists

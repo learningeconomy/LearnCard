@@ -151,7 +151,7 @@ services:
 
     mongodb:
         command: --quiet
-        image: mongo:latest
+        image: mongo:7.0
         environment:
             MONGO_INITDB_DATABASE: start
         expose:
