@@ -5,13 +5,14 @@
 import React from 'react';
 import { FileCheck, Plus, X } from 'lucide-react';
 
-import { 
-    OBv3CredentialTemplate, 
-    EvidenceTemplate, 
-    TemplateFieldValue, 
+import {
+    OBv3CredentialTemplate,
+    EvidenceTemplate,
+    TemplateFieldValue,
     staticField,
 } from '../types';
 import { FieldEditor, CollapsibleSection } from '../FieldEditor';
+import { FieldValidationError, getFieldError } from '../utils';
 
 interface EvidenceSectionProps {
     template: OBv3CredentialTemplate;
@@ -19,6 +20,7 @@ interface EvidenceSectionProps {
     isExpanded: boolean;
     onToggle: () => void;
     disableDynamicFields?: boolean;
+    validationErrors?: FieldValidationError[];
 }
 
 export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
@@ -27,6 +29,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
     isExpanded,
     onToggle,
     disableDynamicFields = false,
+    validationErrors = [],
 }) => {
     const evidence = template.credentialSubject.evidence || [];
 
@@ -72,7 +75,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
             badge={evidence.length > 0 ? `${evidence.length} item${evidence.length > 1 ? 's' : ''}` : undefined}
         >
             <p className="text-xs text-gray-500 mb-3">
-                Evidence supports claims made by the credential with artifacts like projects, assessments, or portfolios.
+                Attach artifacts that support this credential — link to projects, portfolios, assessments, or other work products.
             </p>
 
             <button
@@ -105,20 +108,32 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                             </div>
 
                             <FieldEditor
-                                label="Evidence Type"
-                                field={item.type || staticField('Evidence')}
-                                onChange={(f) => updateEvidenceItem(index, 'type', f)}
-                                placeholder="Evidence"
-                                helpText="Type of evidence (e.g., Evidence, Artifact)"
+                                label="Evidence Name"
+                                field={item.name || staticField('')}
+                                onChange={(f) => updateEvidenceItem(index, 'name', f)}
+                                placeholder="e.g., Final Project Submission"
+                                helpText="A short title for this piece of evidence"
                                 showDynamicToggle={!disableDynamicFields}
                             />
 
                             <FieldEditor
-                                label="Name"
-                                field={item.name || staticField('')}
-                                onChange={(f) => updateEvidenceItem(index, 'name', f)}
-                                placeholder="e.g., Final Project"
-                                helpText="Name of the evidence item"
+                                label="Evidence URL"
+                                field={item.evidenceUrl || staticField('')}
+                                onChange={(f) => updateEvidenceItem(index, 'evidenceUrl', f)}
+                                placeholder="https://portfolio.example.com/project"
+                                helpText="Link to the evidence artifact (webpage, file, portfolio)"
+                                type="url"
+                                showDynamicToggle={!disableDynamicFields}
+                                error={getFieldError(validationErrors, `evidence.${index}.evidenceUrl`)}
+                            />
+
+                            <FieldEditor
+                                label="Narrative"
+                                field={item.narrative || staticField('')}
+                                onChange={(f) => updateEvidenceItem(index, 'narrative', f)}
+                                placeholder="Describe the process and achievement that led to this evidence..."
+                                helpText="A narrative describing the evidence and how it was produced (supports Markdown)"
+                                type="textarea"
                                 showDynamicToggle={!disableDynamicFields}
                             />
 
@@ -126,37 +141,37 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                                 label="Description"
                                 field={item.description || staticField('')}
                                 onChange={(f) => updateEvidenceItem(index, 'description', f)}
-                                placeholder="Describe the evidence..."
-                                helpText="Description of the evidence"
-                                type="textarea"
+                                placeholder="e.g., A sentiment analysis model trained on movie reviews"
+                                helpText="A longer description of this evidence"
                                 showDynamicToggle={!disableDynamicFields}
                             />
 
-                            <FieldEditor
-                                label="Narrative"
-                                field={item.narrative || staticField('')}
-                                onChange={(f) => updateEvidenceItem(index, 'narrative', f)}
-                                placeholder="Detailed narrative..."
-                                helpText="Detailed narrative about the evidence"
-                                type="textarea"
-                                showDynamicToggle={!disableDynamicFields}
-                            />
+                            <div className="grid grid-cols-2 gap-3">
+                                <FieldEditor
+                                    label="Genre"
+                                    field={item.genre || staticField('')}
+                                    onChange={(f) => updateEvidenceItem(index, 'genre', f)}
+                                    placeholder="e.g., Portfolio, Film"
+                                    helpText="The format or medium of the evidence"
+                                    showDynamicToggle={!disableDynamicFields}
+                                />
+
+                                <FieldEditor
+                                    label="Audience"
+                                    field={item.audience || staticField('')}
+                                    onChange={(f) => updateEvidenceItem(index, 'audience', f)}
+                                    placeholder="e.g., Hiring Managers"
+                                    helpText="Who this evidence is intended for"
+                                    showDynamicToggle={!disableDynamicFields}
+                                />
+                            </div>
 
                             <FieldEditor
-                                label="Genre"
-                                field={item.genre || staticField('')}
-                                onChange={(f) => updateEvidenceItem(index, 'genre', f)}
-                                placeholder="e.g., Portfolio, Assessment"
-                                helpText="Category or genre of the evidence"
-                                showDynamicToggle={!disableDynamicFields}
-                            />
-
-                            <FieldEditor
-                                label="Audience"
-                                field={item.audience || staticField('')}
-                                onChange={(f) => updateEvidenceItem(index, 'audience', f)}
-                                placeholder="e.g., Employers, Educators"
-                                helpText="Intended audience for this evidence"
+                                label="Evidence Type"
+                                field={item.type || staticField('Evidence')}
+                                onChange={(f) => updateEvidenceItem(index, 'type', f)}
+                                placeholder="Evidence"
+                                helpText="OBv3 type identifier (usually 'Evidence')"
                                 showDynamicToggle={!disableDynamicFields}
                             />
                         </div>

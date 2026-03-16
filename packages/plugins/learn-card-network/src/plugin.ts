@@ -1873,6 +1873,12 @@ export async function getLearnCardNetworkPlugin(
                 return client.appStore.isAppInstalled.query({ listingId });
             },
 
+            getMyCredentialsFromApp: async (_learnCard, listingId, options = {}) => {
+                await ensureUser();
+
+                return client.appStore.getMyCredentialsFromApp.query({ listingId, ...options });
+            },
+
             isAppStoreAdmin: async _learnCard => {
                 await ensureUser();
 
