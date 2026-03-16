@@ -23,8 +23,8 @@ const DASHBOARD_IDS = {
 const METABASE_SECRET_KEY =
     process.env.METABASE_SECRET_KEY ??
     (() => {
-        if (process.env.CI) {
-            console.log('METABASE_SECRET_KEY not set in CI')
+        if (process.env.CI || process.env.NODE_ENV === 'test') {
+            console.log('METABASE_SECRET_KEY not set in CI/test');
             return;
         }
         throw new Error('METABASE_SECRET_KEY not set');
@@ -70,7 +70,6 @@ export const analyticsRouter = t.router({
         .input(analyticsRouterInputZodSchema)
         .output(z.string().nullable())
         .mutation(async ({ input }) => {
-
             if (!METABASE_SECRET_KEY) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',

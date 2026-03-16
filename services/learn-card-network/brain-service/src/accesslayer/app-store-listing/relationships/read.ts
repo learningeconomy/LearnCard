@@ -126,3 +126,84 @@ export const hasTemplateAliasForListing = async (
 
     return result.records[0]?.get('exists') ?? false;
 };
+
+export const getCredentialsSentByListingToProfile = async (
+    listingId: string,
+    profileId: string,
+    options: { limit: number; cursor?: string }
+): Promise<
+    Array<{
+        credentialId: string;
+        date: string;
+        status: 'pending' | 'claimed' | 'revoked';
+        boostName?: string;
+        boostCategory?: string;
+        activityId?: string;
+    }>
+> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (listing:AppStoreListing {listing_id: $listingId})
+               -[r:CREDENTIAL_SENT {to: $profileId}]->(c:Credential)
+         ${options.cursor ? 'WHERE r.date < $cursor' : ''}
+         OPTIONAL MATCH (c)-[:INSTANCE_OF]->(b:Boost)
+         OPTIONAL MATCH (c)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile {profileId: $profileId})
+         RETURN c.id AS credentialId, r.date AS date, 
+                b.name AS boostName, b.category AS boostCategory, r.activityId AS activityId,
+                received IS NOT NULL AS isReceived, received.status AS receivedStatus
+         ORDER BY r.date DESC
+         LIMIT $limit`,
+        {
+            listingId,
+            profileId,
+            cursor: options.cursor ?? null,
+            limit: int(options.limit),
+        }
+    );
+
+    return result.records
+        .map(record => {
+            const credentialId = record.get('credentialId');
+            const date = record.get('date');
+
+            // Skip records with missing required fields
+            if (!credentialId || !date) {
+                return null;
+            }
+
+            // Determine status based on CREDENTIAL_RECEIVED relationship
+            const isReceived = record.get('isReceived');
+            const receivedStatus = record.get('receivedStatus');
+            let status: 'pending' | 'claimed' | 'revoked' = 'pending';
+            if (isReceived) {
+                status = receivedStatus === 'revoked' ? 'revoked' : 'claimed';
+            }
+
+            return {
+                credentialId: String(credentialId),
+                date: String(date),
+                status,
+                boostName: record.get('boostName') ? String(record.get('boostName')) : undefined,
+                boostCategory: record.get('boostCategory')
+                    ? String(record.get('boostCategory'))
+                    : undefined,
+                activityId: record.get('activityId') ? String(record.get('activityId')) : undefined,
+            };
+        })
+        .filter((record): record is NonNullable<typeof record> => record !== null);
+};
+
+export const countCredentialsSentByListingToProfile = async (
+    listingId: string,
+    profileId: string
+): Promise<number> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (listing:AppStoreListing {listing_id: $listingId})
+               -[r:CREDENTIAL_SENT {to: $profileId}]->(c:Credential)
+         RETURN COUNT(c) AS count`,
+        { listingId, profileId }
+    );
+
+    const count = result.records[0]?.get('count');
+    // Neo4j returns Integer objects, ensure we return a JS number
+    return count?.toNumber?.() ?? Number(count) ?? 0;
+};
