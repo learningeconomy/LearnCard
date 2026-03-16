@@ -71,10 +71,12 @@ export const AppCredentialDashboard: React.FC<AppCredentialDashboardProps> = ({
 
             // Trigger badge animation
             setIsNewBadgeAnimating(true);
-            setTimeout(() => setIsNewBadgeAnimating(false), 600);
+            const timerId = setTimeout(() => setIsNewBadgeAnimating(false), 600);
 
             // Update badge count
             fetchBadgeCount();
+
+            return () => clearTimeout(timerId);
         }
     }, [pendingCredential, fetchBadgeCount]);
 
