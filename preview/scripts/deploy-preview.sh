@@ -100,7 +100,7 @@ else
 fi
 
 git checkout "$BRANCH_NAME" || git checkout "origin/$BRANCH_NAME" --detach
-git pull origin "$BRANCH_NAME" 2>/dev/null || true
+git reset --hard "origin/$BRANCH_NAME"
 
 # --- Generate compose override for DID resolution ---
 # The PR branch may not have the DOMAIN_NAME fix, so we generate an

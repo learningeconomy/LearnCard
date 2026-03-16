@@ -218,9 +218,12 @@ jobs:
                       # Update repo to PR branch BEFORE running the deploy script.
                       # This ensures bash loads the current version of the script,
                       # avoiding stale code from the previous deploy's checkout.
+                      # Reset first to clear any dirty working tree (e.g. from manual SSH fixes)
+                      # that would cause git pull to silently fail.
                       git fetch origin "$BRANCH"
+                      git reset --hard HEAD
                       git checkout "$BRANCH" 2>/dev/null || git checkout "origin/$BRANCH" --detach
-                      git pull origin "$BRANCH" 2>/dev/null || true
+                      git reset --hard "origin/$BRANCH"
 
                       chmod +x preview/scripts/*.sh
 
