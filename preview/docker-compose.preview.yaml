@@ -213,7 +213,7 @@ services:
             - 'localhost:host-gateway'
         healthcheck:
             test: >
-                mongosh --host localhost --port 27017 --quiet --eval "try { rs.status().ok } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}) }"
+                mongosh --host 127.0.0.1 --port 27017 --quiet --eval "try { rs.status().ok } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}) }"
             interval: 5s
             timeout: 30s
             start_period: 0s
