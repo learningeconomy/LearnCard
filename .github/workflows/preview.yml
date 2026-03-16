@@ -17,10 +17,6 @@ on:
                 required: true
                 type: number
 
-concurrency:
-    group: preview-${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr_number }}
-    cancel-in-progress: true
-
 env:
     PREVIEW_BASE_DOMAIN: preview.learncard.ai
 
@@ -122,6 +118,9 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 30
         environment: preview
+        concurrency:
+            group: preview-deploy-${{ needs.should-deploy.outputs.pr_number }}
+            cancel-in-progress: true
         steps:
             - name: Post "deploying" comment
               id: deploying-comment

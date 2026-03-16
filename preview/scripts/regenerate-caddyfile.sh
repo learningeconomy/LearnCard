@@ -45,16 +45,19 @@ for PROJECT in $(docker compose ls --format json 2>/dev/null | jq -r '.[].Name' 
 ${PREVIEW_DOMAIN} {
     # Brain service (strip /brain prefix)
     handle_path /brain/* {
+        rewrite /did.json /.well-known/did.json
         reverse_proxy ${PROJECT}-brain-1:4000
     }
 
     # Cloud service (strip /cloud prefix)
     handle_path /cloud/* {
+        rewrite /did.json /.well-known/did.json
         reverse_proxy ${PROJECT}-cloud-1:4100
     }
 
     # LCA API service (strip /lca-api prefix)
     handle_path /lca-api/* {
+        rewrite /did.json /.well-known/did.json
         reverse_proxy ${PROJECT}-api-1:5100
     }
 
