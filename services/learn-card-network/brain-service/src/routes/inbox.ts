@@ -601,6 +601,20 @@ export const inboxRouter = t.router({
                 const pending = await getAcceptedPendingInboxCredentialsForContactMethodId(cm.id);
                 for (const inboxCredential of pending) {
                     processed += 1;
+
+                    // Look up the sender/issuer profile outside try/catch so it's
+                    // available for activity logging in both success and failure paths
+                    let senderProfile;
+                    try {
+                        senderProfile = await getProfileByDid(inboxCredential.issuerDid);
+                    } catch (error) {
+                        console.warn(
+                            `Failed to fetch sender profile for DID ${inboxCredential.issuerDid}:`,
+                            error
+                        );
+                        senderProfile = null;
+                    }
+
                     try {
                         let finalCredential: VC;
 
@@ -694,16 +708,21 @@ export const inboxRouter = t.router({
                         }
 
                         // Log credential activity for inbox claim - chain to original activityId
-                        await logCredentialClaimed({
-                            activityId: inboxCredential.activityId || undefined,
-                            actorProfileId: profile.profileId,
-                            recipientType: cm.type as 'email' | 'phone',
-                            recipientIdentifier: cm.value,
-                            recipientProfileId: profile.profileId,
-                            inboxCredentialId: inboxCredential.id,
-                            boostUri: inboxCredential.boostUri || undefined,
-                            source: 'inbox',
-                        });
+                        // Use the issuer's profileId as actorProfileId so the CLAIMED event
+                        // appears in the sender's activity chain alongside the original CREATED event
+                        if (senderProfile) {
+                            await logCredentialClaimed({
+                                activityId: inboxCredential.activityId || undefined,
+                                actorProfileId: senderProfile.profileId,
+                                recipientType: cm.type as 'email' | 'phone',
+                                recipientIdentifier: cm.value,
+                                recipientProfileId: profile.profileId,
+                                inboxCredentialId: inboxCredential.id,
+                                boostUri: inboxCredential.boostUri || undefined,
+                                integrationId: inboxCredential.integrationId || undefined,
+                                source: 'inbox',
+                            });
+                        }
 
                         claimed += 1;
                         verifiableCredentials.push(finalCredential);
@@ -717,12 +736,12 @@ export const inboxRouter = t.router({
                         try {
                             await logCredentialFailed({
                                 activityId: inboxCredential.activityId || undefined,
-                                actorProfileId: profile.profileId,
+                                actorProfileId: senderProfile?.profileId || profile.profileId,
                                 recipientType: cm.type as 'email' | 'phone',
                                 recipientIdentifier: cm.value,
                                 recipientProfileId: profile.profileId,
                                 boostUri: inboxCredential.boostUri || undefined,
-                                integrationId: (inboxCredential as any).integrationId || undefined,
+                                integrationId: inboxCredential.integrationId || undefined,
                                 source: 'claimLink',
                                 metadata: {
                                     error: error instanceof Error ? error.message : 'Unknown error',
