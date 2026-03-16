@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
 
 import {
     TextInput,
@@ -23,7 +24,7 @@ import Plus from 'src/components/svgs/Plus';
 import X from 'src/components/svgs/X';
 import { MapPin } from 'lucide-react';
 
-import 'swiper/css';
+import { ExperiencesIconWithShape } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
 
 type SkillProfileStep2Props = {
     handleNext: () => void;
@@ -133,11 +134,18 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
 
     return (
         <div className="flex flex-col gap-[20px]">
-            <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
-                {shouldShowForm
-                    ? 'What is your most recent work experience?'
-                    : 'Select your most recent work experience'}
-            </h3>
+            {hasExistingCredentials && shouldShowForm ? (
+                <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px] flex flex-col gap-[10px] items-center">
+                    <ExperiencesIconWithShape className="w-[60px] h-[60px]" />
+                    New Work Experience
+                </h3>
+            ) : (
+                <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
+                    {shouldShowForm
+                        ? 'What is your most recent work experience?'
+                        : 'Select your most recent work experience'}
+                </h3>
+            )}
 
             {isLoading && <p className="text-xs text-grayscale-400">Loading credentials…</p>}
 
@@ -250,7 +258,11 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                             <TextInput
                                 value={experience.jobTitle}
                                 onChange={value => updateExperience(index, 'jobTitle', value ?? '')}
-                                placeholder="What is your job title?"
+                                placeholder={
+                                    hasExistingCredentials
+                                        ? 'What was your job title?'
+                                        : 'What is your job title?'
+                                }
                             />
                         </div>
 
@@ -263,7 +275,9 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                 onChange={value =>
                                     updateExperience(index, 'jobSummary', value ?? '')
                                 }
-                                placeholder="What do you do?"
+                                placeholder={
+                                    hasExistingCredentials ? 'What did you do?' : 'What do you do?'
+                                }
                                 rows={2}
                             />
                         </div>
@@ -275,7 +289,11 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                             <TextInput
                                 value={experience.employer}
                                 onChange={value => updateExperience(index, 'employer', value ?? '')}
-                                placeholder="Who do you work for?"
+                                placeholder={
+                                    hasExistingCredentials
+                                        ? 'Who did you work for?'
+                                        : 'Who do you work for?'
+                                }
                             />
                         </div>
 
@@ -297,7 +315,11 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                 onChange={value =>
                                     updateExperience(index, 'jobLocation', value ?? '')
                                 }
-                                placeholder="Where is this job located?"
+                                placeholder={
+                                    hasExistingCredentials
+                                        ? 'Where was this job located?'
+                                        : 'Where is this job located?'
+                                }
                                 disabled={experience.workFromHome}
                                 endIcon={
                                     <MapPin
