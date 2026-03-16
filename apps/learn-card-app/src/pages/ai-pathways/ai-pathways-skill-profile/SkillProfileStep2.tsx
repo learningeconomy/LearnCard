@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextInput, TextArea, Toggle, useDeviceTypeByWidth } from 'learn-card-base';
+import { TextInput, TextArea, Checkbox, useDeviceTypeByWidth } from 'learn-card-base';
 // import Plus from 'learn-card-base/svgs/Plus';
 // import MapPin from 'learn-card-base/svgs/MapPin';
 import DatePickerInput from 'src/components/date-picker/DatePickerInput';
@@ -64,14 +64,12 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                             <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
                                 Job Title
                             </span>
-                            <Toggle
+                            <Checkbox
                                 checked={experience.isCurrentJob}
                                 onChange={checked =>
                                     updateExperience(index, 'isCurrentJob', checked)
                                 }
                                 label="Current Job"
-                                labelPosition="left"
-                                size="sm"
                             />
                         </div>
                         <TextInput
@@ -109,14 +107,12 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                             <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
                                 Job Location
                             </span>
-                            <Toggle
+                            <Checkbox
                                 checked={experience.workFromHome}
                                 onChange={checked =>
                                     updateExperience(index, 'workFromHome', checked)
                                 }
                                 label="Work from home"
-                                labelPosition="left"
-                                size="sm"
                             />
                         </div>
                         <TextInput
@@ -124,7 +120,13 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                             onChange={value => updateExperience(index, 'jobLocation', value ?? '')}
                             placeholder="Where is this job located?"
                             disabled={experience.workFromHome}
-                            endIcon={<MapPin className="w-[20px] h-[20px] text-grayscale-500" />}
+                            endIcon={
+                                <MapPin
+                                    className={`w-[20px] h-[20px] text-grayscale-500 ${
+                                        experience.workFromHome ? 'opacity-50' : ''
+                                    }`}
+                                />
+                            }
                         />
                     </div>
 

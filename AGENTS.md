@@ -446,7 +446,7 @@ Partner Connect example apps follow a consistent pattern:
 The `packages/learn-card-base` package provides reusable, styled form components for use in LearnCard applications. Import from `learn-card-base`:
 
 ```typescript
-import { TextInput, TextArea, Toggle, SelectInput, RadioGroup } from 'learn-card-base';
+import { TextInput, TextArea, Toggle, Checkbox, SelectInput, RadioGroup } from 'learn-card-base';
 ```
 
 ### Available Components
@@ -456,6 +456,7 @@ import { TextInput, TextArea, Toggle, SelectInput, RadioGroup } from 'learn-card
 | `TextInput`   | Single-line text input (uses IonInput)   | `value`, `onChange`, `placeholder`, `type`, `disabled`, `startIcon`, `endIcon` |
 | `TextArea`    | Multi-line text input (uses IonTextarea) | `value`, `onChange`, `placeholder`, `rows`, `autoGrow`, `disabled`             |
 | `Toggle`      | Boolean toggle switch                    | `checked`, `onChange`, `label`, `labelPosition`, `size`                        |
+| `Checkbox`    | Pill-style checkbox with label           | `checked`, `onChange`, `label`, `disabled`, `className`                        |
 | `SelectInput` | Dropdown select                          | `value`, `onChange`, `options`, `placeholder`                                  |
 | `RadioGroup`  | Radio button group                       | `value`, `onChange`, `options`                                                 |
 
@@ -485,6 +486,13 @@ import { TextInput, TextArea, Toggle, SelectInput, RadioGroup } from 'learn-card
     label="Enable feature"
     labelPosition="left"
     size="sm"
+/>
+
+// Checkbox pill (label + circle indicator)
+<Checkbox
+    checked={isCurrentJob}
+    onChange={setIsCurrentJob}
+    label="Current Job"
 />
 ```
 
