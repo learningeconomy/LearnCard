@@ -1,17 +1,51 @@
+# Per-PR full-stack preview environment (no Caddy — uses the shared edge proxy)
+#
+# Usage:
+#   PREVIEW_DOMAIN=pr-123.preview.learncard.ai docker compose -p pr-123 -f docker-compose.preview.yaml up --build -d
+#
+# The shared Caddy edge proxy (docker-compose.edge.yaml) handles TLS and routes
+# traffic to this stack's containers by name on the shared "preview-net" network.
+# Multiple PR previews can run concurrently on the same host.
+
 services:
+    app:
+        image: learncard-monorepo-local
+        build:
+            context: ../
+            dockerfile: Dockerfile.monorepo
+        expose:
+            - 3000
+        # Run vite directly (not docker-start) so we can control env vars for the proxy domain
+        command: ['sh', '-c', 'cd apps/learn-card-app && pnpm exec vite --host']
+        depends_on:
+            - brain
+            - cloud
+            - api
+        networks:
+            - learn-card
+            - preview-net
+        extra_hosts:
+            - 'localhost:host-gateway'
+        environment:
+            # These URLs are what the BROWSER uses — they must go through the Caddy proxy
+            LCN_URL: https://${PREVIEW_DOMAIN:-localhost}/brain/trpc
+            LCN_API_URL: https://${PREVIEW_DOMAIN:-localhost}/brain/api
+            CLOUD_URL: https://${PREVIEW_DOMAIN:-localhost}/cloud/trpc
+            LEARN_CLOUD_XAPI_URL: https://${PREVIEW_DOMAIN:-localhost}/cloud/xapi
+            API_URL: https://${PREVIEW_DOMAIN:-localhost}/lca-api/trpc
+            VITE_SSS_SERVER_URL: https://${PREVIEW_DOMAIN:-localhost}/lca-api
+            REACT_APP_KEY_DERIVATION_PROVIDER: sss
+            REACT_APP_SSS_SERVER_URL: https://${PREVIEW_DOMAIN:-localhost}/lca-api
+            SKIP_DIDKIT_NAPI: '1'
+
     brain:
         image: learncard-monorepo-local
         build:
-            context: ../../
+            context: ../
             dockerfile: Dockerfile.monorepo
-
         expose:
             - 4000
-        ports:
-            - '4000:4000'
-
         command: ['sh', '-c', 'cd services/learn-card-network/brain-service && pnpm dev']
-
         depends_on:
             neo4j:
                 condition: service_healthy
@@ -21,180 +55,138 @@ services:
                 condition: service_started
             signing:
                 condition: service_started
-
         networks:
             - learn-card
-
+            - preview-net
         extra_hosts:
             - 'localhost:host-gateway'
-
-        volumes:
-            - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
-
         environment:
             PORT: 4000
-
             SEED: a
-
-            IS_OFFLINE: true
+            IS_OFFLINE: ''
             IS_E2E_TEST: true
             SKIP_DIDKIT_NAPI: '1'
-
-            DOMAIN_NAME: localhost%3A4000
-
-            NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
-            NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
-            NEO4J_PASSWORD: ${NEO4J_PASSWORD:-this-is-the-password}
-
-            REDIS_HOST: ${REDIS_HOST:-redis}
-            REDIS_PORT: ${REDIS_PORT:-6379}
-
-            AWS_REGION: ${AWS_REGION:-us-east-1}
-            AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-notARealKey}
-            AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-notARealSecretKey}
-
-            NOTIFICATIONS_QUEUE_POLL_URL: ${NOTIFICATIONS_QUEUE_POLL_URL:-http://elasticmq:9324/notifications}
-            NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-http://elasticmq:9324/notifications}
-            SKILL_EMBEDDING_GOOGLE_API_KEY: ${SKILL_EMBEDDING_GOOGLE_API_KEY:-}
-            SKILL_EMBEDDING_GOOGLE_MODEL: ${SKILL_EMBEDDING_GOOGLE_MODEL:-gemini-embedding-001}
-
-            SKILLS_PROVIDER_BASE_URL: ${SKILLS_PROVIDER_BASE_URL:-http://localhost:4000}
-            SKILLS_PROVIDER_API_KEY: ${SKILLS_PROVIDER_API_KEY:-notARealKey}
-
-            APP_STORE_ADMIN_PROFILE_IDS: ${APP_STORE_ADMIN_PROFILE_IDS:-testa}
+            DOMAIN_NAME: ${PREVIEW_DOMAIN:-localhost%3A4000}:brain
+            NEO4J_URI: bolt://neo4j:7687
+            NEO4J_USERNAME: neo4j
+            NEO4J_PASSWORD: this-is-the-password
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+            AWS_REGION: us-east-1
+            AWS_ACCESS_KEY_ID: notARealKey
+            AWS_SECRET_ACCESS_KEY: notARealSecretKey
+            NOTIFICATIONS_QUEUE_POLL_URL: http://elasticmq:9324/notifications
+            NOTIFICATIONS_QUEUE_URL: http://elasticmq:9324/notifications
+            SKILL_EMBEDDING_GOOGLE_API_KEY: ''
+            SKILL_EMBEDDING_GOOGLE_MODEL: gemini-embedding-001
+            APP_STORE_ADMIN_PROFILE_IDS: testa
 
     cloud:
         image: learncard-monorepo-local
         build:
-            context: ../../
+            context: ../
             dockerfile: Dockerfile.monorepo
-
         expose:
             - 4100
-        ports:
-            - '4100:4100'
-
         command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && pnpm dev']
-
         depends_on:
             - mongodb
             - redis2
-
         networks:
             - learn-card
-
+            - preview-net
         extra_hosts:
             - 'localhost:host-gateway'
-
-        volumes:
-            - ../../services/learn-card-network/learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
-
         environment:
             PORT: 4100
-
             LEARN_CLOUD_SEED: b
             SKIP_DIDKIT_NAPI: '1'
-
-            LEARN_CLOUD_MONGO_URI: ${LEARN_CLOUD_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
-            LEARN_CLOUD_MONGO_DB_NAME: ${LEARN_CLOUD_MONGO_DB_NAME:-learn-cloud}
-
+            DOMAIN_NAME: ${PREVIEW_DOMAIN:-localhost%3A4100}:cloud
+            LEARN_CLOUD_MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
+            LEARN_CLOUD_MONGO_DB_NAME: learn-cloud
             REDIS_HOST: redis2
             REDIS_PORT: 6379
-
             XAPI_ENDPOINT: http://lrs:8080/xapi
             XAPI_USERNAME: test-api-key
             XAPI_PASSWORD: test-api-secret
-
             SERVER_URL: http://cloud:4100
             JWT_SIGNING_KEY: test
 
     signing:
         image: learncard-monorepo-local
         build:
-            context: ../../
+            context: ../
             dockerfile: Dockerfile.monorepo
-
         expose:
             - 4200
-        ports:
-            - '4200:4200'
-
         command: ['sh', '-c', 'cd services/learn-card-network/simple-signing-service && pnpm dev']
-
         depends_on:
             - mongodb
             - redis3
-
         networks:
             - learn-card
-
         extra_hosts:
             - 'localhost:host-gateway'
-
-        volumes:
-            - ../../services/learn-card-network/simple-signing-service/src:/app/services/learn-card-network/simple-signing-service/src
-
         environment:
             PORT: 4200
-
             IS_OFFLINE: true
             SKIP_DIDKIT_NAPI: '1'
-
             SEED: c
-            AUTHORIZED_DIDS: did:web:localhost%3A4000
-
-            MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
-            MONGO_DB_NAME: ${MONGO_DB_NAME:-simple-signing}
-
+            AUTHORIZED_DIDS: did:web:${PREVIEW_DOMAIN:-localhost%3A4000}:brain
+            MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
+            MONGO_DB_NAME: simple-signing
             REDIS_HOST: redis3
             REDIS_PORT: 6379
 
-    lca-api:
+    api:
         image: lca-api-service
         build:
-            context: ../../
+            context: ../
             dockerfile: services/learn-card-network/lca-api/Dockerfile
-
         expose:
-            - 5200
-        ports:
-            - '5200:5200'
-
+            - 5100
         depends_on:
             mongodb:
                 condition: service_healthy
             redis3:
                 condition: service_started
-
         networks:
             - learn-card
-
+            - preview-net
         extra_hosts:
             - 'localhost:host-gateway'
-
         environment:
-            PORT: 5200
+            PORT: 5100
             IS_OFFLINE: true
             IS_E2E_TEST: true
             SEED: d
-            AUTHORIZED_DIDS: did:web:localhost%3A4000
-            MONGO_URI: ${LCA_API_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
-            MONGO_DB_NAME: ${LCA_API_MONGO_DB_NAME:-lca-api-e2e}
+            AUTHORIZED_DIDS: did:web:${PREVIEW_DOMAIN:-localhost%3A4000}:brain
+            MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
+            MONGO_DB_NAME: lca-api
             REDIS_HOST: redis3
             REDIS_PORT: 6379
-            METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-test-key}
+            METABASE_SECRET_KEY: test-key
+
+    test-embed-app:
+        image: learncard-monorepo-local
+        build:
+            context: ../
+            dockerfile: Dockerfile.monorepo
+        expose:
+            - 8888
+        command: ['node', 'tests/test-embed-app/serve.js']
+        networks:
+            - learn-card
+            - preview-net
+        environment:
+            PREVIEW_URL: https://${PREVIEW_DOMAIN:-localhost:8888}/test-embed
+
+    # --- Infrastructure ---
 
     neo4j:
         image: neo4j:latest
-        ports:
-            - '7687:7687'
-            - '7474:7474'
         healthcheck:
-            test:
-                [
-                    'CMD-SHELL',
-                    'wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1',
-                ]
+            test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1']
             interval: 10s
             timeout: 5s
             retries: 5
@@ -208,55 +200,35 @@ services:
     redis:
         image: redis:alpine
         environment:
-            - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
+            - ALLOW_EMPTY_PASSWORD=yes
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
-        ports:
-            - '6379:${REDIS_PORT:-6379}'
         networks:
             - learn-card
 
     redis2:
         image: redis:alpine
         environment:
-            - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
+            - ALLOW_EMPTY_PASSWORD=yes
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
-        ports:
-            - '6380:6379'
         networks:
             - learn-card
 
     redis3:
         image: redis:alpine
         environment:
-            - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
+            - ALLOW_EMPTY_PASSWORD=yes
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
-        ports:
-            - '6381:6379'
         networks:
             - learn-card
 
     mongodb:
-        command:
-            [
-                '--replSet',
-                'rs0',
-                '--bind_ip_all',
-                '--port',
-                '27017',
-                '--quiet',
-                '--logpath',
-                '/var/log/mongodb/mongod.log',
-            ]
+        command: ['--replSet', 'rs0', '--bind_ip_all', '--port', '27017', '--quiet', '--logpath', '/var/log/mongodb/mongod.log']
         image: mongo:7.0
-        expose:
-            - 27017
-        ports:
-            - 27017:27017
         extra_hosts:
             - 'localhost:host-gateway'
         healthcheck:
             test: >
-                mongosh --host localhost --port 27017 --quiet --eval "try { rs.status().ok } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}) }"
+                mongosh --host 127.0.0.1 --port 27017 --quiet --eval "try { rs.status().ok } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}) }"
             interval: 5s
             timeout: 30s
             start_period: 0s
@@ -269,8 +241,6 @@ services:
         image: softwaremill/elasticmq-native
         expose:
             - 9324
-        ports:
-            - '9324:9324'
         networks:
             - learn-card
 
@@ -282,8 +252,6 @@ services:
             POSTGRES_USER: lrsql_user
             POSTGRES_PASSWORD: lrsql_password
             POSTGRES_DB: lrsql_db
-        ports:
-            - '5432:5432'
 
     lrs:
         image: yetanalytics/lrsql:latest
@@ -293,8 +261,6 @@ services:
             - learn-card
         extra_hosts:
             - 'localhost:host-gateway'
-        ports:
-            - '8080:8080'
         depends_on:
             - postgres
             - cloud
@@ -307,15 +273,14 @@ services:
             LRSQL_DB_NAME: lrsql_db
             LRSQL_DB_USER: lrsql_user
             LRSQL_DB_PASSWORD: lrsql_password
-
             LRSQL_OIDC_ISSUER: http://cloud:4100
             LRSQL_OIDC_AUDIENCE: http://lrs:8080/xapi
             LRSQL_OIDC_SCOPE_PREFIX: 'lrs:'
-
-            # If Postgres is too slow to start, increase this
             LRSQL_POOL_INITIALIZATION_FAIL_TIMEOUT: 10000
             LRSQL_ALLOW_ALL_ORIGINS: true
 
 networks:
     learn-card:
         driver: bridge
+    preview-net:
+        external: true
