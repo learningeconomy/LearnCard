@@ -58,6 +58,11 @@ ${PREVIEW_DOMAIN} {
         reverse_proxy ${PROJECT}-api-1:5100
     }
 
+    # Test embed app (strip /test-embed prefix)
+    handle_path /test-embed/* {
+        reverse_proxy ${PROJECT}-test-embed-app-1:8888
+    }
+
     # Health check
     handle /preview-health {
         respond "OK" 200

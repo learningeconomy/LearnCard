@@ -102,9 +102,10 @@ fi
 git checkout "$BRANCH_NAME" || git checkout "origin/$BRANCH_NAME" --detach
 git reset --hard "origin/$BRANCH_NAME"
 
-# --- Generate compose override for DID resolution ---
+# --- Generate compose override for DID resolution + optional env overrides ---
 # The PR branch may not have the DOMAIN_NAME fix, so we generate an
 # override file that ensures did:web identifiers resolve through Caddy.
+# Optional seed overrides come from GitHub environment variables.
 OVERRIDE_FILE="$WORKSPACE_DIR/docker-compose.preview.override.yaml"
 cat > "$OVERRIDE_FILE" <<YAML
 services:
@@ -112,12 +113,20 @@ services:
     environment:
       DOMAIN_NAME: ${PREVIEW_DOMAIN}:brain
       IS_OFFLINE: ''
+$([ -n "${BRAIN_SEED:-}" ] && echo "      SEED: ${BRAIN_SEED}" || true)
+  cloud:
+    environment:
+      DOMAIN_NAME: ${PREVIEW_DOMAIN}:cloud
+      IS_OFFLINE: ''
+$([ -n "${CLOUD_SEED:-}" ] && echo "      LEARN_CLOUD_SEED: ${CLOUD_SEED}" || true)
   signing:
     environment:
       AUTHORIZED_DIDS: did:web:${PREVIEW_DOMAIN}:brain
+$([ -n "${SIGNING_SEED:-}" ] && echo "      SEED: ${SIGNING_SEED}" || true)
   api:
     environment:
       AUTHORIZED_DIDS: did:web:${PREVIEW_DOMAIN}:brain
+$([ -n "${API_SEED:-}" ] && echo "      SEED: ${API_SEED}" || true)
 YAML
 
 # --- Tear down existing preview for this PR (if any) ---
