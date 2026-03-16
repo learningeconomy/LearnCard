@@ -130,7 +130,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                         />
                     </div>
 
-                    <div className="flex gap-[10px]">
+                    <div className="flex gap-[20px]">
                         <div className="flex flex-col gap-[10px] flex-1">
                             <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
                                 Start Date
@@ -147,7 +147,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                 End Date
                             </span>
                             {experience.isCurrentJob ? (
-                                <div className="bg-grayscale-100 rounded-[15px] px-[16px] py-[16px] text-grayscale-900 font-poppins text-[14px]">
+                                <div className="py-[10px] text-grayscale-900 font-poppins text-[14px] font-bold h-full flex items-center">
                                     Present
                                 </div>
                             ) : (
