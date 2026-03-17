@@ -111,7 +111,10 @@ import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
-import { getContactMethodByValue, getProfileByContactMethod } from '@accesslayer/contact-method/read';
+import {
+    getContactMethodByValue,
+    getProfileByContactMethod,
+} from '@accesslayer/contact-method/read';
 import {
     getSigningAuthorityForUserByName,
     getPrimarySigningAuthorityForUser,
@@ -490,6 +493,7 @@ export const boostsRouter = t.router({
                     name: framework.name,
                     description: framework.description,
                     sourceURI: framework.sourceURI,
+                    isPublic: (framework as any).isPublic ?? false,
                     status: (framework.status as any) ?? 'active',
                     createdAt: (framework as any).createdAt,
                     updatedAt: (framework as any).updatedAt,
@@ -755,16 +759,25 @@ export const boostsRouter = t.router({
                         let inboxRecipientName: string | undefined;
                         let inboxRecipientDid: string | undefined;
                         if (inboxRecipient.type === 'email' || inboxRecipient.type === 'phone') {
-                            const contactMethod = await traceDb('getContactMethodByValue:inbox', () =>
-                                getContactMethodByValue(inboxRecipient.type as 'email' | 'phone', inboxRecipient.value)
+                            const contactMethod = await traceDb(
+                                'getContactMethodByValue:inbox',
+                                () =>
+                                    getContactMethodByValue(
+                                        inboxRecipient.type as 'email' | 'phone',
+                                        inboxRecipient.value
+                                    )
                             );
                             if (contactMethod) {
-                                const recipientProfile = await traceDb('getProfileByContactMethod:inbox', () =>
-                                    getProfileByContactMethod(contactMethod.id)
+                                const recipientProfile = await traceDb(
+                                    'getProfileByContactMethod:inbox',
+                                    () => getProfileByContactMethod(contactMethod.id)
                                 );
                                 inboxRecipientName = recipientProfile?.displayName;
                                 if (recipientProfile?.profileId) {
-                                    inboxRecipientDid = getDidWeb(domain, recipientProfile.profileId);
+                                    inboxRecipientDid = getDidWeb(
+                                        domain,
+                                        recipientProfile.profileId
+                                    );
                                 }
                             }
                         }
@@ -1282,6 +1295,7 @@ export const boostsRouter = t.router({
                     name: framework.name,
                     description: framework.description ?? undefined,
                     sourceURI: framework.sourceURI ?? undefined,
+                    isPublic: (framework as any).isPublic ?? false,
                     status: framework.status ?? 'active',
                     createdAt: framework.createdAt,
                     updatedAt: framework.updatedAt,
@@ -2813,7 +2827,13 @@ export const boostsRouter = t.router({
                 });
             }
 
-            await setValidClaimLinkForBoost(boostUri, challenge, normalizedClaimLinkSA, options, profile.profileId);
+            await setValidClaimLinkForBoost(
+                boostUri,
+                challenge,
+                normalizedClaimLinkSA,
+                options,
+                profile.profileId
+            );
 
             return { boostUri: boostUri, challenge };
         }),

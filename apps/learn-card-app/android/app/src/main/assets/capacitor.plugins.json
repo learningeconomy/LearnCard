@@ -40,6 +40,10 @@
 		"classpath": "com.capacitorjs.plugins.filetransfer.FileTransferPlugin"
 	},
 	{
+		"pkg": "@capacitor/file-viewer",
+		"classpath": "com.capacitorjs.plugins.fileviewer.FileViewerPlugin"
+	},
+	{
 		"pkg": "@capacitor/filesystem",
 		"classpath": "com.capacitorjs.plugins.filesystem.FilesystemPlugin"
 	},

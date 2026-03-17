@@ -20,6 +20,8 @@ import { EncryptionPluginType } from '@learncard/encryption-plugin';
 
 import { InitFunction, GenericInitFunction } from './helpers';
 
+export type GuardianApprovalGetter = () => string | undefined | Promise<string | undefined>;
+
 /** @group LearnCard */
 export type LearnCardConfig = {
     cloud?: {
@@ -76,7 +78,12 @@ export type LearnCardFromSeed = InitFunction<
 
 /** @group Init Functions */
 export type NetworkLearnCardFromSeed = InitFunction<
-    { seed: string; network: true | string; trustedBoostRegistry?: string },
+    {
+        seed: string;
+        network: true | string;
+        trustedBoostRegistry?: string;
+        guardianApprovalGetter?: GuardianApprovalGetter;
+    },
     keyof LearnCardConfig,
     LearnCard<
         [
@@ -101,7 +108,12 @@ export type NetworkLearnCardFromSeed = InitFunction<
 
 /** @group Init Functions */
 export type NetworkLearnCardFromApiKey = InitFunction<
-    { apiKey: string; network: true | string; trustedBoostRegistry?: string },
+    {
+        apiKey: string;
+        network: true | string;
+        trustedBoostRegistry?: string;
+        guardianApprovalGetter?: GuardianApprovalGetter;
+    },
     'didkit' | 'allowRemoteContexts' | 'debug',
     LearnCard<
         [
@@ -146,7 +158,13 @@ export type DidWebLearnCardFromSeed = InitFunction<
 
 /** @group Init Functions */
 export type DidWebNetworkLearnCardFromSeed = InitFunction<
-    { seed: string; network: true | string; didWeb: string; trustedBoostRegistry?: string },
+    {
+        seed: string;
+        network: true | string;
+        didWeb: string;
+        trustedBoostRegistry?: string;
+        guardianApprovalGetter?: GuardianApprovalGetter;
+    },
     keyof LearnCardConfig,
     LearnCard<
         [

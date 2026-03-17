@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { Redirect, Route, Switch, useLocation } from 'react-router-dom';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     DIDAuthModal,
     VCClaimModalController,
@@ -46,6 +47,9 @@ const PrivacySettingsPage = lazyWithRetry(
     () => import('./pages/privacy-settings/PrivacySettingsPage')
 );
 const ResumeBuilderPage = lazyWithRetry(() => import('./pages/resume-builder/ResumeBuilderPage'));
+const VerifySharedResume = lazyWithRetry(
+    () => import('./pages/resume-builder/VerifySharedResume')
+);
 const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
 const ViewSharedBoost = lazyWithRetry(() => import('./components/creds-bundle/ViewSharedBoost'));
@@ -134,6 +138,9 @@ const SigningAuthoritiesPage = lazyWithRetry(
 const APITokensPage = lazyWithRetry(
     () => import('./pages/adminToolsPage/api-tokens/APITokensPage')
 );
+const LearnerContextPromptTestPage = lazyWithRetry(
+    () => import('./pages/adminToolsPage/learner-context-test/LearnerContextPromptTestPage')
+);
 
 const DevCli = lazyWithRetry(() => import('./pages/devCli/DevCli'));
 const AiPathwaysDiscovery = lazyWithRetry(
@@ -169,6 +176,7 @@ const PrivateRoute = ({ component: Component, ...rest }) => {
 export const Routes: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
+    const flags = useFlags();
 
     // The `backgroundLocation` state is the location that we were at when one of
     // it's what is displayed in the background when we open the modal route
@@ -188,6 +196,7 @@ export const Routes: React.FC = () => {
                         />
                         <SentryRoute exact path="/auth/handoff" component={AuthHandoff} />
                         <SentryRoute exact path="/share-boost" component={ViewSharedBoost} />
+                        <SentryRoute exact path="/verify/resume" component={VerifySharedResume} />
                         <SentryRoute path="/waitingsofa" children={<LoadingPage2 />} />
                         <PrivateRoute
                             exact
@@ -302,6 +311,13 @@ export const Routes: React.FC = () => {
                             path="/admin-tools/api-tokens"
                             component={APITokensPage}
                         />
+                        {flags.enableLearnerContextTest && (
+                            <PrivateRoute
+                                exact
+                                path="/admin-tools/learner-context-test"
+                                component={LearnerContextPromptTestPage}
+                            />
+                        )}
 
                         <SentryRoute
                             path="/claim-credential/:uri"

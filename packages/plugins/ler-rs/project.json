@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "ler-rs-plugin",
+  "sourceRoot": "packages/plugins/ler-rs/src",
+  "projectType": "library",
+  "root": "packages/plugins/ler-rs",
+  "tags": [],
+  "implicitDependencies": ["types", "core", "vc-plugin"],
+  "namedInputs": {
+    "scripts": ["{projectRoot}/scripts/**/*"],
+    "source": ["{projectRoot}/src/**/*"],
+    "dist": ["{projectRoot}/dist/**/*"]
+  },
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "inputs": ["source", "scripts"],
+      "options": { "script": "build" }
+    }
+  }
+}

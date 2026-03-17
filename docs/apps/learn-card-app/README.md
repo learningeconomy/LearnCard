@@ -120,6 +120,7 @@ Recovery methods are managed from the **Account Recovery** section in the user's
 
 ## Related Documentation
 
+-   [Resume Builder LER-RS Mapping](resume-builder-ler-rs-mapping.md) — Field/category mapping for resume issuance
 -   [Create a Credential](../../tutorials/create-a-credential.md) — For issuers
 -   [Verify Credentials](../../tutorials/verify-credentials.md) — For verifiers
 -   [ConsentFlow Overview](../../core-concepts/consent-and-permissions/consentflow-overview.md) — Understanding consent
