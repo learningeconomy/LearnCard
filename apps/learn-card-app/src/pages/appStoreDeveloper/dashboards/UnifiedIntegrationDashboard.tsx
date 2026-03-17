@@ -43,6 +43,9 @@ const ApiTokensTab = lazy(() =>
 const EmbedCodeTab = lazy(() =>
     import('./tabs/EmbedCodeTab').then(m => ({ default: m.EmbedCodeTab }))
 );
+const EmbedConfigTab = lazy(() =>
+    import('./tabs/EmbedConfigTab').then(m => ({ default: m.EmbedConfigTab }))
+);
 const ContractsTab = lazy(() =>
     import('./tabs/ContractsTab').then(m => ({ default: m.ContractsTab }))
 );
@@ -96,6 +99,10 @@ function getTabsForConfig(config: DashboardConfig): DashboardTabConfig[] {
         tabs.push({ id: 'tokens', label: 'API Tokens', icon: Key });
     }
 
+    if (config.showEmbedConfig) {
+        tabs.push({ id: 'embed-config', label: 'Config', icon: Settings });
+    }
+
     if (config.showEmbedCode) {
         tabs.push({ id: 'embed-code', label: 'Embed Code', icon: Code });
     }
@@ -129,8 +136,9 @@ function getTabsForConfig(config: DashboardConfig): DashboardTabConfig[] {
         tabs.push({ id: 'app-config', label: 'App Config', icon: Settings });
     }
 
-    // course-catalog specific tabs (API code + CSV upload + testing)
-    if (config.showTemplates && !config.showAppListings) {
+    // API-based integration tabs (code snippets, CSV upload, testing)
+    // Excluded for embed-claim which has its own live preview in the Embed Code tab
+    if (config.showTemplates && !config.showAppListings && !config.showEmbedCode) {
         tabs.push({ id: 'code', label: 'Code', icon: FileCode });
         tabs.push({ id: 'csv-upload', label: 'CSV Upload', icon: FileSpreadsheet });
         tabs.push({ id: 'testing', label: 'Testing', icon: TestTube2 });
@@ -514,7 +522,13 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                     />
                 )}
 
-                {activeTab === 'embed-code' && <EmbedCodeTab integration={integration} />}
+                {activeTab === 'embed-config' && (
+                    <EmbedConfigTab integration={integration} templates={templates} />
+                )}
+
+                {activeTab === 'embed-code' && (
+                    <EmbedCodeTab integration={integration} templates={templates} />
+                )}
 
                 {activeTab === 'contracts' && <ContractsTab integration={integration} />}
 
