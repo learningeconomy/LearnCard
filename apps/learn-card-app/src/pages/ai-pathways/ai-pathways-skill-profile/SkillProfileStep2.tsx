@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import { v4 as uuidv4 } from 'uuid';
@@ -14,8 +14,15 @@ import {
     useWallet,
     useToast,
     ToastTypeEnum,
+    useVerifiableData,
 } from 'learn-card-base';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
+
+export type SkillProfileWorkHistoryData = {
+    selectedCredentialUris: string[];
+};
+
+export const SKILL_PROFILE_WORK_HISTORY_KEY = 'skill-profile-work-history';
 
 import SelectFrameworkToManageModal from 'src/pages/SkillFrameworks/SelectFrameworkToManageModal';
 import BrowseFrameworkPage from 'src/pages/SkillFrameworks/BrowseFrameworkPage';
@@ -67,6 +74,20 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
     const [showForm, setShowForm] = useState(false);
     const [selectedCredentialUris, setSelectedCredentialUris] = useState<string[]>([]);
     const [isIssuing, setIsIssuing] = useState(false);
+
+    const {
+        data: workHistoryData,
+        isLoading: workHistoryLoading,
+        saveIfChanged: saveWorkHistory,
+        isSaving: workHistorySaving,
+    } = useVerifiableData<SkillProfileWorkHistoryData>(SKILL_PROFILE_WORK_HISTORY_KEY);
+
+    // Pre-populate selected URIs from existing verifiable data
+    useEffect(() => {
+        if (workHistoryData?.selectedCredentialUris) {
+            setSelectedCredentialUris(workHistoryData.selectedCredentialUris);
+        }
+    }, [workHistoryData]);
 
     const swiperRef = useRef<any>(null);
     const [atBeginning, setAtBeginning] = useState(true);
@@ -260,6 +281,11 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
 
     const handleRemoveSkill = (skill: any) => {
         setSelectedSkills(prev => prev.filter(s => s.id !== skill.id));
+    };
+
+    const handleSaveAndNext = async () => {
+        await saveWorkHistory({ selectedCredentialUris });
+        handleNext();
     };
 
     const shouldShowForm = showForm || !hasExistingCredentials;
@@ -556,14 +582,16 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                 <button
                     className="bg-grayscale-50 text-grayscale-800 rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 border-[1px] border-solid border-grayscale-200 h-[44px]"
                     onClick={handleBack}
+                    disabled={workHistorySaving}
                 >
                     Back
                 </button>
                 <button
-                    className="bg-emerald-500 text-white rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 h-[44px]"
-                    onClick={handleNext}
+                    className="bg-emerald-500 text-white rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 h-[44px] disabled:opacity-50"
+                    onClick={handleSaveAndNext}
+                    disabled={workHistorySaving || workHistoryLoading}
                 >
-                    Next
+                    {workHistorySaving ? 'Saving...' : 'Next'}
                 </button>
             </div>
         </div>

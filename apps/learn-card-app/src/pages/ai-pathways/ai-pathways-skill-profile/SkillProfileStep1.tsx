@@ -5,6 +5,9 @@ import { TextInput, SelectInput, useVerifiableData } from 'learn-card-base';
 
 export type SkillProfileGoalsData = {
     goals: string[];
+};
+
+export type SkillProfileProfileData = {
     professionalTitle: string;
     lifetimeExperience: {
         years: number | null;
@@ -13,6 +16,7 @@ export type SkillProfileGoalsData = {
 };
 
 export const SKILL_PROFILE_GOALS_KEY = 'skill-profile-goals';
+export const SKILL_PROFILE_PROFILE_KEY = 'skill-profile-profile';
 
 type SkillProfileStep1Props = {
     handleNext: () => void;
@@ -54,18 +58,37 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
     const [years, setYears] = useState<number | null>(null);
     const [months, setMonths] = useState<number | null>(null);
 
-    const { data, isLoading, isFetched, save, isSaving } =
-        useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY);
+    const {
+        data: goalsData,
+        isLoading: goalsLoading,
+        saveIfChanged: saveGoals,
+        isSaving: goalsSaving,
+    } = useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY);
+
+    const {
+        data: profileData,
+        isLoading: profileLoading,
+        saveIfChanged: saveProfile,
+        isSaving: profileSaving,
+    } = useVerifiableData<SkillProfileProfileData>(SKILL_PROFILE_PROFILE_KEY);
+
+    const isLoading = goalsLoading || profileLoading;
+    const isSaving = goalsSaving || profileSaving;
 
     // Pre-populate form from existing verifiable data
     useEffect(() => {
-        if (data) {
-            setGoals(data.goals ?? []);
-            setProfessionalTitle(data.professionalTitle ?? '');
-            setYears(data.lifetimeExperience?.years ?? null);
-            setMonths(data.lifetimeExperience?.months ?? null);
+        if (goalsData) {
+            setGoals(goalsData.goals ?? []);
         }
-    }, [data]);
+    }, [goalsData]);
+
+    useEffect(() => {
+        if (profileData) {
+            setProfessionalTitle(profileData.professionalTitle ?? '');
+            setYears(profileData.lifetimeExperience?.years ?? null);
+            setMonths(profileData.lifetimeExperience?.months ?? null);
+        }
+    }, [profileData]);
 
     const handleAddGoal = () => {
         if (goalInput.trim()) {
@@ -79,14 +102,13 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
     };
 
     const handleSaveAndNext = async () => {
-        await save({
-            goals,
-            professionalTitle,
-            lifetimeExperience: {
-                years,
-                months,
-            },
-        });
+        await Promise.all([
+            saveGoals({ goals }),
+            saveProfile({
+                professionalTitle,
+                lifetimeExperience: { years, months },
+            }),
+        ]);
         handleNext();
     };
 

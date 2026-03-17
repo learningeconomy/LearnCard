@@ -1,6 +1,20 @@
 import React from 'react';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { SetState } from '@learncard/helpers';
+import { useVerifiableData } from 'learn-card-base';
+
+import {
+    SkillProfileGoalsData,
+    SkillProfileProfileData,
+    SKILL_PROFILE_GOALS_KEY,
+    SKILL_PROFILE_PROFILE_KEY,
+} from './SkillProfileStep1';
+import { SkillProfileWorkHistoryData, SKILL_PROFILE_WORK_HISTORY_KEY } from './SkillProfileStep2';
+import { SkillProfileSalaryData, SKILL_PROFILE_SALARY_KEY } from './SkillProfileStep3';
+import {
+    SkillProfileJobSatisfactionData,
+    SKILL_PROFILE_JOB_SATISFACTION_KEY,
+} from './SkillProfileStep4';
 
 type SkillProfileProgressBarProps = { currentStep: number; setCurrentStep: SetState<number> };
 
@@ -8,11 +22,38 @@ const SkillProfileProgressBar: React.FC<SkillProfileProgressBarProps> = ({
     currentStep,
     setCurrentStep,
 }) => {
+    // Step 1: Goals + Profile (both must exist AND have non-empty data)
+    const { data: goalsData } = useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY);
+    const { data: profileData } =
+        useVerifiableData<SkillProfileProfileData>(SKILL_PROFILE_PROFILE_KEY);
+    const goalsComplete = Boolean(goalsData?.goals?.length);
+    const profileComplete = Boolean(profileData?.professionalTitle);
+    const step1Complete = goalsComplete && profileComplete;
+
+    // Step 2: Work History (selected URIs exist)
+    const { data: workHistoryData } = useVerifiableData<SkillProfileWorkHistoryData>(
+        SKILL_PROFILE_WORK_HISTORY_KEY
+    );
+    const step2Complete = Boolean(workHistoryData?.selectedCredentialUris?.length);
+
+    // Step 3: Salary (amount must be non-empty)
+    const { data: salaryData } =
+        useVerifiableData<SkillProfileSalaryData>(SKILL_PROFILE_SALARY_KEY);
+    const step3Complete = Boolean(salaryData?.salary);
+
+    // Step 4: Job Satisfaction (at least one rating selected)
+    const { data: jobSatisfactionData } = useVerifiableData<SkillProfileJobSatisfactionData>(
+        SKILL_PROFILE_JOB_SATISFACTION_KEY
+    );
+    const step4Complete = Boolean(
+        jobSatisfactionData?.workLifeBalance || jobSatisfactionData?.jobStability
+    );
+
     const bars: { step: number; isCompleted: boolean }[] = [
-        { step: 1, isCompleted: false },
-        { step: 2, isCompleted: true },
-        { step: 3, isCompleted: false },
-        { step: 4, isCompleted: false },
+        { step: 1, isCompleted: step1Complete },
+        { step: 2, isCompleted: step2Complete },
+        { step: 3, isCompleted: step3Complete },
+        { step: 4, isCompleted: step4Complete },
         { step: 5, isCompleted: false },
     ];
 

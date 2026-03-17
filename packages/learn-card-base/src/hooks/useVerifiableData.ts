@@ -189,6 +189,27 @@ export const useVerifiableData = <T>(key: string, options?: VerifiableDataOption
         },
     });
 
+    /**
+     * Check if new data differs from existing data.
+     * Uses JSON serialization for deep comparison.
+     */
+    const hasChanged = (newData: T): boolean => {
+        if (query.data === undefined) return true;
+        return JSON.stringify(query.data) !== JSON.stringify(newData);
+    };
+
+    /**
+     * Save data only if it has changed from the existing data.
+     * Returns true if data was saved, false if skipped.
+     */
+    const saveIfChanged = async (newData: T): Promise<boolean> => {
+        if (!hasChanged(newData)) {
+            return false;
+        }
+        await mutation.mutateAsync(newData);
+        return true;
+    };
+
     return {
         /** The current verifiable data, or undefined if not yet loaded or doesn't exist */
         data: query.data,
@@ -198,10 +219,16 @@ export const useVerifiableData = <T>(key: string, options?: VerifiableDataOption
         isFetched: query.isFetched,
         /** Save new data, replacing any existing credential */
         save: mutation.mutateAsync,
+        /** Save new data only if it differs from existing data. Returns true if saved. */
+        saveIfChanged,
+        /** Check if new data differs from existing data */
+        hasChanged,
         /** Whether data is currently being saved */
         isSaving: mutation.isPending,
         /** Refetch the data from the server */
         refetch: query.refetch,
+        /** Whether data exists (has been saved at least once) */
+        exists: query.data !== undefined,
     };
 };
 

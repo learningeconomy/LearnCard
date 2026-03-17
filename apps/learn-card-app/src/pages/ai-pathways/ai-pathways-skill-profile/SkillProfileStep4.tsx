@@ -35,9 +35,8 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
     const [workLifeBalance, setWorkLifeBalance] = useState<string | null>(null);
     const [jobStability, setJobStability] = useState<string | null>(null);
 
-    const { data, isLoading, save, isSaving } = useVerifiableData<SkillProfileJobSatisfactionData>(
-        SKILL_PROFILE_JOB_SATISFACTION_KEY
-    );
+    const { data, isLoading, saveIfChanged, isSaving } =
+        useVerifiableData<SkillProfileJobSatisfactionData>(SKILL_PROFILE_JOB_SATISFACTION_KEY);
 
     // Pre-populate form from existing verifiable data
     useEffect(() => {
@@ -48,7 +47,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
     }, [data]);
 
     const handleSaveAndNext = async () => {
-        await save({
+        await saveIfChanged({
             workLifeBalance,
             jobStability,
         });
