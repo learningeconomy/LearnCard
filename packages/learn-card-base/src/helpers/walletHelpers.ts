@@ -4,6 +4,7 @@ import type { CredentialRecord } from '@learncard/types';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 import { getLCAPlugin } from '@learncard/lca-api-plugin';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
+import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
 
 import { getSQLitePlugin } from 'learn-card-base/plugins/sqlite';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
@@ -77,11 +78,12 @@ export const getBespokeLearnCard = async (
     );
 
     const linkedClaimsLca = await lcaLearnCard.addPlugin(await getLinkedClaimsPlugin(lcaLearnCard));
+    const lerRsLc = await linkedClaimsLca.addPlugin(getLerRsPlugin(linkedClaimsLca as any));
 
     // Conditionally add SQLite plugin on native platforms only
     const sqliteAugmented = isPlatformWeb()
-        ? linkedClaimsLca
-        : await linkedClaimsLca.addPlugin(await getSQLitePlugin(linkedClaimsLca));
+        ? lerRsLc
+        : await lerRsLc.addPlugin(await getSQLitePlugin(lerRsLc));
 
     const bespokeLearnCard = sqliteAugmented as BespokeLearnCard;
 

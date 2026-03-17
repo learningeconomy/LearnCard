@@ -6,7 +6,7 @@
 /// <reference path="./ambient.d.ts" />
 
 import islandScript from './iframe/island-vanilla.js';
-import { createGlobalStyleEl, iframeCss } from './styles';
+import { createGlobalStyleEl, iframeCss, DEFAULT_PRIMARY, DEFAULT_LOGO_URL, darkenHex } from './styles';
 import { getTargetEl } from './dom';
 import { createNonce } from './security';
 import type { InitOptions, KnownMessages, EmailSubmitResult, OtpVerifyResult } from './types';
@@ -58,18 +58,23 @@ function buildIframeHtml(
   loggedInEmail?: string
 ): string {
   const partnerLabel = escapeHtml(opts.partnerName || 'Partner');
-  const primary = (opts.branding?.primaryColor || opts.theme?.primaryColor || '#1F51FF');
-  const accent = (opts.branding?.accentColor || '#0F3BD9');
+  const primary = (opts.branding?.primaryColor || opts.theme?.primaryColor || DEFAULT_PRIMARY);
+  const accent = (opts.branding?.accentColor || darkenHex(primary, 0.2));
   const credName = escapeHtml(opts.credential?.name || 'Credential');
   const showConsent = !!opts.requestBackgroundIssuance;
   const csp = "default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'";
 
+  const logoUrl = opts.branding?.logoUrl || DEFAULT_LOGO_URL;
+  const issuerName = escapeHtml(opts.issuerName || '');
   const cfg = {
     partnerLabel,
+    partnerName: opts.partnerName || '',
+    issuerName,
     credentialName: credName,
     showConsent,
     nonce,
     parentOrigin,
+    logoUrl,
     ...(loggedInEmail ? { loggedInEmail } : {}),
   } as const;
 
@@ -102,31 +107,69 @@ function openModal(opts: InitOptions): { close: () => void } {
 
   const brand = document.createElement('div');
   brand.className = 'lc-brand';
-  brand.setAttribute('aria-label', `LearnCard × ${(opts.partnerName || 'Partner')}`);
-  const logos = document.createElement('div');
-  logos.className = 'lc-brand-logos';
-  const brandText = document.createElement('span');
-  brandText.textContent = `LearnCard × ${(opts.partnerName || 'Partner')}`;
-  const lcLogoUrl = opts.branding?.logoUrl;
+
+  // Left side: Issuer (logo/avatar + name). Falls back to LC logo if no issuerName provided.
+  const issuerName = opts.issuerName || '';
+  const issuerLogoUrl = opts.issuerLogoUrl;
+  if (issuerName) {
+    if (issuerLogoUrl) {
+      const issuerImg = document.createElement('img');
+      issuerImg.className = 'lc-issuer-logo';
+      issuerImg.alt = issuerName;
+      issuerImg.referrerPolicy = 'no-referrer';
+      issuerImg.decoding = 'async';
+      issuerImg.src = issuerLogoUrl;
+      brand.appendChild(issuerImg);
+    } else {
+      const avatar = document.createElement('span');
+      avatar.className = 'lc-issuer-avatar';
+      avatar.setAttribute('aria-hidden', 'true');
+      avatar.textContent = issuerName.charAt(0).toUpperCase();
+      brand.appendChild(avatar);
+    }
+    const issuerText = document.createElement('span');
+    issuerText.className = 'lc-issuer-name';
+    issuerText.textContent = issuerName;
+    brand.appendChild(issuerText);
+  } else {
+    // Fallback: LC logo
+    const lcLogoUrl = opts.branding?.logoUrl || DEFAULT_LOGO_URL;
+    const lcImg = document.createElement('img');
+    lcImg.alt = 'LearnCard';
+    lcImg.referrerPolicy = 'no-referrer';
+    lcImg.decoding = 'async';
+    lcImg.src = lcLogoUrl;
+    brand.appendChild(lcImg);
+  }
+
+  // Separator + Partner (only shown if partnerName or partnerLogoUrl is set)
   const partnerLogoUrl = opts.branding?.partnerLogoUrl;
-  if (lcLogoUrl) {
-    const img = document.createElement('img');
-    img.alt = 'LearnCard';
-    img.referrerPolicy = 'no-referrer';
-    img.decoding = 'async';
-    img.src = lcLogoUrl;
-    logos.appendChild(img);
+  const partnerName = opts.partnerName || '';
+  if (partnerName || partnerLogoUrl) {
+    const sep = document.createElement('span');
+    sep.className = 'lc-sep';
+    sep.setAttribute('aria-hidden', 'true');
+    sep.textContent = '\u00d7';
+    brand.appendChild(sep);
+
+    if (partnerLogoUrl) {
+      const pImg = document.createElement('img');
+      pImg.className = 'lc-partner-logo';
+      pImg.alt = partnerName || 'Partner';
+      pImg.referrerPolicy = 'no-referrer';
+      pImg.decoding = 'async';
+      pImg.src = partnerLogoUrl;
+      brand.appendChild(pImg);
+    }
+    if (partnerName) {
+      const pText = document.createElement('span');
+      pText.className = 'lc-partner-name';
+      pText.textContent = partnerName;
+      brand.appendChild(pText);
+    }
   }
-  if (partnerLogoUrl) {
-    const img = document.createElement('img');
-    img.alt = (opts.partnerName || 'Partner');
-    img.referrerPolicy = 'no-referrer';
-    img.decoding = 'async';
-    img.src = partnerLogoUrl;
-    logos.appendChild(img);
-  }
-  brand.appendChild(logos);
-  brand.appendChild(brandText);
+
+  brand.setAttribute('aria-label', `${issuerName || 'LearnCard'} \u00d7 ${partnerName || 'Partner'}`);
 
   const closeBtn = document.createElement('button');
   closeBtn.className = 'lc-close';
@@ -174,6 +217,22 @@ function openModal(opts: InitOptions): { close: () => void } {
   const apiBase = (opts.apiBaseUrl ?? 'https://network.learncard.com/api').replace(/\/$/, '');
   let sessionJwt: string | null = stored?.jwt || null;
 
+  // Map technical/internal error codes to user-friendly messages
+  function friendlyError(raw: string, fallback: string): string {
+    const normalized = raw.toUpperCase().replace(/[\s_-]+/g, '_');
+    const map: Record<string, string> = {
+      NOT_FOUND: 'This integration could not be found. Please check your configuration.',
+      UNAUTHORIZED: 'Authorization failed. Please check your publishable key.',
+      FORBIDDEN: 'Access denied. Please check your permissions.',
+      RATE_LIMITED: 'Too many attempts. Please wait a moment and try again.',
+      INVALID_EMAIL: 'Please enter a valid email address.',
+      INVALID_CODE: 'The code you entered is incorrect. Please try again.',
+      EXPIRED: 'This code has expired. Please request a new one.',
+      INTERNAL_SERVER_ERROR: 'Something went wrong on our end. Please try again later.',
+    };
+    return map[normalized] || (/^[A-Z_]+$/.test(raw) ? fallback : raw);
+  }
+
   async function defaultEmailSubmit(email: string): Promise<EmailSubmitResult> {
     // If publishableKey is missing, preserve no-op behavior for backwards compatibility and tests
     if (!opts.publishableKey) return { ok: true };
@@ -190,15 +249,17 @@ function openModal(opts: InitOptions): { close: () => void } {
       });
 
       if (!res.ok) {
-        // Try to parse a message if available
-        let message = 'Failed to send code';
-        try { const j = await res.json(); if (j?.message) message = j.message; } catch {}
+        let message = 'Unable to send verification code. Please try again.';
+        try {
+          const j = await res.json();
+          if (j?.message) message = friendlyError(j.message, message);
+        } catch {}
         return { ok: false, error: message };
       }
 
       return { ok: true };
     } catch (e) {
-      return { ok: false, error: 'Network error while sending code' };
+      return { ok: false, error: 'Unable to reach the server. Please check your connection and try again.' };
     }
   }
 
@@ -218,14 +279,17 @@ function openModal(opts: InitOptions): { close: () => void } {
       });
 
       if (!verifyRes.ok) {
-        let message = 'Verification failed';
-        try { const j = await verifyRes.json(); if (j?.message) message = j.message; } catch {}
+        let message = 'Verification failed. Please try again.';
+        try {
+          const j = await verifyRes.json();
+          if (j?.message) message = friendlyError(j.message, message);
+        } catch {}
         return { ok: false, error: message };
       }
 
       const verifyJson = await verifyRes.json() as { sessionJwt?: string };
       if (!verifyJson?.sessionJwt || typeof verifyJson.sessionJwt !== 'string') {
-        return { ok: false, error: 'Invalid session response' };
+        return { ok: false, error: 'Something went wrong. Please try again.' };
       }
       sessionJwt = verifyJson.sessionJwt;
       setStoredSession(email, sessionJwt);
@@ -238,20 +302,23 @@ function openModal(opts: InitOptions): { close: () => void } {
           'Authorization': `Bearer ${sessionJwt}`,
         },
         body: JSON.stringify({
-          credential: opts.credential,
+          credential: (opts.credential as any).credential ?? (opts.credential as any).obv3Template ?? opts.credential,
           configuration: { publishableKey: opts.publishableKey },
         }),
       });
 
       if (!claimRes.ok) {
-        let message = 'Failed to claim credential';
-        try { const j = await claimRes.json(); if (j?.message) message = j.message; } catch {}
+        let message = 'Unable to claim credential. Please try again.';
+        try {
+          const j = await claimRes.json();
+          if (j?.message) message = friendlyError(j.message, message);
+        } catch {}
         return { ok: false, error: message };
       }
 
       return { ok: true };
     } catch (e) {
-      return { ok: false, error: 'Network error during verification' };
+      return { ok: false, error: 'Unable to reach the server. Please check your connection and try again.' };
     }
   }
 
@@ -285,7 +352,7 @@ function openModal(opts: InitOptions): { close: () => void } {
         cb ? cb(email || '') : defaultEmailSubmit(email || '')
       ) as Promise<EmailSubmitResult>;
       p.then(res => sendToIframe('lc-embed:email-submit:result', res))
-       .catch(() => sendToIframe('lc-embed:email-submit:result', { ok: false, error: 'Failed to send code' }));
+       .catch(() => sendToIframe('lc-embed:email-submit:result', { ok: false, error: 'Unable to send code. Please try again.' }));
       return;
     }
 
@@ -297,15 +364,15 @@ function openModal(opts: InitOptions): { close: () => void } {
         cb ? cb(email || '', code || '') : defaultOtpVerify(email || '', code || '')
       ) as Promise<OtpVerifyResult>;
       p.then(res => sendToIframe('lc-embed:otp-verify:result', res))
-       .catch(() => sendToIframe('lc-embed:otp-verify:result', { ok: false, error: 'Verification failed' }));
+       .catch(() => sendToIframe('lc-embed:otp-verify:result', { ok: false, error: 'Verification failed. Please try again.' }));
       return;
     }
 
     // Accept (already-logged-in) flow
     if (isTrustedMessageOfType(data, nonce, 'lc-embed:accept')) {
       const p: Promise<OtpVerifyResult> = (async () => {
-        if (!opts.publishableKey) return { ok: false, error: 'Configuration error' };
-        if (!sessionJwt) return { ok: false, error: 'Not logged in' };
+        if (!opts.publishableKey) return { ok: false, error: 'Configuration error. Please contact support.' };
+        if (!sessionJwt) return { ok: false, error: 'Your session has expired. Please log in again.' };
 
         try {
           const claimRes = await fetch(`${apiBase}/inbox/claim`, {
@@ -315,26 +382,29 @@ function openModal(opts: InitOptions): { close: () => void } {
               'Authorization': `Bearer ${sessionJwt}`,
             },
             body: JSON.stringify({
-              credential: opts.credential,
+              credential: (opts.credential as any).credential ?? (opts.credential as any).obv3Template ?? opts.credential,
               configuration: { publishableKey: opts.publishableKey },
             }),
           });
 
           if (!claimRes.ok) {
-            let message = 'Failed to claim credential';
-            try { const j = await claimRes.json(); if (j?.message) message = j.message; } catch {}
-            if (claimRes.status === 401) message = 'Session expired. Please log in again.';
+            let message = 'Unable to claim credential. Please try again.';
+            try {
+              const j = await claimRes.json();
+              if (j?.message) message = friendlyError(j.message, message);
+            } catch {}
+            if (claimRes.status === 401) message = 'Your session has expired. Please log in again.';
             return { ok: false, error: message };
           }
 
           return { ok: true };
         } catch {
-          return { ok: false, error: 'Network error during claim' };
+          return { ok: false, error: 'Unable to reach the server. Please check your connection and try again.' };
         }
       })();
 
       p.then(res => sendToIframe('lc-embed:accept:result', res))
-       .catch(() => sendToIframe('lc-embed:accept:result', { ok: false, error: 'Failed to claim' }));
+       .catch(() => sendToIframe('lc-embed:accept:result', { ok: false, error: 'Unable to claim credential. Please try again.' }));
       return;
     }
 
@@ -349,13 +419,16 @@ function openModal(opts: InitOptions): { close: () => void } {
     // Completion
     if (!isTrustedMessage(data, nonce)) return;
     const details = (data as any).payload;
-    const baseWalletUrl = (opts.branding?.walletUrl || 'https://learncard.app').replace(/\/$/, '');
-    const handoffUrl = sessionJwt
-      ? `${baseWalletUrl}/auth/handoff?token=${encodeURIComponent(sessionJwt)}`
-      : baseWalletUrl;
-    window.open(handoffUrl, '_blank', 'noopener,noreferrer');
+    const baseWalletUrl = opts.branding?.walletUrl ?? 'https://learncard.app';
+    const handoffUrl = baseWalletUrl && sessionJwt
+      ? `${baseWalletUrl.replace(/\/$/, '')}/auth/handoff?token=${encodeURIComponent(sessionJwt)}`
+      : baseWalletUrl || undefined;
     if (opts.onSuccess) {
-      try { opts.onSuccess(details); } catch {}
+      try { opts.onSuccess({ ...details, handoffUrl }); } catch {}
+    }
+    // Always open wallet unless walletUrl was explicitly set to empty string
+    if (handoffUrl) {
+      window.open(handoffUrl, '_blank', 'noopener,noreferrer');
     }
     close();
   }
@@ -371,7 +444,7 @@ function openModal(opts: InitOptions): { close: () => void } {
 
 function ensureGlobalStyles(opts: InitOptions) {
   const existing = document.querySelector('style[data-learncard-embed]');
-  if (existing) return;
+  if (existing) existing.remove(); // Always recreate so branding changes are reflected
   const style = createGlobalStyleEl(opts.branding?.primaryColor || opts.theme?.primaryColor, opts.branding?.accentColor);
   document.head.appendChild(style);
 }

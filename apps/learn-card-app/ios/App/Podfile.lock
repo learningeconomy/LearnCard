@@ -35,6 +35,9 @@ PODS:
   - CapacitorFileTransfer (2.0.3):
     - Capacitor
     - IONFileTransferLib (~> 1.0.1)
+  - CapacitorFileViewer (2.0.1):
+    - Capacitor
+    - IONFileViewerLib (~> 1.0.3)
   - CapacitorFirebaseAnalytics (8.0.1):
     - Capacitor
     - CapacitorFirebaseAnalytics/Lite (= 8.0.1)
@@ -189,6 +192,7 @@ PODS:
   - GTMSessionFetcher/Core (3.5.0)
   - IONFilesystemLib (1.1.1)
   - IONFileTransferLib (1.0.2)
+  - IONFileViewerLib (1.0.3)
   - MLImage (1.0.0-beta7)
   - MLKitBarcodeScanning (7.0.0):
     - MLKitCommon (~> 13.0)
@@ -235,6 +239,7 @@ DEPENDENCIES:
   - "CapacitorCordova (from `../../../../node_modules/.pnpm/@capacitor+ios@8.0.1_@capacitor+core@8.0.1/node_modules/@capacitor/ios`)"
   - "CapacitorFilesystem (from `../../../../node_modules/.pnpm/@capacitor+filesystem@8.1.0_@capacitor+core@8.0.1/node_modules/@capacitor/filesystem`)"
   - "CapacitorFileTransfer (from `../../../../node_modules/.pnpm/@capacitor+file-transfer@2.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/file-transfer`)"
+  - "CapacitorFileViewer (from `../../../../node_modules/.pnpm/@capacitor+file-viewer@2.0.1_@capacitor+core@8.0.1/node_modules/@capacitor/file-viewer`)"
   - "CapacitorFirebaseAnalytics (from `../../../../node_modules/.pnpm/@capacitor-firebase+analytics@8.0.1_@capacitor+core@8.0.1_firebase@12.8.0/node_modules/@capacitor-firebase/analytics`)"
   - "CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport (from `../../../../node_modules/.pnpm/@capacitor-firebase+analytics@8.0.1_@capacitor+core@8.0.1_firebase@12.8.0/node_modules/@capacitor-firebase/analytics`)"
   - "CapacitorFirebaseAuthentication (from `../../../../node_modules/.pnpm/@capacitor-firebase+authentication@8.0.1_@capacitor+core@8.0.1_firebase@12.8.0/node_modules/@capacitor-firebase/authentication`)"
@@ -280,6 +285,7 @@ SPEC REPOS:
     - GTMSessionFetcher
     - IONFilesystemLib
     - IONFileTransferLib
+    - IONFileViewerLib
     - MLImage
     - MLKitBarcodeScanning
     - MLKitCommon
@@ -313,6 +319,8 @@ EXTERNAL SOURCES:
     :path: "../../../../node_modules/.pnpm/@capacitor+filesystem@8.1.0_@capacitor+core@8.0.1/node_modules/@capacitor/filesystem"
   CapacitorFileTransfer:
     :path: "../../../../node_modules/.pnpm/@capacitor+file-transfer@2.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/file-transfer"
+  CapacitorFileViewer:
+    :path: "../../../../node_modules/.pnpm/@capacitor+file-viewer@2.0.1_@capacitor+core@8.0.1/node_modules/@capacitor/file-viewer"
   CapacitorFirebaseAnalytics:
     :path: "../../../../node_modules/.pnpm/@capacitor-firebase+analytics@8.0.1_@capacitor+core@8.0.1_firebase@12.8.0/node_modules/@capacitor-firebase/analytics"
   CapacitorFirebaseAuthentication:
@@ -359,6 +367,7 @@ SPEC CHECKSUMS:
   CapacitorCordova: 0d65b9bb74e995dcecb9463f34f1af2aba6f955c
   CapacitorFilesystem: a957d4a4b6860844c4eba5bf441607a5166f92a7
   CapacitorFileTransfer: d4c1787491128c91d0e96e3abe1bc45cc1c080da
+  CapacitorFileViewer: 29c87294cf8741a469dfd8979d1a0187fec54b58
   CapacitorFirebaseAnalytics: 19a1c90af1b9eb4c290fd026418f961f3fd0e548
   CapacitorFirebaseAuthentication: cb5ddfd40d28ae8522b9af25741ba62eaa939501
   CapacitorHaptics: 2079d9fa04c5a71e18663b4722323c304c58245c
@@ -394,6 +403,7 @@ SPEC CHECKSUMS:
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
   IONFilesystemLib: dfa8706539ac9ab77ccfd6e5b3830ce9b5e57f6c
   IONFileTransferLib: f85da429ab97dbcc431f4ea084a6146f36b51029
+  IONFileViewerLib: 574758ebcaa4b1543669b1c9708f1970e1172b29
   MLImage: 2ab9c968e75f57911c16f4c9d9e8a8e9604a86a1
   MLKitBarcodeScanning: 72c6437f13a900833b400136be53a8a5d86f42fa
   MLKitCommon: 26b779f072a182c1603d4c88a101c350cac837b1
@@ -406,6 +416,6 @@ SPEC CHECKSUMS:
   Version: de5907f2c5d0f3cf21708db7801d1d5401139486
   ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
 
-PODFILE CHECKSUM: a594ee4b6980ed6e8741e509187a3ead678c5178
+PODFILE CHECKSUM: 39c3862d3e69a5e8d0b11cea957b9500ca472796
 
 COCOAPODS: 1.16.2
