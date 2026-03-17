@@ -63,7 +63,7 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
                     placeholder="USD"
                     type="number"
                     startIcon={<span className="text-grayscale-600 text-[14px] pb-[1px]">$</span>}
-                    inputClassName="!pl-[29px]"
+                    inputClassName="!pl-[30px]"
                 />
             </div>
 

@@ -43,6 +43,10 @@ const TextInput: React.FC<TextInputProps> = ({
     const hasStartContent = Boolean(startIcon || startButton);
     const hasEndContent = Boolean(endIcon || endButton);
 
+    // Check if inputClassName overrides padding to avoid competing !important classes
+    const hasPaddingLeftOverride = /\bpl-\[/.test(inputClassName);
+    const hasPaddingRightOverride = /\bpr-\[/.test(inputClassName);
+
     return (
         <div className={`relative flex items-center bg-grayscale-100 rounded-[10px] ${className}`}>
             {hasStartContent && (
@@ -65,8 +69,14 @@ const TextInput: React.FC<TextInputProps> = ({
                 onIonBlur={onBlur}
                 onKeyDown={onKeyDown}
                 className={`text-grayscale-900 font-poppins text-[14px] leading-[130%] w-full
-                    ${hasStartContent ? '!pl-[48px]' : '!pl-[15px]'}
-                    ${hasEndContent ? '!pr-[48px] !py-[1px]' : '!pr-[15px] !py-0'}
+                    ${hasPaddingLeftOverride ? '' : hasStartContent ? '!pl-[48px]' : '!pl-[15px]'}
+                    ${
+                        hasPaddingRightOverride
+                            ? ''
+                            : hasEndContent
+                            ? '!pr-[48px] !py-[1px]'
+                            : '!pr-[15px] !py-0'
+                    }
                     ${inputClassName}`}
             />
 
