@@ -20,7 +20,9 @@ import {
 } from '@learncard/types';
 import { claimIntoInbox, issueToInbox } from '@helpers/inbox.helpers';
 import { prepareCredentialFromBoost, getBoostUri } from '@helpers/boost.helpers';
-import { getBoostByUri } from '@accesslayer/boost/read';
+import { hasMustacheVariables, renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
+import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
+import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
 import {
     generateGuardianApprovalToken,
     generateGuardianApprovalUrl,
@@ -37,6 +39,8 @@ import {
     getPrimarySigningAuthorityForListing,
     getSigningAuthoritiesForListingByName,
     getSigningAuthorityForUserByName,
+    getPrimarySigningAuthorityForIntegration,
+    getPrimarySigningAuthorityForUser,
 } from '@accesslayer/signing-authority/relationships/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 import {
@@ -55,9 +59,10 @@ import {
 } from '@accesslayer/inbox-credential/update';
 import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import { getAppDidWeb } from '@helpers/did.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
-import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
+import { logCredentialSent, logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 
 export const inboxRouter = t.router({
     // Request guardian approval via email
@@ -499,34 +504,35 @@ export const inboxRouter = t.router({
                 }
             } else {
                 const listings = await getListingsForIntegration(integration.id, { limit: 2 });
-                if (!listings.length) {
-                    throw new TRPCError({
-                        code: 'NOT_FOUND',
-                        message: 'No listings found for this integration',
-                    });
+                if (listings.length === 1) {
+                    listing = listings[0] ?? null;
                 }
-                if (listings.length > 1) {
-                    throw new TRPCError({
-                        code: 'BAD_REQUEST',
-                        message:
-                            'Multiple listings found. Provide listingId or listingSlug in configuration.',
-                    });
-                }
-                listing = listings[0] ?? null;
+                // 0 or >1 listings: listing stays null, fall through to SA fallback
             }
 
-            if (!listing) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found' });
+            let signingAuthorityRel;
+
+            if (listing) {
+                signingAuthorityRel = configuration?.signingAuthorityName
+                    ? (
+                          await getSigningAuthoritiesForListingByName(
+                              listing,
+                              configuration.signingAuthorityName.toLowerCase()
+                          )
+                      ).at(0)
+                    : await getPrimarySigningAuthorityForListing(listing);
             }
 
-            const signingAuthorityRel = configuration?.signingAuthorityName
-                ? (
-                      await getSigningAuthoritiesForListingByName(
-                          listing,
-                          configuration.signingAuthorityName.toLowerCase()
-                      )
-                  ).at(0)
-                : await getPrimarySigningAuthorityForListing(listing);
+            if (!signingAuthorityRel) {
+                signingAuthorityRel = await getPrimarySigningAuthorityForIntegration(integration.id);
+            }
+
+            if (!signingAuthorityRel) {
+                const owner = await getOwnerProfileForIntegration(integration.id);
+                if (owner) {
+                    signingAuthorityRel = await getPrimarySigningAuthorityForUser(owner);
+                }
+            }
 
             if (!signingAuthorityRel)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Signing Authority not found' });
@@ -535,16 +541,74 @@ export const inboxRouter = t.router({
             if (!issuerProfile)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Issuer Profile not found' });
 
+            // If credential is a name reference (no @context), resolve the boost template by name
+            let resolvedCredential = credential;
+            if (!(credential as any)['@context'] && (credential as any).name) {
+                const matchingBoosts = await getBoostsForProfile(issuerProfile, {
+                    limit: 1,
+                    query: {
+                        name: (credential as any).name,
+                        meta: { integrationId: integration.id },
+                    },
+                });
+
+                if (!matchingBoosts.length) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: `No template found with name "${(credential as any).name}" for this integration`,
+                    });
+                }
+
+                try {
+                    resolvedCredential = JSON.parse(matchingBoosts[0]!.boost);
+                } catch {
+                    throw new TRPCError({
+                        code: 'INTERNAL_SERVER_ERROR',
+                        message: 'Failed to parse credential template',
+                    });
+                }
+            }
+
+            // Render Mustache template variables in the credential (e.g. {{Recipient_name}})
+            const credentialJson = JSON.stringify(resolvedCredential);
+            if (hasMustacheVariables(credentialJson)) {
+                const recipientProfile = await getProfileByVerifiedContactMethod(
+                    contactMethod.type,
+                    contactMethod.value
+                );
+                const templateData: Record<string, string> = {
+                    Recipient_name: recipientProfile?.displayName || contactMethod.value,
+                    recipient_name: recipientProfile?.displayName || contactMethod.value,
+                    Recipient_email: contactMethod.value,
+                    recipient_email: contactMethod.value,
+                };
+                const rendered = renderBoostTemplate(credentialJson, templateData);
+                resolvedCredential = parseRenderedTemplate(rendered);
+            }
+
+            // Log initial activity so embed claims appear in the dashboard
+            const activityId = await logCredentialSent({
+                actorProfileId: issuerProfile.profileId,
+                recipientType: contactMethod.type as 'email' | 'phone',
+                recipientIdentifier: contactMethod.value,
+                integrationId: integration.id,
+                source: 'claim',
+                metadata: { templateName: (resolvedCredential as any)?.name },
+            });
+
             // Claim Credential into Contact Method's inbox
             const result = await claimIntoInbox(
                 issuerProfile,
                 signingAuthorityRel,
                 contactMethod,
-                credential,
+                resolvedCredential as UnsignedVC,
                 {
                     expiresInDays: 720,
+                    integrationId: integration.id,
+                    activityId,
                 },
-                ctx
+                ctx,
+                listing?.slug
             );
 
             return {
@@ -658,12 +722,19 @@ export const inboxRouter = t.router({
                             // Set issuer from signing authority
                             unsignedCredential.issuer = signingAuthorityForUser.relationship.did;
 
+                            // For app-based SAs (listings), use the app did:web as ownerDid
+                            const listingSlug = (inboxCredential.signingAuthority as any)?.listingSlug as string | undefined;
+                            const ownerDidOverride = listingSlug
+                                ? getAppDidWeb(ctx.domain, listingSlug)
+                                : undefined;
+
                             finalCredential = (await issueCredentialWithSigningAuthority(
                                 issuerProfile,
                                 unsignedCredential,
                                 signingAuthorityForUser,
                                 ctx.domain,
-                                false
+                                false,
+                                ownerDidOverride
                             )) as VC;
                         } else {
                             finalCredential = JSON.parse(inboxCredential.credential) as VC;
@@ -719,7 +790,7 @@ export const inboxRouter = t.router({
                                 recipientProfileId: profile.profileId,
                                 inboxCredentialId: inboxCredential.id,
                                 boostUri: inboxCredential.boostUri || undefined,
-                                integrationId: inboxCredential.integrationId || undefined,
+                                integrationId: (inboxCredential as any).integrationId || undefined,
                                 source: 'inbox',
                             });
                         }

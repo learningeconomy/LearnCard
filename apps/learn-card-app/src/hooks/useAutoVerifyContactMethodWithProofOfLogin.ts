@@ -105,7 +105,7 @@ export const useAutoVerifyContactMethodWithProofOfLogin = () => {
                 inFlightRef.current = false;
             }
         })();
-    }, [isLoggedIn, isLCNUser, firebaseAuthUser]);
+    }, [isLoggedIn, isLCNUser, isLoading, firebaseAuthUser, flags, currentUser]);
 };
 
 export default useAutoVerifyContactMethodWithProofOfLogin;

@@ -1086,6 +1086,7 @@ export const getCategoryPrimaryColor = (category = CredentialCategoryEnum.achiev
         case CredentialCategoryEnum.id:
             return 'yellow';
         case CredentialCategoryEnum.workHistory:
+        case CredentialCategoryEnum.resume:
             return 'blue';
         // case CredentialCategoryEnum.job:
         //     return 'rose';
