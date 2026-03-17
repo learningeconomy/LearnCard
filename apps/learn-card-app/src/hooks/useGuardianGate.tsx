@@ -9,6 +9,7 @@ import {
     useGetCurrentLCNUser,
     calculateAge,
 } from 'learn-card-base';
+import { guardianApprovalStore } from 'learn-card-base/stores/guardianApprovalStore';
 
 import { FamilyPinWrapper } from '../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
 
@@ -23,6 +24,7 @@ const verificationTimestamps = new Map<string, number>();
  */
 export const clearGuardianVerification = (): void => {
     verificationTimestamps.clear();
+    guardianApprovalStore.set.clearAllApprovals();
 };
 
 export type UseGuardianGateOptions = {
@@ -95,15 +97,57 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
         return elapsed < verificationTTL;
     }, [parentDid, verificationTTL]);
 
-    const setVerified = useCallback(() => {
+    const setVerified = useCallback(async () => {
         if (parentDid) {
             verificationTimestamps.set(parentDid, Date.now());
+
+            // Create guardian approval VP and store it
+            try {
+                const childDid = switchedProfileStore.get.switchedDid();
+                if (!childDid) return;
+
+                // Get the parent's private key to create their wallet
+                const parentUser = currentUserStore.get.parentUser();
+                const parentPrivateKey = parentUser?.privateKey;
+                if (!parentPrivateKey) {
+                    console.error('Failed to get parent private key for guardian approval');
+                    return;
+                }
+
+                // Create parent's wallet to sign the VP (using parent's DID)
+                const parentWallet = await initWallet(parentPrivateKey, parentDid);
+
+                const expiresAt = Date.now() + verificationTTL;
+                const expInSeconds = Math.floor(expiresAt / 1000);
+
+                // Create guardian approval claims as challenge string
+                // iss = parent (guardian) DID, sub = child DID
+                const guardianClaims = JSON.stringify({
+                    iss: parentDid,
+                    sub: childDid,
+                    exp: expInSeconds,
+                    scope: 'guardian-approval',
+                });
+
+                // Create a VP with the guardian claims as the challenge, signed by parent
+                const vp = await parentWallet.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge: guardianClaims,
+                });
+
+                if (typeof vp === 'string') {
+                    guardianApprovalStore.set.setApproval(parentDid, vp, expiresAt);
+                }
+            } catch (error) {
+                console.error('Failed to create guardian approval VP:', error);
+            }
         }
-    }, [parentDid]);
+    }, [parentDid, initWallet, verificationTTL]);
 
     const clearVerification = useCallback(() => {
         if (parentDid) {
             verificationTimestamps.delete(parentDid);
+            guardianApprovalStore.set.clearApproval(parentDid);
         }
     }, [parentDid]);
 
@@ -145,7 +189,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
 
             // If no PIN set, skip verification
             if (!hasPin) {
-                setVerified();
+                await setVerified();
                 onVerified?.();
                 await action();
                 return;
@@ -159,7 +203,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
                     // Small delay to ensure modal animation completes
                     await new Promise(r => setTimeout(r, 50));
 
-                    setVerified();
+                    await setVerified();
                     onVerified?.();
                     await action();
                     resolve();
