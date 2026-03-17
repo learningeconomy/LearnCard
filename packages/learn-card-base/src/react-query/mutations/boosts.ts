@@ -276,7 +276,10 @@ export const useCreateBoost = () => {
                 boostUri = await wallet.invoke.createBoost(unsignedCredential, {
                     name: state?.basicInfo?.name,
                     type: state?.basicInfo.achievementType ?? '',
-                    category: state?.basicInfo?.type,
+                    category:
+                        state?.basicInfo?.type ||
+                        getDefaultCategoryForCredential(unsignedCredential) ||
+                        'Achievement',
                     status,
                     claimPermissions: defaultClaimPermissions,
                     defaultPermissions,
@@ -295,7 +298,10 @@ export const useCreateBoost = () => {
                 boostUri = await wallet.invoke.createChildBoost(parentUri, unsignedCredential, {
                     name: state?.basicInfo?.name,
                     type: state?.basicInfo.achievementType ?? '',
-                    category: state?.basicInfo?.type,
+                    category:
+                        state?.basicInfo?.type ||
+                        getDefaultCategoryForCredential(unsignedCredential) ||
+                        'Achievement',
                     status,
                     claimPermissions: defaultClaimPermissions,
                     defaultPermissions,

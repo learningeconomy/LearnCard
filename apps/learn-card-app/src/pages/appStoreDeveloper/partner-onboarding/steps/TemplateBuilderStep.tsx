@@ -1,9 +1,9 @@
 /**
  * TemplateBuilderStep - Interactive OBv3 credential template builder
- * 
+ *
  * Uses the CredentialBuilder component for a full-featured, schema-driven
  * credential template editor with live JSON preview and bidirectional editing.
- * 
+ *
  * Performance optimizations:
  * - Constants and utils extracted to separate files for better code splitting
  * - API calls parallelized for faster loading
@@ -38,30 +38,32 @@ import {
 
 import { useWallet, useFilestack } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
+import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import type { UnsignedVC } from '@learncard/types';
 
 import { CredentialTemplate, BrandingConfig, TemplateBoostMeta, PartnerProject } from '../types';
-import { 
+import {
     CredentialBuilder,
-    OBv3CredentialTemplate, 
-    templateToJson, 
+    OBv3CredentialTemplate,
+    templateToJson,
     jsonToTemplate,
     extractDynamicVariables,
 } from '../components/CredentialBuilder';
 
 // Extracted constants and utilities for better code splitting
-import { 
-    DEFAULT_FIELDS, 
-    ISSUANCE_FIELDS, 
+import {
+    DEFAULT_FIELDS,
+    ISSUANCE_FIELDS,
     ISSUANCE_FIELD_MAP,
     FIELD_GROUPS,
     CATALOG_FIELD_OPTIONS,
     suggestCatalogFieldMapping,
     TEMPLATE_META_VERSION,
 } from './templateBuilderConstants';
-import { 
-    ExtendedTemplate, 
+import {
+    ExtendedTemplate,
     ValidationStatus,
-    legacyToOBv3, 
+    legacyToOBv3,
     obv3ToLegacy,
     generateMasterTemplate,
     generateChildBoostForCourse,
@@ -109,15 +111,20 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const [savingTemplateId, setSavingTemplateId] = useState<string | null>(null);
 
     // Validation status tracking for each template (ValidationStatus type imported from templateBuilderUtils)
-    const [validationStatuses, setValidationStatuses] = useState<Record<string, { status: ValidationStatus; error?: string }>>({});
+    const [validationStatuses, setValidationStatuses] = useState<
+        Record<string, { status: ValidationStatus; error?: string }>
+    >({});
 
     // Handle validation status changes from TemplateEditor
-    const handleValidationChange = useCallback((templateId: string, status: ValidationStatus, error?: string) => {
-        setValidationStatuses(prev => ({
-            ...prev,
-            [templateId]: { status, error },
-        }));
-    }, []);
+    const handleValidationChange = useCallback(
+        (templateId: string, status: ValidationStatus, error?: string) => {
+            setValidationStatuses(prev => ({
+                ...prev,
+                [templateId]: { status, error },
+            }));
+        },
+        []
+    );
 
     // Child template editing modal state
     const [editingChild, setEditingChild] = useState<{
@@ -136,7 +143,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const [csvAllRows, setCsvAllRows] = useState<Record<string, string>[]>([]);
     const [csvSampleRows, setCsvSampleRows] = useState<Record<string, string>[]>([]);
     const [columnMappings, setColumnMappings] = useState<Record<string, string>>({});
-    const [issuanceFieldsIncluded, setIssuanceFieldsIncluded] = useState<Record<string, boolean>>({});
+    const [issuanceFieldsIncluded, setIssuanceFieldsIncluded] = useState<Record<string, boolean>>(
+        {}
+    );
     const [templateNamePattern, setTemplateNamePattern] = useState('{{course_name}} Completion');
     const [defaultImage, setDefaultImage] = useState<string>('');
     const csvInputRef = useRef<HTMLInputElement>(null);
@@ -166,9 +175,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             });
 
             const boostRecords = result?.records || [];
-            
+
             // PARALLEL: Fetch all boost details at once instead of sequentially
-            const boostPromises = boostRecords.map(async (boostRecord) => {
+            const boostPromises = boostRecords.map(async boostRecord => {
                 const boostUri = (boostRecord as Record<string, unknown>).uri as string;
                 try {
                     const fullBoost = await wallet.invoke.getBoost(boostUri);
@@ -207,25 +216,31 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             });
 
             const allTemplatesWithNulls = await Promise.all(boostPromises);
-            const allTemplates = allTemplatesWithNulls.filter((t): t is ExtendedTemplate => t !== null);
+            const allTemplates = allTemplatesWithNulls.filter(
+                (t): t is ExtendedTemplate => t !== null
+            );
 
             // Identify master templates and fetch their children in parallel
             const masterTemplates = allTemplates.filter(t => t.isMasterTemplate && t.boostUri);
-            
+
             // PARALLEL: Fetch all children for all master templates at once
-            const childrenPromises = masterTemplates.map(async (master) => {
+            const childrenPromises = masterTemplates.map(async master => {
                 try {
-                    const childrenResult = await wallet.invoke.getBoostChildren(master.boostUri!, { limit: 100 });
+                    const childrenResult = await wallet.invoke.getBoostChildren(master.boostUri!, {
+                        limit: 100,
+                    });
                     const childRecords = childrenResult?.records || [];
-                    
+
                     // PARALLEL: Fetch all child boost details at once
-                    const childPromises = childRecords.map(async (childRecord) => {
+                    const childPromises = childRecords.map(async childRecord => {
                         const childUri = (childRecord as Record<string, unknown>).uri as string;
                         try {
                             const fullChild = await wallet.invoke.getBoost(childUri);
                             const childMeta = fullChild.meta as TemplateBoostMeta | undefined;
                             const childConfig = childMeta?.templateConfig;
-                            const childCredential = fullChild.boost as Record<string, unknown> | undefined;
+                            const childCredential = fullChild.boost as
+                                | Record<string, unknown>
+                                | undefined;
 
                             let childObv3Template: OBv3CredentialTemplate | undefined;
                             if (childCredential) {
@@ -237,14 +252,17 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             }
 
                             const credentialName = childCredential?.name as string | undefined;
-                            const credentialDesc = childCredential?.description as string | undefined;
+                            const credentialDesc = childCredential?.description as
+                                | string
+                                | undefined;
 
                             return {
                                 id: childUri,
                                 boostUri: childUri,
                                 name: fullChild.name || credentialName || 'Untitled',
                                 description: credentialDesc || '',
-                                achievementType: childConfig?.achievementType || 'Course Completion',
+                                achievementType:
+                                    childConfig?.achievementType || 'Course Completion',
                                 fields: childConfig?.fields || [],
                                 isNew: false,
                                 isDirty: false,
@@ -258,9 +276,13 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     });
 
                     const childrenWithNulls = await Promise.all(childPromises);
-                    const children = childrenWithNulls.filter((c): c is ExtendedTemplate => c !== null);
-                    const childUris = childRecords.map(r => (r as Record<string, unknown>).uri as string);
-                    
+                    const children = childrenWithNulls.filter(
+                        (c): c is ExtendedTemplate => c !== null
+                    );
+                    const childUris = childRecords.map(
+                        r => (r as Record<string, unknown>).uri as string
+                    );
+
                     return { masterId: master.id, children, childUris };
                 } catch (e) {
                     console.warn('Failed to fetch children for master template:', e);
@@ -269,11 +291,11 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             });
 
             const childrenResults = await Promise.all(childrenPromises);
-            
+
             // Build a map of master -> children and collect all child URIs
             const masterChildrenMap = new Map<string, ExtendedTemplate[]>();
             const allChildUris = new Set<string>();
-            
+
             for (const result of childrenResults) {
                 masterChildrenMap.set(result.masterId, result.children);
                 result.childUris.forEach(uri => allChildUris.add(uri));
@@ -281,7 +303,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
             // Build final template list
             const fetchedTemplates: ExtendedTemplate[] = [];
-            
+
             for (const template of allTemplates) {
                 if (template.isMasterTemplate) {
                     fetchedTemplates.push({
@@ -294,7 +316,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 }
             }
 
-            setLocalTemplates(fetchedTemplates.length > 0 ? fetchedTemplates : templates as ExtendedTemplate[]);
+            setLocalTemplates(
+                fetchedTemplates.length > 0 ? fetchedTemplates : (templates as ExtendedTemplate[])
+            );
         } catch (err) {
             console.error('Failed to fetch templates:', err);
             setLocalTemplates((templates.length > 0 ? templates : []) as ExtendedTemplate[]);
@@ -315,7 +339,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             const wallet = await initWalletRef.current();
 
             // Get OBv3 template or convert from legacy
-            const obv3Template = template.obv3Template || legacyToOBv3(template, branding?.displayName, branding?.image);
+            const obv3Template =
+                template.obv3Template ||
+                legacyToOBv3(template, branding?.displayName, branding?.image);
 
             // Convert to JSON credential
             const credential = templateToJson(obv3Template);
@@ -333,7 +359,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                         required: false,
                         variableName: varName,
                     })),
-                    achievementType: obv3Template.credentialSubject.achievement.achievementType?.value || 'Achievement',
+                    achievementType:
+                        obv3Template.credentialSubject.achievement.achievementType?.value ||
+                        'Achievement',
                     version: TEMPLATE_META_VERSION,
                 },
                 isMasterTemplate: template.isMasterTemplate,
@@ -343,9 +371,10 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 name: template.name,
                 description: template.description,
                 type: template.achievementType,
-                category: 'achievement',
+                category:
+                    getDefaultCategoryForCredential(credential as UnsignedVC) || 'Achievement',
                 meta: boostMeta,
-                status: 'PROVISIONAL'
+                status: 'PROVISIONAL',
             };
 
             // If updating existing boost, use updateBoost to preserve children
@@ -385,18 +414,16 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
     // Save a child template as a child boost linked to parent
     const saveChildTemplateAsBoost = async (
-        template: ExtendedTemplate, 
+        template: ExtendedTemplate,
         parentBoostUri: string
     ): Promise<string | null> => {
         try {
             const wallet = await initWalletRef.current();
 
             // Use OBv3 template if available, otherwise convert
-            const obv3Template = template.obv3Template || legacyToOBv3(
-                template,
-                branding?.displayName,
-                branding?.image
-            );
+            const obv3Template =
+                template.obv3Template ||
+                legacyToOBv3(template, branding?.displayName, branding?.image);
 
             const credential = templateToJson(obv3Template);
 
@@ -413,7 +440,8 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 name: template.name,
                 description: template.description,
                 type: template.achievementType,
-                category: 'achievement',
+                category:
+                    getDefaultCategoryForCredential(credential as UnsignedVC) || 'Achievement',
                 meta: boostMeta,
                 status: 'PROVISIONAL',
             };
@@ -454,16 +482,23 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             const boostUri = await saveTemplateAsBoost(template);
 
             if (boostUri) {
-                setLocalTemplates(prev => prev.map(t =>
-                    t.id === templateId
-                        ? { ...t, id: boostUri, boostUri, isNew: false, isDirty: false } as ExtendedTemplate
-                        : t
-                ));
-
-                presentToast(
-                    template.isNew ? 'Template created!' : 'Template updated!',
-                    { type: ToastTypeEnum.Success }
+                setLocalTemplates(prev =>
+                    prev.map(t =>
+                        t.id === templateId
+                            ? ({
+                                  ...t,
+                                  id: boostUri,
+                                  boostUri,
+                                  isNew: false,
+                                  isDirty: false,
+                              } as ExtendedTemplate)
+                            : t
+                    )
                 );
+
+                presentToast(template.isNew ? 'Template created!' : 'Template updated!', {
+                    type: ToastTypeEnum.Success,
+                });
                 setExpandedId(null);
             }
         } catch (err) {
@@ -504,10 +539,10 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
         Papa.parse(file, {
             header: true,
-            complete: (results) => {
+            complete: results => {
                 const headers = results.meta.fields || [];
-                const allRows = (results.data as Record<string, string>[]).filter(
-                    row => Object.values(row).some(v => v?.trim())
+                const allRows = (results.data as Record<string, string>[]).filter(row =>
+                    Object.values(row).some(v => v?.trim())
                 );
 
                 setCsvColumns(headers);
@@ -529,9 +564,14 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 setIssuanceFieldsIncluded(issuanceDefaults);
 
                 // Find the achievement name column to set pattern
-                const nameCol = headers.find(h => suggestCatalogFieldMapping(h) === 'achievement_name');
+                const nameCol = headers.find(
+                    h => suggestCatalogFieldMapping(h) === 'achievement_name'
+                );
                 if (nameCol) {
-                    const varName = nameCol.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+                    const varName = nameCol
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '_')
+                        .replace(/^_|_$/g, '');
                     setTemplateNamePattern(`{{${varName}}} Completion`);
                 } else {
                     setTemplateNamePattern('Course Completion Certificate');
@@ -539,9 +579,12 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                 setShowImportModal(true);
             },
-            error: (error) => {
+            error: error => {
                 console.error('CSV parse error:', error);
-                presentToast('Failed to parse CSV file', { type: ToastTypeEnum.Error, hasDismissButton: true });
+                presentToast('Failed to parse CSV file', {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
             },
         });
 
@@ -554,11 +597,22 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     // Handle import confirmation - generate master template + child boosts, then save immediately
     const handleImportConfirm = async () => {
         // Generate master template first (using imported utility)
-        const masterTemplate = generateMasterTemplate(columnMappings, issuanceFieldsIncluded, branding);
+        const masterTemplate = generateMasterTemplate(
+            columnMappings,
+            issuanceFieldsIncluded,
+            branding
+        );
 
         // Generate child boosts for each course, linked to master (using imported utility)
         const childTemplates = csvAllRows.map(row =>
-            generateChildBoostForCourse(row, masterTemplate.id, columnMappings, issuanceFieldsIncluded, branding, defaultImage)
+            generateChildBoostForCourse(
+                row,
+                masterTemplate.id,
+                columnMappings,
+                issuanceFieldsIncluded,
+                branding,
+                defaultImage
+            )
         );
 
         // Attach children to master for UI display
@@ -574,10 +628,18 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             if (parentBoostUri) {
                 // Save all children in parallel
                 const savedChildren = await Promise.all(
-                    childTemplates.map(async (child) => {
+                    childTemplates.map(async child => {
                         try {
-                            const childBoostUri = await saveChildTemplateAsBoost(child as ExtendedTemplate, parentBoostUri);
-                            return { ...child, boostUri: childBoostUri || undefined, isNew: false, isDirty: false };
+                            const childBoostUri = await saveChildTemplateAsBoost(
+                                child as ExtendedTemplate,
+                                parentBoostUri
+                            );
+                            return {
+                                ...child,
+                                boostUri: childBoostUri || undefined,
+                                isNew: false,
+                                isDirty: false,
+                            };
                         } catch (e) {
                             console.error('Failed to save child boost:', e);
                             return child;
@@ -599,7 +661,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                 presentToast(`Created master template + ${childTemplates.length} course boosts!`, {
                     type: ToastTypeEnum.Success,
-                    hasDismissButton: true
+                    hasDismissButton: true,
                 });
             }
         } catch (err) {
@@ -607,10 +669,13 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             // Fall back to adding unsaved to local state so user can retry
             setLocalTemplates(prev => [...prev, masterTemplate as ExtendedTemplate]);
             setExpandedId(masterTemplate.id);
-            presentToast('Import generated but failed to save. Please save each template manually.', {
-                type: ToastTypeEnum.Error,
-                hasDismissButton: true,
-            });
+            presentToast(
+                'Import generated but failed to save. Please save each template manually.',
+                {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                }
+            );
         } finally {
             setIsSaving(false);
         }
@@ -634,9 +699,11 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     };
 
     const handleUpdateTemplate = (id: string, updated: ExtendedTemplate) => {
-        setLocalTemplates(localTemplates.map(t =>
-            t.id === id ? { ...updated, isDirty: true } as ExtendedTemplate : t
-        ));
+        setLocalTemplates(
+            localTemplates.map(t =>
+                t.id === id ? ({ ...updated, isDirty: true } as ExtendedTemplate) : t
+            )
+        );
     };
 
     const handleDeleteTemplate = async (id: string) => {
@@ -662,9 +729,13 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             // Delete from backend immediately
             if (urisToDelete.length > 0) {
                 try {
-                    await Promise.all(urisToDelete.map(uri => deleteBoost(uri).catch(e => {
-                        console.warn('Failed to delete boost:', uri, e);
-                    })));
+                    await Promise.all(
+                        urisToDelete.map(uri =>
+                            deleteBoost(uri).catch(e => {
+                                console.warn('Failed to delete boost:', uri, e);
+                            })
+                        )
+                    );
                 } catch (err) {
                     console.error('Failed to delete template:', err);
                     presentToast('Failed to remove template', { type: ToastTypeEnum.Error });
@@ -681,7 +752,8 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     // Open edit modal for a child template
     const handleEditChild = (masterId: string, child: ExtendedTemplate) => {
         // Get or create OBv3 template for the child
-        const obv3Template = child.obv3Template || legacyToOBv3(child, branding?.displayName, branding?.image);
+        const obv3Template =
+            child.obv3Template || legacyToOBv3(child, branding?.displayName, branding?.image);
 
         setEditingChild({
             masterId,
@@ -694,26 +766,31 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const handleSaveChildEdit = () => {
         if (!editingChild) return;
 
-        setLocalTemplates(prev => prev.map(master => {
-            if (master.id !== editingChild.masterId) return master;
+        setLocalTemplates(prev =>
+            prev.map(master => {
+                if (master.id !== editingChild.masterId) return master;
 
-            const updatedChildren = master.childTemplates?.map(child => {
-                if (child.id !== editingChild.childId) return child;
+                const updatedChildren = master.childTemplates?.map(child => {
+                    if (child.id !== editingChild.childId) return child;
 
-                // Convert OBv3 back to legacy format
-                const updatedChild = obv3ToLegacy(editingChild.template, child) as ExtendedTemplate;
-                updatedChild.obv3Template = editingChild.template;
-                updatedChild.isDirty = true;
+                    // Convert OBv3 back to legacy format
+                    const updatedChild = obv3ToLegacy(
+                        editingChild.template,
+                        child
+                    ) as ExtendedTemplate;
+                    updatedChild.obv3Template = editingChild.template;
+                    updatedChild.isDirty = true;
 
-                return updatedChild;
-            }) as ExtendedTemplate[] | undefined;
+                    return updatedChild;
+                }) as ExtendedTemplate[] | undefined;
 
-            return {
-                ...master,
-                childTemplates: updatedChildren,
-                isDirty: true,
-            } as ExtendedTemplate;
-        }));
+                return {
+                    ...master,
+                    childTemplates: updatedChildren,
+                    isDirty: true,
+                } as ExtendedTemplate;
+            })
+        );
 
         setEditingChild(null);
         presentToast('Child template updated', { type: ToastTypeEnum.Success });
@@ -743,77 +820,90 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     };
 
     // Test issue handler - tests if a credential can be issued
-    const handleTestIssue = useCallback(async (credential: Record<string, unknown>): Promise<{ success: boolean; error?: string; result?: unknown }> => {
-        try {
-            const wallet = await initWalletRef.current();
+    const handleTestIssue = useCallback(
+        async (
+            credential: Record<string, unknown>
+        ): Promise<{ success: boolean; error?: string; result?: unknown }> => {
+            try {
+                const wallet = await initWalletRef.current();
 
-            // Replace dynamic variables with sample values
-            const replaceDynamicVariables = (obj: unknown): unknown => {
-                if (typeof obj === 'string') {
-                    // Replace {{variable_name}} with sample values
-                    return obj.replace(/\{\{(\w+)\}\}/g, (_match, varName) => {
-                        // Special handling for date fields - use actual ISO dates
-                        const lowerVar = varName.toLowerCase();
-                        if (lowerVar.includes('date') || lowerVar.includes('time')) {
-                            return new Date().toISOString();
-                        }
+                // Replace dynamic variables with sample values
+                const replaceDynamicVariables = (obj: unknown): unknown => {
+                    if (typeof obj === 'string') {
+                        // Replace {{variable_name}} with sample values
+                        return obj.replace(/\{\{(\w+)\}\}/g, (_match, varName) => {
+                            // Special handling for date fields - use actual ISO dates
+                            const lowerVar = varName.toLowerCase();
+                            if (lowerVar.includes('date') || lowerVar.includes('time')) {
+                                return new Date().toISOString();
+                            }
 
-                        // Use humanized variable name as sample value for other fields
-                        const humanized = varName.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
-                        return `[Sample ${humanized}]`;
-                    });
-                }
-
-                if (Array.isArray(obj)) {
-                    return obj.map(replaceDynamicVariables);
-                }
-
-                if (obj && typeof obj === 'object') {
-                    const result: Record<string, unknown> = {};
-                    for (const [key, value] of Object.entries(obj)) {
-                        result[key] = replaceDynamicVariables(value);
+                            // Use humanized variable name as sample value for other fields
+                            const humanized = varName
+                                .replace(/_/g, ' ')
+                                .replace(/\b\w/g, (c: string) => c.toUpperCase());
+                            return `[Sample ${humanized}]`;
+                        });
                     }
-                    return result;
+
+                    if (Array.isArray(obj)) {
+                        return obj.map(replaceDynamicVariables);
+                    }
+
+                    if (obj && typeof obj === 'object') {
+                        const result: Record<string, unknown> = {};
+                        for (const [key, value] of Object.entries(obj)) {
+                            result[key] = replaceDynamicVariables(value);
+                        }
+                        return result;
+                    }
+
+                    return obj;
+                };
+
+                const renderedCredential = replaceDynamicVariables(credential) as Record<
+                    string,
+                    unknown
+                >;
+
+                // Ensure required array fields are present and non-empty
+                const contexts = renderedCredential['@context'];
+                const types = renderedCredential['type'];
+
+                const testCredential = {
+                    ...renderedCredential,
+                    '@context':
+                        Array.isArray(contexts) && contexts.length > 0
+                            ? contexts
+                            : ['https://www.w3.org/ns/credentials/v2'],
+                    type:
+                        Array.isArray(types) && types.length > 0 ? types : ['VerifiableCredential'],
+                    issuer: wallet.id.did(),
+                    validFrom: new Date().toISOString(),
+                    credentialSubject: {
+                        ...((renderedCredential.credentialSubject as Record<string, unknown>) ||
+                            {}),
+                        id: wallet.id.did(),
+                    },
+                };
+
+                console.log('Test issuing credential:', testCredential);
+
+                const result = await wallet.invoke.issueCredential?.(
+                    testCredential as Parameters<typeof wallet.invoke.issueCredential>[0]
+                );
+
+                if (result) {
+                    return { success: true, result };
+                } else {
+                    return { success: false, error: 'issueCredential returned undefined' };
                 }
-
-                return obj;
-            };
-
-            const renderedCredential = replaceDynamicVariables(credential) as Record<string, unknown>;
-
-            // Ensure required array fields are present and non-empty
-            const contexts = renderedCredential['@context'];
-            const types = renderedCredential['type'];
-
-            const testCredential = {
-                ...renderedCredential,
-                '@context': Array.isArray(contexts) && contexts.length > 0 
-                    ? contexts 
-                    : ['https://www.w3.org/ns/credentials/v2'],
-                type: Array.isArray(types) && types.length > 0 
-                    ? types 
-                    : ['VerifiableCredential'],
-                issuer: wallet.id.did(),
-                validFrom: new Date().toISOString(),
-                credentialSubject: {
-                    ...(renderedCredential.credentialSubject as Record<string, unknown> || {}),
-                    id: wallet.id.did(),
-                },
-            };
-
-            console.log('Test issuing credential:', testCredential);
-
-            const result = await wallet.invoke.issueCredential?.(testCredential as Parameters<typeof wallet.invoke.issueCredential>[0]);
-
-            if (result) {
-                return { success: true, result };
-            } else {
-                return { success: false, error: 'issueCredential returned undefined' };
+            } catch (e) {
+                return { success: false, error: (e as Error).message };
             }
-        } catch (e) {
-            return { success: false, error: (e as Error).message };
-        }
-    }, []);
+        },
+        []
+    );
 
     // Check if any template is still being edited (unsaved new template open)
     const hasUnsavedNewTemplates = localTemplates.some(t => t.isNew);
@@ -839,8 +929,8 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 <div className="text-sm text-blue-800">
                     <p className="font-medium mb-1">Create Credential Templates</p>
                     <p>
-                        Templates define the structure of credentials you'll issue. Each template is saved 
-                        as a reusable boost that can be issued to recipients.
+                        Templates define the structure of credentials you'll issue. Each template is
+                        saved as a reusable boost that can be issued to recipients.
                     </p>
                 </div>
             </div>
@@ -849,21 +939,28 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             {expandedId && localTemplates.some(t => t.id === expandedId && t.isNew) && (
                 <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>Fill in your template details, then click <strong>"Create Template"</strong> to save it.</span>
+                    <span>
+                        Fill in your template details, then click <strong>"Create Template"</strong>{' '}
+                        to save it.
+                    </span>
                 </div>
             )}
 
             {/* Templates */}
             <div className="space-y-4">
-                {localTemplates.map((template) => (
+                {localTemplates.map(template => (
                     <div key={template.id}>
                         {/* Master Template with Children */}
                         {template.isMasterTemplate ? (
                             <div className="border-2 border-violet-200 rounded-xl overflow-hidden">
                                 {/* Master Template Header */}
-                                <div 
+                                <div
                                     className="flex items-center gap-3 p-4 bg-violet-50 cursor-pointer"
-                                    onClick={() => setExpandedId(expandedId === template.id ? null : template.id)}
+                                    onClick={() =>
+                                        setExpandedId(
+                                            expandedId === template.id ? null : template.id
+                                        )
+                                    }
                                 >
                                     <div className="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center">
                                         <FileStack className="w-5 h-5 text-violet-600" />
@@ -871,20 +968,25 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-gray-800">{template.name}</span>
+                                            <span className="font-semibold text-gray-800">
+                                                {template.name}
+                                            </span>
                                             <span className="px-2 py-0.5 bg-violet-200 text-violet-700 text-xs font-medium rounded-full">
                                                 Master Template
                                             </span>
                                         </div>
 
                                         <p className="text-sm text-gray-500">
-                                            {template.childTemplates?.length || 0} course boosts • {template.fields?.length || 0} dynamic fields
+                                            {template.childTemplates?.length || 0} course boosts •{' '}
+                                            {template.fields?.length || 0} dynamic fields
                                         </p>
                                     </div>
 
-                                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${
-                                        expandedId === template.id ? 'rotate-180' : ''
-                                    }`} />
+                                    <ChevronDown
+                                        className={`w-5 h-5 text-gray-400 transition-transform ${
+                                            expandedId === template.id ? 'rotate-180' : ''
+                                        }`}
+                                    />
                                 </div>
 
                                 {/* Expanded: Show Children */}
@@ -895,36 +997,58 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                             {(() => {
                                                 const issuanceFieldMap = ISSUANCE_FIELDS.reduce(
                                                     (acc, f) => ({ ...acc, [f.id]: f }),
-                                                    {} as Record<string, typeof ISSUANCE_FIELDS[0]>
+                                                    {} as Record<
+                                                        string,
+                                                        (typeof ISSUANCE_FIELDS)[0]
+                                                    >
                                                 );
 
-                                                const dynamicVars = template.fields?.filter(
-                                                    f => issuanceFieldMap[f.id]?.type === 'dynamic'
-                                                ) || [];
+                                                const dynamicVars =
+                                                    template.fields?.filter(
+                                                        f =>
+                                                            issuanceFieldMap[f.id]?.type ===
+                                                            'dynamic'
+                                                    ) || [];
 
-                                                const systemVars = template.fields?.filter(
-                                                    f => issuanceFieldMap[f.id]?.type === 'system'
-                                                ) || [];
+                                                const systemVars =
+                                                    template.fields?.filter(
+                                                        f =>
+                                                            issuanceFieldMap[f.id]?.type ===
+                                                            'system'
+                                                    ) || [];
 
                                                 return (
                                                     <>
                                                         {dynamicVars.length > 0 && (
                                                             <p className="text-sm text-violet-800">
-                                                                <strong>User-provided at issuance:</strong>{' '}
-                                                                {dynamicVars.map(f => `{{${f.variableName}}}`).join(', ')}
+                                                                <strong>
+                                                                    User-provided at issuance:
+                                                                </strong>{' '}
+                                                                {dynamicVars
+                                                                    .map(
+                                                                        f => `{{${f.variableName}}}`
+                                                                    )
+                                                                    .join(', ')}
                                                             </p>
                                                         )}
 
                                                         {systemVars.length > 0 && (
                                                             <p className="text-sm text-violet-600">
                                                                 <strong>Auto-injected:</strong>{' '}
-                                                                {systemVars.map(f => `{{${f.variableName}}}`).join(', ')}
+                                                                {systemVars
+                                                                    .map(
+                                                                        f => `{{${f.variableName}}}`
+                                                                    )
+                                                                    .join(', ')}
                                                             </p>
                                                         )}
 
-                                                        {dynamicVars.length === 0 && systemVars.length === 0 && (
-                                                            <p className="text-sm text-violet-600">No dynamic variables</p>
-                                                        )}
+                                                        {dynamicVars.length === 0 &&
+                                                            systemVars.length === 0 && (
+                                                                <p className="text-sm text-violet-600">
+                                                                    No dynamic variables
+                                                                </p>
+                                                            )}
                                                     </>
                                                 );
                                             })()}
@@ -933,12 +1057,15 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         {/* Child Templates List */}
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                                                <span className="font-medium">Course Boosts ({template.childTemplates?.length})</span>
+                                                <span className="font-medium">
+                                                    Course Boosts ({template.childTemplates?.length}
+                                                    )
+                                                </span>
                                             </div>
 
                                             <div className="max-h-64 overflow-y-auto space-y-2">
                                                 {template.childTemplates?.map((child, idx) => (
-                                                    <div 
+                                                    <div
                                                         key={child.id}
                                                         className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 group"
                                                     >
@@ -949,8 +1076,13 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                         <Award className="w-4 h-4 text-cyan-500" />
 
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="font-medium text-gray-800 truncate">{child.name}</p>
-                                                            <p className="text-xs text-gray-500 truncate">{child.description || 'No description'}</p>
+                                                            <p className="font-medium text-gray-800 truncate">
+                                                                {child.name}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500 truncate">
+                                                                {child.description ||
+                                                                    'No description'}
+                                                            </p>
                                                         </div>
 
                                                         <span className="text-xs text-gray-400">
@@ -959,9 +1091,12 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                                                         <button
                                                             type="button"
-                                                            onClick={(e) => {
+                                                            onClick={e => {
                                                                 e.stopPropagation();
-                                                                handleEditChild(template.id, child as ExtendedTemplate);
+                                                                handleEditChild(
+                                                                    template.id,
+                                                                    child as ExtendedTemplate
+                                                                );
                                                             }}
                                                             className="p-1.5 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                                                             title="Customize this boost"
@@ -991,15 +1126,21 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             <TemplateEditor
                                 template={template}
                                 branding={branding}
-                                onChange={(updated) => handleUpdateTemplate(template.id, updated)}
+                                onChange={updated => handleUpdateTemplate(template.id, updated)}
                                 onDelete={() => handleDeleteTemplate(template.id)}
                                 isExpanded={expandedId === template.id}
-                                onToggle={() => setExpandedId(expandedId === template.id ? null : template.id)}
+                                onToggle={() =>
+                                    setExpandedId(expandedId === template.id ? null : template.id)
+                                }
                                 onTestIssue={handleTestIssue}
                                 onValidationChange={handleValidationChange}
-                                validationStatus={validationStatuses[template.id]?.status || 'unknown'}
+                                validationStatus={
+                                    validationStatuses[template.id]?.status || 'unknown'
+                                }
                                 onSave={() => handleSaveIndividual(template.id)}
-                                onCancel={template.isNew ? () => handleCancelNew(template.id) : undefined}
+                                onCancel={
+                                    template.isNew ? () => handleCancelNew(template.id) : undefined
+                                }
                                 isSaving={savingTemplateId === template.id}
                                 isNew={!!template.isNew}
                             />
@@ -1074,9 +1215,12 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 </div>
 
                                 <div>
-                                    <h3 className="font-semibold text-gray-800">Import Course Catalog</h3>
+                                    <h3 className="font-semibold text-gray-800">
+                                        Import Course Catalog
+                                    </h3>
                                     <p className="text-sm text-gray-500">
-                                        {csvAllRows.length} courses found • {csvColumns.length} columns
+                                        {csvAllRows.length} courses found • {csvColumns.length}{' '}
+                                        columns
                                     </p>
                                 </div>
                             </div>
@@ -1095,9 +1239,11 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
                                 <p className="font-medium mb-1">How this works:</p>
                                 <p>
-                                    We'll create <strong>{csvAllRows.length} separate boosts</strong> — one for each course. 
-                                    Course data (name, credits, etc.) will be <strong>baked in</strong>. 
-                                    Recipient data (name, date) stays <strong>dynamic</strong> for issuance.
+                                    We'll create{' '}
+                                    <strong>{csvAllRows.length} separate boosts</strong> — one for
+                                    each course. Course data (name, credits, etc.) will be{' '}
+                                    <strong>baked in</strong>. Recipient data (name, date) stays{' '}
+                                    <strong>dynamic</strong> for issuance.
                                 </p>
                             </div>
 
@@ -1108,7 +1254,8 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         Default Credential Image
                                     </label>
                                     <p className="text-xs text-gray-500">
-                                        This image will be used for all credentials unless overridden by a CSV column
+                                        This image will be used for all credentials unless
+                                        overridden by a CSV column
                                     </p>
                                 </div>
 
@@ -1161,11 +1308,17 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         <label className="block text-sm font-medium text-gray-700">
                                             Catalog Fields (Baked into each boost)
                                         </label>
-                                        <p className="text-xs text-gray-500">These values come from your CSV</p>
+                                        <p className="text-xs text-gray-500">
+                                            These values come from your CSV
+                                        </p>
                                     </div>
 
                                     <span className="text-xs text-gray-500">
-                                        {Object.values(columnMappings).filter(v => v !== 'skip').length} mapped
+                                        {
+                                            Object.values(columnMappings).filter(v => v !== 'skip')
+                                                .length
+                                        }{' '}
+                                        mapped
                                     </span>
                                 </div>
 
@@ -1184,7 +1337,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                 }`}
                                             >
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="font-medium text-gray-800 truncate">{column}</div>
+                                                    <div className="font-medium text-gray-800 truncate">
+                                                        {column}
+                                                    </div>
 
                                                     {sampleValue && (
                                                         <div className="text-xs text-gray-500 truncate">
@@ -1193,16 +1348,22 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                     )}
                                                 </div>
 
-                                                <ArrowDown className={`w-4 h-4 flex-shrink-0 ${
-                                                    mapping === 'skip' ? 'text-gray-300' : 'text-emerald-500'
-                                                }`} />
+                                                <ArrowDown
+                                                    className={`w-4 h-4 flex-shrink-0 ${
+                                                        mapping === 'skip'
+                                                            ? 'text-gray-300'
+                                                            : 'text-emerald-500'
+                                                    }`}
+                                                />
 
                                                 <select
                                                     value={mapping}
-                                                    onChange={(e) => setColumnMappings(prev => ({
-                                                        ...prev,
-                                                        [column]: e.target.value
-                                                    }))}
+                                                    onChange={e =>
+                                                        setColumnMappings(prev => ({
+                                                            ...prev,
+                                                            [column]: e.target.value,
+                                                        }))
+                                                    }
                                                     className={`px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
                                                         mapping === 'skip'
                                                             ? 'border-gray-300 bg-white'
@@ -1210,20 +1371,34 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                     }`}
                                                 >
                                                     {/* Skip option */}
-                                                    <option value="skip">— Skip this column —</option>
+                                                    <option value="skip">
+                                                        — Skip this column —
+                                                    </option>
 
                                                     {/* Group options by category */}
                                                     {Object.entries(FIELD_GROUPS)
                                                         .filter(([key]) => key !== 'skip')
                                                         .map(([groupKey, groupLabel]) => {
-                                                            const groupOptions = CATALOG_FIELD_OPTIONS.filter(o => o.group === groupKey);
+                                                            const groupOptions =
+                                                                CATALOG_FIELD_OPTIONS.filter(
+                                                                    o => o.group === groupKey
+                                                                );
 
-                                                            if (groupOptions.length === 0) return null;
+                                                            if (groupOptions.length === 0)
+                                                                return null;
 
                                                             return (
-                                                                <optgroup key={groupKey} label={groupLabel}>
+                                                                <optgroup
+                                                                    key={groupKey}
+                                                                    label={groupLabel}
+                                                                >
                                                                     {groupOptions.map(option => (
-                                                                        <option key={option.id} value={option.id}>{option.label}</option>
+                                                                        <option
+                                                                            key={option.id}
+                                                                            value={option.id}
+                                                                        >
+                                                                            {option.label}
+                                                                        </option>
                                                                     ))}
                                                                 </optgroup>
                                                             );
@@ -1242,52 +1417,63 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         Issuance Fields
                                     </label>
                                     <p className="text-xs text-gray-500">
-                                        <span className="text-violet-600 font-medium">Dynamic</span> = you provide at issuance time
+                                        <span className="text-violet-600 font-medium">Dynamic</span>{' '}
+                                        = you provide at issuance time
                                     </p>
                                 </div>
 
                                 {/* Dynamic fields - user can toggle */}
                                 <div className="grid grid-cols-2 gap-2 mb-4">
-                                    {ISSUANCE_FIELDS.filter(f => f.type === 'dynamic').map(field => {
-                                        const isIncluded = issuanceFieldsIncluded[field.id] ?? field.defaultIncluded;
+                                    {ISSUANCE_FIELDS.filter(f => f.type === 'dynamic').map(
+                                        field => {
+                                            const isIncluded =
+                                                issuanceFieldsIncluded[field.id] ??
+                                                field.defaultIncluded;
 
-                                        return (
-                                            <label
-                                                key={field.id}
-                                                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
-                                                    isIncluded
-                                                        ? 'border-violet-200 bg-violet-50'
-                                                        : 'border-gray-200 bg-gray-50'
-                                                }`}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isIncluded}
-                                                    onChange={(e) => setIssuanceFieldsIncluded(prev => ({
-                                                        ...prev,
-                                                        [field.id]: e.target.checked
-                                                    }))}
-                                                    className="w-4 h-4 rounded border-gray-300 text-violet-500 focus:ring-2 focus:ring-violet-500"
-                                                />
+                                            return (
+                                                <label
+                                                    key={field.id}
+                                                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                                                        isIncluded
+                                                            ? 'border-violet-200 bg-violet-50'
+                                                            : 'border-gray-200 bg-gray-50'
+                                                    }`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isIncluded}
+                                                        onChange={e =>
+                                                            setIssuanceFieldsIncluded(prev => ({
+                                                                ...prev,
+                                                                [field.id]: e.target.checked,
+                                                            }))
+                                                        }
+                                                        className="w-4 h-4 rounded border-gray-300 text-violet-500 focus:ring-2 focus:ring-violet-500"
+                                                    />
 
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-medium text-gray-800 text-sm">{field.label}</span>
-                                                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-violet-100 text-violet-700">
-                                                            Dynamic
-                                                        </span>
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-medium text-gray-800 text-sm">
+                                                                {field.label}
+                                                            </span>
+                                                            <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-violet-100 text-violet-700">
+                                                                Dynamic
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {field.description}
+                                                        </div>
                                                     </div>
-                                                    <div className="text-xs text-gray-500">{field.description}</div>
-                                                </div>
 
-                                                {isIncluded && (
-                                                    <code className="text-xs text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded">
-                                                        {`{{${field.id}}}`}
-                                                    </code>
-                                                )}
-                                            </label>
-                                        );
-                                    })}
+                                                    {isIncluded && (
+                                                        <code className="text-xs text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded">
+                                                            {`{{${field.id}}}`}
+                                                        </code>
+                                                    )}
+                                                </label>
+                                            );
+                                        }
+                                    )}
                                 </div>
 
                                 {/* System fields - informational only */}
@@ -1296,16 +1482,27 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-cyan-100 text-cyan-700">
                                             System
                                         </span>
-                                        <span className="text-xs text-cyan-700 font-medium">Auto-injected at issuance</span>
+                                        <span className="text-xs text-cyan-700 font-medium">
+                                            Auto-injected at issuance
+                                        </span>
                                     </div>
                                     <div className="space-y-1">
-                                        {ISSUANCE_FIELDS.filter(f => f.type === 'system').map(field => (
-                                            <div key={field.id} className="flex items-center gap-2 text-xs text-cyan-800">
-                                                <CheckCircle2 className="w-3 h-3 text-cyan-600" />
-                                                <span className="font-medium">{field.label}</span>
-                                                <span className="text-cyan-600">— {field.description}</span>
-                                            </div>
-                                        ))}
+                                        {ISSUANCE_FIELDS.filter(f => f.type === 'system').map(
+                                            field => (
+                                                <div
+                                                    key={field.id}
+                                                    className="flex items-center gap-2 text-xs text-cyan-800"
+                                                >
+                                                    <CheckCircle2 className="w-3 h-3 text-cyan-600" />
+                                                    <span className="font-medium">
+                                                        {field.label}
+                                                    </span>
+                                                    <span className="text-cyan-600">
+                                                        — {field.description}
+                                                    </span>
+                                                </div>
+                                            )
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1318,15 +1515,28 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                                 <div className="space-y-2">
                                     {csvSampleRows.slice(0, 3).map((row, idx) => {
-                                        const nameCol = Object.entries(columnMappings).find(([_, type]) => type === 'achievement.name')?.[0];
+                                        const nameCol = Object.entries(columnMappings).find(
+                                            ([_, type]) => type === 'achievement.name'
+                                        )?.[0];
                                         const name = nameCol ? row[nameCol] : `Course ${idx + 1}`;
 
                                         return (
-                                            <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-200">
+                                            <div
+                                                key={idx}
+                                                className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-200"
+                                            >
                                                 <Award className="w-4 h-4 text-cyan-500" />
-                                                <span className="font-medium text-gray-800">{name} Completion</span>
+                                                <span className="font-medium text-gray-800">
+                                                    {name} Completion
+                                                </span>
                                                 <span className="text-xs text-gray-500">
-                                                    + {Object.values(issuanceFieldsIncluded).filter(Boolean).length} dynamic fields
+                                                    +{' '}
+                                                    {
+                                                        Object.values(
+                                                            issuanceFieldsIncluded
+                                                        ).filter(Boolean).length
+                                                    }{' '}
+                                                    dynamic fields
                                                 </span>
                                             </div>
                                         );
@@ -1357,7 +1567,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                                 <button
                                     onClick={handleImportConfirm}
-                                    disabled={Object.values(columnMappings).every(v => v === 'skip')}
+                                    disabled={Object.values(columnMappings).every(
+                                        v => v === 'skip'
+                                    )}
                                     className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <Check className="w-4 h-4" />
@@ -1381,9 +1593,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 </div>
 
                                 <div>
-                                    <h3 className="font-semibold text-gray-800">
-                                        Customize Boost
-                                    </h3>
+                                    <h3 className="font-semibold text-gray-800">Customize Boost</h3>
                                     <p className="text-sm text-gray-500">
                                         {editingChild.template.name?.value || 'Untitled'}
                                     </p>
@@ -1424,7 +1634,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 {childValidationStatus === 'unknown' && (
                                     <div className="flex items-center gap-2 text-sm text-gray-500">
                                         <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                                        <span>Click "Validate" in the builder to verify before saving</span>
+                                        <span>
+                                            Click "Validate" in the builder to verify before saving
+                                        </span>
                                     </div>
                                 )}
                                 {childValidationStatus === 'valid' && (
@@ -1447,7 +1659,11 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     onClick={handleSaveChildEdit}
                                     disabled={childValidationStatus === 'invalid'}
                                     className="flex items-center gap-2 px-4 py-2 bg-violet-500 text-white rounded-xl font-medium hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                    title={childValidationStatus === 'invalid' ? 'Fix validation errors before saving' : undefined}
+                                    title={
+                                        childValidationStatus === 'invalid'
+                                            ? 'Fix validation errors before saving'
+                                            : undefined
+                                    }
                                 >
                                     <Save className="w-4 h-4" />
                                     Save Changes

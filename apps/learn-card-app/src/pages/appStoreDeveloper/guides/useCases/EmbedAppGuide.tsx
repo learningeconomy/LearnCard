@@ -55,6 +55,8 @@ import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 import { StepProgress, CodeOutputPanel, GoLiveStep, StatusIndicator } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { useWallet, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
+import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import type { UnsignedVC } from '@learncard/types';
 import OBv3CredentialBuilder from '../../../../components/credentials/OBv3CredentialBuilder';
 import {
     CredentialBuilder,
@@ -1865,7 +1867,8 @@ const TemplateManager: React.FC<{
                         (credential.credentialSubject as Record<string, unknown>)
                             ?.achievement as Record<string, unknown>
                     )?.achievementType as string) || 'Achievement',
-                category: 'achievement',
+                category:
+                    getDefaultCategoryForCredential(credential as UnsignedVC) || 'Achievement',
                 meta: { appListingId, integrationId }, // Store both app listing ID and integration ID for filtering
                 defaultPermissions: {
                     canIssue: true, // Public template - anyone can issue
@@ -5308,9 +5311,7 @@ const PeerBadgesSetup: React.FC<{
                         <span className="font-medium text-violet-600">2.</span>
                         <span>
                             In your app, call{' '}
-                            <code className="bg-gray-100 px-1 rounded">
-                                initiateTemplateIssue
-                            </code>{' '}
+                            <code className="bg-gray-100 px-1 rounded">initiateTemplateIssue</code>{' '}
                             with a template URI
                         </span>
                     </li>
