@@ -106,17 +106,25 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                 ...(skill.targetDescription && { targetDescription: skill.targetDescription }),
             }));
 
-            // Build job description/narrative
+            // Build job description/narrative (dates are in separate OBv3 fields)
             const narrative = [
                 experience.jobSummary,
                 experience.workFromHome ? 'Remote position' : experience.jobLocation,
-                experience.startDate && `Started: ${experience.startDate}`,
-                experience.isCurrentJob
-                    ? 'Current position'
-                    : experience.endDate && `Ended: ${experience.endDate}`,
+                experience.isCurrentJob && 'Current position',
             ]
                 .filter(Boolean)
                 .join(' • ');
+
+            // Convert dates to ISO 8601 datetime format for OBv3 (activityStartDate/activityEndDate)
+            const toISODateTime = (dateStr: string) => {
+                if (!dateStr) return undefined;
+                // If already includes time, return as-is; otherwise append T00:00:00Z
+                return dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00Z`;
+            };
+            const activityStartDate = toISODateTime(experience.startDate);
+            const activityEndDate = experience.isCurrentJob
+                ? undefined
+                : toISODateTime(experience.endDate);
 
             const unsignedCredential = {
                 '@context': [
@@ -157,6 +165,8 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                 credentialSubject: {
                     id: walletDid,
                     type: ['AchievementSubject'],
+                    ...(activityStartDate && { activityStartDate }),
+                    ...(activityEndDate && { activityEndDate }),
                     achievement: {
                         id: `urn:uuid:${uuidv4()}`,
                         type: ['Achievement'],
