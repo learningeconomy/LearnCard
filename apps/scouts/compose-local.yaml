@@ -319,7 +319,7 @@ services:
                 '/var/log/mongodb/mongod.log',
             ]
         container_name: 'lcn-mongodb'
-        image: mongo:latest
+        image: mongo:7.0
         expose:
             - 27017
         ports:

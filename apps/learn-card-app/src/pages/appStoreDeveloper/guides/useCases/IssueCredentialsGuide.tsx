@@ -1,40 +1,30 @@
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { 
-    Key, 
-    Shield, 
-    FileCode, 
-    Rocket, 
-    ArrowRight, 
-    ArrowLeft, 
-    Check, 
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import {
+    Key,
+    Shield,
+    ArrowRight,
+    ArrowLeft,
+    Check,
     Loader2,
     Plus,
     Copy,
     Trash2,
     CheckCircle2,
     AlertCircle,
-    Award,
-    Sparkles,
-    Eye,
     ChevronDown,
     ChevronUp,
-    Building2,
-    Link as LinkIcon,
-    BellOff,
-    Webhook,
     RefreshCw,
     Send,
-    Clock,
-    Upload,
 } from 'lucide-react';
 
-import { useWallet, useToast, ToastTypeEnum, useConfirmation, useFilestack } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
-import { OBv3CredentialBuilder } from '../../../../components/credentials/OBv3CredentialBuilder';
+import { TemplateListManager } from '../../components/TemplateListManager';
+import type { ManagedTemplate } from '../../dashboards/hooks/useTemplateDetails';
 import type { GuideProps } from '../GuidePage';
 
 type AuthGrant = {
@@ -50,7 +40,7 @@ type AuthGrant = {
 const STEPS = [
     { id: 'api-token', title: 'Create API Token' },
     { id: 'signing-authority', title: 'Set Up Signing' },
-    { id: 'build-credential', title: 'Build Credential' },
+    { id: 'create-templates', title: 'Create Templates' },
     { id: 'issue', title: 'Issue & Verify' },
     { id: 'go-live', title: 'Go Live' },
 ];
@@ -170,7 +160,7 @@ const ApiTokenStep: React.FC<{
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Create an API Token</h3>
 
                 <p className="text-gray-600">
-                    Your server needs an API token to authenticate with LearnCard. This token should be kept secret 
+                    Your server needs an API token to authenticate with LearnCard. This token should be kept secret
                     and never exposed in client-side code.
                 </p>
             </div>
@@ -341,12 +331,13 @@ const SigningAuthorityStep: React.FC<{
         fetchSigningAuthority();
     }, []);
 
-    const createSigningAuthority = async () => {
+    const createOrReplaceSigningAuthority = async () => {
         try {
             setCreating(true);
             const wallet = await initWallet();
 
-            const authority = await wallet.invoke.createSigningAuthority('default-sa');
+            const saName = `sa-${Date.now().toString(36)}`;
+            const authority = await wallet.invoke.createSigningAuthority(saName);
 
             if (!authority) {
                 throw new Error('Failed to create signing authority');
@@ -381,7 +372,7 @@ const SigningAuthorityStep: React.FC<{
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Set Up Signing Authority</h3>
 
                 <p className="text-gray-600">
-                    A signing authority cryptographically signs your credentials, making them verifiable. 
+                    A signing authority cryptographically signs your credentials, making them verifiable.
                     This proves the credentials actually came from you.
                 </p>
             </div>
@@ -393,10 +384,10 @@ const SigningAuthorityStep: React.FC<{
                 description={hasSigningAuthority ? `Using: ${primarySA?.name}` : 'Create one to sign credentials'}
             />
 
-            {/* Create button if needed */}
+            {/* Create button if no SA exists */}
             {!loading && !hasSigningAuthority && (
                 <button
-                    onClick={createSigningAuthority}
+                    onClick={createOrReplaceSigningAuthority}
                     disabled={creating}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 disabled:opacity-50 transition-colors"
                 >
@@ -409,6 +400,27 @@ const SigningAuthorityStep: React.FC<{
                         <>
                             <Shield className="w-4 h-4" />
                             Create Signing Authority
+                        </>
+                    )}
+                </button>
+            )}
+
+            {/* Recreate button if SA exists but may be stale */}
+            {!loading && hasSigningAuthority && (
+                <button
+                    onClick={createOrReplaceSigningAuthority}
+                    disabled={creating}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                >
+                    {creating ? (
+                        <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Recreating...
+                        </>
+                    ) : (
+                        <>
+                            <RefreshCw className="w-4 h-4" />
+                            Recreate Signing Authority
                         </>
                     )}
                 </button>
@@ -448,26 +460,84 @@ const SigningAuthorityStep: React.FC<{
     );
 };
 
-// Advanced options type
-interface AdvancedOptions {
-    issuerName: string;
-    issuerLogoUrl: string;
-    recipientName: string;
-    suppressDelivery: boolean;
-    webhookUrl: string;
-}
-
-// Step 3: Build Credential
-const BuildCredentialStep: React.FC<{
+// Step 3: Create Templates
+const CreateTemplatesStep: React.FC<{
     onComplete: () => void;
     onBack: () => void;
+    integrationId?: string;
+    onTemplatesChange: (templates: ManagedTemplate[]) => void;
+}> = ({ onComplete, onBack, integrationId, onTemplatesChange }) => {
+    const [hasTemplates, setHasTemplates] = useState(false);
+    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Create Templates</h3>
+
+                <p className="text-gray-600">
+                    Design your credential templates using the visual builder. Each template becomes a reusable
+                    Boost that you can reference by URI when issuing credentials via API.
+                </p>
+            </div>
+
+            <TemplateListManager
+                integrationId={integrationId}
+                featureType="issue-credentials"
+                showCodeSnippets={false}
+                editable={true}
+                onTemplateChange={(templates) => {
+                    setHasTemplates(templates.length > 0);
+                    onTemplatesChange(templates);
+                }}
+                onBuilderOpenChange={setIsBuilderOpen}
+            />
+
+            {/* Navigation */}
+            <div className="space-y-2">
+                <div className="flex gap-3">
+                    <button
+                        onClick={onBack}
+                        className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back
+                    </button>
+
+                    <button
+                        onClick={onComplete}
+                        disabled={!hasTemplates || isBuilderOpen}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        Continue
+                        <ArrowRight className="w-4 h-4" />
+                    </button>
+                </div>
+
+                {isBuilderOpen && (
+                    <p className="text-xs text-amber-600 text-center">
+                        Save or cancel the template you&apos;re editing before continuing.
+                    </p>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Step 4: Issue & Verify
+const IssueVerifyStep: React.FC<{
+    templates: ManagedTemplate[];
     apiToken: string;
     onTokenChange: (token: string) => void;
+    onBack: () => void;
+    onComplete: () => void;
     integrationId?: string;
-}> = ({ onComplete, onBack, apiToken, onTokenChange, integrationId }) => {
-    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+}> = ({ templates, apiToken, onTokenChange, onBack, onComplete, integrationId }) => {
+    const [selectedTemplateUri, setSelectedTemplateUri] = useState<string>(
+        templates[0]?.boostUri || ''
+    );
+    const [showTemplateSelector, setShowTemplateSelector] = useState(false);
     const [recipientEmail, setRecipientEmail] = useState('');
-    const [userDid, setUserDid] = useState<string>('');
 
     // API Token selector state
     const [authGrants, setAuthGrants] = useState<Partial<AuthGrant>[]>([]);
@@ -477,102 +547,32 @@ const BuildCredentialStep: React.FC<{
 
     const { initWallet } = useWallet();
 
-    // Fetch auth grants and DID on mount
+    // Verification polling state
+    const [isPolling, setIsPolling] = useState(false);
+    const [pollResult, setPollResult] = useState<{
+        success: boolean;
+        message: string;
+    } | null>(null);
+    const pollIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const initialTimestampRef = useRef<string | null>(null);
+
+    // Fetch auth grants on mount
     useEffect(() => {
         const fetchData = async () => {
             setLoadingGrants(true);
             try {
                 const wallet = await initWallet();
-                
-                // Fetch grants
                 const grants = await wallet.invoke.getAuthGrants() || [];
                 const activeGrants = grants.filter((g: Partial<AuthGrant>) => g.status === 'active');
                 setAuthGrants(activeGrants);
-                
-                // Fetch DID
-                const did = wallet.id.did();
-                setUserDid(did);
             } catch (err) {
-                console.error('Failed to fetch data:', err);
+                console.error('Failed to fetch grants:', err);
             } finally {
                 setLoadingGrants(false);
             }
         };
         fetchData();
     }, []);
-
-    // Select a token
-    const selectToken = async (grantId: string) => {
-        try {
-            const wallet = await initWallet();
-            const token = await wallet.invoke.getAPITokenForAuthGrant(grantId);
-            onTokenChange(token);
-            setSelectedGrantId(grantId);
-            setShowTokenSelector(false);
-        } catch (err) {
-            console.error('Failed to get token:', err);
-        }
-    };
-
-    const [credential, setCredential] = useState<Record<string, unknown>>({
-        '@context': [
-            'https://www.w3.org/2018/credentials/v1',
-            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-        ],
-        type: ['VerifiableCredential', 'OpenBadgeCredential'],
-        issuer: '', // Will be set from user's DID
-        issuanceDate: new Date().toISOString(),
-        name: 'Achievement Badge',
-        credentialSubject: {
-            type: ['AchievementSubject'],
-            achievement: {
-                id: 'urn:uuid:' + crypto.randomUUID(),
-                type: ['Achievement'],
-                name: 'Achievement Badge',
-                description: 'Awarded for completing the course',
-                achievementType: 'Achievement',
-                criteria: {
-                    narrative: 'Completed the required coursework and assessments.',
-                },
-            },
-        },
-    });
-
-    // Update credential issuer when DID is fetched
-    useEffect(() => {
-        if (userDid && credential.issuer !== userDid) {
-            setCredential(prev => ({ ...prev, issuer: userDid }));
-        }
-    }, [userDid, credential.issuer]);
-
-    // Advanced options state
-    const [showAdvanced, setShowAdvanced] = useState(false);
-    const [advancedOptions, setAdvancedOptions] = useState<AdvancedOptions>({
-        issuerName: '',
-        issuerLogoUrl: '',
-        recipientName: '',
-        suppressDelivery: false,
-        webhookUrl: '',
-    });
-
-    // Logo upload via Filestack
-    const { handleFileSelect: handleLogoUpload, isLoading: isUploadingLogo } = useFilestack({
-        onUpload: (url: string) => {
-            setAdvancedOptions(prev => ({ ...prev, issuerLogoUrl: url }));
-        },
-        fileType: 'image/*',
-    });
-
-    // Verification polling state
-    const [isPolling, setIsPolling] = useState(false);
-    const [pollResult, setPollResult] = useState<{
-        success: boolean;
-        message: string;
-        count?: number;
-        latestCredential?: string;
-    } | null>(null);
-    const pollIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const initialTimestampRef = useRef<string | null>(null);
 
     // Capture initial activity timestamp on mount (before user runs code)
     useEffect(() => {
@@ -588,73 +588,35 @@ const BuildCredentialStep: React.FC<{
                 console.error('Failed to capture initial timestamp:', err);
             }
         };
-
         captureInitialTimestamp();
     }, [initWallet, integrationId]);
+
+    // Select a token
+    const selectToken = async (grantId: string) => {
+        try {
+            const wallet = await initWallet();
+            const token = await wallet.invoke.getAPITokenForAuthGrant(grantId);
+            onTokenChange(token);
+            setSelectedGrantId(grantId);
+            setShowTokenSelector(false);
+        } catch (err) {
+            console.error('Failed to get token:', err);
+        }
+    };
+
+    const selectedTemplate = templates.find(t => t.boostUri === selectedTemplateUri) || templates[0];
 
     // Get the current network API URL from the tenant-configured network store
     const networkUrl = networkStore.get.networkApiUrl();
 
-    const handleCredentialSave = (newCredential: Record<string, unknown>) => {
-        setCredential(newCredential);
-    };
+    // Get selected grant name for display
+    const selectedGrant = authGrants.find(g => g.id === selectedGrantId);
+    const displayTokenName = selectedGrant?.name || (apiToken ? 'Selected Token' : 'No token selected');
 
-    // Extract name, description, and image from credential for display
-    const credentialName = (credential.name as string) || 'Untitled Credential';
-    const credentialSubject = credential.credentialSubject as Record<string, unknown> | undefined;
-    const achievement = credentialSubject?.achievement as Record<string, unknown> | undefined;
-    const credentialDescription = (achievement?.description as string) || '';
-    const achievementImage = (achievement?.image as { id?: string })?.id || (achievement?.image as string) || '';
-
-    // Check if any advanced options are set
-    const hasAdvancedOptions = advancedOptions.issuerName || advancedOptions.issuerLogoUrl || 
-        advancedOptions.recipientName || advancedOptions.suppressDelivery || advancedOptions.webhookUrl;
-
-    // Build configuration object for code snippets
-    const buildConfigObject = () => {
-        const config: Record<string, unknown> = {};
-
-        if (advancedOptions.webhookUrl) {
-            config.webhookUrl = advancedOptions.webhookUrl;
-        }
-
-        if (advancedOptions.suppressDelivery || advancedOptions.issuerName || advancedOptions.issuerLogoUrl || advancedOptions.recipientName) {
-            config.delivery = {};
-
-            if (advancedOptions.suppressDelivery) {
-                (config.delivery as Record<string, unknown>).suppress = true;
-            }
-
-            if (advancedOptions.issuerName || advancedOptions.issuerLogoUrl || advancedOptions.recipientName) {
-                (config.delivery as Record<string, unknown>).template = {
-                    model: {
-                        ...(advancedOptions.issuerName || advancedOptions.issuerLogoUrl ? {
-                            issuer: {
-                                ...(advancedOptions.issuerName && { name: advancedOptions.issuerName }),
-                                ...(advancedOptions.issuerLogoUrl && { logoUrl: advancedOptions.issuerLogoUrl }),
-                            }
-                        } : {}),
-                        ...(advancedOptions.recipientName ? {
-                            recipient: { name: advancedOptions.recipientName }
-                        } : {}),
-                    }
-                };
-            }
-        }
-
-        return Object.keys(config).length > 0 ? config : null;
-    };
-
-    const configObject = buildConfigObject();
-    const configJson = configObject ? JSON.stringify(configObject, null, 4) : null;
-    const configJsonIndented = configJson ? configJson.split('\n').map((line, i) => i === 0 ? line : '    ' + line).join('\n') : '';
-
-    // Format credential JSON for code snippets
-    const credentialJson = useMemo(() => JSON.stringify(credential, null, 4), [credential]);
-    const credentialJsonIndented = credentialJson.split('\n').map((line, i) => i === 0 ? line : '    ' + line).join('\n');
+    const templateUri = selectedTemplate?.boostUri || 'YOUR_TEMPLATE_URI';
+    const templateName = selectedTemplate?.name || 'Credential';
 
     // Poll for sent credentials using credential activity API
-    // Uses initialTimestampRef captured on mount to detect activity since page load
     const startPolling = useCallback(async () => {
         setIsPolling(true);
         setPollResult(null);
@@ -663,7 +625,6 @@ const BuildCredentialStep: React.FC<{
             const wallet = await initWallet();
             const initialTimestamp = initialTimestampRef.current;
 
-            // Poll for 2 minutes (40 attempts at 3s intervals)
             let attempts = 0;
             const maxAttempts = 40;
 
@@ -679,7 +640,6 @@ const BuildCredentialStep: React.FC<{
 
                 attempts++;
 
-                // Check for new activity using integrationId filter
                 const currentActivities = await wallet.invoke.getMyActivities?.({
                     limit: 1,
                     integrationId,
@@ -688,7 +648,6 @@ const BuildCredentialStep: React.FC<{
                 const latestTimestamp = currentActivities?.records?.[0]?.timestamp;
                 const latestEvent = currentActivities?.records?.[0];
 
-                // Detect new activity by comparing timestamps (activity since page load)
                 if (latestTimestamp && latestTimestamp !== initialTimestamp) {
                     stopPolling();
 
@@ -710,11 +669,9 @@ const BuildCredentialStep: React.FC<{
                     return;
                 }
 
-                // Continue polling
                 pollIntervalRef.current = setTimeout(poll, 3000);
             };
 
-            // Start first poll immediately (activity may already exist)
             poll();
         } catch (err) {
             console.error('Polling error:', err);
@@ -740,37 +697,7 @@ const BuildCredentialStep: React.FC<{
         };
     }, []);
 
-    // Build options code for the unified send() API
-    const buildOptionsCode = () => {
-        const parts: string[] = [];
-
-        if (advancedOptions.webhookUrl) {
-            parts.push(`        webhookUrl: '${advancedOptions.webhookUrl}',`);
-        }
-
-        if (advancedOptions.suppressDelivery) {
-            parts.push(`        suppressDelivery: true,`);
-        }
-
-        if (advancedOptions.issuerName || advancedOptions.issuerLogoUrl || advancedOptions.recipientName) {
-            const brandingParts: string[] = [];
-            if (advancedOptions.issuerName) brandingParts.push(`            issuerName: '${advancedOptions.issuerName}',`);
-            if (advancedOptions.issuerLogoUrl) brandingParts.push(`            issuerLogoUrl: '${advancedOptions.issuerLogoUrl}',`);
-            if (advancedOptions.recipientName) brandingParts.push(`            recipientName: '${advancedOptions.recipientName}',`);
-
-            parts.push(`        branding: {
-${brandingParts.join('\n')}
-        },`);
-        }
-
-        return parts.length > 0 ? `
-    options: {
-${parts.join('\n')}
-    },` : '';
-    };
-
-    const optionsCode = buildOptionsCode();
-
+    // Code snippets using templateUri
     const codeSnippet = `// Install: npm install @learncard/init
 
 import { initLearnCard } from '@learncard/init';
@@ -781,35 +708,13 @@ const API_TOKEN = '${apiToken || 'YOUR_API_TOKEN'}';
 // Initialize LearnCard with your API token
 const learnCard = await initLearnCard({ network: true, apiKey: API_TOKEN });
 
-// Your credential (built with Credential Builder)
-const credential = ${credentialJsonIndented};
-
-// Send credential using unified send() API
-// Recipient type is auto-detected: profile ID, DID, email, or phone${recipientEmail ? `
+// Send credential using your template
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: '${recipientEmail}',
-    template: {
-        credential,
-        name: credential.name || 'Credential',
-        category: 'Achievement',
-    },
-    integrationId: '${integrationId || 'YOUR_INTEGRATION_ID'}',${optionsCode}
-});` : `
-// const result = await learnCard.invoke.send({
-//     type: 'boost',
-//     recipient: 'recipient@example.com', // or profile ID, DID, phone
-//     template: {
-//         credential,
-//         name: credential.name || 'Credential',
-//         category: 'Achievement',
-//     },
-//     integrationId: '${integrationId || 'YOUR_INTEGRATION_ID'}',${optionsCode ? optionsCode.split('\n').map(l => '// ' + l.slice(1)).join('\n') : ''}
-// });`}
-${advancedOptions.suppressDelivery ? `
-// Since delivery is suppressed, get the claim URL from the response:
-// const { claimUrl } = result.inbox;
-// Use claimUrl in your own UI or email system.` : ''}
+    templateUri: '${templateUri}',
+    recipient: '${recipientEmail || 'recipient@example.com'}',
+    integrationId: '${integrationId || 'YOUR_INTEGRATION_ID'}',
+});
 
 console.log('Credential URI:', result.credentialUri);
 // For email/phone: result.inbox?.issuanceId, result.inbox?.status
@@ -817,37 +722,6 @@ console.log('Credential URI:', result.credentialUri);
 // Verify your credential was sent:
 const sent = await learnCard.invoke.getMySentInboxCredentials();
 console.log('Sent credentials:', sent.records);`;
-
-    // Build Python options object
-    const buildPythonOptions = () => {
-        const parts: string[] = [];
-
-        if (advancedOptions.webhookUrl) {
-            parts.push(`        "webhookUrl": "${advancedOptions.webhookUrl}",`);
-        }
-
-        if (advancedOptions.suppressDelivery) {
-            parts.push(`        "suppressDelivery": True,`);
-        }
-
-        if (advancedOptions.issuerName || advancedOptions.issuerLogoUrl || advancedOptions.recipientName) {
-            const brandingParts: string[] = [];
-            if (advancedOptions.issuerName) brandingParts.push(`            "issuerName": "${advancedOptions.issuerName}",`);
-            if (advancedOptions.issuerLogoUrl) brandingParts.push(`            "issuerLogoUrl": "${advancedOptions.issuerLogoUrl}",`);
-            if (advancedOptions.recipientName) brandingParts.push(`            "recipientName": "${advancedOptions.recipientName}",`);
-
-            parts.push(`        "branding": {
-${brandingParts.join('\n')}
-        },`);
-        }
-
-        return parts.length > 0 ? `
-    "options": {
-${parts.join('\n')}
-    },` : '';
-    };
-
-    const pythonOptionsCode = buildPythonOptions();
 
     const pythonSnippet = `# Install: pip install requests
 
@@ -860,19 +734,12 @@ API_TOKEN = "${apiToken || 'YOUR_API_TOKEN'}"
 # API endpoint for unified send
 API_URL = "${networkUrl}/send"
 
-# Your credential (built with Credential Builder)
-credential = ${credentialJsonIndented.replace(/null/g, 'None').replace(/true/g, 'True').replace(/false/g, 'False')}
-
-# Build the request payload using unified send API
+# Build the request payload using your template URI
 payload = {
     "type": "boost",
+    "templateUri": "${templateUri}",
     "recipient": "${recipientEmail || 'recipient@example.com'}",
-    "template": {
-        "credential": credential,
-        "name": credential.get("name", "Credential"),
-        "category": "Achievement"
-    },
-    "integrationId": "${integrationId || 'YOUR_INTEGRATION_ID'}",${pythonOptionsCode}
+    "integrationId": "${integrationId || 'YOUR_INTEGRATION_ID'}"
 }
 
 # Send credential using unified send API
@@ -889,7 +756,6 @@ if response.ok:
     data = response.json()
     print("Credential sent!")
     print(f"Credential URI: {data.get('credentialUri', 'N/A')}")
-    # For email/phone recipients:
     inbox = data.get('inbox', {})
     if inbox:
         print(f"Issuance ID: {inbox.get('issuanceId', 'N/A')}")
@@ -897,59 +763,107 @@ if response.ok:
 else:
     print(f"Error: {response.status_code} - {response.text}")`;
 
-    // Build cURL options JSON
-    const buildCurlOptions = () => {
-        const opts: Record<string, unknown> = {};
-
-        if (advancedOptions.webhookUrl) {
-            opts.webhookUrl = advancedOptions.webhookUrl;
-        }
-
-        if (advancedOptions.suppressDelivery) {
-            opts.suppressDelivery = true;
-        }
-
-        if (advancedOptions.issuerName || advancedOptions.issuerLogoUrl || advancedOptions.recipientName) {
-            opts.branding = {};
-            if (advancedOptions.issuerName) (opts.branding as Record<string, string>).issuerName = advancedOptions.issuerName;
-            if (advancedOptions.issuerLogoUrl) (opts.branding as Record<string, string>).issuerLogoUrl = advancedOptions.issuerLogoUrl;
-            if (advancedOptions.recipientName) (opts.branding as Record<string, string>).recipientName = advancedOptions.recipientName;
-        }
-
-        return Object.keys(opts).length > 0 ? opts : null;
-    };
-
-    const curlOptions = buildCurlOptions();
-    const curlPayload = {
-        type: 'boost',
-        recipient: recipientEmail || 'recipient@example.com',
-        template: {
-            credential,
-            name: (credential as Record<string, unknown>).name || 'Credential',
-            category: 'Achievement',
-        },
-        integrationId: integrationId || 'YOUR_INTEGRATION_ID',
-        ...(curlOptions && { options: curlOptions }),
-    };
-
     const curlSnippet = `curl -X POST ${networkUrl}/send \\
   -H "Authorization: Bearer ${apiToken || 'YOUR_API_TOKEN'}" \\
   -H "Content-Type: application/json" \\
-  -d '${JSON.stringify(curlPayload, null, 2).split('\n').map((line, i) => i === 0 ? line : '  ' + line).join('\n')}'`;
-
-    // Get selected grant name for display
-    const selectedGrant = authGrants.find(g => g.id === selectedGrantId);
-    const displayTokenName = selectedGrant?.name || (apiToken ? 'Selected Token' : 'No token selected');
+  -d '{
+    "type": "boost",
+    "templateUri": "${templateUri}",
+    "recipient": "${recipientEmail || 'recipient@example.com'}",
+    "integrationId": "${integrationId || 'YOUR_INTEGRATION_ID'}"
+  }'`;
 
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Build Your Credential</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Issue & Verify</h3>
 
                 <p className="text-gray-600">
-                    Design your Open Badges 3.0 credential using our visual builder. The code will update automatically.
+                    Use your template to issue credentials via API. Select a template and recipient,
+                    then run the generated code in your application.
                 </p>
             </div>
+
+            {/* Template Selector */}
+            {templates.length > 0 && (
+                <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                                <Send className="w-5 h-5 text-cyan-600" />
+                            </div>
+
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">Credential Template</p>
+
+                                <p className="text-xs text-cyan-700 font-medium">
+                                    {selectedTemplate?.name || 'Untitled Template'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {templates.length > 1 && (
+                            <button
+                                onClick={() => setShowTemplateSelector(!showTemplateSelector)}
+                                className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
+                            >
+                                {showTemplateSelector ? 'Hide' : 'Change'}
+                                {showTemplateSelector ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </button>
+                        )}
+                    </div>
+
+                    {selectedTemplate && (
+                        <p className="text-xs text-gray-500 mt-2 font-mono truncate">
+                            URI: {selectedTemplate.boostUri}
+                        </p>
+                    )}
+
+                    {showTemplateSelector && templates.length > 1 && (
+                        <div className="mt-3 pt-3 border-t border-cyan-200 space-y-2">
+                            {templates.map((template) => (
+                                <button
+                                    key={template.boostUri}
+                                    onClick={() => {
+                                        setSelectedTemplateUri(template.boostUri);
+                                        setShowTemplateSelector(false);
+                                    }}
+                                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                                        selectedTemplateUri === template.boostUri
+                                            ? 'bg-cyan-100 border-cyan-300'
+                                            : 'bg-white border-gray-200 hover:border-cyan-300'
+                                    }`}
+                                >
+                                    <div className="text-left">
+                                        <p className="text-sm font-medium text-gray-700">
+                                            {template.name || 'Untitled Template'}
+                                        </p>
+
+                                        <p className="text-xs text-gray-500 font-mono truncate max-w-xs">
+                                            {template.boostUri}
+                                        </p>
+                                    </div>
+
+                                    {selectedTemplateUri === template.boostUri && (
+                                        <CheckCircle2 className="w-5 h-5 text-cyan-600 flex-shrink-0" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {templates.length === 0 && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                    <div className="flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-amber-600" />
+                        <p className="text-sm text-amber-800">
+                            No templates found. <button onClick={onBack} className="text-cyan-600 hover:underline font-medium">Go back to create one</button>.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* API Token Selector */}
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
@@ -993,7 +907,7 @@ else:
                             </div>
                         ) : authGrants.length === 0 ? (
                             <p className="text-sm text-gray-500">
-                                No API tokens found. <a href="#" onClick={(e) => { e.preventDefault(); onBack(); }} className="text-cyan-600 hover:underline">Go back to create one</a>.
+                                No API tokens found. <button onClick={onBack} className="text-cyan-600 hover:underline">Go back to create one</button>.
                             </p>
                         ) : (
                             <div className="space-y-2">
@@ -1026,80 +940,15 @@ else:
                 )}
             </div>
 
-            {/* Credential preview card */}
-            <div className="p-4 bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-200 rounded-2xl">
-                <div className="flex items-start gap-4">
-                    {/* Credential icon/image */}
-                    {achievementImage ? (
-                        <img
-                            src={achievementImage}
-                            alt={credentialName}
-                            className="w-16 h-16 rounded-xl object-cover flex-shrink-0 border border-gray-200"
-                            onError={(e) => {
-                                // Fallback to icon if image fails to load
-                                (e.target as HTMLImageElement).style.display = 'none';
-                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                            }}
-                        />
-                    ) : null}
-
-                    <div className={`w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 ${achievementImage ? 'hidden' : ''}`}>
-                        <Award className="w-8 h-8 text-white" />
-                    </div>
-
-                    {/* Credential info */}
-                    <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-800 truncate">{credentialName}</h4>
-
-                        <p className="text-sm text-gray-600 line-clamp-2 mt-0.5">
-                            {credentialDescription || 'No description set'}
-                        </p>
-
-                        <div className="flex items-center gap-2 mt-2">
-                            <span className="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs font-medium">
-                                {(achievement?.achievementType as string) || 'Achievement'}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Edit button */}
-                    <button
-                        onClick={() => setIsBuilderOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-white text-cyan-600 border border-cyan-300 rounded-xl font-medium hover:bg-cyan-50 transition-colors"
-                    >
-                        <Sparkles className="w-4 h-4" />
-                        Edit
-                    </button>
-                </div>
-
-                {/* Open builder button if using default */}
-                {credentialName === 'Achievement Badge' && (
-                    <button
-                        onClick={() => setIsBuilderOpen(true)}
-                        className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
-                    >
-                        <Sparkles className="w-4 h-4" />
-                        Customize Your Credential
-                    </button>
-                )}
-            </div>
-
-            {/* Credential Builder Modal */}
-            <OBv3CredentialBuilder
-                isOpen={isBuilderOpen}
-                onClose={() => setIsBuilderOpen(false)}
-                onSave={handleCredentialSave}
-            />
-
             {/* Recipient email */}
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Recipient Email 
-                    <span className="text-gray-400 font-normal"> (optional)</span>
+                    Recipient
+                    <span className="text-gray-400 font-normal"> (email, DID, or profile ID)</span>
                 </label>
 
                 <input
-                    type="email"
+                    type="text"
                     value={recipientEmail}
                     onChange={(e) => setRecipientEmail(e.target.value)}
                     placeholder="recipient@example.com"
@@ -1108,146 +957,9 @@ else:
                 />
 
                 <p className="text-xs text-gray-500 mt-1">
-                    Enter an email to see the send code. The recipient will get a claim link.
+                    Enter a recipient to see the send code. Supports email, DID, phone, or profile ID.
                 </p>
             </div>
-
-            {/* Advanced Options Toggle */}
-            <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-            >
-                {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                {showAdvanced ? 'Hide' : 'Show'} Advanced Options
-                {hasAdvancedOptions && <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">Active</span>}
-            </button>
-
-            {/* Advanced Options Panel */}
-            {showAdvanced && (
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
-                    <p className="text-sm text-gray-600">
-                        Customize branding, webhooks, and delivery options for the Universal Inbox.
-                    </p>
-
-                    {/* Branding Section */}
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <Building2 className="w-4 h-4 text-indigo-500" />
-                            Email Branding
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Issuer Name</label>
-
-                                <input
-                                    type="text"
-                                    value={advancedOptions.issuerName}
-                                    onChange={(e) => setAdvancedOptions(prev => ({ ...prev, issuerName: e.target.value }))}
-                                    placeholder="Your Organization"
-                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Logo URL</label>
-
-                                <div className="flex gap-2">
-                                    <input
-                                        type="url"
-                                        value={advancedOptions.issuerLogoUrl}
-                                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, issuerLogoUrl: e.target.value }))}
-                                        placeholder="https://example.com/logo.png"
-                                        className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                        disabled={isUploadingLogo}
-                                        style={{ colorScheme: 'light' }}
-                                    />
-
-                                    <button
-                                        type="button"
-                                        onClick={() => handleLogoUpload()}
-                                        disabled={isUploadingLogo}
-                                        className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
-                                        title="Upload image"
-                                    >
-                                        {isUploadingLogo ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <Upload className="w-4 h-4" />
-                                        )}
-                                    </button>
-                                </div>
-
-                                {advancedOptions.issuerLogoUrl && (
-                                    <img
-                                        src={advancedOptions.issuerLogoUrl}
-                                        alt="Logo preview"
-                                        className="mt-2 h-12 object-contain rounded border border-gray-200"
-                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                    />
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Recipient Name</label>
-
-                                <input
-                                    type="text"
-                                    value={advancedOptions.recipientName}
-                                    onChange={(e) => setAdvancedOptions(prev => ({ ...prev, recipientName: e.target.value }))}
-                                    placeholder="John Doe"
-                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Webhook Section */}
-                    <div className="space-y-3 pt-3 border-t border-gray-200">
-                        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <Webhook className="w-4 h-4 text-emerald-500" />
-                            Webhook Notification
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Webhook URL</label>
-
-                            <input
-                                type="url"
-                                value={advancedOptions.webhookUrl}
-                                onChange={(e) => setAdvancedOptions(prev => ({ ...prev, webhookUrl: e.target.value }))}
-                                placeholder="https://your-server.com/webhook"
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                            />
-
-                            <p className="text-xs text-gray-500 mt-1">
-                                Receive a POST request when the credential is claimed.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Suppress Delivery */}
-                    <div className="space-y-3 pt-3 border-t border-gray-200">
-                        <label className="flex items-center gap-3 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={advancedOptions.suppressDelivery}
-                                onChange={(e) => setAdvancedOptions(prev => ({ ...prev, suppressDelivery: e.target.checked }))}
-                                className="w-4 h-4 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
-                            />
-
-                            <div className="flex items-center gap-2">
-                                <BellOff className="w-4 h-4 text-amber-500" />
-                                <span className="text-sm font-medium text-gray-700">Suppress Email Delivery</span>
-                            </div>
-                        </label>
-
-                        <p className="text-xs text-gray-500 ml-7">
-                            Don't send an email — get the claim URL to use in your own system.
-                        </p>
-                    </div>
-                </div>
-            )}
 
             {/* Code output */}
             <CodeOutputPanel
@@ -1267,17 +979,17 @@ else:
                     </div>
 
                     <div className="flex-1">
-                        <h4 className="font-medium text-gray-800 mb-1">Verify Your Code Worked</h4>
+                        <h4 className="font-medium text-gray-800 mb-1">Check for Sent Credentials</h4>
 
                         <p className="text-sm text-gray-600 mb-3">
-                            Run your code, then click below to verify the credential was sent successfully.
+                            After running your code, click below to check if the credential was sent successfully.
                         </p>
 
-                        {!isPolling && !pollResult?.success && (
+                        {!isPolling && !pollResult && (
                             <button
                                 onClick={startPolling}
                                 disabled={!apiToken}
-                                className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 <RefreshCw className="w-4 h-4" />
                                 Check for Sent Credentials
@@ -1285,17 +997,15 @@ else:
                         )}
 
                         {isPolling && (
-                            <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-indigo-200">
-                                <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
-
-                                <div>
-                                    <p className="text-sm font-medium text-gray-700">Waiting for new credentials...</p>
-                                    <p className="text-xs text-gray-500">Run your code now. We'll detect when it's sent.</p>
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2 text-indigo-600">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span className="text-sm font-medium">Checking for new credentials...</span>
                                 </div>
 
                                 <button
                                     onClick={stopPolling}
-                                    className="ml-auto px-3 py-1 text-sm text-gray-500 hover:text-gray-700"
+                                    className="text-sm text-gray-500 hover:text-gray-700"
                                 >
                                     Cancel
                                 </button>
@@ -1303,187 +1013,44 @@ else:
                         )}
 
                         {pollResult && (
-                            <div className={`flex items-center gap-3 p-3 rounded-lg ${
-                                pollResult.success 
-                                    ? 'bg-emerald-50 border border-emerald-200' 
-                                    : 'bg-amber-50 border border-amber-200'
+                            <div className={`flex items-start gap-2 p-3 rounded-lg ${
+                                pollResult.success
+                                    ? 'bg-emerald-50 border border-emerald-200'
+                                    : 'bg-red-50 border border-red-200'
                             }`}>
                                 {pollResult.success ? (
-                                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                                 ) : (
-                                    <Clock className="w-5 h-5 text-amber-600" />
+                                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                                 )}
 
-                                <div className="flex-1">
-                                    <p className={`text-sm font-medium ${pollResult.success ? 'text-emerald-800' : 'text-amber-800'}`}>
+                                <div>
+                                    <p className={`text-sm font-medium ${
+                                        pollResult.success ? 'text-emerald-800' : 'text-red-800'
+                                    }`}>
                                         {pollResult.message}
                                     </p>
-                                </div>
 
-                                {!pollResult.success && (
-                                    <button
-                                        onClick={startPolling}
-                                        className="px-3 py-1 text-sm bg-amber-100 text-amber-700 rounded hover:bg-amber-200"
-                                    >
-                                        Try Again
-                                    </button>
-                                )}
+                                    {!pollResult.success && (
+                                        <button
+                                            onClick={startPolling}
+                                            className="text-sm text-indigo-600 hover:underline mt-1"
+                                        >
+                                            Try again
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         )}
 
                         {!apiToken && (
                             <p className="text-xs text-amber-600 mt-2">
-                                ⚠️ Create an API token in step 1 to enable verification.
+                                ⚠️ Select an API token above to enable verification.
                             </p>
                         )}
                     </div>
                 </div>
             </div>
-
-            {/* Navigation */}
-            <div className="flex gap-3">
-                <button
-                    onClick={onBack}
-                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back
-                </button>
-
-                <button
-                    onClick={onComplete}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
-                >
-                    Continue
-                    <ArrowRight className="w-4 h-4" />
-                </button>
-            </div>
-        </div>
-    );
-};
-
-// Step 4: Issue & Verify
-const IssueVerifyStep: React.FC<{
-    onBack: () => void;
-    onComplete: () => void;
-}> = ({ onBack, onComplete }) => {
-    const [verifyInput, setVerifyInput] = useState('');
-    const [verifying, setVerifying] = useState(false);
-    const [verifyResult, setVerifyResult] = useState<{ success: boolean; message: string } | null>(null);
-
-    const { initWallet } = useWallet();
-
-    const handleVerify = async () => {
-        if (!verifyInput.trim()) return;
-
-        setVerifying(true);
-        setVerifyResult(null);
-
-        try {
-            const wallet = await initWallet();
-            const credential = JSON.parse(verifyInput);
-
-            const result = await wallet.invoke.verifyCredential(credential);
-
-            if (result.warnings.length === 0 && result.errors.length === 0) {
-                setVerifyResult({ success: true, message: 'Credential is valid!' });
-            } else {
-                const issues = [...result.warnings, ...result.errors].join(', ');
-                setVerifyResult({ success: false, message: `Issues found: ${issues}` });
-            }
-        } catch (err) {
-            console.error('Verification failed:', err);
-            setVerifyResult({ success: false, message: 'Invalid credential format' });
-        } finally {
-            setVerifying(false);
-        }
-    };
-
-    return (
-        <div className="space-y-6">
-            <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Issue & Verify</h3>
-
-                <p className="text-gray-600">
-                    Run your code to issue a credential, then paste it here to verify it works correctly.
-                </p>
-            </div>
-
-            {/* Success state */}
-            <div className="p-6 bg-gradient-to-br from-emerald-50 to-cyan-50 border border-emerald-200 rounded-2xl text-center">
-                <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Rocket className="w-8 h-8 text-emerald-600" />
-                </div>
-
-                <h4 className="text-lg font-semibold text-gray-800 mb-2">You're all set!</h4>
-
-                <p className="text-gray-600 mb-4">
-                    Run the code from the previous step in your application to issue your first credential.
-                </p>
-
-                <div className="flex items-center justify-center gap-2 text-emerald-700 font-medium">
-                    <CheckCircle2 className="w-5 h-5" />
-                    <span>API Token ready</span>
-                </div>
-
-                <div className="flex items-center justify-center gap-2 text-emerald-700 font-medium mt-1">
-                    <CheckCircle2 className="w-5 h-5" />
-                    <span>Signing authority configured</span>
-                </div>
-            </div>
-
-            {/* Verification tool */}
-            {/* <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                    <h4 className="font-medium text-gray-800">Test Verification</h4>
-
-                    <p className="text-sm text-gray-500">Paste a credential to verify it</p>
-                </div>
-
-                <div className="p-4 space-y-4">
-                    <textarea
-                        value={verifyInput}
-                        onChange={(e) => setVerifyInput(e.target.value)}
-                        placeholder='{"@context": [...], "type": [...], ...}'
-                        rows={6}
-                        className="w-full px-4 py-3 bg-gray-900 text-gray-100 font-mono text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
-
-                    <button
-                        onClick={handleVerify}
-                        disabled={verifying || !verifyInput.trim()}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
-                    >
-                        {verifying ? (
-                            <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Verifying...
-                            </>
-                        ) : (
-                            <>
-                                <Shield className="w-4 h-4" />
-                                Verify Credential
-                            </>
-                        )}
-                    </button>
-
-                    {verifyResult && (
-                        <div className={`p-4 rounded-xl ${verifyResult.success ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
-                            <div className="flex items-center gap-2">
-                                {verifyResult.success ? (
-                                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                                ) : (
-                                    <AlertCircle className="w-5 h-5 text-red-600" />
-                                )}
-
-                                <span className={verifyResult.success ? 'text-emerald-800' : 'text-red-800'}>
-                                    {verifyResult.message}
-                                </span>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div> */}
 
             {/* Navigation */}
             <div className="flex gap-3">
@@ -1507,74 +1074,69 @@ const IssueVerifyStep: React.FC<{
     );
 };
 
+// Config persisted via guideState so it survives page reloads
+interface IssueCredentialsConfig {
+    apiTokenGrantId?: string;
+    templateUris?: string[];
+}
+
 // Main component
 const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
     const guideState = useGuideState('issue-credentials', STEPS.length, selectedIntegration);
 
-    const [apiToken, setApiToken] = useState('');
+    // Restore persisted config on mount
+    const savedConfig = guideState.getConfig<IssueCredentialsConfig>('issueCredentialsConfig');
+
+    const [apiToken, setApiToken] = useState(savedConfig?.apiTokenGrantId ?? '');
+    const [templates, setTemplates] = useState<ManagedTemplate[]>([]);
+
+    // Persist API token when it changes
+    const savedConfigRef = useRef(savedConfig);
+    savedConfigRef.current = savedConfig;
+
+    useEffect(() => {
+        if (apiToken) {
+            guideState.updateConfig('issueCredentialsConfig', {
+                ...savedConfigRef.current,
+                apiTokenGrantId: apiToken,
+            });
+        }
+    }, [apiToken]);
+
+    // Persist template URIs when templates change
+    useEffect(() => {
+        const uris = templates.map(t => t.boostUri).filter(Boolean) as string[];
+        if (uris.length > 0) {
+            guideState.updateConfig('issueCredentialsConfig', {
+                ...savedConfigRef.current,
+                templateUris: uris,
+            });
+        }
+    }, [templates]);
+
+    // Allow navigating to current step, any completed step, or any earlier step.
+    // Forward navigation requires all previous steps to be complete.
+    const canNavigateToStep = useCallback((index: number) => {
+        if (index === guideState.currentStep) return true;
+        if (index < guideState.currentStep) return true;
+        if (guideState.isStepComplete(STEPS[index].id)) return true;
+        for (let i = 0; i < index; i++) {
+            if (!guideState.isStepComplete(STEPS[i].id)) return false;
+        }
+        return true;
+    }, [guideState.currentStep, guideState.isStepComplete]);
+
+    if (!selectedIntegration) {
+        return (
+            <div className="text-center py-12">
+                <p className="text-gray-500">Please select an integration from the header dropdown to continue.</p>
+            </div>
+        );
+    }
 
     const handleStepComplete = (stepId: string) => {
         guideState.markStepComplete(stepId);
         guideState.nextStep();
-    };
-
-    const renderStep = () => {
-        switch (guideState.currentStep) {
-            case 0:
-                return (
-                    <ApiTokenStep
-                        onComplete={() => handleStepComplete('api-token')}
-                        onTokenCreated={setApiToken}
-                    />
-                );
-
-            case 1:
-                return (
-                    <SigningAuthorityStep
-                        onComplete={() => handleStepComplete('signing-authority')}
-                        onBack={guideState.prevStep}
-                    />
-                );
-
-            case 2:
-                return (
-                    <BuildCredentialStep
-                        onComplete={() => handleStepComplete('build-credential')}
-                        onBack={guideState.prevStep}
-                        apiToken={apiToken}
-                        onTokenChange={setApiToken}
-                        integrationId={selectedIntegration?.id}
-                    />
-                );
-
-            case 3:
-                return (
-                    <IssueVerifyStep
-                        onBack={guideState.prevStep}
-                        onComplete={() => handleStepComplete('issue')}
-                    />
-                );
-
-            case 4:
-                return (
-                    <GoLiveStep
-                        integration={selectedIntegration}
-                        guideType="issue-credentials"
-                        onBack={guideState.prevStep}
-                        completedItems={[
-                            'Created API token for server-side access',
-                            'Configured signing authority',
-                            'Built credential template',
-                            'Tested issuing and verification',
-                        ]}
-                        title="Ready to Issue Credentials!"
-                        description="You've set up everything needed to issue verifiable credentials via API. Activate your integration to start issuing in production."
-                    />
-                );
-
-            default:
-                return null;
-        }
     };
 
     return (
@@ -1587,11 +1149,56 @@ const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) =>
                     steps={STEPS}
                     completedSteps={guideState.state.completedSteps}
                     onStepClick={guideState.goToStep}
+                    isStepNavigable={canNavigateToStep}
                 />
             </div>
 
-            {/* Current step content */}
-            {renderStep()}
+            {/* All steps rendered but only active one visible — prevents re-mount/re-fetch lag */}
+            <div style={{ display: guideState.currentStep === 0 ? 'block' : 'none' }}>
+                <ApiTokenStep
+                    onComplete={() => handleStepComplete('api-token')}
+                    onTokenCreated={setApiToken}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 1 ? 'block' : 'none' }}>
+                <SigningAuthorityStep
+                    onComplete={() => handleStepComplete('signing-authority')}
+                    onBack={guideState.prevStep}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 2 ? 'block' : 'none' }}>
+                <CreateTemplatesStep
+                    onComplete={() => handleStepComplete('create-templates')}
+                    onBack={guideState.prevStep}
+                    integrationId={selectedIntegration?.id}
+                    onTemplatesChange={setTemplates}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 3 ? 'block' : 'none' }}>
+                <IssueVerifyStep
+                    templates={templates}
+                    apiToken={apiToken}
+                    onTokenChange={setApiToken}
+                    onBack={guideState.prevStep}
+                    onComplete={() => handleStepComplete('issue')}
+                    integrationId={selectedIntegration?.id}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 4 ? 'block' : 'none' }}>
+                <GoLiveStep
+                    integration={selectedIntegration}
+                    guideType="issue-credentials"
+                    onBack={guideState.prevStep}
+                    completedItems={[
+                        'Created API token for server-side access',
+                        'Configured signing authority',
+                        'Created credential templates',
+                        'Tested issuing and verification',
+                    ]}
+                    title="Ready to Issue Credentials!"
+                    description="You've set up everything needed to issue verifiable credentials via API. Activate your integration to start issuing in production."
+                />
+            </div>
         </div>
     );
 };

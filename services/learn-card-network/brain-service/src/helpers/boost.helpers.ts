@@ -607,15 +607,22 @@ export const prepareCredentialFromBoost = async (
     options: {
         templateData?: Record<string, unknown>;
         recipientDid?: string;
+        recipientName?: string;
         issuerDid?: string;
     } = {}
 ): Promise<UnsignedVC> => {
-    const { templateData, recipientDid, issuerDid } = options;
+    const { templateData, recipientDid, recipientName, issuerDid } = options;
 
     let boostJsonString = boost.dataValues.boost;
 
-    if (templateData && Object.keys(templateData).length > 0) {
-        boostJsonString = renderBoostTemplate(boostJsonString, templateData);
+    // Auto-inject known system variables into templateData
+    const autoData: Record<string, unknown> = {};
+    if (recipientName) autoData.recipient_name = recipientName;
+
+    const mergedTemplateData = { ...autoData, ...templateData };
+
+    if (Object.keys(mergedTemplateData).length > 0) {
+        boostJsonString = renderBoostTemplate(boostJsonString, mergedTemplateData);
     }
 
     const credential = parseRenderedTemplate<UnsignedVC>(boostJsonString);

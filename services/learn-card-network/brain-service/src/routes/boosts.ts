@@ -111,6 +111,7 @@ import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { getContactMethodByValue, getProfileByContactMethod } from '@accesslayer/contact-method/read';
 import {
     getSigningAuthorityForUserByName,
     getPrimarySigningAuthorityForUser,
@@ -750,6 +751,24 @@ export const boostsRouter = t.router({
 
                     // Route to Universal Inbox for email/phone recipients
                     if (inboxRecipient) {
+                        // Try to resolve recipient profile for auto-populating template variables + recipient DID
+                        let inboxRecipientName: string | undefined;
+                        let inboxRecipientDid: string | undefined;
+                        if (inboxRecipient.type === 'email' || inboxRecipient.type === 'phone') {
+                            const contactMethod = await traceDb('getContactMethodByValue:inbox', () =>
+                                getContactMethodByValue(inboxRecipient.type as 'email' | 'phone', inboxRecipient.value)
+                            );
+                            if (contactMethod) {
+                                const recipientProfile = await traceDb('getProfileByContactMethod:inbox', () =>
+                                    getProfileByContactMethod(contactMethod.id)
+                                );
+                                inboxRecipientName = recipientProfile?.displayName;
+                                if (recipientProfile?.profileId) {
+                                    inboxRecipientDid = getDidWeb(domain, recipientProfile.profileId);
+                                }
+                            }
+                        }
+
                         // Prepare the credential - use signedCredential if provided, otherwise from boost template
                         let credential: VC | UnsignedVC;
 
@@ -765,6 +784,8 @@ export const boostsRouter = t.router({
                                                 string,
                                                 unknown
                                             >,
+                                            recipientDid: inboxRecipientDid,
+                                            recipientName: inboxRecipientName,
                                         })
                                 );
                             } catch (e) {
@@ -943,6 +964,7 @@ export const boostsRouter = t.router({
                                     templateData: input.templateData as Record<string, unknown>,
                                     issuerDid: signingAuthority.relationship.did,
                                     recipientDid: getDidWeb(domain, targetProfile.profileId),
+                                    recipientName: targetProfile.displayName,
                                 })
                             );
                         } catch (e) {

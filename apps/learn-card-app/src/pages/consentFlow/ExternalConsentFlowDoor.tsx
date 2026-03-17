@@ -30,6 +30,7 @@ import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import ConsentFlowError from './ConsentFlowError';
+import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
@@ -164,7 +165,17 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
         };
 
         handleNavigation();
-    }, [userClickedContinue, consentedContractLoading, consentedContract, login, returnTo, contractDetails, uri, recipientToken, history]);
+    }, [
+        userClickedContinue,
+        consentedContractLoading,
+        consentedContract,
+        login,
+        returnTo,
+        contractDetails,
+        uri,
+        recipientToken,
+        history,
+    ]);
 
     // TODO duplicated from QRCodeUserCard, should turn into helper
     const handleLogout = async () => {
@@ -193,7 +204,8 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                 }
             }
 
-            coordinatorLogout();
+            resumeBuilderStore.set.resetStore();
+            await coordinatorLogout();
             await queryClient.resetQueries();
 
             await clearDB();

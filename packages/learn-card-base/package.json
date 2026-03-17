@@ -21,6 +21,7 @@
         "@radix-ui/react-popover": "1.0.7",
         "@radix-ui/react-slot": "1.0.2",
         "@learncard/helpers": "workspace:*",
+        "@learncard/ler-rs-plugin": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
         "@learncard/types": "workspace:*",
         "@udecode/zustood": "1.1.1",

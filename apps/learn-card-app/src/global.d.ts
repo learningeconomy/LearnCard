@@ -11,3 +11,23 @@ declare module '*.png' {
     const src: string;
     export default src;
 }
+
+declare module '@digitalcredentials/jsonld' {
+    interface DocumentLoaderResult {
+        document: unknown;
+        documentUrl?: string;
+        contextUrl?: string;
+    }
+
+    interface ExpandOptions {
+        documentLoader?: (url: string) => Promise<DocumentLoaderResult>;
+        base?: string;
+        expandContext?: unknown;
+    }
+
+    const jsonld: {
+        expand(input: unknown, options?: ExpandOptions): Promise<unknown[]>;
+    };
+
+    export default jsonld;
+}

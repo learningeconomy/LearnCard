@@ -54,6 +54,7 @@ export const getLearnCardHeaderBrandingColors = (path: string = '/') => {
         path === '/invite' ||
         path === '/claim/boost' ||
         path.includes('/share-boost') ||
+        path.includes('/verify/resume') ||
         path === '/launchpad' ||
         path.includes('/contacts') ||
         path.includes('/skills') ||
@@ -94,6 +95,7 @@ export const getScoutPassBrandingColors = (path: string = '/') => {
         path === '/invite' ||
         path === '/claim/boost' ||
         path.includes('/share-boost') ||
+        path.includes('/verify/resume') ||
         path.includes('/contacts')
     ) {
         return 'text-sp-purple-base';

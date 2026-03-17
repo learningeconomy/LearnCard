@@ -137,3 +137,59 @@ await learnCard.invoke.alignBoostSkills(boostUri, [{ frameworkId: framework.id, 
 ```
 
 For full details, see [Skill Frameworks & OpenSALT](skills-and-opensalt.md).
+
+---
+
+## 📱 App Store Credentials
+
+### Fetch Credentials Sent by an App
+
+Retrieve credentials that a specific app (App Store listing) has sent to the current user. Useful for building in-app credential dashboards.
+
+```typescript
+const result = await learnCard.invoke.getMyCredentialsFromApp(
+    'my-app-listing-id', // App Store listing ID or slug
+    { limit: 50 } // Optional pagination
+);
+
+console.log(result);
+// {
+//   hasMore: false,
+//   cursor: 'abc123',
+//   totalCount: 3,
+//   records: [
+//     {
+//       credentialId: 'cred-123',
+//       credentialUri: 'lc:credential:...',
+//       date: '2024-03-09T12:00:00Z',
+//       status: 'claimed',
+//       boostName: 'Course Completion Badge',
+//       boostCategory: 'Achievement'
+//     },
+//     ...
+//   ]
+// }
+```
+
+#### Credential Status Values
+
+| Status    | Description                                 |
+| --------- | ------------------------------------------- |
+| `pending` | Credential sent but not yet claimed by user |
+| `claimed` | User has claimed the credential             |
+| `revoked` | Credential has been revoked by issuer       |
+
+#### Resolving Full Credential Data
+
+The API returns `credentialUri` which can be used to fetch the full Verifiable Credential:
+
+```typescript
+for (const record of result.records) {
+    const fullVC = await learnCard.read.get(record.credentialUri);
+    console.log(fullVC.credentialSubject);
+}
+```
+
+{% hint style="info" %}
+**Pagination**: Use `cursor` from the response to fetch additional pages. The `hasMore` flag indicates if more records exist.
+{% endhint %}

@@ -15,6 +15,7 @@ import {
     useAiFeatureGate,
     useToast,
     ToastTypeEnum,
+    useDeviceTypeByWidth,
 } from 'learn-card-base';
 
 import ResumeBuilderController from '../../components/resume-builder/ResumeBuilderController';
@@ -48,6 +49,7 @@ const WalletPage: React.FC = () => {
     const location = useLocation();
 
     const { theme } = useTheme();
+    const { isMobile } = useDeviceTypeByWidth();
     const categories = theme.categories;
 
     const [shareCredsIsOpen, setShareCredsIsOpen] = useState(false);
@@ -63,6 +65,9 @@ const WalletPage: React.FC = () => {
     const hideAiWalletRoutes = flags?.hideAiWalletRoutes;
     const showAiInsights = flags?.showAiInsights;
     const hideAiPathways = flags?.hideAiPathways;
+    const showChecklistButton = Boolean(flags?.enableOnboardingChecklist);
+    const showResumeBuilderButton = Boolean(flags?.enableResumeBuilder);
+    const showInlineWalletActions = showChecklistButton && showResumeBuilderButton;
     const { isAiEnabled, reason } = useAiFeatureGate();
     const { presentToast } = useToast();
     const placeholderCategories = [
@@ -146,6 +151,10 @@ const WalletPage: React.FC = () => {
             return <React.Fragment key={categoryType}></React.Fragment>;
         }
 
+        if (categoryType === CredentialCategoryEnum.resume) {
+            return <React.Fragment key={categoryType}></React.Fragment>;
+        }
+
         if (categoryType === CredentialCategoryEnum.aiInsight && !showAiInsights) {
             return <React.Fragment key={categoryType}></React.Fragment>;
         }
@@ -208,8 +217,33 @@ const WalletPage: React.FC = () => {
                                     </div>
                                 </div>
                             </IonRow>
-                            <CheckListButton className="mb-[10px] mt-[10px]" />
-                            <ResumeBuilderController className="mb-[10px]" />
+                            {isMobile ? (
+                                <>
+                                    <CheckListButton className="mb-[10px] mt-[10px]" />
+                                    <ResumeBuilderController className="mb-[10px]" />
+                                </>
+                            ) : (
+                                <div
+                                    className={`w-full flex gap-[10px] pb-[10px] ${
+                                        showInlineWalletActions ? 'flex-row' : 'flex-col'
+                                    }`}
+                                >
+                                    {showChecklistButton && (
+                                        <div className={showInlineWalletActions ? 'flex-1' : ''}>
+                                            <CheckListButton
+                                                mode={
+                                                    showInlineWalletActions ? 'inline' : 'default'
+                                                }
+                                            />
+                                        </div>
+                                    )}
+                                    {showResumeBuilderButton && (
+                                        <div className={showInlineWalletActions ? 'flex-1' : ''}>
+                                            <ResumeBuilderController mode="inline" />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <IonRow className="wallet-squares-wrapper max-w-[600px] mx-auto">
                                 <IonCol
                                     className={`wallet-squares-container ${

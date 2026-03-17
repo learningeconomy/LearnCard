@@ -52,6 +52,22 @@ export function useGuideState(
     const { useUpdateIntegration } = useDeveloperPortal();
     const updateIntegrationMutation = useUpdateIntegration();
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const pendingSaveRef = useRef<GuideState | null>(null);
+
+    // Flush any pending save immediately on unmount so state isn't lost on navigation
+    useEffect(() => {
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+            if (pendingSaveRef.current && integration) {
+                updateIntegrationMutation.mutate({
+                    id: integration.id,
+                    updates: { guideState: pendingSaveRef.current },
+                });
+            }
+        };
+    }, [integration?.id]);
 
     // Load initial state from integration's guideState or defaults
     const loadState = useCallback((): GuideState => {
@@ -79,23 +95,30 @@ export function useGuideState(
 
     const [state, setState] = useState<GuideState>(loadState);
 
-    // Sync state when integration changes (e.g., after server refresh)
+    // Only sync from server when the integration itself changes (e.g., switching integrations).
+    // Do NOT sync on guideState changes — client state is authoritative once loaded,
+    // and server saves happen in the background. This prevents stale server data from
+    // overwriting rapid local state changes (e.g., fast back/forward clicks).
+    const prevIntegrationId = useRef(integration?.id);
     useEffect(() => {
-        const newState = loadState();
+        if (integration?.id !== prevIntegrationId.current) {
+            prevIntegrationId.current = integration?.id;
+            setState(loadState());
+        }
+    }, [integration?.id]);
 
-        setState(newState);
-    }, [integration?.id, integration?.guideState]);
-
-    // Save state to server (debounced)
+    // Save state to server (debounced, fire-and-forget)
     const saveState = useCallback((newState: GuideState) => {
         if (!integration) return;
 
-        // Debounce saves to avoid too many API calls
+        pendingSaveRef.current = newState;
+
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
 
         saveTimeoutRef.current = setTimeout(() => {
+            pendingSaveRef.current = null;
             updateIntegrationMutation.mutate({
                 id: integration.id,
                 updates: {

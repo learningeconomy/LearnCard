@@ -72,6 +72,49 @@ const AuthHandoff: React.FC = () => {
                 return;
             }
 
+            const redirectTo =
+                redirectStore.get.authRedirect() || query.get('redirectTo') || '/wallet';
+
+            // If the user is already logged in as the same contact method in the
+            // handoff token, skip verification entirely and redirect straight away.
+            // This avoids "Failed to verify network handoff token" errors when the
+            // embed SDK opens the wallet for an already-authenticated user.
+            if (currentFirebaseUser) {
+                try {
+                    const decoded = jwtDecode<{ nonce?: string }>(token);
+                    const nonce = decoded?.nonce ?? '';
+
+                    if (typeof nonce === 'string' && nonce.startsWith('contact_method_session:')) {
+                        const parts = nonce.split(':');
+                        const contactType = parts.at(-2);
+                        const contactValue = parts.at(-1);
+
+                        if (contactType && contactValue) {
+                            const normalizePhone = (val?: string | null) =>
+                                (val ?? '')
+                                    .replace(/[^0-9+]/g, '')
+                                    .replace(/(?!^)[+]/g, '');
+
+                            const isMatch =
+                                contactType.toLowerCase() === 'email'
+                                    ? !!currentFirebaseUser.email &&
+                                      currentFirebaseUser.email.toLowerCase() ===
+                                          contactValue.toLowerCase()
+                                    : !!currentFirebaseUser.phoneNumber &&
+                                      normalizePhone(currentFirebaseUser.phoneNumber) ===
+                                          normalizePhone(contactValue);
+
+                            if (isMatch) {
+                                history.replace(redirectTo);
+                                return;
+                            }
+                        }
+                    }
+                } catch {
+                    // Decode failed — fall through to normal verification
+                }
+            }
+
             try {
                 const response = await verifyNetworkHandoffToken({ token });
 
@@ -81,9 +124,6 @@ const AuthHandoff: React.FC = () => {
                     }
 
                     await signInWithCustomFirebaseToken(response.token);
-
-                    const redirectTo =
-                        redirectStore.get.authRedirect() || query.get('redirectTo') || '/wallet';
 
                     history.replace(redirectTo);
                 } else {

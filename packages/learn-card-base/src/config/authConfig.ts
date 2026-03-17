@@ -198,7 +198,8 @@ export const getAuthConfig = (): AuthConfig => {
         readEnv('WEB3AUTH_VERIFIER_ID', 'WEB3AUTH_VERIFIER_ID') ?? '';
 
     const web3AuthRpcTarget =
-        readEnv('WEB3AUTH_RPC_TARGET', 'WEB3AUTH_RPC_TARGET') || 'https://cloudflare-eth.com';
+        _authConfigOverrides?.web3AuthRpcTarget ??
+        readEnv('WEB3AUTH_RPC_TARGET', 'WEB3AUTH_RPC_TARGET') ?? 'https://cloudflare-eth.com';
 
     return {
         authProvider,

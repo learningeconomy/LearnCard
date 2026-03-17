@@ -67,7 +67,7 @@ const QrCodeUserCard: React.FC<{
                                 onClick={async () => {
                                     handleQRCodeCardModal();
 
-                                    coordinatorLogout();
+                                    await coordinatorLogout();
                                     await clearDB();
                                 }}
                                 className="mr-1 text-indigo-500 font-semibold text-lg text-center"

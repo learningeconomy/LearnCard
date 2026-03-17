@@ -487,3 +487,120 @@ Register in `src/tracing/index.ts`:
 ```typescript
 manager.register(new MyProvider());
 ```
+
+## Credential Revocation System
+
+### Purpose
+
+Allows issuers to revoke credentials from recipients. When revoked:
+1. Recipient removed from member/recipient lists
+2. Permissions granted via claim hooks reversed
+3. Connections created via auto-connect cleaned up
+4. Credential marked as revoked (not deleted) for audit
+
+### Neo4j Data Model
+
+#### CREDENTIAL_RECEIVED relationship
+
+```
+(Credential)-[:CREDENTIAL_RECEIVED]->(Profile)
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `status` | string | `null` (claimed), `'pending'` (not yet accepted), `'revoked'` |
+| `date` | datetime | When received/claimed |
+| `revokedAt` | datetime | When revoked (if revoked) |
+
+#### CONNECTED_WITH relationship
+
+```
+(Profile)-[:CONNECTED_WITH]->(Profile)
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `sources` | string[] | Source keys like `['boost:uuid1', 'boost:uuid2']` |
+
+### Key Queries
+
+```cypher
+-- Get recipients (excluding revoked)
+MATCH (c:Credential)-[r:CREDENTIAL_RECEIVED]->(p:Profile)
+WHERE c.boostId = $boostId
+  AND (r.status IS NULL OR r.status <> 'revoked')
+  AND ($includeUnacceptedBoosts = true OR r.status IS NULL)
+RETURN p
+
+-- Set revoked status
+MATCH (credential:Credential { id: $credentialId })
+MATCH (profile:Profile { profileId: $profileId })
+MERGE (credential)-[received:CREDENTIAL_RECEIVED]->(profile)
+ON CREATE SET received.status = "revoked", received.revokedAt = $revokedAt, received.date = $revokedAt
+ON MATCH SET received.status = "revoked", received.revokedAt = $revokedAt
+```
+
+### Revoke Hooks (`src/helpers/revoke-hooks.helpers.ts`)
+
+| Hook | Purpose |
+|------|---------|
+| `processPermissionsRevokeHooks` | Removes HAS_ROLE relationships from GRANT_PERMISSIONS claim hooks |
+| `processAutoConnectRevokeHooks` | Removes AUTO_CONNECT_RECIPIENT relationships |
+| `processAdminRevokeHooks` | Removes admin roles from ADD_ADMIN claim hooks |
+| `processConnectionRevoke` | Removes CONNECTED_WITH relationships sourced from the boost |
+
+### Connection Source Keys
+
+- Pattern: `boost:${boostId}`
+- Connections can have multiple sources (from multiple boosts)
+- On revoke, only the source key from the revoked boost is removed
+- Connection deleted only when all source keys are removed
+
+### Parent Boost Handling
+
+`processConnectionRevoke` checks:
+1. Direct boost (if `autoConnectRecipients=true`)
+2. All parent boosts with `autoConnectRecipients=true`
+3. All boosts targeted by AUTO_CONNECT claim hooks
+
+### getRevokedCredentials Endpoint
+
+```typescript
+// In credentials.ts router — returns revoked credential URIs for authenticated user
+getRevokedCredentials: profileRoute
+    .input(z.object({}).default({}))
+    .output(z.array(z.string()))
+    .query(async ({ ctx }) => {
+        return getRevokedCredentialUrisForProfile(ctx.domain, ctx.user.profile);
+    });
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/accesslayer/credential/read.ts` | `getReceivedCredentialsForProfile` (filters revoked), `getRevokedCredentialUrisForProfile` |
+| `src/routes/credentials.ts` | `getRevokedCredentials` endpoint |
+| `src/helpers/revoke-hooks.helpers.ts` | All revoke hook processors |
+| `test/revoke-credential.spec.ts` | Revocation tests |
+| `test/claim-hooks.spec.ts` | Claim hook tests |
+
+## Debugging
+
+### Docker Logs
+
+```bash
+docker logs lcn-brain-service --tail 100 -f
+```
+
+### Useful Cypher Queries
+
+```cypher
+-- Check connection sources
+MATCH (p:Profile {profileId: 'some-id'})-[r:CONNECTED_WITH]-(other)
+RETURN other.profileId, r.sources
+
+-- Check credential status
+MATCH (c:Credential)-[r:CREDENTIAL_RECEIVED]->(p:Profile {profileId: 'some-id'})
+RETURN c.id, r.status, r.revokedAt
+```

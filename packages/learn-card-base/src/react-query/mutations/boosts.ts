@@ -55,9 +55,11 @@ export const useShareBoostMutation = () => {
         mutationFn: async ({
             credential,
             credentialUri,
+            shareRouteName = baseBoostShareRouteName,
         }: {
             credential: VC | UnsignedVC;
             credentialUri: string;
+            shareRouteName?: string;
         }) => {
             const baseUrl = getBaseUrl();
 
@@ -78,7 +80,7 @@ export const useShareBoostMutation = () => {
 
             //If it already exists than we don't have to do it all again....
             if (extantCredentialIndex && endorsementVCs.length === 0) {
-                const link = `https://${baseUrl}/${baseBoostShareRouteName}?uri=${extantCredentialIndex?.uri}&seed=${extantCredentialIndex?.randomSeed}&pin=${extantCredentialIndex?.pin}`;
+                const link = `https://${baseUrl}/${shareRouteName}?uri=${extantCredentialIndex?.uri}&seed=${extantCredentialIndex?.randomSeed}&pin=${extantCredentialIndex?.pin}`;
                 return {
                     link,
                 };
@@ -135,7 +137,7 @@ export const useShareBoostMutation = () => {
                 uri: publishedVpUri,
                 type: 'shared-credentials',
             });
-            const link = `https://${baseUrl}/${baseBoostShareRouteName}?uri=${publishedVpUri}&seed=${randomKey}&pin=${pin}`;
+            const link = `https://${baseUrl}/${shareRouteName}?uri=${publishedVpUri}&seed=${randomKey}&pin=${pin}`;
 
             return {
                 link,
