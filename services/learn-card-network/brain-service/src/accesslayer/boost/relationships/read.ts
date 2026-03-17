@@ -335,12 +335,14 @@ export const getBoostRecipients = async (
         includeUnacceptedBoosts = true,
         query: matchQuery = {},
         domain,
+        from,
     }: {
         limit: number;
         cursor?: string;
         includeUnacceptedBoosts?: boolean;
         query?: LCNProfileQuery;
         domain: string;
+        from?: string;
     }
 ): Promise<Array<BoostRecipientInfo & { sent: string }>> => {
     const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
@@ -349,7 +351,7 @@ export const getBoostRecipients = async (
         convertedQuery as any
     );
 
-    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
+    const _query = new QueryBuilder(new BindParam({ cursor, from, ...queryParams }))
         .match({
             related: [
                 { identifier: 'source', model: Boost, where: { id: boost.id } },
@@ -368,7 +370,7 @@ export const getBoostRecipients = async (
             ],
         })
         .match({ model: Profile, identifier: 'recipient' })
-        .where('recipient.profileId = sent.to')
+        .where(`recipient.profileId = sent.to${from ? ' AND sender.profileId = $from' : ''}`)
         .match({
             optional: includeUnacceptedBoosts,
             related: [
