@@ -6,6 +6,7 @@ import useLaunchPadApps from './useLaunchPadApps';
 import {
     LaunchPadAppListItem as LaunchPadAppListItemType,
     LaunchPadAppType,
+    useAiFeatureGate,
 } from 'learn-card-base';
 import { UseQueryResult } from '@tanstack/react-query';
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -22,6 +23,8 @@ import MainHeader from '../../components/main-header/MainHeader';
 import LaunchPadSearch from './LaunchPadSearch/LaunchPadSearch';
 import LaunchPadAppTabs, { LaunchPadTabEnum } from './LaunchPadHeader/LaunchPadAppTabs';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
+import { RecoveryBanner } from '../../components/recovery/RecoveryBanner';
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
 import {
     aiPassportApps,
@@ -46,6 +49,8 @@ type LaunchPadItem = Partial<LaunchPadAppListItemType> &
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
+    const { recoveryMethodCount, openRecoverySetup, capabilities } = useAppAuth();
+    const { isAiEnabled, reason } = useAiFeatureGate();
     const history = useHistory();
     const { search } = useLocation();
     const { connectTo, challenge, uri, suppressContractModal, embedUrl, appName, appImage } =
@@ -146,7 +151,7 @@ const LaunchPad: React.FC = () => {
     const aiAppsAvailable = areAiPassportAppsAvailable();
 
     let aiApps: LaunchPadItem[] =
-        flags?.enableLaunchPadUpdates && aiAppsAvailable
+        flags?.enableLaunchPadUpdates && aiAppsAvailable && isAiEnabled
             ? (aiPassportApps as unknown as LaunchPadItem[])
             : [];
     let apps: LaunchPadItem[] = useLaunchPadApps() as unknown as LaunchPadItem[];
@@ -466,7 +471,27 @@ const LaunchPad: React.FC = () => {
                             </div>
                         </LaunchPadHeader>
                         <div className="flex-grow flex flex-col items-center justify-start w-full pb-8 px-4 bg-grayscale-100">
-                            {searchInput.length > 0 ? (
+                            {capabilities.recovery && (
+                                <RecoveryBanner
+                                    recoveryMethodCount={recoveryMethodCount}
+                                    onSetup={openRecoverySetup}
+                                />
+                            )}
+
+                            {tab === LaunchPadTabEnum.ai && !isAiEnabled ? (
+                                <div className="w-full max-w-[600px] flex flex-col items-center justify-center text-center px-6 py-12">
+                                    <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-6 max-w-[450px]">
+                                        <p className="text-[15px] font-semibold text-amber-900 mb-2">
+                                            AI Apps Unavailable
+                                        </p>
+                                        <p className="text-sm text-amber-800">
+                                            {reason === 'disabled_minor'
+                                                ? 'AI features are disabled for users under 18.'
+                                                : 'AI features are currently disabled. Adults can enable AI features in Privacy & Data settings.'}
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : searchInput.length > 0 ? (
                                 <>
                                     <IonList
                                         lines="none"

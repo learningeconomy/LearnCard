@@ -10,6 +10,7 @@ import AdminToolsConsentFlowOption from '../AdminToolsConsentFlow/AdminToolsCons
 import AdminToolsSigningAuthorityOption from '../signingAuthority/AdminToolsSigningAuthorityOption';
 import AdminToolsSyncAllCredentialsOption from '../AdminToolsSyncAllCredentials/AdminToolsSyncAllCredentialsOption';
 import AdminToolsCLIOption from '../AdminToolsCLI/AdminToolsCLIOption';
+import AdminToolsLearnerContextTestOption from '../learner-context-test/AdminToolsLearnerContextTestOption';
 
 import { AdminToolOption, AdminToolOptionsEnum } from './admin-tools.helpers';
 
@@ -21,6 +22,9 @@ export const AdminToolsOptionsContainer: React.FC<{ option: AdminToolOption }> =
     switch (activeAdminToolOption) {
         case AdminToolOptionsEnum.API_TOKENS:
             adminToolContent = <AdminToolsApiTokensOption option={option} />;
+            break;
+        case AdminToolOptionsEnum.LEARNER_CONTEXT_TEST:
+            adminToolContent = <AdminToolsLearnerContextTestOption option={option} />;
             break;
         case AdminToolOptionsEnum.SIGNING_AUTHORITY:
             adminToolContent = <AdminToolsSigningAuthorityOption option={option} />;

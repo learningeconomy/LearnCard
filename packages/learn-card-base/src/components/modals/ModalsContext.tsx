@@ -83,9 +83,10 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const closeModal = useCallback(() => {
         setModals(_modals => {
-            if (_modals.length === 0) return;
+            const index = _modals.findLastIndex(modal => modal.open);
+            if (index === -1) return;
 
-            const modalToClose = _modals.at(-1)!;
+            const modalToClose = _modals[index];
 
             const { id } = modalToClose;
             modalToClose.open = false;

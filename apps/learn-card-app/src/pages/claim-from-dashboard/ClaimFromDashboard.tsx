@@ -33,7 +33,7 @@ import {
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
-import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 import {
     getAchievementType,
@@ -141,7 +141,7 @@ const ClaimFromDashboard: React.FC = () => {
     const [credential, setCredential] = useState<VC | undefined>();
     const [metadata, setMetadata] = useState<FromDashboardMetadata | undefined>();
 
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
 
     const queryClient = useQueryClient();
     const registry = useRegistry();
@@ -278,7 +278,7 @@ const ClaimFromDashboard: React.FC = () => {
             const achievementType = getAchievementType(credential);
 
             if (credential) {
-                logAnalyticsEvent('claim_boost', {
+                track(AnalyticsEvents.CLAIM_BOOST, {
                     category: category,
                     boostType: achievementType,
                     method: 'Dashboard',

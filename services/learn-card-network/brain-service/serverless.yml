@@ -89,7 +89,6 @@ package:
         - 'node_modules/@learncard/didkit-plugin-node/*.node'
         - 'node_modules/@learncard/didkit-plugin-node/package.json'
         - 'node_modules/@learncard/didkit-plugin-node/dist/**'
-        - 'src/swagger-ui'
 
 provider:
     name: aws

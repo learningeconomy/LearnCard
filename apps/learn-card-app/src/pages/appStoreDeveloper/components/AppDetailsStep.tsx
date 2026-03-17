@@ -1,8 +1,8 @@
 import React from 'react';
-import { Info, Plus, X, Video, Shield, Smartphone, Palette } from 'lucide-react';
+import { Info, Plus, X, Video, Shield, Smartphone, Palette, Users } from 'lucide-react';
 
-import type { AppStoreListingCreate } from '../types';
-import { CATEGORY_OPTIONS } from '../types';
+import type { AppStoreListingCreate, AgeRating } from '../types';
+import { CATEGORY_OPTIONS, AGE_RATING_OPTIONS } from '../types';
 import { ImageUpload, ScreenshotUpload } from './ImageUpload';
 
 interface AppDetailsStepProps {
@@ -199,6 +199,94 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         </option>
                     ))}
                 </select>
+            </div>
+
+            {/* Age Restrictions */}
+            <div>
+                <div className="flex items-center gap-2 mb-2">
+                    <Users className="w-4 h-4 text-gray-400" />
+
+                    <label className="text-sm font-medium text-gray-600">Age Restrictions</label>
+
+                    <span className="text-xs text-gray-400">(optional)</span>
+                </div>
+
+                <p className="text-xs text-gray-400 mb-3">
+                    Set age requirements for your app. Age Rating will display in the UI and
+                    requires guardian approval for underage child profiles. Minimum Age is a hard
+                    block that hides the app entirely.
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                            Age Rating
+                        </label>
+
+                        <select
+                            value={data.age_rating || ''}
+                            onChange={e =>
+                                onChange({
+                                    ...data,
+                                    age_rating: (e.target.value as AgeRating) || undefined,
+                                })
+                            }
+                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        >
+                            <option value="">No rating</option>
+
+                            {AGE_RATING_OPTIONS.map(opt => (
+                                <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                            Minimum Age
+                        </label>
+
+                        <input
+                            type="number"
+                            min={0}
+                            max={18}
+                            value={data.min_age ?? ''}
+                            onChange={e => {
+                                const val = e.target.value;
+                                onChange({
+                                    ...data,
+                                    min_age:
+                                        val === ''
+                                            ? undefined
+                                            : Math.min(18, Math.max(0, parseInt(val, 10))),
+                                });
+                            }}
+                            placeholder="e.g., 13"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        />
+                    </div>
+                </div>
+
+                {(data.age_rating || data.min_age !== undefined) && (
+                    <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded-lg space-y-1">
+                        {data.min_age !== undefined && (
+                            <p className="text-xs text-red-700">
+                                <strong>Hard block:</strong> Users under {data.min_age} will not see
+                                this app at all.
+                            </p>
+                        )}
+                        {data.age_rating && (
+                            <p className="text-xs text-amber-700">
+                                <strong>Soft block:</strong> Child profiles under{' '}
+                                {AGE_RATING_OPTIONS.find(o => o.value === data.age_rating)
+                                    ?.minAge ?? 0}{' '}
+                                will need guardian approval to install.
+                            </p>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Hero Background Color */}

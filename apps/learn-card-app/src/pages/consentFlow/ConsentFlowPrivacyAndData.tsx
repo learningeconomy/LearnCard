@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { cloneDeep, isEqual } from 'lodash';
+import { cloneDeep, isEqual } from 'lodash-es';
 import { Updater, useImmer } from 'use-immer';
 
 import {
@@ -11,6 +11,7 @@ import {
     useUpdateTerms,
 } from 'learn-card-base';
 import useConsentFlow from './useConsentFlow';
+import useGuardianGate from 'src/hooks/useGuardianGate';
 
 import { IonToggle } from '@ionic/react';
 import ConsentFlowFooter from './ConsentFlowFooter';
@@ -52,10 +53,14 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 }) => {
     const { closeModal } = useModal();
     const { presentToast } = useToast();
+    const { guardedAction } = useGuardianGate();
 
     // Use passed termsUri/ownerDid if provided (e.g., from ManageDataSharingModal)
     // Otherwise fall back to useConsentFlow lookup
-    const { updateTerms: hookUpdateTerms, updatingTerms: hookUpdatingTerms } = useConsentFlow(contractDetails, app);
+    const { updateTerms: hookUpdateTerms, updatingTerms: hookUpdatingTerms } = useConsentFlow(
+        contractDetails,
+        app
+    );
 
     // Direct update mutation when we have the termsUri
     const { mutateAsync: directUpdateTerms, isPending: directUpdatingTerms } = useUpdateTerms(
@@ -67,13 +72,16 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     const updatingTerms = hasDirectUri ? directUpdatingTerms : hookUpdatingTerms;
 
     const updateTerms = hasDirectUri
-        ? async (terms: ConsentFlowTerms, shareDuration: { oneTimeShare: boolean; customDuration: string }) => {
-            await directUpdateTerms({
-                terms,
-                oneTime: shareDuration.oneTimeShare,
-                expiresAt: shareDuration.customDuration,
-            });
-        }
+        ? async (
+              terms: ConsentFlowTerms,
+              shareDuration: { oneTimeShare: boolean; customDuration: string }
+          ) => {
+              await directUpdateTerms({
+                  terms,
+                  oneTime: shareDuration.oneTimeShare,
+                  expiresAt: shareDuration.customDuration,
+              });
+          }
         : hookUpdateTerms;
 
     const [terms, setTerms] = useImmer(initialTerms);
@@ -363,7 +371,9 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                 onActionButtonClick={async () => {
                     if (isPostConsent && isUpdated) {
                         try {
-                            await updateTerms(terms, shareDuration);
+                            await guardedAction(async () => {
+                                await updateTerms(terms, shareDuration);
+                            });
                             closeModal();
                             presentToast('Successfully updated!', {
                                 type: ToastTypeEnum.Success,

@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { BoostSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 
 import useVerifyCredential from 'learn-card-base/hooks/useVerifyCredential';
-import { useGetBoost, useGetBoostPermissions, useGetCurrentLCNUser } from 'learn-card-base';
+import { useGetBoost, useGetBoostRecipients, useGetCurrentLCNUser, useGetIDs } from 'learn-card-base';
 
 import { isCredentialExpired } from '../../components/boost/boostHelpers';
 import { VC, VerificationStatusEnum } from '@learncard/types';
@@ -13,6 +13,7 @@ enum TroopIdStatusEnum {
     Invalid,
     Expired,
     Revoked,
+    Pending,
 }
 
 type TroopIdStatusButtonProps = {
@@ -24,54 +25,101 @@ type TroopIdStatusButtonProps = {
     otherUserProfileID?: string;
 };
 
-// ! TEMPORARY WAY OF CHECKING IF AN ID IS VALID !!
-// TODO: implement Revocation !!
-export const isTroopIDRevokedFake = (isError: boolean, error: any): boolean => {
-    if (isError && error instanceof Error && error?.message.includes(`Could not find boost`)) {
-        return true;
-    }
+// Status type for credential state
+export type TroopIdCredentialStatus = 'valid' | 'pending' | 'revoked' | undefined;
 
-    return false;
-};
-
-export const useIsTroopIDRevokedFake = (
+/**
+ * Check the status of a troop ID credential.
+ * Returns: 'valid' (claimed), 'pending' (sent but not claimed), 'revoked', or undefined (loading)
+ */
+export const useTroopIDStatus = (
     credential: VC,
-    isError: boolean,
-    error: any,
     otherUserProfileID?: string,
     boostUri?: string
-) => {
+): TroopIdCredentialStatus => {
     const { currentLCNUser } = useGetCurrentLCNUser();
-    const myProfileId = currentLCNUser?.profileId;
+    const profileId = otherUserProfileID ?? currentLCNUser?.profileId;
     const _boostUri = credential?.boostId || boostUri;
 
-    const { data: permissions, isError: isPermissionsError } = useGetBoostPermissions(
-        _boostUri,
-        otherUserProfileID ?? myProfileId
-    );
-    const isRevoked = isTroopIDRevokedFake(isError, error);
+    // Unconditional (rules of hooks) — used for pre-Feb-13 backcompat check below
+    const { data: walletIds } = useGetIDs();
 
-    // # if the boost is not found, the ID has been revoked!
-    if (isRevoked) return true;
+    // Query 1: Get claimed recipients only (default: includeUnacceptedBoosts=false)
+    const { 
+        data: claimedRecipients, 
+        isLoading: isLoadingClaimed, 
+        isError: isClaimedError 
+    } = useGetBoostRecipients(_boostUri, true, false);
 
-    // # if the user has no permissions for this boost, their ID is revoked!
-    if (isPermissionsError || !permissions?.role) return true;
+    // Query 2: Get all recipients including pending (includeUnacceptedBoosts=true)
+    const { 
+        data: allRecipients, 
+        isLoading: isLoadingAll, 
+        isError: isAllError 
+    } = useGetBoostRecipients(_boostUri, true, true);
 
-    // # if the user has permissions for this boost, their ID is valid!
-    if (
-        permissions?.role === 'creator' ||
-        permissions?.role === 'Director' ||
-        permissions?.role === 'Global Admin' ||
-        permissions?.role === 'Leader' ||
-        permissions?.role === 'Scout'
-    ) {
-        return false;
+    // Still loading
+    if (isLoadingClaimed || isLoadingAll) return undefined;
+
+    // Error fetching - could be boost doesn't exist
+    if (isClaimedError || isAllError) return 'revoked';
+
+    // No data yet
+    if (!claimedRecipients || !allRecipients) return undefined;
+
+    // Check if user is in claimed recipients
+    const isInClaimedRecipients = claimedRecipients.some(r => r.to.profileId === profileId);
+    if (isInClaimedRecipients) return 'valid';
+
+    // Check if user is in all recipients (includes pending)
+    const isInAllRecipients = allRecipients.some(r => r.to.profileId === profileId);
+    if (isInAllRecipients) {
+        // Backcompat for pre-Feb-13 credentials: the old acceptance flow added credentials
+        // to the LearnCloud wallet index directly without calling acceptCredential on the
+        // brain-service, so CREDENTIAL_SENT exists but CREDENTIAL_RECEIVED was never created.
+        // If the credential is already in the user's local wallet, treat it as claimed.
+        // This is safe because revoked credentials are excluded from BOTH recipient queries
+        // (status='revoked' filter), so they show as 'revoked' — this check only fires for
+        // 'pending' and cannot accidentally override a real revocation.
+        // Only applies to the current user's own credentials (not admin viewing another user).
+        if (!otherUserProfileID && walletIds) {
+            const credBoostId = credential?.boostId;
+            const isInWallet =
+                credBoostId &&
+                walletIds.some(
+                    (id: any) => id?.boostId === credBoostId || id?.vc?.boostId === credBoostId
+                );
+            if (isInWallet) return 'valid';
+        }
+        return 'pending';
     }
 
-    return true;
+    // Not in any list - revoked
+    return 'revoked';
 };
-// TODO: implement Revocation !!
-// ! TEMPORARY WAY OF CHECKING IF AN ID IS VALID !!
+
+// Legacy compatibility wrapper
+export const useIsTroopIDRevoked = (
+    credential: VC,
+    otherUserProfileID?: string,
+    boostUri?: string
+): boolean | undefined => {
+    const status = useTroopIDStatus(credential, otherUserProfileID, boostUri);
+    if (status === undefined) return undefined;
+    return status === 'revoked';
+};
+
+/** @deprecated Use useTroopIDStatus instead */
+export const useIsTroopIDRevokedFake = (
+    credential: VC,
+    _isError: boolean,
+    _error: any,
+    otherUserProfileID?: string,
+    boostUri?: string
+): boolean => {
+    const result = useIsTroopIDRevoked(credential, otherUserProfileID, boostUri);
+    return result ?? false;
+};
 
 const TroopIdStatusButton: React.FC<TroopIdStatusButtonProps> = ({
     credential,
@@ -85,10 +133,10 @@ const TroopIdStatusButton: React.FC<TroopIdStatusButtonProps> = ({
     const { isLoading, error, isError } = useGetBoost(credential?.boostId);
 
     useEffect(() => {
-        verifyCredential(credential); // this will set worstVerificationStatus
+        verifyCredential(credential);
     }, [checkProof, credential]);
 
-    const isRevoked = useIsTroopIDRevokedFake(credential, isError, error, otherUserProfileID);
+    const credentialStatus = useTroopIDStatus(credential, otherUserProfileID);
 
     let status: TroopIdStatusEnum = TroopIdStatusEnum.Valid;
     if (isCredentialExpired(credential)) {
@@ -98,14 +146,11 @@ const TroopIdStatusButton: React.FC<TroopIdStatusButtonProps> = ({
         worstVerificationStatus !== VerificationStatusEnum.Success
     ) {
         status = TroopIdStatusEnum.Invalid;
-    }
-
-    // TODO: implement Revocation !!
-    else if (isRevoked) {
+    } else if (credentialStatus === 'revoked') {
         status = TroopIdStatusEnum.Revoked;
+    } else if (credentialStatus === 'pending') {
+        status = TroopIdStatusEnum.Pending;
     }
-    // TODO: implement Revocation !!
-    // ! TEMPORARY WAY OF DISPLAYING AN ID IS NO LONGER VALID !!
 
     let text: string;
     let buttonColor: string;
@@ -125,6 +170,10 @@ const TroopIdStatusButton: React.FC<TroopIdStatusButtonProps> = ({
         case TroopIdStatusEnum.Revoked:
             text = 'ID Revoked';
             buttonColor = 'bg-rose-500';
+            break;
+        case TroopIdStatusEnum.Pending:
+            text = 'Pending Acceptance';
+            buttonColor = 'bg-amber-500';
             break;
     }
 

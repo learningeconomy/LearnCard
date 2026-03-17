@@ -1,27 +1,30 @@
 import { useEffect } from 'react';
 import { createStore } from '@udecode/zustood';
 
-import { NewAiSessionStepEnum } from '../components/new-ai-session/newAiSession.helpers';
+import {
+    AiSessionMode,
+    NewAiSessionStepEnum,
+} from '../components/new-ai-session/newAiSession.helpers';
 import {
     ChatBotQA,
     newSessionQAInitState,
     existingSessionQAInitState,
 } from '../components/new-ai-session/NewAiSessionChatBot/newAiSessionChatbot.helpers';
 
-import { 
-    messages, 
-    currentThreadId, 
-    isTyping, 
-    isLoading, 
-    isEndingSession, 
-    showEndingSessionLoader, 
-    activeQuestions, 
-    suggestedTopics, 
-    topicCredentials, 
-    sessionEnded, 
-    planReady, 
+import {
+    messages,
+    currentThreadId,
+    isTyping,
+    isLoading,
+    isEndingSession,
+    showEndingSessionLoader,
+    activeQuestions,
+    suggestedTopics,
+    topicCredentials,
+    sessionEnded,
+    planReady,
     planReadyThread,
-    disconnectWebSocket
+    disconnectWebSocket,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 
 export const chatBotStore = createStore('chatBotStore')<{
@@ -33,6 +36,7 @@ export const chatBotStore = createStore('chatBotStore')<{
     visibleIndexes: number[];
     typingIndex: number | null;
     search: string | null | undefined;
+    mode: AiSessionMode;
 }>(
     {
         activeStep: NewAiSessionStepEnum.topicSelector,
@@ -43,6 +47,7 @@ export const chatBotStore = createStore('chatBotStore')<{
         visibleIndexes: [],
         typingIndex: null,
         search: '',
+        mode: AiSessionMode.tutor,
     },
     { persist: { name: 'chatBotStore', enabled: true } }
 ).extendActions(set => ({
@@ -81,6 +86,9 @@ export const chatBotStore = createStore('chatBotStore')<{
     setSearch: (search: string | null | undefined) => {
         set.search(search);
     },
+    setMode: (mode: AiSessionMode = AiSessionMode.tutor) => {
+        set.mode(mode);
+    },
     resetStore: () => {
         // Reset local store state
         set.activeStep(NewAiSessionStepEnum.topicSelector);
@@ -90,7 +98,8 @@ export const chatBotStore = createStore('chatBotStore')<{
         set.existingChatBotQA(existingSessionQAInitState);
         set.visibleIndexes([]);
         set.typingIndex(null);
-        
+        set.mode(AiSessionMode.tutor);
+
         // Reset chat store state
         messages.set([]);
         currentThreadId.set(null);
@@ -104,7 +113,7 @@ export const chatBotStore = createStore('chatBotStore')<{
         sessionEnded.set(false);
         planReady.set(false);
         planReadyThread.set(null);
-        
+
         // Disconnect WebSocket
         disconnectWebSocket();
     },

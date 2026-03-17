@@ -8,6 +8,12 @@ export const MongoPreferencesValidator = z.object({
     _id: z.string().optional(),
     theme: z.nativeEnum(ThemeEnum),
     did: z.string(),
+    aiEnabled: z.boolean().optional(),
+    aiAutoDisabled: z.boolean().optional(),
+    analyticsEnabled: z.boolean().optional(),
+    analyticsAutoDisabled: z.boolean().optional(),
+    bugReportsEnabled: z.boolean().optional(),
+    isMinor: z.boolean().optional(),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 });

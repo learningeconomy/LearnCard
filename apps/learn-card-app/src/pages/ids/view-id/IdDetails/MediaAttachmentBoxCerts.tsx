@@ -137,7 +137,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
         ...item,
         type: allowedTypes.includes(item.type as any) ? (item.type as Attachment['type']) : 'link',
     }));
-    const combinedAttachments = [...attachments, ...safeEvidenceAttachments];
+    const combinedAttachments = [...(attachments ?? []), ...safeEvidenceAttachments];
 
     const mediaAttachments: Attachment[] = [];
     const documentsAndLinks: Attachment[] = [];

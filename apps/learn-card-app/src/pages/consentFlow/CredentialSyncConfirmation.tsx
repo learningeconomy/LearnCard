@@ -3,6 +3,7 @@ import { useImmer } from 'use-immer';
 import { useHistory } from 'react-router-dom';
 
 import { useModal, useToast, ToastTypeEnum, useCurrentUser, ModalTypes } from 'learn-card-base';
+import { useGuardianGate } from '../../hooks/useGuardianGate';
 
 import Plus from 'learn-card-base/svgs/Plus';
 import Refresh from 'learn-card-base/svgs/Refresh';
@@ -44,6 +45,9 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
 
     const [syncState, setSyncState] = useState(SyncStateEnum.notSynced);
 
+    // Guardian gate for child profiles
+    const { guardedAction } = useGuardianGate();
+
     const [terms, setTerms] = useImmer(
         contractDetails?.contract
             ? getMinimumTermsForContract(contractDetails.contract, currentUser)
@@ -51,21 +55,23 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
     );
 
     const handleSync = async () => {
-        setSyncState(SyncStateEnum.syncing);
-        try {
-            await handleAcceptContract(terms);
-            setSyncState(SyncStateEnum.synced);
-            setTimeout(() => {
-                closeModal();
-                history.push('/wallet');
-            }, 500);
-        } catch (e) {
-            presentToast(`Something went wrong: ${e.message}`, {
-                type: ToastTypeEnum.Error,
-            });
-            console.error(e);
-            setSyncState(SyncStateEnum.error);
-        }
+        await guardedAction(async () => {
+            setSyncState(SyncStateEnum.syncing);
+            try {
+                await handleAcceptContract(terms);
+                setSyncState(SyncStateEnum.synced);
+                setTimeout(() => {
+                    closeModal();
+                    history.push('/wallet');
+                }, 500);
+            } catch (e) {
+                presentToast(`Something went wrong: ${e.message}`, {
+                    type: ToastTypeEnum.Error,
+                });
+                console.error(e);
+                setSyncState(SyncStateEnum.error);
+            }
+        });
     };
 
     const handleEditAccess = () => {

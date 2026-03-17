@@ -25,6 +25,21 @@ export async function issueCredentialWithSigningAuthority(
     encrypt: boolean = true,
     ownerDidOverride?: string
 ): Promise<VC | JWE> {
+    const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
+    const saName = signingAuthorityForUser.relationship.name;
+    const saDid = signingAuthorityForUser.relationship.did;
+    const ownerDid =
+        ownerDidOverride ?? getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
+
+    const logContext = {
+        owner: owner.profileId,
+        ownerDid,
+        saName,
+        saDid,
+        issuerEndpoint,
+        encrypt,
+    };
+
     return trace('signing-authority', 'issueCredentialWithSigningAuthority', async () => {
         try {
 
@@ -32,26 +47,36 @@ export async function issueCredentialWithSigningAuthority(
                 return await _mockIssueCredentialWithSigningAuthority(credential);
             }
 
+            console.log('[SA Helper] Initiating credential issuance', logContext);
+
             const learnCard = await trace('init', 'getDidWebLearnCard', () => getDidWebLearnCard());
+
+            const brainDid = learnCard.id.did();
+            console.log('[SA Helper] Brain DID resolved:', brainDid);
 
             const didJwt = await traceCrypto('getDidAuthVp', () =>
                 learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' })
             );
 
-            const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
+            if (!didJwt) {
+                console.error('[SA Helper] Failed to generate DID Auth VP - got falsy value');
+            }
 
             const subjectId = Array.isArray(credential?.credentialSubject)
                 ? credential?.credentialSubject[0]?.id
                 : credential?.credentialSubject?.id;
 
-            const ownerDid =
-                ownerDidOverride ?? getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
-
             const encryption = encrypt
                 ? {
-                      recipients: [learnCard.id.did(), ...(subjectId ? [subjectId] : [])],
+                      recipients: [brainDid, ...(subjectId ? [subjectId] : [])],
                   }
                 : undefined;
+
+            console.log('[SA Helper] Request details:', {
+                subjectId,
+                encryptionRecipients: encryption?.recipients,
+                credentialType: credential?.type,
+            });
 
             // Create an AbortController instance and get the signal
             const controller = new AbortController();
@@ -71,8 +96,8 @@ export async function issueCredentialWithSigningAuthority(
                         credential,
                         signingAuthority: {
                             ownerDid,
-                            name: signingAuthorityForUser.relationship.name,
-                            did: signingAuthorityForUser.relationship.did,
+                            name: saName,
+                            did: saDid,
                         },
                         encryption,
                     }),
@@ -84,30 +109,58 @@ export async function issueCredentialWithSigningAuthority(
 
             clearTimeout(timeoutId);
 
+            console.log('[SA Helper] LCA-API response status:', response.status, response.statusText);
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                console.error('[SA Helper] LCA-API returned non-OK response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    body: errorBody,
+                    ...logContext,
+                });
+                throw new Error(
+                    `LCA-API returned ${response.status}: ${errorBody}`
+                );
+            }
+
             const res = await trace('internal', 'parseResponse', () => response.json());
 
             if (!res || res?.code === 'INTERNAL_SERVER_ERROR') {
-                throw new Error(res);
+                console.error('[SA Helper] LCA-API returned error in body:', JSON.stringify(res));
+                throw new Error(
+                    `LCA-API error response: ${JSON.stringify(res)}`
+                );
             }
 
             if (encryption) {
                 const validationResult = await JWEValidator.spa(res);
 
-                if (!validationResult.success)
+                if (!validationResult.success) {
+                    console.error('[SA Helper] JWE validation failed:', validationResult.error);
                     throw new Error('Signing Authority returned malformed JWE');
+                }
 
                 return validationResult.data;
             } else {
                 const validationResult = await VCValidator.spa(res);
 
-                if (!validationResult.success)
+                if (!validationResult.success) {
+                    console.error('[SA Helper] VC validation failed:', validationResult.error);
                     throw new Error('Signing Authority returned malformed VC');
+                }
 
                 return validationResult.data;
             }
         } catch (error) {
-            console.error('SA Helpers - Error While Sending:', error);
-            throw new Error('SA Helpers - Error While Sending');
+            const errMsg = error instanceof Error ? error.message : String(error);
+            const errStack = error instanceof Error ? error.stack : undefined;
+            console.error('[SA Helper] issueCredentialWithSigningAuthority failed:', {
+                error: errMsg,
+                stack: errStack,
+                ...logContext,
+            });
+            throw error;
         }
     }, { owner: owner.profileId, saEndpoint: signingAuthorityForUser.signingAuthority.endpoint });
 }

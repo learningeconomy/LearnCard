@@ -9,6 +9,7 @@ import { getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
 import { getLearnCloudPlugin } from '@learncard/learn-cloud-plugin';
 import { expirationPlugin } from '@learncard/expiration-plugin';
 import { getEthereumPlugin } from '@learncard/ethereum-plugin';
+
 import { getVpqrPlugin } from '@learncard/vpqr-plugin';
 import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';

@@ -12,8 +12,13 @@ import {
     CredentialCategoryEnum,
     newCredsStore,
     lazyWithRetry,
+    useAiFeatureGate,
+    useToast,
+    ToastTypeEnum,
+    useDeviceTypeByWidth,
 } from 'learn-card-base';
 
+import ResumeBuilderController from '../../components/resume-builder/ResumeBuilderController';
 import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/ThemeSelector';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import WalletActionButton from '../../components/main-subheader/WalletActionButton';
@@ -44,6 +49,7 @@ const WalletPage: React.FC = () => {
     const location = useLocation();
 
     const { theme } = useTheme();
+    const { isMobile } = useDeviceTypeByWidth();
     const categories = theme.categories;
 
     const [shareCredsIsOpen, setShareCredsIsOpen] = useState(false);
@@ -59,6 +65,11 @@ const WalletPage: React.FC = () => {
     const hideAiWalletRoutes = flags?.hideAiWalletRoutes;
     const showAiInsights = flags?.showAiInsights;
     const hideAiPathways = flags?.hideAiPathways;
+    const showChecklistButton = Boolean(flags?.enableOnboardingChecklist);
+    const showResumeBuilderButton = Boolean(flags?.enableResumeBuilder);
+    const showInlineWalletActions = showChecklistButton && showResumeBuilderButton;
+    const { isAiEnabled, reason } = useAiFeatureGate();
+    const { presentToast } = useToast();
     const placeholderCategories = [
         CredentialCategoryEnum.aiPathway,
         CredentialCategoryEnum.aiInsight,
@@ -97,7 +108,7 @@ const WalletPage: React.FC = () => {
 
     const categoryToPath: Partial<Record<CredentialCategoryEnum, string>> = {
         [CredentialCategoryEnum.aiTopic]: '/ai/topics',
-        // [CredentialCategoryEnum.aiPathway]: '/ai/pathways', // placeholder
+        [CredentialCategoryEnum.aiPathway]: '/ai/pathways', // placeholder
         [CredentialCategoryEnum.aiInsight]: '/ai/insights', // placeholder
         [CredentialCategoryEnum.skill]: '/skills',
         [CredentialCategoryEnum.socialBadge]: '/socialBadges',
@@ -111,15 +122,36 @@ const WalletPage: React.FC = () => {
         [CredentialCategoryEnum.membership]: '/memberships',
     };
 
+    const AI_CATEGORIES = [
+        CredentialCategoryEnum.aiTopic,
+        CredentialCategoryEnum.aiPathway,
+        CredentialCategoryEnum.aiInsight,
+    ];
+
     const handleClickSquare = (categoryType: CredentialCategoryEnum) => {
         const path = categoryToPath[categoryType];
-        if (path) history.push(path);
+        if (!path) return;
+
+        if (AI_CATEGORIES.includes(categoryType) && !isAiEnabled) {
+            const msg =
+                reason === 'disabled_minor'
+                    ? 'AI features are not available for users under 18.'
+                    : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
+            presentToast(msg, { type: ToastTypeEnum.Error });
+            return;
+        }
+
+        history.push(path);
     };
 
     const renderWalletList = categories?.map(category => {
         const { categoryId: categoryType } = category;
 
         if (categoryType === CredentialCategoryEnum.family && !canCreateFamilies) {
+            return <React.Fragment key={categoryType}></React.Fragment>;
+        }
+
+        if (categoryType === CredentialCategoryEnum.resume) {
             return <React.Fragment key={categoryType}></React.Fragment>;
         }
 
@@ -185,7 +217,33 @@ const WalletPage: React.FC = () => {
                                     </div>
                                 </div>
                             </IonRow>
-                            <CheckListButton className="mb-[20px] mt-[10px]" />
+                            {isMobile ? (
+                                <>
+                                    <CheckListButton className="mb-[10px] mt-[10px]" />
+                                    <ResumeBuilderController className="mb-[10px]" />
+                                </>
+                            ) : (
+                                <div
+                                    className={`w-full flex gap-[10px] pb-[10px] ${
+                                        showInlineWalletActions ? 'flex-row' : 'flex-col'
+                                    }`}
+                                >
+                                    {showChecklistButton && (
+                                        <div className={showInlineWalletActions ? 'flex-1' : ''}>
+                                            <CheckListButton
+                                                mode={
+                                                    showInlineWalletActions ? 'inline' : 'default'
+                                                }
+                                            />
+                                        </div>
+                                    )}
+                                    {showResumeBuilderButton && (
+                                        <div className={showInlineWalletActions ? 'flex-1' : ''}>
+                                            <ResumeBuilderController mode="inline" />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <IonRow className="wallet-squares-wrapper max-w-[600px] mx-auto">
                                 <IonCol
                                     className={`wallet-squares-container ${

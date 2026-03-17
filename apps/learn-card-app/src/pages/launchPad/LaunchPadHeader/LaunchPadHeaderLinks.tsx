@@ -4,7 +4,14 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import LaunchPadAiSessionComingSoon from './LaunchPadAiSessionsComingSoon';
 
-import { ModalTypes, useGetUnreadUserNotifications, useModal } from 'learn-card-base';
+import {
+    ModalTypes,
+    useGetUnreadUserNotifications,
+    useModal,
+    useAiFeatureGate,
+    useToast,
+    ToastTypeEnum,
+} from 'learn-card-base';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
@@ -23,6 +30,8 @@ const LaunchPadHeaderLinks: React.FC = () => {
 
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
     const flags = useFlags();
+    const { isAiEnabled, reason } = useAiFeatureGate();
+    const { presentToast } = useToast();
 
     const { data: unreadNotifications } = useGetUnreadUserNotifications();
 
@@ -45,7 +54,7 @@ const LaunchPadHeaderLinks: React.FC = () => {
                     </p>
                 </Link>
 
-                {enableLaunchPadUpdates ? (
+                {enableLaunchPadUpdates && isAiEnabled ? (
                     <Link
                         to="/ai/topics"
                         className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1 xxs:p-1 max-h-[133px] min-h-[133px]"
@@ -57,6 +66,24 @@ const LaunchPadHeaderLinks: React.FC = () => {
                             AI Sessions
                         </p>
                     </Link>
+                ) : enableLaunchPadUpdates && !isAiEnabled ? (
+                    <button
+                        onClick={() => {
+                            const msg =
+                                reason === 'disabled_minor'
+                                    ? 'AI features are not available for users under 18.'
+                                    : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
+                            presentToast(msg, { type: ToastTypeEnum.Error });
+                        }}
+                        className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1 xxs:p-1 max-h-[133px] min-h-[133px] opacity-50"
+                    >
+                        <AiSessionsIcon className={styles?.iconStyles} />
+                        <p
+                            className={`text-${aiSessions.color} ${styles?.textStyles} font-poppins font-semibold phone:text-[14px] text-center`}
+                        >
+                            AI Sessions
+                        </p>
+                    </button>
                 ) : (
                     <button
                         onClick={() => {

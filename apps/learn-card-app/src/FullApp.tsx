@@ -1,16 +1,14 @@
-import React, { useRef, Suspense } from 'react';
+import React, { Suspense } from 'react';
 import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import useFeedbackWidget from './hooks/useFeedbackWidget';
 import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 import AppRouter from './AppRouter';
 import {
-    useInitLoading,
     sqliteInit,
     PushNotificationListener,
     QRCodeScannerOverlay,
@@ -27,8 +25,11 @@ import NetworkListener from './components/network-listener/NetworkListener';
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
 
+import { AnalyticsContextProvider } from '@analytics';
 import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator';
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
+import AuthKeyDebugWidget from './components/debug/AuthKeyDebugWidget';
+import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import localforage from 'localforage';
 
 const history = createBrowserHistory();
@@ -144,50 +145,42 @@ const persister = createAsyncStoragePersister({
 const FullApp: React.FC = () => {
     useSQLiteInitWeb(); // initializes SQLite on web
     sqliteInit(); // initializes SQLite on native
-    const initLoading = useInitLoading();
     const showScannerOverlay = QRCodeScannerStore?.use?.showScanner();
-    const buttonRef = useRef(null);
-    const isSentryEnabled = SENTRY_ENV && SENTRY_ENV !== 'development';
-
-    useFeedbackWidget({ buttonRef });
 
     return (
         <PersistQueryClientProvider
             client={client}
             persistOptions={{ persister, maxAge: CACHE_TTL }}
         >
-            <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
-            {/* <ReactQueryDevtools /> */}
-            <IonReactRouter history={history}>
-                <Suspense fallback={<LoadingPageDumb />}>
-                    <ExternalAuthServiceProvider>
-                        <ModalsProvider>
-                            <IonApp>
-                                <div id="modal-mid-root"></div>
-                                <Toast />
-                                <SdkActivityIndicator />
-                                <NetworkListener />
-                                <AppUrlListener />
-                                <PushNotificationListener />
-                                <PresentVcModalListener />
-                                {/* <UserProfileSetupListener loading={initLoading} /> */}
-                                <AppRouter initLoading={initLoading} />
-                                <QRCodeScannerListener />
+            <AnalyticsContextProvider>
+                <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
+                {/* <ReactQueryDevtools /> */}
+                <IonReactRouter history={history}>
+                    <Suspense fallback={<LoadingPageDumb />}>
+                        <AuthCoordinatorProvider>
+                            <ExternalAuthServiceProvider>
+                                <ModalsProvider>
+                                    <IonApp>
+                                        <div id="modal-mid-root"></div>
+                                        <Toast />
+                                        <SdkActivityIndicator />
+                                        <NetworkListener />
+                                        <AppUrlListener />
+                                        <PushNotificationListener />
+                                        <PresentVcModalListener />
+                                        <AppRouter />
+                                        <QRCodeScannerListener />
 
-                                {showScannerOverlay && <QRCodeScannerOverlay />}
-                                {isSentryEnabled && (
-                                    <button
-                                        className="sentry-feedback-widget-btn z-[99999999999999]"
-                                        ref={buttonRef}
-                                    >
-                                        <p>Feedback</p>
-                                    </button>
-                                )}
-                            </IonApp>
-                        </ModalsProvider>
-                    </ExternalAuthServiceProvider>
-                </Suspense>
-            </IonReactRouter>
+                                        {showScannerOverlay && <QRCodeScannerOverlay />}
+
+                                        <AuthKeyDebugWidget />
+                                    </IonApp>
+                                </ModalsProvider>
+                            </ExternalAuthServiceProvider>
+                        </AuthCoordinatorProvider>
+                    </Suspense>
+                </IonReactRouter>
+            </AnalyticsContextProvider>
         </PersistQueryClientProvider>
     );
 };

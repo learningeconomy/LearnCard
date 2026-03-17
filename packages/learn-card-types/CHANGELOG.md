@@ -1,5 +1,35 @@
 # learn-card-types
 
+## 5.12.3
+
+### Patch Changes
+
+-   [#1044](https://github.com/learningeconomy/LearnCard/pull/1044) [`bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee`](https://github.com/learningeconomy/LearnCard/commit/bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee) Thanks [@smurflo2](https://github.com/smurflo2)! - Add age rating and minimum age (both optional) to apps
+
+## 5.12.2
+
+### Patch Changes
+
+-   [#1031](https://github.com/learningeconomy/LearnCard/pull/1031) [`495f2939cb6e4271cab0a88abea5105fb7e4f9b6`](https://github.com/learningeconomy/LearnCard/commit/495f2939cb6e4271cab0a88abea5105fb7e4f9b6) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-982][LC-1625] - extend default boost permissions, add "canView"
+
+-   [#1033](https://github.com/learningeconomy/LearnCard/pull/1033) [`08a1c8a07501c2f426d16239c4b0551e518a7ed5`](https://github.com/learningeconomy/LearnCard/commit/08a1c8a07501c2f426d16239c4b0551e518a7ed5) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1601] Add AppEvent source
+
+## 5.12.1
+
+### Patch Changes
+
+-   [#1006](https://github.com/learningeconomy/LearnCard/pull/1006) [`caf231b53707174ea49f0eb2b65885a36b3e7228`](https://github.com/learningeconomy/LearnCard/commit/caf231b53707174ea49f0eb2b65885a36b3e7228) Thanks [@smurflo2](https://github.com/smurflo2)! - Add Self-Assigned Skills including optional proficiency level field on Boost -> Skill relationship
+
+## 5.12.0
+
+### Minor Changes
+
+-   [#991](https://github.com/learningeconomy/LearnCard/pull/991) [`32e5cfacf499e9a68700170298040f3d313b38da`](https://github.com/learningeconomy/LearnCard/commit/32e5cfacf499e9a68700170298040f3d313b38da) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add semantic skill search backed by embeddings.
+
+    The brain service now generates and stores vector embeddings for skills and exposes semantic search over skills using Neo4j vector queries. Embeddings are generated via Google Gemini embeddings (`gemini-embedding-001`) with configurable batching for efficient backfills, and backfill execution can be safely toggled via environment variables.
+
+    This also adds the typed semantic search route and plugin method so SDK consumers can call semantic skill search directly through the network plugin.
+
 ## 5.11.4
 
 ### Patch Changes

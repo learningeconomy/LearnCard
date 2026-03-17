@@ -32,6 +32,25 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
     const { IconWithShape, Icon } = icons;
     const { primaryColor, indicatorColor, borderColor } = colors;
 
+    let countDisplay: React.ReactNode | null = (
+        <p className="font-poppins text-[14px] text-grayscale-900">
+            {loading ? (
+                <div className="flex items-center gap-[5px]">
+                    <IonSpinner name="crescent" className="h-[14px] w-[14px]" /> Items
+                </div>
+            ) : (
+                conditionalPluralize(count, 'Item')
+            )}
+        </p>
+    );
+
+    if (
+        categoryType === CredentialCategoryEnum.aiInsight ||
+        categoryType === CredentialCategoryEnum.aiPathway
+    ) {
+        countDisplay = null;
+    }
+
     return (
         <div
             role="button"
@@ -46,19 +65,11 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
                 )}
             </div>
 
-            <div className="flex flex-col">
+            <div className="flex flex-col items-start justify-center">
                 <p className="font-poppins text-[17px] font-[600] leading-[130%] text-grayscale-900">
                     {walletPageItem.labels.plural}
                 </p>
-                <p className="font-poppins text-[14px] text-grayscale-900">
-                    {loading ? (
-                        <div className="flex items-center gap-[5px]">
-                            <IonSpinner name="crescent" className="h-[14px] w-[14px]" /> Items
-                        </div>
-                    ) : (
-                        conditionalPluralize(count, 'Item')
-                    )}
-                </p>
+                {countDisplay}
             </div>
 
             <div className="ml-auto flex items-center gap-[5px]">

@@ -7,6 +7,7 @@ This tutorial will walk you through the essential steps to send an xAPI statemen
 -   Construct a basic xAPI statement.
 -   Send the statement to the LearnCloud xAPI endpoint.
 -   Retrieve and verify the statement you sent.
+-   View xAPI statements in the LearnCard app's Activity Feed.
 
 {% embed url="https://codepen.io/Jacks-n-Smith/pen/xbbBmBV" fullWidth="false" %}
 
@@ -277,6 +278,61 @@ The response from a `GET` request to the `/statements` endpoint will be a JSON o
 
 ---
 
+## Part 3: Viewing xAPI Statements in the LearnCard App
+
+Once xAPI statements have been sent, users can view their activity data directly in the LearnCard app. This provides a user-friendly way to see all learning activities associated with a specific app or contract.
+
+{% stepper %}
+{% step %}
+
+### **Navigate to Data Sharing**
+
+From the LearnCard app:
+
+1. Tap on your **profile picture** in the top corner
+2. Select **"Manage Data Sharing"** to see all your consented apps and contracts
+
+{% endstep %}
+
+{% step %}
+
+### **Select a Contract**
+
+In the Data Sharing view, you'll see a list of apps you've consented to share data with. Tap on any contract to view its details.
+
+{% endstep %}
+
+{% step %}
+
+### **Open the Activity Feed**
+
+In the contract detail view, look for the **"xAPI Data Feed"** button. Tap it to open the Activity Feed modal.
+
+{% endstep %}
+
+{% step %}
+
+### **View Your Activity Data**
+
+The Activity Feed displays all xAPI statements associated with that specific contract, including:
+
+-   **Verb badges** (e.g., "completed", "attempted", "mastered") with color-coded styling
+-   **Activity name and description**
+-   **Timestamps** showing when each activity occurred
+-   **Result data** (scores, completion status, success/failure)
+-   **Raw JSON view** for developers who want to inspect the full statement
+
+The feed supports infinite scrolling, so you can browse through all your historical activity data.
+
+{% endstep %}
+{% endstepper %}
+
+{% hint style="info" %}
+**For Developers:** The Activity Feed filters statements by the `contractUri` extension in `context.extensions`. When you send xAPI statements with a contract URI (as shown in [Contract-Scoped xAPI Statements](../sdks/learncloud-storage-api/xapi-reference.md#contract-scoped-xapi-statements)), they will automatically appear in this feed for the associated contract.
+{% endhint %}
+
+---
+
 ## Important Considerations (Recap)
 
 -   **Authentication (`X-VP` Header):** All requests to the LearnCloud xAPI endpoint must include a valid JWT in the `X-VP` header.
@@ -292,13 +348,14 @@ The response from a `GET` request to the `/statements` endpoint will be a JSON o
 
 ## Next Steps
 
-Congratulations! You've now seen how to send and read basic xAPI statements with LearnCloud.
+Congratulations! You've now seen how to send, read, and view xAPI statements with LearnCloud.
 
 From here, you can explore:
 
 -   Sending different types of xAPI statements (e.g., `completed`, `mastered`, with `result` objects).
 -   Using the other examples provided in our [xAPI Concepts Guide](../core-concepts/credentials-and-data/xapi-data.md).
 -   Implementing more advanced queries to filter and retrieve statements. (See [Advanced xAPI Statement Queries](../sdks/learncloud-storage-api/xapi-reference.md#advanced-xapi-statement-queries)).
+-   Using [Contract-Scoped xAPI Statements](../sdks/learncloud-storage-api/xapi-reference.md#contract-scoped-xapi-statements) to associate activity data with specific apps.
 -   Connecting these xAPI statements as evidence for Verifiable Credentials.
 
 Happy tracking!

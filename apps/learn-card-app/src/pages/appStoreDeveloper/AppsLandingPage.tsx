@@ -1,6 +1,6 @@
 /**
  * AppsLandingPage - Landing page for Apps tab when no integration is selected
- * 
+ *
  * Shows list of integrations with their app counts, allowing user to select one
  * to manage its apps.
  */
@@ -22,17 +22,15 @@ import {
 import { AppStoreHeader } from './components/AppStoreHeader';
 import { useDeveloperPortalContext } from './DeveloperPortalContext';
 import { useDeveloperPortal } from './useDeveloperPortal';
+import { useDeviceTypeByWidth } from 'learn-card-base';
 
 const AppsLandingPage: React.FC = () => {
     const history = useHistory();
     const [newProjectName, setNewProjectName] = useState('');
+    const { isMobile } = useDeviceTypeByWidth();
 
-    const {
-        integrations,
-        isLoadingIntegrations,
-        createIntegration,
-        isCreatingIntegration,
-    } = useDeveloperPortalContext();
+    const { integrations, isLoadingIntegrations, createIntegration, isCreatingIntegration } =
+        useDeveloperPortalContext();
 
     const { useListingsForIntegration } = useDeveloperPortal();
 
@@ -111,7 +109,8 @@ const AppsLandingPage: React.FC = () => {
                             </h2>
 
                             <p className="text-gray-500 max-w-md mx-auto">
-                                Share your app with thousands of users. Create a project to get started.
+                                Share your app with thousands of users. Create a project to get
+                                started.
                             </p>
                         </div>
 
@@ -120,7 +119,7 @@ const AppsLandingPage: React.FC = () => {
                                 Name your first project
                             </label>
 
-                            <div className="flex gap-2">
+                            <div className={`${isMobile ? 'flex-col' : ''} flex gap-2`}>
                                 <input
                                     type="text"
                                     value={newProjectName}
@@ -165,12 +164,8 @@ const AppsLandingPage: React.FC = () => {
             <IonContent className="ion-padding">
                 <div className="max-w-3xl mx-auto py-6">
                     <div className="text-center mb-8">
-                        <h1 className="text-2xl font-semibold text-gray-800 mb-2">
-                            Your Projects
-                        </h1>
-                        <p className="text-gray-500">
-                            Select a project to manage its app listings
-                        </p>
+                        <h1 className="text-2xl font-semibold text-gray-800 mb-2">Your Projects</h1>
+                        <p className="text-gray-500">Select a project to manage its app listings</p>
                     </div>
 
                     <div className="space-y-3">
@@ -183,11 +178,13 @@ const AppsLandingPage: React.FC = () => {
                                     onClick={() => handleSelectIntegration(integration.id)}
                                     className="w-full p-4 bg-white border border-gray-200 rounded-xl hover:border-cyan-300 hover:bg-cyan-50/50 transition-all flex items-center gap-4 text-left group"
                                 >
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                                        isActive
-                                            ? 'bg-emerald-100 text-emerald-600'
-                                            : 'bg-amber-100 text-amber-600'
-                                    }`}>
+                                    <div
+                                        className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                                            isActive
+                                                ? 'bg-emerald-100 text-emerald-600'
+                                                : 'bg-amber-100 text-amber-600'
+                                        }`}
+                                    >
                                         {isActive ? (
                                             <LayoutDashboard className="w-6 h-6" />
                                         ) : (
@@ -200,7 +197,8 @@ const AppsLandingPage: React.FC = () => {
                                             {integration.name}
                                         </h3>
                                         <p className="text-sm text-gray-500">
-                                            {isActive ? 'Live' : 'In Setup'} • {integration.guideType || 'No guide selected'}
+                                            {isActive ? 'Live' : 'In Setup'} •{' '}
+                                            {integration.guideType || 'No guide selected'}
                                         </p>
                                     </div>
 

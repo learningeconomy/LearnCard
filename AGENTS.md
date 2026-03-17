@@ -1,406 +1,242 @@
-# LearnCard SDK Guide
-
-## Build & Test Commands
-
--   Build project: `pnpm build` or `pnpm exec nx build <package-name>`
--   Test all packages: `pnpm test` or `pnpm exec nx test`
--   (Vitest packages) Run tests once (non-watch): `pnpm test -- run` (equivalent to `vitest run`)
--   Run single test: `pnpm exec nx test <package-name> --testFile=path/to/test.spec.ts`
--   Run e2e tests: `pnpm exec nx test:e2e e2e`
-
-## Code Style Guidelines
-
--   **TypeScript**: Use strict typing with interfaces in dedicated type files
--   **Imports**: Prefer named imports; avoid default exports when possible
--   **Formatting**: Follow Prettier config; 4-space indentation for JSX
--   **Naming**:
-    -   PascalCase for classes, interfaces, types, React components
-    -   camelCase for variables, functions, methods, properties
-    -   ALL_CAPS for constants
--   **Error handling**: Use try/catch with specific error types
--   **Functions**: Prefer arrow functions with explicit return types
--   **React**: Function components with hooks preferred over class components
--   **Modules**: Keep files focused on single responsibility
--   **Documentation**: Add JSDoc comments for public APIs and complex logic
-
-## Monorepo Structure
-
-The project uses pnpm workspaces and NX for monorepo management with packages organized in `packages/` directory, services in the `services/` directory, and end-to-end tests in the `tests/` directory
-
-## Documentation (`docs/`)
-
-The `docs/` folder contains **GitBook documentation** that is synced to [docs.learncard.com](https://docs.learncard.com). These docs follow the **Diátaxis framework**, which organizes documentation into four distinct types:
-
-### Diátaxis Structure
-
-| Type              | Purpose                                       | Location              |
-| ----------------- | --------------------------------------------- | --------------------- |
-| **Tutorials**     | Learning-oriented, hands-on lessons           | `docs/tutorials/`     |
-| **How-To Guides** | Task-oriented, step-by-step recipes           | `docs/how-to-guides/` |
-| **Reference**     | Information-oriented, technical descriptions  | `docs/sdks/`          |
-| **Explanation**   | Understanding-oriented, conceptual discussion | `docs/core-concepts/` |
-
-### Key Files
-
--   `docs/README.md` — Landing page (What is LearnCard?)
--   `docs/SUMMARY.md` — Table of contents / sidebar navigation (GitBook uses this)
--   `docs/quick-start/` — Getting started guides
--   `docs/apps/` — User-facing app documentation (LearnCard App, ScoutPass)
-
-### App Documentation (`docs/apps/`)
-
-For changes to user-facing applications in `apps/`:
-
-| App           | Doc Location                | Focus                                               |
-| ------------- | --------------------------- | --------------------------------------------------- |
-| LearnCard App | `docs/apps/learn-card-app/` | Claiming, sharing, wallet flows                     |
-| ScoutPass     | `docs/apps/scouts/`         | NSO→Troop→Scout hierarchy, BoostIDs, badge issuance |
-
-Use **Mermaid diagrams** for user flows (e.g., claim flow, share flow, permission flow).
-
-### Editing Guidelines
-
--   **GitBook syntax**: Docs use GitBook-flavored markdown with special directives like `{% tabs %}`, `{% hint %}`, `{% content-ref %}`
--   **Code snippets**: Must be accurate and runnable. Use `@learncard/init` for initialization (not `@learncard/core`)
--   **Links**: Internal links use relative paths. GitBook handles `/broken/pages/` placeholders automatically
--   **Context URLs**: Use current versions (e.g., `https://ctx.learncard.com/boosts/1.0.3.json`)
--   **API patterns**: Use `learnCard.invoke.*` for methods, `learnCard.id.did()` for DID access
--   **Simplicity**: Avoid jargon. Spell out acronyms on first use. Keep examples minimal
-
-### Testing Doc Changes
-
-Docs are not programmatically tested. When editing:
-
-1. Verify code snippets match the actual SDK API
-2. Check that imports reference the correct packages
-3. Ensure `await` is used with async operations like `addPlugin()`
+# LearnCard Cross-Cutting Architecture
 
 ## LearnCard Plugin System
 
-LearnCard uses a modular plugin system to extend functionality in a composable way. Understanding this architecture is critical for development.
+LearnCard uses a modular plugin system. Each plugin provides functionality through:
+- **Control Planes**: Standardized interfaces (`read`, `store`, `index`, `cache`, `id`, `context`)
+- **Methods**: Custom functions exposed via `learnCard.invoke.*`
 
-### Core Concepts
+### Control Planes
 
-#### Plugins
+| Plane | Purpose | Example |
+|-------|---------|---------|
+| Read | Retrieve credentials/data | `learnCard.read.get(uri)` |
+| Store | Store/upload credentials | `learnCard.store.LearnCloud.uploadEncrypted(vc)` |
+| Index | Query indexed data | `learnCard.index.LearnCloud.get({ category })` |
+| Cache | Temporary storage | `learnCard.cache.getItem(key)` |
+| Id | Identity (DIDs, keypairs) | `learnCard.id.did()` |
+| Context | Resolve context documents | `learnCard.context.resolve(url)` |
 
--   Each plugin is a self-contained module that adds specific capabilities
--   Plugins follow a standard interface: `Plugin<Name, ControlPlanes, Methods, DependentControlPlanes, DependentMethods>`
--   Each plugin can provide functionality through:
-    -   **Control Planes**: Standard interfaces like `read`, `store`, `index`, `cache`, `id`, and `context`
-    -   **Methods**: Custom functions exposed through the `invoke` API
+### Plugin Interface
 
-#### Control Planes
+```typescript
+Plugin<Name, ControlPlanes, Methods, DependentControlPlanes, DependentMethods>
+```
 
-Control planes are standardized interfaces that plugins implement to provide core functionality:
+Plugins depend on other plugins via `DependentControlPlanes` and `DependentMethods`. Order matters during initialization.
 
--   **Read Plane**: For retrieving credentials and data
--   **Store Plane**: For storing and uploading credentials
--   **Index Plane**: For querying and managing indexed data
--   **Cache Plane**: For temporary data storage and retrieval
--   **Id Plane**: For identity management (DID methods, keypairs)
--   **Context Plane**: For resolving context documents
+### Standard Plugin Stack (seed-based init)
 
-#### LearnCard Object
+DynamicLoader → Crypto → DidKit → DidKey → Encryption → VC → VCTemplates → Ceramic → LearnCloud → IDX → Expiration → Ethereum → Vpqr → CHAPI → LearnCard
 
-The main LearnCard object combines all plugins and exposes:
-
--   Access to control planes (e.g., `learnCard.read.get()`, `learnCard.store.upload()`)
--   Access to all plugin methods through the `invoke` property (e.g., `learnCard.invoke.createProfile()`)
--   The ability to add more plugins using `addPlugin()`
-
-### Plugin Dependencies
-
--   Plugins can depend on other plugins through their `DependentControlPlanes` and `DependentMethods`
--   When initializing LearnCard, plugins must be added in the correct order to respect dependencies
-
-### Initialization Process
-
-The `@learncard/init` package provides several initialization methods:
-
-#### Main Initialization Functions
-
--   `initLearnCard()`: The primary entry point with multiple overloads
--   Different configurations determine which plugins are included:
-    -   Empty initialization
-    -   Seed-based initialization
-    -   Network-enabled initialization
-    -   DID Web initialization
-
-#### Standard Plugin Stack
-
-When initializing with `seed` parameter, the following plugins are typically added (in order):
-
-1. `DynamicLoaderPlugin`: Enables dynamic loading of dependencies
-2. `CryptoPlugin`: Core cryptographic operations
-3. `DidKitPlugin`: DID operations using DIDKit
-4. `DidKeyPlugin`: Key management for DIDs
-5. `EncryptionPlugin`: Data encryption and decryption
-6. `VCPlugin`: Verifiable Credential operations
-7. `VCTemplatesPlugin`: Template handling for VCs
-8. `CeramicPlugin`: Integration with Ceramic Network
-9. `LearnCloudPlugin`: LearnCard Cloud storage
-10. `IDXPlugin`: Identity indexing
-11. `ExpirationPlugin`: Credential expiration handling
-12. `EthereumPlugin`: Ethereum blockchain integration
-13. `VpqrPlugin`: QR code handling for presentations
-14. `CHAPIPlugin`: Credential Handler API integration
-15. `LearnCardPlugin`: Core LearnCard functionality
-
-#### Network-Enabled Initialization
-
-When initializing with `network` parameter, these additional plugins are added:
-
-1. `VerifyBoostPlugin`: Verification of boost credentials
-2. `LearnCardNetworkPlugin`: Integration with LearnCard Network
-
-### Using the Plugin System
-
-When developing new features or extending functionality:
-
-1. Identify which control planes and methods your code needs
-2. Ensure the appropriate plugins are available in your LearnCard instance
-3. Access functionality through the appropriate plane or `invoke` method
-
-## ConsentFlow Architecture
-
-ConsentFlow is a consent management system that allows users to create and manage consent for data sharing:
-
-### Key Components
-
--   **Profiles**: Create and consent to contracts
--   **Contracts**: Define data access requirements (read/write permissions)
--   **Terms**: Record a profile's consent to a contract
--   **Transactions**: Record actions against Terms (consent, withdraw, update, sync)
--   **Credentials**: Can be issued through contracts with auto-boosts or synced by consenters
-
-### Transaction Types
-
--   **Consent**: Initial consent to a contract
--   **Update**: Modification of existing terms
--   **Withdraw**: Revocation of consent
--   **Sync**: Adding existing credentials to a contract in specific categories
--   **Write**: Recording credentials issued by contract owner
-
-### Data Flow Between Packages
-
-1. **LearnCard Network Plugin** (`packages/plugins/learn-card-network/`) provides the API for interacting with consent flow
-2. **Brain Service** (`services/learn-card-network/brain-service/`) implements the backend logic
-3. **End-to-end tests** are written in `tests/e2e/` to test the full flow
-
-The workflow typically involves:
-
-1. Creating a contract with specific data requirements
-2. Users consenting to the contract with their own terms
-3. Recording transactions for consent actions (consent, update, withdraw, sync)
-4. Optionally issuing credentials via auto-boosts when a user consents
-5. Users syncing existing credentials to the contract in specified categories
-
-## Service-Level Boost Sending via Signing Authority
-
-### Context
-
-Some LearnCard workflows, such as sending a boost (credential) to another profile, require issuing a credential on behalf of the user. In SDK/plugin contexts, this is straightforward because the user's key material is available. However, when using HTTP service routes, the server does not have access to user key material for security reasons.
-
-### Solution: Signing Authorities
-
-To enable credential issuance via HTTP routes, the system supports **Signing Authorities**:
-
--   A Signing Authority is a registered external service that can sign credentials on behalf of a user/profile.
--   Users can create and register signing authorities, specifying an endpoint and a name.
--   When sending a boost via the service, the route can use the registered signing authority to issue (sign) the credential, then deliver it to the target profile.
-
-### Example: `/boost/send/via-signing-authority` Route
-
--   **Input:** `{ profileId, boostUri, signingAuthority: { name, endpoint } }`
--   **Flow:**
-    1. Fetch the boost by URI.
-    2. Fetch the recipient profile.
-    3. Prepare an unsigned VC for the recipient.
-    4. Use the specified signing authority to sign the VC.
-    5. Deliver the signed VC to the recipient via the network.
--   **Testing:** E2E tests can use fetch to POST directly to the route, after creating and registering a signing authority for the sender.
-
-### Best Practices for AI Assistants
-
--   When designing service routes that require credential issuance, always check if key material is available. If not, require a signing authority.
--   Document the expected flow and security implications (e.g., never handle user keys server-side unless explicitly intended).
--   For E2E tests, prefer direct HTTP calls over plugin methods for service-only routes, and show how to set up signing authorities in test code.
-
-## Network type flow and adding routes
-
-This guide traces how types defined in `@learncard/types` move through the network services into the final `LearnCard` used in end-to-end tests. It also shows how to expose a new route on the `LearnCard` object.
-
-### Type definitions
-
-Network request and response shapes live in `@learncard/types`. For example, profile data is described with Zod validators that are exported for reuse across the stack【F:packages/learn-card-types/src/lcn.ts†L1-L78】.
-
-### Brain service
-
-The Brain service composes these validators into a tRPC `AppRouter` that defines all server routes【F:services/learn-card-network/brain-service/src/app.ts†L1-L56】. Individual routes import the shared validators to enforce input and output types. A profile creation example is shown below【F:services/learn-card-network/brain-service/src/routes/profiles.ts†L84-L126】.
-
-### Brain client
-
-`@learncard/network-brain-client` imports the `AppRouter` type and uses it to create a fully typed tRPC client. The client handles challenge/response authentication and exposes strongly typed methods for every route【F:packages/learn-card-network/brain-client/src/index.ts†L1-L60】.
-
-### Network plugin
-
-The LearnCard Network plugin creates a Brain client and exposes it through plugin methods. When added to a wallet, these methods become available via `learnCard.invoke.*`. The plugin also exports the raw client for advanced use【F:packages/plugins/learn-card-network/src/plugin.ts†L1-L52】【F:packages/plugins/learn-card-network/src/plugin.ts†L1068-L1075】.
+Network-enabled init adds: VerifyBoost → LearnCardNetwork
 
 ### Initialization
 
-`@learncard/init` assembles a standard plugin stack and finally adds the Network plugin so that network routes are available on any initialized wallet【F:packages/learn-card-init/src/initializers/networkLearnCardFromSeed.ts†L1-L83】.
+```typescript
+import { initLearnCard } from '@learncard/init';
 
-### End-to-end tests
+// Seed-based
+const lc = await initLearnCard({ seed: '...' });
 
-End-to-end tests create a network-enabled wallet with `initLearnCard` and call plugin methods such as `createProfile` to exercise the entire stack【F:tests/e2e/tests/init.spec.ts†L1-L25】.
+// Network-enabled
+const lc = await initLearnCard({ seed: '...', network: true });
+```
 
-### Plugin system
+## Adding a New Network Route
 
-Plugins are merged into the LearnCard via `addPlugin`, which rebuilds the wallet with the new plugin list【F:packages/learn-card-core/src/wallet/base/wallet.ts†L50-L60】. Plugin methods are bound onto the `invoke` helper so they are accessible from the final `learnCard` instance【F:packages/learn-card-core/src/wallet/base/wallet.ts†L780-L807】.
+Types flow: `@learncard/types` → brain-service tRPC router → brain-client → network plugin → `learnCard.invoke.*`
 
-### Adding a new network route
+1. **Define types** in `packages/learn-card-types/src/lcn.ts` (Zod validators)
+2. **Implement route** in `services/learn-card-network/brain-service/src/routes/` — add to `AppRouter`
+3. **Brain client auto-types** — it imports `AppRouter` type, new route is typed automatically
+4. **Expose in network plugin** — add method in `packages/plugins/learn-card-network/src/plugin.ts`
+5. **Test** in `tests/e2e/` — `pnpm test:e2e`
 
-1. **Define types** in `packages/learn-card-types/src/lcn.ts`.
-2. **Implement the server route** in `services/learn-card-network/brain-service/src/routes` using those validators and ensure it is added to the `AppRouter`.
-3. **Rebuild the Brain client** – it consumes the exported `AppRouter` so the new route is typed automatically.
-4. **Expose the route in the Network plugin** by adding a method that calls the new client procedure.
-5. **Initialize** with `initLearnCard` (the Network plugin is included by default) and call the new method via `learnCard.invoke`.
-6. **Test** the new route in `tests/e2e` using the top-level script: `pnpm test:e2e`.
+## Credential Storage Architecture
 
-These steps ensure types flow consistently from definition to testing and help avoid stale builds by relying on Nx-managed scripts.
+Three storage layers serve different purposes:
 
-## Partner Connect SDK Architecture
+### Layer 1: LearnCloud Personal Index (MongoDB)
 
-The `@learncard/partner-connect` SDK enables secure cross-origin communication between partner applications and the LearnCard host application via a clean Promise-based API.
+- **Service**: `services/learn-cloud-service`
+- **Purpose**: User's personal wallet — what they SEE in the app
+- **Owner**: User (authenticated via DID)
+- **Access**: `wallet.index.LearnCloud.get/add/remove`
+- **Populated by**: Frontend on credential claim
 
-### Core Architecture
+### Layer 2: Brain Service Network Index (Neo4j)
 
-#### Security Model
+- **Service**: `services/learn-card-network/brain-service`
+- **Purpose**: Network-level tracking of who received what
+- **Relationship**: `(Profile)-[:CREDENTIAL_SENT]->(Credential)-[:CREDENTIAL_RECEIVED]->(Profile)`
+- **Status values**: `null` (claimed), `'pending'` (sent, not accepted), `'revoked'`
+- **Access**: `wallet.invoke.getReceivedCredentials()`
 
--   **Multi-layered Origin Validation**: Strict origin matching with configurable whitelists
--   **Protocol Verification**: Messages must match expected protocol version
--   **Request ID Tracking**: Only tracked requests are processed to prevent replay attacks
--   **No Wildcard Origins**: Never uses `'*'` as target origin for security
+### Layer 3: Credential Storage (Various backends)
 
-#### Message Lifecycle Management
+- **Options**: Brain storage, Ceramic, IPFS, S3
+- **Purpose**: Actual VC JSON content
+- **Access**: `wallet.read.get(uri)`
 
-1. **Request Generation**: Unique ID generation with collision prevention
-2. **Message Queue**: Map-based tracking of pending requests with timeouts
-3. **Central Listener**: Single event handler for all message types with origin validation
-4. **Promise Resolution**: Automatic cleanup and response handling
+### Why Two Indexes?
 
-#### Configuration Hierarchy
+Brain-service stores the *network view* (who sent what to whom). LearnCloud stores the *user view* (personal wallet). They can differ because:
+- Users may have credentials from outside the network
+- Users may hide certain credentials
+- Brain-service can't modify LearnCloud (it's user-authenticated)
+- Frontend sync hooks bridge the gap (e.g., `useSyncRevokedCredentials`)
 
-1. **Default**: `https://learncard.app` (security anchor)
-2. **Query Parameter Override**: `?lc_host_override=https://staging.learncard.app`
-3. **Configured Origin**: From `hostOrigin` option in SDK initialization
+### Credential Lifecycle
 
-### Key Components
+```
+ISSUE  → Brain: CREDENTIAL_SENT + Storage: VC JSON stored
+CLAIM  → Brain: CREDENTIAL_RECEIVED (status=null) + LearnCloud: frontend adds to index
+DISPLAY → LearnCloud: useGetIDs() + Storage: wallet.read.get()
+REVOKE → Brain: status='revoked' + LearnCloud: frontend sync removes
+```
 
-#### PartnerConnect Class (`packages/learn-card-partner-connect-sdk/src/index.ts`)
+### Common Queries
 
--   **Factory Function**: `createPartnerConnect()` for clean initialization
--   **Request Management**: Handles timeout, cleanup, and error states
--   **Security Enforcement**: Multi-layer origin validation
--   **Browser Compatibility**: SSR-safe with proper cleanup
+| Use Case | Layer | Query |
+|----------|-------|-------|
+| User's IDs on Membership page | LearnCloud | `wallet.index.LearnCloud.get({ category: 'ID' })` |
+| Troop member list | Brain | `getBoostRecipients(boostId)` |
+| Credential content | Storage | `wallet.read.get(uri)` |
+| Check if user received credential | Brain | `getCredentialReceivedByProfile(credId, profile)` |
 
-#### Type System (`packages/learn-card-partner-connect-sdk/src/types.ts`)
+### Debugging
 
--   **Comprehensive TypeScript**: Full type coverage for all APIs
--   **Structured Errors**: Specific error codes for different failure scenarios
--   **Message Protocols**: Internal postMessage format definitions
--   **Browser Types**: Uses browser-native types (not Node.js) for compatibility
+- **Shows in brain but not Membership page** → Check LearnCloud index
+- **Shows in Membership page but is revoked** → Run `useSyncRevokedCredentials()`
+- **In member list but user says they don't have it** → Check CREDENTIAL_RECEIVED.status (null vs 'pending')
 
-### Example App Architecture
+## Frontend Query Hooks
 
-Partner Connect example apps follow a consistent pattern:
+Located in `packages/learn-card-base/src/react-query/queries/`.
 
-#### Frontend Architecture
+```typescript
+// Boost recipients (excludes revoked always)
+useGetBoostRecipients(boostUri, enabled, includeUnacceptedBoosts=false)
+useCountBoostRecipients(uri, enabled, includeUnacceptedBoosts=false)
 
--   **Framework**: Astro for simple static hosting compatibility
--   **SDK Integration**: Partner Connect SDK for host communication
--   **UI Framework**: Tailwind CSS for rapid development
--   **State Management**: Simple vanilla JavaScript state management
+// Connections
+useGetConnections()
+useGetPaginatedConnections()
+```
 
-#### Backend Architecture
+## Self-Issued Credentials Pattern
 
--   **Actions**: Astro actions using `@learncard/init` for credential operations
--   **Environment Variables**: Secure storage of issuer seeds and configuration
--   **Validation**: Zod schemas for input validation
--   **Error Handling**: Structured error responses
+When a user self-issues a credential (e.g., creating a network and receiving their own admin ID), you MUST call `acceptCredential` after `sendBoostCredential`:
 
-#### Security Patterns
+```typescript
+if (profileId === currentLCNUser?.profileId) {
+    const { sentBoost, sentBoostUri } = await sendBoostCredential(wallet, profileId, boostUri);
+    await wallet.invoke.acceptCredential(sentBoostUri); // REQUIRED
+    const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
+    await addCredentialToWallet({ uri: issuedVcUri });
+}
+```
 
--   **Frontend**: Never expose private keys, validate user input
--   **Backend**: Environment-based secrets, proper error handling
--   **Communication**: Secure postMessage with origin validation
+Without this, the credential shows "Pending Acceptance" because only CREDENTIAL_SENT exists (no CREDENTIAL_RECEIVED).
 
-### Integration Patterns
+## AuthCoordinator Architecture
 
-#### Authentication Flow
+The AuthCoordinator is a unified state machine that coordinates authentication and key derivation across LearnCard applications. It replaces the previous ad-hoc Web3Auth flow with a composable, provider-agnostic system.
 
-1. Partner app calls `requestIdentity()`
-2. User authenticates in LearnCard host
-3. Host returns JWT token and user DID
-4. Partner app validates token with backend
+### 3-Layer Auth Model
 
-#### Credential Flow
+| Layer | Components | Required | Purpose |
+| ----- | ---------- | -------- | ------- |
+| **0 — Core** | Private Key → DID → Wallet | **yes** | Everything depends on this |
+| **1 — Auth Session** | Auth Provider (Firebase) | no | Needed for SSS server ops |
+| **2 — Network Identity** | LCN Profile | no | Needed for network interactions |
 
-1. Partner backend issues credential using `@learncard/init`
-2. Partner frontend calls `sendCredential()` with issued credential
-3. Host adds credential to user's wallet
-4. Success response with credential ID
+A user with a cached private key can use the wallet even without an active Firebase session.
 
-#### Feature Launch Flow
+### State Machine (10 states)
 
-1. Partner app calls `launchFeature()` with path and optional prompt
-2. Host navigates to specified feature
-3. Optional data passed for feature initialization
+`idle` → `authenticating` → `authenticated` → `checking_key_status` → one of:
+-   `needs_setup` (new user, no server record)
+-   `needs_migration` (server has web3auth key)
+-   `needs_recovery` (no local key / stale key)
+-   `deriving_key` → `ready`
 
-### Development Guidelines for AI Assistants
+Also: `error` (with `canRetry` + `previousState`)
 
-#### When Working with Partner Connect SDK
+Private-key-first shortcut: `idle` → `deriving_key` → `ready` (from cached key)
 
-**Add New SDK Methods:**
+### Key Interfaces
 
-1. Define types in `src/types.ts`
-2. Implement method in `PartnerConnect` class
-3. Add JSDoc documentation with examples
-4. Test with example applications
+-   `AuthProvider` — Auth session abstraction (`getIdToken`, `getCurrentUser`, `signOut`)
+-   `KeyDerivationStrategy` — Key split/reconstruct abstraction (`splitKey`, `reconstructKey`, `hasLocalKey`)
+-   `AuthCoordinatorConfig` — Full configuration passed to `new AuthCoordinator()`
 
-**Security Considerations:**
+### Logout vs Forget Device
 
--   Never bypass origin validation
--   Always use structured error types
--   Validate query parameter overrides
--   Test with different deployment scenarios
+-   **`logout()`** — Signs out the auth provider, runs cleanup/onLogout callbacks, resets state to `idle`. **Preserves the device share** in IndexedDB so the user can reconstruct their key on re-login without recovery.
+-   **`forgetDevice()`** — Calls `clearLocalKeys()` to wipe the device share from IndexedDB. Use this for "public computer" scenarios where the device should not remain trusted. Can be called before or after `logout()`.
 
-**Common Patterns:**
+### File Map
 
--   Use `sendMessage()` for all host communication
--   Implement proper cleanup in error cases
--   Follow browser compatibility guidelines (avoid Node.js types)
--   Use environment variables for sensitive configuration
+```
+packages/learn-card-base/src/
+├── auth-coordinator/
+│   ├── AuthCoordinator.ts           — Core state machine class
+│   ├── AuthCoordinatorProvider.tsx   — Base React provider + context
+│   ├── createAuthCoordinatorApi.ts   — Default server API factory
+│   ├── useAuthCoordinatorAutoSetup.ts — Auto handles needs_setup & needs_migration
+│   ├── types.ts                      — Type definitions (re-exports from sss-key-manager)
+│   ├── index.ts                      — Public exports
+│   ├── README.md                     — Core reference with Mermaid diagrams
+│   ├── INTEGRATION.md                — App integration guide
+│   ├── RECOVERY.md                   — Recovery system guide
+│   └── __tests__/
+│       └── AuthCoordinator.test.ts   — 46+ unit tests
+├── auth-providers/
+│   ├── createFirebaseAuthProvider.ts — Firebase AuthProvider factory
+│   └── index.ts
+├── config/
+│   └── authConfig.ts                 — Environment-driven config (getAuthConfig)
+├── helpers/
+│   └── indexedDBHelpers.ts           — clearAllIndexedDB (preserves lcb-sss-keys)
+├── key-derivation/
+│   └── createWeb3AuthStrategy.ts    — Web3Auth KeyDerivationStrategy (migration only)
+└── hooks/
+    ├── useRecoveryMethods.ts         — Recovery execution (password, passkey, phrase, backup)
+    └── useRecoverySetup.ts           — Recovery setup (add methods, export backup)
 
-#### When Working with Example Apps
+packages/sss-key-manager/src/
+├── types.ts              — Canonical shared types (AuthProvider, KeyDerivationStrategy, etc.)
+├── sss-strategy.ts       — createSSSStrategy() factory
+├── sss.ts                — Shamir split/reconstruct
+├── storage.ts            — IndexedDB device share storage (lcb-sss-keys)
+├── crypto.ts             — Argon2id KDF + AES-GCM encryption
+├── passkey.ts            — WebAuthn passkey operations
+├── recovery-phrase.ts    — Mnemonic phrase encode/decode (25 words)
+└── atomic-operations.ts  — splitAndVerify, atomicShareUpdate
 
-**Creating New Example Apps:**
+apps/learn-card-app/src/providers/
+└── AuthCoordinatorProvider.tsx — LCA app wrapper (wallet, LCN profile, recovery UI)
 
-1. Follow existing directory structure in `examples/app-store-apps/`
-2. Use Astro + Tailwind + Partner Connect SDK stack
-3. Implement proper error handling and user feedback
-4. Include environment configuration and README
+apps/scouts/src/providers/
+└── AuthCoordinatorProvider.tsx — Scouts app wrapper (wallet, LCN profile)
+```
 
-**Backend Integration:**
+### Environment Variables
 
--   Use `@learncard/init` for credential operations
--   Store issuer seeds in environment variables only
--   Validate inputs with Zod schemas
--   Handle network-related errors gracefully
+All auth-related env vars use the `VITE_` prefix for Vite compatibility and are read via `getAuthConfig()` in `config/authConfig.ts`.
 
-**Testing and Deployment:**
+-   `VITE_AUTH_PROVIDER`: `'firebase' | 'supertokens' | 'keycloak' | 'oidc'` (default: `'firebase'`)
+-   `VITE_KEY_DERIVATION`: `'sss' | 'web3auth'` (default: `'sss'`)
+-   `VITE_SSS_SERVER_URL`: Server URL for key share operations (default: `'http://localhost:5100/api'`)
+-   `VITE_ENABLE_MIGRATION`: `'true' | 'false'` (default: `'false'`)
+-   `VITE_ENABLE_EMAIL_BACKUP_SHARE`: `'true' | 'false'` (default: `'true'`)
+-   `VITE_WEB3AUTH_CLIENT_ID`: Web3Auth client ID (per app, from dashboard)
+-   `VITE_WEB3AUTH_NETWORK`: Web3Auth network (e.g. `'testnet'`, `'sapphire_mainnet'`)
+-   `VITE_WEB3AUTH_VERIFIER_ID`: Web3Auth verifier name (e.g. `'learncardapp-firebase'`)
+-   `VITE_WEB3AUTH_RPC_TARGET`: Ethereum RPC URL for Web3Auth private key provider (e.g. Infura endpoint)
 
--   Test with staging and production LearnCard hosts
--   Verify origin validation works correctly
--   Test error scenarios (timeouts, user rejection, network issues)
--   Ensure proper cleanup on component unmount
+### Detailed Documentation
+
+See `packages/learn-card-base/src/auth-coordinator/README.md` for full state machine diagrams, sequence diagrams for every method, configuration reference, and server API contract. See `INTEGRATION.md` and `RECOVERY.md` in the same directory for app integration and recovery system guides.

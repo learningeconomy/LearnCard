@@ -11,8 +11,8 @@ const args = process.argv.slice(2);
 const targetIndex = args.indexOf('--target');
 const target = targetIndex !== -1 ? args[targetIndex + 1] : null;
 
-if (process.env.SKIP_DIDKIT_NAPI) {
-    console.log('✓ SKIP_DIDKIT_NAPI set, skipping napi build');
+if (!process.env.BUILD_DIDKIT_NAPI) {
+    console.log('✓ BUILD_DIDKIT_NAPI not set, skipping napi build');
 } else if (process.env.CI && hasNodeBinary && !target) {
     console.log('✓ CI detected with prebuilt binary, skipping napi build');
 } else {

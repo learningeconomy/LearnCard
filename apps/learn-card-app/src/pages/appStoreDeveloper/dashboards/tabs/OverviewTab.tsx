@@ -18,6 +18,10 @@ import {
     X,
     AlertTriangle,
     Activity,
+    Hash,
+    Filter,
+    ChevronDown,
+    Download,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
@@ -37,9 +41,11 @@ import {
     getActivityName,
     getActivityError,
     formatActivitySource,
+    EVENT_TYPE_FILTER_OPTIONS,
 } from '../hooks/useIntegrationActivity';
+import { ExportDialog } from '../components/ExportDialog';
 
-import { useWallet } from 'learn-card-base/hooks/useWallet';
+import { useWallet } from 'learn-card-base';
 
 interface OverviewTabProps {
     integration: LCNIntegration;
@@ -68,10 +74,15 @@ function getEventStyling(eventType: string) {
     }
 }
 
+// Maximum events to show before collapsing
+const ACTIVITY_CHAIN_DISPLAY_LIMIT = 5;
+
 const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
     const { initWallet } = useWallet();
     const [activityChain, setActivityChain] = useState<CredentialActivityRecord[]>([]);
     const [isLoadingChain, setIsLoadingChain] = useState(true);
+    const [chainError, setChainError] = useState<string | null>(null);
+    const [showAllEvents, setShowAllEvents] = useState(false);
 
     // Fetch the full activity chain
     useEffect(() => {
@@ -83,11 +94,13 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
             }
 
             try {
+                setChainError(null);
                 const wallet = await initWallet();
                 const chain = await wallet.invoke.getActivityChain({ activityId: item.activityId });
                 setActivityChain(chain?.length > 0 ? chain : [item]);
             } catch (err) {
                 console.error('Failed to fetch activity chain:', err);
+                setChainError('Unable to load full activity timeline');
                 setActivityChain([item]);
             } finally {
                 setIsLoadingChain(false);
@@ -96,6 +109,12 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
 
         fetchChain();
     }, [item.activityId, initWallet]);
+
+    // Determine which events to display
+    const hasMoreEvents = activityChain.length > ACTIVITY_CHAIN_DISPLAY_LIMIT;
+    const displayedEvents = showAllEvents
+        ? activityChain
+        : activityChain.slice(0, ACTIVITY_CHAIN_DISPLAY_LIMIT);
 
     // Determine current status from the chain (latest event)
     const latestEvent = activityChain.length > 0 ? activityChain[activityChain.length - 1] : item;
@@ -128,7 +147,9 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
 
                 <div className="space-y-5">
                     <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${statusBg}`}>
+                        <div
+                            className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${statusBg}`}
+                        >
                             {currentEventType === 'CLAIMED' ? (
                                 <CheckCircle2 className={`w-6 h-6 ${statusColor}`} />
                             ) : currentEventType === 'FAILED' ? (
@@ -143,14 +164,24 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 text-lg truncate">{templateName}</h3>
+                            <h3 className="font-semibold text-gray-900 text-lg truncate">
+                                {templateName}
+                            </h3>
 
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusBg} ${statusColor}`}>
+                                <span
+                                    className={`text-xs px-2 py-1 rounded-full font-medium ${statusBg} ${statusColor}`}
+                                >
                                     {statusLabel}
                                 </span>
 
-                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${isInbox ? 'bg-violet-100 text-violet-700' : 'bg-cyan-100 text-cyan-700'}`}>
+                                <span
+                                    className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                        isInbox
+                                            ? 'bg-violet-100 text-violet-700'
+                                            : 'bg-cyan-100 text-cyan-700'
+                                    }`}
+                                >
                                     {isInbox ? 'Email Delivery' : 'Direct Send'}
                                 </span>
                             </div>
@@ -165,9 +196,13 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
 
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm text-gray-500">Recipient</p>
-                                <p className="font-medium text-gray-900 truncate">{recipientName}</p>
+                                <p className="font-medium text-gray-900 truncate">
+                                    {recipientName}
+                                </p>
                                 {item.recipientType === 'profile' && (
-                                    <p className="text-xs text-gray-400 mt-0.5 font-mono truncate">{item.recipientIdentifier}</p>
+                                    <p className="text-xs text-gray-400 mt-0.5 font-mono truncate">
+                                        {item.recipientIdentifier}
+                                    </p>
                                 )}
                             </div>
                         </div>
@@ -192,9 +227,7 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                         minute: '2-digit',
                                     })}
                                 </p>
-                                <p className="text-xs text-gray-400">
-                                    {timeSinceEventText} ago
-                                </p>
+                                <p className="text-xs text-gray-400">{timeSinceEventText} ago</p>
                             </div>
                         </div>
 
@@ -206,9 +239,7 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
 
                                 <div className="min-w-0 flex-1">
                                     <p className="text-sm text-gray-500">Error</p>
-                                    <p className="text-sm text-red-600">
-                                        {errorMessage}
-                                    </p>
+                                    <p className="text-sm text-red-600">{errorMessage}</p>
                                 </div>
                             </div>
                         )}
@@ -234,50 +265,95 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                         {/* Activity Timeline */}
                         {activityChain.length > 0 && (
                             <div className="pt-2 border-t border-gray-100">
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Activity Timeline</p>
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                                    Activity Timeline
+                                    {activityChain.length > 1 && (
+                                        <span className="ml-2 text-gray-400 font-normal">
+                                            ({activityChain.length} events)
+                                        </span>
+                                    )}
+                                </p>
 
                                 <div className="space-y-2">
                                     {isLoadingChain ? (
-                                        <p className="text-sm text-gray-400">Loading timeline...</p>
+                                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Loading timeline...
+                                        </div>
+                                    ) : chainError ? (
+                                        <div className="flex items-center gap-2 text-sm text-amber-600">
+                                            <AlertTriangle className="w-4 h-4" />
+                                            {chainError}
+                                        </div>
                                     ) : (
-                                        activityChain.map((event, index) => {
-                                            const isAutoDeliver = isAutoDelivery(event);
-                                            let { color, bg, Icon } = getEventStyling(event.eventType);
+                                        <>
+                                            {displayedEvents.map((event, index) => {
+                                                const isAutoDeliver = isAutoDelivery(event);
+                                                let { color, bg, Icon } = getEventStyling(
+                                                    event.eventType
+                                                );
 
-                                            // Override styling for auto-delivery
-                                            if (isAutoDeliver) {
-                                                color = 'text-emerald-600';
-                                                bg = 'bg-emerald-100';
-                                                Icon = User;
-                                            }
+                                                // Override styling for auto-delivery
+                                                if (isAutoDeliver) {
+                                                    color = 'text-emerald-600';
+                                                    bg = 'bg-emerald-100';
+                                                    Icon = User;
+                                                }
 
-                                            const eventTime = new Date(event.timestamp);
+                                                const eventTime = new Date(event.timestamp);
 
-                                            return (
-                                                <div key={event.id} className="flex items-center gap-3">
-                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${bg}`}>
-                                                        <Icon className={`w-3 h-3 ${color}`} />
-                                                    </div>
+                                                return (
+                                                    <div
+                                                        key={event.id}
+                                                        className="flex items-center gap-3"
+                                                    >
+                                                        <div
+                                                            className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${bg}`}
+                                                        >
+                                                            <Icon className={`w-3 h-3 ${color}`} />
+                                                        </div>
 
-                                                    <div className="flex-1 min-w-0">
-                                                        <span className={`text-sm font-medium ${color}`}>
-                                                            {getActivityLabel(event)}
+                                                        <div className="flex-1 min-w-0">
+                                                            <span
+                                                                className={`text-sm font-medium ${color}`}
+                                                            >
+                                                                {getActivityLabel(event)}
+                                                            </span>
+                                                        </div>
+
+                                                        <span className="text-xs text-gray-400">
+                                                            {eventTime.toLocaleTimeString('en-US', {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                            })}
                                                         </span>
                                                     </div>
+                                                );
+                                            })}
 
-                                                    <span className="text-xs text-gray-400">
-                                                        {eventTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })
+                                            {hasMoreEvents && (
+                                                <button
+                                                    onClick={() => setShowAllEvents(!showAllEvents)}
+                                                    className="text-xs text-cyan-600 hover:text-cyan-700 font-medium mt-1"
+                                                >
+                                                    {showAllEvents
+                                                        ? 'Show less'
+                                                        : `Show ${
+                                                              activityChain.length -
+                                                              ACTIVITY_CHAIN_DISPLAY_LIMIT
+                                                          } more events`}
+                                                </button>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
                         )}
 
                         <div className="pt-2 border-t border-gray-100">
-                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Technical Details</p>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                                Technical Details
+                            </p>
 
                             <div className="space-y-3">
                                 <div className="flex items-start gap-3">
@@ -288,7 +364,9 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                     <div className="min-w-0 flex-1">
                                         <p className="text-sm text-gray-500">Delivery Method</p>
                                         <p className="font-medium text-gray-900">
-                                            {isInbox ? 'Universal Inbox (Email)' : 'Direct to Profile'}
+                                            {isInbox
+                                                ? 'Universal Inbox (Email)'
+                                                : 'Direct to Profile'}
                                         </p>
                                     </div>
                                 </div>
@@ -303,7 +381,20 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                         <p className="font-medium text-gray-900">{sourceLabel}</p>
                                     </div>
                                 </div>
+                                {item?.metadata && (
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                            <Hash className="w-4 h-4 text-gray-600" />
+                                        </div>
 
+                                        <div className="min-w-0 flex-1 overflow-hidden">
+                                            <p className="text-sm text-gray-500">Template Alias</p>
+                                            <p className="font-mono text-xs text-gray-600 break-all">
+                                                {item?.metadata?.templateAlias}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                                 {item.boostUri && (
                                     <div className="flex items-start gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -376,9 +467,20 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     onNavigate,
     refreshKey,
 }) => {
-    const { activity, isLoading: activityLoading, refetch } = useIntegrationActivity(templates, { 
-        limit: 10,
+    const [eventTypeFilter, setEventTypeFilter] = useState<CredentialEventType | 'ALL'>('ALL');
+
+    const {
+        activity,
+        isLoading: activityLoading,
+        isLoadingMore,
+        hasMore,
+        refetch,
+        loadMore,
+        stats: activityStats,
+    } = useIntegrationActivity(templates, {
+        limit: 25,
         integrationId: integration.id,
+        eventType: eventTypeFilter === 'ALL' ? undefined : eventTypeFilter,
     });
 
     // Refetch when refreshKey changes
@@ -389,12 +491,10 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     }, [refreshKey, refetch]);
 
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
+    const [showExportDialog, setShowExportDialog] = useState(false);
 
     const handleActivityItemClick = (item: CredentialActivityRecord) => {
-        newModal(
-            <IssuanceDetailModal item={item} />,
-            { sectionClassName: '!max-w-[450px]' }
-        );
+        newModal(<IssuanceDetailModal item={item} />, { sectionClassName: '!max-w-[450px]' });
     };
 
     const quickActions = [];
@@ -454,6 +554,20 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         });
     }
 
+    const getActivityStat = (eventTypeFilter: string, activityStats: any) => {
+        const statMap = {
+            DELIVERED: activityStats.totalSent,
+            CLAIMED: activityStats.totalClaimed,
+            ALL: activityStats.totalEvents,
+            FAILED: activityStats.failed,
+            EXPIRED: activityStats.expired,
+        };
+
+        const total = statMap[eventTypeFilter as keyof typeof statMap];
+
+        return total ? `Load More (showing ${activity.length} of ${total})` : 'Load More';
+    };
+
     // Always add documentation link
     const docsUrl = getDocsUrl(integration.guideType);
 
@@ -461,7 +575,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         <div className="space-y-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-2">Quick Actions</h2>
-                <p className="text-sm text-gray-500 mb-4">Common tasks for managing your integration</p>
+                <p className="text-sm text-gray-500 mb-4">
+                    Common tasks for managing your integration
+                </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {quickActions.slice(0, 2).map(action => (
@@ -471,7 +587,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                             className={`p-4 border border-gray-200 rounded-xl ${action.hoverColor} transition-colors text-left group`}
                         >
                             <action.icon className={`w-8 h-8 ${action.iconColor} mb-3`} />
-                            <h3 className="font-medium text-gray-800 group-hover:text-gray-900">{action.title}</h3>
+                            <h3 className="font-medium text-gray-800 group-hover:text-gray-900">
+                                {action.title}
+                            </h3>
                             <p className="text-sm text-gray-500 mt-1">{action.description}</p>
                         </button>
                     ))}
@@ -483,120 +601,185 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                         className="p-4 border border-gray-200 rounded-xl hover:border-cyan-300 hover:bg-cyan-50 transition-colors text-left group"
                     >
                         <ExternalLink className="w-8 h-8 text-cyan-600 mb-3" />
-                        <h3 className="font-medium text-gray-800 group-hover:text-cyan-700">Documentation</h3>
+                        <h3 className="font-medium text-gray-800 group-hover:text-cyan-700">
+                            Documentation
+                        </h3>
                         <p className="text-sm text-gray-500 mt-1">Learn how to integrate</p>
                     </a>
                 </div>
             </div>
 
             <div>
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h2>
-
-                {activityLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+                <div className="flex items-center justify-between mb-3 xs:flex-col xs:items-start">
+                    <div className="flex xs:flex-col">
+                        <h2 className="text-lg font-semibold text-gray-800 mb-1 mr-4">
+                            Recent Activity
+                        </h2>
+                        <button
+                            onClick={() => setShowExportDialog(true)}
+                            className="flex items-center text-sm font-medium text-gray-600 p-[5px] border !border-solid border-gray-200 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors xs:mb-[5px]"
+                        >
+                            <Download className="w-4 h-4 mr-[5px]" />
+                            Download CSV
+                        </button>
                     </div>
-                ) : activity.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                        <Zap className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                        <p>No activity yet</p>
-                        <p className="text-sm mt-1">Credentials will appear here as they're issued</p>
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        {activity.map(item => {
-                            const { eventType } = item;
-                            const isInbox = isInboxActivity(item);
-                            const isAutoDeliver = isAutoDelivery(item);
-                            const templateName = getActivityName(item);
-                            const recipientName = getRecipientDisplayName(item);
-                            const statusLabel = getActivityLabel(item);
-
-                            // Determine icon and colors based on event type
-                            let bgColor = 'bg-cyan-100';
-                            let textColor = 'text-cyan-600';
-                            let badgeBg = 'bg-cyan-100';
-                            let badgeText = 'text-cyan-700';
-                            let Icon = Send;
-
-                            if (eventType === 'CLAIMED') {
-                                bgColor = 'bg-emerald-100';
-                                textColor = 'text-emerald-600';
-                                badgeBg = 'bg-emerald-100';
-                                badgeText = 'text-emerald-700';
-                                Icon = CheckCircle2;
-                            } else if (eventType === 'FAILED') {
-                                bgColor = 'bg-red-100';
-                                textColor = 'text-red-600';
-                                badgeBg = 'bg-red-100';
-                                badgeText = 'text-red-700';
-                                Icon = AlertTriangle;
-                            } else if (eventType === 'EXPIRED') {
-                                bgColor = 'bg-gray-100';
-                                textColor = 'text-gray-500';
-                                badgeBg = 'bg-gray-100';
-                                badgeText = 'text-gray-600';
-                                Icon = Clock;
-                            } else if (isAutoDeliver) {
-                                // Auto-delivered to verified user - use User icon, emerald color
-                                bgColor = 'bg-emerald-50';
-                                textColor = 'text-emerald-600';
-                                badgeBg = 'bg-emerald-100';
-                                badgeText = 'text-emerald-700';
-                                Icon = User;
-                            } else if (isInbox) {
-                                // CREATED to inbox - use Mail icon, cyan color
-                                Icon = Mail;
+                    <div className="relative">
+                        <select
+                            value={eventTypeFilter}
+                            onChange={e =>
+                                setEventTypeFilter(e.target.value as CredentialEventType | 'ALL')
                             }
-                            // Regular DELIVERED to profile uses cyan (default)
-
-                            return (
-                                <button
-                                    key={item.id}
-                                    onClick={() => handleActivityItemClick(item)}
-                                    className="w-full flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-left"
-                                >
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bgColor}`}>
-                                        <Icon className={`w-4 h-4 ${textColor}`} />
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium text-gray-800 truncate">
-                                                {templateName}
-                                            </span>
-
-                                            <span className={`text-xs px-1.5 py-0.5 rounded ${badgeBg} ${badgeText}`}>
-                                                {statusLabel}
-                                            </span>
-
-                                            {isInbox && (
-                                                <span className="text-xs px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">
-                                                    Email
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <p className="text-sm text-gray-500 truncate">
-                                            To: {recipientName}
-                                        </p>
-                                    </div>
-
-                                    <div className="text-xs text-gray-400 flex items-center gap-1 flex-shrink-0">
-                                        <Clock className="w-3 h-3" />
-                                        {formatRelativeTime(item.timestamp)}
-                                    </div>
-                                </button>
-                            );
-                        })}
-
-                        {stats.totalIssued > activity.length && (
-                            <p className="text-center text-sm text-gray-500 pt-2">
-                                Showing {activity.length} of {stats.totalIssued} credentials
-                            </p>
-                        )}
+                            className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-8 py-[5px] text-sm
+                                       text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500
+                                       focus:border-transparent cursor-pointer transition-colors"
+                        >
+                            {EVENT_TYPE_FILTER_OPTIONS.map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                        <Filter className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <ChevronDown className="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                </div>
+                {showExportDialog && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <ExportDialog
+                            integrationId={integration.id}
+                            integrationName={integration.name}
+                            initialEventType={eventTypeFilter === 'ALL' ? '' : eventTypeFilter}
+                            onClose={() => setShowExportDialog(false)}
+                        />
                     </div>
                 )}
+
+                <div className="min-h-[300px]">
+                    {activityLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+                        </div>
+                    ) : activity.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                            <Zap className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                            <p>No activity yet</p>
+                            <p className="text-sm mt-1">
+                                Credentials will appear here as they're issued
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {activity.map(item => {
+                                const { eventType } = item;
+                                const isInbox = isInboxActivity(item);
+                                const isAutoDeliver = isAutoDelivery(item);
+                                const templateName = getActivityName(item);
+                                const recipientName = getRecipientDisplayName(item);
+                                const statusLabel = getActivityLabel(item);
+
+                                // Determine icon and colors based on event type
+                                let bgColor = 'bg-cyan-100';
+                                let textColor = 'text-cyan-600';
+                                let badgeBg = 'bg-cyan-100';
+                                let badgeText = 'text-cyan-700';
+                                let Icon = Send;
+
+                                if (eventType === 'CLAIMED') {
+                                    bgColor = 'bg-emerald-100';
+                                    textColor = 'text-emerald-600';
+                                    badgeBg = 'bg-emerald-100';
+                                    badgeText = 'text-emerald-700';
+                                    Icon = CheckCircle2;
+                                } else if (eventType === 'FAILED') {
+                                    bgColor = 'bg-red-100';
+                                    textColor = 'text-red-600';
+                                    badgeBg = 'bg-red-100';
+                                    badgeText = 'text-red-700';
+                                    Icon = AlertTriangle;
+                                } else if (eventType === 'EXPIRED') {
+                                    bgColor = 'bg-gray-100';
+                                    textColor = 'text-gray-500';
+                                    badgeBg = 'bg-gray-100';
+                                    badgeText = 'text-gray-600';
+                                    Icon = Clock;
+                                } else if (isAutoDeliver) {
+                                    // Auto-delivered to verified user - use User icon, emerald color
+                                    bgColor = 'bg-emerald-50';
+                                    textColor = 'text-emerald-600';
+                                    badgeBg = 'bg-emerald-100';
+                                    badgeText = 'text-emerald-700';
+                                    Icon = User;
+                                } else if (isInbox) {
+                                    // CREATED to inbox - use Mail icon, cyan color
+                                    Icon = Mail;
+                                }
+                                // Regular DELIVERED to profile uses cyan (default)
+
+                                return (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => handleActivityItemClick(item)}
+                                        className="w-full flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-left"
+                                    >
+                                        <div
+                                            className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bgColor}`}
+                                        >
+                                            <Icon className={`w-4 h-4 ${textColor}`} />
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-medium text-gray-800 truncate">
+                                                    {templateName}
+                                                </span>
+
+                                                <span
+                                                    className={`text-xs px-1.5 py-0.5 rounded ${badgeBg} ${badgeText}`}
+                                                >
+                                                    {statusLabel}
+                                                </span>
+
+                                                {isInbox && (
+                                                    <span className="text-xs px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">
+                                                        Email
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <p className="text-sm text-gray-500 truncate">
+                                                To: {recipientName}
+                                            </p>
+                                        </div>
+
+                                        <div className="text-xs text-gray-400 flex items-center gap-1 flex-shrink-0">
+                                            <Clock className="w-3 h-3" />
+                                            {formatRelativeTime(item.timestamp)}
+                                        </div>
+                                    </button>
+                                );
+                            })}
+
+                            {hasMore && (
+                                <button
+                                    onClick={loadMore}
+                                    disabled={isLoadingMore}
+                                    className="w-full py-3 text-sm font-medium text-cyan-600 hover:text-cyan-700 
+                                           hover:bg-cyan-50 rounded-xl transition-colors flex items-center 
+                                           justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isLoadingMore ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Loading...
+                                        </>
+                                    ) : (
+                                        getActivityStat(eventTypeFilter, activityStats)
+                                    )}
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -609,7 +792,7 @@ function getDocsUrl(guideType?: string): string {
         case 'embed-claim':
             return 'https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-embed-sdk';
         case 'embed-app':
-            return 'https://docs.learncard.com/sdks/partner-connect'
+            return 'https://docs.learncard.com/sdks/partner-connect';
         case 'consent-flow':
             return 'https://docs.learncard.com/consent-flow';
         default:

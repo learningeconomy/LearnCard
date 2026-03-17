@@ -5,6 +5,7 @@
     "scripts": {
         "test": "echo \"Skipping E2E tests in CI. Run test:e2e if you'd like to actually run this!\"",
         "test:e2e": "vitest",
+        "test:e2e:no-docker": "E2E_MANAGE_DOCKER=false vitest",
         "test:run": "vitest run",
         "test:e2e:interop": "TEST_TAGS=@interop vitest",
         "test:run:interop": "TEST_TAGS=@interop vitest run",
@@ -16,6 +17,7 @@
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/init": "workspace:*",
+        "@learncard/lca-api-plugin": "workspace:*",
         "@learncard/simple-signing-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
         "@xapi/xapi": "^3.0.0",

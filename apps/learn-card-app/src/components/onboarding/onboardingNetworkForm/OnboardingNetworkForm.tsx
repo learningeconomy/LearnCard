@@ -11,6 +11,7 @@ import { ProfilePicture } from 'learn-card-base/components/profilePicture/Profil
 import OnboardingRoleItem from '../onboardingRoles/OnboardingRoleItem';
 import OnboardingHeader from '../onboardingHeader/OnboardingHeader';
 import OnboardingFooter from '../onboardingFooter/OnboardingFooter';
+import OnboardingSwiperForSlides from '../onboardingRoles/OnboardingSwiperForSlides';
 import ErrorLogout from '../../network-prompts/ErrorLogout';
 import HandleIcon from 'learn-card-base/svgs/HandleIcon';
 import { Checkmark } from '@learncard/react';
@@ -40,6 +41,7 @@ import {
     useToast,
     ToastTypeEnum,
     useDeviceTypeByWidth,
+    useUpdatePreferences,
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -53,9 +55,11 @@ import EUParentalConsentModalContent from './components/EUParentalConsentModalCo
 import UnderageModalContent from './components/UnderageModalContent';
 import USConsentNoticeModalContent from './components/USConsentNoticeModalContent';
 import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
+import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
 import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
 import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
@@ -95,13 +99,14 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
 }) => {
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
+    const { track } = useAnalytics();
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
+    const { mutateAsync: updatePreferences } = useUpdatePreferences();
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
     const flags = useFlags();
     const schoolCodes = (flags?.underageSchoolCodes as string[]) || [];
-
 
     const authToken = getAuthToken();
     const currentUser = useCurrentUser();
@@ -119,7 +124,6 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
             return newErrors;
         });
         updateFormData({ dob: date });
-
     };
     const handleCountrySelect = (selectedCountry: string) => {
         updateFormData({ country: selectedCountry });
@@ -290,6 +294,26 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 });
 
                 if (didWeb) {
+                    // Initialize privacy preferences based on age at signup
+                    const age = dob ? calculateAge(dob) : null;
+                    const limit = getMinorAgeThreshold(country);
+                    const isMinorUser = age !== null && !isNaN(age) && age < limit;
+
+                    await updatePreferences({
+                        aiEnabled: !isMinorUser,
+                        aiAutoDisabled: isMinorUser,
+                        analyticsEnabled: !isMinorUser,
+                        analyticsAutoDisabled: isMinorUser,
+                        bugReportsEnabled: !isMinorUser,
+                        isMinor: isMinorUser,
+                    }).catch(err => {
+                        console.error('Failed to initialize preferences (non-blocking):', err);
+                    });
+
+                    track(AnalyticsEvents.ONBOARDING_COMPLETED, {
+                        role: role ?? undefined,
+                        country: country ?? undefined,
+                    });
                     await refetchIsCurrentUserLCNUser();
                     await wallet.invoke.resetLCAClient();
                     await queryClient.resetQueries();
@@ -301,6 +325,16 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     setTimeout(async () => {
                         await onSuccess?.();
                     }, 1000);
+                    newModal(
+                        <OnboardingSwiperForSlides
+                            roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
+                            dob={dob}
+                        />,
+                        {
+                            sectionClassName: '!max-w-full',
+                        },
+                        { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                    );
                 }
 
                 if (role === LearnCardRolesEnum.teacher) {
@@ -457,7 +491,9 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                         { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                                     );
                                     handleLogout(BrandingEnum.learncard, {
-                                        appendQuery: { redirectTo: '/families?createFamily=true' },
+                                        overrideRedirectUrl: `/login?redirectTo=${encodeURIComponent(
+                                            '/families?createFamily=true'
+                                        )}`,
                                     });
                                 }}
                                 className="mx-[10px] shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"

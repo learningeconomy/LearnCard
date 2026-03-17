@@ -10,7 +10,9 @@ export const CredentialActivityEventTypeValidator = z.enum([
 export type CredentialActivityEventType = z.infer<typeof CredentialActivityEventTypeValidator>;
 
 export const CredentialActivityRecipientTypeValidator = z.enum(['profile', 'email', 'phone']);
-export type CredentialActivityRecipientType = z.infer<typeof CredentialActivityRecipientTypeValidator>;
+export type CredentialActivityRecipientType = z.infer<
+    typeof CredentialActivityRecipientTypeValidator
+>;
 
 export const CredentialActivitySourceTypeValidator = z.enum([
     'send',
@@ -21,6 +23,7 @@ export const CredentialActivitySourceTypeValidator = z.enum([
     'inbox',
     'claimLink',
     'acceptCredential',
+    'appEvent',
 ]);
 export type CredentialActivitySourceType = z.infer<typeof CredentialActivitySourceTypeValidator>;
 
@@ -42,15 +45,19 @@ export const CredentialActivityValidator = z.object({
 export type CredentialActivityRecord = z.infer<typeof CredentialActivityValidator>;
 
 export const CredentialActivityWithDetailsValidator = CredentialActivityValidator.extend({
-    boost: z.object({
-        id: z.string(),
-        name: z.string().optional(),
-        category: z.string().optional(),
-    }).optional(),
-    recipientProfile: z.object({
-        profileId: z.string(),
-        displayName: z.string().optional(),
-    }).optional(),
+    boost: z
+        .object({
+            id: z.string(),
+            name: z.string().optional(),
+            category: z.string().optional(),
+        })
+        .optional(),
+    recipientProfile: z
+        .object({
+            profileId: z.string(),
+            displayName: z.string().optional(),
+        })
+        .optional(),
 });
 export type CredentialActivityWithDetails = z.infer<typeof CredentialActivityWithDetailsValidator>;
 
@@ -62,6 +69,7 @@ export const PaginatedCredentialActivitiesValidator = z.object({
 export type PaginatedCredentialActivities = z.infer<typeof PaginatedCredentialActivitiesValidator>;
 
 export const CredentialActivityStatsValidator = z.object({
+    totalEvents: z.number(),
     total: z.number(),
     created: z.number(),
     delivered: z.number(),

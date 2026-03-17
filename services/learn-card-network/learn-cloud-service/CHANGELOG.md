@@ -1,5 +1,87 @@
 # @learncard/network-brain-service
 
+## 2.5.6
+
+### Patch Changes
+
+-   Updated dependencies [[`bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee`](https://github.com/learningeconomy/LearnCard/commit/bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee)]:
+    -   @learncard/types@5.12.3
+    -   @learncard/core@9.4.9
+    -   @learncard/helpers@1.2.9
+    -   @learncard/did-web-plugin@1.1.9
+    -   @learncard/didkey-plugin@1.1.9
+    -   @learncard/didkit-plugin@1.7.5
+    -   @learncard/didkit-plugin-node@0.2.5
+    -   @learncard/encryption-plugin@1.1.9
+    -   @learncard/learn-card-plugin@1.2.9
+    -   @learncard/vc-plugin@1.4.5
+    -   @learncard/vc-templates-plugin@1.1.9
+    -   @learncard/crypto-plugin@1.1.9
+    -   @learncard/expiration-plugin@1.2.9
+
+## 2.5.5
+
+### Patch Changes
+
+-   Updated dependencies [[`495f2939cb6e4271cab0a88abea5105fb7e4f9b6`](https://github.com/learningeconomy/LearnCard/commit/495f2939cb6e4271cab0a88abea5105fb7e4f9b6), [`08a1c8a07501c2f426d16239c4b0551e518a7ed5`](https://github.com/learningeconomy/LearnCard/commit/08a1c8a07501c2f426d16239c4b0551e518a7ed5)]:
+    -   @learncard/types@5.12.2
+    -   @learncard/core@9.4.8
+    -   @learncard/helpers@1.2.8
+    -   @learncard/did-web-plugin@1.1.8
+    -   @learncard/didkey-plugin@1.1.8
+    -   @learncard/didkit-plugin@1.7.4
+    -   @learncard/didkit-plugin-node@0.2.4
+    -   @learncard/encryption-plugin@1.1.8
+    -   @learncard/learn-card-plugin@1.2.8
+    -   @learncard/vc-plugin@1.4.4
+    -   @learncard/vc-templates-plugin@1.1.8
+    -   @learncard/crypto-plugin@1.1.8
+    -   @learncard/expiration-plugin@1.2.8
+
+## 2.5.4
+
+### Patch Changes
+
+-   Updated dependencies [[`caf231b53707174ea49f0eb2b65885a36b3e7228`](https://github.com/learningeconomy/LearnCard/commit/caf231b53707174ea49f0eb2b65885a36b3e7228)]:
+    -   @learncard/types@5.12.1
+    -   @learncard/core@9.4.7
+    -   @learncard/helpers@1.2.7
+    -   @learncard/did-web-plugin@1.1.7
+    -   @learncard/didkey-plugin@1.1.7
+    -   @learncard/didkit-plugin@1.7.3
+    -   @learncard/didkit-plugin-node@0.2.3
+    -   @learncard/encryption-plugin@1.1.7
+    -   @learncard/learn-card-plugin@1.2.7
+    -   @learncard/vc-plugin@1.4.3
+    -   @learncard/vc-templates-plugin@1.1.7
+    -   @learncard/crypto-plugin@1.1.7
+    -   @learncard/expiration-plugin@1.2.7
+
+## 2.5.3
+
+### Patch Changes
+
+-   [#983](https://github.com/learningeconomy/LearnCard/pull/983) [`50e72d3dd3abc9a8d4309ce1b3c1637f1baf6dbe`](https://github.com/learningeconomy/LearnCard/commit/50e72d3dd3abc9a8d4309ce1b3c1637f1baf6dbe) Thanks [@Custard7](https://github.com/Custard7)! - feat: Sentry Filtering
+
+## 2.5.2
+
+### Patch Changes
+
+-   Updated dependencies [[`32e5cfacf499e9a68700170298040f3d313b38da`](https://github.com/learningeconomy/LearnCard/commit/32e5cfacf499e9a68700170298040f3d313b38da)]:
+    -   @learncard/types@5.12.0
+    -   @learncard/core@9.4.6
+    -   @learncard/helpers@1.2.6
+    -   @learncard/did-web-plugin@1.1.6
+    -   @learncard/didkey-plugin@1.1.6
+    -   @learncard/didkit-plugin@1.7.2
+    -   @learncard/didkit-plugin-node@0.2.2
+    -   @learncard/encryption-plugin@1.1.6
+    -   @learncard/learn-card-plugin@1.2.6
+    -   @learncard/vc-plugin@1.4.2
+    -   @learncard/vc-templates-plugin@1.1.6
+    -   @learncard/crypto-plugin@1.1.6
+    -   @learncard/expiration-plugin@1.2.6
+
 ## 2.5.1
 
 ### Patch Changes

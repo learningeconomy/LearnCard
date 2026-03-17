@@ -16,6 +16,7 @@ import { createSentCredentialRelationship } from '@accesslayer/credential/relati
 import {
     isClaimLinkAlreadySetForBoost,
     getClaimLinkSAInfoForBoost,
+    getClaimLinkGeneratorProfileId,
     useClaimLinkForBoost,
 } from '@cache/claim-links';
 
@@ -29,9 +30,9 @@ import {
     getContactMethodById,
     getProfileByContactMethod,
 } from '@accesslayer/contact-method/read';
-import { getProfileByDid } from '@accesslayer/profile/read';
+import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 
-import { getBoostUri, isDraftBoost } from '@helpers/boost.helpers';
+import { getBoostUri, isBoostViewableByClaimLink, isDraftBoost } from '@helpers/boost.helpers';
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
@@ -206,6 +207,13 @@ async function handleExchangeInitiation(
         });
     }
 
+    if (!(await isBoostViewableByClaimLink(boost))) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'This boost is not currently viewable by claim link.',
+        });
+    }
+
     // Check if challenge is already in use (shouldn't happen with UUID but be safe)
     if (!await isClaimLinkAlreadySetForBoost(exchangeInfo.boostUri, exchangeInfo.challenge)) {
         throw new TRPCError({
@@ -277,13 +285,29 @@ async function handlePresentationForClaim(
 
     if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-    const boostOwner = await getBoostOwner(boost);
+    if (!(await isBoostViewableByClaimLink(boost))) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'This boost is not currently viewable by claim link.',
+        });
+    }
+
+    const [boostOwner, generatorProfileId] = await Promise.all([
+        getBoostOwner(boost),
+        getClaimLinkGeneratorProfileId(exchangeInfo.boostUri, exchangeInfo.challenge),
+    ]);
+
     if (!boostOwner) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost owner' });
     }
 
+    // Use the generator's profile for SA lookup if available, fall back to boost owner
+    const saOwner = generatorProfileId
+        ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
+        : boostOwner;
+
     const signingAuthorityForUser = await getSigningAuthorityForUserByName(
-        boostOwner,
+        saOwner,
         claimLinkSA.endpoint,
         claimLinkSA.name
     );
@@ -360,7 +384,7 @@ async function handlePresentationForClaim(
         await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);
 
         const vc = await issueCredentialWithSigningAuthority(
-            boostOwner,
+            saOwner,
             boostCredential,
             signingAuthorityForUser,
             domain,
@@ -640,8 +664,8 @@ async function handleInboxClaimPresentation(
 
             // Log CLAIMED activity - chain to original activityId/integrationId if available
             // activityId and integrationId are stored on the inbox credential
-            const activityId = (inboxCredential as any).activityId as string | undefined;
-            const integrationId = (inboxCredential as any).integrationId as string | undefined;
+            const activityId = inboxCredential.activityId;
+            const integrationId = inboxCredential.integrationId;
             const issuerProfileForActivity = await getProfileByDid(inboxCredential.issuerDid);
             if (issuerProfileForActivity) {
                 await logCredentialClaimed({
@@ -687,9 +711,9 @@ async function handleInboxClaimPresentation(
             console.error(`Failed to process inbox credential ${inboxCredential.id}:`, error);
             
             // Log FAILED activity - chain to original activityId/integrationId if available
-            const failedActivityId = (inboxCredential as any).activityId as string | undefined;
-            const failedIntegrationId = (inboxCredential as any).integrationId as string | undefined;
-            const failedBoostUri = (inboxCredential as any).boostUri as string | undefined;
+            const failedActivityId = inboxCredential.activityId;
+            const failedIntegrationId = inboxCredential.integrationId;
+            const failedBoostUri = inboxCredential.boostUri;
             const failedIssuerProfile = await getProfileByDid(inboxCredential.issuerDid);
             if (failedIssuerProfile) {
                 try {

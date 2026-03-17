@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { v4 as uuid } from 'uuid';
 
 import TrashBin from '../../../svgs/TrashBin';
 import DocIcon from 'learn-card-base/svgs/DocIcon';
@@ -50,7 +49,9 @@ export const CheckListTranscripts: React.FC = () => {
 
     useEffect(() => {
         if (base64Datas?.length > 0 && rawArtifactCredentials?.length > 0) {
-            parseFiles(UploadTypesEnum.Transcript);
+            parseFiles(UploadTypesEnum.Transcript).finally(() => {
+                handleSetTranscripts();
+            });
         }
     }, [base64Datas, rawArtifactCredentials]);
 
@@ -153,22 +154,7 @@ export const CheckListTranscripts: React.FC = () => {
                         type="file"
                         accept=".pdf,.txt,.docx"
                         onChange={async e => {
-                            const transcriptCredential = await getFiles(
-                                e,
-                                UploadTypesEnum.Transcript
-                            );
-                            if (transcriptCredential?.fileInfos) {
-                                setTranscripts(prev => [
-                                    ...prev,
-                                    ...transcriptCredential.fileInfos?.map((fileInfo: any) => ({
-                                        id: uuid(),
-                                        fileName: fileInfo.name,
-                                        fileSize: fileInfo.size,
-                                        fileType: fileInfo.type,
-                                        type: UploadTypesEnum.Transcript,
-                                    })),
-                                ]);
-                            }
+                            await getFiles(e, UploadTypesEnum.Transcript);
                         }}
                         ref={fileInputRef}
                         style={{ display: 'none' }}

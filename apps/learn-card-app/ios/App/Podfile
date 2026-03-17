@@ -11,7 +11,7 @@ install! 'cocoapods', :disable_input_output_paths => true, :deterministic_uuids 
 def capacitor_pods
   pod 'Capacitor', :path => '../../../../node_modules/.pnpm/@capacitor+ios@8.0.1_@capacitor+core@8.0.1/node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../../../node_modules/.pnpm/@capacitor+ios@8.0.1_@capacitor+core@8.0.1/node_modules/@capacitor/ios'
-  pod 'CapacitorCommunityMedia', :path => '../../../../node_modules/.pnpm/@capacitor-community+media@9.0.0_@capacitor+core@8.0.1/node_modules/@capacitor-community/media'
+  pod 'CapacitorCommunityMedia', :path => '../../../../node_modules/.pnpm/@capacitor-community+media@9.0.1_@capacitor+core@8.0.1/node_modules/@capacitor-community/media'
   pod 'CapacitorCommunitySqlite', :path => '../../../../node_modules/.pnpm/@capacitor-community+sqlite@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor-community/sqlite'
   pod 'CapacitorFirebaseAnalytics', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+analytics@8.0.1_@capacitor+core@8.0.1_firebase@12.8.0/node_modules/@capacitor-firebase/analytics'
   pod 'CapacitorFirebaseAuthentication', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+authentication@8.0.1_@capacitor+core@8.0.1_firebase@12.8.0/node_modules/@capacitor-firebase/authentication'
@@ -21,7 +21,8 @@ def capacitor_pods
   pod 'CapacitorCamera', :path => '../../../../node_modules/.pnpm/@capacitor+camera@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/camera'
   pod 'CapacitorClipboard', :path => '../../../../node_modules/.pnpm/@capacitor+clipboard@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/clipboard'
   pod 'CapacitorFileTransfer', :path => '../../../../node_modules/.pnpm/@capacitor+file-transfer@2.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/file-transfer'
-  pod 'CapacitorFilesystem', :path => '../../../../node_modules/.pnpm/@capacitor+filesystem@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/filesystem'
+  pod 'CapacitorFileViewer', :path => '../../../../node_modules/.pnpm/@capacitor+file-viewer@2.0.1_@capacitor+core@8.0.1/node_modules/@capacitor/file-viewer'
+  pod 'CapacitorFilesystem', :path => '../../../../node_modules/.pnpm/@capacitor+filesystem@8.1.0_@capacitor+core@8.0.1/node_modules/@capacitor/filesystem'
   pod 'CapacitorHaptics', :path => '../../../../node_modules/.pnpm/@capacitor+haptics@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/haptics'
   pod 'CapacitorKeyboard', :path => '../../../../node_modules/.pnpm/@capacitor+keyboard@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/keyboard'
   pod 'CapacitorLocalNotifications', :path => '../../../../node_modules/.pnpm/@capacitor+local-notifications@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/local-notifications'
@@ -49,10 +50,10 @@ post_install do |installer|
   assertDeploymentTarget(installer)
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+
       if target.respond_to?(:product_type) and target.product_type == "com.apple.product-type.bundle"
-        target.build_configurations.each do |config|
-            config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
-        end
+        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
       end
     end
   end

@@ -30,6 +30,12 @@ import type {
     ConsentResponse,
     RequestConsentOptions,
     TemplateIssueResponse,
+    CheckCredentialInput,
+    CheckCredentialResponse,
+    CheckIssuanceStatusInput,
+    TemplateIssuanceStatusResponse,
+    GetTemplateRecipientsInput,
+    TemplateRecipientsResponse,
     AppEvent,
     AppEventResponse,
     LearnCardError,
@@ -305,14 +311,95 @@ export class PartnerConnect {
         ) {
             const templateInput = input as TemplateCredentialInput;
 
-            return this.sendAppEvent({
+            return this.sendAppEvent<TemplateCredentialResponse>({
                 type: 'send-credential',
                 templateAlias: templateInput.templateAlias,
                 templateData: templateInput.templateData,
-            }) as Promise<TemplateCredentialResponse>;
+                preventDuplicateClaim: templateInput.preventDuplicateClaim,
+            });
         }
 
         return this.sendMessage<SendCredentialResponse>('SEND_CREDENTIAL', { credential: input });
+    }
+
+    /**
+     * Check whether the current user already has a credential from a given boost template.
+     * This is a silent, non-interactive status check for installed app integrations.
+     */
+    public checkUserHasCredential(input: CheckCredentialInput): Promise<CheckCredentialResponse> {
+        return this.sendAppEvent<CheckCredentialResponse>({
+            type: 'check-credential',
+            ...input,
+        });
+    }
+
+    /**
+     * Check if the current user has issued/sent a specific template to someone.
+     * Returns issuance status including sent date and claim status.
+     *
+     * @param input - Template identifier (templateAlias or boostUri) and recipient identifier (recipientDid or recipientProfileId)
+     * @returns Promise resolving to issuance status response
+     *
+     * @example
+     * ```typescript
+     * // Check if user already issued 'achievement-badge' to a specific person
+     * const status = await learnCard.getTemplateIssuanceStatus({
+     *   templateAlias: 'achievement-badge',
+     *   recipientProfileId: 'user123'
+     * });
+     *
+     * if (status.sent) {
+     *   console.log('Already issued on:', status.sentDate);
+     *   console.log('Status:', status.status); // 'pending', 'claimed', or 'revoked'
+     * }
+     * ```
+     */
+    public getTemplateIssuanceStatus(
+        input: CheckIssuanceStatusInput
+    ): Promise<TemplateIssuanceStatusResponse> {
+        return this.sendAppEvent<TemplateIssuanceStatusResponse>({
+            type: 'check-issuance-status',
+            ...input,
+        });
+    }
+
+    /**
+     * Get the list of all recipients for a specific template/boost.
+     * Useful for dashboards showing who has received a credential.
+     *
+     * @param input - Template identifier (templateAlias or boostUri) and optional pagination params
+     * @returns Promise resolving to paginated list of recipients
+     *
+     * @example
+     * ```typescript
+     * // Get first 10 recipients of 'achievement-badge'
+     * const recipients = await learnCard.getTemplateRecipients({
+     *   templateAlias: 'achievement-badge',
+     *   limit: 10
+     * });
+     *
+     * console.log(`Found ${recipients.records.length} recipients`);
+     * recipients.records.forEach(r => {
+     *   console.log(`${r.recipientDisplayName}: ${r.status}`);
+     * });
+     *
+     * // Get next page if available
+     * if (recipients.hasMore) {
+     *   const nextPage = await learnCard.getTemplateRecipients({
+     *     templateAlias: 'achievement-badge',
+     *     limit: 10,
+     *     cursor: recipients.cursor
+     *   });
+     * }
+     * ```
+     */
+    public getTemplateRecipients(
+        input: GetTemplateRecipientsInput
+    ): Promise<TemplateRecipientsResponse> {
+        return this.sendAppEvent<TemplateRecipientsResponse>({
+            type: 'get-template-recipients',
+            ...input,
+        });
     }
 
     /**
@@ -469,8 +556,8 @@ export class PartnerConnect {
      * }
      * ```
      */
-    public sendAppEvent(event: AppEvent): Promise<AppEventResponse> {
-        return this.sendMessage<AppEventResponse>('APP_EVENT', event);
+    public sendAppEvent<T = AppEventResponse>(event: AppEvent): Promise<T> {
+        return this.sendMessage<T>('APP_EVENT', event);
     }
 
     /**
@@ -511,7 +598,7 @@ export class PartnerConnect {
  * });
  * ```
  */
-export function createPartnerConnect(options: PartnerConnectOptions): PartnerConnect {
+export function createPartnerConnect(options?: PartnerConnectOptions): PartnerConnect {
     return new PartnerConnect(options);
 }
 

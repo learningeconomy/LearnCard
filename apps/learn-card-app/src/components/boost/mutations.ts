@@ -68,28 +68,47 @@ export const useAddCredentialToWallet = () => {
                 didOverride === true
                     ? undefined
                     : didOverride || switchedProfileStore.get.switchedDid();
+            const didForCredentials = didWeb;
+            const didForListsAndCounts = didWeb ?? '';
 
             await queryClient.cancelQueries({
-                queryKey: ['useGetCredentialList', didWeb ?? '', category],
+                queryKey: ['useGetCredentialList', didForListsAndCounts, category],
             });
             await queryClient.invalidateQueries({
-                queryKey: ['useGetCredentialCount', didWeb ?? '', category],
+                queryKey: ['useGetCredentialCount', didForListsAndCounts, category],
             });
 
             // Update cache
-            insertItem(queryClient, ['useGetCredentialList', didWeb ?? '', category], {
+            insertItem(queryClient, ['useGetCredentialList', didForListsAndCounts, category], {
                 id,
                 category,
                 uri,
             });
 
-            // Intentionally don't await these to keep this mutation fast!
-            queryClient.refetchQueries({ queryKey: ['useGetCredentials', didWeb ?? '', category] });
+            // Keep resume-builder selectors and wallet credential views in sync after any issuance.
+            // Intentionally don't await these to keep this mutation fast.
+            queryClient.invalidateQueries({ queryKey: ['useGetCredentials', didForCredentials] });
+            queryClient.invalidateQueries({
+                queryKey: ['useGetCredentialList', didForListsAndCounts],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['useGetCredentialCount', didForListsAndCounts],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['useGetIDs', didForListsAndCounts],
+            });
+
             queryClient.refetchQueries({
-                queryKey: ['useGetCredentialCount', didWeb ?? '', category],
+                queryKey: ['useGetCredentials', didForCredentials, category],
             });
             queryClient.refetchQueries({
-                queryKey: ['useGetCredentialList', didWeb ?? '', category],
+                queryKey: ['useGetCredentialList', didForListsAndCounts],
+            });
+            queryClient.refetchQueries({
+                queryKey: ['useGetCredentialCount', didForListsAndCounts],
+            });
+            queryClient.refetchQueries({
+                queryKey: ['useGetIDs', didForListsAndCounts],
             });
 
             await syncCredentialToContracts({ record: data, category });

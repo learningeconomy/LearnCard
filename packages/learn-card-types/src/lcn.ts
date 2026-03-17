@@ -146,6 +146,7 @@ export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;
 
 export const BoostPermissionsValidator = z.object({
     role: z.string(),
+    canView: z.boolean().default(true),
     canEdit: z.boolean(),
     canIssue: z.boolean(),
     canRevoke: z.boolean(),
@@ -163,6 +164,7 @@ export type BoostPermissions = z.infer<typeof BoostPermissionsValidator>;
 export const BoostPermissionsQueryValidator = z
     .object({
         role: StringQuery,
+        canView: z.boolean(),
         canEdit: z.boolean(),
         canIssue: z.boolean(),
         canRevoke: z.boolean(),
@@ -360,7 +362,13 @@ const SendBoostTemplateValidator = BoostValidator.partial()
         credential: VCValidator.or(UnsignedVCValidator),
         claimPermissions: BoostPermissionsValidator.partial().optional(),
         skills: z
-            .array(z.object({ frameworkId: z.string(), id: z.string() }))
+            .array(
+                z.object({
+                    frameworkId: z.string(),
+                    id: z.string(),
+                    proficiencyLevel: z.number().optional(),
+                })
+            )
             .min(1)
             .optional(),
     });
@@ -768,6 +776,7 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'APP_LISTING_SUBMITTED',
     'APP_LISTING_APPROVED',
     'APP_LISTING_REJECTED',
+    'DEVICE_LINK_REQUEST',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
@@ -985,6 +994,7 @@ export const InboxCredentialValidator = z.object({
     webhookUrl: z.string().optional(),
     boostUri: z.string().optional(),
     activityId: z.string().optional(),
+    integrationId: z.string().optional(),
     signingAuthority: z
         .object({
             endpoint: z.string().optional(),
@@ -1173,10 +1183,14 @@ export type IssueInboxCredentialResponseType = z.infer<
     typeof IssueInboxCredentialResponseValidator
 >;
 
+/** A simple name reference that the server resolves to a boost template */
+export const CredentialNameRefValidator = z.object({ name: z.string() }).passthrough();
+
 export const ClaimInboxCredentialValidator = z.object({
     credential: VCValidator.or(VPValidator)
         .or(UnsignedVCValidator)
-        .describe('The credential to issue.'),
+        .or(CredentialNameRefValidator)
+        .describe('The credential to issue, or a { name } reference to resolve a boost template.'),
     configuration: z
         .object({
             publishableKey: z.string(),
@@ -1359,6 +1373,7 @@ export const SkillFrameworkValidator = z.object({
     description: z.string().optional(),
     image: z.string().optional(),
     sourceURI: z.string().url().optional(),
+    isPublic: z.boolean().default(false),
     status: SkillFrameworkStatusEnum.default('active'),
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
@@ -1427,6 +1442,7 @@ export const CreateManagedFrameworkInputValidator = z.object({
     description: z.string().optional(),
     image: z.string().optional(),
     sourceURI: z.string().url().optional(),
+    isPublic: z.boolean().optional(),
     status: SkillFrameworkStatusEnum.optional(),
     skills: z.array(SkillTreeNodeInputValidator).optional(),
     boostUris: z.array(z.string()).optional(),
@@ -1444,6 +1460,7 @@ export const UpdateFrameworkInputValidator = z
         description: z.string().optional(),
         image: z.string().optional(),
         sourceURI: z.string().url().optional(),
+        isPublic: z.boolean().optional(),
         status: SkillFrameworkStatusEnum.optional(),
     })
     .refine(
@@ -1452,6 +1469,7 @@ export const UpdateFrameworkInputValidator = z
             data.description !== undefined ||
             data.image !== undefined ||
             data.sourceURI !== undefined ||
+            data.isPublic !== undefined ||
             data.status !== undefined,
         {
             message: 'At least one field must be provided to update',
@@ -1662,6 +1680,9 @@ export const PromotionLevelValidator = z.enum([
 ]);
 export type PromotionLevel = z.infer<typeof PromotionLevelValidator>;
 
+export const AgeRatingValidator = z.enum(['4+', '9+', '12+', '17+']);
+export type AgeRating = z.infer<typeof AgeRatingValidator>;
+
 export const AppStoreListingValidator = z.object({
     listing_id: z.string(),
     slug: z.string().optional(),
@@ -1682,6 +1703,8 @@ export const AppStoreListingValidator = z.object({
     highlights: z.array(z.string()).optional(),
     screenshots: z.array(z.string()).optional(),
     hero_background_color: z.string().optional(),
+    min_age: z.number().int().min(0).max(18).optional(),
+    age_rating: AgeRatingValidator.optional(),
 });
 
 export type AppStoreListing = z.infer<typeof AppStoreListingValidator>;
@@ -1737,12 +1760,57 @@ export const SendCredentialEventValidator = z.object({
     type: z.literal('send-credential'),
     templateAlias: z.string(),
     templateData: z.record(z.string(), z.unknown()).optional(),
+    preventDuplicateClaim: z.boolean().optional(),
 });
 
 export type SendCredentialEvent = z.infer<typeof SendCredentialEventValidator>;
 
+export const CheckCredentialEventValidator = z
+    .object({
+        type: z.literal('check-credential'),
+        templateAlias: z.string().optional(),
+        boostUri: z.string().optional(),
+    })
+    .refine(input => Boolean(input.templateAlias) !== Boolean(input.boostUri), {
+        message: 'Exactly one of templateAlias or boostUri is required',
+    });
+
+export type CheckCredentialEvent = z.infer<typeof CheckCredentialEventValidator>;
+
+export const CheckIssuanceStatusEventValidator = z
+    .object({
+        type: z.literal('check-issuance-status'),
+        templateAlias: z.string().optional(),
+        boostUri: z.string().optional(),
+        recipient: z.string(),
+    })
+    .refine(input => Boolean(input.templateAlias) !== Boolean(input.boostUri), {
+        message: 'Exactly one of templateAlias or boostUri is required',
+    });
+
+export type CheckIssuanceStatusEvent = z.infer<typeof CheckIssuanceStatusEventValidator>;
+
+export const GetTemplateRecipientsEventValidator = z
+    .object({
+        type: z.literal('get-template-recipients'),
+        templateAlias: z.string().optional(),
+        boostUri: z.string().optional(),
+        limit: z.number().optional(),
+        cursor: z.string().optional(),
+    })
+    .refine(input => Boolean(input.templateAlias) !== Boolean(input.boostUri), {
+        message: 'Exactly one of templateAlias or boostUri is required',
+    });
+
+export type GetTemplateRecipientsEvent = z.infer<typeof GetTemplateRecipientsEventValidator>;
+
 // Add new event types here as the union grows
-export const AppEventValidator = z.discriminatedUnion('type', [SendCredentialEventValidator]);
+export const AppEventValidator = z.discriminatedUnion('type', [
+    SendCredentialEventValidator,
+    CheckCredentialEventValidator,
+    CheckIssuanceStatusEventValidator,
+    GetTemplateRecipientsEventValidator,
+]);
 
 export type AppEvent = z.infer<typeof AppEventValidator>;
 
@@ -1782,6 +1850,7 @@ export const CredentialActivitySourceTypeValidator = z.enum([
     'inbox',
     'claimLink',
     'acceptCredential',
+    'appEvent',
 ]);
 export type CredentialActivitySourceType = z.infer<typeof CredentialActivitySourceTypeValidator>;
 

@@ -2,12 +2,13 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { LCNNotificationTypeEnumValidator } from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
-import { isVC2Format } from '@learncard/helpers';
+import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
 
-import { t, openRoute, profileRoute } from '@routes';
+import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
+import { getCredentialUri } from '@helpers/credential.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
@@ -42,6 +43,8 @@ import {
     getBoostForListingByTemplateAlias,
     getBoostsForListing,
     hasTemplateAliasForListing,
+    getCredentialsSentByListingToProfile,
+    countCredentialsSentByListingToProfile,
 } from '@accesslayer/app-store-listing/relationships/read';
 import { readIntegrationById } from '@accesslayer/integration/read';
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
@@ -58,6 +61,7 @@ import {
     LaunchType,
     PromotionLevel,
     AppStoreListingValidator,
+    AgeRating,
 } from 'types/app-store-listing';
 import type {
     AppStoreListingCreateType,
@@ -68,7 +72,11 @@ import { getBoostByUri } from '@accesslayer/boost/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { getAppDidWeb, getDidWeb } from '@helpers/did.helpers';
+import { getAppDidWeb, getDidWeb, getProfileIdFromDid } from '@helpers/did.helpers';
+import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
+import { getBoostRecipients, getBoostPermissions } from '@accesslayer/boost/relationships/read';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+import type { BoostInstance } from '@models';
 
 // =============================================================================
 // VALIDATION HELPERS
@@ -208,6 +216,8 @@ const AppStoreListingBaseSchema = z.object({
             message: 'Must be a valid hex color (e.g., #FF5733)',
         })
         .optional(),
+    min_age: z.number().optional(),
+    age_rating: AgeRating.optional(),
 });
 
 // Iframe URL validation refinement (applied to schemas that include launch_type)
@@ -377,6 +387,23 @@ const PaginatedInstalledAppsValidator = z.object({
     records: z.array(InstalledAppValidator),
 });
 
+const AppCredentialRecordValidator = z.object({
+    credentialId: z.string(),
+    credentialUri: z.string(),
+    date: z.string(),
+    status: z.enum(['pending', 'claimed', 'revoked']),
+    boostName: z.string().optional(),
+    boostCategory: z.string().optional(),
+    activityId: z.string().optional(),
+});
+
+const PaginatedAppCredentialsValidator = z.object({
+    hasMore: z.boolean(),
+    cursor: z.string().optional(),
+    records: z.array(AppCredentialRecordValidator),
+    totalCount: z.number(),
+});
+
 // Helper to verify integration ownership
 const verifyIntegrationOwnership = async (integrationId: string, profileId: string) => {
     const associated = await isIntegrationAssociatedWithProfile(integrationId, profileId);
@@ -449,6 +476,7 @@ const handleSendCredentialEvent = async (
 ): Promise<Record<string, unknown>> => {
     const templateAlias = event.templateAlias as string | undefined;
     const templateData = event.templateData as Record<string, unknown> | undefined;
+    const preventDuplicateClaim = Boolean(event.preventDuplicateClaim);
 
     if (!templateAlias) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias required' });
@@ -465,6 +493,30 @@ const handleSendCredentialEvent = async (
     }
 
     const { boost, boostUri } = boostResult;
+
+    // NOTE: This is best-effort duplicate prevention, not a guarantee.
+    // There is a race condition window between checking and creating the credential
+    // where concurrent requests could both pass this check. This is acceptable for
+    // UI-level duplicate prevention. For hard guarantees, database-level constraints
+    // would be needed, but users CAN legitimately have multiple credentials from
+    // the same boost (e.g., renewed certifications), so we don't enforce uniqueness.
+    if (preventDuplicateClaim) {
+        const existingCredential = await getCredentialStatusForBoostAndProfile(
+            boost.id,
+            profile.profileId
+        );
+
+        if (existingCredential && existingCredential.status !== 'revoked') {
+            return {
+                hasCredential: true,
+                alreadyClaimed: true,
+                credentialUri: getCredentialUri(existingCredential.credential.id, ctx.domain),
+                receivedDate: existingCredential.receivedDate ?? existingCredential.sentDate,
+                status: existingCredential.status,
+                boostUri,
+            };
+        }
+    }
 
     if (isDraftBoost(boost)) {
         throw new TRPCError({
@@ -575,19 +627,37 @@ const handleSendCredentialEvent = async (
     let credential: VC | JWE;
 
     try {
+        const ownerDidOverride = listing.slug ? getAppDidWeb(ctx.domain, listing.slug) : undefined;
+        console.log('[appEvent] Issuing credential via SA', {
+            integrationOwner: integrationOwner.profileId,
+            saName: sa.relationship.name,
+            saDid: sa.relationship.did,
+            saEndpoint: sa.signingAuthority.endpoint,
+            ownerDidOverride,
+            domain: ctx.domain,
+            boostUri,
+            templateAlias,
+        });
         credential = await issueCredentialWithSigningAuthority(
             integrationOwner,
             unsignedVc,
             sa,
             ctx.domain,
             true,
-            listing.slug ? getAppDidWeb(ctx.domain, listing.slug) : undefined
+            ownerDidOverride
         );
     } catch (e) {
-        console.error('Failed to issue VC with signing authority', e);
+        const errMsg = e instanceof Error ? e.message : String(e);
+        console.error('[appEvent] Failed to issue VC with signing authority:', {
+            error: errMsg,
+            stack: e instanceof Error ? e.stack : undefined,
+            integrationOwner: integrationOwner.profileId,
+            saName: sa.relationship.name,
+            saEndpoint: sa.signingAuthority.endpoint,
+        });
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: 'Could not issue credential with signing authority',
+            message: `Could not issue credential with signing authority: ${errMsg}`,
         });
     }
 
@@ -600,7 +670,7 @@ const handleSendCredentialEvent = async (
         boostUri,
         integrationId: integration.id,
         listingId,
-        source: 'sendBoost',
+        source: 'appEvent',
         metadata: { listingId, templateAlias },
     });
 
@@ -620,6 +690,285 @@ const handleSendCredentialEvent = async (
     return {
         credentialUri,
         boostUri,
+    };
+};
+
+const handleCheckCredentialEvent = async (
+    ctx: { domain: string },
+    profile: { profileId: string },
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const templateAlias = event.templateAlias as string | undefined;
+    const boostUriInput = event.boostUri as string | undefined;
+
+    if (!templateAlias && !boostUriInput) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias or boostUri required' });
+    }
+
+    if (templateAlias && boostUriInput) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Provide either templateAlias or boostUri, not both',
+        });
+    }
+
+    let boost: { id: string } | null = null;
+    let boostUri: string;
+
+    if (templateAlias) {
+        const boostResult = await getBoostForListingByTemplateAlias(
+            listingId,
+            templateAlias,
+            ctx.domain
+        );
+
+        if (!boostResult) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
+        }
+
+        boost = boostResult.boost;
+        boostUri = boostResult.boostUri;
+    } else {
+        boostUri = boostUriInput as string;
+        const boosts = await getBoostsForListing(listingId, ctx.domain);
+        const hasBoostAccess = boosts.some(item => item.boostUri === boostUri);
+
+        if (!hasBoostAccess) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Boost is not associated with this app',
+            });
+        }
+
+        boost = await getBoostByUri(boostUri);
+
+        if (!boost) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+        }
+    }
+
+    const credentialStatus = await getCredentialStatusForBoostAndProfile(
+        boost.id,
+        profile.profileId
+    );
+
+    if (!credentialStatus) {
+        return {
+            hasCredential: false,
+            boostUri,
+        };
+    }
+
+    const credentialUri = getCredentialUri(credentialStatus.credential.id, ctx.domain);
+    const receivedDate = credentialStatus.receivedDate ?? credentialStatus.sentDate;
+    const hasCredential = credentialStatus.status !== 'revoked';
+
+    return {
+        hasCredential,
+        boostUri,
+        credentialUri,
+        receivedDate,
+        status: credentialStatus.status,
+    };
+};
+
+const handleCheckIssuanceStatusEvent = async (
+    ctx: { domain: string },
+    profile: { profileId: string },
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const templateAlias = event.templateAlias as string | undefined;
+    const boostUriInput = event.boostUri as string | undefined;
+    const recipient = event.recipient as string | undefined;
+
+    if (!templateAlias && !boostUriInput) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias or boostUri required' });
+    }
+
+    if (templateAlias && boostUriInput) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Provide either templateAlias or boostUri, not both',
+        });
+    }
+
+    if (!recipient) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'recipient required',
+        });
+    }
+
+    let boost: BoostInstance | null = null;
+    let boostUri: string;
+
+    if (templateAlias) {
+        const boostResult = await getBoostForListingByTemplateAlias(
+            listingId,
+            templateAlias,
+            ctx.domain
+        );
+
+        if (!boostResult) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
+        }
+
+        boost = boostResult.boost;
+        boostUri = boostResult.boostUri;
+    } else {
+        boostUri = boostUriInput as string;
+        boost = await getBoostByUri(boostUri);
+
+        if (!boost) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+        }
+    }
+
+    const fullProfile = await getProfileByProfileId(profile.profileId);
+    if (!fullProfile) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+    }
+
+    const permissions = await getBoostPermissions(boost, fullProfile);
+    if (!permissions.canView) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Profile does not have permission to view this boost',
+        });
+    }
+
+    let targetProfileId: string;
+    if (recipient.startsWith('did:')) {
+        const parsedId = getProfileIdFromDid(recipient);
+        if (!parsedId) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Invalid DID format. Expected did:web:domain:users:profileId',
+            });
+        }
+        targetProfileId = parsedId;
+    } else {
+        targetProfileId = recipient;
+    }
+
+    const credentialStatus = await getCredentialStatusForBoostAndProfile(boost.id, targetProfileId);
+
+    if (!credentialStatus) {
+        return {
+            sent: false,
+            boostUri,
+        };
+    }
+
+    const credentialUri = getCredentialUri(credentialStatus.credential.id, ctx.domain);
+
+    return {
+        sent: true,
+        boostUri,
+        credentialUri,
+        sentDate: credentialStatus.sentDate,
+        claimedDate: credentialStatus.receivedDate,
+        status: credentialStatus.status,
+    };
+};
+
+const handleGetTemplateRecipientsEvent = async (
+    ctx: { domain: string },
+    profile: { profileId: string },
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const templateAlias = event.templateAlias as string | undefined;
+    const boostUriInput = event.boostUri as string | undefined;
+    const limit = Math.min(Math.max(Number(event.limit) || 10, 1), 100);
+    const cursor = event.cursor as string | undefined;
+
+    if (!templateAlias && !boostUriInput) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias or boostUri required' });
+    }
+
+    if (templateAlias && boostUriInput) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Provide either templateAlias or boostUri, not both',
+        });
+    }
+
+    let boost: BoostInstance | null = null;
+    let boostUri: string;
+
+    if (templateAlias) {
+        const boostResult = await getBoostForListingByTemplateAlias(
+            listingId,
+            templateAlias,
+            ctx.domain
+        );
+
+        if (!boostResult) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
+        }
+
+        boost = boostResult.boost;
+        boostUri = boostResult.boostUri;
+    } else {
+        boostUri = boostUriInput as string;
+        boost = await getBoostByUri(boostUri);
+
+        if (!boost) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+        }
+    }
+
+    const fullProfile = await getProfileByProfileId(profile.profileId);
+    if (!fullProfile) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+    }
+
+    const permissions = await getBoostPermissions(boost, fullProfile);
+    if (!permissions.canView) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Profile does not have permission to view this boost',
+        });
+    }
+
+    const recipients = await getBoostRecipients(boost, {
+        limit: limit + 1,
+        cursor,
+        includeUnacceptedBoosts: true,
+        domain: ctx.domain,
+        from: profile.profileId,
+    });
+
+    const hasMore = recipients.length > limit;
+    const records = hasMore ? recipients.slice(0, limit) : recipients;
+
+    const formattedRecords = records.map(
+        (r: {
+            to: { profileId: string; displayName?: string };
+            sent: string;
+            received?: string;
+            uri?: string;
+        }) => ({
+            recipientProfileId: r.to.profileId,
+            recipientDisplayName: r.to.displayName,
+            sentDate: r.sent,
+            claimedDate: r.received,
+            credentialUri: r.uri,
+            status: r.received ? 'claimed' : 'pending',
+        })
+    );
+
+    const lastRecord = records.length > 0 ? records[records.length - 1] : undefined;
+    const nextCursor = hasMore && lastRecord ? (lastRecord as { sent: string }).sent : undefined;
+
+    return {
+        records: formattedRecords,
+        hasMore,
+        cursor: nextCursor,
+        total: formattedRecords.length,
     };
 };
 
@@ -1080,7 +1429,7 @@ export const appStoreRouter = t.router({
 
     // ==================== User Install/Uninstall Routes ====================
 
-    installApp: profileRoute
+    installApp: guardianGatedRoute
         .meta({
             openapi: {
                 protect: true,
@@ -1102,6 +1451,53 @@ export const appStoreRouter = t.router({
                     code: 'NOT_FOUND',
                     message: 'Listing not found or not available',
                 });
+            }
+
+            // Check age restrictions using shared helper
+            const userAge = calculateAgeFromDob(ctx.user.profile.dob);
+
+            // Parse launch config to check for contract
+            let hasContract = false;
+            try {
+                const launchConfig = listing.launch_config_json
+                    ? JSON.parse(listing.launch_config_json)
+                    : {};
+                hasContract = Boolean(launchConfig?.contractUri);
+            } catch {
+                // Invalid JSON, assume no contract
+            }
+
+            const eligibilityResult = checkAppInstallEligibility({
+                isChildProfile: ctx.isChildAccount,
+                userAge,
+                minAge: listing.min_age,
+                ageRating: listing.age_rating,
+                hasContract,
+                hasGuardianApproval: ctx.hasGuardianApproval,
+            });
+
+            switch (eligibilityResult.action) {
+                case 'hard_blocked':
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: eligibilityResult.reason,
+                    });
+
+                case 'require_dob':
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: eligibilityResult.reason,
+                    });
+
+                case 'require_guardian_approval':
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: eligibilityResult.reason,
+                    });
+
+                case 'proceed':
+                    // Continue with installation
+                    break;
             }
 
             const alreadyInstalled = await checkIfProfileInstalledApp(
@@ -1223,6 +1619,69 @@ export const appStoreRouter = t.router({
         .output(z.boolean())
         .query(async ({ input, ctx }) => {
             return checkIfProfileInstalledApp(ctx.user.profile.profileId, input.listingId);
+        }),
+
+    getMyCredentialsFromApp: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/{listingId}/my-credentials',
+                tags: ['App Store'],
+                summary: 'Get credentials earned from an app',
+                description: 'Get all credentials that have been sent to you from a specific app',
+            },
+            requiredScope: 'credentials:read',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                limit: z.number().int().min(1).max(100).default(25),
+                cursor: z.string().optional(),
+            })
+        )
+        .output(PaginatedAppCredentialsValidator)
+        .query(async ({ input, ctx }) => {
+            const { listingId, limit, cursor } = input;
+            const profileId = ctx.user.profile.profileId;
+
+            // Verify listing exists
+            const listing = await readAppStoreListingByIdOrSlug(listingId);
+            if (!listing) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+            }
+
+            const resolvedListingId = listing.listing_id;
+
+            // Get credentials with pagination
+            const results = await getCredentialsSentByListingToProfile(
+                resolvedListingId,
+                profileId,
+                { limit: limit + 1, cursor }
+            );
+
+            // Get total count
+            const totalCount = await countCredentialsSentByListingToProfile(
+                resolvedListingId,
+                profileId
+            );
+
+            const hasMore = results.length > limit;
+            const slicedResults = hasMore ? results.slice(0, limit) : results;
+            const nextCursor = hasMore ? slicedResults[slicedResults.length - 1]?.date : undefined;
+
+            // Construct credential URIs from IDs using the domain
+            const records = slicedResults.map(record => ({
+                ...record,
+                credentialUri: getCredentialUri(record.credentialId, ctx.domain),
+            }));
+
+            return {
+                hasMore,
+                cursor: nextCursor,
+                records,
+                totalCount,
+            };
         }),
 
     // ==================== App Boost Management Routes ====================
@@ -1405,6 +1864,18 @@ export const appStoreRouter = t.router({
 
             if (eventType === 'send-credential') {
                 return handleSendCredentialEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'check-credential') {
+                return handleCheckCredentialEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'check-issuance-status') {
+                return handleCheckIssuanceStatusEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'get-template-recipients') {
+                return handleGetTemplateRecipientsEvent(ctx, profile, resolvedListingId, event);
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });

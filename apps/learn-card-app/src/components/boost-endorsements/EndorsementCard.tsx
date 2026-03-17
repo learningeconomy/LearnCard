@@ -67,6 +67,7 @@ export const EndorsementCard: React.FC<{
                     badgeRibbonIconCustomClass="w-[70%] mt-[4px]"
                     displayType={displayType}
                     credential={credential}
+                    hideMediaBadge
                 />
 
                 <div className="flex items-start">

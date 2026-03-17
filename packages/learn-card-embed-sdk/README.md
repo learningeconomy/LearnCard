@@ -12,7 +12,7 @@ Note: By default, the SDK uses LearnCard Hosted Wallet APIs to send email OTP ch
 
 ```html
 <!-- Load from CDN in production -->
-<script src="https://cdn.learncard.com/sdk/v1/learncard.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js" defer></script>
 <div id="claim-container"></div>
 <script>
   window.addEventListener('DOMContentLoaded', function() {

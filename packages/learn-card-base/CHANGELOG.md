@@ -1,5 +1,81 @@
 # learn-card-base
 
+## 0.1.21
+
+### Patch Changes
+
+-   [#1051](https://github.com/learningeconomy/LearnCard/pull/1051) [`e15dafbc571e8c63fa4fddcfbb03e87d495b01ff`](https://github.com/learningeconomy/LearnCard/commit/e15dafbc571e8c63fa4fddcfbb03e87d495b01ff) Thanks [@Custard7](https://github.com/Custard7)! - fix: Category Map Error
+
+## 0.1.20
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.9
+    -   @learncard/lca-api-plugin@1.1.17
+
+## 0.1.19
+
+### Patch Changes
+
+-   [#1036](https://github.com/learningeconomy/LearnCard/pull/1036) [`14980c4c2b8ff739afa1a2c915884df1c8517770`](https://github.com/learningeconomy/LearnCard/commit/14980c4c2b8ff739afa1a2c915884df1c8517770) Thanks [@Custard7](https://github.com/Custard7)! - fix: Null URL Helper
+
+-   [#1031](https://github.com/learningeconomy/LearnCard/pull/1031) [`495f2939cb6e4271cab0a88abea5105fb7e4f9b6`](https://github.com/learningeconomy/LearnCard/commit/495f2939cb6e4271cab0a88abea5105fb7e4f9b6) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-982][LC-1625] - extend default boost permissions, add "canView"
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.8
+    -   @learncard/lca-api-plugin@1.1.16
+
+## 0.1.18
+
+### Patch Changes
+
+-   [#1006](https://github.com/learningeconomy/LearnCard/pull/1006) [`caf231b53707174ea49f0eb2b65885a36b3e7228`](https://github.com/learningeconomy/LearnCard/commit/caf231b53707174ea49f0eb2b65885a36b3e7228) Thanks [@smurflo2](https://github.com/smurflo2)! - Add Self-Assigned Skills including optional proficiency level field on Boost -> Skill relationship
+
+-   [#1025](https://github.com/learningeconomy/LearnCard/pull/1025) [`35179e0ed8d7694e42efe2ea4bc6f60a96f8bf0e`](https://github.com/learningeconomy/LearnCard/commit/35179e0ed8d7694e42efe2ea4bc6f60a96f8bf0e) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1608][LC-1609] - Resume Builder + Resume Generation
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.7
+    -   @learncard/lca-api-plugin@1.1.15
+
+## 0.1.17
+
+### Patch Changes
+
+-   [#973](https://github.com/learningeconomy/LearnCard/pull/973) [`5b76830d328bd38b4f184458414ef478c9cc118a`](https://github.com/learningeconomy/LearnCard/commit/5b76830d328bd38b4f184458414ef478c9cc118a) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1510] [LC-1508] Replace temporary revoke for scouts with a more comprehensive solution
+
+-   [#1009](https://github.com/learningeconomy/LearnCard/pull/1009) [`db1f854739a3238b93e594c59f8ed4b58635185f`](https://github.com/learningeconomy/LearnCard/commit/db1f854739a3238b93e594c59f8ed4b58635185f) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1422 - validate file uploads (resumes, transcripts, certificates, etc) + fix toast styles
+
+-   [#971](https://github.com/learningeconomy/LearnCard/pull/971) [`a5e21c66edcff63a75603e741b6907800bf8c984`](https://github.com/learningeconomy/LearnCard/commit/a5e21c66edcff63a75603e741b6907800bf8c984) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-1501 - AI Insight Sessions
+
+-   [#992](https://github.com/learningeconomy/LearnCard/pull/992) [`42849fe9be2e6654708546c2cc360589e5745fd5`](https://github.com/learningeconomy/LearnCard/commit/42849fe9be2e6654708546c2cc360589e5745fd5) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: LC-1503 - Add streamMode Support for Structured Plan Streaming
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.14
+
+## 0.1.16
+
+### Patch Changes
+
+-   [#989](https://github.com/learningeconomy/LearnCard/pull/989) [`4d4f0d30a69f6228ff66a5ebfe891331670ffc6b`](https://github.com/learningeconomy/LearnCard/commit/4d4f0d30a69f6228ff66a5ebfe891331670ffc6b) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1423] Move xAPI statements into "Manage Data Sharing" based on contract
+
+-   [#1001](https://github.com/learningeconomy/LearnCard/pull/1001) [`3e2e71af075cef55039ae39baa902f76f7b5fa34`](https://github.com/learningeconomy/LearnCard/commit/3e2e71af075cef55039ae39baa902f76f7b5fa34) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1586 - Migrate AI Tutor Apps to use Official App Store
+
+-   [#988](https://github.com/learningeconomy/LearnCard/pull/988) [`3ea5b9d4b65e1344d0639e84f6fa27d1cef12a3f`](https://github.com/learningeconomy/LearnCard/commit/3ea5b9d4b65e1344d0639e84f6fa27d1cef12a3f) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1373 - Update CMS Thumbnail (Add Media Type preview)
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.13
+
+## 0.1.15
+
+### Patch Changes
+
+-   [#987](https://github.com/learningeconomy/LearnCard/pull/987) [`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1578] Optimize skill framework uploads (aka fix timeout error)
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.6
+    -   @learncard/lca-api-plugin@1.1.12
+
 ## 0.1.14
 
 ### Patch Changes

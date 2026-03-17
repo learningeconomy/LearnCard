@@ -15,7 +15,7 @@ import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
 import X from 'learn-card-base/svgs/X';
 import Lottie from 'react-lottie-player';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+const HourGlass = '/lotties/hourglass.json';
 
 // import { getWallpaperBackgroundStyles } from '../../helpers/troop.helpers';
 import { VC, VerificationItem } from '@learncard/types';
@@ -85,7 +85,7 @@ const ViewIdModal: React.FC<ViewIdModalProps> = ({
                     <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
                         <Lottie
                             loop
-                            animationData={HourGlass}
+                            path={HourGlass}
                             play
                             style={{ width: '180px', height: '180px' }}
                         />

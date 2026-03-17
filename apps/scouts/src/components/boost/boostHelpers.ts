@@ -21,7 +21,7 @@ export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState =
         ? replaceUnderscoresWithWhiteSpace(
               getAchievementTypeFromCustomType(state.basicInfo.achievementType ?? '') ?? ''
           )
-        : CATEGORY_TO_SUBCATEGORY_LIST[state.basicInfo.type].find(
+        : CATEGORY_TO_SUBCATEGORY_LIST[state.basicInfo.type]?.find(
               options => options.type === state.basicInfo.achievementType
           )?.title ?? '';
 
@@ -71,7 +71,7 @@ export const getBoostCredentialPreview = (vcInput: BoostCMSState) => {
         };
     } else {
         fallbackCredentialValues =
-            CATEGORY_TO_SUBCATEGORY_LIST?.[vcInput?.basicInfo?.type].find(
+            CATEGORY_TO_SUBCATEGORY_LIST?.[vcInput?.basicInfo?.type]?.find(
                 options => options?.type === vcInput?.basicInfo?.achievementType
             ) ?? {};
     }
@@ -185,7 +185,7 @@ export const createBoost = async (
         };
     } else {
         fallbackCredentialValues =
-            CATEGORY_TO_SUBCATEGORY_LIST?.[vcInput?.basicInfo?.type].find(
+            CATEGORY_TO_SUBCATEGORY_LIST?.[vcInput?.basicInfo?.type]?.find(
                 options => options?.type === vcInput?.basicInfo?.achievementType
             ) ?? {};
     }
@@ -265,10 +265,6 @@ export const createBoost = async (
         console.warn('Failed to set alignments on unsignedCredential', e);
     }
 
-    // TODO: Forcibly using 3.0.1 for now, need to figure out what to do about this!
-    unsignedCredential['@context'][1] =
-        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json';
-
     // the returned template credential doesn't seem to respect the input fields....
 
     /// CREATE BOOST
@@ -317,7 +313,7 @@ export const updateBoost = async (
         };
     } else {
         fallbackCredentialValues =
-            CATEGORY_TO_SUBCATEGORY_LIST?.[vcInput?.basicInfo?.type].find(
+            CATEGORY_TO_SUBCATEGORY_LIST?.[vcInput?.basicInfo?.type]?.find(
                 options => options?.type === vcInput?.basicInfo?.achievementType
             ) ?? {};
     }
@@ -380,9 +376,6 @@ export const updateBoost = async (
     } catch (e) {
         console.warn('Failed to set nested alignments on updatedCredential', e);
     }
-
-    // TODO: Forcibly using 3.0.1 for now, need to figure out what to do about this!
-    updatedCredential['@context'][1] = 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json';
 
     const updatedBoost = await wallet?.invoke?.updateBoost(boostUri, {
         name: vcInput?.basicInfo?.name || fallbackCredentialValues?.title,
@@ -539,7 +532,7 @@ export const getDefaultBoostTitle = (category: string, achievementType: string) 
 
             return customTypeTitle;
         } else {
-            const _achievementType: any = CATEGORY_TO_SUBCATEGORY_LIST?.[category].find(
+            const _achievementType: any = CATEGORY_TO_SUBCATEGORY_LIST?.[category]?.find(
                 options => options?.type === achievementType
             );
 
@@ -558,7 +551,7 @@ export const getDefaultBoostDescription = (category: string, achievementType: st
         category === BoostCategoryOptionsEnum.socialBadge ||
         category === BoostCategoryOptionsEnum.meritBadge
     ) {
-        const _achievementType: any = CATEGORY_TO_SUBCATEGORY_LIST?.[category].find(
+        const _achievementType: any = CATEGORY_TO_SUBCATEGORY_LIST?.[category]?.find(
             options => options?.type === achievementType
         );
 
@@ -575,7 +568,7 @@ export const getDefaultBoostCriteria = (category: string, achievementType: strin
         category === BoostCategoryOptionsEnum.socialBadge ||
         category === BoostCategoryOptionsEnum.meritBadge
     ) {
-        const _achievementType: any = CATEGORY_TO_SUBCATEGORY_LIST?.[category].find(
+        const _achievementType: any = CATEGORY_TO_SUBCATEGORY_LIST?.[category]?.find(
             options => options?.type === achievementType
         );
 

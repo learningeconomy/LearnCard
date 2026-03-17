@@ -16,7 +16,7 @@ import Plus from '../../components/svgs/Plus';
 import {
     useGetCredentialList,
     useGetIDs,
-    useGetCurrentUserTroopIds,
+    useGetCurrentUserTroopIdsResolved,
     useModal,
     ModalTypes,
     BrandingEnum,
@@ -77,10 +77,10 @@ const MembershipPage: React.FC = () => {
     } = useGetCredentialList(CredentialCategoryEnum.membership);
 
     // logic to show the plus button
-  const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
+const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
     const { data: earnedBoostIDs, isLoading: earnedBoostIDsLoading } = useGetIDs();
     // oxlint-disable-next-line no-unused-vars
-    const { data: troopIds, isLoading: troopIdsLoading } = useGetCurrentUserTroopIds();
+    const { data: troopIds, isLoading: troopIdsLoading } = useGetCurrentUserTroopIdsResolved();
 
     const hasGlobalAdminID = troopIds?.isScoutGlobalAdmin;
     const hasNationalAdminID = troopIds?.isNationalAdmin;

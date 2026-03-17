@@ -216,6 +216,7 @@ export type LearnCardNetworkPluginMethods = {
         }
     ) => Promise<boolean>;
     getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
+    getRevokedCredentials: () => Promise<string[]>;
     getSentCredentials: (to?: string) => Promise<SentCredentialInfo[]>;
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     deleteCredential: (uri: string) => Promise<boolean>;
@@ -230,17 +231,18 @@ export type LearnCardNetworkPluginMethods = {
     createBoost: (
         credential: VC | UnsignedVC,
         metadata?: Partial<Omit<Boost, 'uri'>> & {
-            skills?: { frameworkId: string; id: string }[];
+            skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
         }
     ) => Promise<string>;
     createChildBoost: (
         parentUri: string,
         credential: VC | UnsignedVC,
         metadata?: Partial<Omit<Boost, 'uri'>> & {
-            skills?: { frameworkId: string; id: string }[];
+            skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
         }
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
+    getBoostSkills: (uri: string) => Promise<(SkillType & { proficiencyLevel?: number })[]>;
     getBoostFrameworks: (
         uri: string,
         options?: { limit?: number; cursor?: string | null; query?: SkillFrameworkQuery }
@@ -356,14 +358,16 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedLCNProfileManagers>;
     updateBoost: (
         uri: string,
-        updates: Partial<Omit<Boost, 'uri'>>,
+        updates: Partial<Omit<Boost, 'uri'>> & {
+            skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
+        },
         credential?: UnsignedVC | VC
     ) => Promise<boolean>;
     attachFrameworkToBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;
     detachFrameworkFromBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;
     alignBoostSkills: (
         boostUri: string,
-        skills: { frameworkId: string; id: string }[]
+        skills: { frameworkId: string; id: string; proficiencyLevel?: number }[]
     ) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
     getBoostAdmins: (
@@ -378,6 +382,7 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<boolean>;
     addBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
     removeBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
+    revokeBoostRecipient: (boostUri: string, recipientProfileId: string) => Promise<boolean>;
     sendBoost: (
         profileId: string,
         boostUri: string,
@@ -614,6 +619,11 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<SkillFrameworkType[]>;
     createSkillFramework: (input: LinkProviderFrameworkInputType) => Promise<SkillFrameworkType>;
     listMySkillFrameworks: () => Promise<SkillFrameworkType[]>;
+    getAllAvailableFrameworks: (options?: {
+        limit?: number;
+        cursor?: string | null;
+        query?: SkillFrameworkQuery;
+    }) => Promise<PaginatedSkillFrameworksType>;
     getSkillFrameworkById: (
         id: string,
         options?: { limit?: number; childrenLimit?: number; cursor?: string | null }
@@ -724,6 +734,23 @@ export type LearnCardNetworkPluginMethods = {
     getInstalledApps: (options?: Partial<PaginationOptionsType>) => Promise<PaginatedInstalledApps>;
     countInstalledApps: () => Promise<number>;
     isAppInstalled: (listingId: string) => Promise<boolean>;
+    getMyCredentialsFromApp: (
+        listingId: string,
+        options?: { limit?: number; cursor?: string }
+    ) => Promise<{
+        hasMore: boolean;
+        cursor?: string;
+        records: Array<{
+            credentialId: string;
+            credentialUri: string;
+            date: string;
+            status: 'pending' | 'claimed' | 'revoked';
+            boostName?: string;
+            boostCategory?: string;
+            activityId?: string;
+        }>;
+        totalCount: number;
+    }>;
 
     isAppStoreAdmin: () => Promise<boolean>;
     adminUpdateListingStatus: (listingId: string, status: AppListingStatus) => Promise<boolean>;

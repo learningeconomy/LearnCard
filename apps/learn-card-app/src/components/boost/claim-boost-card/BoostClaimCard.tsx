@@ -5,11 +5,11 @@ import { Capacitor } from '@capacitor/core';
 import { IonSpinner, useIonAlert, IonPage } from '@ionic/react';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import Lottie from 'react-lottie-player';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+const HourGlass = '/lotties/hourglass.json';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import BoostDetailsSideMenu from '../boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../boostCMS/BoostPreview/BoostDetailsSideBar';
-import useFirebaseAnalytics from 'apps/learn-card-app/src/hooks/useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useGetResolvedCredential, useToast, ToastTypeEnum } from 'learn-card-base';
 
@@ -87,7 +87,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         verify();
     }, [credential]);
 
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
 
     const [isFront, setIsFront] = useState(true);
     const [isClaimLoading, setIsClaimLoading] = useState(false);
@@ -130,7 +130,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                             }
 
                             if (credential) {
-                                logAnalyticsEvent('claim_boost', {
+                                track(AnalyticsEvents.CLAIM_BOOST, {
                                     category: category,
                                     boostType: achievementType,
                                     method: 'Notification',
@@ -249,7 +249,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                         <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
                             <Lottie
                                 loop
-                                animationData={HourGlass}
+                                path={HourGlass}
                                 play
                                 style={{ width: '180px', height: '180px' }}
                             />

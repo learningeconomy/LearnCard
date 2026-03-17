@@ -125,6 +125,69 @@ describe('Skill Frameworks (provider-based)', () => {
         expect(mineB.find(f => f.id === FW_ID)).toBeUndefined();
     });
 
+    it('lists frameworks available to profile (managed + public) with pagination', async () => {
+        await createProfileFor(userA, 'usera');
+        await createProfileFor(userB, 'userb');
+
+        const managedId = `fw-managed-${crypto.randomUUID().slice(0, 8)}`;
+        const publicId = `fw-public-${crypto.randomUUID().slice(0, 8)}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: managedId,
+            name: 'Managed Framework',
+        });
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: publicId,
+            name: 'Public Framework',
+        });
+
+        await neogma.queryRunner.run('MATCH (f:SkillFramework {id: $id}) SET f.isPublic = true', {
+            id: publicId,
+        });
+
+        const page1 = await userB.clients.fullAuth.skillFrameworks.getAllAvailableFrameworks({
+            limit: 1,
+        });
+        expect(page1.records).toHaveLength(1);
+        expect(page1.hasMore).toBe(false);
+        expect(page1.records[0]?.id).toBe(publicId);
+
+        const forOwner = await userA.clients.fullAuth.skillFrameworks.getAllAvailableFrameworks({
+            limit: 10,
+        });
+        const ids = forOwner.records.map(framework => framework.id);
+        expect(ids).toEqual(expect.arrayContaining([managedId, publicId]));
+    });
+
+    it('filters available frameworks by query', async () => {
+        await createProfileFor(userA, 'usera');
+        await createProfileFor(userB, 'userb');
+
+        const publicAlpha = `fw-public-alpha-${crypto.randomUUID().slice(0, 8)}`;
+        const publicBeta = `fw-public-beta-${crypto.randomUUID().slice(0, 8)}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: publicAlpha,
+            name: 'Alpha Public Framework',
+        });
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: publicBeta,
+            name: 'Beta Public Framework',
+        });
+
+        await neogma.queryRunner.run(
+            'UNWIND $ids AS id MATCH (f:SkillFramework {id: id}) SET f.isPublic = true',
+            { ids: [publicAlpha, publicBeta] }
+        );
+
+        const filtered = await userB.clients.fullAuth.skillFrameworks.getAllAvailableFrameworks({
+            limit: 10,
+            query: { name: { $regex: /alpha/i } },
+        });
+
+        expect(filtered.records.map(framework => framework.id)).toEqual([publicAlpha]);
+    });
+
     it('fetches the framework and its skills from the provider if I manage it', async () => {
         await createProfileFor(userA, 'usera');
         await userA.clients.fullAuth.skillFrameworks.create({ frameworkId: FW_ID });
@@ -521,6 +584,104 @@ describe('Skill Frameworks (custom CRUD)', () => {
                 profileId: ownerProfileId,
             })
         ).rejects.toThrow('Cannot remove the last framework admin');
+    });
+
+    it('should allow adding framework admin by did:web', async () => {
+        const ownerProfileId = await ensureProfile();
+        const otherProfileId = await ensureProfileFor(userB, 'userb');
+        const frameworkId = `fw-did-web-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'DID Web Framework',
+        });
+
+        const userBDid = await userB.clients.fullAuth.profile.getProfile().then(p => p!.did);
+
+        await userA.clients.fullAuth.skillFrameworks.addFrameworkAdmin({
+            frameworkId,
+            profileId: userBDid,
+        });
+
+        const admins = await userA.clients.fullAuth.skillFrameworks.listFrameworkAdmins({
+            frameworkId,
+        });
+        expect(admins.map(admin => admin.profileId)).toEqual(
+            expect.arrayContaining([ownerProfileId, otherProfileId])
+        );
+    });
+
+    it('should allow adding framework admin by did:key', async () => {
+        const ownerProfileId = await ensureProfile();
+        const otherProfileId = await ensureProfileFor(userB, 'userb');
+        const frameworkId = `fw-did-key-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'DID Key Framework',
+        });
+
+        const userBDidKey = userB.learnCard.id.did();
+
+        await userA.clients.fullAuth.skillFrameworks.addFrameworkAdmin({
+            frameworkId,
+            profileId: userBDidKey,
+        });
+
+        const admins = await userA.clients.fullAuth.skillFrameworks.listFrameworkAdmins({
+            frameworkId,
+        });
+        expect(admins.map(admin => admin.profileId)).toEqual(
+            expect.arrayContaining([ownerProfileId, otherProfileId])
+        );
+    });
+
+    it('should return NOT_FOUND when adding admin with unsupported did format', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-did-invalid-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Invalid DID Framework',
+        });
+
+        await expect(
+            userA.clients.fullAuth.skillFrameworks.addFrameworkAdmin({
+                frameworkId,
+                profileId: 'did:example:userb',
+            })
+        ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    });
+
+    it('should allow removing framework admin by did:web', async () => {
+        const ownerProfileId = await ensureProfile();
+        const otherProfileId = await ensureProfileFor(userB, 'userb');
+        const frameworkId = `fw-remove-did-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Remove DID Framework',
+        });
+
+        // First add the admin
+        await userA.clients.fullAuth.skillFrameworks.addFrameworkAdmin({
+            frameworkId,
+            profileId: otherProfileId,
+        });
+
+        // Then remove using did:web
+        const userBDid = await userB.clients.fullAuth.profile.getProfile().then(p => p!.did);
+        const result = await userA.clients.fullAuth.skillFrameworks.removeFrameworkAdmin({
+            frameworkId,
+            profileId: userBDid,
+        });
+        expect(result.success).toBe(true);
+
+        const admins = await userA.clients.fullAuth.skillFrameworks.listFrameworkAdmins({
+            frameworkId,
+        });
+        expect(admins.map(admin => admin.profileId)).not.toContain(otherProfileId);
+        expect(admins.map(admin => admin.profileId)).toContain(ownerProfileId);
     });
 
     it('updates metadata for a custom framework I manage', async () => {

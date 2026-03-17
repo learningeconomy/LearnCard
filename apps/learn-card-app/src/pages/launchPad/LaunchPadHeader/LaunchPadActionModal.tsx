@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
-import { ModalTypes, useModal, QRCodeScannerStore } from 'learn-card-base';
+import { ModalTypes, useModal, QRCodeScannerStore, useAiFeatureGate } from 'learn-card-base';
 import { ProfilePicture } from 'learn-card-base';
 import CheckListContainer from 'apps/learn-card-app/src/components/learncard/checklist/CheckListContainer';
 import AiPassportPersonalizationContainer from 'apps/learn-card-app/src/components/ai-passport/AiPassportPersonalizationContainer';
@@ -63,6 +63,7 @@ import {
     LearnCardRolesEnum,
     LearnCardRoles,
 } from '../../../components/onboarding/onboarding.helpers';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import {
     useWallet,
     useGetProfile,
@@ -163,7 +164,8 @@ const ActionButton: React.FC<{
     bg: string;
     to?: string;
     onClick?: () => void;
-}> = ({ label, bg, to, onClick }) => {
+    role?: string;
+}> = ({ label, bg, to, onClick, role }) => {
     const history = useHistory();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { handlePresentBoostModal } = useBoostModal(undefined, undefined, true, true);
@@ -171,8 +173,14 @@ const ActionButton: React.FC<{
     const buildMyLCIcon = theme?.defaults?.buildMyLCIcon;
     const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
     const AiInsightsIcon = sideMenuIcons[CredentialCategoryEnum.aiInsight];
+    const { track } = useAnalytics();
 
     const handleClick = () => {
+        track(AnalyticsEvents.LAUNCHPAD_QUICKNAV_ACTION_CLICKED, {
+            action: label,
+            role: role ?? 'unknown',
+        });
+
         if (onClick) {
             onClick();
             return;
@@ -427,6 +435,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     const profileType = switchedProfileStore.use.profileType();
     const isChildProfile = profileType === 'child';
+    const { isAiEnabled } = useAiFeatureGate();
 
     const activeRole = (
         isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
@@ -507,6 +516,20 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     if (!Capacitor.isNativePlatform()) {
         actions = actions.map(a => (a === 'Claim Credential' ? 'Customize AI Sessions' : a));
+    }
+
+    const AI_ACTIONS = [
+        'New AI Tutoring Session',
+        'Understand My Skills',
+        'Customize AI Sessions',
+        'View Learner Insights',
+        'View Child Insights',
+        'Request Learner Insights',
+        'Share Insights with Teacher',
+    ];
+
+    if (!isAiEnabled) {
+        actions = actions.filter(a => !AI_ACTIONS.includes(a));
     }
 
     const bgColors = [
@@ -615,7 +638,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     };
 
     return (
-        <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[380px]">
+        <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[500px]">
             <button
                 type="button"
                 aria-label="Close modal"
@@ -711,6 +734,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                         key={`${label}-${i}`}
                         label={label}
                         bg={colorByLabel[label] ?? bgColors[i % bgColors.length]}
+                        role={activeRole}
                         onClick={
                             label === 'View Family' && familyUri
                                 ? () => {

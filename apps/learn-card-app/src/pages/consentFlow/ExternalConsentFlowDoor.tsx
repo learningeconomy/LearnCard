@@ -17,7 +17,6 @@ import {
     useWallet,
     ProfilePicture,
     pushUtilities,
-    useWeb3Auth,
     useSQLiteStorage,
     useContract,
     redirectStore,
@@ -29,10 +28,13 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
 import { auth } from '../../firebase/firebase';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
+import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import ConsentFlowError from './ConsentFlowError';
+import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 enum Step {
     landing,
@@ -50,8 +52,9 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     const firebaseAuth = auth();
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
-    const { logout } = useWeb3Auth();
+    const { logout: coordinatorLogout } = useAuthCoordinator();
     const { clearDB } = useSQLiteStorage();
+    const { track } = useAnalytics();
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -88,6 +91,14 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
             newModal(<ConsentFlowError errorType={errorType} uri={uri} />);
         }
     }, [error]);
+
+    useEffect(() => {
+        if (contractDetails) {
+            track(AnalyticsEvents.CONSENT_FLOW_STARTED, {
+                contractName: contractDetails.name,
+            });
+        }
+    }, [contractDetails?.name]);
 
     // Handle navigation after user clicks Continue AND consent query completes
     useEffect(() => {
@@ -155,7 +166,17 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
         };
 
         handleNavigation();
-    }, [userClickedContinue, consentedContractLoading, consentedContract, login, returnTo, contractDetails, uri, recipientToken, history]);
+    }, [
+        userClickedContinue,
+        consentedContractLoading,
+        consentedContract,
+        login,
+        returnTo,
+        contractDetails,
+        uri,
+        recipientToken,
+        history,
+    ]);
 
     // TODO duplicated from QRCodeUserCard, should turn into helper
     const handleLogout = async () => {
@@ -187,7 +208,8 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                 }
             }
 
-            logout(redirectUrl);
+            resumeBuilderStore.set.resetStore();
+            await coordinatorLogout();
             await queryClient.resetQueries();
 
             await clearDB();
@@ -265,7 +287,13 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                         <button
                             type="button"
                             disabled={consentedContractLoading}
-                            onClick={() => setUserClickedContinue(true)}
+                            onClick={() => {
+                                track(AnalyticsEvents.CONSENT_FLOW_ACCEPTED, {
+                                    contractName: contractDetails?.name,
+                                    alreadyConsented: !!consentedContract,
+                                });
+                                setUserClickedContinue(true);
+                            }}
                             className={`bg-emerald-700 text-grayscale-50 text-[16px] font-semibold font-poppins normal w-full py-[12px] px-[10px] rounded-[40px] shadow-bottom ${
                                 consentedContractLoading ? 'opacity-50 cursor-not-allowed' : ''
                             }`}

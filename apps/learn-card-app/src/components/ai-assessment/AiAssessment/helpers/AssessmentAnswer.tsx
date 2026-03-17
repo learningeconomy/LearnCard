@@ -1,5 +1,5 @@
 import React from 'react';
-import MarkdownRenderer from './MarkdownRenderer';
+import MarkdownRenderer from './LazyMarkdownRenderer';
 
 export const AssessmentAnswer: React.FC<{ answer: string }> = ({ answer }) => {
     return (

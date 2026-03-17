@@ -20,6 +20,7 @@ jobs:
         name: ${{ inputs.environment || 'learn-card-app-production' }} iOS Upload
         runs-on: macos-14
         environment: ${{ inputs.environment || 'learn-card-app-production' }}
+
         steps:
             - uses: actions/checkout@v3
 
@@ -28,10 +29,10 @@ jobs:
               with:
                   xcode-version: "15.4"
 
-            - name: Setup Node.js 20.x
+            - name: Setup Node.js 22.x
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
 
             - name: Install pnpm
               uses: pnpm/action-setup@v3
@@ -57,8 +58,16 @@ jobs:
                   SENTRY_DSN: ${{ vars.SENTRY_DSN }}
                   SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-                  WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
-                  WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
+                  VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
+                  VITE_WEB3AUTH_NETWORK: ${{ vars.VITE_WEB3AUTH_NETWORK }}
+                  VITE_WEB3AUTH_VERIFIER_ID: ${{ vars.VITE_WEB3AUTH_VERIFIER_ID }}
+                  VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
+                  VITE_AUTH_PROVIDER: ${{ vars.VITE_AUTH_PROVIDER }}
+                  VITE_KEY_DERIVATION: ${{ vars.VITE_KEY_DERIVATION }}
+                  VITE_SSS_SERVER_URL: ${{ vars.VITE_SSS_SERVER_URL }}
+                  VITE_ENABLE_EMAIL_BACKUP_SHARE: ${{ vars.VITE_ENABLE_EMAIL_BACKUP_SHARE }}
+                  VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
+                  VITE_REQUIRE_EMAIL_FOR_PHONE_USERS: ${{ vars.VITE_REQUIRE_EMAIL_FOR_PHONE_USERS }}
 
             - name: Sync Capacitor Files to iOS
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
@@ -117,10 +126,10 @@ jobs:
         steps:
             - uses: actions/checkout@v3
 
-            - name: Setup Node.js 20.x
+            - name: Setup Node.js 22.x
               uses: actions/setup-node@v4
               with:
-                  node-version: 20.x
+                  node-version: 22.x
 
             - name: Install pnpm
               uses: pnpm/action-setup@v3
@@ -146,8 +155,16 @@ jobs:
                   SENTRY_DSN: ${{ vars.SENTRY_DSN }}
                   SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-                  WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
-                  WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
+                  VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
+                  VITE_WEB3AUTH_NETWORK: ${{ vars.VITE_WEB3AUTH_NETWORK }}
+                  VITE_WEB3AUTH_VERIFIER_ID: ${{ vars.VITE_WEB3AUTH_VERIFIER_ID }}
+                  VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
+                  VITE_AUTH_PROVIDER: ${{ vars.VITE_AUTH_PROVIDER }}
+                  VITE_KEY_DERIVATION: ${{ vars.VITE_KEY_DERIVATION }}
+                  VITE_SSS_SERVER_URL: ${{ vars.VITE_SSS_SERVER_URL }}
+                  VITE_ENABLE_EMAIL_BACKUP_SHARE: ${{ vars.VITE_ENABLE_EMAIL_BACKUP_SHARE }}
+                  VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
+                  VITE_REQUIRE_EMAIL_FOR_PHONE_USERS: ${{ vars.VITE_REQUIRE_EMAIL_FOR_PHONE_USERS }}
 
             - name: Sync Capacitor Files to Android
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}

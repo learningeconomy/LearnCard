@@ -8,9 +8,8 @@ import SwitchAccountButton from '../../../learncard/SwitchAccountButton';
 import AccountSwitcherModal from '../../../learncard/AccountSwitcherModal';
 import ChildInviteModal from '../../../familyCMS/FamilyCMSInviteModal/ChildInviteModal/ChildInviteModal';
 import LearnCardAppIcon from '../../../../assets/images/add-boost-icon-small.png';
-import MyLearnCardModal, {
-    MyLearnCardModalViewModeEnum,
-} from '../../../learncard/MyLearnCardModal';
+import MyLearnCardModal from '../../../learncard/MyLearnCardModal';
+import { MyLearnCardModalViewModeEnum } from '../../../learncard/MyLearnCardModal.types';
 import ProfileIcon from '../../../svgs/ProfileIcon';
 
 import { VC } from '@learncard/types';
@@ -31,14 +30,7 @@ import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { useHistory } from 'react-router-dom';
 import { closeAll } from '../../../../helpers/uiHelpers';
 import { BoostSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
-
-export enum MemberActionMenuEnum {
-    viewProfile = 'viewProfile',
-    boost = 'boost',
-    leaveFamily = 'leaveFamily',
-    removeFromFamily = 'removeFromFamily',
-    deleteChild = 'deleteChild',
-}
+import { MemberActionMenuEnum } from './FamilyMemberActionMenu.types';
 
 export const FamilyMemberActionMenu: React.FC<{
     credential: VC;
@@ -108,6 +100,8 @@ export const FamilyMemberActionMenu: React.FC<{
             icon: <ProfileIcon className="text-grayscale-900" />,
             onClick: () => {
                 // open LearnCardID Preview
+                closeModal();
+
                 newModal(
                     <MyLearnCardModal
                         branding={BrandingEnum.learncard}
@@ -131,7 +125,6 @@ export const FamilyMemberActionMenu: React.FC<{
                     {},
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                 );
-                closeModal();
             },
             type: MemberActionMenuEnum.viewProfile,
         },

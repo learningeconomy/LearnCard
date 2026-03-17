@@ -9,6 +9,7 @@ import { getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
 import { getLearnCloudPlugin } from '@learncard/learn-cloud-plugin';
 import { expirationPlugin } from '@learncard/expiration-plugin';
 import { getEthereumPlugin } from '@learncard/ethereum-plugin';
+
 import { getVpqrPlugin } from '@learncard/vpqr-plugin';
 import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getVerifyBoostPlugin, getLearnCardNetworkPlugin } from '@learncard/network-plugin';
@@ -26,6 +27,7 @@ export const networkLearnCardFromSeed = async ({
     seed,
     network: _network,
     trustedBoostRegistry = 'https://raw.githubusercontent.com/learningeconomy/registries/main/learncard/trusted-app-registry.json',
+    guardianApprovalGetter,
 
     cloud: {
         url = 'https://cloud.learncard.com/trpc',
@@ -53,7 +55,9 @@ export const networkLearnCardFromSeed = async ({
     };
 
     const didkitLc = await cryptoLc.addPlugin(
-        await (await getDidkit())(didkit === 'node' ? undefined : didkit, allowRemoteContexts)
+        await (
+            await getDidkit()
+        )(didkit === 'node' ? undefined : didkit, allowRemoteContexts)
     );
 
     const didkeyLc = await didkitLc.addPlugin(
@@ -90,5 +94,7 @@ export const networkLearnCardFromSeed = async ({
 
     const lcLc = await boostVerificationLc.addPlugin(getLearnCardPlugin(boostVerificationLc));
 
-    return lcLc.addPlugin(await getLearnCardNetworkPlugin(lcLc, network));
+    return lcLc.addPlugin(
+        await getLearnCardNetworkPlugin(lcLc, network, { guardianApprovalGetter })
+    );
 };

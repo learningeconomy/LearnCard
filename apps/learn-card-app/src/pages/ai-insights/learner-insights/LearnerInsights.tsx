@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import _ from 'lodash';
+import _ from 'lodash-es';
 
 import RequestInsightsCard from '../request-insights/RequestInsightsCard';
 import LearnerInsightsSearch from './LearnerInsightsSearch';

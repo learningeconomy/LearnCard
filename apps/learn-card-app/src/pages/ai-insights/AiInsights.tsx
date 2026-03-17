@@ -5,6 +5,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { IonContent, IonPage } from '@ionic/react';
 import { useLocation } from 'react-router-dom';
 import AiInsightsTopSkills from './AiInsightsTopSkills';
+import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import ChildInsights from './child-insights/ChildInsights';
 import AiInsightsTabs from './ai-insight-tabs/AiInsightsTabs';
 import MainHeader from '../../components/main-header/MainHeader';
@@ -16,6 +17,7 @@ import RequestInsightsCard from './request-insights/RequestInsightsCard';
 import AiInsightsLearningPathwaysCard from './AiInsightsLearningPathwaysCard';
 import AiInsightsUserRequestsToast from './toasts/AiInsightsUserRequestsToast';
 import ExperimentalFeatureBox from '../../components/generic/ExperimentalFeatureBox';
+import AiInsightsPromptBoxContainer from './ai-inisghts-prompt/AiInsightsPromptBoxContainer';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
@@ -113,26 +115,28 @@ const AiInsights: React.FC = () => {
 
     const myInsights = (
         <>
-            {/* <div className="flex items-center justify-center w-full shadow-box-bottom rounded-[10px]">
-                                <ExperimentalFeatureBox />
-                            </div>
-                            <div className="flex items-center justify-center w-full mt-4">
-                                {flags?.showGenerateAiInsightsButton && (
-                                    <button
-                                        className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
-                                        type="button"
-                                        disabled={createAiInsightCredentialLoading}
-                                        onClick={() => createAiInsightCredential()}
-                                    >
-                                        {createAiInsightCredentialLoading
-                                            ? 'Generating...'
-                                            : 'Generate AI Insights'}
-                                    </button>
-                                )}
-                            </div> */}
+            <div className="flex items-center justify-center w-full shadow-box-bottom rounded-[10px]">
+                <ExperimentalFeatureBox />
+            </div>
+            <div className="flex items-center justify-center w-full my-4">
+                {flags?.showGenerateAiInsightsButton && (
+                    <button
+                        className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
+                        type="button"
+                        disabled={createAiInsightCredentialLoading}
+                        onClick={() => createAiInsightCredential()}
+                    >
+                        {createAiInsightCredentialLoading
+                            ? 'Generating...'
+                            : 'Generate AI Insights'}
+                    </button>
+                )}
+            </div>
 
             {contractRequest}
             <ShareInsightsCard />
+            {/* <AiInsightsLearningPathwaysCard /> */}
+            <AiInsightsPromptBoxContainer />
             {!flags?.hideAiPathways && <AiInsightsLearningPathwaysCard />}
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
             {topSkills.length > 0 && <AiInsightsSkillsCardSimple />}
@@ -162,16 +166,18 @@ const AiInsights: React.FC = () => {
                         subheaderType={SubheaderTypeEnum.AiInsights}
                         hidePlusBtn={true}
                     />
-                    <div className="flex relative justify-center items-center w-full">
-                        <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] pb-[100px]">
-                            <AiInsightsTabs
-                                selectedTab={selectedTab}
-                                setSelectedTab={setSelectedTab}
-                                className="w-full mb-4"
-                            />
-                            {activeInsights}
+                    <AiFeatureGate>
+                        <div className="flex relative justify-center items-center w-full">
+                            <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] pb-[100px]">
+                                <AiInsightsTabs
+                                    selectedTab={selectedTab}
+                                    setSelectedTab={setSelectedTab}
+                                    className="w-full mb-4"
+                                />
+                                {activeInsights}
+                            </div>
                         </div>
-                    </div>
+                    </AiFeatureGate>
                 </IonContent>
             </ErrorBoundary>
         </IonPage>

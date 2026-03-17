@@ -45,6 +45,7 @@ const {
 const {
     AiSessionsIconFormal,
     AiPathwaysIconFormal,
+    AiPathwaysSideMenuIconFormal,
     AiInsightsIconFormal,
     SkillsIconFormal,
     BoostsIconFormal,
@@ -149,6 +150,7 @@ export type SideMenuIcons = {
     [CredentialCategoryEnum.accomplishment]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.accommodation]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.workHistory]: React.FC<{ className?: string }>;
+    [CredentialCategoryEnum.resume]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.family]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.id]: React.FC<{ className?: string }>;
 };
@@ -186,6 +188,7 @@ export const icons = {
             IconWithShape: AiSessionsIconWithShape,
         },
         [CredentialCategoryEnum.aiPathway]: {
+            Icon: AiPathwaysIconWithShape,
             IconWithShape: AiPathwaysIconWithShape,
         },
         [CredentialCategoryEnum.aiInsight]: {
@@ -228,6 +231,11 @@ export const icons = {
             IconWithShape: ExperiencesIconWithShape,
             IconWithLightShape: ExperiencesIconWithLightShape,
         },
+        [CredentialCategoryEnum.resume]: {
+            Icon: ExperiencesIcon,
+            IconWithShape: ExperiencesIconWithShape,
+            IconWithLightShape: ExperiencesIconWithLightShape,
+        },
         [CredentialCategoryEnum.family]: {
             Icon: FamiliesIcon,
             IconWithShape: FamiliesIconWithShape,
@@ -262,6 +270,7 @@ export const icons = {
             [CredentialCategoryEnum.accomplishment]: PortfolioTwoTonedIcon,
             [CredentialCategoryEnum.accommodation]: AssistanceTwoTonedIcon,
             [CredentialCategoryEnum.workHistory]: ExperiencesTwoTonedIcon,
+            [CredentialCategoryEnum.resume]: ExperiencesTwoTonedIcon,
             [CredentialCategoryEnum.family]: FamiliesTwoTonedIcon,
             [CredentialCategoryEnum.id]: IDsTwoTonedIcon,
         },
@@ -286,6 +295,7 @@ export const icons = {
         [CredentialCategoryEnum.accomplishment]: { Icon: PortfolioIconFormal },
         [CredentialCategoryEnum.accommodation]: { Icon: AssistanceIconFormal },
         [CredentialCategoryEnum.workHistory]: { Icon: ExperiencesIconFormal },
+        [CredentialCategoryEnum.resume]: { Icon: ExperiencesIconFormal },
         [CredentialCategoryEnum.family]: { Icon: FamiliesIconFormal },
         [CredentialCategoryEnum.id]: { Icon: IDsIconFormal },
 
@@ -303,7 +313,7 @@ export const icons = {
             adminTools: ThinnerShieldChevron,
             wallet: WalletFormalIcon,
             [CredentialCategoryEnum.aiTopic]: AiSessionFormalIcon,
-            [CredentialCategoryEnum.aiPathway]: AiPathwaysTwoTonedIcon, // need bold icon
+            [CredentialCategoryEnum.aiPathway]: AiPathwaysSideMenuIconFormal, // need bold icon
             [CredentialCategoryEnum.aiInsight]: AiInsightsTwoTonedIcon, // need bold icon
             [CredentialCategoryEnum.skill]: SkillsFormalIcon,
             [CredentialCategoryEnum.socialBadge]: BoostsFormalIcon,
@@ -312,6 +322,7 @@ export const icons = {
             [CredentialCategoryEnum.accomplishment]: PortfolioFormalIcon,
             [CredentialCategoryEnum.accommodation]: AssistanceFormalIcon,
             [CredentialCategoryEnum.workHistory]: ExperiencesFormalIcon,
+            [CredentialCategoryEnum.resume]: ExperiencesFormalIcon,
             [CredentialCategoryEnum.family]: FamiliesFormalIcon,
             [CredentialCategoryEnum.id]: IDsFormalIcon,
         },

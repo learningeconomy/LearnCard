@@ -331,6 +331,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             {isTopLevel && 'Framework • '}
                             <FrameworkSkillsCount
                                 frameworkId={frameworkInfo?.id}
+                                sourceURI={frameworkInfo?.sourceURI}
                                 skillId={columnNode?.id}
                                 includeSkillWord
                                 className="!text-grayscale-800"
@@ -341,10 +342,13 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                     </div>
 
                     {columnNode && (
-                        <InfoIcon className="ml-auto w-[24px] h-[24px] text-grayscale-600" />
+                        <InfoIcon
+                            className="ml-auto w-[24px] h-[24px] text-grayscale-600"
+                            version="thinner"
+                        />
                     )}
 
-                    {isTopLevel && !isApproveFlow && !isEdit && (
+                    {isTopLevel && !isApproveFlow && !isEdit && !isSelectSkillsFlow && (
                         <button
                             onClick={() =>
                                 newModal(

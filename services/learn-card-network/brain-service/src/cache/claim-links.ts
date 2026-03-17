@@ -4,19 +4,30 @@ import {
     BoostClaimLinkOptionsType,
     BoostClaimLinkCacheValueValidator,
 } from 'types/boost';
+import { escapeColonsInDomain } from '@helpers/uri.helpers';
+
+const normalizeBoostUriForClaimLinkKey = (boostUri: string): string => {
+    try {
+        return escapeColonsInDomain(decodeURIComponent(boostUri));
+    } catch {
+        return escapeColonsInDomain(boostUri);
+    }
+};
 
 export const getClaimLinkCacheKey = (boostUri: string, challenge: string): string =>
-    `claimLink|${boostUri}|${challenge}`;
+    `claimLink|${normalizeBoostUriForClaimLinkKey(boostUri)}|${challenge}`;
 
 export const VALID = 'valid';
 
 export const stringifyClaimLinkValue = (
     claimLinkSA: BoostClaimLinkSigningAuthorityType,
-    options: BoostClaimLinkOptionsType
+    options: BoostClaimLinkOptionsType,
+    generatorProfileId?: string
 ): string => {
     return JSON.stringify({
         claimLinkSA,
         options,
+        ...(generatorProfileId ? { generatorProfileId } : {}),
     });
 };
 
@@ -47,11 +58,12 @@ export const setValidClaimLinkForBoost = async (
     boostUri: string,
     challenge: string,
     claimLinkSA: BoostClaimLinkSigningAuthorityType,
-    options: BoostClaimLinkOptionsType
+    options: BoostClaimLinkOptionsType,
+    generatorProfileId?: string
 ) => {
     return cache.set(
         getClaimLinkCacheKey(boostUri, challenge),
-        stringifyClaimLinkValue(claimLinkSA, options),
+        stringifyClaimLinkValue(claimLinkSA, options, generatorProfileId),
         options.ttlSeconds ?? false
     );
 };
@@ -73,6 +85,19 @@ export const getClaimLinkSAInfoForBoost = async (
         return;
     }
     return validated.data.claimLinkSA;
+};
+
+export const getClaimLinkGeneratorProfileId = async (
+    boostUri: string,
+    challenge: string
+): Promise<string | undefined> => {
+    const result = await cache.get(getClaimLinkCacheKey(boostUri, challenge));
+    if (!result) return;
+
+    const validated = await BoostClaimLinkCacheValueValidator.spa(JSON.parse(result));
+    if (!validated.success) return;
+
+    return validated.data.generatorProfileId;
 };
 
 export const getClaimLinkOptionsInfoForBoost = async (
@@ -122,7 +147,7 @@ export const useClaimLinkForBoost = async (
             stringifyClaimLinkValue(validated.data.claimLinkSA, {
                 ...validated.data.options,
                 totalUses: usesLeft,
-            }),
+            }, validated.data.generatorProfileId),
             undefined,
             true
         );

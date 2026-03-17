@@ -114,6 +114,8 @@ export const useSyncAllCredentialsToContractsMutation = () => {
                         contract: c.contract,
                         terms: c.terms,
                         uri: c.uri,
+                        expiresAt: c.expiresAt,
+                        oneTime: c.oneTime,
                     })),
                 });
 

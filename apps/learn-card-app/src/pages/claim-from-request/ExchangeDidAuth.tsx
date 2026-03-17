@@ -71,7 +71,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
         <IonPage>
             <IonContent fullscreen>
                 <div className="min-h-full bg-gradient-to-br from-emerald-50 via-white to-cyan-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl shadow-xl max-w-md w-full overflow-hidden">
+                    <div className="bg-white rounded-3xl shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin">
                         {/* Header with icon */}
                         <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-8 text-center">
                             <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">

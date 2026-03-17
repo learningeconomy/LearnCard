@@ -23,19 +23,20 @@ import {
     usePrefetchBoosts,
     useModal,
     ModalTypes,
-    useWeb3Auth,
     LOGIN_REDIRECTS,
     useSyncConsentFlow,
     useCurrentUser,
     useIsCurrentUserLCNUser,
     useContract,
     switchedProfileStore,
+    usePrivacyGate,
+    useAiFeatureGate,
 } from 'learn-card-base';
+import { useAppAuth } from './providers/AuthCoordinatorProvider';
 import { useNetworkConsentMutation } from 'learn-card-base/react-query/mutations/networkConsent';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
-import { WALLET_ADAPTERS } from '@web3auth/base';
 
 import endorsementsRequestStore from './stores/endorsementsRequestStore';
 import { useFirebase } from './hooks/useFirebase';
@@ -44,7 +45,7 @@ import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals } from 'learn-card-base';
-import { useSetFirebaseAnalyticsUserId } from './hooks/useSetFirebaseAnalyticsUserId';
+import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { redirectStore } from 'learn-card-base/stores/redirectStore';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
@@ -53,8 +54,13 @@ import useConsentFlow from './pages/consentFlow/useConsentFlow';
 
 export const aiRoutes = ['/ai/topics', '/ai/sessions', '/chats'];
 
-const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
-    const { web3AuthInit } = useWeb3Auth();
+const AppRouter: React.FC = () => {
+    const { isLoading: coordinatorLoading, walletReady } = useAppAuth();
+
+    // The coordinator detects Firebase auth changes via firebaseAuthStore and
+    // handles the full lifecycle (authenticating → deriving_key → ready).
+    // Once walletReady is true, we always show the app regardless of other signals.
+    const initLoading = walletReady ? false : coordinatorLoading;
     const { verifySignInLinkAndLogin, verifyAppleLogin } = useFirebase();
     const history = useHistory();
     const location = useLocation();
@@ -63,6 +69,9 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
     const { isMobile } = useDeviceTypeByWidth();
     const isChapiInteraction = useIsChapiInteraction();
     const networkConsentMutation = useNetworkConsentMutation();
+    const { setEnabled: setAnalyticsEnabled } = useAnalytics();
+    const { isAiEnabled } = useAiFeatureGate();
+    usePrivacyGate({ onAnalyticsChange: setAnalyticsEnabled });
 
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
@@ -207,28 +216,13 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
     useLaunchDarklyIdentify({ debug: false });
     useSentryIdentify({ debug: false });
 
-    useSetFirebaseAnalyticsUserId({ debug: false });
+    useSetAnalyticsUserId({ debug: false });
     useAutoVerifyContactMethodWithProofOfLogin();
     useFinalizeInboxCredentials();
 
     const saved_email = window.localStorage.getItem('emailForSignIn');
 
     useEffect(() => {
-        const handleLoginAsync = async () => {
-            // re-init
-            const web3Auth = await web3AuthInit({
-                redirectUrl:
-                    IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                        ? LOGIN_REDIRECTS?.[BrandingEnum.learncard].redirectUrl
-                        : LOGIN_REDIRECTS?.[BrandingEnum.learncard].devRedirectUrl,
-                branding: BrandingEnum.learncard,
-                showLoading: false,
-            });
-
-            // re-connect
-            await web3Auth?.connectTo(WALLET_ADAPTERS.OPENLOGIN);
-        };
-
         App.addListener('appUrlOpen', data => {
             // get the url when the event "appUrlOpen" is triggered
             const authLink = data?.url;
@@ -241,9 +235,7 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
 
             const isNative = Capacitor?.isNativePlatform();
 
-            if (params.has('loginCompleted') && isNative) {
-                handleLoginAsync();
-            } else if (params.get('verifyCode') === 'true' && isNative) {
+            if (params.get('verifyCode') === 'true' && isNative) {
                 redirectStore.set.email(params.get('email') as string);
                 history.replace('/login?verifyCode=true');
             } else {
@@ -269,21 +261,10 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
         }
     }, []);
 
-    useEffect(() => {
-        web3AuthInit({
-            redirectUrl:
-                IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                    ? LOGIN_REDIRECTS[BrandingEnum.learncard].redirectUrl
-                    : LOGIN_REDIRECTS[BrandingEnum.learncard].devRedirectUrl,
-            branding: BrandingEnum.learncard,
-            showLoading: false,
-        });
-    }, []);
-
-    // Backfill consent logic for existing users
+    // Backfill consent logic for existing users — skipped for minors (AI disabled)
     useEffect(() => {
         const handleBackfillConsent = async () => {
-            if (!currentLCNUserLoading && currentLCNUser && currentUser) {
+            if (!currentLCNUserLoading && currentLCNUser && currentUser && isAiEnabled) {
                 try {
                     // Use the reusable network consent mutation with backfill check
                     await networkConsentMutation.mutateAsync({
@@ -297,7 +278,7 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
         };
 
         handleBackfillConsent();
-    }, [currentLCNUser, currentLCNUserLoading, currentUser]);
+    }, [currentLCNUser, currentLCNUserLoading, currentUser, isAiEnabled]);
 
     if (initLoading) return <LoginLoadingPage />;
 

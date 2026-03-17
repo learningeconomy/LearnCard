@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
-import { useDeviceTypeByWidth } from 'learn-card-base';
+import { useDeviceTypeByWidth, LEARNCARD_AI_URL } from 'learn-card-base';
 
 import ChatInput from './ChatInput';
 import CaretDown from '../../svgs/CaretDown';
 import AiChatLoading from './AiChatLoading';
+import AiSessionPlan from './AiSessionPlan';
 import AiSessionLoader from '../AiSessionLoader';
+import FinishSessionButton from './FinishSessionButton';
 import MessageWithQuestions from './MessageWithQuestions';
 
 import {
@@ -19,15 +21,17 @@ import {
     isEndingSession,
     showEndingSessionLoader,
     disconnectWebSocket,
+    startInsightsSession,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 import { auth } from 'learn-card-base/stores/nanoStores/authStore';
 
 import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 
-import { sessionWrapUpText } from '../newAiSession.helpers';
+import { sessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
 import { AiPassportAppContractUri } from '../../ai-passport-apps/aiPassport-apps.helpers';
+import { AiFeatureGate } from '../../ai-feature-gate/AiFeatureGate';
 
-export const BACKEND_URL = 'https://api.learncloud.ai';
+export const BACKEND_URL = LEARNCARD_AI_URL;
 
 type LearnCardAiChatBotProps = {
     initialMessages: ChatMessage[];
@@ -35,6 +39,7 @@ type LearnCardAiChatBotProps = {
     initialTopicUri?: string | undefined;
     contractUri?: string | undefined;
     handleStartOver?: () => void;
+    mode?: AiSessionMode;
 };
 
 export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
@@ -43,6 +48,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     initialTopicUri: _initialTopicUri = undefined,
     contractUri = AiPassportAppContractUri.learncardapp,
     handleStartOver: _handleStartOver,
+    mode = AiSessionMode.tutor,
 }) => {
     const { isDesktop } = useDeviceTypeByWidth();
     const [showInitialMessages, setShowInitialMessages] = useState(true);
@@ -108,7 +114,12 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
             if (!authState?.did) return; // Wait for auth to be ready
 
             setTopicInitialized(true);
-            startTopic(initialTopic);
+
+            if (mode === AiSessionMode.insights) {
+                startInsightsSession(initialTopic);
+            } else {
+                startTopic(initialTopic, mode);
+            }
         }
     }, [initialTopic, _initialTopicUri, topicInitialized, authState?.did]);
 
@@ -323,6 +334,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     }, [messageRefs.current[messagesToShow.length - 1]?.offsetHeight, typing]);
 
     return (
+        <AiFeatureGate>
         <div
             className={`flex flex-col h-full min-h-[32rem] w-full max-w-[829px] mx-auto sm:pb-[30px] bg-white ${
                 isDesktop ? 'pt-[100px]' : ''
@@ -350,19 +362,22 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                 />
             )}
 
-            {loading && <AiChatLoading contractUri={contractUri} />}
+            {loading && mode === AiSessionMode.insights && (
+                <AiChatLoading contractUri={contractUri} />
+            )}
 
-            {!loading && (
+            {(!loading || mode !== AiSessionMode.insights) && (
                 <>
                     <div
                         ref={chatContainerRef}
-                        className="flex-1 pt-[100px] sm:pt-0 overflow-y-auto flex flex-col px-4 relative"
+                        className="flex-1 pt-[150px] sm:pt-0 overflow-y-auto flex flex-col px-4 relative"
                     >
                         <div
                             ref={chatInnerScrollRef}
                             className="flex flex-col transition-transform duration-300 ease-out"
                             style={{ paddingBottom: `${scrollOffset}px` }}
                         >
+                            {mode !== AiSessionMode.insights && <AiSessionPlan />}
                             {messagesToShow.map((msg, index) => {
                                 return (
                                     <div
@@ -412,10 +427,12 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                         )}
                     </div>
 
+                    {mode !== AiSessionMode.insights && <FinishSessionButton />}
                     <div className="sm:px-4">{!loading && <ChatInput />}</div>
                 </>
             )}
         </div>
+        </AiFeatureGate>
     );
 };
 

@@ -8,6 +8,7 @@ This page provides common usage examples for the **LearnCloud Network API**, so 
 -   Trigger and validate ConsentFlows
 -   Monitor health and fetch metadata (like DIDs or challenge keys)
 -   Run semantic search across skill frameworks
+-   Link and use OpenSALT skill frameworks
 
 Each example is standalone and self-explanatory. Scroll, copy, and paste what you need.
 
@@ -77,8 +78,6 @@ const result = await learnCard.invoke.send({
 
 ---
 
-##
-
 ## 🔎 Semantic Skill Search
 
 Use semantic search when keyword matching is too strict and you want meaning-based results.
@@ -103,4 +102,94 @@ console.log(results.records[0]);
 
 {% hint style="info" %}
 Semantic search requires skill embeddings to be present. In LearnCard Network, embeddings are generated for skill create/update/sync flows and can be backfilled when enabled by environment configuration.
+{% endhint %}
+
+---
+
+## OpenSALT Skill Frameworks
+
+Link an OpenSALT framework by CASE URL (or UUID), then sync it locally:
+
+```typescript
+const framework = await learnCard.invoke.createSkillFramework({
+    frameworkId:
+        'https://opensalt.net/ims/case/v1p0/CFDocuments/c6085394-d7cb-11e8-824f-0242ac160002',
+});
+
+await learnCard.invoke.syncFrameworkSkills({ id: framework.id });
+```
+
+List frameworks available to the current profile (managed + public):
+
+```typescript
+const page = await learnCard.invoke.getAllAvailableFrameworks({
+    limit: 25,
+    cursor: null,
+});
+
+console.log(page.records.map(framework => framework.id));
+```
+
+To align a boost with skills from that framework:
+
+```typescript
+await learnCard.invoke.alignBoostSkills(boostUri, [{ frameworkId: framework.id, id: 'skill-id' }]);
+```
+
+For full details, see [Skill Frameworks & OpenSALT](skills-and-opensalt.md).
+
+---
+
+## 📱 App Store Credentials
+
+### Fetch Credentials Sent by an App
+
+Retrieve credentials that a specific app (App Store listing) has sent to the current user. Useful for building in-app credential dashboards.
+
+```typescript
+const result = await learnCard.invoke.getMyCredentialsFromApp(
+    'my-app-listing-id', // App Store listing ID or slug
+    { limit: 50 } // Optional pagination
+);
+
+console.log(result);
+// {
+//   hasMore: false,
+//   cursor: 'abc123',
+//   totalCount: 3,
+//   records: [
+//     {
+//       credentialId: 'cred-123',
+//       credentialUri: 'lc:credential:...',
+//       date: '2024-03-09T12:00:00Z',
+//       status: 'claimed',
+//       boostName: 'Course Completion Badge',
+//       boostCategory: 'Achievement'
+//     },
+//     ...
+//   ]
+// }
+```
+
+#### Credential Status Values
+
+| Status    | Description                                 |
+| --------- | ------------------------------------------- |
+| `pending` | Credential sent but not yet claimed by user |
+| `claimed` | User has claimed the credential             |
+| `revoked` | Credential has been revoked by issuer       |
+
+#### Resolving Full Credential Data
+
+The API returns `credentialUri` which can be used to fetch the full Verifiable Credential:
+
+```typescript
+for (const record of result.records) {
+    const fullVC = await learnCard.read.get(record.credentialUri);
+    console.log(fullVC.credentialSubject);
+}
+```
+
+{% hint style="info" %}
+**Pagination**: Use `cursor` from the response to fetch additional pages. The `hasMore` flag indicates if more records exist.
 {% endhint %}
