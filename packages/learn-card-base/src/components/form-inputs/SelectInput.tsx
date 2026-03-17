@@ -12,11 +12,12 @@ type SelectOption = {
 
 type SelectInputProps = {
     value: string | number | null | undefined;
-    onChange: (newValue: string | number) => void;
+    onChange: (newValue: string | number | null) => void;
     options: SelectOption[];
     placeholder?: string;
     disabled?: boolean;
     className?: string;
+    allowDeselect?: boolean;
 };
 
 const SelectInput: React.FC<SelectInputProps> = ({
@@ -26,6 +27,7 @@ const SelectInput: React.FC<SelectInputProps> = ({
     placeholder = 'Select...',
     disabled = false,
     className = '',
+    allowDeselect = false,
 }) => {
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
@@ -39,6 +41,17 @@ const SelectInput: React.FC<SelectInputProps> = ({
 
         newModal(
             <div className="text-grayscale-900 flex flex-col py-[10px]">
+                {allowDeselect && value !== null && value !== undefined && (
+                    <button
+                        className="py-[10px] text-grayscale-500 italic"
+                        onClick={() => {
+                            onChange(null);
+                            closeModal();
+                        }}
+                    >
+                        Clear selection
+                    </button>
+                )}
                 {options.map(o => (
                     <button
                         key={o.value}

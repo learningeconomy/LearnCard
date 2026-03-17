@@ -66,6 +66,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
                 options={WORK_LIFE_BALANCE_OPTIONS}
                 name="work_life_balance"
                 columns={2}
+                allowDeselect
                 className="pb-[30px] border-b-[1px] border-solid border-grayscale-200"
             />
 
@@ -79,6 +80,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
                 options={JOB_STABILITY_OPTIONS}
                 name="job_stability"
                 columns={2}
+                allowDeselect
             />
 
             <div className="flex gap-[10px] w-full">

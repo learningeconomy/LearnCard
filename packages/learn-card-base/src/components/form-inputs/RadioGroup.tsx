@@ -7,12 +7,13 @@ type RadioOption = {
 
 type RadioGroupProps = {
     value: string | null;
-    onChange: (value: string) => void;
+    onChange: (value: string | null) => void;
     options: RadioOption[];
     name: string;
     columns?: 1 | 2 | 3;
     disabled?: boolean;
     className?: string;
+    allowDeselect?: boolean;
 };
 
 const RadioGroup: React.FC<RadioGroupProps> = ({
@@ -23,6 +24,7 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
     columns = 2,
     disabled = false,
     className = '',
+    allowDeselect = false,
 }) => {
     const gridCols = {
         1: 'grid-cols-1',
@@ -38,7 +40,14 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
                     <button
                         key={option.value}
                         type="button"
-                        onClick={() => !disabled && onChange(option.value)}
+                        onClick={() => {
+                            if (disabled) return;
+                            if (allowDeselect && isSelected) {
+                                onChange(null);
+                            } else {
+                                onChange(option.value);
+                            }
+                        }}
                         className={`flex items-center gap-[10px] cursor-pointer ${
                             disabled ? 'opacity-50 cursor-not-allowed' : ''
                         }`}

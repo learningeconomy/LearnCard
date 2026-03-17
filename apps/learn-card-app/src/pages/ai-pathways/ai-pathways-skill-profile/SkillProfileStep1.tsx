@@ -188,16 +188,18 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                 <div className="flex gap-[10px]">
                     <SelectInput
                         value={years}
-                        onChange={value => setYears(value as number)}
+                        onChange={value => setYears(value as number | null)}
                         options={YEARS_OPTIONS}
                         placeholder="years"
+                        allowDeselect
                         className="flex-1"
                     />
                     <SelectInput
                         value={months}
-                        onChange={value => setMonths(value as number)}
+                        onChange={value => setMonths(value as number | null)}
                         options={MONTHS_OPTIONS}
                         placeholder="months"
+                        allowDeselect
                         className="flex-1"
                     />
                 </div>
