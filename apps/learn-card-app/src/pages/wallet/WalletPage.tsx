@@ -65,6 +65,9 @@ const WalletPage: React.FC = () => {
     const hideAiWalletRoutes = flags?.hideAiWalletRoutes;
     const showAiInsights = flags?.showAiInsights;
     const hideAiPathways = flags?.hideAiPathways;
+    const showChecklistButton = Boolean(flags?.enableOnboardingChecklist);
+    const showResumeBuilderButton = Boolean(flags?.enableResumeBuilder);
+    const showInlineWalletActions = showChecklistButton && showResumeBuilderButton;
     const { isAiEnabled, reason } = useAiFeatureGate();
     const { presentToast } = useToast();
     const placeholderCategories = [
@@ -220,9 +223,25 @@ const WalletPage: React.FC = () => {
                                     <ResumeBuilderController className="mb-[10px]" />
                                 </>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px] my-[10px]">
-                                    <CheckListButton mode="inline" />
-                                    <ResumeBuilderController mode="inline" />
+                                <div
+                                    className={`w-full flex gap-[10px] pb-[10px] ${
+                                        showInlineWalletActions ? 'flex-row' : 'flex-col'
+                                    }`}
+                                >
+                                    {showChecklistButton && (
+                                        <div className={showInlineWalletActions ? 'flex-1' : ''}>
+                                            <CheckListButton
+                                                mode={
+                                                    showInlineWalletActions ? 'inline' : 'default'
+                                                }
+                                            />
+                                        </div>
+                                    )}
+                                    {showResumeBuilderButton && (
+                                        <div className={showInlineWalletActions ? 'flex-1' : ''}>
+                                            <ResumeBuilderController mode="inline" />
+                                        </div>
+                                    )}
                                 </div>
                             )}
                             <IonRow className="wallet-squares-wrapper max-w-[600px] mx-auto">
