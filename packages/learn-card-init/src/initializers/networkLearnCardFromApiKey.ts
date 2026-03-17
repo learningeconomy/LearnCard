@@ -21,6 +21,7 @@ export const networkLearnCardFromApiKey = async ({
     apiKey,
     network: _network,
     trustedBoostRegistry = 'https://raw.githubusercontent.com/learningeconomy/registries/main/learncard/trusted-app-registry.json',
+    guardianApprovalGetter,
     didkit,
     allowRemoteContexts = false,
     debug,
@@ -40,7 +41,9 @@ export const networkLearnCardFromApiKey = async ({
     };
 
     const didkitLc = await cryptoLc.addPlugin(
-        await (await getDidkit())(didkit === 'node' ? undefined : didkit, allowRemoteContexts)
+        await (
+            await getDidkit()
+        )(didkit === 'node' ? undefined : didkit, allowRemoteContexts)
     );
 
     const vcLc = await didkitLc.addPlugin(getVCPlugin(didkitLc));
@@ -59,5 +62,7 @@ export const networkLearnCardFromApiKey = async ({
 
     const lcLc = await boostVerificationLc.addPlugin(getLearnCardPlugin(boostVerificationLc));
 
-    return lcLc.addPlugin(await getLearnCardNetworkPlugin(lcLc, network, apiKey));
+    return lcLc.addPlugin(
+        await getLearnCardNetworkPlugin(lcLc, network, apiKey, { guardianApprovalGetter })
+    );
 };
