@@ -2,9 +2,9 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { LCNNotificationTypeEnumValidator } from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
-import { isVC2Format } from '@learncard/helpers';
+import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
 
-import { t, openRoute, profileRoute } from '@routes';
+import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
@@ -1121,7 +1121,7 @@ export const appStoreRouter = t.router({
 
     // ==================== User Install/Uninstall Routes ====================
 
-    installApp: profileRoute
+    installApp: guardianGatedRoute
         .meta({
             openapi: {
                 protect: true,
@@ -1143,6 +1143,53 @@ export const appStoreRouter = t.router({
                     code: 'NOT_FOUND',
                     message: 'Listing not found or not available',
                 });
+            }
+
+            // Check age restrictions using shared helper
+            const userAge = calculateAgeFromDob(ctx.user.profile.dob);
+
+            // Parse launch config to check for contract
+            let hasContract = false;
+            try {
+                const launchConfig = listing.launch_config_json
+                    ? JSON.parse(listing.launch_config_json)
+                    : {};
+                hasContract = Boolean(launchConfig?.contractUri);
+            } catch {
+                // Invalid JSON, assume no contract
+            }
+
+            const eligibilityResult = checkAppInstallEligibility({
+                isChildProfile: ctx.isChildAccount,
+                userAge,
+                minAge: listing.min_age,
+                ageRating: listing.age_rating,
+                hasContract,
+                hasGuardianApproval: ctx.hasGuardianApproval,
+            });
+
+            switch (eligibilityResult.action) {
+                case 'hard_blocked':
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: eligibilityResult.reason,
+                    });
+
+                case 'require_dob':
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: eligibilityResult.reason,
+                    });
+
+                case 'require_guardian_approval':
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: eligibilityResult.reason,
+                    });
+
+                case 'proceed':
+                    // Continue with installation
+                    break;
             }
 
             const alreadyInstalled = await checkIfProfileInstalledApp(
