@@ -30,6 +30,7 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
     };
 
     const handleFinish = () => {
+        setCurrentStep(1);
         setIsExpanded(false);
     };
 
