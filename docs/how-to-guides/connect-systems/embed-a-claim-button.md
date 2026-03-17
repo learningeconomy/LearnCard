@@ -27,7 +27,7 @@ This is for **external websites** that want to award credentials to visitors. If
 {% tabs %}
 {% tab title="Script Tag (CDN)" %}
 ```html
-<script src="https://cdn.learncard.com/sdk/v1/learncard.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js"></script>
 ```
 {% endtab %}
 {% tab title="npm/ESM" %}
@@ -124,7 +124,7 @@ LearnCard.init({
       ✅ Credential claimed! Check your LearnCard wallet.
     </div>
 
-    <script src="https://cdn.learncard.com/sdk/v1/learncard.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js"></script>
     <script>
       LearnCard.init({
         publishableKey: 'pk_your_key_here',

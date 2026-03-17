@@ -262,7 +262,7 @@ const LoadSdkStep: React.FC<{
                     title="CDN Script Tag"
                     snippets={{
                         typescript: `<!-- Add before closing </body> tag -->
-<script src="https://cdn.learncard.com/embed-sdk/v1/learncard.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js" defer></script>
 
 <!-- Then initialize after page loads -->
 <script>
