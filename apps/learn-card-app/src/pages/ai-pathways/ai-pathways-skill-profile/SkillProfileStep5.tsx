@@ -80,13 +80,15 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
                 </h3>
             </div>
 
-            <SkillSearchSelector
-                selectedSkills={selectedSkills}
-                onSelectedSkillsChange={setSelectedSkills}
-                mode="add"
-                shouldCollapseOptions={false}
-                showSuggestSkill={true}
-            />
+            <div className="px-[3px]">
+                <SkillSearchSelector
+                    selectedSkills={selectedSkills}
+                    onSelectedSkillsChange={setSelectedSkills}
+                    mode="add"
+                    shouldCollapseOptions={false}
+                    showSuggestSkill={true}
+                />
+            </div>
 
             <div className="flex gap-[10px] w-full">
                 <button
