@@ -172,7 +172,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                                 }`}
                                             >
                                                 {totalRecords !== null
-                                                    ? `${totalRecords.toLocaleString()} results`
+                                                    ? `${totalRecords.toLocaleString()} ${
+                                                          totalRecords === 1 ? 'result' : 'results'
+                                                      }`
                                                     : 'Loading...'}
                                             </span>
                                             {isLoadingStats && totalRecords !== null && (
