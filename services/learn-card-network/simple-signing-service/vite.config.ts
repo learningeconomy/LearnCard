@@ -12,6 +12,8 @@ export default defineConfig({
         fileParallelism: false,
         globalSetup: './vitest-setup.ts',
         alias: { '@mongo': require.resolve('./test/helpers/mock-mongo.ts') },
+        pool: 'forks',
+        teardownTimeout: 5000,
         exclude: [
             '**/node_modules/**',
             '**/dist/**',

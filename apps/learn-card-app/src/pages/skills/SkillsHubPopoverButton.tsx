@@ -145,7 +145,7 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
                 </span>
                 <SortIcon className="h-[32px] w-[32px] text-grayscale-700" />
             </button>
-            <IonPopover
+            {!isMobile && <IonPopover
                 onDidDismiss={() => setShowSortPopover(false)}
                 reference="trigger"
                 trigger="trigger-button"
@@ -235,7 +235,7 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
                         )}
                     </div>
                 </div>
-            </IonPopover>
+            </IonPopover>}
         </>
     );
 };

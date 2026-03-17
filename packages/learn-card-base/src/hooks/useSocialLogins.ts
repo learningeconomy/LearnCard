@@ -1,5 +1,3 @@
-import useWeb3Auth from './useWeb3Auth';
-
 // import OktaIcon from 'learn-card-base/assets/images/okta-circle-icon.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-circle-icon.svg';
 import DiscordIcon from 'learn-card-base/assets/images/discord-circle-icon.svg';
@@ -25,9 +23,7 @@ export enum SocialLoginTypes {
     scoutsSSO = 'scoutsSSO',
 }
 
-export const useSocialLogins = (branding: BrandingEnum = BrandingEnum.learncard) => {
-    const { learncardGoogleLogin } = useWeb3Auth();
-
+export const useSocialLogins = (_branding: BrandingEnum = BrandingEnum.learncard) => {
     // if (branding === BrandingEnum.metaversity) {
     //     return [
     //         {

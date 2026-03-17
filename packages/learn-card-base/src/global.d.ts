@@ -6,5 +6,3 @@ declare var LCN_API_URL: string | undefined;
 declare var CLOUD_URL: string | undefined;
 declare var LEARN_CLOUD_XAPI_URL: string | undefined;
 declare var API_URL: string | undefined;
-declare var WEB3AUTH_MAINNET_CLIENT_ID: string | undefined;
-declare var WEB3AUTH_TESTNET_CLIENT_ID: string | undefined;

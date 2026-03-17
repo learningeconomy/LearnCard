@@ -13,6 +13,7 @@ import figlet from 'figlet';
 import { program } from 'commander';
 import clipboard from 'clipboardy';
 
+import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
 
 import { generateRandomSeed } from './random';
 
@@ -76,10 +77,11 @@ program
             ),
         });
 
-        globalThis.learnCard = await _learnCard.addPlugin(
+        const simpleSigningLc = await _learnCard.addPlugin(
             await getSimpleSigningPlugin(_learnCard, 'https://api.learncard.app/trpc')
         );
 
+        globalThis.learnCard = await simpleSigningLc.addPlugin(getLerRsPlugin(simpleSigningLc));
         // Add LinkedClaims plugin so endorse/verify/store/getEndorsements are available in the CLI
         globalThis.learnCard = await globalThis.learnCard.addPlugin(
             getLinkedClaimsPlugin(globalThis.learnCard)
