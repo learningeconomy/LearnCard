@@ -32,4 +32,7 @@ node_modules
 # Personal AI tooling (not shared — teammates may use different setups)
 .claude/
 .vexp/
+.superpowers/
+docs/superpowers/plans/
+docs/superpowers/specs/
 .github/copilot-instructions.md

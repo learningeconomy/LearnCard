@@ -734,6 +734,23 @@ export type LearnCardNetworkPluginMethods = {
     getInstalledApps: (options?: Partial<PaginationOptionsType>) => Promise<PaginatedInstalledApps>;
     countInstalledApps: () => Promise<number>;
     isAppInstalled: (listingId: string) => Promise<boolean>;
+    getMyCredentialsFromApp: (
+        listingId: string,
+        options?: { limit?: number; cursor?: string }
+    ) => Promise<{
+        hasMore: boolean;
+        cursor?: string;
+        records: Array<{
+            credentialId: string;
+            credentialUri: string;
+            date: string;
+            status: 'pending' | 'claimed' | 'revoked';
+            boostName?: string;
+            boostCategory?: string;
+            activityId?: string;
+        }>;
+        totalCount: number;
+    }>;
 
     isAppStoreAdmin: () => Promise<boolean>;
     adminUpdateListingStatus: (listingId: string, status: AppListingStatus) => Promise<boolean>;
