@@ -2,7 +2,8 @@
 // Server-side data (if needed for backend integration in the future)
 const config = {
   contractUri: import.meta.env.CONTRACT_URI || 'lc:network:network.learncard.com/trpc:contract:fc430a19-5f0d-46e2-95c5-15fa57f753c9',
-  boostUri: import.meta.env.BOOST_URI || 'lc:network:network.learncard.com/trpc:boost:fbe30973-68b2-4a87-b0ac-80938ff382c4'
+  boostUri: import.meta.env.BOOST_URI || 'lc:network:network.learncard.com/trpc:boost:fbe30973-68b2-4a87-b0ac-80938ff382c4',
+  templateAlias: import.meta.env.TEMPLATE_ALIAS || 'achievement'
 };
 ---
 
@@ -52,43 +53,127 @@ const config = {
         id="issue-cred-btn"
         class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
       >
-        1. Issue Credential (SDK: sendCredential)
+        1. Issue Credential (SDK: sendCredential + preventDuplicateClaim)
+      </button>
+
+      <button
+        id="check-credential-btn"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+      >
+        2. Check Credential Status (SDK: checkUserHasCredential)
+      </button>
+
+      <button
+        id="check-issuance-btn"
+        class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+      >
+        2a. Check Issuance Status (SDK: getTemplateIssuanceStatus)
+      </button>
+
+      <button
+        id="get-recipients-btn"
+        class="w-full bg-indigo-400 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+      >
+        2b. Get Template Recipients (SDK: getTemplateRecipients)
+      </button>
+
+      <button
+        id="arbitrary-boost-btn"
+        class="w-full bg-indigo-300 hover:bg-indigo-400 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+      >
+        2c. Use Arbitrary Boost URI
       </button>
 
       <button
         id="launch-ai-btn"
-        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+        class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
       >
-        2. Launch AI Tutor (SDK: launchFeature)
+        3. Launch AI Tutor (SDK: launchFeature)
       </button>
 
       <button
         id="ask-cred-btn"
-        class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+        class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
       >
-        3. Request Credential (SDK: askCredentialSearch)
+        4. Request Credential (SDK: askCredentialSearch)
       </button>
 
       <button
         id="request-consent-btn"
-        class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+        class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
       >
-        4. Request Consent (SDK: requestConsent)
+        5. Request Consent (SDK: requestConsent)
       </button>
 
       <button
         id="ask-specific-cred-btn"
-        class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+        class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
       >
-        5. Request Specific Credential (SDK: askCredentialSpecific)
+        6. Request Specific Credential (SDK: askCredentialSpecific)
       </button>
 
       <button
         id="initiate-template-issue-btn"
         class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
       >
-        6. Initiate Template Issue (SDK: initiateTemplateIssue)
+        7. Initiate Template Issue (SDK: initiateTemplateIssue)
       </button>
+    </div>
+  </div>
+
+  <!-- Modal for Arbitrary Boost URI -->
+  <div id="boost-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl">
+      <h3 class="text-xl font-bold text-gray-800 mb-4">Query Boost by URI</h3>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Boost URI</label>
+          <input 
+            type="text" 
+            id="boost-uri-input" 
+            placeholder="lc:network:network.learncard.com/trpc:boost:abc123"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Action</label>
+          <select 
+            id="boost-action-select"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="check-issuance">Check Issuance Status</option>
+            <option value="get-recipients">Get Recipients</option>
+          </select>
+        </div>
+        
+        <div id="recipient-input-container">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Recipient (Profile ID or DID)</label>
+          <input 
+            type="text" 
+            id="recipient-input" 
+            placeholder="user123 or did:web:network.learncard.com:users:user123"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          />
+          <p class="text-xs text-gray-500 mt-1">Leave empty to use your own profile</p>
+        </div>
+      </div>
+      
+      <div class="flex gap-3 mt-6">
+        <button 
+          id="boost-modal-cancel"
+          class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+        >
+          Cancel
+        </button>
+        <button 
+          id="boost-modal-submit"
+          class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+        >
+          Execute
+        </button>
+      </div>
     </div>
   </div>
 
@@ -98,7 +183,6 @@ const config = {
   </script>
 
   <script>
-    import { actions } from 'astro:actions';
     import { createPartnerConnect } from '@learncard/partner-connect';
 
     // --- CONFIGURATION ---
@@ -166,29 +250,209 @@ const config = {
       updateStatus('Issuing credential request. Waiting for user consent popup...', 'info');
 
       try {
-        const identity = await learnCard.requestIdentity();
+        const response = await learnCard.sendCredential({
+          templateAlias: window.__LC_CONFIG.templateAlias,
+          templateData: {
+            issuedAt: new Date().toISOString()
+          },
+          preventDuplicateClaim: true
+        });
 
-        const { data: credential, error } = await actions.issueCredential({ recipientDid: identity.user.did });
-        if (error) {
-          console.error(error)
-          throw new Error(error)
+        if (response.alreadyClaimed) {
+          updateStatus(`Already earned! Existing credential: ${response.credentialUri}`, 'info');
+          return;
         }
-        console.log('CREDENTIAL:', credential);
 
-        const response = await learnCard.sendCredential(credential);
-        
-        // Save the credential ID for later use
         if (response.credentialId) {
           lastIssuedCredentialId = response.credentialId;
+          updateStatus(`Credential Issued! New ID: ${response.credentialId}`, 'success');
+          return;
         }
-        
-        updateStatus(`Credential Issued! New ID: ${response.credentialId}`, 'success');
+
+        updateStatus(`Credential Issued! URI: ${response.credentialUri}`, 'success');
       } catch (error) {
         updateStatus(`Issue Failed: ${error.message || 'User rejected credential.'}`, 'error');
       }
     }
 
-    // C. Launch Feature
+
+    // C. Check Credential Status
+    async function handleCheckCredentialStatus() {
+      updateStatus('Checking credential status silently...', 'info');
+
+      try {
+        const result = await learnCard.checkUserHasCredential({
+          templateAlias: window.__LC_CONFIG.templateAlias
+        });
+
+        if (result.hasCredential) {
+          updateStatus(`Already earned! Status: ${result.status} (${result.credentialUri})`, 'success');
+        } else if (result.status === 'revoked') {
+          updateStatus('Credential was previously issued but is now revoked.', 'error');
+        } else {
+          updateStatus('Not earned yet. Click "Issue Credential" to claim it.', 'info');
+        }
+      } catch (error) {
+        updateStatus(`Check Failed: ${error.message || 'Unable to check credential status.'}`, 'error');
+      }
+    }
+
+    // C2. Check Template Issuance Status
+    async function handleCheckIssuanceStatus() {
+      updateStatus('Checking if you have issued this template to yourself...', 'info');
+
+      try {
+        const identity = await learnCard.requestIdentity();
+        const result = await learnCard.getTemplateIssuanceStatus({
+          templateAlias: window.__LC_CONFIG.templateAlias,
+          recipient: identity.user.did
+        });
+
+        if (result.sent) {
+          updateStatus(
+            `You issued this credential on ${new Date(result.sentDate).toLocaleDateString()}. ` +
+            `Status: ${result.status}${result.claimedDate ? ' (claimed on ' + new Date(result.claimedDate).toLocaleDateString() + ')' : ' (pending)'}`,
+            'success'
+          );
+        } else {
+          updateStatus('You have not issued this template to this recipient yet.', 'info');
+        }
+      } catch (error) {
+        updateStatus(`Issuance Check Failed: ${error.message || 'Unable to check issuance status.'}`, 'error');
+      }
+    }
+
+    // C3. Get Template Recipients
+    async function handleGetTemplateRecipients() {
+      updateStatus('Fetching list of recipients for this template...', 'info');
+
+      try {
+        const result = await learnCard.getTemplateRecipients({
+          templateAlias: window.__LC_CONFIG.templateAlias,
+          limit: 10
+        });
+
+        if (result.records.length === 0) {
+          updateStatus('No recipients found for this template yet.', 'info');
+        } else {
+          const recipientList = result.records.map(r =>
+            `${r.recipientDisplayName || r.recipientProfileId} (${r.status})`
+          ).join(', ');
+          updateStatus(
+            `Found ${result.records.length} recipient(s): ${recipientList}${result.hasMore ? '...' : ''}`,
+            'success'
+          );
+        }
+      } catch (error) {
+        updateStatus(`Recipients Fetch Failed: ${error.message || 'Unable to fetch recipients.'}`, 'error');
+      }
+    }
+
+    // C4. Use Arbitrary Boost URI - Modal-based UI
+    const boostModal = document.getElementById('boost-modal');
+    const boostUriInput = document.getElementById('boost-uri-input');
+    const boostActionSelect = document.getElementById('boost-action-select');
+    const recipientInput = document.getElementById('recipient-input');
+    const recipientContainer = document.getElementById('recipient-input-container');
+    const boostModalCancel = document.getElementById('boost-modal-cancel');
+    const boostModalSubmit = document.getElementById('boost-modal-submit');
+
+    function openBoostModal() {
+      boostModal.classList.remove('hidden');
+      boostModal.classList.add('flex');
+      boostUriInput.focus();
+    }
+
+    function closeBoostModal() {
+      boostModal.classList.add('hidden');
+      boostModal.classList.remove('flex');
+      boostUriInput.value = '';
+      recipientInput.value = '';
+    }
+
+    boostActionSelect.addEventListener('change', () => {
+      if (boostActionSelect.value === 'get-recipients') {
+        recipientContainer.classList.add('hidden');
+      } else {
+        recipientContainer.classList.remove('hidden');
+      }
+    });
+
+    boostModalCancel.addEventListener('click', closeBoostModal);
+
+    boostModal.addEventListener('click', (e) => {
+      if (e.target === boostModal) closeBoostModal();
+    });
+
+    async function handleBoostModalSubmit() {
+      const boostUri = boostUriInput.value.trim();
+      const action = boostActionSelect.value;
+      let recipient = recipientInput.value.trim();
+
+      if (!boostUri) {
+        updateStatus('Please enter a boost URI.', 'error');
+        return;
+      }
+
+      closeBoostModal();
+
+      if (action === 'check-issuance') {
+        if (!recipient) {
+          const identity = await learnCard.requestIdentity();
+          recipient = identity.user.did;
+        }
+        
+        updateStatus(`Checking issuance status for ${boostUri}...`, 'info');
+        try {
+          const result = await learnCard.getTemplateIssuanceStatus({
+            boostUri,
+            recipient
+          });
+
+          if (result.sent) {
+            updateStatus(
+              `Credential sent on ${new Date(result.sentDate).toLocaleDateString()}. ` +
+              `Status: ${result.status}${result.claimedDate ? ' (claimed)' : ' (pending)'}`,
+              'success'
+            );
+          } else {
+            updateStatus('No credential found for this boost and recipient.', 'info');
+          }
+        } catch (error) {
+          updateStatus(`Check Failed: ${error.message || 'Error checking issuance status.'}`, 'error');
+        }
+      } else if (action === 'get-recipients') {
+        updateStatus(`Fetching recipients for ${boostUri}...`, 'info');
+        try {
+          const result = await learnCard.getTemplateRecipients({
+            boostUri,
+            limit: 10
+          });
+
+          if (result.records.length === 0) {
+            updateStatus('No recipients found for this boost.', 'info');
+          } else {
+            const recipientList = result.records.map(r =>
+              `${r.recipientDisplayName || r.recipientProfileId} (${r.status})`
+            ).join(', ');
+            updateStatus(
+              `Found ${result.records.length} recipient(s): ${recipientList}${result.hasMore ? '...' : ''}`,
+              'success'
+            );
+          }
+        } catch (error) {
+          updateStatus(`Fetch Failed: ${error.message || 'Error fetching recipients.'}`, 'error');
+        }
+      }
+    }
+
+    boostModalSubmit.addEventListener('click', handleBoostModalSubmit);
+
+    function handleArbitraryBoostUri() {
+      openBoostModal();
+    }
+
+    // D. Launch Feature
     async function handleLaunchFeature() {
       updateStatus('Requesting LearnCard Host to launch AI Tutor...');
 
@@ -203,7 +467,7 @@ const config = {
       }
     }
 
-    // D. Request Credential (Gated Content)
+    // E. Request Credential (Gated Content)
     async function handleAskCredential() {
       updateStatus(
         'Requesting user to share a credential (searching for "Learning History"). Waiting for consent...',
@@ -247,7 +511,7 @@ const config = {
       }
     }
 
-    // E. Request Consent
+    // F. Request Consent
     async function handleRequestConsent() {
       updateStatus(
         'Requesting user consent for general permissions. Waiting for consent...',
@@ -271,7 +535,7 @@ const config = {
       }
     }
 
-    // F. Request Specific Credential
+    // G. Request Specific Credential
     async function handleAskSpecificCredential() {
       updateStatus(
         'Requesting a specific credential by ID. Waiting for user to share...',
@@ -318,7 +582,7 @@ const config = {
       }
     }
 
-    // G. Initiate Template Issue (Boost)
+    // H. Initiate Template Issue (Boost)
     async function handleInitiateTemplateIssue() {
       updateStatus(
         'Initiating template issue flow. Opening Send Boost modal...',
@@ -381,7 +645,11 @@ const config = {
     window.onload = function () {
       // Attach event listeners to the buttons
       document.getElementById('issue-cred-btn').addEventListener('click', handleIssueCredential);
-      document.getElementById('launch-ai-btn').addEventListener('click', handleLaunchFeature);
+document.getElementById('check-credential-btn').addEventListener('click', handleCheckCredentialStatus);
+    document.getElementById('check-issuance-btn')?.addEventListener('click', handleCheckIssuanceStatus);
+    document.getElementById('get-recipients-btn')?.addEventListener('click', handleGetTemplateRecipients);
+    document.getElementById('arbitrary-boost-btn')?.addEventListener('click', handleArbitraryBoostUri);
+    document.getElementById('launch-ai-btn').addEventListener('click', handleLaunchFeature);
       document.getElementById('ask-cred-btn').addEventListener('click', handleAskCredential);
       document.getElementById('request-consent-btn').addEventListener('click', handleRequestConsent);
       document.getElementById('ask-specific-cred-btn').addEventListener('click', handleAskSpecificCredential);
