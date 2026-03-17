@@ -50,7 +50,6 @@ function buildHtmlSnippet(
 
     return `<!-- LearnCard Claim Button -->
 <div id="learncard-claim"></div>
-<!-- TODO: Verify CDN deployment URL is live before shipping -->
 <script src="https://cdn.learncard.com/embed-sdk/v1/learncard.js" defer></script>
 <script>
   window.addEventListener('DOMContentLoaded', function() {

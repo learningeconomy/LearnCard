@@ -262,7 +262,6 @@ const LoadSdkStep: React.FC<{
                     title="CDN Script Tag"
                     snippets={{
                         typescript: `<!-- Add before closing </body> tag -->
-<!-- TODO: Verify CDN deployment URL is live before shipping -->
 <script src="https://cdn.learncard.com/embed-sdk/v1/learncard.js" defer></script>
 
 <!-- Then initialize after page loads -->
