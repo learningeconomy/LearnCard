@@ -17,8 +17,8 @@ interface EmbedCodeTabProps {
     templates?: CredentialTemplate[];
 }
 
-/** Escape single quotes in user-provided strings for safe JS string interpolation */
-const safe = (str: string): string => str.replace(/'/g, "\\'");
+/** Escape backslashes and single quotes in user-provided strings for safe JS string interpolation */
+const safe = (str: string): string => str.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
 /**
  * Build the branding block for generated snippets, conditionally including partnerLogoUrl
