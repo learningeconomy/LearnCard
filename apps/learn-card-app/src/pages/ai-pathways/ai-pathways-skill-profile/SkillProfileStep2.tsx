@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
+import { v4 as uuidv4 } from 'uuid';
 
 import {
     TextInput,
@@ -10,6 +11,9 @@ import {
     useModal,
     ModalTypes,
     useGetCredentialList,
+    useWallet,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 
@@ -56,10 +60,13 @@ const emptyExperience: WorkExperience = {
 const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handleBack }) => {
     const { isMobile } = useDeviceTypeByWidth();
     const { newModal, closeModal } = useModal();
+    const { initWallet, storeAndAddVCToWallet } = useWallet();
+    const { presentToast } = useToast();
     const [experiences, setExperiences] = useState<WorkExperience[]>([{ ...emptyExperience }]);
     const [selectedSkills, setSelectedSkills] = useState<any[]>([]);
     const [showForm, setShowForm] = useState(false);
     const [selectedCredentialUris, setSelectedCredentialUris] = useState<string[]>([]);
+    const [isIssuing, setIsIssuing] = useState(false);
 
     const swiperRef = useRef<any>(null);
     const [atBeginning, setAtBeginning] = useState(true);
@@ -75,12 +82,127 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
     };
 
     const handleAddExperience = async () => {
-        // TODO: Implement credential issuance using experience data
-        console.log('Issuing work history credential with data:', experiences[0]);
-        // Stub: After issuing, return to credential slider view
-        setShowForm(false);
-        setExperiences([{ ...emptyExperience }]);
-        setSelectedSkills([]);
+        const experience = experiences[0];
+        if (!experience.jobTitle || !experience.employer) {
+            presentToast('Please fill in job title and employer', {
+                type: ToastTypeEnum.Error,
+                title: 'Missing required fields',
+            });
+            return;
+        }
+
+        setIsIssuing(true);
+        try {
+            const wallet = await initWallet();
+            const walletDid = wallet?.id?.did();
+            const currentDate = new Date().toISOString();
+
+            // Build alignments from selected skills (OBv3 format)
+            const alignments = selectedSkills.map(skill => ({
+                type: ['Alignment'],
+                targetName: skill.targetName || skill.name,
+                targetUrl: skill.targetUrl || skill.id || `urn:uuid:${uuidv4()}`,
+                ...(skill.targetCode && { targetCode: skill.targetCode }),
+                ...(skill.targetDescription && { targetDescription: skill.targetDescription }),
+            }));
+
+            // Build job description/narrative
+            const narrative = [
+                experience.jobSummary,
+                experience.workFromHome ? 'Remote position' : experience.jobLocation,
+                experience.startDate && `Started: ${experience.startDate}`,
+                experience.isCurrentJob
+                    ? 'Current position'
+                    : experience.endDate && `Ended: ${experience.endDate}`,
+            ]
+                .filter(Boolean)
+                .join(' • ');
+
+            const unsignedCredential = {
+                '@context': [
+                    'https://www.w3.org/2018/credentials/v1',
+                    'https://purl.imsglobal.org/spec/ob/v3p0/context.json',
+                    {
+                        type: '@type',
+                        xsd: 'https://www.w3.org/2001/XMLSchema#',
+                        BoostCredential: {
+                            '@id': 'https://www.example.org/boost-credential',
+                            '@context': {
+                                display: {
+                                    '@id': 'https://www.example.org/boost-display',
+                                    '@context': {
+                                        backgroundImage: {
+                                            '@id': 'https://www.example.org/backgroundImage',
+                                            '@type': 'xsd:string',
+                                        },
+                                        backgroundColor: {
+                                            '@id': 'https://www.example.org/backgroundColor',
+                                            '@type': 'xsd:string',
+                                        },
+                                    },
+                                },
+                                image: {
+                                    '@id': 'https://www.example.org/boost-image',
+                                    '@type': 'xsd:string',
+                                },
+                            },
+                        },
+                    },
+                ],
+                id: `urn:uuid:${uuidv4()}`,
+                type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+                issuer: walletDid,
+                issuanceDate: currentDate,
+                name: `${experience.jobTitle} at ${experience.employer}`,
+                credentialSubject: {
+                    id: walletDid,
+                    type: ['AchievementSubject'],
+                    achievement: {
+                        id: `urn:uuid:${uuidv4()}`,
+                        type: ['Achievement'],
+                        achievementType: 'ext:Job',
+                        criteria: {
+                            narrative,
+                        },
+                        description:
+                            experience.jobSummary ||
+                            `${experience.jobTitle} position at ${experience.employer}`,
+                        name: experience.jobTitle,
+                        ...(alignments.length > 0 && { alignment: alignments }),
+                    },
+                },
+                display: {
+                    backgroundImage: '',
+                    backgroundColor: '',
+                },
+            };
+
+            // Issue (sign) the credential
+            const vc = await wallet.invoke.issueCredential(unsignedCredential);
+
+            // Store and add to wallet index
+            await storeAndAddVCToWallet(vc, {
+                title: `${experience.jobTitle} at ${experience.employer}`,
+            });
+
+            presentToast('Your work history credential has been created', {
+                type: ToastTypeEnum.Success,
+                title: 'Work experience added',
+            });
+
+            // Reset form and return to credential slider view
+            setShowForm(false);
+            setExperiences([{ ...emptyExperience }]);
+            setSelectedSkills([]);
+        } catch (error) {
+            console.error('Failed to issue work history credential:', error);
+            presentToast(error instanceof Error ? error.message : 'An error occurred', {
+                type: ToastTypeEnum.Error,
+                title: 'Failed to add experience',
+            });
+        } finally {
+            setIsIssuing(false);
+        }
     };
 
     const handleSelectCredential = (uri: string) => {
@@ -412,9 +534,10 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                 <button
                     type="button"
                     onClick={handleAddExperience}
-                    className="bg-cyan-501 text-white rounded-full pl-[30px] pr-[10px] py-[7px] text-[15px] font-bold leading-[24px] tracking-[0.25px] h-[44px] flex items-center justify-center gap-[10px]"
+                    disabled={isIssuing}
+                    className="bg-cyan-501 text-white rounded-full pl-[30px] pr-[10px] py-[7px] text-[15px] font-bold leading-[24px] tracking-[0.25px] h-[44px] flex items-center justify-center gap-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Add Experience
+                    {isIssuing ? 'Adding...' : 'Add Experience'}
                     <GearPlusIcon className="w-[30px] h-[30px] text-cyan-601" />
                 </button>
             )}
