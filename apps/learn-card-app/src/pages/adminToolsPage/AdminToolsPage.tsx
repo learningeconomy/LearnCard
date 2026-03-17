@@ -1,5 +1,6 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import AdminPageStructure from './AdminPageStructure';
 
@@ -14,6 +15,7 @@ import AdminToolsOptionsContainer from './AdminToolsModal/AdminToolsOptionsConta
 
 const AdminToolsPage: React.FC = () => {
     const history = useHistory();
+    const flags = useFlags();
     const { presentToast } = useToast();
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
 
@@ -113,6 +115,14 @@ const AdminToolsPage: React.FC = () => {
                 >
                     API Tokens
                 </button>
+                {flags.enableLearnerContextTest && (
+                    <button
+                        className="bg-white rounded-[20px] shadow-bottom px-[15px] py-[10px]"
+                        onClick={() => history.push('/admin-tools/learner-context-test')}
+                    >
+                        Learner Context Test UX
+                    </button>
+                )}
                 <button
                     className="bg-white rounded-[20px] shadow-bottom px-[15px] py-[10px]"
                     onClick={() =>
