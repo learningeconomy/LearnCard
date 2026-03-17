@@ -156,7 +156,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                         {goals.map((goal, index) => (
                             <span
                                 key={index}
-                                className="flex items-center gap-[8px] border-solid border-[2px] border-sky-200 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]"
+                                className="flex items-center gap-[8px] border-solid border-[2px] border-sky-600 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]"
                             >
                                 {goal}
                                 <button type="button" onClick={() => handleRemoveGoal(index)}>
