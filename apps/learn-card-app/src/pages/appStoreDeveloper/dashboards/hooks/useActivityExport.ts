@@ -272,6 +272,9 @@ export function useActivityExport(): {
                 const stats = await (wallet.invoke as any).getActivityStats?.({
                     boostUris: boostUris?.length ? boostUris : undefined,
                     integrationId,
+                    eventType,
+                    startDate,
+                    endDate,
                 });
 
                 const totalEstimate = stats?.total || 0;
@@ -295,6 +298,7 @@ export function useActivityExport(): {
                         eventType,
                         startDate,
                         endDate,
+                        groupByLatestStatus: true, // Export shows unique credentials filtered by current status
                     });
 
                     if (signal.aborted) break;
