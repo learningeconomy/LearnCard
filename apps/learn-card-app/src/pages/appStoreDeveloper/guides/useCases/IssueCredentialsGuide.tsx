@@ -1140,68 +1140,6 @@ const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) =>
         guideState.nextStep();
     };
 
-    const renderStep = () => {
-        switch (guideState.currentStep) {
-            case 0:
-                return (
-                    <ApiTokenStep
-                        onComplete={() => handleStepComplete('api-token')}
-                        onTokenCreated={setApiToken}
-                    />
-                );
-
-            case 1:
-                return (
-                    <SigningAuthorityStep
-                        onComplete={() => handleStepComplete('signing-authority')}
-                        onBack={guideState.prevStep}
-                    />
-                );
-
-            case 2:
-                return (
-                    <CreateTemplatesStep
-                        onComplete={() => handleStepComplete('create-templates')}
-                        onBack={guideState.prevStep}
-                        integrationId={selectedIntegration?.id}
-                        onTemplatesChange={setTemplates}
-                    />
-                );
-
-            case 3:
-                return (
-                    <IssueVerifyStep
-                        templates={templates}
-                        apiToken={apiToken}
-                        onTokenChange={setApiToken}
-                        onBack={guideState.prevStep}
-                        onComplete={() => handleStepComplete('issue')}
-                        integrationId={selectedIntegration?.id}
-                    />
-                );
-
-            case 4:
-                return (
-                    <GoLiveStep
-                        integration={selectedIntegration}
-                        guideType="issue-credentials"
-                        onBack={guideState.prevStep}
-                        completedItems={[
-                            'Created API token for server-side access',
-                            'Configured signing authority',
-                            'Created credential templates',
-                            'Tested issuing and verification',
-                        ]}
-                        title="Ready to Issue Credentials!"
-                        description="You've set up everything needed to issue verifiable credentials via API. Activate your integration to start issuing in production."
-                    />
-                );
-
-            default:
-                return null;
-        }
-    };
-
     return (
         <div className="max-w-3xl mx-auto py-4">
             {/* Progress */}
@@ -1216,8 +1154,52 @@ const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) =>
                 />
             </div>
 
-            {/* Current step content */}
-            {renderStep()}
+            {/* All steps rendered but only active one visible — prevents re-mount/re-fetch lag */}
+            <div style={{ display: guideState.currentStep === 0 ? 'block' : 'none' }}>
+                <ApiTokenStep
+                    onComplete={() => handleStepComplete('api-token')}
+                    onTokenCreated={setApiToken}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 1 ? 'block' : 'none' }}>
+                <SigningAuthorityStep
+                    onComplete={() => handleStepComplete('signing-authority')}
+                    onBack={guideState.prevStep}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 2 ? 'block' : 'none' }}>
+                <CreateTemplatesStep
+                    onComplete={() => handleStepComplete('create-templates')}
+                    onBack={guideState.prevStep}
+                    integrationId={selectedIntegration?.id}
+                    onTemplatesChange={setTemplates}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 3 ? 'block' : 'none' }}>
+                <IssueVerifyStep
+                    templates={templates}
+                    apiToken={apiToken}
+                    onTokenChange={setApiToken}
+                    onBack={guideState.prevStep}
+                    onComplete={() => handleStepComplete('issue')}
+                    integrationId={selectedIntegration?.id}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 4 ? 'block' : 'none' }}>
+                <GoLiveStep
+                    integration={selectedIntegration}
+                    guideType="issue-credentials"
+                    onBack={guideState.prevStep}
+                    completedItems={[
+                        'Created API token for server-side access',
+                        'Configured signing authority',
+                        'Created credential templates',
+                        'Tested issuing and verification',
+                    ]}
+                    title="Ready to Issue Credentials!"
+                    description="You've set up everything needed to issue verifiable credentials via API. Activate your integration to start issuing in production."
+                />
+            </div>
         </div>
     );
 };
