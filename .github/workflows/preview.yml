@@ -1,0 +1,382 @@
+name: Full-Stack PR Preview
+
+# Trigger options:
+#   1. Add the "preview" label to a PR
+#   2. Comment "/preview" on a PR
+#   3. Push to a branch that already has the "preview" label
+#   4. Manual dispatch with a PR number
+on:
+    issue_comment:
+        types: [created]
+    pull_request:
+        types: [labeled, synchronize]
+    workflow_dispatch:
+        inputs:
+            pr_number:
+                description: 'PR number to deploy a preview for'
+                required: true
+                type: number
+
+env:
+    PREVIEW_BASE_DOMAIN: preview.learncard.ai
+
+jobs:
+    # =========================================================================
+    # GATE: Determine if we should deploy a preview
+    # =========================================================================
+    should-deploy:
+        name: Check Preview Trigger
+        runs-on: ubuntu-latest
+        outputs:
+            deploy: ${{ steps.check.outputs.deploy }}
+            pr_number: ${{ steps.check.outputs.pr_number }}
+            branch: ${{ steps.check.outputs.branch }}
+            run_e2e: ${{ steps.check.outputs.run_e2e }}
+        steps:
+            - name: Determine trigger
+              id: check
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      let deploy = false;
+                      let prNumber = '';
+                      let branch = '';
+                      let runE2e = false;
+
+                      const event = context.eventName;
+
+                      if (event === 'workflow_dispatch') {
+                          // Manual trigger
+                          prNumber = '${{ github.event.inputs.pr_number }}';
+                          const { data: pr } = await github.rest.pulls.get({
+                              owner: context.repo.owner,
+                              repo: context.repo.repo,
+                              pull_number: parseInt(prNumber),
+                          });
+                          branch = pr.head.ref;
+                          deploy = true;
+                          console.log(`Manual dispatch for PR #${prNumber} (${branch})`);
+
+                      } else if (event === 'issue_comment') {
+                          // Comment trigger: /preview or /preview+e2e
+                          const comment = context.payload.comment.body.trim().toLowerCase();
+                          const isPR = !!context.payload.issue.pull_request;
+
+                          if (isPR && (comment === '/preview' || comment === '/preview+e2e')) {
+                              prNumber = context.payload.issue.number.toString();
+                              runE2e = comment === '/preview+e2e';
+
+                              const { data: pr } = await github.rest.pulls.get({
+                                  owner: context.repo.owner,
+                                  repo: context.repo.repo,
+                                  pull_number: parseInt(prNumber),
+                              });
+                              branch = pr.head.ref;
+                              deploy = true;
+                              console.log(`Comment trigger for PR #${prNumber} (${branch}), e2e=${runE2e}`);
+
+                              // React to the comment to acknowledge
+                              await github.rest.reactions.createForIssueComment({
+                                  owner: context.repo.owner,
+                                  repo: context.repo.repo,
+                                  comment_id: context.payload.comment.id,
+                                  content: 'rocket',
+                              });
+                          }
+
+                      } else if (event === 'pull_request') {
+                          const action = context.payload.action;
+                          const labels = context.payload.pull_request.labels.map(l => l.name);
+
+                          if (action === 'labeled' && context.payload.label.name === 'preview') {
+                              // Label was just added
+                              prNumber = context.payload.pull_request.number.toString();
+                              branch = context.payload.pull_request.head.ref;
+                              deploy = true;
+                              console.log(`Label trigger for PR #${prNumber} (${branch})`);
+                          } else if (action === 'synchronize' && labels.includes('preview')) {
+                              // New push to a PR that already has the preview label
+                              prNumber = context.payload.pull_request.number.toString();
+                              branch = context.payload.pull_request.head.ref;
+                              deploy = true;
+                              console.log(`Sync trigger for PR #${prNumber} (${branch})`);
+                          }
+                      }
+
+                      core.setOutput('deploy', deploy.toString());
+                      core.setOutput('pr_number', prNumber);
+                      core.setOutput('branch', branch);
+                      core.setOutput('run_e2e', runE2e.toString());
+
+    # =========================================================================
+    # DEPLOY: Start EC2, build, and deploy the full-stack preview
+    # =========================================================================
+    deploy-preview:
+        name: Deploy Preview
+        needs: should-deploy
+        if: needs.should-deploy.outputs.deploy == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        environment: preview
+        concurrency:
+            group: preview-deploy-${{ needs.should-deploy.outputs.pr_number }}
+            cancel-in-progress: true
+        steps:
+            - name: Post "deploying" comment
+              id: deploying-comment
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const prNumber = ${{ needs.should-deploy.outputs.pr_number }};
+                      const { data: comment } = await github.rest.issues.createComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: prNumber,
+                          body: [
+                              '## 🚀 Full-Stack Preview',
+                              '',
+                              '| Status | Details |',
+                              '|--------|---------|',
+                              '| **State** | ⏳ Deploying... |',
+                              `| **Branch** | \`${{ needs.should-deploy.outputs.branch }}\` |`,
+                              `| **PR** | #${prNumber} |`,
+                              '',
+                              `_Started at ${new Date().toISOString()}_`,
+                          ].join('\n'),
+                      });
+                      core.setOutput('comment_id', comment.id);
+
+            - name: Start EC2 instance
+              run: |
+                  echo "Starting EC2 preview server..."
+                  curl -sf -H "x-api-key: ${{ secrets.PREVIEW_EC2_API_KEY }}" \
+                      "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/start" || {
+                      echo "::warning::EC2 start request failed — instance may already be running"
+                  }
+
+            - name: Wait for EC2 to be ready
+              id: ec2
+              run: |
+                  echo "Waiting for EC2 instance to be ready..."
+                  for i in {1..30}; do
+                      STATUS=$(curl -s -H "x-api-key: ${{ secrets.PREVIEW_EC2_API_KEY }}" \
+                          "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/status" || echo "")
+                      STATE=$(echo "$STATUS" | grep -i "^State:" | awk '{print $2}')
+                      IP=$(echo "$STATUS" | grep -i "^Public IP:" | awk '{print $3}')
+
+                      echo "Attempt $i: state=$STATE, ip=$IP"
+
+                      if [ "$STATE" = "running" ] && [ -n "$IP" ]; then
+                          echo "Waiting for SSH..."
+                          for j in {1..20}; do
+                              if nc -z -w5 "$IP" 22 2>/dev/null; then
+                                  echo "SSH is ready at $IP"
+                                  echo "ip=$IP" >> "$GITHUB_OUTPUT"
+                                  exit 0
+                              fi
+                              echo "  SSH not ready yet ($j)..."
+                              sleep 5
+                          done
+                          echo "::error::Timeout waiting for SSH"
+                          exit 1
+                      fi
+
+                      sleep 10
+                  done
+                  echo "::error::Timeout waiting for EC2 to start"
+                  exit 1
+
+            - name: Deploy preview on EC2
+              uses: appleboy/ssh-action@v1.0.3
+              env:
+                  PR_NUMBER: ${{ needs.should-deploy.outputs.pr_number }}
+                  BRANCH: ${{ needs.should-deploy.outputs.branch }}
+                  BASE_DOMAIN: ${{ env.PREVIEW_BASE_DOMAIN }}
+                  DOZZLE_USERNAME: ${{ secrets.DOZZLE_USERNAME }}
+                  DOZZLE_PASSWORD: ${{ secrets.DOZZLE_PASSWORD }}
+                  # Optional overrides — set in GitHub environment "preview" to customize
+                  BRAIN_SEED: ${{ vars.BRAIN_SEED || '' }}
+                  CLOUD_SEED: ${{ vars.CLOUD_SEED || '' }}
+                  SIGNING_SEED: ${{ vars.SIGNING_SEED || '' }}
+                  API_SEED: ${{ vars.API_SEED || '' }}
+              with:
+                  host: ${{ steps.ec2.outputs.ip }}
+                  username: ${{ secrets.PREVIEW_EC2_USERNAME }}
+                  key: ${{ secrets.PREVIEW_EC2_SSH_KEY }}
+                  script_stop: true
+                  command_timeout: 25m
+                  envs: PR_NUMBER,BRANCH,BASE_DOMAIN,DOZZLE_USERNAME,DOZZLE_PASSWORD,BRAIN_SEED,CLOUD_SEED,SIGNING_SEED,API_SEED
+                  script: |
+                      cd ~/preview-workspace/LearnCard
+
+                      # Validate inputs to prevent command injection
+                      if ! echo "$PR_NUMBER" | grep -qE '^[0-9]+$'; then
+                          echo "::error::Invalid PR number: $PR_NUMBER"
+                          exit 1
+                      fi
+                      if ! echo "$BRANCH" | grep -qE '^[a-zA-Z0-9_./-]+$'; then
+                          echo "::error::Invalid branch name: $BRANCH"
+                          exit 1
+                      fi
+
+                      # Update repo to PR branch BEFORE running the deploy script.
+                      # This ensures bash loads the current version of the script,
+                      # avoiding stale code from the previous deploy's checkout.
+                      # Reset first to clear any dirty working tree (e.g. from manual SSH fixes)
+                      # that would cause git pull to silently fail.
+                      git fetch origin "$BRANCH"
+                      git reset --hard HEAD
+                      git checkout "$BRANCH" 2>/dev/null || git checkout "origin/$BRANCH" --detach
+                      git reset --hard "origin/$BRANCH"
+
+                      chmod +x preview/scripts/*.sh
+
+                      # Deploy the preview
+                      preview/scripts/deploy-preview.sh \
+                          "$PR_NUMBER" \
+                          "$BRANCH" \
+                          "$BASE_DOMAIN"
+
+            - name: Read preview URL
+              id: preview-url
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ steps.ec2.outputs.ip }}
+                  username: ${{ secrets.PREVIEW_EC2_USERNAME }}
+                  key: ${{ secrets.PREVIEW_EC2_SSH_KEY }}
+                  script_stop: false
+                  script: |
+                      cat ~/preview-workspace/preview-${{ needs.should-deploy.outputs.pr_number }}.env 2>/dev/null || echo "PREVIEW_URL=https://pr-${{ needs.should-deploy.outputs.pr_number }}.${{ env.PREVIEW_BASE_DOMAIN }}"
+
+            - name: Add preview label to PR
+              if: success()
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const prNumber = ${{ needs.should-deploy.outputs.pr_number }};
+                      try {
+                          await github.rest.issues.addLabels({
+                              owner: context.repo.owner,
+                              repo: context.repo.repo,
+                              issue_number: prNumber,
+                              labels: ['preview'],
+                          });
+                      } catch (e) {
+                          console.log(`Could not add label: ${e.message}`);
+                      }
+
+            - name: Update comment with preview URL
+              if: always()
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const prNumber = ${{ needs.should-deploy.outputs.pr_number }};
+                      const commentId = ${{ steps.deploying-comment.outputs.comment_id }};
+                      const success = '${{ job.status }}' === 'success';
+                      const previewDomain = `pr-${prNumber}.${{ env.PREVIEW_BASE_DOMAIN }}`;
+                      const previewUrl = `https://${previewDomain}`;
+
+                      const logsUrl = `https://logs.${{ env.PREVIEW_BASE_DOMAIN }}`;
+
+                      const body = success ? [
+                          '## 🚀 Full-Stack Preview',
+                          '',
+                          '| Status | Details |',
+                          '|--------|---------|',
+                          '| **State** | ✅ Ready |',
+                          `| **URL** | [${previewUrl}](${previewUrl}) |`,
+                          `| **Logs** | [${logsUrl}](${logsUrl}) |`,
+                          `| **Branch** | \`${{ needs.should-deploy.outputs.branch }}\` |`,
+                          `| **PR** | #${prNumber} |`,
+                          '',
+                          '### Services',
+                          `| Service | Endpoint |`,
+                          `|---------|----------|`,
+                          `| **Frontend** | [${previewUrl}](${previewUrl}) |`,
+                          `| **Brain API** | [${previewUrl}/brain/trpc](${previewUrl}/brain/trpc) |`,
+                          `| **Cloud API** | [${previewUrl}/cloud/trpc](${previewUrl}/cloud/trpc) |`,
+                          `| **LCA API** | [${previewUrl}/lca-api/trpc](${previewUrl}/lca-api/trpc) |`,
+                          `| **Test Embed** | [${previewUrl}/test-embed/](${previewUrl}/test-embed/) |`,
+                          `| **Health** | [${previewUrl}/preview-health](${previewUrl}/preview-health) |`,
+                          '',
+                          '> **Note:** Preview will auto-shutdown after 4 hours of inactivity.',
+                          '> Comment `/preview` again to redeploy, or `/preview+e2e` to deploy and run E2E tests.',
+                          '',
+                          `_Deployed at ${new Date().toISOString()}_`,
+                      ].join('\n') : [
+                          '## 🚀 Full-Stack Preview',
+                          '',
+                          '| Status | Details |',
+                          '|--------|---------|',
+                          '| **State** | ❌ Failed |',
+                          `| **Branch** | \`${{ needs.should-deploy.outputs.branch }}\` |`,
+                          `| **PR** | #${prNumber} |`,
+                          '',
+                          `Check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.`,
+                          '',
+                          `_Failed at ${new Date().toISOString()}_`,
+                      ].join('\n');
+
+                      await github.rest.issues.updateComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          comment_id: commentId,
+                          body,
+                      });
+
+    # =========================================================================
+    # E2E TESTS: Optionally run against the preview (triggered by /preview+e2e)
+    # =========================================================================
+    run-e2e-tests:
+        name: Run E2E Tests Against Preview
+        needs: [should-deploy, deploy-preview]
+        if: |
+            needs.should-deploy.outputs.run_e2e == 'true' &&
+            needs.deploy-preview.result == 'success'
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ needs.should-deploy.outputs.branch }}
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Run E2E tests
+              run: |
+                  PREVIEW_URL="https://pr-${{ needs.should-deploy.outputs.pr_number }}.${{ env.PREVIEW_BASE_DOMAIN }}"
+                  echo "Running E2E tests against: $PREVIEW_URL"
+
+                  # Run the e2e tests pointing at the preview environment
+                  # The tests connect to the services via their URLs, which are routed through Caddy
+                  E2E_BRAIN_URL="${PREVIEW_URL}/brain" \
+                  E2E_CLOUD_URL="${PREVIEW_URL}/cloud" \
+                  E2E_LCA_API_URL="${PREVIEW_URL}/lca-api" \
+                  E2E_MANAGE_DOCKER=false \
+                  pnpm --filter @workspace/e2e-tests test:run
+              env:
+                  SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+                  LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+
+            - name: Post E2E results
+              if: always()
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const prNumber = ${{ needs.should-deploy.outputs.pr_number }};
+                      const success = '${{ job.status }}' === 'success';
+                      const icon = success ? '✅' : '❌';
+                      const status = success ? 'Passed' : 'Failed';
+
+                      await github.rest.issues.createComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: prNumber,
+                          body: [
+                              `### ${icon} E2E Test Results: ${status}`,
+                              '',
+                              `[View full results](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+                          ].join('\n'),
+                      });

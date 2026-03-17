@@ -863,12 +863,46 @@ const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
         }
     }, [templates]);
 
-    const handleStepComplete = (stepId: string) => {
+    const [isTransitioning, setIsTransitioning] = useState(false);
+    const guideTopRef = useRef<HTMLDivElement>(null);
+
+    const scrollToTop = useCallback(() => {
+        setTimeout(() => {
+            guideTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
+    }, []);
+
+    const handleStepComplete = useCallback((stepId: string) => {
+        if (isTransitioning) return;
+        setIsTransitioning(true);
         guideState.markStepComplete(stepId);
         guideState.nextStep();
-    };
+        scrollToTop();
+        // Brief debounce to prevent double-clicks during step transition
+        setTimeout(() => setIsTransitioning(false), 150);
+    }, [isTransitioning, guideState, scrollToTop]);
 
-    // Step navigation guard
+    const handleBack = useCallback(() => {
+        guideState.prevStep();
+        scrollToTop();
+    }, [guideState, scrollToTop]);
+
+    const handleStepClick = useCallback((step: number) => {
+        guideState.goToStep(step);
+        scrollToTop();
+    }, [guideState, scrollToTop]);
+
+    // Integration selection guard — placed after all hooks to respect Rules of Hooks
+    if (!selectedIntegration) {
+        return (
+            <div className="text-center py-12">
+                <p className="text-gray-500">Please select an integration from the header dropdown to continue.</p>
+            </div>
+        );
+    }
+
+    // Allow navigating to current step, any completed step, or any earlier step.
+    // Forward navigation requires all previous steps to be complete.
     const canNavigateToStep = useCallback((index: number) => {
         if (index === guideState.currentStep) return true;
         if (index < guideState.currentStep) return true;
@@ -879,111 +913,83 @@ const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
         return true;
     }, [guideState.currentStep, guideState.isStepComplete]);
 
-    // Integration selection guard
-    if (!selectedIntegration) {
-        return (
-            <div className="text-center py-12">
-                <p className="text-gray-500">Please select an integration from the header dropdown to continue.</p>
-            </div>
-        );
-    }
-
-    const renderStep = () => {
-        switch (guideState.currentStep) {
-            case 0:
-                return (
-                    <CreateContractStep
-                        onComplete={() => handleStepComplete('create-contract')}
-                        contractUri={contractUri}
-                        setContractUri={setContractUri}
-                    />
-                );
-
-            case 1:
-                return (
-                    <RedirectHandlerStep
-                        onComplete={() => handleStepComplete('redirect-handler')}
-                        onBack={guideState.prevStep}
-                        contractUri={contractUri}
-                        redirectUrl={redirectUrl}
-                        setRedirectUrl={setRedirectUrl}
-                    />
-                );
-
-            case 2:
-                return (
-                    <APISetupStep
-                        onComplete={() => handleStepComplete('api-setup')}
-                        onBack={guideState.prevStep}
-                        apiToken={apiToken}
-                        onTokenChange={setApiToken}
-                    />
-                );
-
-            case 3:
-                return (
-                    <SendCredentialsStep
-                        onBack={guideState.prevStep}
-                        onComplete={() => handleStepComplete('send-credentials')}
-                        contractUri={contractUri}
-                        apiToken={apiToken}
-                        integrationId={selectedIntegration?.id}
-                        templates={templates}
-                        onTemplatesChange={setTemplates}
-                        onBuilderOpenChange={setIsBuilderOpen}
-                    />
-                );
-
-            case 4:
-                return (
-                    <TestStep
-                        onBack={guideState.prevStep}
-                        onComplete={() => handleStepComplete('test')}
-                        contractUri={contractUri}
-                        redirectUrl={redirectUrl}
-                        apiToken={apiToken}
-                        templates={templates}
-                        integrationId={selectedIntegration?.id}
-                    />
-                );
-
-            case 5:
-                return (
-                    <GoLiveStep
-                        integration={selectedIntegration}
-                        guideType="consent-flow"
-                        onBack={guideState.prevStep}
-                        completedItems={[
-                            'Created consent flow contract',
-                            'Set up redirect handler',
-                            'Configured API access',
-                            'Created credential templates',
-                            'Tested consent flow integration',
-                        ]}
-                        title="Ready to Connect!"
-                        description="You've set up everything needed for consent-based data sharing. Activate your integration to start connecting with users."
-                    />
-                );
-
-            default:
-                return null;
-        }
-    };
-
     return (
-        <div className="max-w-3xl mx-auto py-4">
+        <div ref={guideTopRef} className="max-w-3xl mx-auto py-4">
             <div className="mb-8">
                 <StepProgress
                     currentStep={guideState.currentStep}
                     totalSteps={STEPS.length}
                     steps={STEPS}
                     completedSteps={guideState.state.completedSteps}
-                    onStepClick={guideState.goToStep}
+                    onStepClick={handleStepClick}
                     isStepNavigable={canNavigateToStep}
                 />
             </div>
 
-            {renderStep()}
+            {/* All steps rendered but only active one visible — prevents re-mount/re-fetch lag */}
+            <div style={{ display: guideState.currentStep === 0 ? 'block' : 'none' }}>
+                <CreateContractStep
+                    onComplete={() => handleStepComplete('create-contract')}
+                    contractUri={contractUri}
+                    setContractUri={setContractUri}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 1 ? 'block' : 'none' }}>
+                <RedirectHandlerStep
+                    onComplete={() => handleStepComplete('redirect-handler')}
+                    onBack={handleBack}
+                    contractUri={contractUri}
+                    redirectUrl={redirectUrl}
+                    setRedirectUrl={setRedirectUrl}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 2 ? 'block' : 'none' }}>
+                <APISetupStep
+                    onComplete={() => handleStepComplete('api-setup')}
+                    onBack={handleBack}
+                    apiToken={apiToken}
+                    onTokenChange={setApiToken}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 3 ? 'block' : 'none' }}>
+                <SendCredentialsStep
+                    onBack={handleBack}
+                    onComplete={() => handleStepComplete('send-credentials')}
+                    contractUri={contractUri}
+                    apiToken={apiToken}
+                    integrationId={selectedIntegration?.id}
+                    templates={templates}
+                    onTemplatesChange={setTemplates}
+                    onBuilderOpenChange={setIsBuilderOpen}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 4 ? 'block' : 'none' }}>
+                <TestStep
+                    onBack={handleBack}
+                    onComplete={() => handleStepComplete('test')}
+                    contractUri={contractUri}
+                    redirectUrl={redirectUrl}
+                    apiToken={apiToken}
+                    templates={templates}
+                    integrationId={selectedIntegration?.id}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 5 ? 'block' : 'none' }}>
+                <GoLiveStep
+                    integration={selectedIntegration}
+                    guideType="consent-flow"
+                    onBack={handleBack}
+                    completedItems={[
+                        'Created consent flow contract',
+                        'Set up redirect handler',
+                        'Configured API access',
+                        'Created credential templates',
+                        'Tested consent flow integration',
+                    ]}
+                    title="Ready to Connect!"
+                    description="You've set up everything needed for consent-based data sharing. Activate your integration to start connecting with users."
+                />
+            </div>
         </div>
     );
 };

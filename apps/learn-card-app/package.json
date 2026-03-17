@@ -15,6 +15,7 @@
         "@capacitor/clipboard": "^8.0.0",
         "@capacitor/core": "8.0.1",
         "@capacitor/file-transfer": "^2.0.3",
+        "@capacitor/file-viewer": "^2.0.1",
         "@capacitor/filesystem": "^8.0.0",
         "@capacitor/haptics": "^8.0.0",
         "@capacitor/ios": "^8.0.1",
@@ -37,8 +38,10 @@
         "@learncard/embed-sdk": "workspace:^",
         "@learncard/helpers": "workspace:*",
         "@learncard/lca-api-plugin": "workspace:*",
+        "@learncard/ler-rs-plugin": "workspace:*",
         "@learncard/open-badge-v2-plugin": "workspace:*",
         "@learncard/react": "workspace:^",
+        "@learncard/sss-key-manager": "workspace:*",
         "@nanostores/react": "^0.8.4",
         "@sentry/browser": "8.34.0",
         "@sentry/react": "8.34.0",
@@ -186,6 +189,7 @@
         "vite": "4.3.8",
         "vite-plugin-svgr": "^3.3.0",
         "vite-tsconfig-paths": "4.2.3",
+        "neo4j-driver": "5.18.0",
         "vitest": "^3.0.0"
     },
     "description": "An Ionic project"

@@ -3,16 +3,12 @@ import { VCValidator, JWEValidator } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 import { z } from 'zod';
 
-import {
-    sendEmailWithTemplate,
-    POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID,
-    getFrom,
-} from '@helpers/postmark.helpers';
-
+import { getDeliveryService, getFrom } from '../services/delivery';
 import { IssueEndpointValidator } from 'types/credentials';
-
 import { t, authorizedDidRoute, openRoute } from '@routes';
 import { getSigningAuthorityLearnCard } from '@helpers/learnCard.helpers';
+
+const ENDORSEMENT_REQUEST_TEMPLATE_ALIAS = process.env.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS ?? '';
 
 export const credentialsRouter = t.router({
     issueCredential: authorizedDidRoute
@@ -31,7 +27,17 @@ export const credentialsRouter = t.router({
         .output(VCValidator.or(JWEValidator))
         .mutation(async ({ input }) => {
             const { credential, options = {}, signingAuthority, encryption } = input;
+            const logContext = {
+                ownerDid: signingAuthority.ownerDid,
+                saName: signingAuthority.name,
+                saDid: signingAuthority.did,
+                credentialType: credential?.type,
+                encrypt: !!encryption,
+            };
+
             try {
+                console.log('[LCA /credentials/issue] Request received', logContext);
+
                 // If incoming credential doesn't have an issuanceDate, default it to right now
                 if (
                     credential &&
@@ -45,58 +51,54 @@ export const credentialsRouter = t.router({
                     }
                 }
 
+                console.log('[LCA /credentials/issue] Resolving SA LearnCard...');
                 const learnCard = await getSigningAuthorityLearnCard(
                     signingAuthority.ownerDid,
                     signingAuthority.name
                 );
+                const saDid = learnCard.id.did();
+                console.log('[LCA /credentials/issue] SA LearnCard resolved, DID:', saDid);
 
                 // Preserve issuer.name/image if the credential has an object-form issuer
                 if (typeof credential.issuer === 'object' && credential.issuer !== null) {
-                    credential.issuer.id = learnCard.id.did();
+                    credential.issuer.id = saDid;
                 } else {
-                    credential.issuer = learnCard.id.did();
+                    credential.issuer = saDid;
                 }
-                const verificationMethod = learnCard.id.did().startsWith('did:web')
-                    ? `${learnCard.id.did()}#${signingAuthority.name}`
+                const verificationMethod = saDid.startsWith('did:web')
+                    ? `${saDid}#${signingAuthority.name}`
                     : undefined;
 
+                console.log('[LCA /credentials/issue] Issuing credential...', {
+                    verificationMethod,
+                    issuer: credential.issuer,
+                });
                 const issuedCredential = await learnCard.invoke.issueCredential(credential, {
                     ...options,
                     verificationMethod,
                 });
+                console.log('[LCA /credentials/issue] Credential issued successfully');
 
                 if (encryption) {
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('recipients', [learnCard.id.did(), ...encryption.recipients]);
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    const jwe = await learnCard.invoke.createDagJwe(issuedCredential, [
-                        learnCard.id.did(),
-                        ...encryption.recipients,
-                    ]);
-                    console.log('jwe', JSON.stringify(jwe));
+                    const recipients = [saDid, ...encryption.recipients];
+                    console.log('[LCA /credentials/issue] Encrypting JWE for recipients:', recipients);
+                    const jwe = await learnCard.invoke.createDagJwe(issuedCredential, recipients);
+                    console.log('[LCA /credentials/issue] JWE created successfully');
                     return jwe;
                 }
 
                 return issuedCredential;
             } catch (error) {
-                console.error(error);
+                const errMsg = error instanceof Error ? error.message : String(error);
+                const errStack = error instanceof Error ? error.stack : undefined;
+                console.error('[LCA /credentials/issue] Failed:', {
+                    error: errMsg,
+                    stack: errStack,
+                    ...logContext,
+                });
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
-                    message: '[/credentials/issue] Caught error: ' + JSON.stringify(error),
+                    message: `[/credentials/issue] ${errMsg}`,
                 });
             }
         }),
@@ -140,18 +142,18 @@ export const credentialsRouter = t.router({
             const _email = email.toLowerCase();
 
             try {
-                await sendEmailWithTemplate(
-                    _email,
-                    Number(POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID),
-                    {
+                await getDeliveryService().send({
+                    to: _email,
+                    templateAlias: ENDORSEMENT_REQUEST_TEMPLATE_ALIAS,
+                    templateModel: {
                         recipient: { name: _email },
                         shareLink,
                         message,
                         issuer,
                         credential,
                     },
-                    getFrom({ mailbox: 'endorsement' })
-                );
+                    from: getFrom({ mailbox: 'endorsement' }),
+                });
                 return true;
             } catch (error) {
                 console.error('Failed to send verification email:', error);

@@ -17,8 +17,8 @@ interface EmbedCodeTabProps {
     templates?: CredentialTemplate[];
 }
 
-/** Escape single quotes in user-provided strings for safe JS string interpolation */
-const safe = (str: string): string => str.replace(/'/g, "\\'");
+/** Escape backslashes and single quotes in user-provided strings for safe JS string interpolation */
+const safe = (str: string): string => str.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
 /**
  * Build the branding block for generated snippets, conditionally including partnerLogoUrl
@@ -50,8 +50,7 @@ function buildHtmlSnippet(
 
     return `<!-- LearnCard Claim Button -->
 <div id="learncard-claim"></div>
-<!-- TODO: Verify CDN deployment URL is live before shipping -->
-<script src="https://cdn.learncard.com/embed-sdk/v1/learncard.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js" defer></script>
 <script>
   window.addEventListener('DOMContentLoaded', function() {
     LearnCard.init({

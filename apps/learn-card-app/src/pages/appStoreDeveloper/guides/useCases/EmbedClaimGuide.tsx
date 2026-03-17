@@ -262,8 +262,7 @@ const LoadSdkStep: React.FC<{
                     title="CDN Script Tag"
                     snippets={{
                         typescript: `<!-- Add before closing </body> tag -->
-<!-- TODO: Verify CDN deployment URL is live before shipping -->
-<script src="https://cdn.learncard.com/embed-sdk/v1/learncard.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js" defer></script>
 
 <!-- Then initialize after page loads -->
 <script>
@@ -1127,7 +1126,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
         guideState.nextStep();
         scrollToTop();
         // Brief debounce to prevent double-clicks during step transition
-        setTimeout(() => setIsTransitioning(false), 600);
+        setTimeout(() => setIsTransitioning(false), 150);
     }, [isTransitioning, guideState, scrollToTop]);
 
     const handleBack = useCallback(() => {
@@ -1148,101 +1147,6 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
             </div>
         );
     }
-
-    const renderStep = () => {
-        switch (guideState.currentStep) {
-            case 0:
-                return (
-                    <PublishableKeyStep
-                        onComplete={() => handleStepComplete('publishable-key')}
-                        selectedIntegration={selectedIntegration}
-                        isTransitioning={isTransitioning}
-                    />
-                );
-
-            case 1:
-                return (
-                    <AddTargetStep
-                        onComplete={() => handleStepComplete('add-target')}
-                        onBack={handleBack}
-                        isTransitioning={isTransitioning}
-                    />
-                );
-
-            case 2:
-                return (
-                    <LoadSdkStep
-                        onComplete={() => handleStepComplete('load-sdk')}
-                        onBack={handleBack}
-                        isTransitioning={isTransitioning}
-                    />
-                );
-
-            case 3:
-                return (
-                    <ConfigureStep
-                        onComplete={() => handleStepComplete('configure')}
-                        onBack={handleBack}
-                        publishableKey={publishableKey}
-                        selectedIntegration={selectedIntegration}
-                        partnerName={partnerName}
-                        setPartnerName={setPartnerName}
-                        branding={branding}
-                        setBranding={setBranding}
-                        requestBackgroundIssuance={requestBackgroundIssuance}
-                        setRequestBackgroundIssuance={setRequestBackgroundIssuance}
-                        onTemplatesChange={setTemplates}
-                        templates={templates}
-                        isTransitioning={isTransitioning}
-                        whitelistedDomains={selectedIntegration.whitelistedDomains || []}
-                        onWhitelistedDomainsChange={(domains) => {
-                            updateIntegrationMutation.mutate({
-                                id: selectedIntegration.id,
-                                updates: { whitelistedDomains: domains },
-                            });
-                        }}
-                    />
-                );
-
-            case 4:
-                return (
-                    <TestStep
-                        onBack={handleBack}
-                        onComplete={() => handleStepComplete('test')}
-                        publishableKey={publishableKey}
-                        templates={templates}
-                        partnerName={partnerName}
-                        branding={branding}
-                        requestBackgroundIssuance={requestBackgroundIssuance}
-                        isTransitioning={isTransitioning}
-                        apiBaseUrl={apiBaseUrl}
-                        issuerName={currentLCNUser?.displayName || ''}
-                        issuerLogoUrl={currentLCNUser?.image || undefined}
-                    />
-                );
-
-            case 5:
-                return (
-                    <GoLiveStep
-                        integration={selectedIntegration}
-                        guideType="embed-claim"
-                        onBack={handleBack}
-                        completedItems={[
-                            'Retrieved publishable key',
-                            'Added HTML target element',
-                            'Loaded the SDK',
-                            'Configured claim settings',
-                            'Tested the embed flow',
-                        ]}
-                        title="Ready to Embed!"
-                        description="You've set up everything needed to embed claim buttons on your website. Activate your integration to start accepting claims in production."
-                    />
-                );
-
-            default:
-                return null;
-        }
-    };
 
     // Allow navigating to current step, any completed step, or any earlier step.
     // Forward navigation requires all previous steps to be complete.
@@ -1269,7 +1173,83 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                 />
             </div>
 
-            {renderStep()}
+            {/* All steps rendered but only active one visible — prevents re-mount/re-fetch lag */}
+            <div style={{ display: guideState.currentStep === 0 ? 'block' : 'none' }}>
+                <PublishableKeyStep
+                    onComplete={() => handleStepComplete('publishable-key')}
+                    selectedIntegration={selectedIntegration}
+                    isTransitioning={isTransitioning}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 1 ? 'block' : 'none' }}>
+                <AddTargetStep
+                    onComplete={() => handleStepComplete('add-target')}
+                    onBack={handleBack}
+                    isTransitioning={isTransitioning}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 2 ? 'block' : 'none' }}>
+                <LoadSdkStep
+                    onComplete={() => handleStepComplete('load-sdk')}
+                    onBack={handleBack}
+                    isTransitioning={isTransitioning}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 3 ? 'block' : 'none' }}>
+                <ConfigureStep
+                    onComplete={() => handleStepComplete('configure')}
+                    onBack={handleBack}
+                    publishableKey={publishableKey}
+                    selectedIntegration={selectedIntegration}
+                    partnerName={partnerName}
+                    setPartnerName={setPartnerName}
+                    branding={branding}
+                    setBranding={setBranding}
+                    requestBackgroundIssuance={requestBackgroundIssuance}
+                    setRequestBackgroundIssuance={setRequestBackgroundIssuance}
+                    onTemplatesChange={setTemplates}
+                    templates={templates}
+                    isTransitioning={isTransitioning}
+                    whitelistedDomains={selectedIntegration.whitelistedDomains || []}
+                    onWhitelistedDomainsChange={(domains) => {
+                        updateIntegrationMutation.mutate({
+                            id: selectedIntegration.id,
+                            updates: { whitelistedDomains: domains },
+                        });
+                    }}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 4 ? 'block' : 'none' }}>
+                <TestStep
+                    onBack={handleBack}
+                    onComplete={() => handleStepComplete('test')}
+                    publishableKey={publishableKey}
+                    templates={templates}
+                    partnerName={partnerName}
+                    branding={branding}
+                    requestBackgroundIssuance={requestBackgroundIssuance}
+                    isTransitioning={isTransitioning}
+                    apiBaseUrl={apiBaseUrl}
+                    issuerName={currentLCNUser?.displayName || ''}
+                    issuerLogoUrl={currentLCNUser?.image || undefined}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 5 ? 'block' : 'none' }}>
+                <GoLiveStep
+                    integration={selectedIntegration}
+                    guideType="embed-claim"
+                    onBack={handleBack}
+                    completedItems={[
+                        'Retrieved publishable key',
+                        'Added HTML target element',
+                        'Loaded the SDK',
+                        'Configured claim settings',
+                        'Tested the embed flow',
+                    ]}
+                    title="Ready to Embed!"
+                    description="You've set up everything needed to embed claim buttons on your website. Activate your integration to start accepting claims in production."
+                />
+            </div>
         </div>
     );
 };

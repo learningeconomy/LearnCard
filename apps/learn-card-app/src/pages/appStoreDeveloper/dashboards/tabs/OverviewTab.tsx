@@ -19,7 +19,8 @@ import {
     AlertTriangle,
     Activity,
     Hash,
-    Users,
+    Filter,
+    ChevronDown,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
@@ -39,9 +40,10 @@ import {
     getActivityName,
     getActivityError,
     formatActivitySource,
+    EVENT_TYPE_FILTER_OPTIONS,
 } from '../hooks/useIntegrationActivity';
 
-import { useWallet } from 'learn-card-base/hooks/useWallet';
+import { useWallet } from 'learn-card-base';
 
 interface OverviewTabProps {
     integration: LCNIntegration;
@@ -70,10 +72,15 @@ function getEventStyling(eventType: string) {
     }
 }
 
+// Maximum events to show before collapsing
+const ACTIVITY_CHAIN_DISPLAY_LIMIT = 5;
+
 const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
     const { initWallet } = useWallet();
     const [activityChain, setActivityChain] = useState<CredentialActivityRecord[]>([]);
     const [isLoadingChain, setIsLoadingChain] = useState(true);
+    const [chainError, setChainError] = useState<string | null>(null);
+    const [showAllEvents, setShowAllEvents] = useState(false);
 
     // Fetch the full activity chain
     useEffect(() => {
@@ -85,11 +92,13 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
             }
 
             try {
+                setChainError(null);
                 const wallet = await initWallet();
                 const chain = await wallet.invoke.getActivityChain({ activityId: item.activityId });
                 setActivityChain(chain?.length > 0 ? chain : [item]);
             } catch (err) {
                 console.error('Failed to fetch activity chain:', err);
+                setChainError('Unable to load full activity timeline');
                 setActivityChain([item]);
             } finally {
                 setIsLoadingChain(false);
@@ -98,6 +107,12 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
 
         fetchChain();
     }, [item.activityId, initWallet]);
+
+    // Determine which events to display
+    const hasMoreEvents = activityChain.length > ACTIVITY_CHAIN_DISPLAY_LIMIT;
+    const displayedEvents = showAllEvents
+        ? activityChain
+        : activityChain.slice(0, ACTIVITY_CHAIN_DISPLAY_LIMIT);
 
     // Determine current status from the chain (latest event)
     const latestEvent = activityChain.length > 0 ? activityChain[activityChain.length - 1] : item;
@@ -250,55 +265,84 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                             <div className="pt-2 border-t border-gray-100">
                                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
                                     Activity Timeline
+                                    {activityChain.length > 1 && (
+                                        <span className="ml-2 text-gray-400 font-normal">
+                                            ({activityChain.length} events)
+                                        </span>
+                                    )}
                                 </p>
 
                                 <div className="space-y-2">
                                     {isLoadingChain ? (
-                                        <p className="text-sm text-gray-400">Loading timeline...</p>
+                                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Loading timeline...
+                                        </div>
+                                    ) : chainError ? (
+                                        <div className="flex items-center gap-2 text-sm text-amber-600">
+                                            <AlertTriangle className="w-4 h-4" />
+                                            {chainError}
+                                        </div>
                                     ) : (
-                                        activityChain.map((event, index) => {
-                                            const isAutoDeliver = isAutoDelivery(event);
-                                            let { color, bg, Icon } = getEventStyling(
-                                                event.eventType
-                                            );
+                                        <>
+                                            {displayedEvents.map((event, index) => {
+                                                const isAutoDeliver = isAutoDelivery(event);
+                                                let { color, bg, Icon } = getEventStyling(
+                                                    event.eventType
+                                                );
 
-                                            // Override styling for auto-delivery
-                                            if (isAutoDeliver) {
-                                                color = 'text-emerald-600';
-                                                bg = 'bg-emerald-100';
-                                                Icon = User;
-                                            }
+                                                // Override styling for auto-delivery
+                                                if (isAutoDeliver) {
+                                                    color = 'text-emerald-600';
+                                                    bg = 'bg-emerald-100';
+                                                    Icon = User;
+                                                }
 
-                                            const eventTime = new Date(event.timestamp);
+                                                const eventTime = new Date(event.timestamp);
 
-                                            return (
-                                                <div
-                                                    key={event.id}
-                                                    className="flex items-center gap-3"
-                                                >
+                                                return (
                                                     <div
-                                                        className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${bg}`}
+                                                        key={event.id}
+                                                        className="flex items-center gap-3"
                                                     >
-                                                        <Icon className={`w-3 h-3 ${color}`} />
-                                                    </div>
-
-                                                    <div className="flex-1 min-w-0">
-                                                        <span
-                                                            className={`text-sm font-medium ${color}`}
+                                                        <div
+                                                            className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${bg}`}
                                                         >
-                                                            {getActivityLabel(event)}
+                                                            <Icon className={`w-3 h-3 ${color}`} />
+                                                        </div>
+
+                                                        <div className="flex-1 min-w-0">
+                                                            <span
+                                                                className={`text-sm font-medium ${color}`}
+                                                            >
+                                                                {getActivityLabel(event)}
+                                                            </span>
+                                                        </div>
+
+                                                        <span className="text-xs text-gray-400">
+                                                            {eventTime.toLocaleTimeString('en-US', {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                            })}
                                                         </span>
                                                     </div>
+                                                );
+                                            })}
 
-                                                    <span className="text-xs text-gray-400">
-                                                        {eventTime.toLocaleTimeString('en-US', {
-                                                            hour: '2-digit',
-                                                            minute: '2-digit',
-                                                        })}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })
+                                            {hasMoreEvents && (
+                                                <button
+                                                    onClick={() => setShowAllEvents(!showAllEvents)}
+                                                    className="text-xs text-cyan-600 hover:text-cyan-700 font-medium mt-1"
+                                                >
+                                                    {showAllEvents
+                                                        ? 'Show less'
+                                                        : `Show ${
+                                                              activityChain.length -
+                                                              ACTIVITY_CHAIN_DISPLAY_LIMIT
+                                                          } more events`}
+                                                </button>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -335,18 +379,20 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                         <p className="font-medium text-gray-900">{sourceLabel}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                                        <Hash className="w-4 h-4 text-gray-600" />
-                                    </div>
+                                {item?.metadata && (
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                            <Hash className="w-4 h-4 text-gray-600" />
+                                        </div>
 
-                                    <div className="min-w-0 flex-1 overflow-hidden">
-                                        <p className="text-sm text-gray-500">Template Alias</p>
-                                        <p className="font-mono text-xs text-gray-600 break-all">
-                                            {item?.metadata?.templateAlias}
-                                        </p>
+                                        <div className="min-w-0 flex-1 overflow-hidden">
+                                            <p className="text-sm text-gray-500">Template Alias</p>
+                                            <p className="font-mono text-xs text-gray-600 break-all">
+                                                {item?.metadata?.templateAlias}
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                                 {item.boostUri && (
                                     <div className="flex items-start gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -419,13 +465,20 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     onNavigate,
     refreshKey,
 }) => {
+    const [eventTypeFilter, setEventTypeFilter] = useState<CredentialEventType | 'ALL'>('ALL');
+
     const {
         activity,
         isLoading: activityLoading,
+        isLoadingMore,
+        hasMore,
         refetch,
+        loadMore,
+        stats: activityStats,
     } = useIntegrationActivity(templates, {
-        limit: 10,
+        limit: 25,
         integrationId: integration.id,
+        eventType: eventTypeFilter === 'ALL' ? undefined : eventTypeFilter,
     });
 
     // Refetch when refreshKey changes
@@ -487,17 +540,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         });
     }
 
-    if (config.showConnections) {
-        quickActions.push({
-            id: 'connections',
-            icon: Users,
-            iconColor: 'text-blue-600',
-            title: 'View Connections',
-            description: `${stats.totalConnections || 0} connected users`,
-            hoverColor: 'hover:border-blue-300 hover:bg-blue-50',
-        });
-    }
-
     if (config.showSigningAuthority) {
         quickActions.push({
             id: 'signing',
@@ -508,6 +550,20 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             hoverColor: 'hover:border-emerald-300 hover:bg-emerald-50',
         });
     }
+
+    const getActivityStat = (eventTypeFilter: string, activityStats: any) => {
+        const statMap = {
+            DELIVERED: activityStats.totalSent,
+            CLAIMED: activityStats.totalClaimed,
+            ALL: activityStats.totalEvents,
+            FAILED: activityStats.failed,
+            EXPIRED: activityStats.expired,
+        };
+
+        const total = statMap[eventTypeFilter as keyof typeof statMap];
+
+        return total ? `Load More (showing ${activity.length} of ${total})` : 'Load More';
+    };
 
     // Always add documentation link
     const docsUrl = getDocsUrl(integration.guideType);
@@ -551,7 +607,29 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
 
             <div>
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h2>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-800">Recent Activity</h2>
+
+                    <div className="relative">
+                        <select
+                            value={eventTypeFilter}
+                            onChange={e =>
+                                setEventTypeFilter(e.target.value as CredentialEventType | 'ALL')
+                            }
+                            className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-8 py-2 text-sm
+                                       text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500
+                                       focus:border-transparent cursor-pointer transition-colors"
+                        >
+                            {EVENT_TYPE_FILTER_OPTIONS.map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                        <Filter className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <ChevronDown className="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                </div>
 
                 {activityLoading ? (
                     <div className="flex items-center justify-center py-8">
@@ -657,10 +735,23 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                             );
                         })}
 
-                        {stats.totalIssued > activity.length && (
-                            <p className="text-center text-sm text-gray-500 pt-2">
-                                Showing {activity.length} of {stats.totalIssued} credentials
-                            </p>
+                        {hasMore && (
+                            <button
+                                onClick={loadMore}
+                                disabled={isLoadingMore}
+                                className="w-full py-3 text-sm font-medium text-cyan-600 hover:text-cyan-700 
+                                           hover:bg-cyan-50 rounded-xl transition-colors flex items-center 
+                                           justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isLoadingMore ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Loading...
+                                    </>
+                                ) : (
+                                    getActivityStat(eventTypeFilter, activityStats)
+                                )}
+                            </button>
                         )}
                     </div>
                 )}

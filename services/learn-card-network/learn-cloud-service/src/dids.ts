@@ -50,10 +50,12 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         const learnCard = await getLearnCard();
 
         const domainName: string = request.hostname || (request as any).requestContext.domainName;
-        const domain =
+        const _domain =
             !domainName || process.env.IS_OFFLINE
                 ? `localhost%3A${process.env.PORT || 3000}`
                 : domainName.replace(/:/g, '%3A');
+
+        const domain = process.env.DOMAIN_NAME || _domain;
 
         const did = learnCard.id.did();
         const didDoc = await learnCard.invoke.resolveDid(did);

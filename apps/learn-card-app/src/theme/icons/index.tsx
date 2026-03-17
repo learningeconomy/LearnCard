@@ -150,6 +150,7 @@ export type SideMenuIcons = {
     [CredentialCategoryEnum.accomplishment]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.accommodation]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.workHistory]: React.FC<{ className?: string }>;
+    [CredentialCategoryEnum.resume]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.family]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.id]: React.FC<{ className?: string }>;
 };
@@ -230,6 +231,11 @@ export const icons = {
             IconWithShape: ExperiencesIconWithShape,
             IconWithLightShape: ExperiencesIconWithLightShape,
         },
+        [CredentialCategoryEnum.resume]: {
+            Icon: ExperiencesIcon,
+            IconWithShape: ExperiencesIconWithShape,
+            IconWithLightShape: ExperiencesIconWithLightShape,
+        },
         [CredentialCategoryEnum.family]: {
             Icon: FamiliesIcon,
             IconWithShape: FamiliesIconWithShape,
@@ -264,6 +270,7 @@ export const icons = {
             [CredentialCategoryEnum.accomplishment]: PortfolioTwoTonedIcon,
             [CredentialCategoryEnum.accommodation]: AssistanceTwoTonedIcon,
             [CredentialCategoryEnum.workHistory]: ExperiencesTwoTonedIcon,
+            [CredentialCategoryEnum.resume]: ExperiencesTwoTonedIcon,
             [CredentialCategoryEnum.family]: FamiliesTwoTonedIcon,
             [CredentialCategoryEnum.id]: IDsTwoTonedIcon,
         },
@@ -288,6 +295,7 @@ export const icons = {
         [CredentialCategoryEnum.accomplishment]: { Icon: PortfolioIconFormal },
         [CredentialCategoryEnum.accommodation]: { Icon: AssistanceIconFormal },
         [CredentialCategoryEnum.workHistory]: { Icon: ExperiencesIconFormal },
+        [CredentialCategoryEnum.resume]: { Icon: ExperiencesIconFormal },
         [CredentialCategoryEnum.family]: { Icon: FamiliesIconFormal },
         [CredentialCategoryEnum.id]: { Icon: IDsIconFormal },
 
@@ -314,6 +322,7 @@ export const icons = {
             [CredentialCategoryEnum.accomplishment]: PortfolioFormalIcon,
             [CredentialCategoryEnum.accommodation]: AssistanceFormalIcon,
             [CredentialCategoryEnum.workHistory]: ExperiencesFormalIcon,
+            [CredentialCategoryEnum.resume]: ExperiencesFormalIcon,
             [CredentialCategoryEnum.family]: FamiliesFormalIcon,
             [CredentialCategoryEnum.id]: IDsFormalIcon,
         },

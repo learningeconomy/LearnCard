@@ -49,6 +49,7 @@ COPY packages/plugins/learn-card/package.json packages/plugins/learn-card/
 COPY packages/plugins/learn-card-network/package.json packages/plugins/learn-card-network/
 COPY packages/plugins/linked-claims/package.json packages/plugins/linked-claims/
 COPY packages/plugins/learn-cloud/package.json packages/plugins/learn-cloud/
+COPY packages/plugins/ler-rs/package.json packages/plugins/ler-rs/
 COPY packages/plugins/open-badge-v2/package.json packages/plugins/open-badge-v2/
 COPY packages/plugins/vc/package.json packages/plugins/vc/
 COPY packages/plugins/vc-api/package.json packages/plugins/vc-api/
@@ -90,6 +91,7 @@ COPY packages/plugins/learn-card packages/plugins/learn-card
 COPY packages/plugins/learn-card-network packages/plugins/learn-card-network
 COPY packages/plugins/linked-claims packages/plugins/linked-claims
 COPY packages/plugins/learn-cloud packages/plugins/learn-cloud
+COPY packages/plugins/ler-rs packages/plugins/ler-rs
 COPY packages/plugins/open-badge-v2 packages/plugins/open-badge-v2
 COPY packages/plugins/vc packages/plugins/vc
 COPY packages/plugins/vc-api packages/plugins/vc-api

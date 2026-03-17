@@ -17,7 +17,6 @@ import {
     useWallet,
     ProfilePicture,
     pushUtilities,
-    useWeb3Auth,
     useSQLiteStorage,
     useContract,
     redirectStore,
@@ -29,8 +28,10 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
 import { auth } from '../../firebase/firebase';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
+import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import ConsentFlowError from './ConsentFlowError';
+import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
@@ -51,7 +52,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     const firebaseAuth = auth();
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
-    const { logout } = useWeb3Auth();
+    const { logout: coordinatorLogout } = useAuthCoordinator();
     const { clearDB } = useSQLiteStorage();
     const { track } = useAnalytics();
     const { newModal } = useModal({
@@ -165,7 +166,17 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
         };
 
         handleNavigation();
-    }, [userClickedContinue, consentedContractLoading, consentedContract, login, returnTo, contractDetails, uri, recipientToken, history]);
+    }, [
+        userClickedContinue,
+        consentedContractLoading,
+        consentedContract,
+        login,
+        returnTo,
+        contractDetails,
+        uri,
+        recipientToken,
+        history,
+    ]);
 
     // TODO duplicated from QRCodeUserCard, should turn into helper
     const handleLogout = async () => {
@@ -197,7 +208,8 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                 }
             }
 
-            logout(redirectUrl);
+            resumeBuilderStore.set.resetStore();
+            await coordinatorLogout();
             await queryClient.resetQueries();
 
             await clearDB();

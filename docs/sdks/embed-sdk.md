@@ -16,7 +16,7 @@ npm install @learncard/embed-sdk
 {% endtab %}
 {% tab title="CDN (IIFE)" %}
 ```html
-<script src="https://cdn.learncard.com/sdk/v1/learncard.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js"></script>
 ```
 {% endtab %}
 {% tab title="ESM" %}
@@ -31,7 +31,7 @@ import { init } from '@learncard/embed-sdk';
 ```html
 <div id="claim-here"></div>
 
-<script src="https://cdn.learncard.com/sdk/v1/learncard.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js"></script>
 <script>
   LearnCard.init({
     publishableKey: 'pk_your_key_here',
