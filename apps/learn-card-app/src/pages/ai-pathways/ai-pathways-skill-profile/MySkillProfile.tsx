@@ -13,9 +13,9 @@ import SkillProfileStep5 from './SkillProfileStep5';
 type MySkillProfileProps = {};
 
 const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
-    const [isExpanded, setIsExpanded] = useState(true); // init = true the first time you land on the page, TODO false otherwise
-    const [currentStep, setCurrentStep] = useState(1);
     const { percentage, lastEditedDate } = useSkillProfileCompletion();
+    const [isExpanded, setIsExpanded] = useState(percentage === 0);
+    const [currentStep, setCurrentStep] = useState(1);
 
     const formattedEditDate = lastEditedDate
         ? new Date(lastEditedDate).toLocaleDateString('en-US', {
@@ -50,9 +50,18 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
             <div className="w-full max-w-[600px] bg-white items-center justify-center flex flex-col shadow-bottom-2-4 px-[15px] py-[18px] rounded-[15px]">
                 <div className="flex flex-col w-full gap-[10px]">
                     <div className="flex gap-[10px] items-center justify-start w-full">
-                        <ProfilePicture customContainerClass="w-[30px] h-[30px]" />
-                        <h2 className="text-[16px] font-poppins text-grayscale-900 font-bold leading-[20px]">
+                        <ProfilePicture
+                            customContainerClass={
+                                !isExpanded ? 'w-[48px] h-[48px]' : 'w-[30px] h-[30px]'
+                            }
+                        />
+                        <h2 className="text-[16px] font-poppins text-grayscale-900 font-bold leading-[20px] flex flex-col gap-[3px]">
                             My Skill Profile
+                            {!isExpanded && (
+                                <span className="text-[14px] font-poppins text-grayscale-700 leading-[130%] font-normal">
+                                    Personalize your pathways.
+                                </span>
+                            )}
                         </h2>
                         {isExpanded && (
                             <button onClick={() => setIsExpanded(false)} className="ml-auto">
@@ -96,11 +105,17 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
                     )}
                 </div>
 
-                {isExpanded && (
-                    <div className="pt-[20px] border-t border-grayscale-200 w-full mt-[10px]">
-                        {steps[currentStep] ?? <div>Step {currentStep} content...</div>}
+                <div
+                    className={`grid w-full transition-[grid-template-rows] duration-300 ease-in-out ${
+                        isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                    }`}
+                >
+                    <div className="overflow-hidden min-h-0">
+                        <div className="pt-[20px] border-t border-grayscale-200 w-full mt-[10px]">
+                            {steps[currentStep] ?? <div>Step {currentStep} content...</div>}
+                        </div>
                     </div>
-                )}
+                </div>
             </div>
         </div>
     );
