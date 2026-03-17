@@ -141,9 +141,9 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                 // Fetch templates based on featureType
                 let allBoostInfos: Array<{ boostUri: string; templateAlias?: string }> = [];
 
-                if (featureType === 'peer-badges') {
-                    // For peer-badges: fetch by featureType metadata
-                    if (listingId) {
+                if (listingId) {
+                    // Listing-based fetch: use listing relationships
+                    if (featureType === 'peer-badges') {
                         const boostsResult = await wallet.invoke.getPaginatedBoosts({
                             limit: 50,
                             query: {
@@ -156,16 +156,28 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                                 templateAlias: undefined,
                             }))
                             .filter(info => info.boostUri);
-                    }
-                } else {
-                    // For issue-credentials (default): fetch from getAppBoosts (has templateAlias)
-                    if (listingId) {
+                    } else {
                         const boostLinks = (await wallet.invoke.getAppBoosts(listingId)) || [];
                         allBoostInfos = boostLinks.map(link => ({
                             boostUri: link.boostUri,
                             templateAlias: link.templateAlias,
                         }));
                     }
+                } else if (integrationId) {
+                    // Integration-only fetch: query by metadata (no listing relationship)
+                    const metaQuery: Record<string, unknown> = { integrationId };
+                    if (featureType) metaQuery.featureType = featureType;
+
+                    const boostsResult = await wallet.invoke.getPaginatedBoosts({
+                        limit: 50,
+                        query: { meta: metaQuery },
+                    });
+                    allBoostInfos = (boostsResult?.records || [])
+                        .map((boost: Record<string, unknown>) => ({
+                            boostUri: boost.uri as string,
+                            templateAlias: undefined,
+                        }))
+                        .filter(info => info.boostUri);
                 }
 
                 if (cancelled) return;
@@ -260,8 +272,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                                         'Untitled Template',
                                     description: (childCredential?.description as string) || '',
                                     achievementType:
-                                        (childConfig?.achievementType as string) ||
-                                        'Course Completion',
+                                        (childConfig?.achievementType as string) || 'Achievement',
                                     fields:
                                         (childConfig?.fields as CredentialTemplate['fields']) || [],
                                     imageUrl: (fullChild as Record<string, unknown>)?.image as
@@ -356,30 +367,47 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                 };
             }
         ): Promise<{ boostUri: string; templateAlias: string }> => {
-            if (!listingId) {
-                throw new Error('listingId is required to create templates');
+            if (!listingId && !integrationId) {
+                throw new Error(
+                    'Either listingId or integrationId is required to create templates'
+                );
             }
 
             const wallet = await initWalletRef.current();
             const name = options?.name || (credential.name as string) || 'Untitled Template';
 
-            // Generate or use provided alias
+            // Generate or use provided alias (only meaningful with listingId)
             let templateAlias = options?.alias || generateTemplateAlias(name);
 
-            // Check for duplicate alias
-            const existingAliases = templates.map(t => t.templateAlias).filter(Boolean);
-            let counter = 1;
-            const baseAlias = templateAlias;
-            while (existingAliases.includes(templateAlias)) {
-                templateAlias = `${baseAlias}-${counter}`;
-                counter++;
+            if (listingId) {
+                // Check for duplicate alias only when using listings
+                const existingAliases = templates.map(t => t.templateAlias).filter(Boolean);
+                let counter = 1;
+                const baseAlias = templateAlias;
+                while (existingAliases.includes(templateAlias)) {
+                    templateAlias = `${baseAlias}-${counter}`;
+                    counter++;
+                }
             }
 
             // Replace system placeholders
             const issuerDid = wallet.id.did();
+
+            // Handle issuer as either a string or object with nested id
+            let resolvedIssuer: unknown = credential.issuer;
+            if (typeof credential.issuer === 'string' && credential.issuer === '{{issuer_did}}') {
+                resolvedIssuer = issuerDid;
+            } else if (typeof credential.issuer === 'object' && credential.issuer !== null) {
+                const issuerObj = { ...(credential.issuer as Record<string, unknown>) };
+                if (issuerObj.id === '{{issuer_did}}') {
+                    issuerObj.id = issuerDid;
+                }
+                resolvedIssuer = issuerObj;
+            }
+
             const preparedCredential = {
                 ...credential,
-                issuer: credential.issuer === '{{issuer_did}}' ? issuerDid : credential.issuer,
+                issuer: resolvedIssuer,
                 validFrom:
                     credential.validFrom === '{{issue_date}}'
                         ? new Date().toISOString()
@@ -391,11 +419,14 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                 preparedCredential as Parameters<typeof wallet.invoke.issueCredential>[0]
             );
 
-            // Create the boost with featureType in metadata
-            // Use PROVISIONAL status so the template can be edited later
             // Derive category dynamically from credential's achievementType
             const category =
                 getDefaultCategoryForCredential(credential as UnsignedVC) || 'Achievement';
+
+            // Create the boost with featureType in metadata
+            // Use PROVISIONAL status so the template can be edited later
+            const meta: Record<string, unknown> = { integrationId, featureType };
+            if (listingId) meta.appListingId = listingId;
 
             const boostMetadata = {
                 name,
@@ -406,7 +437,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                     )?.achievementType as string) || 'Achievement',
                 status: 'PROVISIONAL',
                 category: category,
-                meta: { appListingId: listingId, integrationId, featureType },
+                meta,
                 ...(options?.defaultPermissions && {
                     defaultPermissions: options.defaultPermissions,
                 }),
@@ -417,9 +448,9 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                 boostMetadata as unknown as Parameters<typeof wallet.invoke.createBoost>[1]
             );
 
-            // For issue-credentials: add to app listing (gives it a templateAlias)
-            // For peer-badges: don't add to app listing (they're queried by featureType metadata)
-            if (featureType !== 'peer-badges') {
+            // For issue-credentials with a listing: add to app listing (gives it a templateAlias)
+            // For peer-badges or no listing: skip — templates are queried by metadata
+            if (listingId && featureType !== 'peer-badges') {
                 await wallet.invoke.addBoostToApp(listingId, boostUri, templateAlias);
             }
 
@@ -442,9 +473,22 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
 
             // Replace system placeholders
             const issuerDid = wallet.id.did();
+
+            // Handle issuer as either a string or object with nested id
+            let resolvedIssuer: unknown = credential.issuer;
+            if (typeof credential.issuer === 'string' && credential.issuer === '{{issuer_did}}') {
+                resolvedIssuer = issuerDid;
+            } else if (typeof credential.issuer === 'object' && credential.issuer !== null) {
+                const issuerObj = { ...(credential.issuer as Record<string, unknown>) };
+                if (issuerObj.id === '{{issuer_did}}') {
+                    issuerObj.id = issuerDid;
+                }
+                resolvedIssuer = issuerObj;
+            }
+
             const preparedCredential = {
                 ...credential,
-                issuer: credential.issuer === '{{issuer_did}}' ? issuerDid : credential.issuer,
+                issuer: resolvedIssuer,
                 validFrom:
                     credential.validFrom === '{{issue_date}}'
                         ? new Date().toISOString()
@@ -461,6 +505,9 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                 getDefaultCategoryForCredential(credential as UnsignedVC) || 'Achievement';
 
             // Update the boost
+            const meta: Record<string, unknown> = { integrationId };
+            if (listingId) meta.appListingId = listingId;
+
             const boostMetadata = {
                 name,
                 type:
@@ -469,7 +516,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                             ?.achievement as Record<string, unknown>
                     )?.achievementType as string) || 'Achievement',
                 category: category,
-                meta: { appListingId: listingId, integrationId },
+                meta,
             };
 
             await wallet.invoke.updateBoost(
@@ -486,15 +533,11 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
 
     const deleteTemplate = useCallback(
         async (boostUri: string): Promise<void> => {
-            if (!listingId) {
-                throw new Error('listingId is required to delete templates');
-            }
-
             const wallet = await initWalletRef.current();
             const template = templates.find(t => t.boostUri === boostUri);
 
-            if (template?.templateAlias) {
-                // For issue-credentials: Remove from app listing
+            // If listing-based: remove from app listing first
+            if (listingId && template?.templateAlias) {
                 await wallet.invoke.removeBoostFromApp(listingId, template.templateAlias);
             }
 
@@ -515,7 +558,8 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
     const updateAlias = useCallback(
         async (boostUri: string, newAlias: string): Promise<void> => {
             if (!listingId) {
-                throw new Error('listingId is required to update alias');
+                // Aliases only work with app listing relationships
+                return;
             }
 
             const wallet = await initWalletRef.current();

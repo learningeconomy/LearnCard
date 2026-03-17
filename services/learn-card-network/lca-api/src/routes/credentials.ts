@@ -3,16 +3,12 @@ import { VCValidator, JWEValidator } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 import { z } from 'zod';
 
-import {
-    sendEmailWithTemplate,
-    POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID,
-    getFrom,
-} from '@helpers/postmark.helpers';
-
+import { getDeliveryService, getFrom } from '../services/delivery';
 import { IssueEndpointValidator } from 'types/credentials';
-
 import { t, authorizedDidRoute, openRoute } from '@routes';
 import { getSigningAuthorityLearnCard } from '@helpers/learnCard.helpers';
+
+const ENDORSEMENT_REQUEST_TEMPLATE_ALIAS = process.env.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS ?? '';
 
 export const credentialsRouter = t.router({
     issueCredential: authorizedDidRoute
@@ -135,18 +131,18 @@ export const credentialsRouter = t.router({
             const _email = email.toLowerCase();
 
             try {
-                await sendEmailWithTemplate(
-                    _email,
-                    Number(POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID),
-                    {
+                await getDeliveryService().send({
+                    to: _email,
+                    templateAlias: ENDORSEMENT_REQUEST_TEMPLATE_ALIAS,
+                    templateModel: {
                         recipient: { name: _email },
                         shareLink,
                         message,
                         issuer,
                         credential,
                     },
-                    getFrom({ mailbox: 'endorsement' })
-                );
+                    from: getFrom({ mailbox: 'endorsement' }),
+                });
                 return true;
             } catch (error) {
                 console.error('Failed to send verification email:', error);

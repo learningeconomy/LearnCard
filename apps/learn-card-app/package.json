@@ -27,6 +27,7 @@
         "@capacitor/status-bar": "^8.0.0",
         "@capawesome/capacitor-badge": "8.0.0",
         "@capgo/capacitor-updater": "8.41.12",
+        "@digitalcredentials/jsonld": "^9.0.0",
         "@emoji-mart/data": "^1.2.1",
         "@emoji-mart/react": "^1.1.1",
         "@headlessui/react": "^2.2.4",
@@ -37,6 +38,7 @@
         "@learncard/lca-api-plugin": "workspace:*",
         "@learncard/open-badge-v2-plugin": "workspace:*",
         "@learncard/react": "workspace:^",
+        "@learncard/sss-key-manager": "workspace:*",
         "@nanostores/react": "^0.8.4",
         "@sentry/browser": "8.34.0",
         "@sentry/react": "8.34.0",
@@ -174,6 +176,7 @@
         "@vitejs/plugin-react-swc": "^3.8.0",
         "autoprefixer": "^10.4.20",
         "jeep-sqlite": "2.5.8",
+        "neo4j-driver": "5.18.0",
         "node-stdlib-browser": "1.2.1",
         "open-cli": "^8.0.0",
         "postcss": "^8.5.2",
@@ -183,6 +186,7 @@
         "vite": "4.3.8",
         "vite-plugin-svgr": "^3.3.0",
         "vite-tsconfig-paths": "4.2.3",
+        "neo4j-driver": "5.18.0",
         "vitest": "^3.0.0"
     },
     "description": "An Ionic project"
