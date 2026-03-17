@@ -3,22 +3,6 @@ import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
 import { trace, traceDb, traceInternal } from '@tracing';
 
-// Derive category from credential's achievementType when not explicitly provided
-function deriveCategoryFromCredential(credential: any): string {
-    try {
-        const achievementType = credential?.credentialSubject?.achievement?.achievementType;
-        if (!achievementType) return 'Achievement';
-
-        if (achievementType === 'Course') return 'Learning History';
-        if (achievementType === 'License') return 'ID';
-        if (achievementType === 'Membership') return 'Membership';
-
-        return 'Achievement';
-    } catch {
-        return 'Achievement';
-    }
-}
-
 import {
     BoostValidator as ConsumerBoostValidator,
     UnsignedVCValidator,
@@ -719,11 +703,6 @@ export const boostsRouter = t.router({
                         const { credential, claimPermissions, skills, ...metadata } =
                             input.template;
 
-                        // Ensure category is always set - derive from credential if not provided
-                        if (!metadata.category) {
-                            metadata.category = deriveCategoryFromCredential(credential);
-                        }
-
                         boost = await traceDb('createBoost', () =>
                             createBoost(credential, profile, metadata, domain)
                         );
@@ -1109,11 +1088,6 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { credential, claimPermissions, defaultPermissions, skills, ...metadata } = input;
 
-            // Ensure category is always set - derive from credential if not provided
-            if (!metadata.category) {
-                metadata.category = deriveCategoryFromCredential(credential);
-            }
-
             const boost = await createBoost(credential, profile, metadata, ctx.domain);
 
             if (Array.isArray(skills) && skills.length > 0) {
@@ -1177,11 +1151,6 @@ export const boostsRouter = t.router({
                 boost: { credential, claimPermissions, defaultPermissions, ...metadata },
                 skills,
             } = input;
-
-            // Ensure category is always set - derive from credential if not provided
-            if (!metadata.category) {
-                metadata.category = deriveCategoryFromCredential(credential);
-            }
 
             const parentBoost = await getBoostByUri(parentUri);
 
