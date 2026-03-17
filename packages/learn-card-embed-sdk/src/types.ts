@@ -8,6 +8,7 @@ export type CredentialConfig = {
 export type ClaimSuccessDetails = {
   credentialId: string;
   consentGiven: boolean;
+  handoffUrl?: string;
 };
 
 export type EmailSubmitResult = { ok: true } | { ok: false; error: string };
@@ -24,6 +25,8 @@ export type BrandingTokens = {
 
 export type InitOptions = {
   partnerName?: string;
+  issuerName?: string;    // Display name of the credential issuer (profile name)
+  issuerLogoUrl?: string; // Logo or avatar URL for the issuer
   target: string | HTMLElement;
   credential: CredentialConfig;
   onSuccess?: (details: ClaimSuccessDetails) => void;

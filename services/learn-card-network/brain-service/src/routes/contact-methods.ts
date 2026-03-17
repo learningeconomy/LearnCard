@@ -287,9 +287,10 @@ export const contactMethodsRouter = t.router({
             const deliveryService = getDeliveryService(contactMethodToVerify);
             await deliveryService.send({
                 contactMethod: contactMethodToVerify,
-                templateId: 'contact-method-verification',
+                templateId: 'embed-email-verification',
                 templateModel: {
-                    verificationToken,
+                    verificationCode: verificationToken,
+                    verificationEmail: value,
                 },
             });
 

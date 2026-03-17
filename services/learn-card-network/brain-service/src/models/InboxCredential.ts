@@ -20,6 +20,7 @@ export type InboxCredentialType = {
     integrationId?: string; // Links to the integration that issued this credential
     'signingAuthority.endpoint'?: string;
     'signingAuthority.name'?: string;
+    'signingAuthority.listingSlug'?: string;
 };
 
 export type InboxCredentialRelationships = {
@@ -83,8 +84,10 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
             webhookUrl: { type: 'string', required: false },
             boostUri: { type: 'string', required: false },
             activityId: { type: 'string', required: false },
+            integrationId: { type: 'string', required: false },
             'signingAuthority.endpoint': { type: 'string', required: false },
             'signingAuthority.name': { type: 'string', required: false },
+            'signingAuthority.listingSlug': { type: 'string', required: false },
         },
         relationships: {
             addressedTo: { 

@@ -55,6 +55,7 @@ COPY packages/plugins/vc/package.json packages/plugins/vc/
 COPY packages/plugins/vc-api/package.json packages/plugins/vc-api/
 COPY packages/plugins/vc-templates/package.json packages/plugins/vc-templates/
 COPY packages/plugins/vpqr/package.json packages/plugins/vpqr/
+COPY packages/learn-card-embed-sdk/package.json packages/learn-card-embed-sdk/
 COPY apps/learn-card-app/package.json apps/learn-card-app/
 
 # Install dependencies - done before copying source for caching
