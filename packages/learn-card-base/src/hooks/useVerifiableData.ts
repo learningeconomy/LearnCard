@@ -13,6 +13,7 @@ export type VerifiableDataOptions = {
 
 type VerifiableDataRecord<T> = LCR & {
     verifiableData?: T;
+    issuanceDate?: string;
 };
 
 /**
@@ -81,15 +82,22 @@ const storeVerifiableData = async <T>(
     if (!uri) throw new Error('Failed to store verifiable data credential.');
 
     // Index the credential with the unique key as the ID
+    const issuanceDate = new Date().toISOString();
     await wallet.index.LearnCloud.add<VerifiableDataRecord<T>>({
         uri,
         id: `__verifiable_data_${key}__`,
         category,
         title: `VerifiableData: ${key}`,
         verifiableData: data,
+        issuanceDate,
     });
 
     return uri;
+};
+
+type VerifiableDataResult<T> = {
+    data: T | undefined;
+    issuanceDate: string | undefined;
 };
 
 /**
@@ -98,14 +106,17 @@ const storeVerifiableData = async <T>(
 const getVerifiableData = async <T>(
     wallet: BespokeLearnCard,
     key: string
-): Promise<T | undefined> => {
+): Promise<VerifiableDataResult<T>> => {
     const records = await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({
         id: `__verifiable_data_${key}__`,
     });
 
     if (records?.length > 0 && records[0].verifiableData !== undefined) {
         // Return the data from the index record directly (faster)
-        return records[0].verifiableData;
+        return {
+            data: records[0].verifiableData,
+            issuanceDate: records[0].issuanceDate,
+        };
     }
 
     // Fallback: try to read from the credential itself
@@ -119,14 +130,17 @@ const getVerifiableData = async <T>(
                 : achievement?.description;
 
             if (description) {
-                return JSON.parse(description) as T;
+                return {
+                    data: JSON.parse(description) as T,
+                    issuanceDate: credential?.issuanceDate ?? records[0].issuanceDate,
+                };
             }
         } catch (e) {
             console.warn('Failed to read verifiable data credential:', e);
         }
     }
 
-    return undefined;
+    return { data: undefined, issuanceDate: undefined };
 };
 
 /**
@@ -171,7 +185,7 @@ export const useVerifiableData = <T>(key: string, options?: VerifiableDataOption
 
     const query = useQuery({
         queryKey,
-        queryFn: async () => {
+        queryFn: async (): Promise<VerifiableDataResult<T>> => {
             const wallet = await initWallet();
             return getVerifiableData<T>(wallet, key);
         },
@@ -185,7 +199,10 @@ export const useVerifiableData = <T>(key: string, options?: VerifiableDataOption
         },
         onSuccess: (_, data) => {
             // Update the cache with the new data
-            queryClient.setQueryData(queryKey, data);
+            queryClient.setQueryData(queryKey, {
+                data,
+                issuanceDate: new Date().toISOString(),
+            });
         },
     });
 
@@ -194,8 +211,8 @@ export const useVerifiableData = <T>(key: string, options?: VerifiableDataOption
      * Uses JSON serialization for deep comparison.
      */
     const hasChanged = (newData: T): boolean => {
-        if (query.data === undefined) return true;
-        return JSON.stringify(query.data) !== JSON.stringify(newData);
+        if (query.data?.data === undefined) return true;
+        return JSON.stringify(query.data.data) !== JSON.stringify(newData);
     };
 
     /**
@@ -212,7 +229,9 @@ export const useVerifiableData = <T>(key: string, options?: VerifiableDataOption
 
     return {
         /** The current verifiable data, or undefined if not yet loaded or doesn't exist */
-        data: query.data,
+        data: query.data?.data,
+        /** The issuance date of the credential, or undefined if not yet loaded */
+        issuanceDate: query.data?.issuanceDate,
         /** Whether the data is being loaded */
         isLoading: query.isLoading,
         /** Whether data has been fetched (loading complete, regardless of result) */
@@ -228,7 +247,7 @@ export const useVerifiableData = <T>(key: string, options?: VerifiableDataOption
         /** Refetch the data from the server */
         refetch: query.refetch,
         /** Whether data exists (has been saved at least once) */
-        exists: query.data !== undefined,
+        exists: query.data?.data !== undefined,
     };
 };
 
@@ -240,7 +259,8 @@ export const getVerifiableDataForKey = async <T>(
     wallet: BespokeLearnCard,
     key: string
 ): Promise<T | undefined> => {
-    return getVerifiableData<T>(wallet, key);
+    const result = await getVerifiableData<T>(wallet, key);
+    return result.data;
 };
 
 /**

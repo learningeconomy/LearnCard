@@ -15,7 +15,15 @@ type MySkillProfileProps = {};
 const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
     const [isExpanded, setIsExpanded] = useState(true); // init = true the first time you land on the page, TODO false otherwise
     const [currentStep, setCurrentStep] = useState(1);
-    const { percentage } = useSkillProfileCompletion();
+    const { percentage, lastEditedDate } = useSkillProfileCompletion();
+
+    const formattedEditDate = lastEditedDate
+        ? new Date(lastEditedDate).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+          })
+        : undefined;
 
     const handleNext = () => {
         setCurrentStep(currentStep + 1);
@@ -82,6 +90,7 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
                         <div className="flex items-center w-full">
                             <span className="text-grayscale-600 font-poppins font-[500] text-[14px] leading-[18px]">
                                 {percentage}% optimized
+                                {formattedEditDate && ` • Edited on ${formattedEditDate}`}
                             </span>
                         </div>
                     )}

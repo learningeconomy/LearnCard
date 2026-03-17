@@ -30,23 +30,22 @@ type SkillProfileProgressBarProps = {
 
 export const useSkillProfileCompletion = () => {
     // Step 1: Goals + Profile
-    const { data: goalsData } = useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY);
-    const { data: profileData } =
+    const { data: goalsData, issuanceDate: goalsIssuanceDate } =
+        useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY);
+    const { data: profileData, issuanceDate: profileIssuanceDate } =
         useVerifiableData<SkillProfileProfileData>(SKILL_PROFILE_PROFILE_KEY);
 
     // Step 2: Work History
-    const { data: workHistoryData } = useVerifiableData<SkillProfileWorkHistoryData>(
-        SKILL_PROFILE_WORK_HISTORY_KEY
-    );
+    const { data: workHistoryData, issuanceDate: workHistoryIssuanceDate } =
+        useVerifiableData<SkillProfileWorkHistoryData>(SKILL_PROFILE_WORK_HISTORY_KEY);
 
     // Step 3: Salary
-    const { data: salaryData } =
+    const { data: salaryData, issuanceDate: salaryIssuanceDate } =
         useVerifiableData<SkillProfileSalaryData>(SKILL_PROFILE_SALARY_KEY);
 
     // Step 4: Job Satisfaction
-    const { data: jobSatisfactionData } = useVerifiableData<SkillProfileJobSatisfactionData>(
-        SKILL_PROFILE_JOB_SATISFACTION_KEY
-    );
+    const { data: jobSatisfactionData, issuanceDate: jobSatisfactionIssuanceDate } =
+        useVerifiableData<SkillProfileJobSatisfactionData>(SKILL_PROFILE_JOB_SATISFACTION_KEY);
 
     // Step 5: Self-assigned skills
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
@@ -85,11 +84,28 @@ export const useSkillProfileCompletion = () => {
     const step4Complete = hasWorkLifeBalance && hasJobStability;
     const step5Complete = hasSelfAssignedSkills;
 
+    // Find the most recent issuance date
+    const issuanceDates = [
+        goalsIssuanceDate,
+        profileIssuanceDate,
+        workHistoryIssuanceDate,
+        salaryIssuanceDate,
+        jobSatisfactionIssuanceDate,
+    ].filter((d): d is string => Boolean(d));
+
+    const lastEditedDate =
+        issuanceDates.length > 0
+            ? issuanceDates.reduce((latest, current) =>
+                  new Date(current) > new Date(latest) ? current : latest
+              )
+            : undefined;
+
     return {
         percentage,
         completedCount,
         totalMetrics: TOTAL_METRICS,
         stepCompletion: [step1Complete, step2Complete, step3Complete, step4Complete, step5Complete],
+        lastEditedDate,
     };
 };
 
