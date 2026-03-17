@@ -55,6 +55,8 @@ import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 import { StepProgress, CodeOutputPanel, GoLiveStep, StatusIndicator } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { useWallet, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
+import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import type { UnsignedVC } from '@learncard/types';
 import OBv3CredentialBuilder from '../../../../components/credentials/OBv3CredentialBuilder';
 import {
     CredentialBuilder,
@@ -796,13 +798,14 @@ const SigningAuthorityStep: React.FC<{
         fetchSigningAuthority();
     }, []);
 
-    const createSigningAuthority = async () => {
+    const createOrReplaceSigningAuthority = async () => {
         try {
             setCreating(true);
             const wallet = await initWallet();
 
             const ownerDid = appSlug ? getAppDidFromSlug(appSlug) : undefined;
-            const authority = await wallet.invoke.createSigningAuthority('default-sa', ownerDid);
+            const saName = `sa-${Date.now().toString(36)}`;
+            const authority = await wallet.invoke.createSigningAuthority(saName, ownerDid);
 
             if (!authority) {
                 throw new Error('Failed to create signing authority');
@@ -871,10 +874,10 @@ const SigningAuthorityStep: React.FC<{
                 }
             />
 
-            {/* Create button if needed */}
+            {/* Create button if no SA exists */}
             {!loading && !hasSigningAuthority && (
                 <button
-                    onClick={createSigningAuthority}
+                    onClick={createOrReplaceSigningAuthority}
                     disabled={creating}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 disabled:opacity-50 transition-colors"
                 >
@@ -887,6 +890,27 @@ const SigningAuthorityStep: React.FC<{
                         <>
                             <Shield className="w-4 h-4" />
                             Create Signing Authority
+                        </>
+                    )}
+                </button>
+            )}
+
+            {/* Recreate button if SA exists but may be stale */}
+            {!loading && hasSigningAuthority && (
+                <button
+                    onClick={createOrReplaceSigningAuthority}
+                    disabled={creating}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                >
+                    {creating ? (
+                        <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Recreating...
+                        </>
+                    ) : (
+                        <>
+                            <RefreshCw className="w-4 h-4" />
+                            Recreate Signing Authority
                         </>
                     )}
                 </button>
@@ -1865,7 +1889,8 @@ const TemplateManager: React.FC<{
                         (credential.credentialSubject as Record<string, unknown>)
                             ?.achievement as Record<string, unknown>
                     )?.achievementType as string) || 'Achievement',
-                category: 'achievement',
+                category:
+                    getDefaultCategoryForCredential(credential as UnsignedVC) || 'Achievement',
                 meta: { appListingId, integrationId }, // Store both app listing ID and integration ID for filtering
                 defaultPermissions: {
                     canIssue: true, // Public template - anyone can issue
@@ -3491,7 +3516,7 @@ const IssueCredentialsSetup: React.FC<{
         fetchSigningAuthority();
     }, [mode, signingAuthorityFetched, initWallet]);
 
-    const createSigningAuthority = async () => {
+    const createOrReplaceSigningAuthority = async () => {
         try {
             setSigningAuthorityCreating(true);
             const wallet = await initWallet();
@@ -3499,7 +3524,8 @@ const IssueCredentialsSetup: React.FC<{
             const ownerDid = selectedListing?.slug
                 ? getAppDidFromSlug(selectedListing.slug)
                 : undefined;
-            const authority = await wallet.invoke.createSigningAuthority('default-sa', ownerDid);
+            const saName = `sa-${Date.now().toString(36)}`;
+            const authority = await wallet.invoke.createSigningAuthority(saName, ownerDid);
 
             if (!authority) {
                 throw new Error('Failed to create signing authority');
@@ -3838,18 +3864,37 @@ console.log('Credential synced:', result);`;
                                     </span>
                                 </div>
                             ) : primarySA ? (
-                                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                                        <div>
-                                            <p className="font-medium text-emerald-800">
-                                                Signing authority ready
-                                            </p>
-                                            <p className="text-xs text-emerald-600">
-                                                Using: {primarySA.name}
-                                            </p>
+                                <div className="space-y-3">
+                                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                            <div>
+                                                <p className="font-medium text-emerald-800">
+                                                    Signing authority ready
+                                                </p>
+                                                <p className="text-xs text-emerald-600">
+                                                    Using: {primarySA.name}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
+                                    <button
+                                        onClick={createOrReplaceSigningAuthority}
+                                        disabled={signingAuthorityCreating}
+                                        className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                                    >
+                                        {signingAuthorityCreating ? (
+                                            <>
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                Recreating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <RefreshCw className="w-3.5 h-3.5" />
+                                                Recreate Signing Authority
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
                             ) : (
                                 <div className="space-y-3">
@@ -3860,7 +3905,7 @@ console.log('Credential synced:', result);`;
                                         </p>
 
                                         <button
-                                            onClick={createSigningAuthority}
+                                            onClick={createOrReplaceSigningAuthority}
                                             disabled={signingAuthorityCreating}
                                             className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 disabled:opacity-50 transition-colors"
                                         >
@@ -5308,9 +5353,7 @@ const PeerBadgesSetup: React.FC<{
                         <span className="font-medium text-violet-600">2.</span>
                         <span>
                             In your app, call{' '}
-                            <code className="bg-gray-100 px-1 rounded">
-                                initiateTemplateIssue
-                            </code>{' '}
+                            <code className="bg-gray-100 px-1 rounded">initiateTemplateIssue</code>{' '}
                             with a template URI
                         </span>
                     </li>

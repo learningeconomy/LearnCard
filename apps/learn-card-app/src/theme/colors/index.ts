@@ -236,6 +236,19 @@ export const colors = {
             backgroundSecondaryColor: 'cyan-200',
             tabActiveColor: 'bg-cyan-400',
         },
+        [CredentialCategoryEnum.resume]: {
+            primaryColor: 'cyan-401',
+            secondaryColor: 'cyan-601',
+            indicatorColor: 'yellow-200',
+            borderColor: 'cyan-401',
+
+            statusBarColor: 'cyan-401',
+            headerBrandingTextColor: 'text-white',
+            headerTextColor: 'text-white',
+            backgroundPrimaryColor: '!bg-cyan-401',
+            backgroundSecondaryColor: 'cyan-200',
+            tabActiveColor: 'bg-cyan-400',
+        },
         [CredentialCategoryEnum.family]: {
             primaryColor: 'amber-400',
             secondaryColor: 'amber-600',
@@ -330,6 +343,13 @@ export const colors = {
                 },
             },
             [CredentialCategoryEnum.workHistory]: {
+                spilledCup: {
+                    backsplash: '#22D3EE', // cyan-401
+                    spill: '#EAB308', // yellow-500
+                    cupOutline: '#0E7490', // cyan-701
+                },
+            },
+            [CredentialCategoryEnum.resume]: {
                 spilledCup: {
                     backsplash: '#22D3EE', // cyan-401
                     spill: '#EAB308', // yellow-500
@@ -525,6 +545,19 @@ export const colors = {
             backgroundSecondaryColor: 'grayscale-100',
             tabActiveColor: 'bg-grayscale-200',
         },
+        [CredentialCategoryEnum.resume]: {
+            primaryColor: 'off-white-50',
+            secondaryColor: 'grayscale-800',
+            indicatorColor: 'emerald-500',
+            borderColor: 'grayscale-100',
+
+            statusBarColor: 'light',
+            headerBrandingTextColor: 'text-grayscale-800',
+            headerTextColor: 'text-grayscale-800',
+            backgroundPrimaryColor: '!bg-white',
+            backgroundSecondaryColor: 'grayscale-100',
+            tabActiveColor: 'bg-grayscale-200',
+        },
         [CredentialCategoryEnum.family]: {
             primaryColor: 'off-white-50',
             secondaryColor: 'grayscale-800',
@@ -633,6 +666,13 @@ export const colors = {
                 },
             },
             [CredentialCategoryEnum.workHistory]: {
+                spilledCup: {
+                    backsplash: '#E2E3E9', // grayscale-200-line
+                    spill: '#3B82F6', // blue-500
+                    cupOutline: '#353E64', // graycale-800
+                },
+            },
+            [CredentialCategoryEnum.resume]: {
                 spilledCup: {
                     backsplash: '#E2E3E9', // grayscale-200-line
                     spill: '#3B82F6', // blue-500

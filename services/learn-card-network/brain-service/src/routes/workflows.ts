@@ -664,8 +664,8 @@ async function handleInboxClaimPresentation(
 
             // Log CLAIMED activity - chain to original activityId/integrationId if available
             // activityId and integrationId are stored on the inbox credential
-            const activityId = (inboxCredential as any).activityId as string | undefined;
-            const integrationId = (inboxCredential as any).integrationId as string | undefined;
+            const activityId = inboxCredential.activityId;
+            const integrationId = inboxCredential.integrationId;
             const issuerProfileForActivity = await getProfileByDid(inboxCredential.issuerDid);
             if (issuerProfileForActivity) {
                 await logCredentialClaimed({
@@ -711,9 +711,9 @@ async function handleInboxClaimPresentation(
             console.error(`Failed to process inbox credential ${inboxCredential.id}:`, error);
             
             // Log FAILED activity - chain to original activityId/integrationId if available
-            const failedActivityId = (inboxCredential as any).activityId as string | undefined;
-            const failedIntegrationId = (inboxCredential as any).integrationId as string | undefined;
-            const failedBoostUri = (inboxCredential as any).boostUri as string | undefined;
+            const failedActivityId = inboxCredential.activityId;
+            const failedIntegrationId = inboxCredential.integrationId;
+            const failedBoostUri = inboxCredential.boostUri;
             const failedIssuerProfile = await getProfileByDid(inboxCredential.issuerDid);
             if (failedIssuerProfile) {
                 try {

@@ -3,7 +3,12 @@
  */
 
 // Re-export AppEvent types from shared types package
-export type { AppEvent, SendCredentialEvent, AppEventResponse } from '@learncard/types';
+export type {
+    AppEvent,
+    SendCredentialEvent,
+    CheckCredentialEvent,
+    AppEventResponse,
+} from '@learncard/types';
 
 /**
  * Configuration options for initializing the SDK
@@ -96,6 +101,11 @@ export interface TemplateCredentialInput {
 
     /** Optional template data for Mustache-style variable substitution */
     templateData?: Record<string, unknown>;
+
+    /**
+     * If true, the host will return an existing credential (if present) instead of issuing a duplicate.
+     */
+    preventDuplicateClaim?: boolean;
 }
 
 /**
@@ -107,6 +117,18 @@ export interface TemplateCredentialResponse {
 
     /** URI of the boost template used */
     boostUri: string;
+
+    /** Whether the credential was already claimed (when preventDuplicateClaim is true) */
+    alreadyClaimed?: boolean;
+
+    /** Whether the user has the credential (when preventDuplicateClaim is true) */
+    hasCredential?: boolean;
+
+    /** The status of the credential (when preventDuplicateClaim is true) */
+    status?: 'pending' | 'claimed' | 'revoked';
+
+    /** The date the credential was received (when preventDuplicateClaim is true) */
+    receivedDate?: string;
 
     [key: string]: unknown;
 }
@@ -180,7 +202,70 @@ export interface TemplateIssueResponse {
     [key: string]: unknown;
 }
 
-// AppEvent, SendCredentialEvent, and AppEventResponse are re-exported from @learncard/types above
+// AppEvent, SendCredentialEvent, CheckCredentialEvent, and AppEventResponse are re-exported from @learncard/types above
+
+/**
+ * Input used to check if the authenticated user already has a credential for a boost template
+ */
+export type CheckCredentialInput = { templateAlias: string } | { boostUri: string };
+
+/**
+ * Response from checkUserHasCredential
+ */
+export interface CheckCredentialResponse {
+    hasCredential: boolean;
+    credentialUri?: string;
+    receivedDate?: string;
+    status?: 'pending' | 'claimed' | 'revoked';
+}
+
+/**
+ * Input for checking template issuance status to a specific recipient.
+ * The recipient can be either a DID (did:web:...) or a profileId.
+ */
+export type CheckIssuanceStatusInput =
+    | { templateAlias: string; recipient: string }
+    | { boostUri: string; recipient: string };
+
+/**
+ * Response from getTemplateIssuanceStatus
+ */
+export interface TemplateIssuanceStatusResponse {
+    sent: boolean;
+    credentialUri?: string;
+    sentDate?: string;
+    claimedDate?: string;
+    status?: 'pending' | 'claimed' | 'revoked';
+}
+
+/**
+ * Input for getting template recipients list
+ */
+export type GetTemplateRecipientsInput =
+    | { templateAlias: string; limit?: number; cursor?: string }
+    | { boostUri: string; limit?: number; cursor?: string };
+
+/**
+ * Individual recipient record in the template recipients response
+ */
+export interface TemplateRecipientRecord {
+    recipientProfileId: string;
+    recipientDisplayName?: string;
+    sentDate: string;
+    claimedDate?: string;
+    credentialUri?: string;
+    status: 'pending' | 'claimed' | 'revoked';
+}
+
+/**
+ * Response from getTemplateRecipients
+ */
+export interface TemplateRecipientsResponse {
+    records: TemplateRecipientRecord[];
+    hasMore: boolean;
+    cursor?: string;
+    total?: number;
+}
 
 /**
  * Error codes that can be returned by the LearnCard host
@@ -192,6 +277,8 @@ export type ErrorCode =
     | 'USER_REJECTED'
     | 'UNAUTHORIZED'
     | 'TEMPLATE_NOT_FOUND'
+    | 'BOOST_NOT_FOUND'
+    | 'INSUFFICIENT_PERMISSIONS'
     | string;
 
 /**

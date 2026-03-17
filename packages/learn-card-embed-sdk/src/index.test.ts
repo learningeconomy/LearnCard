@@ -81,7 +81,7 @@ describe('LearnCard Embed SDK', () => {
     expect(cfg.parentOrigin).toBe(window.location.origin);
   });
 
-  test('completes flow on trusted message, calls onSuccess, opens wallet, and closes modal', () => {
+  test('completes flow with onSuccess: calls onSuccess AND opens wallet', () => {
     setupTarget();
 
     const onSuccess = jest.fn();
@@ -101,8 +101,56 @@ describe('LearnCard Embed SDK', () => {
     const payload = { __lcEmbed: true, type: 'lc-embed:complete', nonce: cfg.nonce, payload: { credentialId: 'abc', consentGiven: false } };
     window.dispatchEvent(new MessageEvent('message', { data: payload, source: null as any }));
 
+    // SDK always opens wallet AND calls onSuccess — they are decoupled
+    expect(onSuccess).toHaveBeenCalledWith({ credentialId: 'abc', consentGiven: false, handoffUrl: 'https://learncard.app' });
     expect(openSpy).toHaveBeenCalledWith('https://learncard.app', '_blank', 'noopener,noreferrer');
-    expect(onSuccess).toHaveBeenCalledWith({ credentialId: 'abc', consentGiven: false });
+    expect(getOverlay()).toBeFalsy();
+  });
+
+  test('completes flow without onSuccess: opens wallet via window.open', () => {
+    setupTarget();
+
+    init({
+      target: '#mount',
+      credential: { name: 'Thing' },
+    });
+
+    (document.querySelector('button.lc-claim-btn') as HTMLButtonElement).click();
+
+    const iframe = getIframe();
+    const cfg = parseEmbedConfigFromSrcdoc(iframe.srcdoc || '');
+
+    const payload = { __lcEmbed: true, type: 'lc-embed:complete', nonce: cfg.nonce, payload: { credentialId: 'abc', consentGiven: false } };
+    window.dispatchEvent(new MessageEvent('message', { data: payload, source: null as any }));
+
+    // Without onSuccess, SDK still opens wallet directly
+    expect(openSpy).toHaveBeenCalledWith('https://learncard.app', '_blank', 'noopener,noreferrer');
+    expect(getOverlay()).toBeFalsy();
+  });
+
+  test('walletUrl empty string suppresses window.open', () => {
+    setupTarget();
+
+    const onSuccess = jest.fn();
+
+    init({
+      target: '#mount',
+      credential: { name: 'Thing' },
+      branding: { walletUrl: '' },
+      onSuccess,
+    });
+
+    (document.querySelector('button.lc-claim-btn') as HTMLButtonElement).click();
+
+    const iframe = getIframe();
+    const cfg = parseEmbedConfigFromSrcdoc(iframe.srcdoc || '');
+
+    const payload = { __lcEmbed: true, type: 'lc-embed:complete', nonce: cfg.nonce, payload: { credentialId: 'abc', consentGiven: false } };
+    window.dispatchEvent(new MessageEvent('message', { data: payload, source: null as any }));
+
+    // walletUrl: '' suppresses wallet open, but onSuccess still fires
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(onSuccess).toHaveBeenCalled();
     expect(getOverlay()).toBeFalsy();
   });
 

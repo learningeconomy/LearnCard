@@ -130,6 +130,20 @@ You can configure age-based access controls for your app:
 Age restrictions are enforced based on the user's date of birth in their profile
 {% endhint %}
 
+{% hint style="warning" %}
+**Hard vs soft enforcement**
+
+-   **`min_age`** is a hard minimum age requirement. If a user's age is known and below `min_age`, the user is blocked from installing the app (including for managed/child profiles).
+-   **`age_rating`** is a content rating. For managed/child profiles, installs that would violate the rating will require guardian approval.
+-   If a managed/child profile's age is **unknown** (no valid DOB on the profile), the install flow will require the guardian to verify age (e.g., by entering DOB) before continuing.
+    {% endhint %}
+
+{% hint style="info" %}
+**Contract-based listings and managed profiles**
+
+If your listing's launch configuration includes a `contractUri`, the install flow will require **guardian approval** for managed/child profiles before the child can install/consent.
+{% endhint %}
+
 ### 2. Create Credential Templates
 
 Templates define what credentials your app can issue. For each type of credential:
@@ -173,7 +187,7 @@ Issue a credential to the current user.
 ```typescript
 interface TemplateCredentialResponse {
     credentialUri: string; // URI of the issued credential
-    boostUri: string;      // URI of the boost template used
+    boostUri: string; // URI of the boost template used
 }
 ```
 
@@ -278,10 +292,10 @@ Request user consent for a ConsentFlow contract. This is useful when your app ne
 
 **Parameters:**
 
-| Parameter     | Type                      | Required | Description                                           |
-| ------------- | ------------------------- | -------- | ----------------------------------------------------- |
-| `contractUri` | `string`                  | Yes      | The URI of the ConsentFlow contract                   |
-| `options`     | `RequestConsentOptions`   | No       | Additional options for the consent flow               |
+| Parameter     | Type                    | Required | Description                             |
+| ------------- | ----------------------- | -------- | --------------------------------------- |
+| `contractUri` | `string`                | Yes      | The URI of the ConsentFlow contract     |
+| `options`     | `RequestConsentOptions` | No       | Additional options for the consent flow |
 
 **Options:**
 

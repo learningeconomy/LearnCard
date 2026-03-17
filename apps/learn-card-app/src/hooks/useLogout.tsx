@@ -13,6 +13,7 @@ import {
     useWallet,
     ToastTypeEnum,
 } from 'learn-card-base';
+import { resumeBuilderStore } from '../stores/resumeBuilderStore';
 
 import { useAuthCoordinator } from '../providers/AuthCoordinatorProvider';
 
@@ -81,6 +82,7 @@ const useLogout = () => {
                 }
 
                 // Coordinator handles: authProvider.signOut, clearLocalKeys, onLogout callback
+                resumeBuilderStore.set.resetStore();
                 // (onLogout clears stores, queryClient, SQLite, localStorage, IndexedDB, etc.)
                 await coordinatorLogout();
 
