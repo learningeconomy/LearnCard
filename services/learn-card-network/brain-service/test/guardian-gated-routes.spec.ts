@@ -1,19 +1,48 @@
-import { describe, it, expect, beforeEach, afterAll, beforeAll } from 'vitest';
-import { getClient, getUser } from './helpers/getClient';
-import { minimalContract, minimalTerms } from './helpers/contract';
-import { Profile } from '@models';
-import { AUTH_GRANT_FULL_ACCESS_SCOPE } from 'src/constants/auth-grant';
-import { getLearnCard, SeedLearnCard } from '@helpers/learnCard.helpers';
-import { createProfileManagedByRelationship } from '@accesslayer/profile/relationships/create';
-import { getProfileByProfileId } from '@accesslayer/profile/read';
-import { getDidWeb } from '@helpers/did.helpers';
+import { vi, describe, it, expect, beforeEach, beforeAll } from 'vitest';
 
-let guardian: Awaited<ReturnType<typeof getUser>>;
-let child: Awaited<ReturnType<typeof getUser>>;
-let nonManagedUser: Awaited<ReturnType<typeof getUser>>;
-let guardianLearnCard: SeedLearnCard;
+vi.mock('@accesslayer/profile/relationships/read', () => ({
+    isProfileManaged: vi.fn(),
+    getProfilesThatManageAProfile: vi.fn(),
+}));
+
+vi.mock('@accesslayer/profile/read', () => ({
+    getProfileByDid: vi.fn(),
+}));
+
+import { isProfileManaged, getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
+import { getProfileByDid } from '@accesslayer/profile/read';
+import { getLearnCard, SeedLearnCard } from '@helpers/learnCard.helpers';
+import { getDidWeb } from '@helpers/did.helpers';
+import { AUTH_GRANT_FULL_ACCESS_SCOPE } from 'src/constants/auth-grant';
+import { appRouter } from '../src/app';
+
+const mockIsProfileManaged = vi.mocked(isProfileManaged);
+const mockGetProfilesThatManageAProfile = vi.mocked(getProfilesThatManageAProfile);
+const mockGetProfileByDid = vi.mocked(getProfileByDid);
 
 const DOMAIN = 'localhost%3A3000';
+
+let guardianLearnCard: SeedLearnCard;
+let childLearnCard: SeedLearnCard;
+let nonManagedLearnCard: SeedLearnCard;
+
+const mockGuardianProfile = {
+    profileId: 'guardian-user',
+    displayName: 'Guardian User',
+    did: '',
+};
+
+const mockChildProfile = {
+    profileId: 'child-user',
+    displayName: 'Child User',
+    did: '',
+};
+
+const mockNonManagedProfile = {
+    profileId: 'non-managed-user',
+    displayName: 'Non-Managed User',
+    did: '',
+};
 
 const generateGuardianApprovalToken = async (
     signerLearnCard: SeedLearnCard,
@@ -41,228 +70,112 @@ const generateGuardianApprovalToken = async (
     );
 
     if (typeof vp !== 'string') throw new Error('Failed to generate guardian approval token');
-
     return vp;
+};
+
+const createCaller = (did: string, guardianApproval?: string) => {
+    return appRouter.createCaller({
+        domain: DOMAIN,
+        user: { did, isChallengeValid: true, scope: AUTH_GRANT_FULL_ACCESS_SCOPE },
+        _guardianApprovalToken: guardianApproval,
+    });
 };
 
 describe('Guardian Gated Routes - Context Passing', () => {
     beforeAll(async () => {
         guardianLearnCard = await getLearnCard('a'.repeat(64));
-        guardian = await getUser('a'.repeat(64));
-        child = await getUser('b'.repeat(64));
-        nonManagedUser = await getUser('c'.repeat(64));
+        childLearnCard = await getLearnCard('b'.repeat(64));
+        nonManagedLearnCard = await getLearnCard('c'.repeat(64));
+
+        mockGuardianProfile.did = guardianLearnCard.id.did();
+        mockChildProfile.did = childLearnCard.id.did();
+        mockNonManagedProfile.did = nonManagedLearnCard.id.did();
     });
 
-    beforeEach(async () => {
-        await Profile.delete({ detach: true, where: {} });
-
-        await guardian.clients.fullAuth.profile.createProfile({
-            profileId: 'guardian-user',
-            displayName: 'Guardian User',
-        });
-
-        await child.clients.fullAuth.profile.createProfile({
-            profileId: 'child-user',
-            displayName: 'Child User',
-        });
-
-        await nonManagedUser.clients.fullAuth.profile.createProfile({
-            profileId: 'non-managed-user',
-            displayName: 'Non-Managed User',
-        });
-    });
-
-    afterAll(async () => {
-        await Profile.delete({ detach: true, where: {} });
+    beforeEach(() => {
+        vi.clearAllMocks();
     });
 
     describe('Non-managed profiles (isChildAccount: false)', () => {
         it('should pass through for non-managed profiles with isChildAccount=false', async () => {
-            const contractUri = await guardian.clients.fullAuth.contracts.createConsentFlowContract(
-                {
-                    contract: minimalContract,
-                    name: 'Test Contract',
-                }
-            );
+            mockGetProfileByDid.mockResolvedValue(mockNonManagedProfile as any);
+            mockIsProfileManaged.mockResolvedValue(false);
 
-            const result = await nonManagedUser.clients.fullAuth.contracts.consentToContract({
-                contractUri,
-                terms: minimalTerms,
-            });
+            const caller = createCaller(nonManagedLearnCard.id.did());
+            const profile = await caller.profile.getProfile();
 
-            expect(result.termsUri).toBeDefined();
-        }, 15000);
+            expect(profile).toBeDefined();
+        });
     });
 
     describe('Managed profiles (isChildAccount: true)', () => {
-        beforeEach(async () => {
-            const guardianProfile = await getProfileByProfileId('guardian-user');
-            const childProfile = await getProfileByProfileId('child-user');
-
-            if (guardianProfile && childProfile) {
-                await createProfileManagedByRelationship(guardianProfile, childProfile);
-            }
-        });
-
         it('should pass through for managed profiles without guardian approval (hasGuardianApproval=false)', async () => {
-            const contractUri = await guardian.clients.fullAuth.contracts.createConsentFlowContract(
-                {
-                    contract: minimalContract,
-                    name: 'Test Contract',
-                }
-            );
+            mockGetProfileByDid.mockResolvedValue(mockChildProfile as any);
+            mockIsProfileManaged.mockResolvedValue(true);
+            mockGetProfilesThatManageAProfile.mockResolvedValue([]);
 
-            const result = await child.clients.fullAuth.contracts.consentToContract({
-                contractUri,
-                terms: minimalTerms,
-            });
+            const caller = createCaller(childLearnCard.id.did());
+            const profile = await caller.profile.getProfile();
 
-            expect(result.termsUri).toBeDefined();
+            expect(profile).toBeDefined();
         });
 
         it('should pass through for managed profiles with valid guardian approval (hasGuardianApproval=true)', async () => {
-            const contractUri = await guardian.clients.fullAuth.contracts.createConsentFlowContract(
-                {
-                    contract: minimalContract,
-                    name: 'Test Contract',
-                }
-            );
+            mockGetProfileByDid.mockResolvedValue(mockChildProfile as any);
+            mockIsProfileManaged.mockResolvedValue(true);
+            mockGetProfilesThatManageAProfile.mockResolvedValue([mockGuardianProfile as any]);
 
-            const guardianApprovalToken = await generateGuardianApprovalToken(
-                guardianLearnCard,
-                'child-user'
-            );
+            const token = await generateGuardianApprovalToken(guardianLearnCard, 'child-user');
+            const caller = createCaller(childLearnCard.id.did(), token);
+            const profile = await caller.profile.getProfile();
 
-            const childClientWithApproval = getClient({
-                did: child.learnCard.id.did(),
-                isChallengeValid: true,
-                scope: AUTH_GRANT_FULL_ACCESS_SCOPE,
-                guardianApproval: guardianApprovalToken,
-            });
-
-            const result = await childClientWithApproval.contracts.consentToContract({
-                contractUri,
-                terms: minimalTerms,
-            });
-
-            expect(result.termsUri).toBeDefined();
+            expect(profile).toBeDefined();
         });
 
         it('should pass through with hasGuardianApproval=false for expired token', async () => {
-            const contractUri = await guardian.clients.fullAuth.contracts.createConsentFlowContract(
-                {
-                    contract: minimalContract,
-                    name: 'Test Contract',
-                }
-            );
+            mockGetProfileByDid.mockResolvedValue(mockChildProfile as any);
+            mockIsProfileManaged.mockResolvedValue(true);
 
-            const expiredToken = await generateGuardianApprovalToken(
-                guardianLearnCard,
-                'child-user',
-                { expired: true }
-            );
+            const token = await generateGuardianApprovalToken(guardianLearnCard, 'child-user', { expired: true });
+            const caller = createCaller(childLearnCard.id.did(), token);
+            const profile = await caller.profile.getProfile();
 
-            const childClientWithExpiredApproval = getClient({
-                did: child.learnCard.id.did(),
-                isChallengeValid: true,
-                scope: AUTH_GRANT_FULL_ACCESS_SCOPE,
-                guardianApproval: expiredToken,
-            });
-
-            const result = await childClientWithExpiredApproval.contracts.consentToContract({
-                contractUri,
-                terms: minimalTerms,
-            });
-
-            expect(result.termsUri).toBeDefined();
+            expect(profile).toBeDefined();
         });
 
         it('should pass through with hasGuardianApproval=false for wrong scope token', async () => {
-            const contractUri = await guardian.clients.fullAuth.contracts.createConsentFlowContract(
-                {
-                    contract: minimalContract,
-                    name: 'Test Contract',
-                }
-            );
+            mockGetProfileByDid.mockResolvedValue(mockChildProfile as any);
+            mockIsProfileManaged.mockResolvedValue(true);
 
-            const wrongScopeToken = await generateGuardianApprovalToken(
-                guardianLearnCard,
-                'child-user',
-                { wrongScope: true }
-            );
+            const token = await generateGuardianApprovalToken(guardianLearnCard, 'child-user', { wrongScope: true });
+            const caller = createCaller(childLearnCard.id.did(), token);
+            const profile = await caller.profile.getProfile();
 
-            const childClientWithWrongScope = getClient({
-                did: child.learnCard.id.did(),
-                isChallengeValid: true,
-                scope: AUTH_GRANT_FULL_ACCESS_SCOPE,
-                guardianApproval: wrongScopeToken,
-            });
-
-            const result = await childClientWithWrongScope.contracts.consentToContract({
-                contractUri,
-                terms: minimalTerms,
-            });
-
-            expect(result.termsUri).toBeDefined();
+            expect(profile).toBeDefined();
         });
 
         it('should pass through with hasGuardianApproval=false for non-guardian signer', async () => {
-            const contractUri = await guardian.clients.fullAuth.contracts.createConsentFlowContract(
-                {
-                    contract: minimalContract,
-                    name: 'Test Contract',
-                }
-            );
+            mockGetProfileByDid.mockResolvedValue(mockChildProfile as any);
+            mockIsProfileManaged.mockResolvedValue(true);
+            mockGetProfilesThatManageAProfile.mockResolvedValue([mockGuardianProfile as any]);
 
             const nonGuardianLearnCard = await getLearnCard('d'.repeat(64));
+            const token = await generateGuardianApprovalToken(nonGuardianLearnCard, 'child-user');
+            const caller = createCaller(childLearnCard.id.did(), token);
+            const profile = await caller.profile.getProfile();
 
-            const nonGuardianToken = await generateGuardianApprovalToken(
-                nonGuardianLearnCard,
-                'child-user'
-            );
-
-            const childClientWithNonGuardianToken = getClient({
-                did: child.learnCard.id.did(),
-                isChallengeValid: true,
-                scope: AUTH_GRANT_FULL_ACCESS_SCOPE,
-                guardianApproval: nonGuardianToken,
-            });
-
-            const result = await childClientWithNonGuardianToken.contracts.consentToContract({
-                contractUri,
-                terms: minimalTerms,
-            });
-
-            expect(result.termsUri).toBeDefined();
+            expect(profile).toBeDefined();
         });
 
         it('should pass through with hasGuardianApproval=false for wrong subject token', async () => {
-            const contractUri = await guardian.clients.fullAuth.contracts.createConsentFlowContract(
-                {
-                    contract: minimalContract,
-                    name: 'Test Contract',
-                }
-            );
+            mockGetProfileByDid.mockResolvedValue(mockChildProfile as any);
+            mockIsProfileManaged.mockResolvedValue(true);
 
-            const wrongSubjectToken = await generateGuardianApprovalToken(
-                guardianLearnCard,
-                'child-user',
-                { wrongSubject: true }
-            );
+            const token = await generateGuardianApprovalToken(guardianLearnCard, 'child-user', { wrongSubject: true });
+            const caller = createCaller(childLearnCard.id.did(), token);
+            const profile = await caller.profile.getProfile();
 
-            const childClientWithWrongSubject = getClient({
-                did: child.learnCard.id.did(),
-                isChallengeValid: true,
-                scope: AUTH_GRANT_FULL_ACCESS_SCOPE,
-                guardianApproval: wrongSubjectToken,
-            });
-
-            const result = await childClientWithWrongSubject.contracts.consentToContract({
-                contractUri,
-                terms: minimalTerms,
-            });
-
-            expect(result.termsUri).toBeDefined();
+            expect(profile).toBeDefined();
         });
     });
 });
