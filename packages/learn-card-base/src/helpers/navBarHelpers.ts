@@ -8,7 +8,7 @@ export const getNavBarColor = (path?: string, branding?: BrandingEnum): string =
             return 'bg-sp-blue-dark-ocean';
         } else if (path === '/memberships' || path === '/troops') {
             return 'bg-sp-green-light';
-        } else if (path?.includes('/share-boost')) {
+        } else if (path?.includes('/share-boost') || path?.includes('/verify/resume')) {
             return 'bg-sp-purple-base';
         } else if (path === '/notifications') {
             return 'bg-grayscale-100';
@@ -36,7 +36,7 @@ export const getNavBarColor = (path?: string, branding?: BrandingEnum): string =
         return 'bg-emerald-400';
     } else if (path === '/lc-preview') {
         return 'bg-cyan-100';
-    } else if (path?.includes('/share-boost')) {
+    } else if (path?.includes('/share-boost') || path?.includes('/verify/resume')) {
         return 'bg-grayscale-900';
     } else if (path?.includes('/memberships')) {
         return 'bg-teal-300';
@@ -73,6 +73,7 @@ export const showNavBar = (path?: string): boolean => {
         (path?.includes('/boost') && path !== '/boosts') ||
         path?.includes('/select-credentials') ||
         path?.includes('/share-boost') ||
+        path?.includes('/verify/resume') ||
         path?.includes('/app-store') ||
         path?.includes('/cli') ||
         path?.includes('/login') ||

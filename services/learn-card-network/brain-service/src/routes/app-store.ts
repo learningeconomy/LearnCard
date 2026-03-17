@@ -598,19 +598,37 @@ const handleSendCredentialEvent = async (
     let credential: VC | JWE;
 
     try {
+        const ownerDidOverride = listing.slug ? getAppDidWeb(ctx.domain, listing.slug) : undefined;
+        console.log('[appEvent] Issuing credential via SA', {
+            integrationOwner: integrationOwner.profileId,
+            saName: sa.relationship.name,
+            saDid: sa.relationship.did,
+            saEndpoint: sa.signingAuthority.endpoint,
+            ownerDidOverride,
+            domain: ctx.domain,
+            boostUri,
+            templateAlias,
+        });
         credential = await issueCredentialWithSigningAuthority(
             integrationOwner,
             unsignedVc,
             sa,
             ctx.domain,
             true,
-            listing.slug ? getAppDidWeb(ctx.domain, listing.slug) : undefined
+            ownerDidOverride
         );
     } catch (e) {
-        console.error('Failed to issue VC with signing authority', e);
+        const errMsg = e instanceof Error ? e.message : String(e);
+        console.error('[appEvent] Failed to issue VC with signing authority:', {
+            error: errMsg,
+            stack: e instanceof Error ? e.stack : undefined,
+            integrationOwner: integrationOwner.profileId,
+            saName: sa.relationship.name,
+            saEndpoint: sa.signingAuthority.endpoint,
+        });
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: 'Could not issue credential with signing authority',
+            message: `Could not issue credential with signing authority: ${errMsg}`,
         });
     }
 

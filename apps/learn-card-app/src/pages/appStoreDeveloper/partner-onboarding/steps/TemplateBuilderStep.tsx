@@ -90,6 +90,8 @@ interface TemplateBuilderStepProps {
     project: PartnerProject | null;
     onComplete: (templates: CredentialTemplate[]) => void;
     onBack: () => void;
+    hideNavigation?: boolean;
+    onTemplateChange?: () => void;
 }
 
 export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
@@ -98,6 +100,8 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     project,
     onComplete,
     onBack,
+    hideNavigation,
+    onTemplateChange,
 }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
@@ -346,6 +350,33 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             // Convert to JSON credential
             const credential = templateToJson(obv3Template);
 
+            // Resolve issuer placeholder and issue the credential so the boost
+            // stores a valid signed VC (matches useTemplateDetails.createTemplate)
+            const issuerDid = wallet.id.did();
+            let resolvedIssuer: unknown = credential.issuer;
+            if (typeof credential.issuer === 'string' && credential.issuer === '{{issuer_did}}') {
+                resolvedIssuer = issuerDid;
+            } else if (typeof credential.issuer === 'object' && credential.issuer !== null) {
+                const issuerObj = { ...(credential.issuer as Record<string, unknown>) };
+                if (issuerObj.id === '{{issuer_did}}') {
+                    issuerObj.id = issuerDid;
+                }
+                resolvedIssuer = issuerObj;
+            }
+
+            const preparedCredential = {
+                ...credential,
+                issuer: resolvedIssuer,
+                validFrom:
+                    credential.validFrom === '{{issue_date}}'
+                        ? new Date().toISOString()
+                        : credential.validFrom,
+            };
+
+            const vc = await wallet.invoke.issueCredential(
+                preparedCredential as Parameters<typeof wallet.invoke.issueCredential>[0]
+            );
+
             // Extract dynamic variables for storage
             const dynamicVars = extractDynamicVariables(obv3Template);
 
@@ -382,7 +413,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 await wallet.invoke.updateBoost(
                     template.boostUri,
                     boostMetadata as unknown as Parameters<typeof wallet.invoke.updateBoost>[1],
-                    credential as Parameters<typeof wallet.invoke.updateBoost>[2]
+                    vc as Parameters<typeof wallet.invoke.updateBoost>[2]
                 );
 
                 return template.boostUri;
@@ -390,7 +421,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
             // Otherwise create a new boost
             const boostUri = await wallet.invoke.createBoost(
-                credential as Parameters<typeof wallet.invoke.createBoost>[0],
+                vc as Parameters<typeof wallet.invoke.createBoost>[0],
                 boostMetadata as unknown as Parameters<typeof wallet.invoke.createBoost>[1]
             );
 
@@ -500,6 +531,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     type: ToastTypeEnum.Success,
                 });
                 setExpandedId(null);
+                onTemplateChange?.();
             }
         } catch (err) {
             console.error('Failed to save template:', err);
@@ -663,6 +695,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
+                onTemplateChange?.();
             }
         } catch (err) {
             console.error('Failed to save imported templates:', err);
@@ -747,6 +780,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         setLocalTemplates(localTemplates.filter(t => t.id !== id));
         if (expandedId === id) setExpandedId(null);
         presentToast('Template removed', { type: ToastTypeEnum.Success });
+        onTemplateChange?.();
     };
 
     // Open edit modal for a child template
@@ -1177,30 +1211,34 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 </p>
             </div>
 
-            {/* Navigation */}
-            <div className="flex gap-3 pt-4 border-t border-gray-100">
-                <button
-                    onClick={onBack}
-                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back
-                </button>
+            {/* Navigation - hidden in dashboard context */}
+            {!hideNavigation && (
+                <>
+                    <div className="flex gap-3 pt-4 border-t border-gray-100">
+                        <button
+                            onClick={onBack}
+                            className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            Back
+                        </button>
 
-                <button
-                    onClick={() => onComplete(localTemplates)}
-                    disabled={!canProceed}
-                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                    Continue
-                    <ArrowRight className="w-4 h-4" />
-                </button>
-            </div>
+                        <button
+                            onClick={() => onComplete(localTemplates)}
+                            disabled={!canProceed}
+                            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Continue
+                            <ArrowRight className="w-4 h-4" />
+                        </button>
+                    </div>
 
-            {hasUnsavedNewTemplates && (
-                <p className="text-xs text-amber-600 text-center">
-                    Save or cancel the template you're editing before continuing.
-                </p>
+                    {hasUnsavedNewTemplates && (
+                        <p className="text-xs text-amber-600 text-center">
+                            Save or cancel the template you're editing before continuing.
+                        </p>
+                    )}
+                </>
             )}
 
             {/* Import from Catalog Modal */}

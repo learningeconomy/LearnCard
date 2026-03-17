@@ -33,6 +33,11 @@ const markFinalized = (profileId?: string | null): void => {
     finalizedProfileCache.set(profileId, { ts: Date.now() });
 };
 
+/** Clear finalize cache so the next effect run re-checks the inbox. */
+export const clearFinalizeCache = (): void => {
+    finalizedProfileCache.clear();
+};
+
 const hasProfileId = (p: LCNProfile | undefined): boolean => !!p && typeof p.profileId === 'string' && p.profileId.length > 0;
 
 export const useFinalizeInboxCredentials = () => {

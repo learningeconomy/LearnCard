@@ -20,13 +20,29 @@ export type URIParts = {
     method: string;
 };
 
-export const escapeLocalhostInUri = (uri: string): string =>
-    uri.replace('localhost:', 'localhost%3A');
+// Encode colons within the domain portion of a URI so they don't conflict
+// with the colon-delimited lc:method:domain/trpc:type:id format.
+// Handles preview domains with path prefixes (e.g. domain:brain/trpc).
+export const escapeColonsInDomain = (uri: string): string => {
+    const trpcIdx = uri.indexOf('/trpc:');
+
+    if (trpcIdx === -1) return uri.replace('localhost:', 'localhost%3A');
+
+    const secondColon = uri.indexOf(':', uri.indexOf(':') + 1);
+
+    if (secondColon === -1) return uri;
+
+    const header = uri.substring(0, secondColon + 1);
+    const domain = uri.substring(secondColon + 1, trpcIdx);
+    const suffix = uri.substring(trpcIdx);
+
+    return header + domain.replace(/:/g, '%3A') + suffix;
+};
 
 export const isURIType = (type: string): type is URIType => URI_TYPES.includes(type as any);
 
 export const getUriParts = (_uri: string, allowOutsideUris: boolean = false): URIParts => {
-    const uri = escapeLocalhostInUri(_uri);
+    const uri = escapeColonsInDomain(_uri);
     const parts = uri.split(':');
 
     // Allow additional ':' segments in the id portion (e.g., skill URIs with frameworkId:skillId)
@@ -59,8 +75,14 @@ export const getIdFromUri = (uri: string): string => getUriParts(uri).id;
 export const getDomainFromUri = (uri: string): string =>
     getUriParts(uri).domain.replace(/\/trpc$/, '');
 
-export const constructUri = (type: URIType, id: string, domain: string): string =>
-    `lc:network:${domain}/trpc:${type}:${id}`;
+export const constructUri = (type: URIType, id: string, domain: string): string => {
+    const isLocal = domain.includes('localhost');
+    const encodedDomain = isLocal
+        ? domain.replace(/:/g, '%3A')
+        : domain.replace(/:/g, '/');
+
+    return `lc:network:${encodedDomain}/trpc:${type}:${id}`;
+};
 
 // Helper specifically for skill URIs which must be of the form
 // lc:network:<domain>/trpc:skill:<frameworkId>:<skillId>
@@ -91,7 +113,7 @@ export const resolveUri = async (uri: string) => {
     if (method === 'cloud') {
         const isLocal = domain.includes('localhost');
         const url = `http${isLocal ? '' : 's'}://${domain
-            .replace('%3A', ':')
+            .replace(/%3A/g, isLocal ? ':' : '/')
             .replace('/trpc', '/api')}/storage/resolve?uri=${encodeURIComponent(uri)}`;
 
         const res = await fetch(url);
