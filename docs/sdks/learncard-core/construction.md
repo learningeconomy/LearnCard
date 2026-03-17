@@ -4,16 +4,16 @@ This page provides comprehensive examples for using the LearnCard SDK. If you're
 
 ## Table of Contents
 
-| Section | Description |
-|---------|-------------|
-| [Initialize SDK Client](#initialize-sdk-client) | Basic wallet initialization |
-| [Key Generation](#key-generation) | Generating secure seeds |
-| [Create Credentials](#create-credentials) | Building unsigned credentials |
-| [Issue Credentials](#issue-credentials) | Signing credentials |
-| [Verify Credentials](#verify-credentials) | Validating credential proofs |
-| [Issue/Verify Presentations](#issueverify-presentations) | Working with VPs |
-| [Storing/Retrieving Credentials](#storingretrieving-credentials) | URIs and storage |
-| [LearnCloud Network](#learncloud-network) | Profiles, connections, boosts |
+| Section                                                          | Description                   |
+| ---------------------------------------------------------------- | ----------------------------- |
+| [Initialize SDK Client](#initialize-sdk-client)                  | Basic wallet initialization   |
+| [Key Generation](#key-generation)                                | Generating secure seeds       |
+| [Create Credentials](#create-credentials)                        | Building unsigned credentials |
+| [Issue Credentials](#issue-credentials)                          | Signing credentials           |
+| [Verify Credentials](#verify-credentials)                        | Validating credential proofs  |
+| [Issue/Verify Presentations](#issueverify-presentations)         | Working with VPs              |
+| [Storing/Retrieving Credentials](#storingretrieving-credentials) | URIs and storage              |
+| [LearnCloud Network](#learncloud-network)                        | Profiles, connections, boosts |
 
 ---
 
@@ -49,6 +49,17 @@ const learncard = await initLearnCard({ seed: 'abc123' });
 
 // Constructs a LearnCard default connected to LearnCard Network hosted at https://network.learncard.com
 const networkLearnCard = await initLearnCard({ seed: 'abc123', network: true });
+
+// If you are calling guardian-gated Network routes from a managed/child profile,
+// you can optionally provide a function that returns a guardian approval token (JWT VP).
+// The Network client will attach it as an `x-guardian-approval` header when present.
+const networkLearnCardWithGuardianApproval = await initLearnCard({
+    seed: 'abc123',
+    network: true,
+    guardianApprovalGetter: async () => {
+        return undefined;
+    },
+});
 
 // Constructs a LearnCard default connected to VC-API at https://bridge.learncard.com for handling signing
 const defaultApi = await initLearnCard({ vcApi: true });

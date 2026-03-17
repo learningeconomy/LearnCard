@@ -14,6 +14,11 @@ import { ContactMethodType } from '@learncard/types';
 import { RegExpTransformer } from '@learncard/helpers';
 
 import { getProfileByDid } from '@accesslayer/profile/read';
+import {
+    isProfileManaged,
+    getProfilesThatManageAProfile,
+} from '@accesslayer/profile/relationships/read';
+import { getDidWeb } from '@helpers/did.helpers';
 import { getEmptyLearnCard, isServersDidWebDID } from '@helpers/learnCard.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
 import { ProfileType } from 'types/profile';
@@ -44,6 +49,7 @@ export type Context = {
     };
     contactMethod?: ContactMethodType;
     domain: string;
+    _guardianApprovalToken?: string;
 };
 
 export type RequiredScope = { requiredScope?: string };
@@ -72,6 +78,10 @@ export const createContext = async (
         'get' in event.headers
             ? (event.headers as Map<string, string>).get('authorization')
             : event.headers.authorization;
+    const _guardianApprovalToken =
+        'get' in event.headers
+            ? (event.headers as Map<string, string>).get('x-guardian-approval')
+            : (event.headers as Record<string, string | undefined>)['x-guardian-approval'];
     const domainName = 'requestContext' in event ? event.requestContext.domainName : '';
 
     const _domain =
@@ -138,12 +148,12 @@ export const createContext = async (
 
                 Sentry.setUser({ id: did });
 
-                return { user: { did, isChallengeValid, scope }, domain };
+                return { user: { did, isChallengeValid, scope }, domain, _guardianApprovalToken };
             }
         }
     }
 
-    return { domain };
+    return { domain, _guardianApprovalToken };
 };
 
 export const openRoute = t.procedure
@@ -311,4 +321,104 @@ export const verifiedContactRoute = openRoute.use(async ({ ctx, next }) => {
     if (!ctx.contactMethod) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
     return next({ ctx: { ...ctx, contactMethod: ctx.contactMethod } });
+});
+
+export type GuardianApprovalToken = {
+    iss: string;
+    sub: string;
+    iat: number;
+    exp: number;
+    scope: string;
+};
+
+export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
+    const { profile } = ctx.user;
+    const guardianApprovalToken = ctx._guardianApprovalToken;
+
+    const isChildAccount = await isProfileManaged(profile.profileId);
+
+    if (!isChildAccount) {
+        return next({
+            ctx: { ...ctx, isChildAccount: false, hasGuardianApproval: false },
+        });
+    }
+
+    if (!guardianApprovalToken) {
+        return next({
+            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+        });
+    }
+
+    try {
+        const learnCard = await getEmptyLearnCard();
+
+        const result = await learnCard.invoke.verifyPresentation(guardianApprovalToken, {
+            proofFormat: 'jwt',
+        });
+
+        if (result.errors.length > 0 || !result.checks.includes('JWS')) {
+            return next({
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+            });
+        }
+
+        const jwtPayload = jwtDecode<{ vp?: { proof?: { challenge?: string } }; nonce?: string }>(
+            guardianApprovalToken
+        );
+
+        const challengeStr = jwtPayload.vp?.proof?.challenge ?? jwtPayload.nonce;
+        if (!challengeStr) {
+            return next({
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+            });
+        }
+
+        let guardianClaims: GuardianApprovalToken;
+        try {
+            guardianClaims = JSON.parse(challengeStr);
+        } catch {
+            return next({
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+            });
+        }
+
+        if (!guardianClaims.exp || guardianClaims.exp * 1000 < Date.now()) {
+            return next({
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+            });
+        }
+
+        if (guardianClaims.scope !== 'guardian-approval') {
+            return next({
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+            });
+        }
+
+        const childDidWeb = getDidWeb(ctx.domain, profile.profileId);
+        if (guardianClaims.sub !== childDidWeb) {
+            return next({
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+            });
+        }
+
+        const managers = await getProfilesThatManageAProfile(profile.profileId);
+        const guardianProfile = managers.find(manager => {
+            const managerDidWeb = getDidWeb(ctx.domain, manager.profileId);
+            return guardianClaims.iss === managerDidWeb || guardianClaims.iss === manager.did;
+        });
+
+        if (!guardianProfile) {
+            return next({
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+            });
+        }
+
+        return next({
+            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: true },
+        });
+    } catch {
+        return next({
+            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+        });
+    }
 });
