@@ -127,11 +127,14 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                 ...(skill.targetDescription && { targetDescription: skill.targetDescription }),
             }));
 
-            // Build job description/narrative (dates are in separate OBv3 fields)
+            // Build job description/narrative (dates are also included in separate OBv3 fields)
             const narrative = [
                 experience.jobSummary,
                 experience.workFromHome ? 'Remote position' : experience.jobLocation,
-                experience.isCurrentJob && 'Current position',
+                experience.startDate && `Started: ${experience.startDate}`,
+                experience.isCurrentJob
+                    ? 'Current position'
+                    : experience.endDate && `Ended: ${experience.endDate}`,
             ]
                 .filter(Boolean)
                 .join(' • ');
