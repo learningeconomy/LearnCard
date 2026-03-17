@@ -322,10 +322,7 @@ export function useLearnCardMessageHandlers({
                 },
 
                 // Consent handlers
-                showConsentModal: async (
-                    contractUri: string,
-                    options?: { redirect?: boolean }
-                ) => {
+                showConsentModal: async (contractUri: string, options?: { redirect?: boolean }) => {
                     log('Consent requested for contract:', contractUri, options);
                     return showConsentFlow(contractUri, options);
                 },
@@ -854,31 +851,37 @@ export function useLearnCardMessageHandlers({
                 // App events - only available when appId is provided
                 sendAppEvent: appId
                     ? async (listingId: string, event: AppEvent) => {
-                        const learnCard = await initWallet();
+                          const learnCard = await initWallet();
 
-                        if (!learnCard) {
-                            sdkActivityStore.set.endActivity();
-                            throw new Error('Wallet not initialized');
-                        }
+                          if (!learnCard) {
+                              sdkActivityStore.set.endActivity();
+                              throw new Error('Wallet not initialized');
+                          }
 
-                        if (!learnCard.invoke.sendAppEvent) {
-                            sdkActivityStore.set.endActivity();
-                            throw new Error('sendAppEvent not available - rebuild types');
-                        }
+                          if (!learnCard.invoke.sendAppEvent) {
+                              sdkActivityStore.set.endActivity();
+                              throw new Error('sendAppEvent not available - rebuild types');
+                          }
 
-                        const result = await learnCard.invoke.sendAppEvent(listingId, event);
+                          const result = await learnCard.invoke.sendAppEvent(listingId, event);
 
-                        // If a credential was issued, notify the parent component
-                        if (result.credentialUri && onCredentialIssued) {
-                            onCredentialIssued(
-                                result.credentialUri as string,
-                                result.boostUri as string | undefined
-                            );
-                        }
+                          // If a credential was issued via send-credential event, notify the parent component
+                          // Note: check-credential also returns credentialUri but should NOT trigger the modal
+                          if (
+                              event.type === 'send-credential' &&
+                              result.credentialUri &&
+                              !result.alreadyClaimed &&
+                              onCredentialIssued
+                          ) {
+                              onCredentialIssued(
+                                  result.credentialUri as string,
+                                  result.boostUri as string | undefined
+                              );
+                          }
 
-                        sdkActivityStore.set.endActivity();
-                        return result;
-                    }
+                          sdkActivityStore.set.endActivity();
+                          return result;
+                      }
                     : undefined,
                 getAppListingId: appId ? () => appId : undefined,
             }),
