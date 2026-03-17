@@ -113,6 +113,84 @@ REVOKE → Brain: status='revoked' + LearnCloud: frontend sync removes
 -   **Shows in Membership page but is revoked** → Run `useSyncRevokedCredentials()`
 -   **In member list but user says they don't have it** → Check CREDENTIAL_RECEIVED.status (null vs 'pending')
 
+## Verifiable Data Storage (`useVerifiableData`)
+
+A hook for storing arbitrary user data as self-issued verifiable credentials. Data is encrypted and stored in LearnCloud, providing a privacy-preserving way to collect user preferences, profile data, or any structured information.
+
+**Location**: `packages/learn-card-base/src/hooks/useVerifiableData.ts`
+
+### Usage
+
+```typescript
+import { useVerifiableData } from 'learn-card-base';
+
+type SalaryData = { salary: string; salaryType: 'per_year' | 'per_hour' };
+
+const { data, isLoading, save, saveIfChanged, isSaving, issuanceDate } =
+    useVerifiableData<SalaryData>('skill-profile-salary');
+
+// Pre-populate form from existing data
+useEffect(() => {
+    if (data) {
+        setSalary(data.salary);
+        setSalaryType(data.salaryType);
+    }
+}, [data]);
+
+// Save on next (only if changed)
+const handleNext = async () => {
+    await saveIfChanged({ salary, salaryType });
+    navigateToNextStep();
+};
+```
+
+### How It Works
+
+1. Data is serialized to JSON and stored in a self-issued VC's `achievement.description` field
+2. The VC is signed by the user's wallet and encrypted via `store.LearnCloud.uploadEncrypted()`
+3. An index record with `id: __verifiable_data_{key}__` enables fast lookups
+4. On save, any existing record with the same key is deleted and replaced
+
+### Return Values
+
+| Property        | Type                            | Description                                            |
+| --------------- | ------------------------------- | ------------------------------------------------------ |
+| `data`          | `T \| undefined`                | Current data, or undefined if not loaded/doesn't exist |
+| `issuanceDate`  | `string \| undefined`           | When the credential was issued                         |
+| `isLoading`     | `boolean`                       | Whether data is being loaded                           |
+| `isFetched`     | `boolean`                       | Whether loading has completed                          |
+| `save`          | `(data: T) => Promise<string>`  | Save new data (always writes)                          |
+| `saveIfChanged` | `(data: T) => Promise<boolean>` | Save only if different from existing                   |
+| `hasChanged`    | `(data: T) => boolean`          | Check if data differs from existing                    |
+| `isSaving`      | `boolean`                       | Whether a save is in progress                          |
+| `exists`        | `boolean`                       | Whether data has been saved at least once              |
+
+### Non-React Usage
+
+```typescript
+import { getVerifiableDataForKey, saveVerifiableData } from 'learn-card-base';
+
+// Read
+const data = await getVerifiableDataForKey<MyType>(wallet, 'my-key');
+
+// Write
+await saveVerifiableData(wallet, 'my-key', { foo: 'bar' });
+```
+
+### Current Usage: My Skills Profile
+
+The AI Pathways "My Skills Profile" feature uses `useVerifiableData` to store user career data:
+
+| Key                              | Data Type                     | Step   |
+| -------------------------------- | ----------------------------- | ------ |
+| `skill-profile-goals`            | Goals array                   | Step 1 |
+| `skill-profile-profile`          | Title + experience            | Step 1 |
+| `skill-profile-work-history`     | Selected credential URIs      | Step 2 |
+| `skill-profile-salary`           | Salary + type                 | Step 3 |
+| `skill-profile-job-satisfaction` | Work-life balance + stability | Step 4 |
+
+Step 5 uses the existing self-assigned skills boost system (`useManageSelfAssignedSkillsBoost`).
+
 ## Frontend Query Hooks
 
 Located in `packages/learn-card-base/src/react-query/queries/`.
