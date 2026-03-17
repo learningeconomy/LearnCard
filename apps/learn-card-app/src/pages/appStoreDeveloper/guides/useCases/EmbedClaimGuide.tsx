@@ -1126,7 +1126,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
         guideState.nextStep();
         scrollToTop();
         // Brief debounce to prevent double-clicks during step transition
-        setTimeout(() => setIsTransitioning(false), 600);
+        setTimeout(() => setIsTransitioning(false), 150);
     }, [isTransitioning, guideState, scrollToTop]);
 
     const handleBack = useCallback(() => {
