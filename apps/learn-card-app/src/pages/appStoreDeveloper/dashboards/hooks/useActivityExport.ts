@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 
-import { useWallet } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 
 import {
     CredentialActivityRecord,
@@ -220,8 +220,10 @@ async function downloadCsvWeb(csvContent: string, filename: string): Promise<voi
     URL.revokeObjectURL(url);
 }
 
-async function downloadCsvNative(csvContent: string, filename: string): Promise<void> {
-    const base64 = btoa(unescape(encodeURIComponent(csvContent)));
+async function downloadCsvNative(csvContent: string, filename: string, presentToast: (message: string, type: ToastTypeEnum) => void): Promise<void> {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(csvContent);
+    const base64 = btoa(String.fromCharCode(...bytes));
 
     await Filesystem.writeFile({
         path: filename,
@@ -229,17 +231,18 @@ async function downloadCsvNative(csvContent: string, filename: string): Promise<
         directory: Directory.Documents,
     });
 
-    alert(`CSV saved to Documents: ${filename}`);
+    presentToast(`CSV saved to Documents: ${filename}`, ToastTypeEnum.Success);
 }
 
 export function useActivityExport(): {
-    exportCsv: (options: ExportOptions, integrationName: string) => Promise<void>;
+    exportCsv: (options: ExportOptions, integrationName: string) => Promise<boolean>;
     cancelExport: () => void;
     state: ExportState;
 } {
     const { initWallet } = useWallet();
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
+    const { presentToast } = useToast();
 
     const [state, setState] = useState<ExportState>({
         isExporting: false,
@@ -258,7 +261,7 @@ export function useActivityExport(): {
     }, []);
 
     const exportCsv = useCallback(
-        async (options: ExportOptions, integrationName: string): Promise<void> => {
+        async (options: ExportOptions, integrationName: string): Promise<boolean> => {
             const { integrationId, boostUris, eventType, startDate, endDate } = options;
 
             abortControllerRef.current = new AbortController();
@@ -269,7 +272,7 @@ export function useActivityExport(): {
             try {
                 const wallet = await initWalletRef.current();
 
-                const stats = await (wallet.invoke as any).getActivityStats?.({
+                const stats = await wallet.invoke.getActivityStats?.({
                     boostUris: boostUris?.length ? boostUris : undefined,
                     integrationId,
                     eventType,
@@ -291,7 +294,7 @@ export function useActivityExport(): {
                 const pageSize = 100;
 
                 while (hasMore && !signal.aborted) {
-                    const result = await (wallet.invoke as any).getMyActivities?.({
+                    const result = await wallet.invoke.getMyActivities?.({
                         limit: pageSize,
                         cursor,
                         integrationId,
@@ -330,7 +333,7 @@ export function useActivityExport(): {
 
                 if (signal.aborted) {
                     setState({ isExporting: false, progress: null, error: null });
-                    return;
+                    return false;
                 }
 
                 const chainMap: ActivityChainMap = {};
@@ -362,7 +365,7 @@ export function useActivityExport(): {
 
                 if (signal.aborted) {
                     setState({ isExporting: false, progress: null, error: null });
-                    return;
+                    return false;
                 }
 
                 let csvContent = UTF8_BOM;
@@ -377,12 +380,13 @@ export function useActivityExport(): {
                 const filename = generateFilename(integrationName);
 
                 if (Capacitor.isNativePlatform()) {
-                    await downloadCsvNative(csvContent, filename);
+                    await downloadCsvNative(csvContent, filename, presentToast);
                 } else {
                     await downloadCsvWeb(csvContent, filename);
                 }
 
                 setState({ isExporting: false, progress: null, error: null });
+                return true;
             } catch (err) {
                 if (!signal.aborted) {
                     console.error('[useActivityExport] Export failed:', err);
@@ -392,6 +396,7 @@ export function useActivityExport(): {
                         error: err instanceof Error ? err : new Error('Export failed'),
                     });
                 }
+                return false;
             } finally {
                 abortControllerRef.current = null;
             }

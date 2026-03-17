@@ -49,7 +49,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                 setIsLoadingStats(true);
                 setStatsError(false);
                 const wallet = await initWalletRef.current();
-                const stats = await (wallet.invoke as any).getActivityStats?.({
+                const stats = await wallet.invoke.getActivityStats?.({
                     integrationId,
                     eventType: eventType || undefined,
                     startDate: startDate ? new Date(startDate).toISOString() : undefined,
@@ -89,9 +89,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             endDate: endDate ? new Date(endDate + 'T23:59:59.999Z').toISOString() : undefined,
         };
 
-        await exportCsv(options, integrationName);
+        const success = await exportCsv(options, integrationName);
 
-        if (!state.error) {
+        if (success) {
             onClose();
         }
     };

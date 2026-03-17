@@ -198,9 +198,6 @@ export const getActivityStatsForProfile = async (
 
     const boostFilter = boostIds?.length ? 'WHERE b.id IN $boostIds' : '';
 
-    // Build the derived status filter - filter by the latest event type AFTER grouping
-    const statusFilter = eventType ? 'WHERE latestEvent.eventType = $eventType' : '';
-
     // Build date filters for the latest event
     const dateFilters: string[] = [];
     if (startDate) {
@@ -212,8 +209,8 @@ export const getActivityStatsForProfile = async (
 
     // Combine status and date filters
     let postGroupFilter = '';
-    if (statusFilter || dateFilters.length > 0) {
-        const allFilters = [];
+    if (eventType || dateFilters.length > 0) {
+        const allFilters: string[] = [];
         if (eventType) allFilters.push('latestEvent.eventType = $eventType');
         allFilters.push(...dateFilters);
         postGroupFilter = `WHERE ${allFilters.join(' AND ')}`;
@@ -298,7 +295,7 @@ export const getActivityStatsForProfile = async (
     const claimRate = totalSent > 0 ? (claimed / totalSent) * 100 : 0;
 
     return {
-        totalEvents: total, // Use total as totalEvents since we're now counting unique activities
+        totalEvents: created + delivered + claimed + expired + failed, // Total count of all events
         total,
         created,
         delivered,

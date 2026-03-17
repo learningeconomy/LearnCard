@@ -35,8 +35,8 @@ export const activityRouter = t.router({
                 boostUri: z.string().optional(),
                 eventType: CredentialActivityEventTypeValidator.optional(),
                 integrationId: z.string().optional(),
-                startDate: z.string().optional(),
-                endDate: z.string().optional(),
+                startDate: z.string().datetime().optional(),
+                endDate: z.string().datetime().optional(),
                 groupByLatestStatus: z.boolean().optional(), // When true, returns unique credentials filtered by current status (for CSV export)
             })
         )
@@ -93,8 +93,8 @@ export const activityRouter = t.router({
                 boostUris: z.array(z.string()).optional(),
                 integrationId: z.string().optional(),
                 eventType: CredentialActivityEventTypeValidator.optional(),
-                startDate: z.string().optional(),
-                endDate: z.string().optional(),
+                startDate: z.string().datetime().optional(),
+                endDate: z.string().datetime().optional(),
             })
         )
         .output(CredentialActivityStatsValidator)
