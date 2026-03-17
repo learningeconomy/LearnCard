@@ -27,7 +27,17 @@ export const credentialsRouter = t.router({
         .output(VCValidator.or(JWEValidator))
         .mutation(async ({ input }) => {
             const { credential, options = {}, signingAuthority, encryption } = input;
+            const logContext = {
+                ownerDid: signingAuthority.ownerDid,
+                saName: signingAuthority.name,
+                saDid: signingAuthority.did,
+                credentialType: credential?.type,
+                encrypt: !!encryption,
+            };
+
             try {
+                console.log('[LCA /credentials/issue] Request received', logContext);
+
                 // If incoming credential doesn't have an issuanceDate, default it to right now
                 if (
                     credential &&
@@ -41,58 +51,54 @@ export const credentialsRouter = t.router({
                     }
                 }
 
+                console.log('[LCA /credentials/issue] Resolving SA LearnCard...');
                 const learnCard = await getSigningAuthorityLearnCard(
                     signingAuthority.ownerDid,
                     signingAuthority.name
                 );
+                const saDid = learnCard.id.did();
+                console.log('[LCA /credentials/issue] SA LearnCard resolved, DID:', saDid);
 
                 // Preserve issuer.name/image if the credential has an object-form issuer
                 if (typeof credential.issuer === 'object' && credential.issuer !== null) {
-                    credential.issuer.id = learnCard.id.did();
+                    credential.issuer.id = saDid;
                 } else {
-                    credential.issuer = learnCard.id.did();
+                    credential.issuer = saDid;
                 }
-                const verificationMethod = learnCard.id.did().startsWith('did:web')
-                    ? `${learnCard.id.did()}#${signingAuthority.name}`
+                const verificationMethod = saDid.startsWith('did:web')
+                    ? `${saDid}#${signingAuthority.name}`
                     : undefined;
 
+                console.log('[LCA /credentials/issue] Issuing credential...', {
+                    verificationMethod,
+                    issuer: credential.issuer,
+                });
                 const issuedCredential = await learnCard.invoke.issueCredential(credential, {
                     ...options,
                     verificationMethod,
                 });
+                console.log('[LCA /credentials/issue] Credential issued successfully');
 
                 if (encryption) {
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('recipients', [learnCard.id.did(), ...encryption.recipients]);
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-                    const jwe = await learnCard.invoke.createDagJwe(issuedCredential, [
-                        learnCard.id.did(),
-                        ...encryption.recipients,
-                    ]);
-                    console.log('jwe', JSON.stringify(jwe));
+                    const recipients = [saDid, ...encryption.recipients];
+                    console.log('[LCA /credentials/issue] Encrypting JWE for recipients:', recipients);
+                    const jwe = await learnCard.invoke.createDagJwe(issuedCredential, recipients);
+                    console.log('[LCA /credentials/issue] JWE created successfully');
                     return jwe;
                 }
 
                 return issuedCredential;
             } catch (error) {
-                console.error(error);
+                const errMsg = error instanceof Error ? error.message : String(error);
+                const errStack = error instanceof Error ? error.stack : undefined;
+                console.error('[LCA /credentials/issue] Failed:', {
+                    error: errMsg,
+                    stack: errStack,
+                    ...logContext,
+                });
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
-                    message: '[/credentials/issue] Caught error: ' + JSON.stringify(error),
+                    message: `[/credentials/issue] ${errMsg}`,
                 });
             }
         }),

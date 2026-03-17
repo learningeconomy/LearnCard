@@ -91,30 +91,50 @@ export const getSigningAuthorityLearnCard = async (
     ownerDID: string,
     name: string
 ): Promise<DidWebLearnCardFromSeed['returnValue'] | LearnCardFromSeed['returnValue']> => {
-    const seed = (await getSigningAuthorityForDid(ownerDID, name))?.seed;
+    console.log('[LCA getSigningAuthorityLearnCard] Looking up SA:', { ownerDID, name });
 
-    if (!seed) throw new Error('No seed set for SA!');
+    const sa = await getSigningAuthorityForDid(ownerDID, name);
 
-    const cachedValue = saCardsCache.get(seed);
+    if (!sa?.seed) {
+        console.error('[LCA getSigningAuthorityLearnCard] SA not found or has no seed:', {
+            ownerDID,
+            name,
+            saFound: !!sa,
+            hasSeed: !!sa?.seed,
+        });
+        throw new Error(
+            `No signing authority found for ownerDID="${ownerDID}" name="${name}"`
+        );
+    }
 
-    if (cachedValue) return cachedValue;
+    const cachedValue = saCardsCache.get(sa.seed);
+
+    if (cachedValue) {
+        console.log('[LCA getSigningAuthorityLearnCard] Using cached SA LearnCard');
+        return cachedValue;
+    }
+
+    console.log('[LCA getSigningAuthorityLearnCard] Initializing SA LearnCard:', {
+        isDidWeb: ownerDID.startsWith('did:web:'),
+        ownerDID,
+    });
 
     const saLearnCard = ownerDID.startsWith('did:web:')
         ? await initLearnCard({
               didkit: await getDidKitInit(),
-              seed,
+              seed: sa.seed,
               didWeb: ownerDID,
               cloud,
               allowRemoteContexts: true,
           })
         : await initLearnCard({
               didkit: await getDidKitInit(),
-              seed,
+              seed: sa.seed,
               cloud,
               allowRemoteContexts: true,
           });
 
-    saCardsCache.add(seed, saLearnCard);
+    saCardsCache.add(sa.seed, saLearnCard);
 
     return saLearnCard;
 };
