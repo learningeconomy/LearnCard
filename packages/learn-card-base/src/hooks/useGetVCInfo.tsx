@@ -101,13 +101,25 @@ export const useGetVCInfo = (
     const isCurrentUserIssuer =
         issuerDid === currentUserDidKey || issuerDid === currentLCNUser?.did;
     if (issuerAppSlug) {
-        issuerName =
-            issuerAppListing?.display_name || (issuerAppLoading ? 'Loading app...' : issuerAppSlug);
+        const vcIssuerName = getIssuerName(vc);
+        const vcIssuerImage = getIssuerImage(vc);
+        const hasExplicitName = vcIssuerName && !vcIssuerName.startsWith('did:');
+
+        issuerName = hasExplicitName
+            ? vcIssuerName
+            : (issuerAppListing?.display_name || (issuerAppLoading ? 'Loading app...' : issuerAppSlug));
+
         issuerLink = issuerAppListing?.listing_id
             ? `/app/${issuerAppListing.listing_id}`
             : undefined;
 
-        issuerProfileImageElement = issuerAppListing?.icon_url ? (
+        issuerProfileImageElement = vcIssuerImage ? (
+            <UserProfilePicture
+                user={{ name: issuerName, image: vcIssuerImage }}
+                customImageClass="w-full h-full object-cover"
+                customContainerClass="flex items-center justify-center h-full text-white font-medium text-lg"
+            />
+        ) : issuerAppListing?.icon_url ? (
             <UserProfilePicture
                 user={{ name: issuerName, image: issuerAppListing.icon_url }}
                 customImageClass="w-full h-full object-cover"

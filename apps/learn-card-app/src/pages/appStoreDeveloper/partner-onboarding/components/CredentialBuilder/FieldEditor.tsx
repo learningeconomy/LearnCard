@@ -22,6 +22,8 @@ interface FieldEditorProps {
     disabled?: boolean;
     showDynamicToggle?: boolean;
     enableFileUpload?: boolean;
+    /** Inline validation error message shown beneath the field */
+    error?: string;
 }
 
 export const FieldEditor: React.FC<FieldEditorProps> = ({
@@ -36,9 +38,14 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
     disabled = false,
     showDynamicToggle = true,
     enableFileUpload = false,
+    error,
 }) => {
     const [showHelp, setShowHelp] = useState(false);
     const [customVarName, setCustomVarName] = useState(false);
+    const [touched, setTouched] = useState(false);
+
+    // Only show the error visually after the user has interacted with the field
+    const showError = error && touched;
 
     // Use refs to avoid stale closures in async callbacks (like file upload)
     const fieldRef = useRef(field);
@@ -83,16 +90,29 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
 
     const renderInput = () => {
         const baseClasses = `w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors ${
-            field.isDynamic 
-                ? 'border-violet-300 bg-violet-50 focus:ring-2 focus:ring-violet-500 focus:border-violet-500' 
-                : 'border-gray-200 bg-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500'
+            showError
+                ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500 focus:border-red-500'
+                : field.isDynamic
+                    ? 'border-violet-300 bg-violet-50 focus:ring-2 focus:ring-violet-500 focus:border-violet-500'
+                    : 'border-gray-200 bg-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`;
 
         if (type === 'select' && options) {
+            // If current value is not in options, clear it on mount
+            const validValues = new Set(options.map(o => o.value));
+            const currentIsValid = !field.value || validValues.has(field.value);
+
             return (
                 <select
-                    value={field.value}
+                    value={currentIsValid ? field.value : ''}
                     onChange={(e) => handleValueChange(e.target.value)}
+                    onBlur={() => {
+                        setTouched(true);
+                        // Auto-clear invalid legacy values when user interacts
+                        if (!currentIsValid && field.value) {
+                            handleValueChange('');
+                        }
+                    }}
                     disabled={disabled}
                     className={baseClasses}
                 >
@@ -110,6 +130,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                 <textarea
                     value={field.value}
                     onChange={(e) => handleValueChange(e.target.value)}
+                    onBlur={() => setTouched(true)}
                     placeholder={field.isDynamic ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}` : placeholder}
                     disabled={disabled}
                     rows={3}
@@ -119,30 +140,47 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
         }
 
         if (enableFileUpload) {
-            return (
-                <div className="flex gap-2">
-                    <input
-                        type={type}
-                        value={field.value}
-                        onChange={(e) => handleValueChange(e.target.value)}
-                        placeholder={field.isDynamic ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}` : placeholder}
-                        disabled={disabled}
-                        className={`${baseClasses} flex-1`}
-                    />
+            const hasImageUrl = field.value && /^https?:\/\/.+/i.test(field.value);
 
-                    <button
-                        type="button"
-                        onClick={handleFileSelect}
-                        disabled={disabled || isUploading}
-                        className="flex items-center gap-1 px-3 py-2 bg-cyan-50 text-cyan-700 border border-cyan-200 rounded-lg text-sm font-medium hover:bg-cyan-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Upload image"
-                    >
-                        {isUploading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <Upload className="w-4 h-4" />
-                        )}
-                    </button>
+            return (
+                <div className="space-y-2">
+                    <div className="flex gap-2">
+                        <input
+                            type={type}
+                            value={field.value}
+                            onChange={(e) => handleValueChange(e.target.value)}
+                            onBlur={() => setTouched(true)}
+                            placeholder={field.isDynamic ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}` : placeholder}
+                            disabled={disabled}
+                            className={`${baseClasses} flex-1`}
+                        />
+
+                        <button
+                            type="button"
+                            onClick={handleFileSelect}
+                            disabled={disabled || isUploading}
+                            className="flex items-center gap-1 px-3 py-2 bg-cyan-50 text-cyan-700 border border-cyan-200 rounded-lg text-sm font-medium hover:bg-cyan-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Upload image"
+                        >
+                            {isUploading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Upload className="w-4 h-4" />
+                            )}
+                        </button>
+                    </div>
+
+                    {hasImageUrl && (
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-lg">
+                            <img
+                                src={field.value}
+                                alt="Uploaded preview"
+                                className="w-10 h-10 rounded object-cover border border-gray-200"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                            <span className="text-xs text-gray-500 truncate flex-1">{field.value.split('/').pop()}</span>
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -152,6 +190,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                 type={type}
                 value={field.value}
                 onChange={(e) => handleValueChange(e.target.value)}
+                onBlur={() => setTouched(true)}
                 placeholder={field.isDynamic ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}` : placeholder}
                 disabled={disabled}
                 className={baseClasses}
@@ -253,6 +292,10 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             )}
 
             {renderInput()}
+
+            {showError && (
+                <p className="text-xs text-red-600 mt-1">{error}</p>
+            )}
 
             {field.isDynamic && (
                 <div className="flex items-center gap-2 mt-1">

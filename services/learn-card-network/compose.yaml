@@ -174,7 +174,7 @@ services:
                 '--logpath',
                 '/var/log/mongodb/mongod.log',
             ]
-        image: mongo:latest
+        image: mongo:7.0
         expose:
             - 27017
         ports:

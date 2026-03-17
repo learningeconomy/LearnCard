@@ -47,6 +47,9 @@ const PrivacySettingsPage = lazyWithRetry(
     () => import('./pages/privacy-settings/PrivacySettingsPage')
 );
 const ResumeBuilderPage = lazyWithRetry(() => import('./pages/resume-builder/ResumeBuilderPage'));
+const VerifySharedResume = lazyWithRetry(
+    () => import('./pages/resume-builder/VerifySharedResume')
+);
 const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
 const ViewSharedBoost = lazyWithRetry(() => import('./components/creds-bundle/ViewSharedBoost'));
@@ -193,6 +196,7 @@ export const Routes: React.FC = () => {
                         />
                         <SentryRoute exact path="/auth/handoff" component={AuthHandoff} />
                         <SentryRoute exact path="/share-boost" component={ViewSharedBoost} />
+                        <SentryRoute exact path="/verify/resume" component={VerifySharedResume} />
                         <SentryRoute path="/waitingsofa" children={<LoadingPage2 />} />
                         <PrivateRoute
                             exact

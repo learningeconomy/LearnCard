@@ -34,6 +34,7 @@ export interface CredentialActivityRecord {
 }
 
 interface CredentialActivityStats {
+    totalEvents: number;
     total: number;
     created: number;
     delivered: number;
@@ -44,6 +45,16 @@ interface CredentialActivityStats {
 }
 
 export type CredentialEventType = 'CREATED' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED' | 'FAILED';
+
+/** Filter options for event type dropdown */
+export const EVENT_TYPE_FILTER_OPTIONS: { value: CredentialEventType | 'ALL'; label: string }[] = [
+    { value: 'ALL', label: 'All Events' },
+    { value: 'CREATED', label: 'Sent' },
+    { value: 'DELIVERED', label: 'Delivered' },
+    { value: 'CLAIMED', label: 'Claimed' },
+    { value: 'FAILED', label: 'Failed' },
+    { value: 'EXPIRED', label: 'Expired' },
+];
 
 /**
  * Get display label for event type
@@ -146,12 +157,19 @@ export function formatActivitySource(source: string): string {
 export interface IntegrationActivityResult {
     activity: CredentialActivityRecord[];
     isLoading: boolean;
+    isLoadingMore: boolean;
+    hasMore: boolean;
     error: Error | null;
     refetch: () => void;
+    loadMore: () => Promise<void>;
 
     stats: {
         totalSent: number;
         totalClaimed: number;
+        total: number;
+        totalEvents: number;
+        expired: number;
+        failed: number;
         pendingClaims: number;
         claimRate: number;
     };
@@ -166,12 +184,13 @@ export interface IntegrationActivityResult {
  * @param templates - Credential templates to filter by (optional)
  * @param options.limit - Maximum number of activities to fetch
  * @param options.integrationId - Filter activities by integration ID for accurate per-integration stats
+ * @param options.eventType - Filter activities by event type (optional)
  */
 export function useIntegrationActivity(
     templates: CredentialTemplate[],
-    options: { limit?: number; integrationId?: string } = {}
+    options: { limit?: number; integrationId?: string; eventType?: CredentialEventType } = {}
 ): IntegrationActivityResult {
-    const { limit = 20, integrationId } = options;
+    const { limit = 25, integrationId, eventType } = options;
     const { initWallet } = useWallet();
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
@@ -180,10 +199,17 @@ export function useIntegrationActivity(
     const [stats, setStats] = useState<IntegrationActivityResult['stats']>({
         totalSent: 0,
         totalClaimed: 0,
+        total: 0,
+        totalEvents: 0,
+        expired: 0,
+        failed: 0,
         pendingClaims: 0,
         claimRate: 0,
     });
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(false);
+    const [cursor, setCursor] = useState<string | undefined>(undefined);
     const [error, setError] = useState<Error | null>(null);
     const [fetchKey, setFetchKey] = useState(0);
 
@@ -204,11 +230,14 @@ export function useIntegrationActivity(
                 const activityResult = await (wallet.invoke as any).getMyActivities?.({
                     limit,
                     integrationId,
+                    eventType,
                 });
 
                 // Fetch stats using unified API with integrationId for accurate per-integration stats
+                // When integrationId is provided, don't also filter by boostUris — it's redundant
+                // and excludes activities without a FOR_BOOST relationship (e.g. embed claims)
                 const statsResult = await (wallet.invoke as any).getActivityStats?.({
-                    boostUris: boostUris.length > 0 ? boostUris : undefined,
+                    boostUris: !integrationId && boostUris.length > 0 ? boostUris : undefined,
                     integrationId,
                 });
 
@@ -217,17 +246,25 @@ export function useIntegrationActivity(
                 // Pass through all records - server already filters by integrationId
                 // Client-side filtering by boostUri is not needed since stats API handles it
                 const records: CredentialActivityRecord[] = activityResult?.records || [];
+                const apiHasMore = activityResult?.hasMore ?? false;
+                const nextCursor = activityResult?.cursor;
 
                 setActivity(records);
+                setHasMore(apiHasMore);
+                setCursor(nextCursor);
 
                 // Set stats from unified API
                 if (statsResult) {
                     const apiStats = statsResult as CredentialActivityStats;
 
                     setStats({
-                        totalSent: apiStats.delivered + apiStats.created,
+                        totalSent: apiStats.delivered + apiStats.created + apiStats.claimed,
                         totalClaimed: apiStats.claimed,
-                        pendingClaims: apiStats.delivered + apiStats.created - apiStats.claimed,
+                        total: apiStats.total,
+                        totalEvents: apiStats.totalEvents,
+                        expired: apiStats.expired,
+                        failed: apiStats.failed,
+                        pendingClaims: apiStats.delivered + apiStats.created,
                         claimRate: apiStats.claimRate,
                     });
                 }
@@ -250,14 +287,45 @@ export function useIntegrationActivity(
         return () => {
             cancelled = true;
         };
-    }, [boostUris.join(','), limit, integrationId, fetchKey]);
+    }, [boostUris.join(','), limit, integrationId, eventType, fetchKey]);
 
-    // Refetch function
     const refetch = useCallback(() => {
+        setCursor(undefined);
+        setHasMore(false);
         setFetchKey(k => k + 1);
     }, []);
 
-    return { activity, isLoading, error, refetch, stats };
+    // Fetches next page and appends to existing activity
+    const loadMore = useCallback(async () => {
+        if (isLoadingMore || !hasMore || !cursor) return;
+
+        try {
+            setIsLoadingMore(true);
+            const wallet = await initWalletRef.current();
+
+            const activityResult = await (wallet.invoke as any).getMyActivities?.({
+                limit,
+                cursor,
+                integrationId,
+                eventType,
+            });
+
+            const records: CredentialActivityRecord[] = activityResult?.records || [];
+            const apiHasMore = activityResult?.hasMore ?? false;
+            const nextCursor = activityResult?.cursor;
+
+            setActivity(prev => [...prev, ...records]);
+            setHasMore(apiHasMore);
+            setCursor(nextCursor);
+        } catch (err) {
+            console.error('[useIntegrationActivity] Failed to load more activity:', err);
+            setError(err instanceof Error ? err : new Error('Failed to load more activity'));
+        } finally {
+            setIsLoadingMore(false);
+        }
+    }, [isLoadingMore, hasMore, cursor, limit, integrationId, eventType]);
+
+    return { activity, isLoading, isLoadingMore, hasMore, error, refetch, loadMore, stats };
 }
 
 /**

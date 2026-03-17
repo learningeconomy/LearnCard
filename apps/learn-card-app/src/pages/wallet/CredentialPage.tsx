@@ -128,7 +128,8 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
 
     const { data: currentLCNUser } = useIsCurrentUserLCNUser();
 
-    const config = categoryToConfig[category];
+    const config =
+        categoryToConfig[category] ?? categoryToConfig[CredentialCategoryEnum.workHistory];
 
     const _activeTab = query.get('managed')
         ? CredentialListTabEnum.Managed

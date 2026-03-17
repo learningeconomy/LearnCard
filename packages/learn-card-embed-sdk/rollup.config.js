@@ -8,6 +8,24 @@ import { string } from 'rollup-plugin-string';
 
 const pkg = require('./package.json');
 
+/**
+ * Minify island-vanilla.js with esbuild after rollup-plugin-string reads it.
+ * Must be placed AFTER string() in plugins array so it runs second.
+ */
+function minifyIslandPlugin() {
+  return {
+    name: 'minify-island',
+    transform(_code, id) {
+      if (!id.endsWith('island-vanilla.js')) return null;
+      const { readFileSync } = require('fs');
+      const { transformSync } = require('esbuild');
+      const src = readFileSync(id, 'utf-8');
+      const { code: minified } = transformSync(src, { minify: true, loader: 'js' });
+      return { code: `export default ${JSON.stringify(minified)};`, map: null };
+    },
+  };
+}
+
 export default [
   {
     input: 'src/index.ts',
@@ -32,6 +50,7 @@ export default [
           'src/iframe/island-vanilla.js',
         ],
       }),
+      minifyIslandPlugin(),
       replace({
         'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
         preventAssignment: true,
