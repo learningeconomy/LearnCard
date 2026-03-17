@@ -11,4 +11,5 @@ export * from './mongo';
 export * from './wasm';
 export * from './helpers';
 export * from './queries';
+export * from './edlink';
 export * from './auth';
