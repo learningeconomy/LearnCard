@@ -7,6 +7,7 @@ import { testUnsignedBoost } from './helpers/credential.helpers';
 
 let appOwner: LearnCard;
 let appUser: LearnCard;
+let appUserProfileId: string;
 let integrationId: string;
 let listingId: string;
 let boostUri: string;
@@ -58,6 +59,10 @@ describe('App Store Credential Issuance E2E Tests', () => {
     beforeEach(async () => {
         appOwner = await getLearnCardForUser('a');
         appUser = await getLearnCardForUser('b');
+
+        // Get app user's profile ID for tests
+        const appUserProfile = await appUser.invoke.getProfile();
+        appUserProfileId = appUserProfile?.profileId || '';
 
         // 1. Create integration first (without SA)
         integrationId = await setupIntegration(appOwner, 'app-cred-test');
@@ -286,6 +291,214 @@ describe('App Store Credential Issuance E2E Tests', () => {
                 typeof credential.issuer === 'string' ? credential.issuer : credential.issuer?.id;
 
             expect(issuerId).toBe(expectedAppDid);
+        });
+    });
+
+    describe('App Event: check-credential', () => {
+        beforeEach(async () => {
+            await appOwner.invoke.addBoostToApp(listingId, boostUri, 'status-badge');
+        });
+
+        it('should return hasCredential false before issuance', async () => {
+            const result = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'check-credential',
+                templateAlias: 'status-badge',
+            });
+
+            expect(result.hasCredential).toBe(false);
+            expect(result.credentialUri).toBeUndefined();
+        });
+
+        it('should return credential metadata after issuance', async () => {
+            const issued = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'send-credential',
+                templateAlias: 'status-badge',
+            });
+
+            const result = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'check-credential',
+                templateAlias: 'status-badge',
+            });
+
+            expect(result.hasCredential).toBe(true);
+            expect(result.status).toBe('claimed');
+            expect(result.credentialUri).toBe(issued.credentialUri);
+            expect(result.receivedDate).toBeDefined();
+
+            const byBoost = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'check-credential',
+                boostUri,
+            });
+
+            expect(byBoost.hasCredential).toBe(true);
+            expect(byBoost.credentialUri).toBe(issued.credentialUri);
+        });
+
+        it('should prevent duplicate issuance when preventDuplicateClaim is true', async () => {
+            const first = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'send-credential',
+                templateAlias: 'status-badge',
+            });
+
+            const second = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'send-credential',
+                templateAlias: 'status-badge',
+                preventDuplicateClaim: true,
+            });
+
+            expect(second.alreadyClaimed).toBe(true);
+            expect(second.hasCredential).toBe(true);
+            expect(second.credentialUri).toBe(first.credentialUri);
+            expect(second.status).toBe('claimed');
+        });
+    });
+
+    describe('App Event: check-issuance-status', () => {
+        beforeEach(async () => {
+            await appOwner.invoke.addBoostToApp(listingId, boostUri, 'issuance-badge');
+        });
+
+        it('should return sent: false when credential has not been issued to recipient', async () => {
+            const result = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'check-issuance-status',
+                templateAlias: 'issuance-badge',
+                recipient: appUserProfileId,
+            });
+
+            expect(result.sent).toBe(false);
+            expect(result.credentialUri).toBeUndefined();
+        });
+
+        it('should return issuance status after sending credential', async () => {
+            const issued = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'send-credential',
+                templateAlias: 'issuance-badge',
+            });
+
+            const result = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'check-issuance-status',
+                templateAlias: 'issuance-badge',
+                recipient: appUserProfileId,
+            });
+
+            expect(result.sent).toBe(true);
+            expect(result.credentialUri).toBe(issued.credentialUri);
+            expect(result.sentDate).toBeDefined();
+            expect(result.status).toBe('claimed');
+            expect(result.claimedDate).toBeDefined();
+        });
+
+        it('should work with recipient as DID', async () => {
+            await appUser.invoke.sendAppEvent(listingId, {
+                type: 'send-credential',
+                templateAlias: 'issuance-badge',
+            });
+
+            const result = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'check-issuance-status',
+                templateAlias: 'issuance-badge',
+                recipient: `did:web:network.learncard.com:users:${appUserProfileId}`,
+            });
+
+            expect(result.sent).toBe(true);
+            expect(result.status).toBe('claimed');
+        });
+
+        it('should work with boostUri instead of templateAlias', async () => {
+            await appUser.invoke.sendAppEvent(listingId, {
+                type: 'send-credential',
+                templateAlias: 'issuance-badge',
+            });
+
+            const result = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'check-issuance-status',
+                boostUri,
+                recipient: appUserProfileId,
+            });
+
+            expect(result.sent).toBe(true);
+            expect(result.status).toBe('claimed');
+        });
+    });
+
+    describe('App Event: get-template-recipients', () => {
+        beforeEach(async () => {
+            await appOwner.invoke.addBoostToApp(listingId, boostUri, 'recipients-badge');
+        });
+
+        it('should return empty list when no credentials have been issued', async () => {
+            const result = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'get-template-recipients',
+                templateAlias: 'recipients-badge',
+            });
+
+            expect(result.records).toHaveLength(0);
+            expect(result.hasMore).toBe(false);
+        });
+
+        it('should return recipients after issuing credentials', async () => {
+            await appUser.invoke.sendAppEvent(listingId, {
+                type: 'send-credential',
+                templateAlias: 'recipients-badge',
+            });
+
+            const result = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'get-template-recipients',
+                templateAlias: 'recipients-badge',
+            });
+
+            expect(result.records).toHaveLength(1);
+            expect(result.records[0].recipientProfileId).toBe(appUserProfileId);
+            expect(result.records[0].status).toBe('claimed');
+            expect(result.records[0].sentDate).toBeDefined();
+            expect(result.records[0].credentialUri).toBeDefined();
+            expect(result.hasMore).toBe(false);
+        });
+
+        it('should support pagination with limit parameter', async () => {
+            await appUser.invoke.sendAppEvent(listingId, {
+                type: 'send-credential',
+                templateAlias: 'recipients-badge',
+            });
+
+            const result = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'get-template-recipients',
+                templateAlias: 'recipients-badge',
+                limit: 1,
+            });
+
+            expect(result.records).toHaveLength(1);
+            expect(result.total).toBe(1);
+        });
+
+        it('should work with boostUri instead of templateAlias', async () => {
+            await appUser.invoke.sendAppEvent(listingId, {
+                type: 'send-credential',
+                templateAlias: 'recipients-badge',
+            });
+
+            const result = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'get-template-recipients',
+                boostUri,
+            });
+
+            expect(result.records).toHaveLength(1);
+            expect(result.records[0].recipientProfileId).toBe(appUserProfileId);
+        });
+
+        it('should only show credentials sent by the requesting user', async () => {
+            await appUser.invoke.sendAppEvent(listingId, {
+                type: 'send-credential',
+                templateAlias: 'recipients-badge',
+            });
+
+            const result = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'get-template-recipients',
+                templateAlias: 'recipients-badge',
+            });
+
+            expect(result.records).toHaveLength(1);
+            expect(result.records[0].recipientProfileId).toBe(appUserProfileId);
         });
     });
 

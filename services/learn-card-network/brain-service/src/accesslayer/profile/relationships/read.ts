@@ -28,8 +28,8 @@ export const getManagedServiceProfiles = async (
 
     const query = cursor
         ? _query.where(
-            new Where({ managed: { profileId: { [Op.gt]: cursor } } }, _query.getBindParam())
-        )
+              new Where({ managed: { profileId: { [Op.gt]: cursor } } }, _query.getBindParam())
+          )
         : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{
@@ -37,6 +37,11 @@ export const getManagedServiceProfiles = async (
     }>(await query.return('managed').orderBy('managed.profileId').limit(limit).run());
 
     return results.map(({ managed }) => inflateObject(managed as any));
+};
+
+export const isProfileManaged = async (profileId: string): Promise<boolean> => {
+    const managers = await getProfilesThatManageAProfile(profileId);
+    return managers.length > 0;
 };
 
 export const getProfilesThatManageAProfile = async (profileId: string): Promise<ProfileType[]> => {
@@ -103,8 +108,11 @@ export const getProfilesThatAProfileManages = async (
     }: { limit: number; cursor?: string; query?: LCNProfileQuery }
 ): Promise<{ profile: ProfileType; manager?: ProfileManagerType }[]> => {
     const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
-    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('managed', convertedQuery as any);
-    
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder(
+        'managed',
+        convertedQuery as any
+    );
+
     const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             optional: true,
