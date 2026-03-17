@@ -72,8 +72,7 @@ import { getBoostByUri } from '@accesslayer/boost/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { getAppDidWeb, getDidWeb } from '@helpers/did.helpers';
-import { getCredentialUri } from '@helpers/credential.helpers';
+import { getAppDidWeb, getDidWeb, getProfileIdFromDid } from '@helpers/did.helpers';
 import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
 import { getBoostRecipients, getBoostPermissions } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
@@ -495,6 +494,12 @@ const handleSendCredentialEvent = async (
 
     const { boost, boostUri } = boostResult;
 
+    // NOTE: This is best-effort duplicate prevention, not a guarantee.
+    // There is a race condition window between checking and creating the credential
+    // where concurrent requests could both pass this check. This is acceptable for
+    // UI-level duplicate prevention. For hard guarantees, database-level constraints
+    // would be needed, but users CAN legitimately have multiple credentials from
+    // the same boost (e.g., renewed certifications), so we don't enforce uniqueness.
     if (preventDuplicateClaim) {
         const existingCredential = await getCredentialStatusForBoostAndProfile(
             boost.id,
@@ -834,15 +839,18 @@ const handleCheckIssuanceStatusEvent = async (
         });
     }
 
-    const targetProfileId = recipient.startsWith('did:')
-        ? recipient.split(':').pop() || recipient
-        : recipient;
-
-    if (!targetProfileId) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Invalid recipient format',
-        });
+    let targetProfileId: string;
+    if (recipient.startsWith('did:')) {
+        const parsedId = getProfileIdFromDid(recipient);
+        if (!parsedId) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Invalid DID format. Expected did:web:domain:users:profileId',
+            });
+        }
+        targetProfileId = parsedId;
+    } else {
+        targetProfileId = recipient;
     }
 
     const credentialStatus = await getCredentialStatusForBoostAndProfile(boost.id, targetProfileId);
@@ -931,14 +939,11 @@ const handleGetTemplateRecipientsEvent = async (
         cursor,
         includeUnacceptedBoosts: true,
         domain: ctx.domain,
+        from: profile.profileId,
     });
 
-    const filteredRecipients = recipients.filter(
-        (r: { from: string }) => r.from === profile.profileId
-    );
-
-    const hasMore = filteredRecipients.length > limit;
-    const records = hasMore ? filteredRecipients.slice(0, limit) : filteredRecipients;
+    const hasMore = recipients.length > limit;
+    const records = hasMore ? recipients.slice(0, limit) : recipients;
 
     const formattedRecords = records.map(
         (r: {
