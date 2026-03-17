@@ -112,6 +112,7 @@ export * from './hooks/useQrLogin';
 export * from './components/qr-login';
 export * from './hooks/usePrivacyGate';
 export * from './hooks/useAiFeatureGate';
+export * from './hooks/useVerifiableData';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';

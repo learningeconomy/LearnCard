@@ -1,5 +1,12 @@
-import React, { useState } from 'react';
-import { RadioGroup } from 'learn-card-base';
+import React, { useState, useEffect } from 'react';
+import { RadioGroup, useVerifiableData } from 'learn-card-base';
+
+export type SkillProfileJobSatisfactionData = {
+    workLifeBalance: string | null;
+    jobStability: string | null;
+};
+
+export const SKILL_PROFILE_JOB_SATISFACTION_KEY = 'skill-profile-job-satisfaction';
 
 type SkillProfileStep4Props = {
     handleNext: () => void;
@@ -27,6 +34,26 @@ const JOB_STABILITY_OPTIONS = [
 const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handleBack }) => {
     const [workLifeBalance, setWorkLifeBalance] = useState<string | null>(null);
     const [jobStability, setJobStability] = useState<string | null>(null);
+
+    const { data, isLoading, save, isSaving } = useVerifiableData<SkillProfileJobSatisfactionData>(
+        SKILL_PROFILE_JOB_SATISFACTION_KEY
+    );
+
+    // Pre-populate form from existing verifiable data
+    useEffect(() => {
+        if (data) {
+            setWorkLifeBalance(data.workLifeBalance ?? null);
+            setJobStability(data.jobStability ?? null);
+        }
+    }, [data]);
+
+    const handleSaveAndNext = async () => {
+        await save({
+            workLifeBalance,
+            jobStability,
+        });
+        handleNext();
+    };
 
     return (
         <div className="flex flex-col gap-[20px]">
@@ -59,14 +86,16 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
                 <button
                     className="bg-grayscale-50 text-grayscale-800 rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 border-[1px] border-solid border-grayscale-200 h-[44px]"
                     onClick={handleBack}
+                    disabled={isSaving}
                 >
                     Back
                 </button>
                 <button
-                    className="bg-emerald-500 text-white rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 h-[44px]"
-                    onClick={handleNext}
+                    className="bg-emerald-500 text-white rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 h-[44px] disabled:opacity-50"
+                    onClick={handleSaveAndNext}
+                    disabled={isSaving || isLoading}
                 >
-                    Next
+                    {isSaving ? 'Saving...' : 'Next'}
                 </button>
             </div>
         </div>

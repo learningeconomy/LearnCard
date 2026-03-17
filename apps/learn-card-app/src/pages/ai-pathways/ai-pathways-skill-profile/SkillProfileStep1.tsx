@@ -1,7 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import X from 'src/components/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
-import { TextInput, SelectInput } from 'learn-card-base';
+import { TextInput, SelectInput, useVerifiableData } from 'learn-card-base';
+
+export type SkillProfileGoalsData = {
+    goals: string[];
+    professionalTitle: string;
+    lifetimeExperience: {
+        years: number | null;
+        months: number | null;
+    };
+};
+
+export const SKILL_PROFILE_GOALS_KEY = 'skill-profile-goals';
 
 type SkillProfileStep1Props = {
     handleNext: () => void;
@@ -43,6 +54,19 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
     const [years, setYears] = useState<number | null>(null);
     const [months, setMonths] = useState<number | null>(null);
 
+    const { data, isLoading, isFetched, save, isSaving } =
+        useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY);
+
+    // Pre-populate form from existing verifiable data
+    useEffect(() => {
+        if (data) {
+            setGoals(data.goals ?? []);
+            setProfessionalTitle(data.professionalTitle ?? '');
+            setYears(data.lifetimeExperience?.years ?? null);
+            setMonths(data.lifetimeExperience?.months ?? null);
+        }
+    }, [data]);
+
     const handleAddGoal = () => {
         if (goalInput.trim()) {
             setGoals([...goals, goalInput.trim().slice(0, 35)]);
@@ -52,6 +76,18 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
 
     const handleRemoveGoal = (index: number) => {
         setGoals(goals.filter((_, i) => i !== index));
+    };
+
+    const handleSaveAndNext = async () => {
+        await save({
+            goals,
+            professionalTitle,
+            lifetimeExperience: {
+                years,
+                months,
+            },
+        });
+        handleNext();
     };
 
     return (
@@ -146,10 +182,11 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
             </div>
 
             <button
-                className="bg-emerald-500 text-white rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] h-[44px]"
-                onClick={handleNext}
+                className="bg-emerald-500 text-white rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] h-[44px] disabled:opacity-50"
+                onClick={handleSaveAndNext}
+                disabled={isSaving || isLoading}
             >
-                Next
+                {isSaving ? 'Saving...' : 'Next'}
             </button>
         </div>
     );
