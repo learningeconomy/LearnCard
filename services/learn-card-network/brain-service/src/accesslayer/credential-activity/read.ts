@@ -24,54 +24,105 @@ export type GetActivitiesOptions = {
     integrationId?: string;
     startDate?: string;
     endDate?: string;
+    groupByLatestStatus?: boolean; // When true, returns unique credentials filtered by their current status
 };
 
 export const getActivitiesForProfile = async (
     profileId: string,
     options: GetActivitiesOptions
 ): Promise<CredentialActivityWithDetails[]> => {
-    const { limit, cursor, boostUri, eventType, integrationId, startDate, endDate } = options;
+    const {
+        limit,
+        cursor,
+        boostUri,
+        eventType,
+        integrationId,
+        startDate,
+        endDate,
+        groupByLatestStatus,
+    } = options;
 
     const boostId = boostUri ? safeGetIdFromUri(boostUri) : null;
-
-    const whereConditions: string[] = ['a.actorProfileId = $profileId'];
-
-    if (cursor) {
-        whereConditions.push('a.timestamp < $cursor');
-    }
-
-    if (eventType) {
-        whereConditions.push('a.eventType = $eventType');
-    }
-
-    if (integrationId) {
-        whereConditions.push('a.integrationId = $integrationId');
-    }
-
-    if (startDate) {
-        whereConditions.push('a.timestamp >= $startDate');
-    }
-
-    if (endDate) {
-        whereConditions.push('a.timestamp <= $endDate');
-    }
-
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
     const boostMatch = boostId
         ? 'MATCH (a)-[:FOR_BOOST]->(b:Boost {id: $boostId})'
         : 'OPTIONAL MATCH (a)-[:FOR_BOOST]->(b:Boost)';
 
-    const query = `
-        MATCH (a:CredentialActivity)
-        ${whereClause}
-        ${boostMatch}
-        OPTIONAL MATCH (a)-[:TO_RECIPIENT]->(r:Profile)
-        WITH a, b, r
-        ORDER BY a.timestamp DESC
-        LIMIT $limit
-        RETURN a, b, r
-    `;
+    let query: string;
+
+    if (groupByLatestStatus) {
+        // Export mode: Group by activityId and filter by derived (latest) status
+        const whereConditions: string[] = ['a.actorProfileId = $profileId'];
+        if (integrationId) {
+            whereConditions.push('a.integrationId = $integrationId');
+        }
+        const whereClause =
+            whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+        // Build post-group filters for derived status and dates
+        // Note: latestEvent is a map {activity: a, boost: b, recipient: r}
+        const postGroupFilters: string[] = [];
+        if (eventType) {
+            postGroupFilters.push('latestEvent.activity.eventType = $eventType');
+        }
+        if (startDate) {
+            postGroupFilters.push('latestEvent.activity.timestamp >= $startDate');
+        }
+        if (endDate) {
+            postGroupFilters.push('latestEvent.activity.timestamp <= $endDate');
+        }
+        if (cursor) {
+            postGroupFilters.push('latestEvent.activity.timestamp < $cursor');
+        }
+        const postGroupFilter =
+            postGroupFilters.length > 0 ? `WHERE ${postGroupFilters.join(' AND ')}` : '';
+
+        query = `
+            MATCH (a:CredentialActivity)
+            ${whereClause}
+            ${boostMatch}
+            OPTIONAL MATCH (a)-[:TO_RECIPIENT]->(r:Profile)
+            WITH a.activityId as aid, COLLECT({activity: a, boost: b, recipient: r}) as events
+            WITH aid, events, REDUCE(latest = HEAD(events), e IN TAIL(events) |
+                CASE WHEN e.activity.timestamp > latest.activity.timestamp THEN e ELSE latest END) as latestEvent
+            ${postGroupFilter}
+            WITH latestEvent.activity as a, latestEvent.boost as b, latestEvent.recipient as r
+            ORDER BY a.timestamp DESC
+            LIMIT $limit
+            RETURN a, b, r
+        `;
+    } else {
+        // Recent Activity mode: Show all individual events
+        const whereConditions: string[] = ['a.actorProfileId = $profileId'];
+        if (cursor) {
+            whereConditions.push('a.timestamp < $cursor');
+        }
+        if (eventType) {
+            whereConditions.push('a.eventType = $eventType');
+        }
+        if (integrationId) {
+            whereConditions.push('a.integrationId = $integrationId');
+        }
+        if (startDate) {
+            whereConditions.push('a.timestamp >= $startDate');
+        }
+        if (endDate) {
+            whereConditions.push('a.timestamp <= $endDate');
+        }
+        const whereClause =
+            whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+        query = `
+            MATCH (a:CredentialActivity)
+            ${whereClause}
+            ${boostMatch}
+            OPTIONAL MATCH (a)-[:TO_RECIPIENT]->(r:Profile)
+            WITH a, b, r
+            ORDER BY a.timestamp DESC
+            LIMIT $limit
+            RETURN a, b, r
+        `;
+    }
 
     const result = await neogma.queryRunner.run(query, {
         profileId,
@@ -133,45 +184,58 @@ export const getActivityStatsForProfile = async (
 
     const boostIds = boostUris?.map(uri => safeGetIdFromUri(uri)).filter(Boolean) as string[];
 
+    // Base conditions that don't include eventType - we filter by derived status later
     const whereConditions: string[] = ['a.actorProfileId = $profileId'];
 
     if (integrationId) {
         whereConditions.push('a.integrationId = $integrationId');
     }
 
-    if (eventType) {
-        whereConditions.push('a.eventType = $eventType');
-    }
-
-    if (startDate) {
-        whereConditions.push('a.timestamp >= $startDate');
-    }
-
-    if (endDate) {
-        whereConditions.push('a.timestamp <= $endDate');
-    }
+    // Date filters apply to the activity chain, not individual events
+    // We'll filter based on the latest event's timestamp after grouping
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
     const boostFilter = boostIds?.length ? 'WHERE b.id IN $boostIds' : '';
+
+    // Build the derived status filter - filter by the latest event type AFTER grouping
+    const statusFilter = eventType ? 'WHERE latestEvent.eventType = $eventType' : '';
+
+    // Build date filters for the latest event
+    const dateFilters: string[] = [];
+    if (startDate) {
+        dateFilters.push('latestEvent.timestamp >= $startDate');
+    }
+    if (endDate) {
+        dateFilters.push('latestEvent.timestamp <= $endDate');
+    }
+
+    // Combine status and date filters
+    let postGroupFilter = '';
+    if (statusFilter || dateFilters.length > 0) {
+        const allFilters = [];
+        if (eventType) allFilters.push('latestEvent.eventType = $eventType');
+        allFilters.push(...dateFilters);
+        postGroupFilter = `WHERE ${allFilters.join(' AND ')}`;
+    }
 
     const query = `
         MATCH (a:CredentialActivity)
         ${whereClause}
         ${boostIds?.length ? 'MATCH (a)-[:FOR_BOOST]->(b:Boost)' : ''}
         ${boostFilter}
-        WITH COLLECT(a) as allEvents, a.activityId as aid, COLLECT(a) as events
-        WITH allEvents, aid, REDUCE(latest = HEAD(events), e IN TAIL(events) |
+        WITH a.activityId as aid, COLLECT(a) as events
+        WITH aid, events, REDUCE(latest = HEAD(events), e IN TAIL(events) |
             CASE WHEN e.timestamp > latest.timestamp THEN e ELSE latest END) as latestEvent
+        ${postGroupFilter}
         WITH 
-            SUM(SIZE(allEvents)) as totalEvents,
             COUNT(DISTINCT aid) as total,
             SUM(CASE WHEN latestEvent.eventType = 'CREATED' THEN 1 ELSE 0 END) as created,
             SUM(CASE WHEN latestEvent.eventType = 'DELIVERED' THEN 1 ELSE 0 END) as delivered,
             SUM(CASE WHEN latestEvent.eventType = 'CLAIMED' THEN 1 ELSE 0 END) as claimed,
             SUM(CASE WHEN latestEvent.eventType = 'EXPIRED' THEN 1 ELSE 0 END) as expired,
             SUM(CASE WHEN latestEvent.eventType = 'FAILED' THEN 1 ELSE 0 END) as failed
-        RETURN totalEvents, total, created, delivered, claimed, expired, failed
+        RETURN total, created, delivered, claimed, expired, failed
     `;
 
     const result = await neogma.queryRunner.run(query, {
@@ -211,7 +275,6 @@ export const getActivityStatsForProfile = async (
         };
     }
 
-    const totalEventsVal = record.get('totalEvents');
     const totalVal = record.get('total');
     const createdVal = record.get('created');
     const deliveredVal = record.get('delivered');
@@ -219,10 +282,6 @@ export const getActivityStatsForProfile = async (
     const expiredVal = record.get('expired');
     const failedVal = record.get('failed');
 
-    const totalEvents =
-        typeof totalEventsVal?.toNumber === 'function'
-            ? totalEventsVal.toNumber()
-            : totalEventsVal ?? 0;
     const total = typeof totalVal?.toNumber === 'function' ? totalVal.toNumber() : totalVal ?? 0;
     const created =
         typeof createdVal?.toNumber === 'function' ? createdVal.toNumber() : createdVal ?? 0;
@@ -239,7 +298,7 @@ export const getActivityStatsForProfile = async (
     const claimRate = totalSent > 0 ? (claimed / totalSent) * 100 : 0;
 
     return {
-        totalEvents,
+        totalEvents: total, // Use total as totalEvents since we're now counting unique activities
         total,
         created,
         delivered,

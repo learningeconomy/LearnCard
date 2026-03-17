@@ -37,12 +37,22 @@ export const activityRouter = t.router({
                 integrationId: z.string().optional(),
                 startDate: z.string().optional(),
                 endDate: z.string().optional(),
+                groupByLatestStatus: z.boolean().optional(), // When true, returns unique credentials filtered by current status (for CSV export)
             })
         )
         .output(PaginatedCredentialActivitiesValidator)
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { limit, cursor, boostUri, eventType, integrationId, startDate, endDate } = input;
+            const {
+                limit,
+                cursor,
+                boostUri,
+                eventType,
+                integrationId,
+                startDate,
+                endDate,
+                groupByLatestStatus,
+            } = input;
 
             const records = await getActivitiesForProfile(profile.profileId, {
                 limit: limit + 1,
@@ -52,6 +62,7 @@ export const activityRouter = t.router({
                 integrationId,
                 startDate,
                 endDate,
+                groupByLatestStatus,
             });
 
             const hasMore = records.length > limit;
