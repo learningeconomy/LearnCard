@@ -610,14 +610,14 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
 
             <div>
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex">
+                <div className="flex items-center justify-between mb-3 xs:flex-col xs:items-start">
+                    <div className="flex xs:flex-col">
                         <h2 className="text-lg font-semibold text-gray-800 mb-1 mr-4">
                             Recent Activity
                         </h2>
                         <button
                             onClick={() => setShowExportDialog(true)}
-                            className="flex items-center text-sm font-medium text-gray-600 p-[5px] border !border-solid border-gray-200 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                            className="flex items-center text-sm font-medium text-gray-600 p-[5px] border !border-solid border-gray-200 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors xs:mb-[5px]"
                         >
                             <Download className="w-4 h-4 mr-[5px]" />
                             Download CSV
