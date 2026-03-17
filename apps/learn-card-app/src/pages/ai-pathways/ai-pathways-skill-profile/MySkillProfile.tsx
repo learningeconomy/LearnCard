@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { ProfilePicture } from 'learn-card-base';
 import X from 'src/components/svgs/X';
 import Pencil from 'src/components/svgs/Pencil';
-import SkillProfileProgressBar from './SkillProfileProgressBar';
+import SkillProfileProgressBar, { useSkillProfileCompletion } from './SkillProfileProgressBar';
 import SkillProfileStep1 from './SkillProfileStep1';
 import SkillProfileStep2 from './SkillProfileStep2';
 import SkillProfileStep3 from './SkillProfileStep3';
@@ -15,6 +15,7 @@ type MySkillProfileProps = {};
 const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
     const [isExpanded, setIsExpanded] = useState(true); // init = true the first time you land on the page, TODO false otherwise
     const [currentStep, setCurrentStep] = useState(1);
+    const { percentage } = useSkillProfileCompletion();
 
     const handleNext = () => {
         setCurrentStep(currentStep + 1);
@@ -60,6 +61,7 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
                     <SkillProfileProgressBar
                         currentStep={currentStep}
                         setCurrentStep={setCurrentStep}
+                        isExpanded={isExpanded}
                     />
 
                     {isExpanded && (
@@ -79,7 +81,7 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({}) => {
                     {!isExpanded && (
                         <div className="flex items-center w-full">
                             <span className="text-grayscale-600 font-poppins font-[500] text-[14px] leading-[18px]">
-                                X% optimized • Edited on Month Day, Year
+                                {percentage}% optimized
                             </span>
                         </div>
                     )}
