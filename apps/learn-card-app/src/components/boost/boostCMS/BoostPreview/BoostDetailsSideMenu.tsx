@@ -17,7 +17,6 @@ import AlignmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/A
 import TruncateTextBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/TruncateTextBox';
 import VerificationsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/VerificationsBox';
 import MediaAttachmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/MediaAttachmentBoxCerts';
-import ChildCLRVerificationNotice from './ChildCLRVerificationNotice';
 
 import { useGetVCInfo, boostPreviewStore, BoostPreviewTabsEnum } from 'learn-card-base';
 
@@ -177,9 +176,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
 
                     {alignment && <AlignmentsBox alignment={alignment} style="Certificate" />}
 
-                    {isClrChildCredential && <ChildCLRVerificationNotice />}
-
-                    {!isClrChildCredential && verificationItems && verificationItems.length > 0 && (
+                    {verificationItems && verificationItems.length > 0 && (
                         <VerificationsBox verificationItems={verificationItems} />
                     )}
                 </>

@@ -128,7 +128,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
             <BoostDetailsSideMenu
                 credential={selectedCredential}
                 categoryType={categoryType}
-                verificationItems={verifications}
+                verificationItems={detailVerificationItems}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 existingEndorsements={existingEndorsements}
                 isEarnedBoost={isEarnedBoost}
@@ -162,6 +162,8 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     } else if (showVerifications) {
         verifications = vcVerifications;
     }
+
+    const detailVerificationItems = isClrChildCredential ? verificationItems : verifications;
 
     const selectedCredential = credential;
 
@@ -233,7 +235,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                     <BoostDetailsSideBar
                         credential={selectedCredential}
                         categoryType={categoryType}
-                        verificationItems={verifications}
+                        verificationItems={detailVerificationItems}
                         customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                         existingEndorsements={existingEndorsements}
                         isEarnedBoost={isEarnedBoost}

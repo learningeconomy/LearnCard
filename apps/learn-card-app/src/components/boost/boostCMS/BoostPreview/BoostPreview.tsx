@@ -164,6 +164,8 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         verifications = vcVerifications;
     }
 
+    const detailVerificationItems = isClrChildCredential ? verificationItems : verifications;
+
     const selectedCredential = credential;
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
@@ -190,7 +192,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
             <BoostDetailsSideMenu
                 credential={selectedCredential}
                 categoryType={categoryType}
-                verificationItems={verifications}
+                verificationItems={detailVerificationItems}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 displayType={displayType}
                 existingEndorsements={existingEndorsements}
@@ -299,7 +301,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                     <BoostDetailsSideBar
                         credential={selectedCredential}
                         categoryType={categoryType}
-                        verificationItems={verifications}
+                        verificationItems={detailVerificationItems}
                         customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                         displayType={displayType}
                         existingEndorsements={existingEndorsements}

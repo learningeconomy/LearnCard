@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { IonFooter, IonCol, IonGrid, IonRow, IonInput } from '@ionic/react';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
@@ -12,6 +12,7 @@ import {
     BoostPageViewModeType,
     DisplayTypeEnum,
     useModal,
+    useWallet,
 } from 'learn-card-base';
 
 import {
@@ -22,7 +23,7 @@ import {
     getCredentialName,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
-import { VC } from '@learncard/types';
+import { VC, VerificationItem } from '@learncard/types';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { Capacitor } from '@capacitor/core';
 
@@ -43,11 +44,30 @@ export const BoostLinkedCredentialsModal: React.FC<{
 }) => {
     const bottomBarRef = useRef<HTMLDivElement>();
     const { closeModal } = useModal();
+    const { initWallet } = useWallet();
+
+    const [parentVerificationItems, setParentVerificationItems] = useState<VerificationItem[]>([]);
 
     const [viewMode, setViewMode] = useState<BoostPageViewModeType>(BoostPageViewMode.Card);
     const isCardView = viewMode === BoostPageViewMode.Card;
 
     const [search, setSearch] = useState<string>('');
+    const isParentClrCredential = credential?.type?.includes('ClrCredential');
+
+    useEffect(() => {
+        const verifyParentCredential = async () => {
+            if (!isParentClrCredential) {
+                setParentVerificationItems([]);
+                return;
+            }
+
+            const wallet = await initWallet();
+            const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
+            setParentVerificationItems(verifications ?? []);
+        };
+
+        verifyParentCredential();
+    }, [credential?.id, isParentClrCredential]);
 
     keyboardStore.store.subscribe(({ isOpen }) => {
         if (isOpen && Capacitor.isNativePlatform() && bottomBarRef.current) {
@@ -67,7 +87,6 @@ export const BoostLinkedCredentialsModal: React.FC<{
     const achievementType = credential?.credentialSubject?.achievement?.achievementType;
 
     const { subColor, color } = boostCategoryMetadata[categoryType];
-    const isParentClrCredential = credential?.type?.includes('ClrCredential');
     const categoryColors = {
         [BoostCategoryOptionsEnum.learningHistory]: 'emerald-700',
         [BoostCategoryOptionsEnum.socialBadge]: 'blue-400',
@@ -93,6 +112,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
                         key={record?.uri || index}
                         credential={record}
                         isClrChildCredential={Boolean(isParentClrCredential)}
+                        parentVerificationItems={parentVerificationItems}
                         defaultImg={defaultImg}
                         categoryType={
                             categoryType as
