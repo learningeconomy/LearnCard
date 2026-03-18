@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, profileRoute, openRoute } from '@routes';
+import { t, profileRoute, openRoute, guardianGatedRoute } from '@routes';
 import { ConsentFlowContract } from '@models';
 
 import {
@@ -873,7 +873,7 @@ export const contractsRouter = t.router({
             });
         }),
 
-    consentToContract: profileRoute
+    consentToContract: guardianGatedRoute
         .meta({
             openapi: {
                 protect: true,
@@ -897,6 +897,14 @@ export const contractsRouter = t.router({
         .output(z.object({ termsUri: z.string(), redirectUrl: z.string().optional() }))
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
+            const { isChildAccount, hasGuardianApproval } = ctx;
+
+            if (isChildAccount && !hasGuardianApproval) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Child accounts require guardian approval to consent to contracts',
+                });
+            }
 
             const { terms, contractUri, expiresAt, oneTime, recipientToken } = input;
 
@@ -1140,7 +1148,7 @@ export const contractsRouter = t.router({
             };
         }),
 
-    updateConsentedContractTerms: profileRoute
+    updateConsentedContractTerms: guardianGatedRoute
         .meta({
             openapi: {
                 protect: true,
@@ -1163,6 +1171,15 @@ export const contractsRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
+            const { isChildAccount, hasGuardianApproval } = ctx;
+
+            if (isChildAccount && !hasGuardianApproval) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message:
+                        'Child accounts require guardian approval to update consented contract terms',
+                });
+            }
 
             const { uri, terms, expiresAt, oneTime } = input;
 

@@ -244,9 +244,9 @@ services:
                     'wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1',
                 ]
             interval: 10s
-            timeout: 10s
-            retries: 10
-            start_period: 120s
+            timeout: 15s
+            retries: 15
+            start_period: 200s
         environment:
             NEO4J_AUTH: none
             NEO4J_server_jvm_additional: --add-modules=jdk.incubator.vector

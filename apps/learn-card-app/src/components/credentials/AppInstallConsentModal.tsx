@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useImmer, Updater } from 'use-immer';
 import { useQuery } from '@tanstack/react-query';
+import { useImmer, Updater } from 'use-immer';
+import { useGuardianGate } from '../../hooks/useGuardianGate';
 import { BookOpen, PenTool, Settings, Loader2 } from 'lucide-react';
 
 import {
@@ -14,6 +15,7 @@ import {
     useToast,
     ToastTypeEnum,
 } from 'learn-card-base';
+import { checkAppInstallEligibility } from '@learncard/helpers';
 
 import type { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import ConsentFlowPrivacyAndData from '../../pages/consentFlow/ConsentFlowPrivacyAndData';
@@ -68,6 +70,13 @@ type AppInstallConsentModalProps = {
     onAccept: () => void;
     onReject: () => void;
     isPreview?: boolean;
+    /** Age restriction data for guardian gate check */
+    ageRestriction?: {
+        isChildProfile: boolean;
+        userAge: number | null;
+        minAge?: number;
+        ageRating?: string;
+    };
 };
 
 export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
@@ -78,12 +87,18 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     onAccept,
     onReject,
     isPreview = false,
+    ageRestriction,
 }) => {
     const { newModal } = useModal();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const currentUser = useCurrentUser();
     const [isConsenting, setIsConsenting] = useState(false);
+
+    // Guardian gate for child profiles - without ignorePriorVerification
+    const { guardedAction } = useGuardianGate({
+        skip: isPreview || !ageRestriction,
+    });
 
     // Filter to only known permissions
     const validPermissions = permissions.filter((p): p is AppPermission => p in PERMISSION_INFO);
@@ -179,7 +194,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
         );
     };
 
-    const handleInstall = async () => {
+    const doInstall = async () => {
         // If there's a contract, consent to it first
         if (contractUri && contractDetails && terms) {
             setIsConsenting(true);
@@ -200,6 +215,20 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     error?.shape?.code === 'CONFLICT' ||
                     error?.message?.includes('already consented');
 
+                if (
+                    error?.data?.code === 'FORBIDDEN' &&
+                    error?.message?.includes('guardian approval')
+                ) {
+                    // Not 100% sure why we're being intentionally vague about error messages,
+                    //   but we should definitely show this particular one
+                    setIsConsenting(false);
+                    presentToast(error?.message, {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
+                    return;
+                }
+
                 if (!isAlreadyConsented) {
                     setIsConsenting(false);
                     presentToast('Unable to install app, please try again.', {
@@ -215,6 +244,53 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
 
         // Proceed with the install
         onAccept();
+    };
+
+    const handleInstall = () => {
+        // If no age restriction data, proceed directly
+        if (!ageRestriction) {
+            doInstall();
+            return;
+        }
+
+        const { isChildProfile, userAge, minAge, ageRating } = ageRestriction;
+
+        const result = checkAppInstallEligibility({
+            isChildProfile,
+            userAge,
+            minAge,
+            ageRating,
+            hasContract: Boolean(contractUri),
+        });
+
+        switch (result.action) {
+            case 'hard_blocked':
+                presentToast(result.reason, {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                return;
+
+            case 'require_dob':
+                // DOB entry should have been handled before reaching this modal
+                // If we get here, show an error
+                presentToast('Please set your date of birth before installing this app.', {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                return;
+
+            case 'require_guardian_approval':
+                // Use guardedAction WITHOUT ignorePriorVerification
+                guardedAction(() => {
+                    doInstall();
+                });
+                return;
+
+            case 'proceed':
+                doInstall();
+                return;
+        }
     };
 
     return (
