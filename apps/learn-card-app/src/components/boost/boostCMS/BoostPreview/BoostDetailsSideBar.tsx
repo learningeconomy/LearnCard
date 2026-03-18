@@ -4,6 +4,7 @@ import X from '../../../svgs/X';
 import { IonFooter } from '@ionic/react';
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
+import CredentialResultsBox from './CredentialResultsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
@@ -39,6 +40,7 @@ type BoostDetailsSideBarProps = {
     existingEndorsements?: VC[];
     hideEndorsementRequestCard?: boolean;
     isEarnedBoost?: boolean;
+    isClrChildCredential?: boolean;
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
@@ -50,6 +52,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     existingEndorsements = [],
     hideEndorsementRequestCard = false,
     isEarnedBoost,
+    isClrChildCredential = false,
 }) => {
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
@@ -59,22 +62,37 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     });
     const { isMobile } = useDeviceTypeByWidth();
 
-    const { description, criteria, alignment, attachments, title, evidence, skills } = useGetVCInfo(
-        credential,
-        categoryType
-    );
+    const {
+        description,
+        criteria,
+        alignment,
+        attachments,
+        title,
+        evidence,
+        skills,
+        results,
+        creditsEarned,
+    } = useGetVCInfo(credential, categoryType);
 
     const isMediaDisplay = displayType === DisplayTypeEnum.Media;
 
     const credentialVerificationDisplay = (
         <div className="w-full flex items-center justify-start text-sm text-grayscale-600 font-semibold border-t-[1px] border-solid border-grayscale-200 pt-[10px]">
-            <CredentialVerificationDisplay
-                credential={credential}
-                iconClassName="!w-[20px] !h-[20px] mr-1"
-                showText
-                className="!capitalize !text-grayscale-900 text-sm"
-            />
-            &nbsp;on {createdAt}
+            {isClrChildCredential ? (
+                <span className="text-grayscale-900 text-sm">
+                    Verified as part of the parent CLR credential on {createdAt}
+                </span>
+            ) : (
+                <>
+                    <CredentialVerificationDisplay
+                        credential={credential}
+                        iconClassName="!w-[20px] !h-[20px] mr-1"
+                        showText
+                        className="!capitalize !text-grayscale-900 text-sm"
+                    />
+                    &nbsp;on {createdAt}
+                </>
+            )}
         </div>
     );
 
@@ -109,6 +127,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                     </TruncateTextBox>
 
                     {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
+
+                    <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
 
                     <CredentialIssuerInformation credential={credential} />
 
@@ -149,9 +169,23 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
 
                     {alignment && <AlignmentsBox alignment={alignment} style="Certificate" />}
 
-                    {verificationItems && verificationItems?.length > 0 && (
-                        <VerificationsBox verificationItems={verificationItems} />
+                    {isClrChildCredential && (
+                        <div className="bg-white flex flex-col items-start gap-[6px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
+                            <h3 className="text-[17px] text-grayscale-900 font-poppins">
+                                Verification
+                            </h3>
+                            <p className="text-grayscale-700 text-[13px] font-poppins">
+                                This achievement is verified through the parent CLR credential
+                                signature.
+                            </p>
+                        </div>
                     )}
+
+                    {!isClrChildCredential &&
+                        verificationItems &&
+                        verificationItems?.length > 0 && (
+                            <VerificationsBox verificationItems={verificationItems} />
+                        )}
                 </>
             );
             break;

@@ -158,6 +158,10 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
             : showVerifications
             ? vcVerifications
             : [];
+    const isClrCredential = credential?.type?.includes('ClrCredential');
+    const selectedCredential = isClrCredential
+        ? credential?.credentialSubject?.verifiableCredential?.[0] ?? credential
+        : credential;
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
 
@@ -181,17 +185,14 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         // }
         newModal(
             <BoostDetailsSideMenu
-                credential={
-                    credential?.type.includes('ClrCredential')
-                        ? credential?.credentialSubject?.verifiableCredential[0]
-                        : credential
-                }
+                credential={selectedCredential}
                 categoryType={categoryType}
                 verificationItems={verifications}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 displayType={displayType}
                 existingEndorsements={existingEndorsements}
                 isEarnedBoost={isEarnedBoost}
+                isClrChildCredential={isClrCredential}
             />,
             {
                 className: '!bg-transparent',
@@ -287,17 +288,14 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 </footer>
                 {!isMobile && (
                     <BoostDetailsSideBar
-                        credential={
-                            credential?.type.includes('ClrCredential')
-                                ? credential?.credentialSubject?.verifiableCredential[0]
-                                : credential
-                        }
+                        credential={selectedCredential}
                         categoryType={categoryType}
                         verificationItems={verifications}
                         customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                         displayType={displayType}
                         existingEndorsements={existingEndorsements}
                         isEarnedBoost={isEarnedBoost}
+                        isClrChildCredential={isClrCredential}
                     />
                 )}
             </div>

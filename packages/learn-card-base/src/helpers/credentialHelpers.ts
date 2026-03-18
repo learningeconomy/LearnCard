@@ -572,18 +572,48 @@ export const getCredentialSubject = (credential: UnsignedVC) => {
 
 export const getCredentialSubjectAchievementData = (credential: UnsignedVC) => {
     let description, criteria, alignment;
+    const credentialSubject = getCredentialSubject(credential);
+
+    let achievementSubject;
+    if (Array.isArray(credentialSubject?.achievementSubject)) {
+        achievementSubject = credentialSubject.achievementSubject[0];
+    } else {
+        achievementSubject = credentialSubject?.achievementSubject;
+    }
+
+    const credentialDescription = credential?.description;
+    const achievementSubjectDescription = achievementSubject?.description;
+
     if (credential?.type?.includes(CREDENTIAL_TYPES.LEGACY_CRED)) {
         description = credential?.legacyAssertion?.badge?.description;
         criteria = credential?.legacyAssertion?.badge?.narrative;
         alignment = credential?.legacyAssertion?.badge?.alignment;
     } else if (isClrCredential(credential)) {
         const achievement = getCredentialSubjectAchievement(credential);
-        description = credential?.description ?? achievement?.description;
+        if (credentialDescription !== undefined && credentialDescription !== null) {
+            description = credentialDescription;
+        } else if (
+            achievementSubjectDescription !== undefined &&
+            achievementSubjectDescription !== null
+        ) {
+            description = achievementSubjectDescription;
+        } else {
+            description = achievement?.description;
+        }
         criteria = achievement?.criteria?.narrative;
         alignment = achievement?.alignment;
     } else {
         const achievement = getCredentialSubjectAchievement(credential);
-        description = achievement?.description;
+        if (credentialDescription !== undefined && credentialDescription !== null) {
+            description = credentialDescription;
+        } else if (
+            achievementSubjectDescription !== undefined &&
+            achievementSubjectDescription !== null
+        ) {
+            description = achievementSubjectDescription;
+        } else {
+            description = achievement?.description;
+        }
         criteria = achievement?.criteria?.narrative;
         alignment = achievement?.alignment;
     }
