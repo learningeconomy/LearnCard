@@ -147,6 +147,22 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         let finalDoc = { ...replacedDoc, controller: profile.did };
 
+        // Add brain-service service endpoint for federation
+        const baseUrl = `https://${domain.replace('%3A', ':')}`;
+        finalDoc.service = [
+            ...(finalDoc.service || []),
+            {
+                id: `${did}#brain-service`,
+                type: 'LearnCardBrainService',
+                serviceEndpoint: baseUrl,
+            },
+            {
+                id: `${did}#universal-inbox`,
+                type: 'UniversalInboxService',
+                serviceEndpoint: `${baseUrl}/api/inbox/receive`,
+            },
+        ];
+
         // Ensure the primary keyAgreement uses 2019 suite format for backwards compatibility
         try {
             const vm0 = (finalDoc.verificationMethod?.[0] as any) || {};

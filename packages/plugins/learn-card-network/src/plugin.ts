@@ -504,6 +504,70 @@ export async function getLearnCardNetworkPlugin(
             sendCredential: async (_learnCard, profileId, vc, metadataOrEncrypt, encrypt) => {
                 await ensureUser();
 
+                // Check if profileId is an external DID (federation case)
+                if (profileId.startsWith('did:web:')) {
+                    const didDoc = await _learnCard.invoke.resolveDid(profileId);
+
+                    const inboxService = didDoc.service?.find(s => {
+                        const type = Array.isArray(s.type) ? s.type[0] : s.type;
+                        return type === 'UniversalInboxService' || type === 'LearnCardInboxService';
+                    });
+
+                    const brainService = didDoc.service?.find(s => {
+                        const type = Array.isArray(s.type) ? s.type[0] : s.type;
+                        return type === 'LearnCardBrainService';
+                    });
+
+                    const serviceEndpoint =
+                        inboxService?.serviceEndpoint || brainService?.serviceEndpoint;
+
+                    if (serviceEndpoint) {
+                        // Handle metadata parameter
+                        let metadata: Record<string, unknown> | undefined;
+                        if (typeof metadataOrEncrypt === 'object') {
+                            metadata = metadataOrEncrypt;
+                        }
+
+                        const myProfile = await client.profile.getProfile.query();
+                        const issuerDid = myProfile?.did || (await client.utilities.getDid.query());
+                        const issuerDisplayName = myProfile?.displayName || 'Unknown Issuer';
+                        const signedCredential = await _learnCard.invoke.issueCredential(vc);
+                        const didAuthJwt = await _learnCard.invoke.getDidAuthVp({
+                            proofFormat: 'jwt',
+                            challenge: `inbox-federation-${Date.now()}`,
+                        });
+
+                        const receiveUrl =
+                            inboxService?.serviceEndpoint || `${serviceEndpoint}/api/inbox/receive`;
+
+                        const response = await fetch(receiveUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${didAuthJwt}`,
+                            },
+                            body: JSON.stringify({
+                                recipientDid: profileId,
+                                credential: signedCredential,
+                                issuerDid,
+                                issuerDisplayName,
+                                configuration: {
+                                    ...metadata,
+                                    federatedFrom: issuerDid,
+                                },
+                            }),
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.text();
+                            throw new Error(`Federation failed: ${error}`);
+                        }
+
+                        const result = await response.json();
+                        return result.issuanceId;
+                    }
+                }
+
                 // Handle backward compatibility: if metadataOrEncrypt is a boolean, it's the encrypt flag
                 let metadata: Record<string, unknown> | undefined;
                 let shouldEncrypt = true;
@@ -1972,6 +2036,15 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.activity.getActivityChain.query(options);
+            },
+
+            isServiceTrusted: async (_learnCard, serviceDid) => {
+                const trustedServices = await client.federation.getTrustedServices.query({});
+                return trustedServices.some(s => s.did === serviceDid);
+            },
+
+            getTrustedServices: async () => {
+                return client.federation.getTrustedServices.query({});
             },
         },
     };

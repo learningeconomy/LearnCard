@@ -1,0 +1,19 @@
+{
+    "name": "@workspace/federation-e2e-tests",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "test": "echo 'Skipping Federation E2E tests in CI. Run test:federation:e2e if you want to run these!'",
+        "test:federation:e2e": "vitest",
+        "test:federation:run": "vitest run",
+        "logs": "docker compose logs -f"
+    },
+    "dependencies": {
+        "@learncard/core": "workspace:*",
+        "@learncard/didkit-plugin": "workspace:*",
+        "@learncard/init": "workspace:*",
+        "@learncard/types": "workspace:*",
+        "execa": "^9.5.1"
+    },
+    "devDependencies": {}
+}

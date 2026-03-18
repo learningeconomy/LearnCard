@@ -1,10 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import type { UnsignedVC, VC, VP, JWE } from '@learncard/types';
 import {
-    UnsignedVC,
-    VC,
-    VP,
-    JWE,
     UnsignedVCValidator,
     VCValidator,
     VPValidator,
@@ -31,40 +28,59 @@ import { getContractById } from '@accesslayer/consentflowcontract/read';
 import { getContractTermsById } from '@accesslayer/consentflowcontract/relationships/read';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
 
-const isBoostCredential = (item: any): boolean =>
+const isBoostCredential = (item: unknown): item is Record<string, unknown> =>
     !!item &&
     typeof item === 'object' &&
     !Array.isArray(item) &&
-    Array.isArray(item.type) &&
-    item.type.includes('BoostCredential');
+    Array.isArray((item as Record<string, unknown>).type) &&
+    ((item as Record<string, unknown>).type as string[])?.includes('BoostCredential');
 
-const getSubjects = (credential: any): any[] => {
-    if (!credential || typeof credential !== 'object') return [];
-    if (Array.isArray(credential.credentialSubject)) return credential.credentialSubject;
-    if (credential.credentialSubject) return [credential.credentialSubject];
-    return [];
+const getSubjects = (credential: Record<string, unknown>): Record<string, unknown>[] => {
+    const subject = credential.credentialSubject;
+    if (!subject) return [];
+    if (Array.isArray(subject)) return subject as Record<string, unknown>[];
+    return [subject as Record<string, unknown>];
 };
 
-const subjectHasAlignments = (subject: any): boolean => {
-    if (!subject || typeof subject !== 'object') return false;
-    if (Array.isArray(subject?.achievement?.alignment) && subject.achievement.alignment.length > 0)
+const subjectHasAlignments = (subject: Record<string, unknown>): boolean => {
+    const achievement = subject.achievement as Record<string, unknown> | undefined;
+    if (Array.isArray(achievement?.alignment) && (achievement.alignment as unknown[]).length > 0)
         return true;
-    if (Array.isArray(subject?.alignment) && subject.alignment.length > 0) return true;
+    if (Array.isArray(subject.alignment) && (subject.alignment as unknown[]).length > 0)
+        return true;
     return false;
 };
 
-const credentialHasAlignments = (credential: any): boolean =>
+const credentialHasAlignments = (credential: Record<string, unknown>): boolean =>
     getSubjects(credential).some(subjectHasAlignments);
 
-const getBoostUriFromCredential = (credential: any): string | undefined => {
-    const { boostId } = credential ?? {};
+const getBoostUriFromCredential = (credential: Record<string, unknown>): string | undefined => {
+    const boostId = credential.boostId;
     return typeof boostId === 'string' && boostId.length > 0 ? boostId : undefined;
 };
 
+type BoostInstanceLike = {
+    id: string;
+    boost: string;
+    name?: string;
+    status?: 'DRAFT' | 'PROVISIONAL' | 'LIVE';
+    type?: string;
+    category?: string;
+    autoConnectRecipients?: boolean;
+    defaultPermissions?: {
+        canShare?: boolean;
+        canRevoke?: boolean;
+        canDelete?: boolean;
+    };
+    allowAnyoneToCreateChildren?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
 const ensureAlignmentsForBoostCredential = async (
-    credential: any,
+    credential: Record<string, unknown>,
     domain: string,
-    options: { boostInstance?: any; boostUri?: string }
+    options: { boostInstance?: BoostInstanceLike; boostUri?: string }
 ): Promise<boolean> => {
     if (!isBoostCredential(credential)) return false;
     if (credentialHasAlignments(credential)) return false;
@@ -72,7 +88,11 @@ const ensureAlignmentsForBoostCredential = async (
     const { boostInstance: providedInstance, boostUri: providedUri } = options;
 
     if (providedInstance) {
-        await injectObv3AlignmentsIntoCredentialForBoost(credential, providedInstance, domain);
+        await injectObv3AlignmentsIntoCredentialForBoost(
+            credential as Parameters<typeof injectObv3AlignmentsIntoCredentialForBoost>[0],
+            providedInstance as Parameters<typeof injectObv3AlignmentsIntoCredentialForBoost>[1],
+            domain
+        );
         return true;
     }
 
@@ -82,7 +102,11 @@ const ensureAlignmentsForBoostCredential = async (
     const instance = await getBoostByUri(boostUri);
     if (!instance) return false;
 
-    await injectObv3AlignmentsIntoCredentialForBoost(credential, instance, domain);
+    await injectObv3AlignmentsIntoCredentialForBoost(
+        credential as Parameters<typeof injectObv3AlignmentsIntoCredentialForBoost>[0],
+        instance as Parameters<typeof injectObv3AlignmentsIntoCredentialForBoost>[1],
+        domain
+    );
     return true;
 };
 
@@ -155,7 +179,34 @@ export const storageRouter = t.router({
             const { uri, challenge } = input;
             const { domain } = ctx;
 
-            const { id, type } = getUriParts(uri);
+            const { id, type, method } = getUriParts(uri, true);
+
+            // Check if this is an external URI that needs to be fetched from another instance
+            const normalizedDomain = domain.replace('/trpc', '').replace(/%3A/g, ':');
+            const normalizedLocalDomain = domain.replace('/trpc', '').replace(/%3A/g, ':');
+            const isLocalUri = !domain || normalizedDomain === normalizedLocalDomain;
+
+            if (method === 'network' && !isLocalUri) {
+                // Fetch from external brain-service
+                const isLocal = domain.includes('localhost');
+                const baseUrl = `http${isLocal ? '' : 's'}://${domain
+                    .replace('%3A', ':')
+                    .replace('/trpc', '')}`;
+                const response = await fetch(
+                    `${baseUrl}/api/storage/resolve?uri=${encodeURIComponent(uri)}${
+                        challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
+                    }`
+                );
+
+                if (!response.ok) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: `External resource not found: ${uri}`,
+                    });
+                }
+
+                return await response.json();
+            }
 
             const cachedResponse = await getCachedStorageByUri(uri);
 
@@ -198,8 +249,7 @@ export const storageRouter = t.router({
                     const canView = Boolean(
                         profile && (await canProfileViewBoost(profile, boostInstance))
                     );
-                    const isViewableByClaimLink =
-                        await isBoostViewableByClaimLink(boostInstance);
+                    const isViewableByClaimLink = await isBoostViewableByClaimLink(boostInstance);
 
                     if (!isViewableByClaimLink && !canView) {
                         throw new TRPCError({
@@ -220,7 +270,11 @@ export const storageRouter = t.router({
                     }
                 }
 
-                if (mutated) await setStorageForUri(uri, cachedResponse as any);
+                if (mutated)
+                    await setStorageForUri(
+                        uri,
+                        cachedResponse as Parameters<typeof setStorageForUri>[1]
+                    );
 
                 return cachedResponse;
             }
