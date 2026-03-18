@@ -16,6 +16,7 @@ import AlignmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/A
 import TruncateTextBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/TruncateTextBox';
 import VerificationsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/VerificationsBox';
 import MediaAttachmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/MediaAttachmentBoxCerts';
+import ChildCLRVerificationNotice from './ChildCLRVerificationNotice';
 
 import { useGetVCInfo, boostPreviewStore, BoostPreviewTabsEnum } from 'learn-card-base';
 
@@ -126,9 +127,9 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                         )}
                     </TruncateTextBox>
 
-                    {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
-
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
+
+                    {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
 
                     <CredentialIssuerInformation credential={credential} />
 
@@ -169,17 +170,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
 
                     {alignment && <AlignmentsBox alignment={alignment} style="Certificate" />}
 
-                    {isClrChildCredential && (
-                        <div className="bg-white flex flex-col items-start gap-[6px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
-                            <h3 className="text-[17px] text-grayscale-900 font-poppins">
-                                Verification
-                            </h3>
-                            <p className="text-grayscale-700 text-[13px] font-poppins">
-                                This achievement is verified through the parent CLR credential
-                                signature.
-                            </p>
-                        </div>
-                    )}
+                    {isClrChildCredential && <ChildCLRVerificationNotice />}
 
                     {!isClrChildCredential &&
                         verificationItems &&
