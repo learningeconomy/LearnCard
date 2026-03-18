@@ -63,14 +63,20 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
         isLoading: goalsLoading,
         saveIfChanged: saveGoals,
         isSaving: goalsSaving,
-    } = useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY);
+    } = useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY, {
+        name: 'Career Goals',
+        description: 'Self-reported career goals and aspirations',
+    });
 
     const {
         data: profileData,
         isLoading: profileLoading,
         saveIfChanged: saveProfile,
         isSaving: profileSaving,
-    } = useVerifiableData<SkillProfileProfileData>(SKILL_PROFILE_PROFILE_KEY);
+    } = useVerifiableData<SkillProfileProfileData>(SKILL_PROFILE_PROFILE_KEY, {
+        name: 'Professional Profile',
+        description: 'Professional title and experience level',
+    });
 
     const isLoading = goalsLoading || profileLoading;
     const isSaving = goalsSaving || profileSaving;

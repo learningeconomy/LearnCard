@@ -23,7 +23,10 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
     const [salaryType, setSalaryType] = useState<string>('per_year');
 
     const { data, isLoading, saveIfChanged, isSaving } =
-        useVerifiableData<SkillProfileSalaryData>(SKILL_PROFILE_SALARY_KEY);
+        useVerifiableData<SkillProfileSalaryData>(SKILL_PROFILE_SALARY_KEY, {
+            name: 'Salary Information',
+            description: 'Current salary and compensation type',
+        });
 
     // Pre-populate form from existing verifiable data
     useEffect(() => {
