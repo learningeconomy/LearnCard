@@ -9,6 +9,7 @@ import {
     AskCredentialSearchPayload,
     VerifiablePresentationRequest,
     LaunchFeaturePayload,
+    RequestLearnerContextPayload,
     AppEvent,
 } from './useLearnCardPostMessage';
 
@@ -490,6 +491,69 @@ export const createAppEventHandler = (dependencies: {
 };
 
 /**
+ * REQUEST_LEARNER_CONTEXT Handler
+ * Partner requests comprehensive learner context for AI tutoring.
+ */
+export const createRequestLearnerContextHandler = (dependencies: {
+    requestLearnerContext: (options: {
+        include?: string[];
+        format?: string;
+        instructions?: string;
+        detailLevel?: string;
+    }) => Promise<{
+        prompt: string;
+        raw?: {
+            credentials: unknown[];
+            preferences?: Record<string, unknown>;
+            recentActivity?: unknown[];
+        };
+        did: string;
+        displayName?: string;
+    }>;
+    showConsentModal?: (purpose: string) => Promise<boolean>;
+}): ActionHandler<'REQUEST_LEARNER_CONTEXT'> => {
+    return async ({ payload }) => {
+        const { requestLearnerContext, showConsentModal } = dependencies;
+
+        try {
+            // Optional: Show consent modal for data sharing
+            if (showConsentModal) {
+                const consented = await showConsentModal(
+                    'Share your learning history, credentials, and preferences with this app?'
+                );
+                if (!consented) {
+                    return {
+                        success: false,
+                        error: {
+                            code: 'USER_REJECTED',
+                            message: 'User declined to share learner context',
+                        },
+                    };
+                }
+            }
+
+            const context = await requestLearnerContext({
+                include: payload.include,
+                format: payload.format,
+                instructions: payload.instructions,
+                detailLevel: payload.detailLevel,
+            });
+
+            return { success: true, data: context };
+        } catch (error) {
+            return {
+                success: false,
+                error: {
+                    code: 'UNKNOWN_ERROR',
+                    message:
+                        error instanceof Error ? error.message : 'Failed to get learner context',
+                },
+            };
+        }
+    };
+};
+
+/**
  * Factory function to create all handlers with dependencies
  */
 export function createActionHandlers(dependencies: {
@@ -524,6 +588,23 @@ export function createActionHandlers(dependencies: {
     // App events
     sendAppEvent?: (listingId: string, event: AppEvent) => Promise<Record<string, unknown>>;
     getAppListingId?: () => string | undefined;
+
+    // Learner context
+    requestLearnerContext?: (options: {
+        include?: string[];
+        format?: string;
+        instructions?: string;
+        detailLevel?: string;
+    }) => Promise<{
+        prompt: string;
+        raw?: {
+            credentials: unknown[];
+            preferences?: Record<string, unknown>;
+            recentActivity?: unknown[];
+        };
+        did: string;
+        displayName?: string;
+    }>;
 }): ActionHandlers {
     const handlers: ActionHandlers = {
         REQUEST_IDENTITY: createRequestIdentityHandler(dependencies),
@@ -540,6 +621,13 @@ export function createActionHandlers(dependencies: {
         handlers.APP_EVENT = createAppEventHandler({
             sendAppEvent: dependencies.sendAppEvent,
             getAppListingId: dependencies.getAppListingId,
+        });
+    }
+
+    // Add REQUEST_LEARNER_CONTEXT handler if dependency is provided
+    if (dependencies.requestLearnerContext) {
+        handlers.REQUEST_LEARNER_CONTEXT = createRequestLearnerContextHandler({
+            requestLearnerContext: dependencies.requestLearnerContext,
         });
     }
 

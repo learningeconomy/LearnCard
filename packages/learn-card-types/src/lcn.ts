@@ -1804,12 +1804,24 @@ export const GetTemplateRecipientsEventValidator = z
 
 export type GetTemplateRecipientsEvent = z.infer<typeof GetTemplateRecipientsEventValidator>;
 
+// Request learner context event for AI tutoring systems
+export const RequestLearnerContextEventValidator = z.object({
+    type: z.literal('request-learner-context'),
+    include: z.array(z.enum(['credentials', 'preferences', 'history'])).optional(),
+    format: z.enum(['prompt', 'structured']).optional(),
+    instructions: z.string().optional(),
+    detailLevel: z.enum(['compact', 'expanded']).optional(),
+});
+
+export type RequestLearnerContextEvent = z.infer<typeof RequestLearnerContextEventValidator>;
+
 // Add new event types here as the union grows
 export const AppEventValidator = z.discriminatedUnion('type', [
     SendCredentialEventValidator,
     CheckCredentialEventValidator,
     CheckIssuanceStatusEventValidator,
     GetTemplateRecipientsEventValidator,
+    RequestLearnerContextEventValidator,
 ]);
 
 export type AppEvent = z.infer<typeof AppEventValidator>;

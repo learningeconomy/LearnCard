@@ -36,6 +36,8 @@ import type {
     TemplateIssuanceStatusResponse,
     GetTemplateRecipientsInput,
     TemplateRecipientsResponse,
+    RequestLearnerContextOptions,
+    LearnerContextResponse,
     AppEvent,
     AppEventResponse,
     LearnCardError,
@@ -532,6 +534,45 @@ export class PartnerConnect {
         return this.sendMessage<TemplateIssueResponse>('INITIATE_TEMPLATE_ISSUE', {
             templateId,
             draftRecipients: draftRecipients || [],
+        });
+    }
+
+    /**
+     * Request comprehensive learner context for AI tutoring systems.
+     *
+     * This method retrieves the user's credentials, preferences, and learning history,
+     * then formats them into an LLM-ready prompt that can be injected directly into
+     * an AI system prompt.
+     *
+     * @param options - Configuration options for what data to include and how to format it
+     * @returns Promise resolving to learner context with prompt and optional raw data
+     *
+     * @example
+     * ```typescript
+     * // Get LLM-ready prompt with credentials
+     * const context = await learnCard.requestLearnerContext({
+     *   include: ['credentials', 'preferences', 'history'],
+     *   format: 'prompt',
+     *   instructions: 'Focus on technical skills and certifications',
+     *   detailLevel: 'expanded'
+     * });
+     *
+     * // Use in AI system prompt
+     * const systemPrompt = `You are a helpful tutor. ${context.prompt}`;
+     *
+     * // Access structured data if needed
+     * console.log('User DID:', context.did);
+     * console.log('Credentials count:', context.raw?.credentials.length);
+     * ```
+     */
+    public requestLearnerContext(
+        options?: RequestLearnerContextOptions
+    ): Promise<LearnerContextResponse> {
+        return this.sendMessage<LearnerContextResponse>('REQUEST_LEARNER_CONTEXT', {
+            include: options?.include ?? ['credentials'],
+            format: options?.format ?? 'prompt',
+            instructions: options?.instructions,
+            detailLevel: options?.detailLevel ?? 'compact',
         });
     }
 

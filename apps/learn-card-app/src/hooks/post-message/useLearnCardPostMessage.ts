@@ -20,7 +20,8 @@ export type LearnCardAction =
     | 'ASK_CREDENTIAL_SEARCH'
     | 'LAUNCH_FEATURE'
     | 'INITIATE_TEMPLATE_ISSUE'
-    | 'APP_EVENT';
+    | 'APP_EVENT'
+    | 'REQUEST_LEARNER_CONTEXT';
 
 export type ResponseType = 'SUCCESS' | 'ERROR';
 
@@ -104,6 +105,13 @@ export interface InitiateTemplateIssuePayload {
     draftRecipients?: string[]; // Optional list of profile IDs/DIDs
 }
 
+export interface RequestLearnerContextPayload {
+    include?: ('credentials' | 'preferences' | 'history')[];
+    format?: 'prompt' | 'structured';
+    instructions?: string;
+    detailLevel?: 'compact' | 'expanded';
+}
+
 // AppEvent and SendCredentialEvent are imported from @learncard/types above
 
 export type AppEventPayload = AppEvent;
@@ -120,6 +128,7 @@ export interface ActionPayloadMap {
     LAUNCH_FEATURE: LaunchFeaturePayload;
     INITIATE_TEMPLATE_ISSUE: InitiateTemplateIssuePayload;
     APP_EVENT: AppEventPayload;
+    REQUEST_LEARNER_CONTEXT: RequestLearnerContextPayload;
 }
 
 // ============================================================================
@@ -147,6 +156,7 @@ export interface ActionHandlers {
     LAUNCH_FEATURE?: ActionHandler<'LAUNCH_FEATURE'>;
     INITIATE_TEMPLATE_ISSUE?: ActionHandler<'INITIATE_TEMPLATE_ISSUE'>;
     APP_EVENT?: ActionHandler<'APP_EVENT'>;
+    REQUEST_LEARNER_CONTEXT?: ActionHandler<'REQUEST_LEARNER_CONTEXT'>;
 }
 
 // ============================================================================

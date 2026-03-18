@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
-import { useIsLoggedIn, useWallet, useModal, ModalTypes } from 'learn-card-base';
+import { useIsLoggedIn, useWallet, useModal, ModalTypes, LEARNCARD_AI_URL } from 'learn-card-base';
 import { UnsignedVP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
@@ -851,39 +851,122 @@ export function useLearnCardMessageHandlers({
                 // App events - only available when appId is provided
                 sendAppEvent: appId
                     ? async (listingId: string, event: AppEvent) => {
-                          const learnCard = await initWallet();
+                        const learnCard = await initWallet();
 
-                          if (!learnCard) {
-                              sdkActivityStore.set.endActivity();
-                              throw new Error('Wallet not initialized');
-                          }
+                        if (!learnCard) {
+                            sdkActivityStore.set.endActivity();
+                            throw new Error('Wallet not initialized');
+                        }
 
-                          if (!learnCard.invoke.sendAppEvent) {
-                              sdkActivityStore.set.endActivity();
-                              throw new Error('sendAppEvent not available - rebuild types');
-                          }
+                        if (!learnCard.invoke.sendAppEvent) {
+                            sdkActivityStore.set.endActivity();
+                            throw new Error('sendAppEvent not available - rebuild types');
+                        }
 
-                          const result = await learnCard.invoke.sendAppEvent(listingId, event);
+                        const result = await learnCard.invoke.sendAppEvent(listingId, event);
 
-                          // If a credential was issued via send-credential event, notify the parent component
-                          // Note: check-credential also returns credentialUri but should NOT trigger the modal
-                          if (
-                              event.type === 'send-credential' &&
-                              result.credentialUri &&
-                              !result.alreadyClaimed &&
-                              onCredentialIssued
-                          ) {
-                              onCredentialIssued(
-                                  result.credentialUri as string,
-                                  result.boostUri as string | undefined
-                              );
-                          }
+                        // If a credential was issued via send-credential event, notify the parent component
+                        // Note: check-credential also returns credentialUri but should NOT trigger the modal
+                        if (
+                            event.type === 'send-credential' &&
+                            result.credentialUri &&
+                            !result.alreadyClaimed &&
+                            onCredentialIssued
+                        ) {
+                            onCredentialIssued(
+                                result.credentialUri as string,
+                                result.boostUri as string | undefined
+                            );
+                        }
 
-                          sdkActivityStore.set.endActivity();
-                          return result;
-                      }
+                        sdkActivityStore.set.endActivity();
+                        return result;
+                    }
                     : undefined,
                 getAppListingId: appId ? () => appId : undefined,
+
+                // Learner context - only available when appId is provided
+                requestLearnerContext: appId
+                    ? async (options: {
+                        include?: string[];
+                        format?: string;
+                        instructions?: string;
+                        detailLevel?: string;
+                    }) => {
+                        const learnCard = await initWallet();
+
+                        if (!learnCard) {
+                            throw new Error('Wallet not initialized');
+                        }
+
+                        if (!learnCard.invoke.sendAppEvent) {
+                            throw new Error('sendAppEvent not available - rebuild types');
+                        }
+
+                        const result = await learnCard.invoke.sendAppEvent(appId, {
+                            type: 'request-learner-context',
+                            instructions: options.instructions,
+                            detailLevel: options.detailLevel,
+                        });
+
+                        const credentialUris = (result.credentialUris as string[]) || [];
+
+                        const credentials = await Promise.all(
+                            credentialUris.map(async uri => {
+                                try {
+                                    return await learnCard.read.get(uri);
+                                } catch (error) {
+                                    console.error(`Failed to resolve credential ${uri}:`, error);
+                                    return null;
+                                }
+                            })
+                        );
+
+                        const validCredentials = credentials.filter((c: unknown) => c !== null);
+
+                        let prompt = '';
+                        if (options.format === 'prompt') {
+                            try {
+                                const promptizerResponse = await fetch(
+                                    `${LEARNCARD_AI_URL}/ai/learner-context/format`,
+                                    {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            credentials: validCredentials,
+                                            personalData: result.personalData,
+                                            instructions: options.instructions,
+                                            detailLevel: options.detailLevel,
+                                            includeStructuredContext: true,
+                                            maxCredentials: validCredentials.length,
+                                        }),
+                                    }
+                                );
+
+                                if (promptizerResponse.ok) {
+                                    const promptizerData = await promptizerResponse.json();
+                                    prompt = promptizerData.prompt || '';
+                                } else {
+                                    prompt = `User has ${validCredentials.length} credentials.`;
+                                }
+                            } catch (error) {
+                                console.error('Failed to call promptizer:', error);
+                                prompt = `User has ${validCredentials.length} credentials.`;
+                            }
+                        }
+
+                        return {
+                            prompt,
+                            raw:
+                                options.format === 'structured'
+                                    ? { credentials: validCredentials }
+                                    : undefined,
+                            did: (result.did as string) || '',
+                            displayName: (result.personalData as { displayName?: string })
+                                ?.displayName,
+                        };
+                    }
+                    : undefined,
             }),
         [
             isLoggedIn,

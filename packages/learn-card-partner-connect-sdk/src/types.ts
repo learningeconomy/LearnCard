@@ -268,6 +268,67 @@ export interface TemplateRecipientsResponse {
 }
 
 /**
+ * Options for REQUEST_LEARNER_CONTEXT action
+ */
+export interface RequestLearnerContextOptions {
+    /**
+     * Which data categories to include in the context
+     * @default ['credentials']
+     */
+    include?: ('credentials' | 'preferences' | 'history')[];
+
+    /**
+     * Format of the response
+     * - 'prompt': Returns LLM-ready formatted text
+     * - 'structured': Returns structured data object
+     * @default 'prompt'
+     */
+    format?: 'prompt' | 'structured';
+
+    /**
+     * Optional instructions to guide the LLM prompt generation
+     */
+    instructions?: string;
+
+    /**
+     * Level of detail in the generated prompt
+     * @default 'compact'
+     */
+    detailLevel?: 'compact' | 'expanded';
+}
+
+/**
+ * Raw data included in learner context response (when format is 'structured')
+ */
+export interface LearnerContextRawData {
+    /** Array of Verifiable Credentials */
+    credentials: unknown[];
+
+    /** User preferences if requested and available */
+    preferences?: Record<string, unknown>;
+
+    /** Recent activity records if requested and available */
+    recentActivity?: unknown[];
+}
+
+/**
+ * Response from REQUEST_LEARNER_CONTEXT action
+ */
+export interface LearnerContextResponse {
+    /** LLM-ready formatted prompt text */
+    prompt: string;
+
+    /** Raw structured data (only included when format is 'structured') */
+    raw?: LearnerContextRawData;
+
+    /** User's DID */
+    did: string;
+
+    /** User's display name if available */
+    displayName?: string;
+}
+
+/**
  * Error codes that can be returned by the LearnCard host
  */
 export type ErrorCode =

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { LCNNotificationTypeEnumValidator } from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
+import type { ProfileType } from 'types/profile';
 
 import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
@@ -74,6 +75,11 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
 import { getAppDidWeb, getDidWeb, getProfileIdFromDid } from '@helpers/did.helpers';
 import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
+import { getCredentialsForContractTerms } from '@accesslayer/credential/relationships/read';
+import {
+    getContractTermsForProfile,
+    getContractDetailsByUri,
+} from '@accesslayer/consentflowcontract/relationships/read';
 import { getBoostRecipients, getBoostPermissions } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import type { BoostInstance } from '@models';
@@ -969,6 +975,76 @@ const handleGetTemplateRecipientsEvent = async (
         hasMore,
         cursor: nextCursor,
         total: formattedRecords.length,
+    };
+};
+
+const handleRequestLearnerContextEvent = async (
+    ctx: { domain: string },
+    profile: ProfileType,
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const { instructions, detailLevel = 'compact' } = event as {
+        instructions?: string;
+        detailLevel?: string;
+    };
+
+    const credentialUris: string[] = [];
+
+    const sentCredentials = await getCredentialsSentByListingToProfile(
+        listingId,
+        profile.profileId,
+        { limit: 100 }
+    );
+
+    for (const sentCred of sentCredentials) {
+        const credentialUri = getCredentialUri(sentCred.credentialId, ctx.domain);
+        credentialUris.push(credentialUri);
+    }
+
+    const integration = await getIntegrationForListing(listingId);
+
+    if (integration?.guideState) {
+        const guideState = JSON.parse(integration.guideState as any);
+
+        try {
+            const contractUri =
+                guideState?.config?.embedAppConfig?.featureConfig['request-data-consent']
+                    ?.contractUri;
+
+            if (contractUri) {
+                const contractDetails = await getContractDetailsByUri(contractUri);
+
+                if (contractDetails?.contract) {
+                    const terms = await getContractTermsForProfile(
+                        profile,
+                        contractDetails.contract
+                    );
+
+                    if (terms?.terms?.read?.credentials) {
+                        const uris = Object.values(terms.terms.read.credentials.categories).flatMap(
+                            category => category.shared ?? []
+                        );
+
+                        credentialUris.push(...uris);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching contract credentials:', error);
+        }
+    }
+
+    return {
+        credentialUris,
+        personalData: {
+            profileId: profile.profileId,
+            displayName: profile.displayName,
+        },
+        instructions,
+        detailLevel,
+        maxCredentials: credentialUris.length,
+        did: `did:web:${ctx.domain}:${profile.profileId}`,
     };
 };
 
@@ -1876,6 +1952,10 @@ export const appStoreRouter = t.router({
 
             if (eventType === 'get-template-recipients') {
                 return handleGetTemplateRecipientsEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'request-learner-context') {
+                return handleRequestLearnerContextEvent(ctx, profile, resolvedListingId, event);
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });
