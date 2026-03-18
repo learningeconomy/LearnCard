@@ -576,6 +576,11 @@ export const getCredentialSubjectAchievementData = (credential: UnsignedVC) => {
         description = credential?.legacyAssertion?.badge?.description;
         criteria = credential?.legacyAssertion?.badge?.narrative;
         alignment = credential?.legacyAssertion?.badge?.alignment;
+    } else if (isClrCredential(credential)) {
+        const achievement = getCredentialSubjectAchievement(credential);
+        description = credential?.description ?? achievement?.description;
+        criteria = achievement?.criteria?.narrative;
+        alignment = achievement?.alignment;
     } else {
         const achievement = getCredentialSubjectAchievement(credential);
         description = achievement?.description;
@@ -1169,7 +1174,22 @@ export const parseShareLinkParams = (shareLink: string) => {
         uri: params.get('uri'),
     };
 };
+const PDF_DATA_URL_PATTERN = /^data:application\/pdf(?:;[^,]+)?,/i;
+const PDF_BASE64_PREFIX = 'JVBERi0';
+
+export const isPdfAttachmentSource = (value?: string | null): boolean => {
+    if (typeof value !== 'string') return false;
+
+    const trimmedValue = value.trim();
+
+    return PDF_DATA_URL_PATTERN.test(trimmedValue) || trimmedValue.startsWith(PDF_BASE64_PREFIX);
+};
+
 export const getEvidenceAttachmentType = async (url: string) => {
+    if (isPdfAttachmentSource(url)) {
+        return 'document';
+    }
+
     const videoMetadata = await getVideoMetadata(url);
     const docMetadata = await getFileMetadata(url);
 
@@ -1184,9 +1204,7 @@ export const getEvidenceAttachmentType = async (url: string) => {
     if (videoMetadata && !docMetadata) {
         return 'video';
     }
-    if (url.includes('data:application/pdf;base64,')) {
-        return 'document';
-    }
+
     return 'text';
 };
 
@@ -1201,10 +1219,7 @@ export const getEvidenceAttachments = async (evidence: BoostEvidenceSpec[]) => {
             if (ev?.url) {
                 url = ev?.url;
                 type = await getEvidenceAttachmentType(ev?.url);
-            } else if (
-                typeof ev?.id === 'string' &&
-                ev?.id?.startsWith('data:application/pdf;base64,')
-            ) {
+            } else if (isPdfAttachmentSource(ev?.id)) {
                 url = ev?.id;
                 type = 'document';
             } else if (ev?.type?.includes('EvidenceFile')) {
@@ -1230,10 +1245,16 @@ export const getEvidenceAttachments = async (evidence: BoostEvidenceSpec[]) => {
 
 export const convertEvidenceToAttachments = (evidence: BoostEvidenceSpec[]): BoostAttachment[] => {
     return evidence.map(evidence => {
+        const evidenceUrl = (evidence as BoostEvidenceSpec & { url?: string })?.url;
+        const url =
+            (typeof evidenceUrl === 'string' && evidenceUrl) ||
+            (typeof evidence?.id === 'string' && evidence.id) ||
+            '';
+
         return {
             type: evidence?.genre ?? '',
             title: evidence?.name ?? '',
-            url: evidence?.id,
+            url,
             fileName: evidence?.fileName ?? '',
             fileSize: evidence?.fileSize ?? '',
             fileType: evidence?.fileType ?? '',
