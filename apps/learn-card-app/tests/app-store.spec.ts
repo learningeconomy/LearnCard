@@ -3,6 +3,68 @@ import { test } from './fixtures/test';
 import { seedAppListing, mockEmbedRoute, SeededListing } from './app-store.helpers';
 import { waitForAuthenticatedState } from './test.helpers';
 
+test.describe('App Store — redirect flow', () => {
+    let listing: SeededListing;
+
+    test.beforeEach(async () => {
+        listing = await seedAppListing();
+    });
+
+    test('shows install context toast on login page when redirected from app listing', async ({ page }) => {
+        // Start logged out — no waitForAuthenticatedState
+        await page.goto('/');
+
+        // Navigate to app listing directly
+        await page.goto(`/app/${listing.listingId}`);
+
+        // Wait for listing page to load
+        await expect(page.getByText(listing.displayName)).toBeVisible({ timeout: 20_000 });
+
+        // Click "Get App" (button text for logged-out users) or "Install"
+        // The button shows "Get App" when logged out
+        await page.getByRole('button', { name: /get app|install/i }).click();
+
+        // Should navigate to /login
+        await expect(page).toHaveURL(/\/login/, { timeout: 5_000 });
+
+        // Toast should show install context — "Sign in to install [displayName]"
+        await expect(
+            page.getByText(new RegExp(`Sign in to install ${listing.displayName}`, 'i'))
+        ).toBeVisible({ timeout: 5_000 });
+    });
+
+    test('auto-triggers install modal after login redirect (existing user)', async ({ page }) => {
+        // Seed a user with a profile BEFORE logging in, so they have an existing account
+        await waitForAuthenticatedState(page, { profileId: 'testa' });
+
+        // Log out by clearing localStorage and reloading
+        await page.evaluate(() => localStorage.clear());
+        await page.reload();
+
+        // Navigate to app listing (logged out now)
+        await page.goto(`/app/${listing.listingId}`);
+
+        // Wait for listing to load
+        await expect(page.getByText(listing.displayName)).toBeVisible({ timeout: 20_000 });
+
+        // Click "Get App" to trigger install intent + redirect
+        await page.getByRole('button', { name: /get app|install/i }).click();
+
+        // Should redirect to /login
+        await expect(page).toHaveURL(/\/login/, { timeout: 5_000 });
+
+        // Log in again — waitForAuthenticatedState handles the login flow
+        // The returnUrl in the URL should cause redirect back to /app/:id
+        await waitForAuthenticatedState(page, { profileId: 'testa' });
+
+        // Should land back on the app listing
+        await expect(page).toHaveURL(new RegExp(`/app/${listing.listingId}`), { timeout: 15_000 });
+
+        // Install consent modal should auto-open
+        await expect(page.getByText(/install.*\?/i)).toBeVisible({ timeout: 20_000 });
+    });
+});
+
 test.describe('App Store', () => {
     let listing: SeededListing;
 
