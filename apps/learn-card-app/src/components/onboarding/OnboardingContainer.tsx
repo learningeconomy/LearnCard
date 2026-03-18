@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import OnboardingRoles from './onboardingRoles/OnboardingRoles';
 import OnboardingFooter from './onboardingFooter/OnboardingFooter';
@@ -6,6 +6,7 @@ import OnboardingHeader from './onboardingHeader/OnboardingHeader';
 import OnboardingNetworkForm from './onboardingNetworkForm/OnboardingNetworkForm';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useModal } from 'learn-card-base';
+import redirectStore from 'learn-card-base/stores/redirectStore';
 
 import { LearnCardRolesEnum, OnboardingStepsEnum } from './onboarding.helpers';
 
@@ -25,6 +26,27 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
         profileId: '',
     });
 
+    const [pendingInstall, setPendingInstall] = useState<{
+        listingId: string;
+        appName: string;
+    } | null>(null);
+
+    useEffect(() => {
+        // Set flag so AppListingPage's auto-trigger waits until onboarding closes
+        redirectStore.set.isOnboardingOpen(true);
+
+        // Claim installIntent — must happen after setting isOnboardingOpen
+        const intent = redirectStore.get.installIntent();
+        if (intent?.listingId) {
+            setPendingInstall({ listingId: intent.listingId, appName: intent.appName });
+            redirectStore.set.installIntent(null);
+        }
+
+        return () => {
+            redirectStore.set.isOnboardingOpen(false);
+        };
+    }, []);
+
     const updateFormData = (updates: Partial<typeof formData>) => {
         setFormData(prev => ({ ...prev, ...updates }));
     };
@@ -40,6 +62,8 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
                 onSuccess={onSuccess}
                 formData={formData}
                 updateFormData={updateFormData}
+                skipRoleSlides={pendingInstall !== null}
+                pendingInstall={pendingInstall}
             />
         );
     }
