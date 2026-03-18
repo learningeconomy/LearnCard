@@ -31,6 +31,7 @@ const createMockWallet = () => {
     const uploadEncrypted = vi.fn();
     const indexGet = vi.fn();
     const indexAdd = vi.fn();
+    const indexUpdate = vi.fn();
     const indexRemove = vi.fn();
     const readGet = vi.fn();
 
@@ -42,6 +43,7 @@ const createMockWallet = () => {
     uploadEncrypted.mockResolvedValue('lc:cloud:test-uri-123');
     indexGet.mockResolvedValue([]);
     indexAdd.mockResolvedValue(undefined);
+    indexUpdate.mockResolvedValue(undefined);
     indexRemove.mockResolvedValue(undefined);
     readGet.mockResolvedValue(null);
 
@@ -49,7 +51,7 @@ const createMockWallet = () => {
         id: { did: () => TEST_DID },
         invoke: { issueCredential },
         store: { LearnCloud: { uploadEncrypted } },
-        index: { LearnCloud: { get: indexGet, add: indexAdd, remove: indexRemove } },
+        index: { LearnCloud: { get: indexGet, add: indexAdd, update: indexUpdate, remove: indexRemove } },
         read: { get: readGet },
     };
 };
@@ -170,59 +172,37 @@ describe('saveVerifiableData', () => {
         ).rejects.toThrow('Failed to store verifiable data credential.');
     });
 
-    // --- Write ordering ---
+    // --- Update vs Add ---
 
-    it('writes new record BEFORE deleting old ones', async () => {
-        const callOrder: string[] = [];
-
+    it('uses index.update when a record already exists', async () => {
         wallet.index.LearnCloud.get.mockResolvedValueOnce([
             { id: '__verifiable_data_key__', uri: 'old-uri' },
         ]);
 
-        wallet.index.LearnCloud.add.mockImplementation(async () => {
-            callOrder.push('add');
-        });
+        await saveVerifiableData(wallet as never, 'key', { updated: true });
 
-        wallet.index.LearnCloud.remove.mockImplementation(async () => {
-            callOrder.push('remove');
-        });
+        expect(wallet.index.LearnCloud.update).toHaveBeenCalledOnce();
+        expect(wallet.index.LearnCloud.add).not.toHaveBeenCalled();
 
-        await saveVerifiableData(wallet as never, 'key', { new: true });
-
-        expect(callOrder).toEqual(['add', 'remove']);
+        const [id, updates] = wallet.index.LearnCloud.update.mock.calls[0];
+        expect(id).toBe('__verifiable_data_key__');
+        expect(updates.uri).toBe('lc:cloud:test-uri-123');
+        expect(updates.verifiableData).toEqual({ updated: true });
     });
 
-    it('cleans up multiple old records after writing', async () => {
-        wallet.index.LearnCloud.get.mockResolvedValueOnce([
-            { id: '__verifiable_data_key__', uri: 'old-uri-1' },
-            { id: '__verifiable_data_key__', uri: 'old-uri-2' },
-        ]);
-
-        await saveVerifiableData(wallet as never, 'key', {});
-
-        expect(wallet.index.LearnCloud.remove).toHaveBeenCalledTimes(2);
-    });
-
-    it('does not fail if old record removal throws', async () => {
-        wallet.index.LearnCloud.get.mockResolvedValueOnce([
-            { id: '__verifiable_data_key__', uri: 'old-uri' },
-        ]);
-
-        wallet.index.LearnCloud.remove.mockRejectedValueOnce(new Error('remove failed'));
-
-        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-        await expect(
-            saveVerifiableData(wallet as never, 'key', {})
-        ).resolves.toBe('lc:cloud:test-uri-123');
-
-        expect(warnSpy).toHaveBeenCalledOnce();
-
-        warnSpy.mockRestore();
-    });
-
-    it('skips cleanup when no existing records', async () => {
+    it('uses index.add when no record exists yet', async () => {
         wallet.index.LearnCloud.get.mockResolvedValueOnce([]);
+
+        await saveVerifiableData(wallet as never, 'key', { fresh: true });
+
+        expect(wallet.index.LearnCloud.add).toHaveBeenCalledOnce();
+        expect(wallet.index.LearnCloud.update).not.toHaveBeenCalled();
+    });
+
+    it('does not call remove during save', async () => {
+        wallet.index.LearnCloud.get.mockResolvedValueOnce([
+            { id: '__verifiable_data_key__', uri: 'old-uri' },
+        ]);
 
         await saveVerifiableData(wallet as never, 'key', {});
 

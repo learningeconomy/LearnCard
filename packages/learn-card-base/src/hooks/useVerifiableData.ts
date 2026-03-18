@@ -68,8 +68,8 @@ const createVerifiableDataCredential = async <T>(
 
 /**
  * Stores a verifiable data credential and indexes it.
- * Writes the new record first, then deletes old ones to avoid data loss
- * if the process is interrupted.
+ * If a record already exists for this key, it is updated in place.
+ * Otherwise a new index record is created.
  */
 const storeVerifiableData = async <T>(
     wallet: BespokeLearnCard,
@@ -78,15 +78,17 @@ const storeVerifiableData = async <T>(
     category: string,
     options?: Pick<VerifiableDataOptions, 'name' | 'description'>
 ): Promise<string> => {
-    // Fetch existing records before writing so we know what to clean up
+    const indexId = `__verifiable_data_${key}__`;
+
+    // Check whether an index record already exists for this key
     const existingRecords = await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({
-        id: `__verifiable_data_${key}__`,
+        id: indexId,
     });
 
     // Create and sign the credential
     const credential = await createVerifiableDataCredential(wallet, key, data, options);
 
-    // Store the credential
+    // Store the credential blob
     const uri = await wallet.store.LearnCloud.uploadEncrypted?.(credential);
 
     if (!uri) throw new Error('Failed to store verifiable data credential.');
@@ -94,25 +96,26 @@ const storeVerifiableData = async <T>(
     // Use the credential's own validFrom as the canonical timestamp
     const issuanceDate = credential.validFrom ?? new Date().toISOString();
 
-    // Index the new credential
-    await wallet.index.LearnCloud.add<VerifiableDataRecord<T>>({
-        uri,
-        id: `__verifiable_data_${key}__`,
-        category,
-        title: `VerifiableData: ${key}`,
-        verifiableData: data,
-        issuanceDate,
-    });
-
-    // Now clean up old records (safe — new record already written)
     if (existingRecords?.length > 0) {
-        for (const record of existingRecords) {
-            try {
-                await wallet.index.LearnCloud.remove(record.id);
-            } catch (e) {
-                console.warn('Failed to remove old verifiable data record:', e);
-            }
-        }
+        // Update the existing index record in place
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await wallet.index.LearnCloud.update(indexId, {
+            uri,
+            category,
+            title: `VerifiableData: ${key}`,
+            verifiableData: data as any,
+            issuanceDate,
+        });
+    } else {
+        // First write for this key — create a new index record
+        await wallet.index.LearnCloud.add<VerifiableDataRecord<T>>({
+            uri,
+            id: indexId,
+            category,
+            title: `VerifiableData: ${key}`,
+            verifiableData: data,
+            issuanceDate,
+        });
     }
 
     return uri;
