@@ -129,7 +129,7 @@ jobs:
 
             **Lane 3 — Low-risk UI / frontend**
             - All changed files are in `apps/`, `packages/react-learn-card/`, or `packages/learn-card-base/`.
-            - None of the changed files match these risky filename patterns: `*auth*`, `*permission*`, `*access*`, `*provider*` (auth providers), `*client*` (API clients), `*query*` (react-query definitions), `*api*`, `*network*`, `*env*`, `*secret*`, `*credential*` (credential issuance/verification logic — display-only is fine).
+            - None of the changed files match these risky filename patterns: `*authentication*`, `*authorization*`, `*permission*`, `*access*`, `*provider*` (auth providers), `*client*` (API clients), `*query*` (react-query definitions), `*api*`, `*network*`, `*env*`, `*secret*`, `*credentials*` (credential issuance/verification logic — display-only is fine).
             - Changes are presentational: JSX/TSX component markup, CSS/SCSS/Tailwind styles, copy/text, layout, stories (`*.stories.tsx`), or additive UI behavior.
             - No dangerous content patterns.
             - LOC limit: ≤ 400 lines changed.
