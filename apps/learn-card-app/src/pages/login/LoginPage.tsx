@@ -33,7 +33,7 @@ import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
 
 import { auth } from '../../firebase/firebase';
 
-import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
+import { IonContent, IonGrid, IonPage, IonRow, IonToast } from '@ionic/react';
 import EmailForm from './forms/EmailForm';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
@@ -75,6 +75,9 @@ export const LoginContent: React.FC = () => {
     const [showLinkedBanner, setShowLinkedBanner] = useState(false);
     const [accountHint, setAccountHint] = useState<string | null>(null);
     const [isPublicMode, setIsPublicMode] = useState(() => isPublicComputerMode());
+
+    const installIntent = redirectStore.use.installIntent();
+    const [showInstallContextToast, setShowInstallContextToast] = useState(false);
     const authConfig = getAuthConfig();
     const configCapabilities = getConfigCapabilities();
     const isWeb = !Capacitor.isNativePlatform();
@@ -208,6 +211,12 @@ export const LoginContent: React.FC = () => {
             return () => clearTimeout(timer); // Add cleanup
         }
     }, [showConfirmation]);
+
+    useEffect(() => {
+        if (installIntent?.listingId) {
+            setShowInstallContextToast(true);
+        }
+    }, [installIntent?.listingId]);
     // custom logins associated with the app
     const extraSocialLogins = useMemo(
         () => [
@@ -416,6 +425,14 @@ export const LoginContent: React.FC = () => {
                     </GenericErrorBoundary>
                 </>
             )}
+
+            <IonToast
+                isOpen={showInstallContextToast}
+                onDidDismiss={() => setShowInstallContextToast(false)}
+                message={`Sign in to install ${installIntent?.appName ?? 'this app'}`}
+                duration={3000}
+                position="top"
+            />
         </div>
     );
 };
