@@ -235,12 +235,21 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             ? parentVerificationItems
             : undefined;
 
+        let verificationItems;
+        if (isClrChildCredential) {
+            verificationItems = inheritedVerificationItems;
+        } else if (isBoost) {
+            verificationItems = undefined;
+        } else {
+            verificationItems = [];
+        }
+
         const earnedBoostIdCardProps = {
             credential: cred,
             categoryType: categoryType,
             issuerOverride: issuerName,
             issueeOverride: issueeName,
-            verificationItems: inheritedVerificationItems,
+            verificationItems,
             handleCloseModal: () => closeModal(),
             handleShareBoost: () => presentShareBoostLink(),
             onDotsClick: () => {
@@ -291,11 +300,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             categoryType: categoryType,
             issuerOverride: issuerName,
             issueeOverride: issueeName,
-            verificationItems: isClrChildCredential
-                ? inheritedVerificationItems
-                : isBoost
-                ? undefined
-                : [],
+            verificationItems,
             handleShareBoost: () => presentShareBoostLink(),
             handleCloseModal: () => closeModal(),
             subjectImageComponent: subjectProfileImageElement,

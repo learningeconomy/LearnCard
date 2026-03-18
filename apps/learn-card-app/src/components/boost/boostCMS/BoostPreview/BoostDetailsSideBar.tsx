@@ -78,21 +78,13 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
 
     const credentialVerificationDisplay = (
         <div className="w-full flex items-center justify-start text-sm text-grayscale-600 font-semibold border-t-[1px] border-solid border-grayscale-200 pt-[10px]">
-            {isClrChildCredential ? (
-                <span className="text-grayscale-900 text-sm">
-                    Verified as part of the parent CLR credential on {createdAt}
-                </span>
-            ) : (
-                <>
-                    <CredentialVerificationDisplay
-                        credential={credential}
-                        iconClassName="!w-[20px] !h-[20px] mr-1"
-                        showText
-                        className="!capitalize !text-grayscale-900 text-sm"
-                    />
-                    &nbsp;on {createdAt}
-                </>
-            )}
+            <CredentialVerificationDisplay
+                credential={credential}
+                iconClassName="!w-[20px] !h-[20px] mr-1"
+                showText
+                className="!capitalize !text-grayscale-900 text-sm"
+            />
+            &nbsp;on {createdAt}
         </div>
     );
 
