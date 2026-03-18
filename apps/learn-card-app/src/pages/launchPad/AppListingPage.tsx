@@ -193,6 +193,8 @@ const AppListingPage: React.FC = () => {
             } else if (isInstalled) {
                 void handleLaunch();
             } else {
+                // isLoggedIn is true here (guarded at effect entry), so handleInstall()
+                // won't re-enter the logout path or set another installIntent
                 handleInstall();
             }
         }, 300);
