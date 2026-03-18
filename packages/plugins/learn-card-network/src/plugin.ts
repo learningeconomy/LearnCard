@@ -560,8 +560,8 @@ export async function getLearnCardNetworkPlugin(
                                     ...metadata,
                                     federatedFrom: issuerDid,
                                 },
-                                signal: AbortSignal.timeout(30000), // 30 second timeout
                             }),
+                            signal: AbortSignal.timeout(30000), // 30 second timeout
                         });
 
                         if (!response.ok) {
