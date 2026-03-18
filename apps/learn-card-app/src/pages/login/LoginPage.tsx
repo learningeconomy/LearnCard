@@ -173,9 +173,13 @@ export const LoginContent: React.FC = () => {
                 redirectStore.set.authRedirect(null);
                 chapiStore.set.isChapiInteraction(null);
                 history.push(redirectTo);
+                void handleGeneratePinUpdateToken();
+                void handlePromptOnboarding();
             } else if (lcnRedirectTo) {
                 redirectStore.set.lcnRedirect(null);
                 history.push(lcnRedirectTo);
+                void handleGeneratePinUpdateToken();
+                void handlePromptOnboarding();
             } else {
                 history.push('/launchpad');
                 void handleGeneratePinUpdateToken();
