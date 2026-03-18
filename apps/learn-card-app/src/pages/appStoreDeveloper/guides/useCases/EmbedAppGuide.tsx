@@ -7041,10 +7041,34 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
         });
     }, [selectedFeatures]);
 
-    const handleStepComplete = (stepId: string) => {
+    const guideTopRef = useRef<HTMLDivElement>(null);
+
+    const scrollToTop = useCallback(() => {
+        setTimeout(() => {
+            guideTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
+    }, []);
+
+    const [isTransitioning, setIsTransitioning] = useState(false);
+
+    const handleStepComplete = useCallback((stepId: string) => {
+        if (isTransitioning) return;
+        setIsTransitioning(true);
         guideState.markStepComplete(stepId);
         guideState.nextStep();
-    };
+        scrollToTop();
+        setTimeout(() => setIsTransitioning(false), 150);
+    }, [isTransitioning, guideState, scrollToTop]);
+
+    const handleBack = useCallback(() => {
+        guideState.prevStep();
+        scrollToTop();
+    }, [guideState, scrollToTop]);
+
+    const handleStepClick = useCallback((step: number) => {
+        guideState.goToStep(step);
+        scrollToTop();
+    }, [guideState, scrollToTop]);
 
     const handleChooseFeaturesComplete = () => {
         if (featuresNeedingSetup.length === 0) {
