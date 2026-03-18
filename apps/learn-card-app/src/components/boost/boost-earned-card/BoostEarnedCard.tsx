@@ -73,6 +73,7 @@ type BoostEarnedCardProps = {
     isInSkillsModal?: boolean;
     hideOptionsMenu?: boolean;
     textColor?: string;
+    isClrChildCredential?: boolean;
 };
 
 export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
@@ -95,6 +96,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     isInSkillsModal,
     hideOptionsMenu = false,
     textColor,
+    isClrChildCredential = false,
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal({
         mobile: ModalTypes.FullScreen,
@@ -275,6 +277,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             },
             formattedDisplayType: formattedAchievementType,
             isEarnedBoost: true,
+            isClrChildCredential,
         };
 
         const earnedBoostModalProps = {
@@ -306,6 +309,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             previewType,
             displayType: displayType,
             isEarnedBoost: true,
+            isClrChildCredential,
         };
 
         const bgImage = isCertificate || isID || isAwardDisplay ? backgroundImage : undefined;

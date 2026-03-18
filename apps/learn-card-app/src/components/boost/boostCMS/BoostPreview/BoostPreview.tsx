@@ -66,6 +66,7 @@ export type BoostPreviewProps = {
     existingEndorsements?: VC[];
     previewType?: PreviewTypeEnum;
     isEarnedBoost?: boolean;
+    isClrChildCredential?: boolean;
 };
 
 export const useVerification = (credential: VC) => {
@@ -134,6 +135,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     existingEndorsements,
     previewType,
     isEarnedBoost,
+    isClrChildCredential = false,
 }) => {
     const unwrappedCredential = unwrapBoostCredential(_credential);
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCredential);
@@ -152,16 +154,16 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     const vcVerifications = useVerification(credential);
     const [isFront, setIsFront] = useState(true);
 
-    const verifications =
-        showVerifications && verificationItems && verificationItems.length > 0
-            ? verificationItems
-            : showVerifications
-            ? vcVerifications
-            : [];
-    const isClrCredential = credential?.type?.includes('ClrCredential');
-    const selectedCredential = isClrCredential
-        ? credential?.credentialSubject?.verifiableCredential?.[0] ?? credential
-        : credential;
+    let verifications: VerificationItem[] = [];
+    if (isClrChildCredential) {
+        verifications = [];
+    } else if (showVerifications && verificationItems && verificationItems.length > 0) {
+        verifications = verificationItems;
+    } else if (showVerifications) {
+        verifications = vcVerifications;
+    }
+
+    const selectedCredential = credential;
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
 
@@ -192,7 +194,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 displayType={displayType}
                 existingEndorsements={existingEndorsements}
                 isEarnedBoost={isEarnedBoost}
-                isClrChildCredential={isClrCredential}
+                isClrChildCredential={isClrChildCredential}
             />,
             {
                 className: '!bg-transparent',
@@ -295,7 +297,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                         displayType={displayType}
                         existingEndorsements={existingEndorsements}
                         isEarnedBoost={isEarnedBoost}
-                        isClrChildCredential={isClrCredential}
+                        isClrChildCredential={isClrChildCredential}
                     />
                 )}
             </div>

@@ -67,6 +67,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
     const achievementType = credential?.credentialSubject?.achievement?.achievementType;
 
     const { subColor, color } = boostCategoryMetadata[categoryType];
+    const isParentClrCredential = credential?.type?.includes('ClrCredential');
     const categoryColors = {
         [BoostCategoryOptionsEnum.learningHistory]: 'emerald-700',
         [BoostCategoryOptionsEnum.socialBadge]: 'blue-400',
@@ -91,6 +92,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
                     <BoostEarnedCard
                         key={record?.uri || index}
                         credential={record}
+                        isClrChildCredential={Boolean(isParentClrCredential)}
                         defaultImg={defaultImg}
                         categoryType={
                             categoryType as
