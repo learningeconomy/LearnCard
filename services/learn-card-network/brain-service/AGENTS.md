@@ -585,6 +585,82 @@ getRevokedCredentials: profileRoute
 | `test/revoke-credential.spec.ts` | Revocation tests |
 | `test/claim-hooks.spec.ts` | Claim hook tests |
 
+## App Notifications
+
+Apps can send notifications to users via the `APP_NOTIFICATION` type. There are two delivery paths:
+
+### 1. SDK Self-Notification (via `appEvent`)
+
+When the user has the app open in LearnCard, the Partner Connect SDK can trigger a self-notification via the `send-notification` app event type. This is handled by `handleSendNotificationEvent` in `src/routes/app-store.ts`.
+
+-   **Rate limit**: 10 notifications per user per app per hour (Redis key: `app-notif-rate:{listingId}:{profileId}`)
+-   **Auth**: User must have the app installed or own the integration
+
+### 2. Server-to-Server Route (Primary)
+
+App backends send notifications to arbitrary users who have the app installed.
+
+-   **Route**: `POST /app-store/listing/{listingId}/notify`
+-   **Scope**: `app-store:write`
+-   **Auth**: Caller must own the listing's integration (`verifyListingOwnership`)
+
+**Input:**
+
+```json
+{
+    "listingId": "my-app-id",
+    "recipient": "user123",
+    "title": "New content available!",
+    "body": "Check out the latest challenge",
+    "actionPath": "/challenges",
+    "category": "announcement",
+    "priority": "normal"
+}
+```
+
+-   `recipient`: Accepts a profileId, `did:web:...`, or `did:key:...` (resolved via `getProfileIdFromString`)
+-   `title` / `body`: At least one required
+-   `actionPath`: Deep link path within the app
+-   `category`: Grouping category (e.g. `'reward'`, `'announcement'`)
+-   `priority`: `'normal'` (default) or `'high'`
+
+**Guards:**
+
+-   Recipient must have the app installed (`hasProfileInstalledApp`)
+-   Rate limit: 60 notifications per listing per hour (Redis key: `app-notif-server-rate:{listingId}`)
+
+**Notification shape:**
+
+```json
+{
+    "type": "APP_NOTIFICATION",
+    "to": { "did": "did:web:...:users:user123", "profileId": "user123" },
+    "from": { "did": "did:web:...:apps:my-app", "displayName": "My App" },
+    "message": { "title": "...", "body": "..." },
+    "data": {
+        "metadata": {
+            "listingId": "...",
+            "listingSlug": "...",
+            "actionPath": "/challenges",
+            "category": "announcement",
+            "priority": "normal"
+        }
+    }
+}
+```
+
+### Querying App Notifications (lca-api)
+
+Notifications can be filtered by app using the `data.metadata.listingId` field in the `queryNotifications` endpoint on `lca-api`.
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/routes/app-store.ts` | `sendAppNotification` route + `handleSendNotificationEvent` handler |
+| `src/helpers/notifications.helpers.ts` | `addNotificationToQueue` — SQS / webhook delivery |
+| `@learncard/types` `lcn.ts` | `LCNNotificationTypeEnumValidator` (`APP_NOTIFICATION`), `SendNotificationEventValidator` |
+
 ## Debugging
 
 ### Docker Logs

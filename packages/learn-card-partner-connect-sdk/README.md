@@ -305,6 +305,35 @@ if (recipients.hasMore) {
 
 **Returns:** `{ records: TemplateRecipientRecord[], hasMore: boolean, cursor?: string, total?: number }`
 
+### `sendNotification(input)`
+
+Send a notification to the current user from this app. The notification appears in the user's LearnCard notification inbox, even after they leave the app.
+
+```typescript
+await learnCard.sendNotification({
+    title: 'Sprint Bonus!',
+    body: '+10 coins from Sprint 42',
+    actionPath: '/',
+    category: 'reward',
+});
+```
+
+**Parameters:**
+
+-   `title` _(optional)_: Notification title
+-   `body` _(optional)_: Notification body text
+-   `actionPath` _(optional)_: Deep link path within the app (e.g. `'/prizes'`)
+-   `category` _(optional)_: Grouping category (e.g. `'reward'`, `'announcement'`, `'status'`)
+-   `priority` _(optional)_: `'normal'` (default) or `'high'`
+
+At least one of `title` or `body` is required.
+
+**Returns:** `{ sent: boolean }`
+
+> **Note:** This method sends a notification to the _current_ user (self-notification) via the `send-notification` app event. For server-to-server notifications to arbitrary users, use the `POST /app-store/listing/{listingId}/notify` brain-service route directly from your app backend.
+
+---
+
 ### `launchFeature(featurePath, initialPrompt?)`
 
 Launch a feature in the LearnCard host application.

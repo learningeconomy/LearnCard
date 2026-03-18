@@ -73,7 +73,7 @@ import { getBoostByUri } from '@accesslayer/boost/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { getAppDidWeb, getDidWeb, getProfileIdFromDid } from '@helpers/did.helpers';
+import { getAppDidWeb, getDidWeb, getProfileIdFromDid, getProfileIdFromString } from '@helpers/did.helpers';
 import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
 import { getBoostRecipients, getBoostPermissions } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
@@ -1872,6 +1872,101 @@ export const appStoreRouter = t.router({
             await verifyListingOwnership(input.listingId, ctx.user.profile.profileId);
 
             return getBoostsForListing(input.listingId, ctx.domain);
+        }),
+
+    // ==================== App Notification Route ====================
+
+    sendAppNotification: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/notify',
+                tags: ['App Store'],
+                summary: 'Send App Notification',
+                description:
+                    'Send a notification to a user on behalf of an app. Caller must own the listing. Recipient must have the app installed.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                recipient: z.string(),
+                title: z.string().optional(),
+                body: z.string().optional(),
+                actionPath: z.string().optional(),
+                category: z.string().optional(),
+                priority: z.enum(['normal', 'high']).default('normal'),
+            })
+        )
+        .output(z.object({ sent: z.boolean() }))
+        .mutation(async ({ input, ctx }) => {
+            const { listingId, recipient, title, body, actionPath, category, priority } = input;
+
+            if (!title && !body) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'title or body is required' });
+            }
+
+            // Verify caller owns the listing
+            const { listing } = await verifyListingOwnership(listingId, ctx.user.profile.profileId);
+
+            // Resolve recipient to profileId (accepts profileId or DID)
+            const recipientProfileId = await getProfileIdFromString(recipient, ctx.domain);
+
+            if (!recipientProfileId) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not resolve recipient to a profile',
+                });
+            }
+
+            // Verify recipient has the app installed
+            const isInstalled = await hasProfileInstalledApp(recipientProfileId, listingId);
+
+            if (!isInstalled) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Recipient does not have this app installed',
+                });
+            }
+
+            // Rate limit: max 60 notifications per listing per hour
+            const rateLimitKey = `app-notif-server-rate:${listingId}`;
+            const currentCount = await cache.get(rateLimitKey);
+
+            if (currentCount && parseInt(currentCount, 10) >= 60) {
+                throw new TRPCError({
+                    code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+                    message: 'Rate limit exceeded: max 60 notifications per app per hour',
+                });
+            }
+
+            await cache.set(rateLimitKey, String((parseInt(currentCount ?? '0', 10) + 1)), 3600);
+
+            const recipientDid = getDidWeb(ctx.domain, recipientProfileId);
+
+            await addNotificationToQueue({
+                type: LCNNotificationTypeEnumValidator.enum.APP_NOTIFICATION,
+                to: { did: recipientDid, profileId: recipientProfileId },
+                from: {
+                    did: getAppDidWeb(ctx.domain, listing.slug ?? listingId),
+                    profileId: listing.slug ?? listingId,
+                    displayName: listing.display_name,
+                },
+                message: { title, body },
+                data: {
+                    metadata: {
+                        listingId,
+                        listingSlug: listing.slug,
+                        actionPath,
+                        category,
+                        priority,
+                    },
+                },
+            });
+
+            return { sent: true };
         }),
 
     // ==================== Generic App Event Route ====================
