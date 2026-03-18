@@ -23,7 +23,8 @@ export const redirectStore = createStore('redirectStore')<{
                 lcnRedirect: state.lcnRedirect,
                 email: state.email,
                 installIntent: state.installIntent,
-                // isOnboardingOpen intentionally excluded — resets to false on reload
+                // All persistable fields must be listed explicitly here.
+                // isOnboardingOpen intentionally excluded — resets to false on reload.
             }),
         },
     }
