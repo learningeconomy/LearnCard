@@ -112,6 +112,10 @@ export const queryNotifications = async (
             mongoQuery['data.vpUris'] = { $in: vpUris };
         }
 
+        if (queryInput['data.metadata.listingId']) {
+            mongoQuery['data.metadata.listingId'] = queryInput['data.metadata.listingId'];
+        }
+
         if (queryInput.read !== undefined) mongoQuery.read = queryInput.read;
 
         if (queryInput.archived !== undefined) mongoQuery.archived = queryInput.archived;

@@ -7,6 +7,7 @@ import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@l
 import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import cache from '@cache';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
@@ -972,6 +973,67 @@ const handleGetTemplateRecipientsEvent = async (
     };
 };
 
+// Helper to handle send-notification app event
+const handleSendNotificationEvent = async (
+    ctx: { domain: string },
+    profile: { profileId: string },
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const title = event.title as string | undefined;
+    const body = event.body as string | undefined;
+    const actionPath = event.actionPath as string | undefined;
+    const category = event.category as string | undefined;
+    const priority = (event.priority as string) || 'normal';
+
+    if (!title && !body) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'title or body is required' });
+    }
+
+    // Rate limit: max 10 notifications per user per app per hour
+    const rateLimitKey = `app-notif-rate:${listingId}:${profile.profileId}`;
+    const currentCount = await cache.get(rateLimitKey);
+
+    if (currentCount && parseInt(currentCount, 10) >= 10) {
+        throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+            message: 'Rate limit exceeded: max 10 notifications per user per app per hour',
+        });
+    }
+
+    await cache.set(rateLimitKey, String((parseInt(currentCount ?? '0', 10) + 1)), 3600);
+
+    const listing = await readAppStoreListingById(listingId);
+
+    if (!listing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found' });
+    }
+
+    const profileDid = getDidWeb(ctx.domain, profile.profileId);
+
+    await addNotificationToQueue({
+        type: LCNNotificationTypeEnumValidator.enum.APP_NOTIFICATION,
+        to: { did: profileDid, profileId: profile.profileId },
+        from: {
+            did: getAppDidWeb(ctx.domain, listing.slug ?? listingId),
+            profileId: listing.slug ?? listingId,
+            displayName: listing.display_name,
+        },
+        message: { title, body },
+        data: {
+            metadata: {
+                listingId,
+                listingSlug: listing.slug,
+                actionPath,
+                category,
+                priority,
+            },
+        },
+    });
+
+    return { sent: true };
+};
+
 export const appStoreRouter = t.router({
     // ==================== Integration Owner Routes ====================
 
@@ -1876,6 +1938,10 @@ export const appStoreRouter = t.router({
 
             if (eventType === 'get-template-recipients') {
                 return handleGetTemplateRecipientsEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'send-notification') {
+                return handleSendNotificationEvent(ctx, profile, resolvedListingId, event);
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });
