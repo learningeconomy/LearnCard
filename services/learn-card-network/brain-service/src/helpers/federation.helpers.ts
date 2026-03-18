@@ -107,7 +107,9 @@ const fetchRegistry = async (registryUrl: string) => {
     }
 
     try {
-        const response = await fetch(registryUrl);
+        const response = await fetch(registryUrl, {
+            signal: AbortSignal.timeout(10000), // 10 second timeout for registry fetch
+        });
         if (!response.ok) {
             throw new Error(`Failed to fetch registry: ${response.status}`);
         }

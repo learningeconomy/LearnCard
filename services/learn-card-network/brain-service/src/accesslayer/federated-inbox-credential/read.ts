@@ -24,14 +24,12 @@ export const getFederatedInboxCredentialsForProfile = async (
     options: GetFederatedInboxCredentialsOptions
 ): Promise<FederatedInboxCredential[]> => {
     const indexKey = getProfileIndexKey(profileId);
-    const indexData = await cache.get(indexKey);
-    if (!indexData) return [];
-
-    const allIds: string[] = JSON.parse(indexData);
+    const allIds = await cache.lrange(indexKey, 0, -1);
+    if (!allIds || allIds.length === 0) return [];
 
     let startIndex = 0;
     if (options.cursor) {
-        const cursorIndex = allIds.findIndex(id => id === options.cursor);
+        const cursorIndex = allIds.findIndex((id: string) => id === options.cursor);
         if (cursorIndex !== -1) {
             startIndex = cursorIndex + 1;
         }
@@ -40,7 +38,7 @@ export const getFederatedInboxCredentialsForProfile = async (
     const idsToFetch = allIds.slice(startIndex, startIndex + options.limit);
 
     const credentials = await Promise.all(
-        idsToFetch.map(id => getFederatedInboxCredentialById(id))
+        idsToFetch.map((id: string) => getFederatedInboxCredentialById(id))
     );
 
     return credentials.filter((c): c is FederatedInboxCredential => c !== null);

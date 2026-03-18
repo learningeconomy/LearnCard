@@ -9,6 +9,7 @@ import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import {
     createFederatedInboxCredential,
     getFederatedInboxCredentialById,
+    updateFederatedInboxCredentialStatus,
 } from '@accesslayer/federated-inbox-credential/create';
 import { getFederatedInboxCredentialsForProfile } from '@accesslayer/federated-inbox-credential/read';
 import { getProfileIdFromDid } from '@helpers/did.helpers';
@@ -220,7 +221,13 @@ export const federationRouter = t.router({
                 throw new TRPCError({ code: 'UNAUTHORIZED' });
             }
 
-            return true;
+            // Update credential status to ACCEPTED
+            const updatedCredential = await updateFederatedInboxCredentialStatus(
+                input.credentialId,
+                'ACCEPTED'
+            );
+
+            return !!updatedCredential;
         }),
 
     getTrustedServices: openRoute

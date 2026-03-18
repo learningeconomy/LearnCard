@@ -148,7 +148,8 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         let finalDoc = { ...replacedDoc, controller: profile.did };
 
         // Add brain-service service endpoint for federation
-        const baseUrl = `https://${domain.replace('%3A', ':')}`;
+        const protocol = domain.includes('localhost') ? 'http://' : 'https://';
+        const baseUrl = `${protocol}${domain.replace(/%3A/g, ':')}`;
         finalDoc.service = [
             ...(finalDoc.service || []),
             {

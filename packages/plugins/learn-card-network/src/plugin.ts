@@ -534,7 +534,7 @@ export async function getLearnCardNetworkPlugin(
                         const signedCredential = await _learnCard.invoke.issueCredential(vc);
                         const didAuthJwt = await _learnCard.invoke.getDidAuthVp({
                             proofFormat: 'jwt',
-                            challenge: `inbox-federation-${Date.now()}`,
+                            challenge: `inbox-federation-${crypto.randomUUID()}`,
                         });
 
                         let receiveUrl =
@@ -560,6 +560,8 @@ export async function getLearnCardNetworkPlugin(
                                     ...metadata,
                                     federatedFrom: issuerDid,
                                 },
+                            }),
+                            signal: AbortSignal.timeout(30000), // 30 second timeout
                             }),
                         });
 

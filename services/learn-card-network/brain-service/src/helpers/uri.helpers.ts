@@ -132,7 +132,9 @@ export const resolveUri = async (uri: string, localDomain?: string): Promise<unk
             .replace(/%3A/g, isLocal ? ':' : '/')
             .replace('/trpc', '/api')}/storage/resolve?uri=${encodeURIComponent(uri)}`;
 
-        const res = await fetch(url);
+        const res = await fetch(url, {
+            signal: AbortSignal.timeout(15000), // 15 second timeout
+        });
         const resolved = await res.json();
         if (isEncrypted(resolved)) {
             const learnCard = await getLearnCard();
@@ -173,10 +175,12 @@ export const resolveUri = async (uri: string, localDomain?: string): Promise<unk
 const resolveExternalNetworkUri = async (uri: string, domain: string): Promise<unknown> => {
     const isLocal = domain.includes('localhost');
     const baseUrl = `http${isLocal ? '' : 's'}://${domain
-        .replace('%3A', ':')
+        .replace(/%3A/g, ':')
         .replace('/trpc', '')}`;
 
-    const response = await fetch(`${baseUrl}/api/storage/resolve?uri=${encodeURIComponent(uri)}`);
+    const response = await fetch(`${baseUrl}/api/storage/resolve?uri=${encodeURIComponent(uri)}`, {
+        signal: AbortSignal.timeout(15000), // 15 second timeout
+    });
 
     if (!response.ok) {
         throw new TRPCError({

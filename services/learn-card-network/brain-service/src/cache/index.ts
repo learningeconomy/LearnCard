@@ -73,6 +73,12 @@ export type Cache = {
 
     /** Gets TTL of a key **/
     ttl: (key: RedisKey) => Promise<number | undefined>;
+
+    /** Pushes values to the end of a Redis list */
+    rpush: (key: RedisKey, ...values: RedisValue[]) => Promise<number | undefined>;
+
+    /** Gets a range of elements from a Redis list */
+    lrange: (key: RedisKey, start: number, stop: number) => Promise<string[] | undefined>;
 };
 
 /** Evict all keys after one hour by default */
@@ -187,6 +193,26 @@ export const getCache = (): Cache => {
                 if (cache?.node) return await cache.node.ttl(key);
             } catch (e) {
                 // logger.error('Cache get error', e);
+            }
+
+            return undefined;
+        },
+        rpush: async (key, ...values) => {
+            try {
+                if (cache?.redis) return await cache.redis.rpush(key, ...values);
+                if (cache?.node) return await cache.node.rpush(key, ...values);
+            } catch (e) {
+                console.error('Cache rpush error', e);
+            }
+
+            return undefined;
+        },
+        lrange: async (key, start, stop) => {
+            try {
+                if (cache?.redis) return await cache.redis.lrange(key, start, stop);
+                if (cache?.node) return await cache.node.lrange(key, start, stop);
+            } catch (e) {
+                console.error('Cache lrange error', e);
             }
 
             return undefined;

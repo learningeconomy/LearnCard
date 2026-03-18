@@ -45,10 +45,7 @@ export const createFederatedInboxCredential = async (
     await cache.set(getCacheKey(id), JSON.stringify(credential));
 
     const indexKey = getProfileIndexKey(input.recipientProfileId);
-    const existingIndex = (await cache.get(indexKey)) || '[]';
-    const index: string[] = JSON.parse(existingIndex);
-    index.push(id);
-    await cache.set(indexKey, JSON.stringify(index));
+    await cache.rpush(indexKey, id);
 
     return credential;
 };

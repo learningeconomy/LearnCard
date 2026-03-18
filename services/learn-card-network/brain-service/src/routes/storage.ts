@@ -190,12 +190,15 @@ export const storageRouter = t.router({
                 // Fetch from external brain-service
                 const isLocal = uriDomain.includes('localhost');
                 const baseUrl = `http${isLocal ? '' : 's'}://${uriDomain
-                    .replace('%3A', ':')
+                    .replace(/%3A/g, ':')
                     .replace('/trpc', '')}`;
                 const response = await fetch(
                     `${baseUrl}/api/storage/resolve?uri=${encodeURIComponent(uri)}${
                         challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
-                    }`
+                    }`,
+                    {
+                        signal: AbortSignal.timeout(15000), // 15 second timeout
+                    }
                 );
 
                 if (!response.ok) {
