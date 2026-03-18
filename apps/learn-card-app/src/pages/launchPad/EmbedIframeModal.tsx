@@ -10,6 +10,7 @@ import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPo
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
 import { CredentialClaimModal } from './CredentialClaimModal';
 import { AppCredentialDashboard } from './AppCredentialDashboard';
+import AppNotificationToast, { type AppNotificationToastData } from '../../components/notifications/AppNotificationToast';
 
 interface LaunchConfig {
     url?: string;
@@ -52,6 +53,19 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         setPendingCredential({ credentialUri, boostUri });
     }, []);
 
+    // App notification toast state
+    const [toastNotification, setToastNotification] = useState<AppNotificationToastData | null>(null);
+
+    const handleAppNotification = useCallback(
+        (notification: { title?: string; body?: string; category?: string; priority?: string }) => {
+            setToastNotification({
+                ...notification,
+                appName,
+            });
+        },
+        [appName]
+    );
+
     const handleDismissClaimModal = useCallback(() => {
         setPendingCredential(null);
     }, []);
@@ -90,6 +104,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         isInstalled,
         appId: appId?.toString(),
         onCredentialIssued: handleCredentialIssued,
+        onAppNotification: handleAppNotification,
     });
 
     // Initialize the PostMessage listener with trusted origins
@@ -198,6 +213,11 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                     onDismiss={handleDismissClaimModal}
                 />
             )}
+
+            <AppNotificationToast
+                notification={toastNotification}
+                onDismiss={() => setToastNotification(null)}
+            />
         </IonPage>
     );
 };

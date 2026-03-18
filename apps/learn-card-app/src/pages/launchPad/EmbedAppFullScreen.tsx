@@ -14,6 +14,7 @@ import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPo
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
 import { CredentialClaimModal } from './CredentialClaimModal';
 import { AppCredentialDashboard } from './AppCredentialDashboard';
+import AppNotificationToast, { type AppNotificationToastData } from '../../components/notifications/AppNotificationToast';
 
 interface EmbedAppParams {
     appId: string;
@@ -66,6 +67,19 @@ export const EmbedAppFullScreen: React.FC = () => {
 
     const embedUrl = queryParams.get('embedUrl') || history.location.state?.embedUrl;
     const appName = queryParams.get('appName') || history.location.state?.appName || 'Partner App';
+
+    // App notification toast state (must be after appName declaration)
+    const [toastNotification, setToastNotification] = useState<AppNotificationToastData | null>(null);
+
+    const handleAppNotification = useCallback(
+        (notification: { title?: string; body?: string; category?: string; priority?: string }) => {
+            setToastNotification({
+                ...notification,
+                appName,
+            });
+        },
+        [appName]
+    );
     const launchConfig = history.location.state?.launchConfig;
     const isInstalled = history.location.state?.isInstalled ?? false;
 
@@ -98,6 +112,7 @@ export const EmbedAppFullScreen: React.FC = () => {
         isInstalled,
         appId,
         onCredentialIssued: handleCredentialIssued,
+        onAppNotification: handleAppNotification,
     });
 
     // Initialize the PostMessage listener with trusted origins
@@ -184,6 +199,11 @@ export const EmbedAppFullScreen: React.FC = () => {
                     onDismiss={handleDismissClaimModal}
                 />
             )}
+
+            <AppNotificationToast
+                notification={toastNotification}
+                onDismiss={() => setToastNotification(null)}
+            />
         </IonPage>
     );
 };

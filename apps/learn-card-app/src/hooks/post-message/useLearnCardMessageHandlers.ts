@@ -22,6 +22,7 @@ interface UseLearnCardMessageHandlersOptions {
     isInstalled?: boolean;
     appId?: string;
     onCredentialIssued?: (credentialUri: string, boostUri?: string) => void;
+    onAppNotification?: (notification: { title?: string; body?: string; category?: string; priority?: string }) => void;
     debug?: boolean;
 }
 
@@ -36,6 +37,7 @@ export function useLearnCardMessageHandlers({
     isInstalled = false,
     appId,
     onCredentialIssued,
+    onAppNotification,
     debug = false,
 }: UseLearnCardMessageHandlersOptions): ActionHandlers {
     const isLoggedIn = useIsLoggedIn();
@@ -879,6 +881,16 @@ export function useLearnCardMessageHandlers({
                               );
                           }
 
+                          // If a notification was sent, trigger the toast overlay
+                          if (event.type === 'send-notification' && result.sent && onAppNotification) {
+                              onAppNotification({
+                                  title: (event as Record<string, unknown>).title as string | undefined,
+                                  body: (event as Record<string, unknown>).body as string | undefined,
+                                  category: (event as Record<string, unknown>).category as string | undefined,
+                                  priority: (event as Record<string, unknown>).priority as string | undefined,
+                              });
+                          }
+
                           sdkActivityStore.set.endActivity();
                           return result;
                       }
@@ -897,6 +909,7 @@ export function useLearnCardMessageHandlers({
             closeModal,
             appId,
             onCredentialIssued,
+            onAppNotification,
             log,
             logError,
         ]
