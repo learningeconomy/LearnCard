@@ -1,14 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { v4 as uuidv4 } from 'uuid';
 import { useWallet } from './useWallet';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { LCR } from 'learn-card-base/types/credential-records';
+import type { UnsignedVC } from '@learncard/types';
 
 const VERIFIABLE_DATA_CATEGORY = 'VerifiableData';
 
 export type VerifiableDataOptions = {
     /** Optional credential category. Defaults to 'VerifiableData' */
     category?: string;
+
+    /** Optional human-readable credential name (VC v2 top-level field). Useful if the credential may be shared via ConsentFlow. */
+    name?: string;
+
+    /** Optional human-readable credential description (VC v2 top-level field). Useful if the credential may be shared via ConsentFlow. */
+    description?: string;
 };
 
 type VerifiableDataRecord<T> = LCR & {
@@ -17,72 +23,78 @@ type VerifiableDataRecord<T> = LCR & {
 };
 
 /**
- * Creates a simple self-issued credential containing arbitrary data.
- * Uses wallet.invoke.newCredential to ensure proper context handling.
- * The data is stored as JSON in the achievement description/narrative fields.
+ * Inline JSON-LD context for VerifiableData credentials.
+ * Uses @json type so the payload is preserved as a native JSON literal
+ * without needing to stringify/parse.
+ */
+const VERIFIABLE_DATA_CONTEXT = {
+    VerifiableData: 'https://docs.learncard.com/schemas/credentials/verifiable-data#VerifiableData',
+    dataKey: 'https://docs.learncard.com/schemas/credentials/verifiable-data#dataKey',
+    dataPayload: {
+        '@id': 'https://docs.learncard.com/schemas/credentials/verifiable-data#dataPayload',
+        '@type': '@json',
+    },
+} as const;
+
+/**
+ * Creates a simple self-issued VC v2 credential containing arbitrary data.
+ * The data is stored as a native JSON literal via the @json-typed dataPayload field.
  */
 const createVerifiableDataCredential = async <T>(
     wallet: BespokeLearnCard,
     key: string,
-    data: T
+    data: T,
+    options?: Pick<VerifiableDataOptions, 'name' | 'description'>
 ) => {
     const did = wallet.id.did();
-    const currentDate = new Date().toISOString();
+    const validFrom = new Date().toISOString();
 
-    // Serialize data to JSON string for storage in standard VC fields
-    const serializedData = JSON.stringify(data);
+    const unsignedCredential: UnsignedVC = {
+        '@context': ['https://www.w3.org/ns/credentials/v2', VERIFIABLE_DATA_CONTEXT],
+        type: ['VerifiableCredential', 'VerifiableData'],
+        issuer: did,
+        validFrom,
+        ...(options?.name && { name: options.name }),
+        ...(options?.description && { description: options.description }),
+        credentialSubject: {
+            id: did,
+            dataKey: key,
+            dataPayload: data,
+        },
+    };
 
-    // Use newCredential which handles context properly
-    const unsignedCredential = wallet.invoke.newCredential({
-        subject: did,
-        type: 'achievement',
-        issuanceDate: currentDate,
-        achievementName: `VerifiableData: ${key}`,
-        achievementType: 'ext:VerifiableData',
-        achievementDescription: serializedData,
-        achievementNarrative: key,
-    });
-
-    const signedCredential = await wallet.invoke.issueCredential(unsignedCredential);
-
-    return signedCredential;
+    return wallet.invoke.issueCredential(unsignedCredential);
 };
 
 /**
  * Stores a verifiable data credential and indexes it.
- * If a record with this key already exists, it will be replaced.
+ * Writes the new record first, then deletes old ones to avoid data loss
+ * if the process is interrupted.
  */
 const storeVerifiableData = async <T>(
     wallet: BespokeLearnCard,
     key: string,
     data: T,
-    category: string
+    category: string,
+    options?: Pick<VerifiableDataOptions, 'name' | 'description'>
 ): Promise<string> => {
-    // First, delete any existing record with this key
+    // Fetch existing records before writing so we know what to clean up
     const existingRecords = await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({
         id: `__verifiable_data_${key}__`,
     });
 
-    if (existingRecords?.length > 0) {
-        for (const record of existingRecords) {
-            try {
-                await wallet.index.LearnCloud.remove(record.id);
-            } catch (e) {
-                console.warn('Failed to remove existing verifiable data record:', e);
-            }
-        }
-    }
-
     // Create and sign the credential
-    const credential = await createVerifiableDataCredential(wallet, key, data);
+    const credential = await createVerifiableDataCredential(wallet, key, data, options);
 
     // Store the credential
     const uri = await wallet.store.LearnCloud.uploadEncrypted?.(credential);
 
     if (!uri) throw new Error('Failed to store verifiable data credential.');
 
-    // Index the credential with the unique key as the ID
-    const issuanceDate = new Date().toISOString();
+    // Use the credential's own validFrom as the canonical timestamp
+    const issuanceDate = credential.validFrom ?? new Date().toISOString();
+
+    // Index the new credential
     await wallet.index.LearnCloud.add<VerifiableDataRecord<T>>({
         uri,
         id: `__verifiable_data_${key}__`,
@@ -91,6 +103,17 @@ const storeVerifiableData = async <T>(
         verifiableData: data,
         issuanceDate,
     });
+
+    // Now clean up old records (safe — new record already written)
+    if (existingRecords?.length > 0) {
+        for (const record of existingRecords) {
+            try {
+                await wallet.index.LearnCloud.remove(record.id);
+            } catch (e) {
+                console.warn('Failed to remove old verifiable data record:', e);
+            }
+        }
+    }
 
     return uri;
 };
@@ -119,20 +142,19 @@ const getVerifiableData = async <T>(
         };
     }
 
-    // Fallback: try to read from the credential itself
+    // Fallback: read the dataPayload directly from the credential
     if (records?.length > 0 && records[0].uri) {
         try {
             const credential = await wallet.read.get(records[0].uri);
-            // Data is stored as JSON string in achievement description
-            const achievement = credential?.credentialSubject?.achievement;
-            const description = Array.isArray(achievement)
-                ? achievement[0]?.description
-                : achievement?.description;
 
-            if (description) {
+            const subject = Array.isArray(credential?.credentialSubject)
+                ? credential.credentialSubject[0]
+                : credential?.credentialSubject;
+
+            if (subject?.dataPayload !== undefined) {
                 return {
-                    data: JSON.parse(description) as T,
-                    issuanceDate: credential?.issuanceDate ?? records[0].issuanceDate,
+                    data: subject.dataPayload as T,
+                    issuanceDate: credential?.validFrom ?? records[0].issuanceDate,
                 };
             }
         } catch (e) {
@@ -183,6 +205,11 @@ export const useVerifiableData = <T>(key: string, options?: VerifiableDataOption
 
     const queryKey = ['useVerifiableData', key];
 
+    const credentialOptions = {
+        ...(options?.name && { name: options.name }),
+        ...(options?.description && { description: options.description }),
+    };
+
     const query = useQuery({
         queryKey,
         queryFn: async (): Promise<VerifiableDataResult<T>> => {
@@ -195,7 +222,7 @@ export const useVerifiableData = <T>(key: string, options?: VerifiableDataOption
     const mutation = useMutation({
         mutationFn: async (data: T) => {
             const wallet = await initWallet();
-            return storeVerifiableData(wallet, key, data, category);
+            return storeVerifiableData(wallet, key, data, category, credentialOptions);
         },
         onSuccess: (_, data) => {
             // Update the cache with the new data
@@ -270,7 +297,9 @@ export const saveVerifiableData = async <T>(
     wallet: BespokeLearnCard,
     key: string,
     data: T,
-    category: string = VERIFIABLE_DATA_CATEGORY
+    options?: Pick<VerifiableDataOptions, 'category' | 'name' | 'description'>
 ): Promise<string> => {
-    return storeVerifiableData(wallet, key, data, category);
+    const category = options?.category ?? VERIFIABLE_DATA_CATEGORY;
+
+    return storeVerifiableData(wallet, key, data, category, options);
 };
