@@ -82,7 +82,33 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
             return;
         }
 
-        // Navigate to the listing page which handles launching
+        // If the app is an embedded iframe with an actionPath, launch it directly
+        // in full-screen mode with the actionPath appended to the embed URL.
+        if (listing.launch_type === 'EMBEDDED_IFRAME' && launchConfig?.url && actionPath) {
+            let embedUrl = launchConfig.url as string;
+
+            try {
+                const url = new URL(embedUrl);
+                url.pathname = url.pathname.replace(/\/$/, '') + actionPath;
+                embedUrl = url.toString();
+            } catch {
+                // If URL parsing fails, just append the path
+                embedUrl = embedUrl.replace(/\/$/, '') + actionPath;
+            }
+
+            const appSlug = (listing as Record<string, unknown>).slug as string | undefined;
+
+            history.push(`/apps/${appSlug || listingId}`, {
+                embedUrl,
+                appName: listing.display_name,
+                launchConfig,
+                isInstalled: true, // User received a notification, so they have the app
+            });
+
+            return;
+        }
+
+        // No actionPath or not embeddable — open the listing page
         history.push(`/app/${listingId}`);
     };
 
