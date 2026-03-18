@@ -46,6 +46,7 @@ import {
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
+import redirectStore from 'learn-card-base/stores/redirectStore';
 import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import { LearnCardRoles, LearnCardRolesEnum, OnboardingStepsEnum } from '../onboarding.helpers';
 
@@ -75,6 +76,8 @@ type OnboardingNetworkFormProps = {
     role?: LearnCardRolesEnum | null;
     setStep?: (step: OnboardingStepsEnum) => void;
     onSuccess?: () => void;
+    skipRoleSlides?: boolean;
+    pendingInstall?: { listingId: string; appName: string } | null;
     formData: {
         name: string | null | undefined;
         dob: string | null | undefined;
@@ -96,6 +99,8 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     onSuccess,
     formData,
     updateFormData,
+    skipRoleSlides,
+    pendingInstall,
 }) => {
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
@@ -325,16 +330,24 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     setTimeout(async () => {
                         await onSuccess?.();
                     }, 1000);
-                    newModal(
-                        <OnboardingSwiperForSlides
-                            roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
-                            dob={dob}
-                        />,
-                        {
-                            sectionClassName: '!max-w-full',
-                        },
-                        { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-                    );
+
+                    if (skipRoleSlides && pendingInstall) {
+                        // Hand install intent back to AppListingPage — its useEffect fires once
+                        // isOnboardingOpen becomes false (set by OnboardingContainer on unmount)
+                        redirectStore.set.installIntent(pendingInstall);
+                    } else {
+                        // Default: show role-specific onboarding slides
+                        newModal(
+                            <OnboardingSwiperForSlides
+                                roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
+                                dob={dob}
+                            />,
+                            {
+                                sectionClassName: '!max-w-full',
+                            },
+                            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                        );
+                    }
                 }
 
                 if (role === LearnCardRolesEnum.teacher) {
