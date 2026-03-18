@@ -16,6 +16,7 @@ import {
     AppStoreAppMetadata,
     AppStoreAppReview,
 } from 'learn-card-base';
+import redirectStore from 'learn-card-base/stores/redirectStore';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
 
@@ -146,6 +147,7 @@ const AppListingPage: React.FC = () => {
     }, [extendedListing?.screenshots, iosMetadata?.screenshotUrls]);
 
     const [showCopiedToast, setShowCopiedToast] = useState(false);
+    const [showInstallToast, setShowInstallToast] = useState(false);
 
     const handleShareApp = async () => {
         if (!listing) return;
@@ -194,8 +196,14 @@ const AppListingPage: React.FC = () => {
         if (!listing) return;
 
         if (!isLoggedIn) {
-            // Redirect to login with return URL
-            history.push(`/login?returnUrl=/app/${listingId}`);
+            redirectStore.set.installIntent({
+                listingId,
+                appName: listing.display_name,
+            });
+            setShowInstallToast(true);
+            setTimeout(() => {
+                history.push(`/login?returnUrl=/app/${listingId}`);
+            }, 1500);
             return;
         }
 
@@ -829,6 +837,12 @@ const AppListingPage: React.FC = () => {
                     duration={2000}
                     position="bottom"
                     color="success"
+                />
+                <IonToast
+                    isOpen={showInstallToast}
+                    onDidDismiss={() => setShowInstallToast(false)}
+                    message={`Sign in to install ${listing?.display_name ?? 'this app'}`}
+                    duration={1500}
                 />
             </IonContent>
         </IonPage>
