@@ -198,7 +198,7 @@ const AppListingPage: React.FC = () => {
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [installIntent, isOnboardingOpen, isLoggedIn, isCheckingInstalled, listing, isInstalled]);
+    }, [installIntent, isOnboardingOpen, isLoggedIn, isCheckingInstalled, listing, isInstalled, isChildProfile]);
 
     const handleShareApp = async () => {
         if (!listing) return;
