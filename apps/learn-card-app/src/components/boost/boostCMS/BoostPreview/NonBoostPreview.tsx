@@ -6,6 +6,7 @@ import { Capacitor } from '@capacitor/core';
 import { IonPage } from '@ionic/react';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
+import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
@@ -193,7 +194,13 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                                 verificationItems={verifications}
                                 customThumbComponent={customThumbComponent}
                                 customBodyCardComponent={customBodyCardComponent}
-                                customFooterComponent={customFooterComponent}
+                                customFooterComponent={
+                                    isClrChildCredential ? (
+                                        <VerifiedChildCLRFooter />
+                                    ) : (
+                                        customFooterComponent
+                                    )
+                                }
                                 subjectDID={subjectDID}
                                 subjectImageComponent={subjectImageComponent}
                                 issuerImageComponent={issuerImageComponent}
