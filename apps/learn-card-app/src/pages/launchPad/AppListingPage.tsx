@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
 import type { AppStoreListing } from '@learncard/types';
 import numeral from 'numeral';
@@ -149,6 +149,14 @@ const AppListingPage: React.FC = () => {
     const [showCopiedToast, setShowCopiedToast] = useState(false);
     const [showInstallToast, setShowInstallToast] = useState(false);
 
+    const navigateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (navigateTimerRef.current) clearTimeout(navigateTimerRef.current);
+        };
+    }, []);
+
     const handleShareApp = async () => {
         if (!listing) return;
         const appUrl = `${window.location.origin}/app/${listing.listing_id}`;
@@ -201,7 +209,7 @@ const AppListingPage: React.FC = () => {
                 appName: listing.display_name,
             });
             setShowInstallToast(true);
-            setTimeout(() => {
+            navigateTimerRef.current = setTimeout(() => {
                 history.push(`/login?returnUrl=/app/${listingId}`);
             }, 1500);
             return;
@@ -494,7 +502,6 @@ const AppListingPage: React.FC = () => {
         );
     }
 
-    console.log('iosMetadata', listing);
     return (
         <IonPage>
             <IonContent fullscreen>
