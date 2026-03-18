@@ -35,7 +35,7 @@ type Attachment = {
 
 type Evidence = {
     id: string;
-    type: ['Evidence'];
+    type: ('Evidence' | 'EvidenceFile')[];
     name: string;
     description: string;
     narrative: string;
@@ -104,8 +104,18 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
 
             const result = await Promise.all(
                 _evidence.map(async ev => {
-                    const type = await getEvidenceAttachmentType(ev.url ?? ev.id);
                     let attachmentUrl = '';
+                    let type: Attachment['type'] = 'link';
+
+                    if (ev.url) {
+                        type = await getEvidenceAttachmentType(ev.url);
+                    } else if (typeof ev.id === 'string' && isPdfAttachmentSource(ev.id)) {
+                        type = 'document';
+                    } else if (ev?.type?.includes('EvidenceFile')) {
+                        type = (ev.genre as Attachment['type']) ?? 'document';
+                    } else {
+                        type = await getEvidenceAttachmentType(ev.id);
+                    }
 
                     if (ev.url) {
                         attachmentUrl = ev.url;
