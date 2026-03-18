@@ -27,25 +27,8 @@ const config = {
             content="LearnCard App Store Partner Demo - SSO, Credential Issuance, Feature Launch, and Credential Requests"
         />
 
-        <!-- Load Tailwind CSS for simple, professional styling -->
-        <script src="https://cdn.tailwindcss.com"></script>
-
-        <style>
-            /* Essential styling for a full-screen, seamless iframe experience */
-            body {
-                margin: 0;
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                background-color: #f7f9fb;
-            }
-
-            .card {
-                max-width: 500px;
-                width: 95%;
-            }
-        </style>
+        <!-- Tailwind CSS is loaded via Astro integration -->
+        <link rel="stylesheet" href="/src/styles/global.css" />
     </head>
 
     <body>
