@@ -150,7 +150,7 @@ export const LoginContent: React.FC = () => {
 
         didRedirectRef.current = true;
 
-        const redirectTo = redirectStore.get.authRedirect() || query.get('redirectTo');
+        const redirectTo = redirectStore.get.authRedirect() || query.get('redirectTo') || query.get('returnUrl');
         const lcnRedirectTo = redirectStore.get.lcnRedirect();
         // const isChapiInteraction = chapiStore.get.isChapiInteraction();
         try {
