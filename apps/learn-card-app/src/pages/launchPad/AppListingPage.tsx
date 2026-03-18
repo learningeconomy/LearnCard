@@ -106,7 +106,7 @@ const AppListingPage: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Guardian gate for child profiles - verify before showing permissions modal
-    const { guardedAction } = useGuardianGate();
+    const { guardedAction, isChildProfile } = useGuardianGate();
 
     // Parse launch config
     const launchConfig = useMemo(() => {
@@ -151,11 +151,54 @@ const AppListingPage: React.FC = () => {
 
     const navigateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    const [shouldAutoInstall, setShouldAutoInstall] = useState(false);
+    const installIntent = redirectStore.use.installIntent();
+    const isOnboardingOpen = redirectStore.use.isOnboardingOpen();
+    const didAutoTriggerRef = useRef(false);
+
     useEffect(() => {
         return () => {
             if (navigateTimerRef.current) clearTimeout(navigateTimerRef.current);
         };
     }, []);
+
+    useEffect(() => {
+        // Only run once per mount
+        if (didAutoTriggerRef.current) return;
+        // Must be logged in with resolved install status, listing loaded, intent matching
+        if (!isLoggedIn) return;
+        if (isCheckingInstalled) return;
+        if (!listing) return;
+        if (installIntent?.listingId !== listingId) return;
+        // Wait for onboarding to finish — OnboardingContainer sets this flag
+        if (isOnboardingOpen) return;
+
+        // For new-user path: OnboardingContainer is opened via newModal() (a portal),
+        // so its useEffect fires *after* this one in the same render cycle.
+        // The 300ms delay gives OnboardingContainer time to mount, set isOnboardingOpen=true,
+        // and claim installIntent before we act on it.
+        const timer = setTimeout(() => {
+            // Re-check after delay using fresh store values (avoids stale-closure issues)
+            const currentIntent = redirectStore.get.installIntent();
+            if (currentIntent?.listingId !== listingId) return;
+            if (redirectStore.get.isOnboardingOpen()) return;
+            if (didAutoTriggerRef.current) return;
+
+            didAutoTriggerRef.current = true;
+            redirectStore.set.installIntent(null);
+
+            if (isChildProfile) {
+                // Don't auto-open guardian-gated modal — show a banner for the user to tap
+                setShouldAutoInstall(true);
+            } else if (isInstalled) {
+                void handleLaunch();
+            } else {
+                handleInstall();
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [installIntent, isOnboardingOpen, isLoggedIn, isCheckingInstalled, listing, isInstalled]);
 
     const handleShareApp = async () => {
         if (!listing) return;
@@ -687,6 +730,23 @@ const AppListingPage: React.FC = () => {
 
                     {/* Content Sections */}
                     <div className="max-w-4xl mx-auto px-4 pb-16">
+                        {shouldAutoInstall && (
+                            <div className="mx-0 mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between gap-3">
+                                <p className="text-sm text-blue-800 font-medium">
+                                    Tap to install {listing?.display_name}
+                                </p>
+                                <button
+                                    className="bg-blue-600 text-white text-sm font-semibold px-4 py-1.5 rounded-full"
+                                    onClick={() => {
+                                        setShouldAutoInstall(false);
+                                        handleInstall();
+                                    }}
+                                >
+                                    Install
+                                </button>
+                            </div>
+                        )}
+
                         {/* About Section */}
                         <section className="bg-white rounded-2xl p-6 shadow-sm mb-6">
                             <h2 className="text-xl font-semibold text-grayscale-900 mb-4">About</h2>
