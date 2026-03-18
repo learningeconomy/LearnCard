@@ -537,8 +537,13 @@ export async function getLearnCardNetworkPlugin(
                             challenge: `inbox-federation-${Date.now()}`,
                         });
 
-                        const receiveUrl =
+                        let receiveUrl =
                             inboxService?.serviceEndpoint || `${serviceEndpoint}/api/inbox/receive`;
+
+                        // Use HTTP for localhost to avoid SSL errors
+                        if (receiveUrl.includes('localhost')) {
+                            receiveUrl = receiveUrl.replace('https://', 'http://');
+                        }
 
                         const response = await fetch(receiveUrl, {
                             method: 'POST',

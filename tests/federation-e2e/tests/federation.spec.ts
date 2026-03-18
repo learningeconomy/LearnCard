@@ -103,7 +103,7 @@ describe('Federation', () => {
                 }),
             });
 
-            expect(response.status).toBe(403);
+            expect(response.status).toBe(400);
         });
     });
 
@@ -126,7 +126,9 @@ describe('Federation', () => {
             const userA = await getLearnCardForUserOnBrainA('a');
 
             await expect(
-                userA.invoke.get('lc:network:localhost%3A4001/trpc:boost:non-existent-id')
+                userA.invoke.resolveFromLCN(
+                    'lc:network:localhost%3A4001/trpc:boost:non-existent-id'
+                )
             ).rejects.toThrow();
         });
     });

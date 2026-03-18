@@ -67,7 +67,7 @@ export const getUriParts = (_uri: string, allowOutsideUris = false): URIParts =>
         string,
         string,
         string,
-        ...string[],
+        ...string[]
     ];
     const id = rest.join(':');
 
@@ -94,7 +94,7 @@ export const constructUri = (type: URIType, id: string, domain: string): string 
     const isLocal = domain.includes('localhost');
     const encodedDomain = isLocal ? domain.replace(/:/g, '%3A') : domain.replace(/:/g, '/');
 
-    return `lc:network:${encodedDomain}/trpc:${type}:${id}`;
+    return `lc:network:${encodedDomain.replace(/\/trpc$/, '')}/trpc:${type}:${id}`;
 };
 
 // Helper specifically for skill URIs which must be of the form
@@ -172,7 +172,9 @@ export const resolveUri = async (uri: string, localDomain?: string): Promise<unk
 
 const resolveExternalNetworkUri = async (uri: string, domain: string): Promise<unknown> => {
     const isLocal = domain.includes('localhost');
-    const baseUrl = `http${isLocal ? '' : 's'}://${domain.replace('%3A', ':').replace('/trpc', '')}`;
+    const baseUrl = `http${isLocal ? '' : 's'}://${domain
+        .replace('%3A', ':')
+        .replace('/trpc', '')}`;
 
     const response = await fetch(`${baseUrl}/api/storage/resolve?uri=${encodeURIComponent(uri)}`);
 

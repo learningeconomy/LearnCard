@@ -111,7 +111,10 @@ import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
-import { getContactMethodByValue, getProfileByContactMethod } from '@accesslayer/contact-method/read';
+import {
+    getContactMethodByValue,
+    getProfileByContactMethod,
+} from '@accesslayer/contact-method/read';
 import {
     getSigningAuthorityForUserByName,
     getPrimarySigningAuthorityForUser,
@@ -146,7 +149,7 @@ import {
     removeProfileAsBoostAdmin,
     removeBoostUsesFramework,
 } from '@accesslayer/boost/relationships/delete';
-import { getIdFromUri } from '@helpers/uri.helpers';
+import { getIdFromUri, getUriParts } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
 import {
     EMPTY_PERMISSIONS,
@@ -756,16 +759,25 @@ export const boostsRouter = t.router({
                         let inboxRecipientName: string | undefined;
                         let inboxRecipientDid: string | undefined;
                         if (inboxRecipient.type === 'email' || inboxRecipient.type === 'phone') {
-                            const contactMethod = await traceDb('getContactMethodByValue:inbox', () =>
-                                getContactMethodByValue(inboxRecipient.type as 'email' | 'phone', inboxRecipient.value)
+                            const contactMethod = await traceDb(
+                                'getContactMethodByValue:inbox',
+                                () =>
+                                    getContactMethodByValue(
+                                        inboxRecipient.type as 'email' | 'phone',
+                                        inboxRecipient.value
+                                    )
                             );
                             if (contactMethod) {
-                                const recipientProfile = await traceDb('getProfileByContactMethod:inbox', () =>
-                                    getProfileByContactMethod(contactMethod.id)
+                                const recipientProfile = await traceDb(
+                                    'getProfileByContactMethod:inbox',
+                                    () => getProfileByContactMethod(contactMethod.id)
                                 );
                                 inboxRecipientName = recipientProfile?.displayName;
                                 if (recipientProfile?.profileId) {
-                                    inboxRecipientDid = getDidWeb(domain, recipientProfile.profileId);
+                                    inboxRecipientDid = getDidWeb(
+                                        domain,
+                                        recipientProfile.profileId
+                                    );
                                 }
                             }
                         }
@@ -1207,6 +1219,7 @@ export const boostsRouter = t.router({
             const { uri } = input;
 
             const decodedUri = decodeURIComponent(uri);
+            const { domain: uriDomain } = getUriParts(decodedUri, true);
             const [boost, boostInstance] = await Promise.all([
                 getBoostByUriWithDefaultClaimPermissions(decodedUri),
                 getBoostByUri(decodedUri),
@@ -1224,13 +1237,9 @@ export const boostsRouter = t.router({
 
             const { id, boost: _boost, ...remaining } = boost;
             const parsedBoost = JSON.parse(_boost);
-            await injectObv3AlignmentsIntoCredentialForBoost(
-                parsedBoost,
-                boostInstance,
-                ctx.domain
-            );
+            await injectObv3AlignmentsIntoCredentialForBoost(parsedBoost, boostInstance, uriDomain);
 
-            return { ...remaining, boost: parsedBoost, uri: getBoostUri(id, ctx.domain) };
+            return { ...remaining, boost: parsedBoost, uri: getBoostUri(id, uriDomain) };
         }),
 
     getBoostFrameworks: profileRoute

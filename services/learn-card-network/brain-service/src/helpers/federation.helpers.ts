@@ -15,22 +15,44 @@ export const getServerDidWebDID = (_domain: string): string => {
 };
 
 /**
+ * Extracts the server DID from a user DID
+ * e.g., did:web:localhost:4000:users:testa -> did:web:localhost:4000
+ * e.g., did:web:localhost%3A4000:users:testa -> did:web:localhost%3A4000
+ */
+export const getServerDidFromUserDid = (userDid: string): string | null => {
+    if (!userDid.startsWith('did:web:')) return null;
+
+    const parts = userDid.split(':');
+    // did:web:domain:path... -> we want did:web:domain
+    if (parts.length < 3) return null;
+
+    // Parts are: ['did', 'web', 'domain', 'users', 'profileId']
+    // We need to reconstruct did:web:domain
+    const domain = parts[2];
+    return `did:web:${domain}`;
+};
+
+/**
  * Checks if a brain-service is trusted based on environment whitelist
  * and optionally a remote registry
  */
-export const isServiceTrusted = async (serviceDid: string, domain: string): Promise<boolean> => {
+export const isServiceTrusted = async (senderDid: string, domain: string): Promise<boolean> => {
     // Always trust self
-    if (serviceDid === getServerDidWebDID(domain)) return true;
+    if (senderDid === getServerDidWebDID(domain)) return true;
+
+    // Extract the server DID from the sender's user DID
+    const senderServerDid = getServerDidFromUserDid(senderDid);
+    if (!senderServerDid) return false;
 
     // Check env whitelist first (for local overrides)
     const whitelist = (process.env.TRUSTED_BRAIN_SERVICES || '').split(',').filter(Boolean);
-    if (whitelist.includes(serviceDid)) return true;
+    if (whitelist.includes(senderServerDid)) return true;
 
     // Check remote registry if configured
     const registryUrl = process.env.BRAIN_SERVICE_REGISTRY_URL;
     if (registryUrl) {
         const registry = await fetchRegistry(registryUrl);
-        return registry.services.some(s => s.did === serviceDid);
+        return registry.services.some(s => s.did === senderServerDid);
     }
 
     return false;

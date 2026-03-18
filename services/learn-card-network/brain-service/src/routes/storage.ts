@@ -177,19 +177,19 @@ export const storageRouter = t.router({
         )
         .query(async ({ input, ctx }) => {
             const { uri, challenge } = input;
-            const { domain } = ctx;
+            const { domain: localDomain } = ctx;
 
-            const { id, type, method } = getUriParts(uri, true);
+            const { id, type, method, domain: uriDomain } = getUriParts(uri, true);
 
             // Check if this is an external URI that needs to be fetched from another instance
-            const normalizedDomain = domain.replace('/trpc', '').replace(/%3A/g, ':');
-            const normalizedLocalDomain = domain.replace('/trpc', '').replace(/%3A/g, ':');
-            const isLocalUri = !domain || normalizedDomain === normalizedLocalDomain;
+            const normalizedUriDomain = uriDomain.replace('/trpc', '').replace(/%3A/g, ':');
+            const normalizedLocalDomain = localDomain.replace('/trpc', '').replace(/%3A/g, ':');
+            const isLocalUri = !uriDomain || normalizedUriDomain === normalizedLocalDomain;
 
             if (method === 'network' && !isLocalUri) {
                 // Fetch from external brain-service
-                const isLocal = domain.includes('localhost');
-                const baseUrl = `http${isLocal ? '' : 's'}://${domain
+                const isLocal = uriDomain.includes('localhost');
+                const baseUrl = `http${isLocal ? '' : 's'}://${uriDomain
                     .replace('%3A', ':')
                     .replace('/trpc', '')}`;
                 const response = await fetch(
@@ -219,7 +219,11 @@ export const storageRouter = t.router({
                     typeof cachedResponse === 'object' &&
                     !Array.isArray(cachedResponse)
                 ) {
-                    mutated = await ensureAlignmentsForBoostCredential(cachedResponse, domain, {});
+                    mutated = await ensureAlignmentsForBoostCredential(
+                        cachedResponse,
+                        localDomain,
+                        {}
+                    );
                 }
 
                 if (
@@ -233,7 +237,7 @@ export const storageRouter = t.router({
                     const boostInstance = await getBoostById(id);
                     if (boostInstance) {
                         mutated =
-                            (await ensureAlignmentsForBoostCredential(cachedResponse, domain, {
+                            (await ensureAlignmentsForBoostCredential(cachedResponse, localDomain, {
                                 boostInstance,
                             })) || mutated;
                     }
@@ -245,7 +249,7 @@ export const storageRouter = t.router({
                         throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
                     }
 
-                    const profile = await resolveProfileFromContextDid(ctx.user?.did, domain);
+                    const profile = await resolveProfileFromContextDid(ctx.user?.did, localDomain);
                     const canView = Boolean(
                         profile && (await canProfileViewBoost(profile, boostInstance))
                     );
@@ -288,7 +292,7 @@ export const storageRouter = t.router({
 
                 const credential = JSON.parse(instance.credential);
 
-                await ensureAlignmentsForBoostCredential(credential, domain, {});
+                await ensureAlignmentsForBoostCredential(credential, localDomain, {});
 
                 await setStorageForUri(uri, credential);
 
@@ -316,7 +320,7 @@ export const storageRouter = t.router({
                     throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
                 }
 
-                const profile = await resolveProfileFromContextDid(ctx.user?.did, domain);
+                const profile = await resolveProfileFromContextDid(ctx.user?.did, localDomain);
                 const canView = Boolean(profile && (await canProfileViewBoost(profile, instance)));
                 const isViewableByClaimLink = await isBoostViewableByClaimLink(instance);
 
@@ -341,7 +345,7 @@ export const storageRouter = t.router({
                 const boost = JSON.parse(instance.boost);
 
                 if (isBoostCredential(boost)) {
-                    await ensureAlignmentsForBoostCredential(boost, domain, {
+                    await ensureAlignmentsForBoostCredential(boost, localDomain, {
                         boostInstance: instance,
                     });
                 }
