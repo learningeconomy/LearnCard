@@ -15,6 +15,7 @@ export * from "./FlippyCard/index";
 export * from "./GenericCard/index";
 export * from "./JobHistoryCard/index";
 export * from "./JobListCard/index";
+export * from "./LearnCardConnect/index";
 export * from "./LearnCardCreditCardBackFace/index";
 export * from "./LearnCardCreditCardFrontFace/index";
 export * from "./LearnPill/index";

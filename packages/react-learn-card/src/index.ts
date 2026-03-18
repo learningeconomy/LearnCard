@@ -1,8 +1,8 @@
 /// <reference path="./declaration.d.ts" />
 
 export * from './components/index';
+export * from './components/LearnCardConnect/index';
 
-// Export shared hooks
 export * from './helpers/useHorizontalPages';
 export * from './helpers/useOnMomentumScrollEnd';
 export * from './helpers/useScrollBorders';

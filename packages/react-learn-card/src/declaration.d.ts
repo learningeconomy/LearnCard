@@ -19,3 +19,8 @@ declare module '*.svg' {
 }
 
 declare module 'react-barcode';
+
+declare module '*.module.css' {
+    const classes: Record<string, string>;
+    export default classes;
+}

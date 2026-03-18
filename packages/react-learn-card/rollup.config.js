@@ -42,6 +42,7 @@ export default [
             svgr(),
             resolve(),
             commonjs(),
+            styles({ mode: 'inject', modules: true }),
             esbuild(),
         ],
         external: ['react', 'react-dom', '@learncard/init'],

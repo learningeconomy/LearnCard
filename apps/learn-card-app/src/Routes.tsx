@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import { Redirect, Route, Switch, useLocation } from 'react-router-dom';
 import {
     DIDAuthModal,
@@ -46,9 +46,7 @@ const PrivacySettingsPage = lazyWithRetry(
     () => import('./pages/privacy-settings/PrivacySettingsPage')
 );
 const ResumeBuilderPage = lazyWithRetry(() => import('./pages/resume-builder/ResumeBuilderPage'));
-const VerifySharedResume = lazyWithRetry(
-    () => import('./pages/resume-builder/VerifySharedResume')
-);
+const VerifySharedResume = lazyWithRetry(() => import('./pages/resume-builder/VerifySharedResume'));
 const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
 const ViewSharedBoost = lazyWithRetry(() => import('./components/creds-bundle/ViewSharedBoost'));
@@ -137,6 +135,7 @@ const SigningAuthoritiesPage = lazyWithRetry(
 const APITokensPage = lazyWithRetry(
     () => import('./pages/adminToolsPage/api-tokens/APITokensPage')
 );
+const EmbedContextPage = lazyWithRetry(() => import('./pages/embedContext/EmbedContextPage'));
 
 const DevCli = lazyWithRetry(() => import('./pages/devCli/DevCli'));
 const AiPathwaysDiscovery = lazyWithRetry(
@@ -317,6 +316,7 @@ export const Routes: React.FC = () => {
                         <SentryRoute exact path="/connect/:profileId" component={ConnectPage} />
                         <SentryRoute exact path="/invite" component={InvitePage} />
                         <SentryRoute exact path="/claim/boost" component={ClaimBoost} />
+                        <SentryRoute exact path="/embed/context" component={EmbedContextPage} />
                         <SentryRoute exact path="/approve-account" component={ApproveAccount} />
                         <SentryRoute
                             exact

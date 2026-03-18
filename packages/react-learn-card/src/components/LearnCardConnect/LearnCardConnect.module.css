@@ -1,0 +1,80 @@
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    background-color: var(--lc-primary-color, #047857);
+    color: white;
+    font-weight: 600;
+    font-size: 16px;
+    border-radius: var(--lc-border-radius, 9999px);
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-family: inherit;
+    line-height: 1.5;
+}
+
+.button:hover:not(:disabled) {
+    background-color: var(--lc-accent-color, #065f46);
+}
+
+.button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+
+.modalContent {
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.iframe {
+    width: 100%;
+    height: 600px;
+    border: none;
+}
+
+@media (max-width: 640px) {
+    .modalContent {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+    }
+
+    .iframe {
+        height: 100vh;
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "name": "@learncard/connect-test-example",
+    "type": "module",
+    "version": "0.0.1",
+    "private": true,
+    "scripts": {
+        "dev": "astro dev",
+        "start": "astro dev",
+        "build": "echo \"Skipping build in CI. Run 'pnpm run build:prod' locally to build.\"",
+        "build:prod": "astro build",
+        "preview": "astro preview",
+        "astro": "astro"
+    },
+    "dependencies": {
+        "@learncard/react": "workspace:^",
+        "@learncard/init": "workspace:^",
+        "@learncard/core": "workspace:^",
+        "@learncard/types": "workspace:^",
+        "astro": "^4.7.0",
+        "react": "^18.0.0",
+        "react-dom": "^18.0.0"
+    },
+    "devDependencies": {
+        "@astrojs/react": "^3.0.0",
+        "@types/react": "^18.0.0",
+        "@types/react-dom": "^18.0.0",
+        "prettier-plugin-astro": "^0.5.4"
+    }
+}
