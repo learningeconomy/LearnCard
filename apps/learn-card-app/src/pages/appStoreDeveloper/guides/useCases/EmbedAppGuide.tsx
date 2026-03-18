@@ -7070,6 +7070,17 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
         scrollToTop();
     }, [guideState, scrollToTop]);
 
+    // Allow backward nav freely; forward nav requires all preceding steps complete.
+    const canNavigateToStep = useCallback((index: number) => {
+        if (index === guideState.currentStep) return true;
+        if (index < guideState.currentStep) return true;
+        if (guideState.isStepComplete(STEPS[index].id)) return true;
+        for (let i = 0; i < index; i++) {
+            if (!guideState.isStepComplete(STEPS[i].id)) return false;
+        }
+        return true;
+    }, [guideState.currentStep, guideState.isStepComplete]);
+
     const handleChooseFeaturesComplete = () => {
         if (featuresNeedingSetup.length === 0) {
             // Skip feature setup, go directly to your app
@@ -7182,7 +7193,8 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                     totalSteps={STEPS.length}
                     steps={STEPS}
                     completedSteps={guideState.state.completedSteps}
-                    onStepClick={guideState.goToStep}
+                    onStepClick={handleStepClick}
+                    isStepNavigable={canNavigateToStep}
                 />
             </div>
 
