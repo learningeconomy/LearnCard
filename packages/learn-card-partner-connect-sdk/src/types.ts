@@ -272,10 +272,16 @@ export interface TemplateRecipientsResponse {
  */
 export interface RequestLearnerContextOptions {
     /**
-     * Which data categories to include in the context
-     * @default ['credentials']
+     * Whether to include credentials in the context
+     * @default true
      */
-    include?: ('credentials' | 'preferences' | 'history')[];
+    includeCredentials?: boolean;
+
+    /**
+     * Whether to include personal data (name, bio, etc.) in the context
+     * @default false
+     */
+    includePersonalData?: boolean;
 
     /**
      * Format of the response
@@ -304,11 +310,8 @@ export interface LearnerContextRawData {
     /** Array of Verifiable Credentials */
     credentials: unknown[];
 
-    /** User preferences if requested and available */
-    preferences?: Record<string, unknown>;
-
-    /** Recent activity records if requested and available */
-    recentActivity?: unknown[];
+    /** Personal data if requested and available (name, bio, etc.) */
+    personalData?: Record<string, unknown>;
 }
 
 /**

@@ -496,7 +496,8 @@ export const createAppEventHandler = (dependencies: {
  */
 export const createRequestLearnerContextHandler = (dependencies: {
     requestLearnerContext: (options: {
-        include?: string[];
+        includeCredentials?: boolean;
+        includePersonalData?: boolean;
         format?: string;
         instructions?: string;
         detailLevel?: string;
@@ -510,30 +511,14 @@ export const createRequestLearnerContextHandler = (dependencies: {
         did: string;
         displayName?: string;
     }>;
-    showConsentModal?: (purpose: string) => Promise<boolean>;
 }): ActionHandler<'REQUEST_LEARNER_CONTEXT'> => {
     return async ({ payload }) => {
-        const { requestLearnerContext, showConsentModal } = dependencies;
+        const { requestLearnerContext } = dependencies;
 
         try {
-            // Optional: Show consent modal for data sharing
-            if (showConsentModal) {
-                const consented = await showConsentModal(
-                    'Share your learning history, credentials, and preferences with this app?'
-                );
-                if (!consented) {
-                    return {
-                        success: false,
-                        error: {
-                            code: 'USER_REJECTED',
-                            message: 'User declined to share learner context',
-                        },
-                    };
-                }
-            }
-
             const context = await requestLearnerContext({
-                include: payload.include,
+                includeCredentials: payload.includeCredentials,
+                includePersonalData: payload.includePersonalData,
                 format: payload.format,
                 instructions: payload.instructions,
                 detailLevel: payload.detailLevel,

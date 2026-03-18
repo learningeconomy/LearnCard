@@ -1807,10 +1807,11 @@ export type GetTemplateRecipientsEvent = z.infer<typeof GetTemplateRecipientsEve
 // Request learner context event for AI tutoring systems
 export const RequestLearnerContextEventValidator = z.object({
     type: z.literal('request-learner-context'),
-    include: z.array(z.enum(['credentials', 'preferences', 'history'])).optional(),
-    format: z.enum(['prompt', 'structured']).optional(),
+    includeCredentials: z.boolean().optional().default(true),
+    includePersonalData: z.boolean().optional().default(false),
+    format: z.enum(['prompt', 'structured']).optional().default('prompt'),
     instructions: z.string().optional(),
-    detailLevel: z.enum(['compact', 'expanded']).optional(),
+    detailLevel: z.enum(['compact', 'expanded']).optional().default('compact'),
 });
 
 export type RequestLearnerContextEvent = z.infer<typeof RequestLearnerContextEventValidator>;

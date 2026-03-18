@@ -75,7 +75,6 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
 import { getAppDidWeb, getDidWeb, getProfileIdFromDid } from '@helpers/did.helpers';
 import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/read';
-import { getCredentialsForContractTerms } from '@accesslayer/credential/relationships/read';
 import {
     getContractTermsForProfile,
     getContractDetailsByUri,
@@ -990,6 +989,8 @@ const handleRequestLearnerContextEvent = async (
     };
 
     const credentialUris: string[] = [];
+    let personalData: Record<string, string> = {};
+
 
     const sentCredentials = await getCredentialsSentByListingToProfile(
         listingId,
@@ -1021,12 +1022,16 @@ const handleRequestLearnerContextEvent = async (
                         contractDetails.contract
                     );
 
-                    if (terms?.terms?.read?.credentials) {
+                    if (event.includeCredentials && terms?.terms?.read?.credentials) {
                         const uris = Object.values(terms.terms.read.credentials.categories).flatMap(
                             category => category.shared ?? []
                         );
 
                         credentialUris.push(...uris);
+                    }
+
+                    if (event.includePersonalData && terms?.terms?.read?.personal) {
+                        personalData = terms.terms.read.personal;
                     }
                 }
             }
@@ -1037,10 +1042,7 @@ const handleRequestLearnerContextEvent = async (
 
     return {
         credentialUris,
-        personalData: {
-            profileId: profile.profileId,
-            displayName: profile.displayName,
-        },
+        personalData,
         instructions,
         detailLevel,
         maxCredentials: credentialUris.length,

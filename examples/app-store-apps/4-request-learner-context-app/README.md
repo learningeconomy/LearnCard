@@ -4,7 +4,7 @@ A demonstration app showcasing the `requestLearnerContext()` method from the `@l
 
 ## Overview
 
-This app demonstrates how to retrieve learner context (credentials, preferences, history) for AI personalization.
+This app demonstrates how to retrieve learner context (credentials and history) for AI personalization.
 
 ## Prerequisites
 
@@ -27,7 +27,7 @@ The app will be available at `http://localhost:4321`.
 ## Usage
 
 1. Click "Connect with LearnCard" to authenticate
-2. Select data options (credentials, preferences, history)
+2. Toggle data options (credentials, personal data) on/off
 3. Choose format (LLM Prompt or Structured Data)
 4. Set detail level (Compact or Expanded)
 5. Click "Get Learner Context"
@@ -41,7 +41,8 @@ import { createPartnerConnect } from '@learncard/partner-connect';
 const learnCard = createPartnerConnect();
 
 const context = await learnCard.requestLearnerContext({
-    include: ['credentials', 'preferences', 'history'],
+    includeCredentials: true, // Toggle credentials on/off
+    includePersonalData: true, // Toggle personal data on/off (name, bio, etc.)
     format: 'prompt',
     detailLevel: 'expanded',
 });
@@ -76,7 +77,7 @@ Deploy the `dist/` directory to any static hosting provider.
 ### Step 2: Create ConsentFlow Contract
 
 1. Go to ConsentFlow → Create Contract
-2. Define data access requirements (credentials, preferences, history)
+2. Define data access requirements (credentials, history)
 3. Save the contract
 
 ### Step 3: Install and Test

@@ -106,7 +106,8 @@ export interface InitiateTemplateIssuePayload {
 }
 
 export interface RequestLearnerContextPayload {
-    include?: ('credentials' | 'preferences' | 'history')[];
+    includeCredentials?: boolean;
+    includePersonalData?: boolean;
     format?: 'prompt' | 'structured';
     instructions?: string;
     detailLevel?: 'compact' | 'expanded';

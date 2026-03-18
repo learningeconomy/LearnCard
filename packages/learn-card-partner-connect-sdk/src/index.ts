@@ -540,7 +540,7 @@ export class PartnerConnect {
     /**
      * Request comprehensive learner context for AI tutoring systems.
      *
-     * This method retrieves the user's credentials, preferences, and learning history,
+     * This method retrieves the user's credentials and personal data,
      * then formats them into an LLM-ready prompt that can be injected directly into
      * an AI system prompt.
      *
@@ -549,9 +549,10 @@ export class PartnerConnect {
      *
      * @example
      * ```typescript
-     * // Get LLM-ready prompt with credentials
+     * // Get LLM-ready prompt with credentials and personal data
      * const context = await learnCard.requestLearnerContext({
-     *   include: ['credentials', 'preferences', 'history'],
+     *   includeCredentials: true,
+     *   includePersonalData: true,
      *   format: 'prompt',
      *   instructions: 'Focus on technical skills and certifications',
      *   detailLevel: 'expanded'
@@ -569,7 +570,8 @@ export class PartnerConnect {
         options?: RequestLearnerContextOptions
     ): Promise<LearnerContextResponse> {
         return this.sendMessage<LearnerContextResponse>('REQUEST_LEARNER_CONTEXT', {
-            include: options?.include ?? ['credentials'],
+            includeCredentials: options?.includeCredentials ?? true,
+            includePersonalData: options?.includePersonalData ?? false,
             format: options?.format ?? 'prompt',
             instructions: options?.instructions,
             detailLevel: options?.detailLevel ?? 'compact',

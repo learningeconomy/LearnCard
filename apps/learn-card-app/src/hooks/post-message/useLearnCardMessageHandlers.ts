@@ -888,7 +888,8 @@ export function useLearnCardMessageHandlers({
                 // Learner context - only available when appId is provided
                 requestLearnerContext: appId
                     ? async (options: {
-                        include?: string[];
+                        includeCredentials?: boolean;
+                        includePersonalData?: boolean;
                         format?: string;
                         instructions?: string;
                         detailLevel?: string;
@@ -905,24 +906,39 @@ export function useLearnCardMessageHandlers({
 
                         const result = await learnCard.invoke.sendAppEvent(appId, {
                             type: 'request-learner-context',
+                            includeCredentials: options.includeCredentials,
+                            includePersonalData: options.includePersonalData,
                             instructions: options.instructions,
                             detailLevel: options.detailLevel,
                         });
 
-                        const credentialUris = (result.credentialUris as string[]) || [];
+                        // Only fetch and include credentials if requested
+                        let validCredentials: unknown[] = [];
+                        if (options.includeCredentials !== false) {
+                            const credentialUris = (result.credentialUris as string[]) || [];
 
-                        const credentials = await Promise.all(
-                            credentialUris.map(async uri => {
-                                try {
-                                    return await learnCard.read.get(uri);
-                                } catch (error) {
-                                    console.error(`Failed to resolve credential ${uri}:`, error);
-                                    return null;
-                                }
-                            })
-                        );
+                            const credentials = await Promise.all(
+                                credentialUris.map(async uri => {
+                                    try {
+                                        return await learnCard.read.get(uri);
+                                    } catch (error) {
+                                        console.error(
+                                            `Failed to resolve credential ${uri}:`,
+                                            error
+                                        );
+                                        return null;
+                                    }
+                                })
+                            );
 
-                        const validCredentials = credentials.filter((c: unknown) => c !== null);
+                            validCredentials = credentials.filter((c: unknown) => c !== null);
+                        }
+
+                        // Only include personal data if requested
+                        let personalData: Record<string, string> | undefined;
+                        if (options.includePersonalData) {
+                            personalData = (result.personalData as Record<string, string>) || {};
+                        }
 
                         let prompt = '';
                         if (options.format === 'prompt') {
@@ -934,7 +950,7 @@ export function useLearnCardMessageHandlers({
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
                                             credentials: validCredentials,
-                                            personalData: result.personalData,
+                                            personalData,
                                             instructions: options.instructions,
                                             detailLevel: options.detailLevel,
                                             includeStructuredContext: true,
@@ -959,11 +975,15 @@ export function useLearnCardMessageHandlers({
                             prompt,
                             raw:
                                 options.format === 'structured'
-                                    ? { credentials: validCredentials }
+                                    ? {
+                                        credentials: validCredentials,
+                                        personalData,
+                                    }
                                     : undefined,
                             did: (result.did as string) || '',
-                            displayName: (result.personalData as { displayName?: string })
-                                ?.displayName,
+                            displayName:
+                                personalData?.name ||
+                                (result.personalData as { displayName?: string })?.displayName,
                         };
                     }
                     : undefined,
