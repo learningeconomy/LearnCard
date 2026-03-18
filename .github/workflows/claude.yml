@@ -117,7 +117,7 @@ jobs:
             **Lane 1 — Docs / reference / metadata**
             - All changed files are in `docs/`, `reference/`, `.changeset/`, or are `*.md` / `*.mdx` files anywhere in the repo.
             - No code, workflow, infrastructure, or dependency lockfile changes.
-            - LOC limit: ≤ 1000 lines changed.
+            - LOC limit: ≤ 1000 lines changed (additions + deletions).
             - Label hint: `auto-approve/docs`
 
             **Lane 2 — Tests only**
