@@ -46,7 +46,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
     return (
         <div
-            className={`flex bg-white flex-col shadow-bottom relative p-0 w-[160px] h-[265px] rounded-[20px] overflow-hidden ${className}`}
+            className={`flex bg-white flex-col shadow-bottom relative p-0 w-[160px] h-[285px] rounded-[20px] overflow-hidden ${className}`}
         >
             {optionsTriggerOnClick && (
                 <section
@@ -100,7 +100,11 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                                 ${customHeaderClass}
                                 font-medium text-center text-grayscale-900 line-clamp-2
                                 h-[50px] flex items-center justify-center
-                                ${(title?.length ?? 0) > 35 ? 'text-[13px] leading-tight' : 'text-[16px]'}
+                                ${
+                                    (title?.length ?? 0) > 35
+                                        ? 'text-[13px] leading-tight'
+                                        : 'text-[16px]'
+                                }
                             `}
                                 title={title}
                             >
