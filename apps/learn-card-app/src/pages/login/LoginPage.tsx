@@ -33,7 +33,7 @@ import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
 
 import { auth } from '../../firebase/firebase';
 
-import { IonContent, IonGrid, IonPage, IonRow, IonToast } from '@ionic/react';
+import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import EmailForm from './forms/EmailForm';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
@@ -77,7 +77,6 @@ export const LoginContent: React.FC = () => {
     const [isPublicMode, setIsPublicMode] = useState(() => isPublicComputerMode());
 
     const installIntent = redirectStore.use.installIntent();
-    const [showInstallContextToast, setShowInstallContextToast] = useState(false);
     const authConfig = getAuthConfig();
     const configCapabilities = getConfigCapabilities();
     const isWeb = !Capacitor.isNativePlatform();
@@ -212,11 +211,6 @@ export const LoginContent: React.FC = () => {
         }
     }, [showConfirmation]);
 
-    useEffect(() => {
-        if (installIntent?.listingId) {
-            setShowInstallContextToast(true);
-        }
-    }, [installIntent?.listingId]);
     // custom logins associated with the app
     const extraSocialLogins = useMemo(
         () => [
@@ -326,6 +320,23 @@ export const LoginContent: React.FC = () => {
                         </IonRow>
                     )}
 
+                    {installIntent?.listingId && (
+                        <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center gap-3 justify-center">
+                                {installIntent.appIcon && (
+                                    <img
+                                        src={installIntent.appIcon}
+                                        alt=""
+                                        className="w-6 h-6 rounded-md object-cover shrink-0"
+                                    />
+                                )}
+                                <span className="text-sm text-white font-medium">
+                                    You'll be taken back to <span className="font-semibold">{installIntent.appName ?? 'the app'}</span> after sign in
+                                </span>
+                            </div>
+                        </IonRow>
+                    )}
+
                     <IonRow className="w-full flex flex-col items-center justify-center">
                         <GenericErrorBoundary hideGoHome>
                             {showSocialLogins && (
@@ -426,13 +437,6 @@ export const LoginContent: React.FC = () => {
                 </>
             )}
 
-            <IonToast
-                isOpen={showInstallContextToast}
-                onDidDismiss={() => setShowInstallContextToast(false)}
-                message={`Sign in to install ${installIntent?.appName ?? 'this app'}`}
-                duration={3000}
-                position="top"
-            />
         </div>
     );
 };

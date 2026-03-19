@@ -4,7 +4,7 @@ export const redirectStore = createStore('redirectStore')<{
     authRedirect: string | null;
     lcnRedirect: string | null;
     email: string | null;
-    installIntent: { listingId: string; appName: string } | null;
+    installIntent: { listingId: string; appName: string; appIcon?: string } | null;
     isOnboardingOpen: boolean;
 }>(
     {

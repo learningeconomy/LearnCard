@@ -10,7 +10,7 @@ test.describe('App Store — redirect flow', () => {
         listing = await seedAppListing();
     });
 
-    test('shows install context toast on login page when redirected from app listing', async ({ page }) => {
+    test('shows sign-in modal then redirect banner on login page when installing from app listing', async ({ page }) => {
         // Start logged out — no waitForAuthenticatedState
         await page.goto('/');
 
@@ -21,15 +21,20 @@ test.describe('App Store — redirect flow', () => {
         await expect(page.getByText(listing.displayName)).toBeVisible({ timeout: 20_000 });
 
         // Click "Get App" (button text for logged-out users) or "Install"
-        // The button shows "Get App" when logged out
         await page.getByRole('button', { name: /get app|install/i }).click();
+
+        // Confirmation modal should appear
+        await expect(page.getByText('Sign in to continue')).toBeVisible({ timeout: 3_000 });
+
+        // Click "Continue" to proceed to login
+        await page.getByRole('button', { name: /continue/i }).click();
 
         // Should navigate to /login
         await expect(page).toHaveURL(/\/login/, { timeout: 5_000 });
 
-        // Toast should show install context — "Sign in to install [displayName]"
+        // Persistent banner should show redirect context with app name
         await expect(
-            page.getByText(new RegExp(`Sign in to install ${listing.displayName}`, 'i'))
+            page.getByText(new RegExp(`taken back to.*${listing.displayName}`, 'i'))
         ).toBeVisible({ timeout: 5_000 });
     });
 

@@ -147,20 +147,12 @@ const AppListingPage: React.FC = () => {
     }, [extendedListing?.screenshots, iosMetadata?.screenshotUrls]);
 
     const [showCopiedToast, setShowCopiedToast] = useState(false);
-    const [showInstallToast, setShowInstallToast] = useState(false);
-
-    const navigateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [showSignInModal, setShowSignInModal] = useState(false);
 
     const [shouldAutoInstall, setShouldAutoInstall] = useState(false);
     const installIntent = redirectStore.use.installIntent();
     const isOnboardingOpen = redirectStore.use.isOnboardingOpen();
     const didAutoTriggerRef = useRef(false);
-
-    useEffect(() => {
-        return () => {
-            if (navigateTimerRef.current) clearTimeout(navigateTimerRef.current);
-        };
-    }, []);
 
     useEffect(() => {
         // Only run once per mount
@@ -252,11 +244,9 @@ const AppListingPage: React.FC = () => {
             redirectStore.set.installIntent({
                 listingId,
                 appName: listing.display_name,
+                appIcon: listing.icon_url,
             });
-            setShowInstallToast(true);
-            navigateTimerRef.current = setTimeout(() => {
-                history.push(`/login?returnUrl=/app/${listingId}`);
-            }, 1500);
+            setShowSignInModal(true);
             return;
         }
 
@@ -907,12 +897,43 @@ const AppListingPage: React.FC = () => {
                     position="bottom"
                     color="success"
                 />
-                <IonToast
-                    isOpen={showInstallToast}
-                    onDidDismiss={() => setShowInstallToast(false)}
-                    message={`Sign in to install ${listing?.display_name ?? 'this app'}`}
-                    duration={1500}
-                />
+                {showSignInModal && (
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+                        <div className="bg-white rounded-2xl shadow-2xl p-6 mx-4 max-w-sm w-full text-center">
+                            {listing?.icon_url && (
+                                <img
+                                    src={listing.icon_url}
+                                    alt=""
+                                    className="w-14 h-14 rounded-xl mx-auto mb-4 object-cover"
+                                />
+                            )}
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                Sign in to continue
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-6">
+                                You'll need to sign in or create a LearnCard Network account to
+                                install {listing?.display_name ?? 'this app'}.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowSignInModal(false)}
+                                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowSignInModal(false);
+                                        history.push(`/login?returnUrl=/app/${listingId}`);
+                                    }}
+                                    className="flex-1 px-4 py-2.5 rounded-xl bg-gray-900 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+                                >
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </IonContent>
         </IonPage>
     );
