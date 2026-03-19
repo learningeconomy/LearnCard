@@ -441,13 +441,13 @@ const EmailForm: React.FC<EmailFormProps> = ({
         <form onSubmit={handleOnClick} className="w-full">
             {formTitle && (
                 <IonCol size="12">
-                    <p
+                    <div
                         className={
                             formTitleClassNameOverride ?? 'w-full font-medium text-white normal'
                         }
                     >
                         {formTitle}
-                    </p>
+                    </div>
                 </IonCol>
             )}
 
