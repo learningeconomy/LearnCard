@@ -13,6 +13,7 @@ import {
     getPaginatedNotificationsForDid,
     getNotificationById,
     queryNotifications,
+    getNotificationsByTypeAndListingId,
 } from '@accesslayer/notifications/read';
 import {
     markAllNotificationsReadForUser,
@@ -245,6 +246,36 @@ export const notificationsRouter = t.router({
         .input(LCNNotificationValidator)
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
+            const notificationType = input.type as string;
+
+            // Handle APP_LISTING_WITHDRAWN specially - delete the original submission notification
+            if (notificationType === 'APP_LISTING_WITHDRAWN' && input.data?.metadata?.listingId) {
+                const listingId = String(input.data.metadata.listingId);
+
+                const originalNotifications = await getNotificationsByTypeAndListingId(
+                    'APP_LISTING_SUBMITTED',
+                    listingId
+                );
+
+                if (originalNotifications && originalNotifications.length > 0) {
+                    const { deleteNotificationById } = await import(
+                        '@accesslayer/notifications/delete'
+                    );
+                    for (const notification of originalNotifications) {
+                        if (notification._id) {
+                            await deleteNotificationById(notification._id);
+                        }
+                    }
+                    if (ctx.debug) {
+                        console.log(
+                            `✅ Deleted ${originalNotifications.length} APP_LISTING_SUBMITTED notifications for listing ${listingId}`
+                        );
+                    }
+                }
+
+                return true;
+            }
+
             const [sendNotificationResponse, createdNotificationId] = await Promise.all([
                 sendPushNotification(input),
                 createNotification(input),
