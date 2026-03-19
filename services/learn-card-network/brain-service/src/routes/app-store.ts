@@ -48,6 +48,7 @@ import {
     countCredentialsSentByListingToProfile,
 } from '@accesslayer/app-store-listing/relationships/read';
 import { readIntegrationById } from '@accesslayer/integration/read';
+import { IntegrationValidator } from 'types/integration';
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
 import {
     getPrimarySigningAuthorityForListing,
@@ -431,13 +432,13 @@ const verifyIntegrationOwnership = async (integrationId: string, profileId: stri
 
 // Helper to verify listing ownership via integration
 const verifyListingOwnership = async (listingId: string, profileId: string) => {
-    const listing = await readAppStoreListingById(listingId);
+    const listing = await readAppStoreListingByIdOrSlug(listingId);
 
     if (!listing) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
     }
 
-    const integration = await getIntegrationForListing(listingId);
+    const integration = await getIntegrationForListing(listing.listing_id);
 
     if (!integration) {
         throw new TRPCError({
@@ -991,7 +992,6 @@ const handleRequestLearnerContextEvent = async (
     const credentialUris: string[] = [];
     let personalData: Record<string, string> = {};
 
-
     const sentCredentials = await getCredentialsSentByListingToProfile(
         listingId,
         profile.profileId,
@@ -1006,7 +1006,7 @@ const handleRequestLearnerContextEvent = async (
     const integration = await getIntegrationForListing(listingId);
 
     if (integration?.guideState) {
-        const guideState = JSON.parse(integration.guideState as any);
+        const guideState = integration.guideState;
 
         try {
             const contractUri =
@@ -1313,6 +1313,24 @@ export const appStoreRouter = t.router({
                 did: primarySa.relationship.did,
                 isPrimary: primarySa.relationship.isPrimary ?? true,
             };
+        }),
+
+    getIntegrationForListing: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/listing/{listingId}/integration',
+                tags: ['App Store'],
+                summary: 'Get Integration for Listing',
+                description: 'Get the integration associated with an App Store Listing',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(IntegrationValidator.optional())
+        .query(async ({ input }) => {
+            return (await getIntegrationForListing(input.listingId)) ?? undefined;
         }),
 
     submitForReview: profileRoute

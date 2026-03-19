@@ -63,7 +63,7 @@ export interface RequestIdentityPayload {
 }
 
 export interface RequestConsentPayload {
-    contractUri: string;
+    contractUri?: string;
     redirect?: boolean;
 }
 

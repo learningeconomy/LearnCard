@@ -1,15 +1,8 @@
+import { LCNIntegration } from '@learncard/types';
 import {
     ActionHandler,
     ActionHandlers,
-    ActionContext,
-    RequestIdentityPayload,
-    RequestConsentPayload,
-    SendCredentialPayload,
-    AskCredentialSpecificPayload,
-    AskCredentialSearchPayload,
     VerifiablePresentationRequest,
-    LaunchFeaturePayload,
-    RequestLearnerContextPayload,
     AppEvent,
 } from './useLearnCardPostMessage';
 
@@ -99,22 +92,70 @@ export const createRequestConsentHandler = (dependencies: {
         contractUri: string,
         options?: { redirect?: boolean }
     ) => Promise<ConsentModalResult>;
+    getIntegrationForListing?: (listingId: string) => Promise<{
+        guideState?: Record<string, unknown>;
+    } | null>;
+    getAppListingId?: () => string | undefined;
 }): ActionHandler<'REQUEST_CONSENT'> => {
     return async ({ payload }) => {
-        const { showConsentModal } = dependencies;
+        const { showConsentModal, getIntegrationForListing, getAppListingId } = dependencies;
 
-        if (!payload.contractUri) {
-            return {
-                success: false,
-                error: {
-                    code: 'INVALID_PAYLOAD',
-                    message: 'Contract URI is required',
-                },
-            };
+        let contractUri = payload.contractUri;
+
+        // If no contract URI provided, try to resolve from app's integration
+        if (!contractUri) {
+            const listingId = getAppListingId?.();
+            if (!listingId) {
+                return {
+                    success: false,
+                    error: {
+                        code: 'INVALID_PAYLOAD',
+                        message: 'Could not find a listing for this app',
+                    },
+                };
+            }
+
+            if (!getIntegrationForListing) {
+                return {
+                    success: false,
+                    error: {
+                        code: 'INVALID_PAYLOAD',
+                        message: 'Could not find an integration for this app listing',
+                    },
+                };
+            }
+
+            const integration = await getIntegrationForListing(listingId);
+            const guideState = integration?.guideState as
+                | {
+                    config?: {
+                        embedAppConfig?: {
+                            featureConfig?: {
+                                'request-data-consent'?: { contractUri?: string };
+                            };
+                        };
+                    };
+                }
+                | undefined;
+
+            contractUri =
+                guideState?.config?.embedAppConfig?.featureConfig?.['request-data-consent']
+                    ?.contractUri;
+
+            if (!contractUri) {
+                return {
+                    success: false,
+                    error: {
+                        code: 'INVALID_PAYLOAD',
+                        message:
+                            'No contract URI provided and no contract configured for this app listing',
+                    },
+                };
+            }
         }
 
         try {
-            const result = await showConsentModal(payload.contractUri, {
+            const result = await showConsentModal(contractUri, {
                 redirect: payload.redirect,
             });
 
@@ -553,6 +594,7 @@ export function createActionHandlers(dependencies: {
         contractUri: string,
         options?: { redirect?: boolean }
     ) => Promise<ConsentModalResult>;
+    getIntegrationForListing?: (listingId: string) => Promise<LCNIntegration | undefined>;
 
     // Credentials
     showCredentialAcceptanceModal: (credential: any) => Promise<string | boolean>;

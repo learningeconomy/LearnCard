@@ -187,6 +187,18 @@ export interface RequestConsentOptions {
 }
 
 /**
+ * Payload for REQUEST_CONSENT action
+ */
+export interface RequestConsentPayload {
+    /**
+     * URI of the consent contract. If not provided, the system will attempt
+     * to use the contract configured for the current app listing.
+     */
+    contractUri?: string;
+    redirect?: boolean;
+}
+
+/**
  * Response from REQUEST_CONSENT action
  */
 export interface ConsentResponse {

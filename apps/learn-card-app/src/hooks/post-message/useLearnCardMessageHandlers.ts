@@ -1,6 +1,14 @@
 import React, { useMemo, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
-import { useIsLoggedIn, useWallet, useModal, ModalTypes, LEARNCARD_AI_URL } from 'learn-card-base';
+import {
+    useIsLoggedIn,
+    useWallet,
+    useModal,
+    ModalTypes,
+    LEARNCARD_AI_URL,
+    getOrFetchIntegrationForListing,
+} from 'learn-card-base';
 import { UnsignedVP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
@@ -8,6 +16,8 @@ import { ActionHandlers, AppEvent } from './useLearnCardPostMessage';
 import { createActionHandlers } from './useLearnCardPostMessage.handlers';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 import sdkActivityStore from '../../stores/sdkActivityStore';
+
+import { useGetIntegrationForListing } from 'learn-card-base';
 
 interface LaunchConfig {
     url?: string;
@@ -43,6 +53,7 @@ export function useLearnCardMessageHandlers({
     const history = useHistory();
     const { newModal, closeModal } = useModal();
     const { data: consentedContracts } = useConsentedContracts();
+    const queryClient = useQueryClient();
 
     // Debug logging helper
     const log = useCallback(
@@ -200,6 +211,14 @@ export function useLearnCardMessageHandlers({
         },
         [initWallet, newModal, closeModal, consentedContracts, log, logError, generateVpAndRedirect]
     );
+
+    const getIntegrationForListing = async (_listingId: string) => {
+        if (!appId) return undefined;
+
+        const wallet = await initWallet();
+
+        return getOrFetchIntegrationForListing(queryClient, wallet, appId);
+    };
 
     const handlers = useMemo(
         () =>
@@ -884,6 +903,7 @@ export function useLearnCardMessageHandlers({
                     }
                     : undefined,
                 getAppListingId: appId ? () => appId : undefined,
+                getIntegrationForListing: getIntegrationForListing,
 
                 // Learner context - only available when appId is provided
                 requestLearnerContext: appId
@@ -1002,6 +1022,7 @@ export function useLearnCardMessageHandlers({
             onCredentialIssued,
             log,
             logError,
+            getIntegrationForListing,
         ]
     );
 

@@ -5,22 +5,24 @@ import { ProfileType } from 'types/profile';
 import { Boost, BoostInstance } from '@models';
 import { int } from 'neo4j-driver';
 import { getBoostUri } from '@helpers/boost.helpers';
+import { parseIntegration } from '@helpers/integrations.helpers';
 
 export const getIntegrationForListing = async (
-    listingId: string
+    listingIdOrSlug: string
 ): Promise<IntegrationType | null> => {
     const result = await neogma.queryRunner.run(
-        `MATCH (i:Integration)-[:PUBLISHES_LISTING]->(listing:AppStoreListing {listing_id: $listingId})
+        `MATCH (i:Integration)-[:PUBLISHES_LISTING]->(listing:AppStoreListing)
+        WHERE listing.listing_id = $listingIdOrSlug OR listing.slug = $listingIdOrSlug
          RETURN i AS integration
          LIMIT 1`,
-        { listingId }
+        { listingIdOrSlug }
     );
 
     const integration = result.records[0]?.get('integration')?.properties;
 
     if (!integration) return null;
 
-    return inflateObject<IntegrationType>(integration as any);
+    return parseIntegration(inflateObject<IntegrationType>(integration as any));
 };
 
 export const getProfilesInstalledApp = async (

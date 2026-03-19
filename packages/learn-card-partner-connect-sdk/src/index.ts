@@ -478,26 +478,31 @@ export class PartnerConnect {
     /**
      * Request user consent for permissions
      *
-     * @param contractUri - URI of the consent contract
+     * @param contractUri - URI of the consent contract (optional for App Store apps with configured contracts)
+     * @param options - Additional options including redirect behavior
      * @returns Promise resolving to consent response
      *
      * @example
      * ```typescript
-     * // Without redirect (default) - returns VP in response if app owns the contract
+     * // With explicit contract URI (for external/non-app store integrations)
      * const response = await learnCard.requestConsent('lc:network:network.learncard.com/trpc:contract:abc123');
      * if (response.granted) {
      *   console.log('User granted consent');
-     *   if (response.vp) {
-     *     console.log('VP:', response.vp);
-     *   }
+     * }
+     *
+     * // Without contract URI (uses app's configured contract from integration)
+     * // This works for App Store apps that have configured a contract in their integration
+     * const response = await learnCard.requestConsent();
+     * if (response.granted) {
+     *   console.log('User granted consent using listing contract');
      * }
      *
      * // With redirect - redirects to contract's redirectUrl with VP in URL params
-     * const response = await learnCard.requestConsent('lc:network:network.learncard.com/trpc:contract:abc123', { redirect: true });
+     * const response = await learnCard.requestConsent(undefined, { redirect: true });
      * ```
      */
     public requestConsent(
-        contractUri: string,
+        contractUri?: string,
         options: RequestConsentOptions = {}
     ): Promise<ConsentResponse> {
         const { redirect = false } = options;

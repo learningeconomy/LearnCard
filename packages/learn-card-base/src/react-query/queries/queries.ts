@@ -5,6 +5,7 @@ import {
     useMutation,
     useInfiniteQuery,
     UseQueryResult,
+    type QueryClient,
 } from '@tanstack/react-query';
 import {
     BoostAndVCType,
@@ -24,6 +25,7 @@ import {
     PaginationOptionsType,
     PaginatedLCNProfiles,
     BoostPermissions,
+    LCNIntegration,
 } from '@learncard/types';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { CREDENTIAL_CATEGORIES } from 'learn-card-base/types/credentials';
@@ -367,15 +369,15 @@ export const useResolveBoosts = (uris?: (string | undefined)[], enabled = true) 
         queries:
             enabled && validUris
                 ? validUris.map(uri => ({
-                      queryKey: ['useResolveBoost', uri],
-                      queryFn: async (): Promise<VC> => {
-                          if (!uri) throw new Error('Boost URI is required.');
-                          const wallet = await initWallet();
-                          const vc = await wallet.invoke.resolveFromLCN(uri);
-                          if (!vc) throw new Error('Unresolveable boost.');
-                          return vc as VC;
-                      },
-                  }))
+                    queryKey: ['useResolveBoost', uri],
+                    queryFn: async (): Promise<VC> => {
+                        if (!uri) throw new Error('Boost URI is required.');
+                        const wallet = await initWallet();
+                        const vc = await wallet.invoke.resolveFromLCN(uri);
+                        if (!vc) throw new Error('Unresolveable boost.');
+                        return vc as VC;
+                    },
+                }))
                 : [],
     });
     return queries.map((result, index) => ({ ...result, uri: validUris?.[index] }));
@@ -864,6 +866,47 @@ export const useGetAppStoreListingBySlug = (
                 console.warn('Failed to load app listing by slug', error);
                 return undefined;
             }
+        },
+    });
+};
+
+/**
+ * Query: Get integration for a listing
+ */
+export const useGetIntegrationForListing = (
+    listingId?: string,
+    enabled = true
+): UseQueryResult<LCNIntegration | undefined> => {
+    const { initWallet } = useWallet();
+
+    return useQuery<LCNIntegration | null>({
+        enabled: enabled && Boolean(listingId),
+        queryKey: ['getIntegrationForListing', listingId],
+        queryFn: async () => {
+            if (!listingId) return null;
+
+            const wallet = await initWallet();
+
+            return (await wallet.invoke.getIntegrationForListing(listingId)) || null;
+        },
+        staleTime: 1000 * 60 * 5,
+    });
+};
+
+// Helper to get integration for listing from cache or fetch manually and cache result
+export const getOrFetchIntegrationForListing = async (
+    queryClient: QueryClient,
+    learnCard: BespokeLearnCard,
+    listingId?: string
+) => {
+    const queryKey = ['getIntegrationForListing', listingId];
+
+    return queryClient.fetchQuery<LCNIntegration | null>({
+        queryKey,
+        queryFn: async () => {
+            if (!listingId) return null;
+
+            return (await learnCard.invoke.getIntegrationForListing(listingId)) || null;
         },
     });
 };

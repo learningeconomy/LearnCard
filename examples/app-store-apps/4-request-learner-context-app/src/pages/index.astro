@@ -115,31 +115,54 @@ import '../styles/global.css';
                             <h3 class="text-xl font-bold text-gray-800">Request Options</h3>
 
                             <div class="space-y-4">
-                                <div class="flex items-center justify-between p-4 rounded-xl border-2 border-gray-200">
+                                <div
+                                    class="flex items-center justify-between p-4 rounded-xl border-2 border-gray-200"
+                                >
                                     <div class="flex items-center gap-3">
                                         <span class="text-2xl">📜</span>
                                         <div>
                                             <span class="font-semibold block">Credentials</span>
-                                            <span class="text-sm text-gray-500">Include your earned credentials and badges</span>
+                                            <span class="text-sm text-gray-500"
+                                                >Include your earned credentials and badges</span
+                                            >
                                         </div>
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="include-credentials" class="sr-only peer" checked>
-                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                        <input
+                                            type="checkbox"
+                                            id="include-credentials"
+                                            class="sr-only peer"
+                                            checked
+                                        />
+                                        <div
+                                            class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"
+                                        >
+                                        </div>
                                     </label>
                                 </div>
 
-                                <div class="flex items-center justify-between p-4 rounded-xl border-2 border-gray-200">
+                                <div
+                                    class="flex items-center justify-between p-4 rounded-xl border-2 border-gray-200"
+                                >
                                     <div class="flex items-center gap-3">
                                         <span class="text-2xl">👤</span>
                                         <div>
                                             <span class="font-semibold block">Personal Data</span>
-                                            <span class="text-sm text-gray-500">Include your name, bio, and other profile info</span>
+                                            <span class="text-sm text-gray-500"
+                                                >Include your name, bio, and other profile info</span
+                                            >
                                         </div>
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="include-personal-data" class="sr-only peer">
-                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                        <input
+                                            type="checkbox"
+                                            id="include-personal-data"
+                                            class="sr-only peer"
+                                        />
+                                        <div
+                                            class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"
+                                        >
+                                        </div>
                                     </label>
                                 </div>
                             </div>
@@ -229,9 +252,7 @@ import '../styles/global.css';
 
                     try {
                         // Request consent for data access
-                        const consentResult = await learnCard.requestConsent(
-                            'lc:network:localhost%3A4000/trpc:contract:525d627a-8268-4dec-8256-fa67eb34e8b4'
-                        );
+                        const consentResult = await learnCard.requestConsent();
 
                         if (consentResult.granted) {
                             // Consent granted - show request options
