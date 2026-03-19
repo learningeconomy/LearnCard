@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { ModalTypes, ProfilePicture, useCurrentUser } from 'learn-card-base';
+import { ModalTypes, ProfilePicture, currentUserStore, useCurrentUser } from 'learn-card-base';
 import Backspace from '../../../svgs/Backspace';
 import { IonCol, IonRow } from '@ionic/react';
 import { FamilyPinViewModeEnum } from './FamilyPinWrapper';
@@ -40,6 +40,7 @@ export const FamilyPinModal: React.FC<FamilyPinModalProps> = ({
     closeButtonText,
 }) => {
     const currentUser = useCurrentUser();
+    const parentUser = currentUserStore.get.parentUser();
     const sectionPortal = document.getElementById('section-cancel-portal');
 
     const { newModal } = useModal({
@@ -146,6 +147,8 @@ export const FamilyPinModal: React.FC<FamilyPinModalProps> = ({
                             customContainerClass="flex justify-center items-center h-[64px] w-[64px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[64px] min-h-[64px]"
                             customImageClass="flex justify-center items-center h-[64px] w-[64px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[64px] min-h-[64px]"
                             customSize={120}
+                            overrideSrc={!!parentUser?.profileImage}
+                            overrideSrcURL={parentUser?.profileImage}
                         />
                         <h4 className="text-grayscale-900 text-[24px] xs:text-lg font-normal font-poppins mt-2">
                             {title}
