@@ -323,7 +323,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
         activeStep = (
             <div
-                className={`w-full mb-[20px] ${
+                className={`w-full ${
                     emailErrorPlacement === 'below' ? 'flex flex-col' : 'flex items-center'
                 } justify-center`}
             >
@@ -364,10 +364,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
             </p>
         );
         activeStep = (
-            <IonCol
-                size="12"
-                className="w-full flex flex-col items-center justify-center ion-no-padding ion-no-margin mb-[20px]"
-            >
+            <IonCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
                 <ReactCodeInput
                     name="phoneVerification"
                     inputMode="numeric"
@@ -452,7 +449,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
             )}
 
             {activeStep}
-            <div className="flex items-center justify-center pb-[20px]">
+            <div className="flex items-center justify-center py-[20px] w-full mx-auto">
                 <button
                     className={`bg-emerald-900 text-white ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${buttonClassName}`}
                     onClick={handleOnClick}
