@@ -332,6 +332,11 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             checklistStore.set.updateIsParsing(fileType, true);
             const wallet = await initWallet();
             const did = wallet?.id?.did();
+            if (!base64Data) {
+                console.warn('fetchParsedCredentials: no file data, call getFile() first');
+                checklistStore.set.updateIsParsing(fileType, false);
+                return [];
+            }
             const vcs = await uploadFile({ did, file: base64Data ?? '', fileType });
             checklistStore.set.updateIsParsing(fileType, false);
             const results = vcs?.vcs ?? [];
@@ -372,6 +377,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
     /**
      * Store the raw artifact(s) + only the user-selected VCs. Call after review step.
+     * If selectedVcs is empty, only the raw artifact is stored (checklist marks complete, no credentials extracted).
+     * If rawArtifactVc is null/undefined, this will throw — ensure getFile() was called first.
      */
     const storeSelectedCredentials = async (
         selectedVcs: any[],
