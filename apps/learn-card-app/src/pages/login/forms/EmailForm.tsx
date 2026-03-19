@@ -147,6 +147,34 @@ const EmailForm: React.FC<EmailFormProps> = ({
         return false;
     };
 
+    const handleVerifyCode = async () => {
+        if (validateCode()) {
+            try {
+                setCodeError('');
+                setIsLoading(true);
+                const response = await verifyLoginVerificationCode({
+                    email: verificationEmail as string,
+                    code: code,
+                });
+                if (response?.token) {
+                    redirectStore.set.email(null);
+                    await signInWithCustomFirebaseToken(response?.token);
+                }
+                setIsLoading(false);
+            } catch (e) {
+                setIsLoading(false);
+                setCodeError('Unable to verify code. Please try again.');
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (currentStep === EmailFormStepsEnum.verification && code.length === 6 && !isLoading) {
+            // auto verify code when 6 digits are entered
+            handleVerifyCode();
+        }
+    }, [code, currentStep]);
+
     const handleDemoLogin = async () => {
         setIsLoading(true);
         try {
@@ -248,25 +276,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 }
             }
         } else if (currentStep === EmailFormStepsEnum.verification) {
-            if (validateCode()) {
-                try {
-                    setCodeError('');
-                    setIsLoading(true);
-
-                    const response = await verifyLoginVerificationCode({
-                        email: verificationEmail as string,
-                        code: code as string,
-                    });
-                    if (response?.token) {
-                        redirectStore.set.email(null);
-                        await signInWithCustomFirebaseToken(response?.token);
-                    }
-                    setIsLoading(false);
-                } catch (e) {
-                    setIsLoading(false);
-                    setCodeError('Unable to verify code. Please try again.');
-                }
-            }
+            await handleVerifyCode();
         } else if (currentStep === EmailFormStepsEnum.passwordExistingUser) {
             // todo: trigger login to existing account
         } else if (currentStep === EmailFormStepsEnum.passwordNewUser) {
