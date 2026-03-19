@@ -8,9 +8,13 @@
 }
 
 .react-code-input:not(.small) {
+    display: flex !important;
+    justify-content: center;
+    gap: 8px;
+
     & > input {
-        margin: 4px;
         width: 14%;
+        flex-grow: 1;
         border-radius: 12px;
         font-size: 24px;
         height: 100px;
