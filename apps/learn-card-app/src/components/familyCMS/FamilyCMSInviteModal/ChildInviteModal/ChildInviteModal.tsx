@@ -247,12 +247,13 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                         </div>
                                     )}
                                 </UserProfilePicture>
-                                <div
+                                <button
+                                    type="button"
                                     onClick={handleImageSelect}
                                     className="text-grayscale-900 ml-3 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
                                 >
                                     <Pencil className="h-[60%]" />
-                                </div>
+                                </button>
                             </div>
                         </div>
                         <div>
