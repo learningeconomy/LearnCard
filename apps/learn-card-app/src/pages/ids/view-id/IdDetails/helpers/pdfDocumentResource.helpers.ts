@@ -1,5 +1,6 @@
 import base64url from 'base64url';
 import { PDFDocument } from 'pdf-lib';
+import { isPdfAttachmentSource } from 'learn-card-base/helpers/credentialHelpers';
 
 export type ResolvedDocumentResource = {
     previewUrl: string;
@@ -16,15 +17,6 @@ export type PdfDocumentMetadata = {
 };
 
 const PDF_DATA_URL_PATTERN = /^data:application\/pdf(?:;[^,]+)?,/i;
-const PDF_BASE64_PREFIX = 'JVBERi0';
-
-const isPdfAttachmentSource = (value?: string | null): boolean => {
-    if (typeof value !== 'string') return false;
-
-    const trimmedValue = value.trim();
-
-    return PDF_DATA_URL_PATTERN.test(trimmedValue) || trimmedValue.startsWith(PDF_BASE64_PREFIX);
-};
 
 const getPdfDownloadName = (title?: string) => {
     const trimmedTitle = title?.trim();
@@ -66,6 +58,20 @@ const getPdfBytesFromSource = (pdfSource: string): Uint8Array | null => {
     return null;
 };
 
+/**
+ * Resolves a PDF data source into a previewable/downloadable resource.
+ *
+ * **Memory Management:** The returned `previewUrl` and `downloadUrl` are blob object URLs
+ * (`URL.createObjectURL`). The caller is responsible for calling `URL.revokeObjectURL()`
+ * on these URLs when they are no longer needed to prevent memory leaks.
+ *
+ * @example
+ * const resolved = await resolvePdfDocumentResource(pdfDataUrl, 'My Document');
+ * if (resolved) {
+ *   // Use resolved.resource.previewUrl...
+ *   // Later: URL.revokeObjectURL(resolved.resource.previewUrl);
+ * }
+ */
 export const resolvePdfDocumentResource = async (
     pdfSource: string,
     title?: string
