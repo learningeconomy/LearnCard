@@ -187,7 +187,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
 
     useEffect(() => {
         let shouldIgnore = false;
-        const objectUrlsToRevoke: string[] = [];
+        const revokeResourceUrls: Array<() => void> = [];
 
         const getMetadata = async (): Promise<void> => {
             const docMetadata: { [docUrl: string]: MediaMetadata | undefined } = {};
@@ -210,7 +210,9 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                             if (resolvedPdf) {
                                 docMetadata[attachment.url] = resolvedPdf.metadata;
                                 resolvedDocuments[attachment.url] = resolvedPdf.resource;
-                                objectUrlsToRevoke.push(resolvedPdf.resource.previewUrl);
+                                if (resolvedPdf.resource.revokeUrls) {
+                                    revokeResourceUrls.push(resolvedPdf.resource.revokeUrls);
+                                }
                                 return;
                             }
                         }
@@ -228,7 +230,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
             );
 
             if (shouldIgnore) {
-                objectUrlsToRevoke.forEach(url => URL.revokeObjectURL(url));
+                revokeResourceUrls.forEach(revoke => revoke());
                 return;
             }
 
@@ -241,7 +243,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
 
         return () => {
             shouldIgnore = true;
-            objectUrlsToRevoke.forEach(url => URL.revokeObjectURL(url));
+            revokeResourceUrls.forEach(revoke => revoke());
         };
     }, [attachments, evidenceAttachments, getFileMetadata, getVideoMetadata]);
 

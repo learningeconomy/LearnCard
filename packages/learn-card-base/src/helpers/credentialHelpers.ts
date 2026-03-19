@@ -1190,8 +1190,8 @@ export const parseShareLinkParams = (shareLink: string) => {
         uri: params.get('uri'),
     };
 };
-const PDF_DATA_URL_PATTERN = /^data:application\/pdf(?:;[^,]+)?,/i;
-const PDF_BASE64_PREFIX = 'JVBERi0';
+export const PDF_DATA_URL_PATTERN = /^data:application\/pdf(?:;[^,]+)?,/i;
+export const PDF_BASE64_PREFIX = 'JVBERi0';
 
 export const isPdfAttachmentSource = (value?: string | null): boolean => {
     if (typeof value !== 'string') return false;

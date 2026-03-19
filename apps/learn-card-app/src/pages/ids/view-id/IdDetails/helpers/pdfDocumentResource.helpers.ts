@@ -1,12 +1,16 @@
 import base64url from 'base64url';
 import { PDFDocument } from 'pdf-lib';
-import { isPdfAttachmentSource } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    isPdfAttachmentSource,
+    PDF_DATA_URL_PATTERN,
+} from 'learn-card-base/helpers/credentialHelpers';
 
 export type ResolvedDocumentResource = {
     previewUrl: string;
     downloadUrl: string;
     downloadName?: string;
     isPdfDataSource: boolean;
+    revokeUrls?: () => void;
 };
 
 export type PdfDocumentMetadata = {
@@ -15,8 +19,6 @@ export type PdfDocumentMetadata = {
     numberOfPages?: number;
     type?: string;
 };
-
-const PDF_DATA_URL_PATTERN = /^data:application\/pdf(?:;[^,]+)?,/i;
 
 const getPdfDownloadName = (title?: string) => {
     const trimmedTitle = title?.trim();
@@ -62,14 +64,13 @@ const getPdfBytesFromSource = (pdfSource: string): Uint8Array | null => {
  * Resolves a PDF data source into a previewable/downloadable resource.
  *
  * **Memory Management:** The returned `previewUrl` and `downloadUrl` are blob object URLs
- * (`URL.createObjectURL`). The caller is responsible for calling `URL.revokeObjectURL()`
- * on these URLs when they are no longer needed to prevent memory leaks.
+ * (`URL.createObjectURL`). Call `resource.revokeUrls?.()` when no longer needed.
  *
  * @example
  * const resolved = await resolvePdfDocumentResource(pdfDataUrl, 'My Document');
  * if (resolved) {
  *   // Use resolved.resource.previewUrl...
- *   // Later: URL.revokeObjectURL(resolved.resource.previewUrl);
+ *   // Later: resolved.resource.revokeUrls?.();
  * }
  */
 export const resolvePdfDocumentResource = async (
@@ -91,6 +92,7 @@ export const resolvePdfDocumentResource = async (
 
     const pdfBlob = new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' });
     const objectUrl = URL.createObjectURL(pdfBlob);
+    const revokeUrls = () => URL.revokeObjectURL(objectUrl);
 
     return {
         metadata: {
@@ -104,6 +106,7 @@ export const resolvePdfDocumentResource = async (
             downloadUrl: objectUrl,
             downloadName: getPdfDownloadName(title),
             isPdfDataSource: true,
+            revokeUrls,
         },
     };
 };
