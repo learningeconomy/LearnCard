@@ -12,6 +12,10 @@
     justify-content: center;
     gap: 8px;
 
+    @media (max-width: 380px) {
+        gap: 6px;
+    }
+
     & > input {
         width: 14%;
         flex-grow: 1;
@@ -375,12 +379,6 @@ ion-toast.login-link-warning-toast::part(button) {
         height: 40px;
         width: 40px;
         margin-left: 5px;
-    }
-
-    .react-code-input {
-        & > input {
-            margin: 7px;
-        }
     }
 }
 
