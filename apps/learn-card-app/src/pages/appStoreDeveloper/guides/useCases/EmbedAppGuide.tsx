@@ -7041,6 +7041,15 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
         });
     }, [selectedFeatures]);
 
+    // Auto-advance past feature-setup when no features require setup
+    // (handles edge case where user arrives at step 3 after deselecting all features)
+    useEffect(() => {
+        if (guideState.currentStep === 3 && featuresNeedingSetup.length === 0) {
+            guideState.markStepComplete('feature-setup');
+            guideState.goToStep(4);
+        }
+    }, [guideState.currentStep, featuresNeedingSetup.length]);
+
     const guideTopRef = useRef<HTMLDivElement>(null);
 
     const scrollToTop = useCallback(() => {
@@ -7092,101 +7101,8 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
         }
     };
 
-    const renderStep = () => {
-        switch (guideState.currentStep) {
-            case 0:
-                return (
-                    <GettingStartedStep
-                        onComplete={() => handleStepComplete('getting-started')}
-                        selectedIntegration={selectedIntegration}
-                        selectedListing={selectedListing}
-                        setSelectedListing={setSelectedListing}
-                    />
-                );
-
-            case 1:
-                return (
-                    <SigningAuthorityStep
-                        onComplete={() => handleStepComplete('signing-authority')}
-                        onBack={guideState.prevStep}
-                        appSlug={selectedListing?.slug}
-                    />
-                );
-
-            case 2:
-                return (
-                    <ChooseFeaturesStep
-                        onComplete={handleChooseFeaturesComplete}
-                        onBack={guideState.prevStep}
-                        selectedFeatures={selectedFeatures}
-                        setSelectedFeatures={setSelectedFeatures}
-                    />
-                );
-
-            case 3:
-                // If no features need setup, skip to step 4
-                if (featuresNeedingSetup.length === 0) {
-                    // Auto-advance to next step
-                    setTimeout(() => {
-                        guideState.markStepComplete('feature-setup');
-                        guideState.goToStep(4);
-                    }, 0);
-                    return null;
-                }
-
-                return (
-                    <FeatureSetupStep
-                        onComplete={() => handleStepComplete('feature-setup')}
-                        onBack={guideState.prevStep}
-                        selectedFeatures={selectedFeatures}
-                        currentFeatureIndex={currentFeatureIndex}
-                        setCurrentFeatureIndex={setCurrentFeatureIndex}
-                        featureSetupState={featureSetupState}
-                        setFeatureSetupState={setFeatureSetupState}
-                        selectedListing={selectedListing}
-                        integrationId={selectedIntegration?.id}
-                    />
-                );
-
-            case 4:
-                return (
-                    <YourAppStep
-                        onBack={guideState.prevStep}
-                        onComplete={() => handleStepComplete('your-app')}
-                        selectedFeatures={selectedFeatures}
-                        selectedListing={selectedListing}
-                        featureSetupState={featureSetupState}
-                        integrationId={selectedIntegration?.id}
-                    />
-                );
-
-            case 5:
-                return (
-                    <GoLiveStep
-                        integration={selectedIntegration}
-                        guideType="embed-app"
-                        onBack={guideState.prevStep}
-                        completedItems={[
-                            'SDK installed and configured',
-                            'Signing authority configured',
-                            'App listing created',
-                            `${selectedFeatures.length} feature${
-                                selectedFeatures.length !== 1 ? 's' : ''
-                            } configured`,
-                            'Integration code generated',
-                        ]}
-                        title="Ready to Go Live!"
-                        description="Your embedded app integration is complete. Activate it to start using it in production."
-                    />
-                );
-
-            default:
-                return null;
-        }
-    };
-
     return (
-        <div className="mx-auto py-4 max-w-3xl">
+        <div ref={guideTopRef} className="mx-auto py-4 max-w-3xl">
             <div className="mb-8">
                 <StepProgress
                     currentStep={guideState.currentStep}
@@ -7198,7 +7114,69 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                 />
             </div>
 
-            {renderStep()}
+            {/* All steps always mounted — only active step visible; prevents re-mount lag */}
+            <div style={{ display: guideState.currentStep === 0 ? 'block' : 'none' }}>
+                <GettingStartedStep
+                    onComplete={() => handleStepComplete('getting-started')}
+                    selectedIntegration={selectedIntegration}
+                    selectedListing={selectedListing}
+                    setSelectedListing={setSelectedListing}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 1 ? 'block' : 'none' }}>
+                <SigningAuthorityStep
+                    onComplete={() => handleStepComplete('signing-authority')}
+                    onBack={handleBack}
+                    appSlug={selectedListing?.slug}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 2 ? 'block' : 'none' }}>
+                <ChooseFeaturesStep
+                    onComplete={handleChooseFeaturesComplete}
+                    onBack={handleBack}
+                    selectedFeatures={selectedFeatures}
+                    setSelectedFeatures={setSelectedFeatures}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 3 ? 'block' : 'none' }}>
+                <FeatureSetupStep
+                    onComplete={() => handleStepComplete('feature-setup')}
+                    onBack={handleBack}
+                    selectedFeatures={selectedFeatures}
+                    currentFeatureIndex={currentFeatureIndex}
+                    setCurrentFeatureIndex={setCurrentFeatureIndex}
+                    featureSetupState={featureSetupState}
+                    setFeatureSetupState={setFeatureSetupState}
+                    selectedListing={selectedListing}
+                    integrationId={selectedIntegration?.id}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 4 ? 'block' : 'none' }}>
+                <YourAppStep
+                    onBack={handleBack}
+                    onComplete={() => handleStepComplete('your-app')}
+                    selectedFeatures={selectedFeatures}
+                    selectedListing={selectedListing}
+                    featureSetupState={featureSetupState}
+                    integrationId={selectedIntegration?.id}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 5 ? 'block' : 'none' }}>
+                <GoLiveStep
+                    integration={selectedIntegration}
+                    guideType="embed-app"
+                    onBack={handleBack}
+                    completedItems={[
+                        'SDK installed and configured',
+                        'Signing authority configured',
+                        'App listing created',
+                        `${selectedFeatures.length} feature${selectedFeatures.length !== 1 ? 's' : ''} configured`,
+                        'Integration code generated',
+                    ]}
+                    title="Ready to Go Live!"
+                    description="Your embedded app integration is complete. Activate it to start using it in production."
+                />
+            </div>
         </div>
     );
 };
