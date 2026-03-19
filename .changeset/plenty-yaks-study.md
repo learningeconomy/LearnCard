@@ -4,7 +4,6 @@
 "@learncard/partner-connect": patch
 "@learncard/types": patch
 "@learncard/network-brain-service": patch
-"@workspace/e2e-tests": patch
 ---
 
 [LC-1632] [LC-1633] Add checkUserHasCredential app event and PartnerConnect SDK helper (with duplicate-claim prevention)
