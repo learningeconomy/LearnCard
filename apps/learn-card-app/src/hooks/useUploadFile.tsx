@@ -91,6 +91,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
     const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [parsedCredentials, setParsedCredentials] = useState<Array<{ vc: any; metadata?: { name?: string; category?: string } }>>([]);
 
     const fetchNewContractCredentials = () => {
         queryClient.refetchQueries({
@@ -323,6 +324,101 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         }
     };
 
+    /**
+     * Parse a single file without storing anything. Call storeSelectedCredentials after user review.
+     */
+    const fetchParsedCredentials = async (fileType: UploadTypesEnum): Promise<Array<{ vc: any; metadata?: any }>> => {
+        try {
+            checklistStore.set.updateIsParsing(fileType, true);
+            const wallet = await initWallet();
+            const did = wallet?.id?.did();
+            const vcs = await uploadFile({ did, file: base64Data ?? '', fileType });
+            checklistStore.set.updateIsParsing(fileType, false);
+            const results = vcs?.vcs ?? [];
+            setParsedCredentials(results);
+            return results;
+        } catch (error) {
+            checklistStore.set.updateIsParsing(fileType, false);
+            console.error('fetchParsedCredentials::error', error);
+            return [];
+        }
+    };
+
+    /**
+     * Parse multiple files (e.g. transcripts) without storing anything.
+     */
+    const fetchParsedCredentialsFromFiles = async (fileType: UploadTypesEnum): Promise<Array<{ vc: any; metadata?: any }>> => {
+        try {
+            checklistStore.set.updateIsParsing(fileType, true);
+            const wallet = await initWallet();
+            const did = wallet?.id?.did();
+            if (!did) throw new Error('Could not get wallet DID');
+
+            const allVcs: Array<{ vc: any; metadata?: any }> = [];
+            for (const rawVC of rawArtifactCredentials) {
+                const vcs = await uploadFile({ did, file: rawVC?.rawArtifact?.data ?? '', fileType });
+                allVcs.push(...(vcs?.vcs ?? []));
+            }
+
+            checklistStore.set.updateIsParsing(fileType, false);
+            setParsedCredentials(allVcs);
+            return allVcs;
+        } catch (error) {
+            checklistStore.set.updateIsParsing(fileType, false);
+            console.error('fetchParsedCredentialsFromFiles::error', error);
+            return [];
+        }
+    };
+
+    /**
+     * Store the raw artifact(s) + only the user-selected VCs. Call after review step.
+     */
+    const storeSelectedCredentials = async (
+        selectedVcs: any[],
+        rawArtifactVc: any,
+        fileType: UploadTypesEnum,
+        additionalRawArtifacts?: any[]
+    ) => {
+        try {
+            await saveFile(rawArtifactVc, fileType);
+
+            if (additionalRawArtifacts?.length) {
+                for (const rac of additionalRawArtifacts) {
+                    await saveFile(rac, fileType);
+                }
+            }
+
+            if (selectedVcs.length > 0) {
+                const wallet = await initWallet();
+                const issuedVCs = await Promise.all(
+                    selectedVcs.map(async vc => {
+                        const issuedVc = await wallet.invoke.issueCredential(vc);
+                        return (await storeAndAddVCToWallet(issuedVc)).result;
+                    })
+                );
+
+                const recordsByCategory = issuedVCs.reduce<Partial<Record<CredentialCategory, string[]>>>(
+                    (records, { category, uri }) => {
+                        if (!uri) return records;
+                        const existing = records[category] ?? [];
+                        records[category] = [...existing, uri];
+                        return records;
+                    },
+                    {}
+                );
+
+                newCredsStore.set.addNewCreds(recordsByCategory);
+            }
+
+            await refetchCheckListStatus();
+            syncAll.mutate();
+            aiInsightMutation.mutate();
+            setParsedCredentials([]);
+        } catch (error) {
+            console.error('storeSelectedCredentials::error', error);
+        }
+    };
+
     const parseFile = async (fileType: UploadTypesEnum) => {
         try {
             checklistStore.set.updateIsParsing(fileType, true);
@@ -459,6 +555,11 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         parseFiles,
         isUploading,
         isSaving,
+        parsedCredentials,
+        setParsedCredentials,
+        fetchParsedCredentials,
+        fetchParsedCredentialsFromFiles,
+        storeSelectedCredentials,
     };
 };
 
