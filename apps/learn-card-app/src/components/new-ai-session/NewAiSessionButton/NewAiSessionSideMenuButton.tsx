@@ -8,7 +8,7 @@ import { IonMenuToggle } from '@ionic/react';
 import useTheme from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors';
 import { useDeviceTypeByWidth } from 'learn-card-base';
-import { chatBotStore } from 'src/stores/chatBotStore';
+import { chatBotStore } from '../../../stores/chatBotStore';
 
 const NewAiSessionSideMenuButton: React.FC<{ handleNewSession?: () => void }> = ({
     handleNewSession,
