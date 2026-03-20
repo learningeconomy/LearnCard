@@ -3294,13 +3294,10 @@ const FeatureSetupStep: React.FC<{
         .map(id => FEATURES.find(f => f.id === id))
         .filter((f): f is Feature => f !== undefined && f.requiresSetup);
 
-    // If no features need setup, skip to complete
-    useEffect(() => {
-        if (featuresNeedingSetup.length === 0) {
-            onComplete();
-        }
-    }, [featuresNeedingSetup.length, onComplete]);
-
+    // Skip rendering when no features need setup.
+    // The parent component handles auto-advancing past this step (see main component).
+    // We must NOT call onComplete() here because with display:none all steps are always
+    // mounted — an onComplete effect would fire immediately and cascade to the last step.
     if (featuresNeedingSetup.length === 0) {
         return null;
     }
@@ -7043,12 +7040,13 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
 
     // Auto-advance past feature-setup when no features require setup
     // (handles edge case where user arrives at step 3 after deselecting all features)
+    // Guard with hasRestoredState to avoid premature skip before selectedFeatures is restored.
     useEffect(() => {
-        if (guideState.currentStep === 3 && featuresNeedingSetup.length === 0) {
+        if (hasRestoredState && guideState.currentStep === 3 && featuresNeedingSetup.length === 0) {
             guideState.markStepComplete('feature-setup');
             guideState.goToStep(4);
         }
-    }, [guideState.currentStep, featuresNeedingSetup.length]);
+    }, [guideState.currentStep, featuresNeedingSetup.length, hasRestoredState]);
 
     const guideTopRef = useRef<HTMLDivElement>(null);
 
