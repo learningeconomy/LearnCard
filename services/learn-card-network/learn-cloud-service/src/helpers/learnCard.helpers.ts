@@ -40,20 +40,25 @@ const getDidKitPlugin = async (): Promise<DIDKitPlugin> => {
     if (didKitPluginPromise) return didKitPluginPromise;
 
     didKitPluginPromise = (async () => {
+        if (process.env.SKIP_DIDKIT_NAPI) {
+            const didkitModule = await import('@learncard/didkit-plugin');
+            const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
+            const wasmBuffer = await readFile(
+                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
+            );
+            return await getWasmPlugin(wasmBuffer);
+        }
+
         try {
             const didkitModule = await import('@learncard/didkit-plugin-node');
             const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
             return await getNativePlugin();
-        } catch (e) {
-            console.log('Native DIDKit plugin not available, falling back to WASM');
-
+        } catch {
             const didkitModule = await import('@learncard/didkit-plugin');
             const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
-
             const wasmBuffer = await readFile(
                 require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
             );
-
             return await getWasmPlugin(wasmBuffer);
         }
     })();

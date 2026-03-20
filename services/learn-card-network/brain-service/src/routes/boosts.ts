@@ -112,6 +112,10 @@ import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import {
+    getContactMethodByValue,
+    getProfileByContactMethod,
+} from '@accesslayer/contact-method/read';
+import {
     getSigningAuthorityForUserByName,
     getPrimarySigningAuthorityForUser,
 } from '@accesslayer/signing-authority/relationships/read';
@@ -126,6 +130,7 @@ import {
     isClaimLinkAlreadySetForBoost,
     setValidClaimLinkForBoost,
     getClaimLinkSAInfoForBoost,
+    getClaimLinkGeneratorProfileId,
     useClaimLinkForBoost,
 } from '@cache/claim-links';
 import { getBlockedAndBlockedByIds, isRelationshipBlocked } from '@helpers/connection.helpers';
@@ -488,6 +493,7 @@ export const boostsRouter = t.router({
                     name: framework.name,
                     description: framework.description,
                     sourceURI: framework.sourceURI,
+                    isPublic: (framework as any).isPublic ?? false,
                     status: (framework.status as any) ?? 'active',
                     createdAt: (framework as any).createdAt,
                     updatedAt: (framework as any).updatedAt,
@@ -749,6 +755,33 @@ export const boostsRouter = t.router({
 
                     // Route to Universal Inbox for email/phone recipients
                     if (inboxRecipient) {
+                        // Try to resolve recipient profile for auto-populating template variables + recipient DID
+                        let inboxRecipientName: string | undefined;
+                        let inboxRecipientDid: string | undefined;
+                        if (inboxRecipient.type === 'email' || inboxRecipient.type === 'phone') {
+                            const contactMethod = await traceDb(
+                                'getContactMethodByValue:inbox',
+                                () =>
+                                    getContactMethodByValue(
+                                        inboxRecipient.type as 'email' | 'phone',
+                                        inboxRecipient.value
+                                    )
+                            );
+                            if (contactMethod) {
+                                const recipientProfile = await traceDb(
+                                    'getProfileByContactMethod:inbox',
+                                    () => getProfileByContactMethod(contactMethod.id)
+                                );
+                                inboxRecipientName = recipientProfile?.displayName;
+                                if (recipientProfile?.profileId) {
+                                    inboxRecipientDid = getDidWeb(
+                                        domain,
+                                        recipientProfile.profileId
+                                    );
+                                }
+                            }
+                        }
+
                         // Prepare the credential - use signedCredential if provided, otherwise from boost template
                         let credential: VC | UnsignedVC;
 
@@ -764,6 +797,8 @@ export const boostsRouter = t.router({
                                                 string,
                                                 unknown
                                             >,
+                                            recipientDid: inboxRecipientDid,
+                                            recipientName: inboxRecipientName,
                                         })
                                 );
                             } catch (e) {
@@ -942,6 +977,7 @@ export const boostsRouter = t.router({
                                     templateData: input.templateData as Record<string, unknown>,
                                     issuerDid: signingAuthority.relationship.did,
                                     recipientDid: getDidWeb(domain, targetProfile.profileId),
+                                    recipientName: targetProfile.displayName,
                                 })
                             );
                         } catch (e) {
@@ -1259,6 +1295,7 @@ export const boostsRouter = t.router({
                     name: framework.name,
                     description: framework.description ?? undefined,
                     sourceURI: framework.sourceURI ?? undefined,
+                    isPublic: (framework as any).isPublic ?? false,
                     status: framework.status ?? 'active',
                     createdAt: framework.createdAt,
                     updatedAt: framework.updatedAt,
@@ -2790,7 +2827,13 @@ export const boostsRouter = t.router({
                 });
             }
 
-            await setValidClaimLinkForBoost(boostUri, challenge, normalizedClaimLinkSA, options);
+            await setValidClaimLinkForBoost(
+                boostUri,
+                challenge,
+                normalizedClaimLinkSA,
+                options,
+                profile.profileId
+            );
 
             return { boostUri: boostUri, challenge };
         }),
@@ -2812,9 +2855,10 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { boostUri, challenge } = input;
 
-            const [claimLinkSA, boost] = await Promise.all([
+            const [claimLinkSA, boost, generatorProfileId] = await Promise.all([
                 getClaimLinkSAInfoForBoost(boostUri, challenge),
                 getBoostByUri(boostUri),
+                getClaimLinkGeneratorProfileId(boostUri, challenge),
             ]);
 
             if (!claimLinkSA) {
@@ -2839,8 +2883,13 @@ export const boostsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost owner' });
             }
 
+            // Use the generator's profile for SA lookup if available, fall back to boost owner
+            const saOwner = generatorProfileId
+                ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
+                : boostOwner;
+
             const signingAuthority = await getSigningAuthorityForUserByName(
-                boostOwner,
+                saOwner,
                 claimLinkSA.endpoint,
                 claimLinkSA.name
             );
@@ -2854,7 +2903,7 @@ export const boostsRouter = t.router({
 
             // Log DELIVERED activity first to get activityId for chaining (outside try for catch access)
             const activityId = await logCredentialSent({
-                actorProfileId: boostOwner.profileId,
+                actorProfileId: saOwner.profileId,
                 recipientType: 'profile',
                 recipientIdentifier: profile.profileId,
                 recipientProfileId: profile.profileId,
@@ -2866,7 +2915,7 @@ export const boostsRouter = t.router({
                 const sentBoostUri = await issueClaimLinkBoost(
                     boost,
                     ctx.domain,
-                    boostOwner,
+                    saOwner,
                     profile,
                     signingAuthority
                 );
@@ -2874,7 +2923,7 @@ export const boostsRouter = t.router({
                 // Log CLAIMED immediately since autoAcceptCredential: true in issueClaimLinkBoost
                 await logCredentialClaimed({
                     activityId,
-                    actorProfileId: boostOwner.profileId,
+                    actorProfileId: saOwner.profileId,
                     recipientType: 'profile',
                     recipientIdentifier: profile.profileId,
                     recipientProfileId: profile.profileId,
@@ -2897,7 +2946,7 @@ export const boostsRouter = t.router({
                 try {
                     await logCredentialFailed({
                         activityId,
-                        actorProfileId: boostOwner.profileId,
+                        actorProfileId: saOwner.profileId,
                         recipientType: 'profile',
                         recipientIdentifier: profile.profileId,
                         recipientProfileId: profile.profileId,

@@ -1,0 +1,48 @@
+# Shared Caddy edge proxy for all PR preview environments
+#
+# This runs as a standalone compose project ("preview-edge") and handles TLS + routing
+# for ALL active PR previews. Per-PR stacks attach to the "preview-net" external network,
+# and this Caddy routes traffic to them by container name.
+#
+# Usage (one-time, managed by deploy-preview.sh):
+#   docker network create preview-net
+#   docker compose -p preview-edge -f docker-compose.edge.yaml up -d
+
+services:
+    caddy:
+        image: caddy:2-alpine
+        container_name: preview-caddy
+        ports:
+            - '80:80'
+            - '443:443'
+        volumes:
+            - ./dynamic-caddyfile:/etc/caddy/Caddyfile:ro
+            - caddy-data:/data
+            - caddy-config:/config
+        networks:
+            - preview-net
+        restart: unless-stopped
+
+    dozzle:
+        image: amir20/dozzle:latest
+        container_name: preview-dozzle
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - ./dozzle-users.yml:/data/users.yml:ro
+        environment:
+            DOZZLE_AUTH_PROVIDER: simple
+            DOZZLE_FILTER: "name=pr-"
+            DOZZLE_BASE: /
+        expose:
+            - 8080
+        networks:
+            - preview-net
+        restart: unless-stopped
+
+networks:
+    preview-net:
+        external: true
+
+volumes:
+    caddy-data:
+    caddy-config:

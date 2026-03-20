@@ -69,7 +69,7 @@ export const AiSessionsPopOverButton: React.FC<{
                         }`}
                 />
             </button>
-            <IonPopover
+            {!isMobile && <IonPopover
                 onDidDismiss={() => setShowSortPopover(false)}
                 reference="trigger"
                 trigger="trigger-button"
@@ -126,7 +126,7 @@ export const AiSessionsPopOverButton: React.FC<{
                             );
                         })}
                 </IonList>
-            </IonPopover>
+            </IonPopover>}
         </>
     );
 };

@@ -22,9 +22,7 @@ const ephemeralCardsCache = getLRUCache<LearnCardFromSeed['returnValue']>();
 // Try native plugin first, fall back to WASM
 let didKitInitPromise: Promise<'node' | Buffer> | null = null;
 
-const resolveDidKitPluginFactory = (
-    module: Record<string, unknown>
-): (() => Promise<unknown>) => {
+const resolveDidKitPluginFactory = (module: Record<string, unknown>): (() => Promise<unknown>) => {
     const factory =
         (module as { getDidKitPlugin?: unknown }).getDidKitPlugin ??
         (module as { default?: { getDidKitPlugin?: unknown } }).default?.getDidKitPlugin;
@@ -40,22 +38,22 @@ const getDidKitInit = async (): Promise<'node' | Buffer> => {
     if (didKitInitPromise) return didKitInitPromise;
 
     didKitInitPromise = (async () => {
-        try {
-            // Check if native plugin is available by trying to load it
-            const didkitModule = await import('@learncard/didkit-plugin-node');
-            const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
-
-            // Test that it actually works
-            await getNativePlugin();
-            return 'node' as const;
-        } catch (e) {
-            console.log('Native DIDKit plugin not available, falling back to WASM');
-
-            // Return the WASM buffer for initLearnCard to use
+        if (process.env.SKIP_DIDKIT_NAPI) {
             const wasmBuffer = await readFile(
                 require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
             );
+            return wasmBuffer;
+        }
 
+        try {
+            const didkitModule = await import('@learncard/didkit-plugin-node');
+            const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
+            await getNativePlugin();
+            return 'node' as const;
+        } catch {
+            const wasmBuffer = await readFile(
+                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
+            );
             return wasmBuffer;
         }
     })();
@@ -91,28 +89,48 @@ export const getSigningAuthorityLearnCard = async (
     ownerDID: string,
     name: string
 ): Promise<DidWebLearnCardFromSeed['returnValue'] | LearnCardFromSeed['returnValue']> => {
-    const seed = (await getSigningAuthorityForDid(ownerDID, name))?.seed;
+    console.log('[LCA getSigningAuthorityLearnCard] Looking up SA:', { ownerDID, name });
 
-    if (!seed) throw new Error('No seed set for SA!');
+    const sa = await getSigningAuthorityForDid(ownerDID, name);
 
-    const cachedValue = saCardsCache.get(seed);
+    if (!sa?.seed) {
+        console.error('[LCA getSigningAuthorityLearnCard] SA not found or has no seed:', {
+            ownerDID,
+            name,
+            saFound: !!sa,
+            hasSeed: !!sa?.seed,
+        });
+        throw new Error(`No signing authority found for ownerDID="${ownerDID}" name="${name}"`);
+    }
 
-    if (cachedValue) return cachedValue;
+    const cachedValue = saCardsCache.get(sa.seed);
+
+    if (cachedValue) {
+        console.log('[LCA getSigningAuthorityLearnCard] Using cached SA LearnCard');
+        return cachedValue;
+    }
+
+    console.log('[LCA getSigningAuthorityLearnCard] Initializing SA LearnCard:', {
+        isDidWeb: ownerDID.startsWith('did:web:'),
+        ownerDID,
+    });
 
     const saLearnCard = ownerDID.startsWith('did:web:')
         ? await initLearnCard({
               didkit: await getDidKitInit(),
-              seed,
+              seed: sa.seed,
               didWeb: ownerDID,
               cloud,
+              allowRemoteContexts: true,
           })
         : await initLearnCard({
               didkit: await getDidKitInit(),
-              seed,
+              seed: sa.seed,
               cloud,
+              allowRemoteContexts: true,
           });
 
-    saCardsCache.add(seed, saLearnCard);
+    saCardsCache.add(sa.seed, saLearnCard);
 
     return saLearnCard;
 };
@@ -122,7 +140,7 @@ export const getServerDidWebDID = (): string => {
     const domain =
         !domainName || process.env.IS_OFFLINE
             ? `localhost%3A${process.env.PORT || 3000}`
-            : domainName.replace(/:/g, '%3A');
+            : domainName;
     return `did:web:${domain}`;
 };
 

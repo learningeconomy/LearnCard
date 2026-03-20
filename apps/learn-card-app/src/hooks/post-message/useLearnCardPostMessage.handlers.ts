@@ -424,6 +424,35 @@ export const createInitiateTemplateIssueHandler = (dependencies: {
     };
 };
 
+const normalizeAppEventError = (error: unknown): { code: string; message: string } => {
+    if (typeof error === 'object' && error !== null) {
+        const trpcCode = (error as { data?: { code?: string } }).data?.code;
+        const message = (error as { message?: string }).message ?? 'Failed to process app event';
+
+        if (trpcCode === 'NOT_FOUND') {
+            return { code: 'BOOST_NOT_FOUND', message };
+        }
+
+        if (trpcCode === 'FORBIDDEN' || trpcCode === 'UNAUTHORIZED') {
+            return { code: 'INSUFFICIENT_PERMISSIONS', message };
+        }
+
+        if (trpcCode) {
+            return { code: trpcCode, message };
+        }
+
+        return {
+            code: 'UNKNOWN_ERROR',
+            message,
+        };
+    }
+
+    return {
+        code: 'UNKNOWN_ERROR',
+        message: 'Failed to process app event',
+    };
+};
+
 /**
  * APP_EVENT Handler
  * Generic event handler for backend-like operations from installed apps.
@@ -447,11 +476,13 @@ export const createAppEventHandler = (dependencies: {
             const result = await sendAppEvent(listingId, payload);
             return { success: true, data: result };
         } catch (error) {
+            const normalizedError = normalizeAppEventError(error);
+
             return {
                 success: false,
                 error: {
-                    code: 'UNKNOWN_ERROR',
-                    message: error instanceof Error ? error.message : 'Failed to process app event',
+                    code: normalizedError.code,
+                    message: normalizedError.message,
                 },
             };
         }

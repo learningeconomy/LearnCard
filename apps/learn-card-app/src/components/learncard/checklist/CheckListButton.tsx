@@ -1,7 +1,6 @@
 import React from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import BlocksIcon from 'learn-card-base/svgs/Blocks';
 import CustomSpinner from '../../svgs/CustomSpinner';
 import SlimCaretRight from '../../svgs/SlimCaretRight';
 import CheckListContainer from '../checklist/CheckListContainer';
@@ -17,7 +16,12 @@ import {
     checklistItems,
 } from 'learn-card-base';
 
-export const CheckListButton: React.FC<{ className?: string }> = ({ className = '' }) => {
+type CheckListButtonMode = 'default' | 'inline';
+
+export const CheckListButton: React.FC<{ className?: string; mode?: CheckListButtonMode }> = ({
+    className = '',
+    mode = 'default',
+}) => {
     const flags = useFlags();
     const { newModal } = useModal();
     const { completedItems } = useGetCheckListStatus();
@@ -30,6 +34,8 @@ export const CheckListButton: React.FC<{ className?: string }> = ({ className = 
     const { resume, certificate, transcript, diploma, rawVC } =
         checklistStore.useTracked.isParsing();
     const isParsing = resume || certificate || transcript || diploma || rawVC;
+    const optimizedPercent =
+        checklistItems.length > 0 ? Math.round((completedItems / checklistItems.length) * 100) : 0;
 
     const handleCheckListButton = async () => {
         const { prompted } = await gate();
@@ -43,11 +49,70 @@ export const CheckListButton: React.FC<{ className?: string }> = ({ className = 
 
     if (!flags?.enableOnboardingChecklist) return null;
 
+    const progressColors = {
+        25: 'bg-amber-500',
+        50: 'bg-violet-500',
+        75: 'bg-sky-500',
+        100: 'bg-emerald-600',
+    };
+
+    if (mode === 'inline') {
+        return (
+            <div
+                role="button"
+                onClick={handleCheckListButton}
+                className={`w-full h-[150px] max-h-[150px] bg-white rounded-[28px] p-4 flex flex-col justify-center shadow-[0_8px_20px_rgba(15,23,42,0.12)] overflow-hidden ${className}`}
+            >
+                <div className="flex justify-center mb-3">
+                    <div
+                        className={`rounded-[14px] p-[8px] ${
+                            isParsing ? `bg-${primaryColor}` : 'bg-white'
+                        }`}
+                    >
+                        {isParsing ? (
+                            <CustomSpinner className="w-[34px] h-[34px] text-white" />
+                        ) : (
+                            <img
+                                src={buildMyLCIcon}
+                                className="w-[36px] h-[36px]"
+                                alt="Build LearnCard"
+                            />
+                        )}
+                    </div>
+                </div>
+
+                <h5 className="text-[17px] leading-[130%] font-poppins font-[600] text-grayscale-900 text-center">
+                    Build My LearnCard
+                </h5>
+
+                {isParsing ? (
+                    <p className="mt-2 text-[13px] leading-[130%] text-grayscale-700 font-poppins text-center">
+                        Processing documents...
+                    </p>
+                ) : (
+                    <div className="mt-3">
+                        <div className="w-full h-[10px] rounded-full bg-grayscale-200 overflow-hidden">
+                            <div
+                                className={`h-full rounded-full ${
+                                    progressColors[optimizedPercent as keyof typeof progressColors]
+                                }`}
+                                style={{ width: `${optimizedPercent}%` }}
+                            />
+                        </div>
+                        <p className="mt-2 text-xs leading-[130%] text-grayscale-700 font-poppins">
+                            {optimizedPercent}% optimized
+                        </p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     return (
         <div
             role="button"
             onClick={handleCheckListButton}
-            className={`w-full flex items-center justify-between max-w-[900px] bg-grayscale-100 rounded-[15px] p-[10px] ${className}`}
+            className={`w-full flex items-center justify-between max-w-[900px] bg-white rounded-[15px] p-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.12)] ${className}`}
         >
             <div className="flex items-center gap-[10px]">
                 <div

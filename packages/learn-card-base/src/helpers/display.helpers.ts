@@ -35,7 +35,8 @@ export const getDefaultDisplayType = (category: string): DisplayTypeEnum => {
 
     if (
         category === CredentialCategoryEnum.socialBadge ||
-        category === CredentialCategoryEnum.workHistory
+        category === CredentialCategoryEnum.workHistory ||
+        category === CredentialCategoryEnum.resume
     ) {
         return DisplayTypeEnum.Badge;
     }

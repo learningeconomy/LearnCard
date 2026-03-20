@@ -1,5 +1,29 @@
 # @welibraryos/lca-api-service
 
+## 1.2.8
+
+### Patch Changes
+
+-   [#1084](https://github.com/learningeconomy/LearnCard/pull/1084) [`bb2996d35d13c52c2a3c983b1b521338678bd68d`](https://github.com/learningeconomy/LearnCard/commit/bb2996d35d13c52c2a3c983b1b521338678bd68d) Thanks [@Custard7](https://github.com/Custard7)! - fix: Vitest timeout
+
+-   Updated dependencies [[`50fa611b714ae47fa3d6d56e7751ba59b5b71322`](https://github.com/learningeconomy/LearnCard/commit/50fa611b714ae47fa3d6d56e7751ba59b5b71322), [`34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c`](https://github.com/learningeconomy/LearnCard/commit/34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c)]:
+    -   @learncard/helpers@1.2.10
+    -   @learncard/types@5.13.0
+    -   @learncard/didkit-plugin@1.8.0
+    -   @learncard/core@9.4.10
+    -   @learncard/did-web-plugin@1.1.10
+    -   @learncard/didkey-plugin@1.1.10
+    -   @learncard/learn-card-plugin@1.2.10
+    -   @learncard/vc-plugin@1.4.6
+    -   @learncard/dynamic-loader-plugin@1.1.10
+    -   @learncard/expiration-plugin@1.2.10
+
+## 1.2.7
+
+### Patch Changes
+
+-   [#1073](https://github.com/learningeconomy/LearnCard/pull/1073) [`bd25921c5a9c06bab25092ebe9485aa2be452d19`](https://github.com/learningeconomy/LearnCard/commit/bd25921c5a9c06bab25092ebe9485aa2be452d19) Thanks [@Custard7](https://github.com/Custard7)! - fix: Enable remote JSON-LD context resolution across all signing services
+
 ## 1.2.6
 
 ### Patch Changes

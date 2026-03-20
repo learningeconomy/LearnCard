@@ -53,6 +53,7 @@ export * from './components/shadcn/components/ui/button';
 export * from './components/shadcn/components/ui/popover';
 export * from './components/shadcn/lib/utils';
 export * from './components/generic/Select';
+export * from './components/form-inputs';
 export * from './components/toast/Toast';
 
 export * from './utils/regexes';
@@ -70,8 +71,16 @@ export * from './hooks/useWithdrawConsent';
 export * from './hooks/useUpdateTerms';
 export * from './hooks/useConsentToContract';
 export * from './hooks/useTermsTransactions';
-export * from './hooks/useWeb3Auth';
-export * from './hooks/useWeb3AuthSFA';
+
+// Auth Coordinator - unified auth + key derivation orchestration
+export * from './auth-coordinator';
+export * from './auth-providers';
+export * from './auth-adapters';
+export * from './key-derivation';
+export * from './config/authConfig';
+export * from './config/providerRegistry';
+export { SignInAdapterProvider, useSignInAdapter } from './providers/SignInAdapterProvider';
+export type { SignInAdapterProviderProps } from './providers/SignInAdapterProvider';
 export * from './hooks/useSocialLogins';
 export * from './hooks/useSQLiteStorage';
 export * from './hooks/useGetCurrentUser';
@@ -99,8 +108,11 @@ export * from './stores/aiBoostStore';
 export * from './hooks/useGetCheckListStatus';
 export * from './hooks/useAiInsightCredential';
 export * from './hooks/useGetCurrentUserRole';
+export * from './hooks/useQrLogin';
+export * from './components/qr-login';
 export * from './hooks/usePrivacyGate';
 export * from './hooks/useAiFeatureGate';
+export * from './hooks/useVerifiableData';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';
@@ -118,6 +130,7 @@ export * from './stores/redirectStore';
 export * from './stores/confirmationStore';
 export * from './stores/chapiStore';
 export * from './stores/firebaseAuthStore';
+export * from './stores/authUserStore';
 export * from './stores/sqliteStore';
 export * from './stores/syncSchoolStore';
 export * from './stores/QRCodeScannerStore';
@@ -159,6 +172,7 @@ export {
     updateArtifactClaimedStatus,
 } from './stores/nanoStores/chatStore';
 
+export * from './helpers/credentialHelpers';
 export * from './helpers/credentials/queries';
 export * from './helpers/web3AuthHelpers';
 export * from './helpers/statusBarHelpers';

@@ -6,9 +6,12 @@ import { callbackLink } from './callbackLink';
 
 export type LCNClient = TRPCClient<AppRouter>;
 
+export type GuardianApprovalGetter = () => string | undefined | Promise<string | undefined>;
+
 export const getClient = async (
     url: string,
-    didAuthFunction: (challenge?: string) => Promise<string>
+    didAuthFunction: (challenge?: string) => Promise<string>,
+    guardianApprovalGetter?: GuardianApprovalGetter
 ): Promise<LCNClient> => {
     let challenges: string[] = [];
 
@@ -47,7 +50,14 @@ export const getClient = async (
                 headers: async () => {
                     if (challenges.length === 0) challenges.push(...(await getChallenges()));
 
-                    return { Authorization: `Bearer ${await didAuthFunction(challenges.pop())}` };
+                    const guardianApproval = guardianApprovalGetter
+                        ? await guardianApprovalGetter()
+                        : undefined;
+
+                    return {
+                        Authorization: `Bearer ${await didAuthFunction(challenges.pop())}`,
+                        ...(guardianApproval ? { 'x-guardian-approval': guardianApproval } : {}),
+                    };
                 },
                 transformer: {
                     input: RegExpTransformer,
@@ -61,14 +71,27 @@ export const getClient = async (
 };
 
 // Create a client that always uses a provided API token and never fetches challenges
-export const getApiTokenClient = async (url: string, apiToken: string): Promise<LCNClient> => {
+export const getApiTokenClient = async (
+    url: string,
+    apiToken: string,
+    guardianApprovalGetter?: GuardianApprovalGetter
+): Promise<LCNClient> => {
     const trpc = createTRPCClient<AppRouter>({
         links: [
             httpBatchLink({
                 methodOverride: 'POST',
                 url,
                 maxURLLength: 3072,
-                headers: { Authorization: `Bearer ${apiToken}` },
+                headers: async () => {
+                    const guardianApproval = guardianApprovalGetter
+                        ? await guardianApprovalGetter()
+                        : undefined;
+
+                    return {
+                        Authorization: `Bearer ${apiToken}`,
+                        ...(guardianApproval ? { 'x-guardian-approval': guardianApproval } : {}),
+                    };
+                },
                 transformer: {
                     input: RegExpTransformer,
                     output: { serialize: o => o, deserialize: o => o },

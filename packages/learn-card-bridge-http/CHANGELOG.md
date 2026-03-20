@@ -1,5 +1,13 @@
 # @learncard/create-http-bridge
 
+## 1.1.226
+
+### Patch Changes
+
+-   Updated dependencies [[`50fa611b714ae47fa3d6d56e7751ba59b5b71322`](https://github.com/learningeconomy/LearnCard/commit/50fa611b714ae47fa3d6d56e7751ba59b5b71322), [`34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c`](https://github.com/learningeconomy/LearnCard/commit/34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c)]:
+    -   @learncard/init@2.3.8
+    -   @learncard/types@5.13.0
+
 ## 1.1.225
 
 ### Patch Changes

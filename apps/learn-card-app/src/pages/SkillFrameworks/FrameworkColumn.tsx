@@ -348,7 +348,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                         />
                     )}
 
-                    {isTopLevel && !isApproveFlow && !isEdit && (
+                    {isTopLevel && !isApproveFlow && !isEdit && !isSelectSkillsFlow && (
                         <button
                             onClick={() =>
                                 newModal(

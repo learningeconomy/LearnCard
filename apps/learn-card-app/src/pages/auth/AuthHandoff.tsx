@@ -6,18 +6,20 @@ import { useVerifyNetworkHandoffToken } from 'learn-card-base/react-query/mutati
 
 import { LoadingPageDumb } from '../loadingPage/LoadingPage';
 import { useFirebase } from '../../hooks/useFirebase';
-import { firebaseAuthStore, useWeb3AuthSFA } from 'learn-card-base';
+import { authUserStore } from 'learn-card-base';
 import jwtDecode from 'jwt-decode';
 
-const shouldSkipLogout = (verifiedToken?: string, currentFirebaseUser?: any) => {
+import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
+
+const shouldSkipLogout = (verifiedToken?: string, currentAuthUser?: { email?: string; phone?: string } | null) => {
     // Decode token JWT to get nonce which will look like this, e.g. contact_method_session:fc026367-a056-45ac-8135-ee2cdee1b75c:email:custard7@gmail.com
     // Then get the last two parts of the nonce, e.g. email:custard7@gmail.com as 'type' and 'value' of contact method.
-    // Then compare the 'value' of the contact method with the current Firebase user's email if it's an email contact method.
-    // If it's not an email contact method, then compare the 'value' of the contact method with the current Firebase user's phone number.
-    // If they match, then continue with the handoff process but skip "web3authLogout".
-    // If they don't match, then continue with the handoff process and ensure "web3authLogout" is called.
+    // Then compare the 'value' of the contact method with the current user's email if it's an email contact method.
+    // If it's not an email contact method, then compare the 'value' of the contact method with the current user's phone number.
+    // If they match, then continue with the handoff process but skip logout.
+    // If they don't match, then continue with the handoff process and ensure logout is called.
     
-    if (!verifiedToken || !currentFirebaseUser) {
+    if (!verifiedToken || !currentAuthUser) {
         return false;
     }
 
@@ -35,12 +37,12 @@ const shouldSkipLogout = (verifiedToken?: string, currentFirebaseUser?: any) => 
             const contactType = parts.at(-2);
             const contactValue = parts.at(-1);
 
-            if (contactType && contactValue && currentFirebaseUser) {
+            if (contactType && contactValue && currentAuthUser) {
                 if (contactType.toLowerCase() === 'email') {
-                    const userEmail = currentFirebaseUser?.email;
+                    const userEmail = currentAuthUser?.email;
                     _shouldSkipLogout = !!userEmail && userEmail.toLowerCase() === contactValue.toLowerCase();
                 } else {
-                    const userPhone = currentFirebaseUser?.phoneNumber;
+                    const userPhone = currentAuthUser?.phone;
                     _shouldSkipLogout = !!userPhone && normalizePhone(userPhone) === normalizePhone(contactValue);
                 }
             }
@@ -55,9 +57,8 @@ const shouldSkipLogout = (verifiedToken?: string, currentFirebaseUser?: any) => 
 const AuthHandoff: React.FC = () => {
     const query = usePathQuery();
     const history = useHistory();
-    const { logout: web3AuthLogout } = useWeb3AuthSFA();
-
-    const currentFirebaseUser = firebaseAuthStore.get.currentUser();
+    const { logout: coordinatorLogout } = useAuthCoordinator();
+    const currentAuthUser = authUserStore.get.currentUser();
 
     const { mutateAsync: verifyNetworkHandoffToken } = useVerifyNetworkHandoffToken();
     const { signInWithCustomFirebaseToken } = useFirebase();
@@ -71,18 +72,58 @@ const AuthHandoff: React.FC = () => {
                 return;
             }
 
+            const redirectTo =
+                redirectStore.get.authRedirect() || query.get('redirectTo') || '/wallet';
+
+            // If the user is already logged in as the same contact method in the
+            // handoff token, skip verification entirely and redirect straight away.
+            // This avoids "Failed to verify network handoff token" errors when the
+            // embed SDK opens the wallet for an already-authenticated user.
+            if (currentFirebaseUser) {
+                try {
+                    const decoded = jwtDecode<{ nonce?: string }>(token);
+                    const nonce = decoded?.nonce ?? '';
+
+                    if (typeof nonce === 'string' && nonce.startsWith('contact_method_session:')) {
+                        const parts = nonce.split(':');
+                        const contactType = parts.at(-2);
+                        const contactValue = parts.at(-1);
+
+                        if (contactType && contactValue) {
+                            const normalizePhone = (val?: string | null) =>
+                                (val ?? '')
+                                    .replace(/[^0-9+]/g, '')
+                                    .replace(/(?!^)[+]/g, '');
+
+                            const isMatch =
+                                contactType.toLowerCase() === 'email'
+                                    ? !!currentFirebaseUser.email &&
+                                      currentFirebaseUser.email.toLowerCase() ===
+                                          contactValue.toLowerCase()
+                                    : !!currentFirebaseUser.phoneNumber &&
+                                      normalizePhone(currentFirebaseUser.phoneNumber) ===
+                                          normalizePhone(contactValue);
+
+                            if (isMatch) {
+                                history.replace(redirectTo);
+                                return;
+                            }
+                        }
+                    }
+                } catch {
+                    // Decode failed — fall through to normal verification
+                }
+            }
+
             try {
                 const response = await verifyNetworkHandoffToken({ token });
 
                 if (response?.token) {
-                    if (!shouldSkipLogout(response.validatedNetworkHandoffToken, currentFirebaseUser)) {
-                        await web3AuthLogout('');
+                    if (!shouldSkipLogout(response.validatedNetworkHandoffToken, currentAuthUser)) {
+                        await coordinatorLogout();
                     }
 
                     await signInWithCustomFirebaseToken(response.token);
-
-                    const redirectTo =
-                        redirectStore.get.authRedirect() || query.get('redirectTo') || '/wallet';
 
                     history.replace(redirectTo);
                 } else {

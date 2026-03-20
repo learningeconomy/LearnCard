@@ -89,7 +89,7 @@ export const FamilyBoostMembersList: React.FC<{
                         </div>
                     );
                 })}
-                {totalMembersCount > 4 && (
+                {totalMembersCount > 5 && (
                     <button
                         onClick={() => threeDotOnClick?.()}
                         className="ml-1 w-[25px] h-[25px] rounded-full overflow-hidden flex items-center justify-center z-10"

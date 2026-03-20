@@ -71,7 +71,7 @@ export const SELF_ASSIGNED_SKILLS_BOOST_NAME = 'Self-Assigned Skills';
 // The type of achievement, for example 'Award' or 'Certification'.
 // This is an extensible enumerated vocabulary. Extending the vocabulary makes use of a naming convention
 // ! MUST ALIGN WITH -> learn-card-base/src/components/issueVC -> constants.ts -> { AchievementTypes }
-const CATEGORY_MAP: Record<
+export const CATEGORY_MAP: Record<
     KnownCredentialType | 'Student Buckcard' | `ext:${string}`,
     CredentialCategory
 > = {
@@ -572,13 +572,34 @@ export const getCredentialSubject = (credential: UnsignedVC) => {
 
 export const getCredentialSubjectAchievementData = (credential: UnsignedVC) => {
     let description, criteria, alignment;
+    const credentialSubject = getCredentialSubject(credential);
+
+    let achievementSubject;
+    if (Array.isArray(credentialSubject?.achievementSubject)) {
+        achievementSubject = credentialSubject.achievementSubject[0];
+    } else {
+        achievementSubject = credentialSubject?.achievementSubject;
+    }
+
+    const credentialDescription = credential?.description;
+    const achievementSubjectDescription = achievementSubject?.description;
+
     if (credential?.type?.includes(CREDENTIAL_TYPES.LEGACY_CRED)) {
         description = credential?.legacyAssertion?.badge?.description;
         criteria = credential?.legacyAssertion?.badge?.narrative;
         alignment = credential?.legacyAssertion?.badge?.alignment;
     } else {
         const achievement = getCredentialSubjectAchievement(credential);
-        description = achievement?.description;
+        if (credentialDescription !== undefined && credentialDescription !== null) {
+            description = credentialDescription;
+        } else if (
+            achievementSubjectDescription !== undefined &&
+            achievementSubjectDescription !== null
+        ) {
+            description = achievementSubjectDescription;
+        } else {
+            description = achievement?.description;
+        }
         criteria = achievement?.criteria?.narrative;
         alignment = achievement?.alignment;
     }
@@ -1086,6 +1107,7 @@ export const getCategoryPrimaryColor = (category = CredentialCategoryEnum.achiev
         case CredentialCategoryEnum.id:
             return 'yellow';
         case CredentialCategoryEnum.workHistory:
+        case CredentialCategoryEnum.resume:
             return 'blue';
         // case CredentialCategoryEnum.job:
         //     return 'rose';
@@ -1168,7 +1190,22 @@ export const parseShareLinkParams = (shareLink: string) => {
         uri: params.get('uri'),
     };
 };
+export const PDF_DATA_URL_PATTERN = /^data:application\/pdf(?:;[^,]+)?,/i;
+export const PDF_BASE64_PREFIX = 'JVBERi0';
+
+export const isPdfAttachmentSource = (value?: string | null): boolean => {
+    if (typeof value !== 'string') return false;
+
+    const trimmedValue = value.trim();
+
+    return PDF_DATA_URL_PATTERN.test(trimmedValue) || trimmedValue.startsWith(PDF_BASE64_PREFIX);
+};
+
 export const getEvidenceAttachmentType = async (url: string) => {
+    if (isPdfAttachmentSource(url)) {
+        return 'document';
+    }
+
     const videoMetadata = await getVideoMetadata(url);
     const docMetadata = await getFileMetadata(url);
 
@@ -1183,9 +1220,7 @@ export const getEvidenceAttachmentType = async (url: string) => {
     if (videoMetadata && !docMetadata) {
         return 'video';
     }
-    if (url.includes('data:application/pdf;base64,')) {
-        return 'document';
-    }
+
     return 'text';
 };
 
@@ -1200,10 +1235,7 @@ export const getEvidenceAttachments = async (evidence: BoostEvidenceSpec[]) => {
             if (ev?.url) {
                 url = ev?.url;
                 type = await getEvidenceAttachmentType(ev?.url);
-            } else if (
-                typeof ev?.id === 'string' &&
-                ev?.id?.startsWith('data:application/pdf;base64,')
-            ) {
+            } else if (isPdfAttachmentSource(ev?.id)) {
                 url = ev?.id;
                 type = 'document';
             } else if (ev?.type?.includes('EvidenceFile')) {
@@ -1229,10 +1261,16 @@ export const getEvidenceAttachments = async (evidence: BoostEvidenceSpec[]) => {
 
 export const convertEvidenceToAttachments = (evidence: BoostEvidenceSpec[]): BoostAttachment[] => {
     return evidence.map(evidence => {
+        const evidenceUrl = (evidence as BoostEvidenceSpec & { url?: string })?.url;
+        const url =
+            (typeof evidenceUrl === 'string' && evidenceUrl) ||
+            (typeof evidence?.id === 'string' && evidence.id) ||
+            '';
+
         return {
             type: evidence?.genre ?? '',
             title: evidence?.name ?? '',
-            url: evidence?.id,
+            url,
             fileName: evidence?.fileName ?? '',
             fileSize: evidence?.fileSize ?? '',
             fileType: evidence?.fileType ?? '',

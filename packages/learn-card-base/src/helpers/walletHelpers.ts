@@ -4,6 +4,7 @@ import type { CredentialRecord } from '@learncard/types';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 import { getLCAPlugin } from '@learncard/lca-api-plugin';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
+import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
 
 import { getSQLitePlugin } from 'learn-card-base/plugins/sqlite';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
@@ -17,11 +18,30 @@ import {
 } from 'learn-card-base/constants/Networks';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { QueryClient } from '@tanstack/react-query';
+import { getGuardianApprovalVP } from 'learn-card-base/stores/guardianApprovalStore';
 
 let LEARN_CARDS: Record<string, BespokeLearnCard> = {};
 
+let SIGNING_LEARN_CARDS: Record<string, Awaited<ReturnType<typeof initLearnCard>>> = {};
+
 export const clearLearnCardCache = () => {
     LEARN_CARDS = {};
+    SIGNING_LEARN_CARDS = {};
+};
+
+/**
+ * Returns a lightweight LearnCard instance (no network) for DID-Auth VP signing.
+ * Because network is omitted, lc.id.did() deterministically returns did:key,
+ * which is directly tied to the private key — exactly what we want for key-share auth.
+ */
+export const getSigningLearnCard = async (seed: string) => {
+    if (SIGNING_LEARN_CARDS[seed]) return SIGNING_LEARN_CARDS[seed];
+
+    const lc = await initLearnCard({ seed, allowRemoteContexts: true });
+
+    SIGNING_LEARN_CARDS[seed] = lc;
+
+    return lc;
 };
 
 export const getBespokeLearnCard = async (
@@ -49,6 +69,7 @@ export const getBespokeLearnCard = async (
         network: network,
         cloud: { url: cloudUrl, automaticallyAssociateDids: !Boolean(didWeb) },
         allowRemoteContexts: true,
+        guardianApprovalGetter: getGuardianApprovalVP,
         ...(didWeb && { didWeb }),
     });
 
@@ -57,11 +78,12 @@ export const getBespokeLearnCard = async (
     );
 
     const linkedClaimsLca = await lcaLearnCard.addPlugin(await getLinkedClaimsPlugin(lcaLearnCard));
+    const lerRsLc = await linkedClaimsLca.addPlugin(getLerRsPlugin(linkedClaimsLca as any));
 
     // Conditionally add SQLite plugin on native platforms only
     const sqliteAugmented = isPlatformWeb()
-        ? linkedClaimsLca
-        : await linkedClaimsLca.addPlugin(await getSQLitePlugin(linkedClaimsLca));
+        ? lerRsLc
+        : await lerRsLc.addPlugin(await getSQLitePlugin(lerRsLc));
 
     const bespokeLearnCard = sqliteAugmented as BespokeLearnCard;
 

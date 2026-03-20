@@ -62,23 +62,33 @@ const renderTemplateJson = (jsonString: string, templateData: Record<string, unk
 };
 export * from './types';
 
+export type GuardianApprovalGetter = () => string | undefined | Promise<string | undefined>;
+
 /**
  * @group Plugins
  */
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, 'id', LearnCardNetworkPluginDependentMethods>,
-    url: string
+    url: string,
+    apiTokenOrOptions?: { guardianApprovalGetter?: GuardianApprovalGetter }
 ): Promise<LearnCardNetworkPlugin>;
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
     url: string,
-    apiToken: string
+    apiToken: string,
+    options?: { guardianApprovalGetter?: GuardianApprovalGetter }
 ): Promise<LearnCardNetworkPlugin>;
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
     url: string,
-    apiToken?: string
+    apiTokenOrOptions?: string | { guardianApprovalGetter?: GuardianApprovalGetter },
+    options?: { guardianApprovalGetter?: GuardianApprovalGetter }
 ): Promise<LearnCardNetworkPlugin> {
+    const apiToken = typeof apiTokenOrOptions === 'string' ? apiTokenOrOptions : undefined;
+    const guardianApprovalGetter =
+        (typeof apiTokenOrOptions === 'object'
+            ? apiTokenOrOptions?.guardianApprovalGetter
+            : undefined) ?? options?.guardianApprovalGetter;
     // Initialize DID safely: in API-key mode there may be no local ID plane provider
     let did = '';
     try {
@@ -92,14 +102,21 @@ export async function getLearnCardNetworkPlugin(
 
     learnCard?.debug?.('Adding LearnCardNetwork Plugin');
     const client = apiToken
-        ? await getApiTokenClient(url, apiToken)
-        : await getClient(url, async challenge => {
-            const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+        ? await getApiTokenClient(url, apiToken, guardianApprovalGetter)
+        : await getClient(
+              url,
+              async challenge => {
+                  const jwt = await learnCard.invoke.getDidAuthVp({
+                      proofFormat: 'jwt',
+                      challenge,
+                  });
 
-            if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+                  if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-            return jwt;
-        });
+                  return jwt;
+              },
+              guardianApprovalGetter
+          );
 
     let userData: LCNProfile | undefined;
 
@@ -347,7 +364,7 @@ export async function getLearnCardNetworkPlugin(
             getProfile: async (_learnCard, profileId) => {
                 try {
                     await ensureUser();
-                } catch { }
+                } catch {}
 
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
@@ -841,7 +858,7 @@ export async function getLearnCardNetworkPlugin(
                     updates: { ...(credential && { credential }), ...restUpdates },
                 };
 
-                if (Array.isArray(skills) && skills.length > 0) payload.skills = skills;
+                if (Array.isArray(skills)) payload.skills = skills;
 
                 return client.boost.updateBoost.mutate(payload);
             },
@@ -965,9 +982,10 @@ export async function getLearnCardNetworkPlugin(
                         boost = JSON.parse(rendered);
                     } catch (error) {
                         throw new Error(
-                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'
+                            `Template substitution failed: ${
+                                error instanceof Error ? error.message : 'Unknown error'
                             }. ` +
-                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                                `Please check your templateData variables and ensure the rendered output is valid JSON.`
                         );
                     }
                 }
@@ -1103,7 +1121,8 @@ export async function getLearnCardNetworkPlugin(
                                     boost = JSON.parse(rendered);
                                 } catch (error) {
                                     throw new Error(
-                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'
+                                        `Failed to apply template data: ${
+                                            error instanceof Error ? error.message : 'Unknown error'
                                         }`
                                     );
                                 }
@@ -1852,6 +1871,12 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.appStore.isAppInstalled.query({ listingId });
+            },
+
+            getMyCredentialsFromApp: async (_learnCard, listingId, options = {}) => {
+                await ensureUser();
+
+                return client.appStore.getMyCredentialsFromApp.query({ listingId, ...options });
             },
 
             isAppStoreAdmin: async _learnCard => {
