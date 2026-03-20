@@ -155,6 +155,12 @@ export const CheckListTranscripts: React.FC = () => {
         setParsedCredentials([]);
     };
 
+    const handleEditCredential = (index: number, editedVc: any) => {
+        setParsedCredentials(prev =>
+            prev.map((cred, i) => (i === index ? { ...cred, vc: editedVc } : cred))
+        );
+    };
+
     let buttonText = transcripts?.length > 0 ? 'Add More' : 'Add';
     buttonText = isUploading ? 'Uploading...' : buttonText;
     const buttonIcon = <UploadIcon className="w-[25px] h-[26px] text-white mr-2" />;
@@ -168,6 +174,7 @@ export const CheckListTranscripts: React.FC = () => {
                     onConfirm={handleReviewConfirm}
                     onBack={handleReviewBack}
                     isLoading={isSavingSelected}
+                    onEditCredential={handleEditCredential}
                 />
             ) : (
                 <>
