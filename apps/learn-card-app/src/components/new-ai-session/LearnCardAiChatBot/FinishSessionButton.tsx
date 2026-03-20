@@ -62,8 +62,8 @@ const FinishSessionButton: React.FC = () => {
             return;
         }
 
-        // if the plan is ready and we are no longer loading, reset the chat stores
-        if ($planReadyThread && !$isLoading && $messages.length === 0) {
+        // if there are no messages, allow immediate exit regardless of loading state
+        if ($messages.length === 0) {
             resetChatStores();
             chatBotStore.set.resetStore();
             closeAllModals();
