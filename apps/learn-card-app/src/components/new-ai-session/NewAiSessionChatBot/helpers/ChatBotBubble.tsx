@@ -69,7 +69,7 @@ export const ChatBotBubbleAnswer: React.FC<{
         containerStyles = 'items-center';
     } else if (qa.type === ChatBotQuestionsEnum.AppSelection) {
         // First try to find in hardcoded apps (numeric id)
-        app = aiPassportApps.find(a => a.id === qa.answer);
+        app = aiPassportApps.find(a => Number(a.id) === Number(qa.answer));
 
         // If not found, check installed app store listings (string id)
         if (!app && installedAppsData?.records) {
