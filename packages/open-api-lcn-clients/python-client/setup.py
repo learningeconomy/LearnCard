@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
     LearnCloud Network API
 
@@ -26,7 +24,7 @@ PYTHON_REQUIRES = ">= 3.9"
 REQUIRES = [
     "urllib3 >= 2.1.0, < 3.0.0",
     "python-dateutil >= 2.8.2",
-    "pydantic >= 2",
+    "pydantic >= 2.11",
     "typing-extensions >= 4.7.1",
 ]
 

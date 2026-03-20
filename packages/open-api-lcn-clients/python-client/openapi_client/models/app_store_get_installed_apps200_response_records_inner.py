@@ -17,10 +17,12 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
     """
@@ -43,11 +45,13 @@ class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
     privacy_policy_url: Optional[StrictStr] = None
     terms_url: Optional[StrictStr] = None
     hero_background_color: Optional[StrictStr] = None
+    min_age: Optional[Annotated[int, Field(le=18, strict=True, ge=0)]] = None
+    age_rating: Optional[StrictStr] = None
     highlights: Optional[List[StrictStr]] = None
     screenshots: Optional[List[StrictStr]] = None
     installed_at: Optional[StrictStr]
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["listing_id", "slug", "display_name", "tagline", "full_description", "icon_url", "app_listing_status", "launch_type", "launch_config_json", "category", "promo_video_url", "promotion_level", "ios_app_store_id", "android_app_store_id", "privacy_policy_url", "terms_url", "hero_background_color", "highlights", "screenshots", "installed_at"]
+    __properties: ClassVar[List[str]] = ["listing_id", "slug", "display_name", "tagline", "full_description", "icon_url", "app_listing_status", "launch_type", "launch_config_json", "category", "promo_video_url", "promotion_level", "ios_app_store_id", "android_app_store_id", "privacy_policy_url", "terms_url", "hero_background_color", "min_age", "age_rating", "highlights", "screenshots", "installed_at"]
 
     @field_validator('app_listing_status')
     def app_listing_status_validate_enum(cls, value):
@@ -73,8 +77,19 @@ class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
             raise ValueError("must be one of enum values ('FEATURED_CAROUSEL', 'CURATED_LIST', 'STANDARD', 'DEMOTED')")
         return value
 
+    @field_validator('age_rating')
+    def age_rating_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['4+', '9+', '12+', '17+']):
+            raise ValueError("must be one of enum values ('4+', '9+', '12+', '17+')")
+        return value
+
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -86,8 +101,7 @@ class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -223,6 +237,8 @@ class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
             "privacy_policy_url": obj.get("privacy_policy_url"),
             "terms_url": obj.get("terms_url"),
             "hero_background_color": obj.get("hero_background_color"),
+            "min_age": obj.get("min_age"),
+            "age_rating": obj.get("age_rating"),
             "highlights": obj.get("highlights"),
             "screenshots": obj.get("screenshots"),
             "installed_at": obj.get("installed_at")

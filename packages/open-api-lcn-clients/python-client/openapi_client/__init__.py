@@ -62,6 +62,7 @@ __all__ = [
     "AppStoreAdminUpdateListingStatusRequest",
     "AppStoreAdminUpdatePromotionLevelRequest",
     "AppStoreAppEventRequest",
+    "AppStoreAssociateListingWithSigningAuthorityRequest",
     "AppStoreBrowseListedAppsRequest",
     "AppStoreCreateListingRequest",
     "AppStoreCreateListingRequestListing",
@@ -69,9 +70,12 @@ __all__ = [
     "AppStoreGetInstalledApps200Response",
     "AppStoreGetInstalledApps200ResponseRecordsInner",
     "AppStoreGetListing200Response",
+    "AppStoreGetListingSigningAuthority200Response",
     "AppStoreGetListingsForIntegration200Response",
     "AppStoreGetListingsForIntegration200ResponseRecordsInner",
     "AppStoreGetListingsForIntegrationRequest",
+    "AppStoreGetMyCredentialsFromApp200Response",
+    "AppStoreGetMyCredentialsFromApp200ResponseRecordsInner",
     "AppStoreRemoveBoostFromListingRequest",
     "AppStoreUpdateListingRequest",
     "AppStoreUpdateListingRequestUpdates",
@@ -130,6 +134,7 @@ __all__ = [
     "BoostGetBoostRecipientsWithChildrenCountRequest",
     "BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations",
     "BoostGetBoostSiblingsRequest",
+    "BoostGetBoostSkills200ResponseInner",
     "BoostGetBoosts200ResponseInner",
     "BoostGetBoostsRequest",
     "BoostGetBoostsRequestQuery",
@@ -162,6 +167,7 @@ __all__ = [
     "BoostMakeBoostParentRequest",
     "BoostRemoveBoostAdminRequest",
     "BoostRemoveBoostParentRequest",
+    "BoostRevokeBoostRecipientRequest",
     "BoostSearchSkillsAvailableForBoost200Response",
     "BoostSearchSkillsAvailableForBoost200ResponseRecordsInner",
     "BoostSearchSkillsAvailableForBoostRequest",
@@ -433,6 +439,8 @@ __all__ = [
     "InboxClaimRequest",
     "InboxClaimRequestConfiguration",
     "InboxClaimRequestCredential",
+    "InboxClaimRequestCredentialAnyOf",
+    "InboxClaimRequestCredentialAnyOf1",
     "InboxFinalize200Response",
     "InboxGetMyIssuedCredentials200Response",
     "InboxGetMyIssuedCredentials200ResponseRecordsInner",
@@ -464,7 +472,6 @@ __all__ = [
     "InboxSendGuardianApprovalEmailRequestTemplate",
     "IntegrationsAddIntegrationRequest",
     "IntegrationsAddIntegrationRequestWhitelistedDomainsInner",
-    "IntegrationsAssociateIntegrationWithSigningAuthorityRequest",
     "IntegrationsCountIntegrationsRequest",
     "IntegrationsGetIntegration200Response",
     "IntegrationsGetIntegrations200Response",
@@ -513,6 +520,7 @@ __all__ = [
     "SkillFrameworksCreateManagedBatchRequestFrameworksInner",
     "SkillFrameworksCreateManagedRequest",
     "SkillFrameworksCreateRequest",
+    "SkillFrameworksGetAllAvailableFrameworksRequest",
     "SkillFrameworksGetBoostsThatUseFrameworkRequest",
     "SkillFrameworksGetById200Response",
     "SkillFrameworksGetById200ResponseSkills",
@@ -536,6 +544,9 @@ __all__ = [
     "SkillsSearchFrameworkSkillsRequest",
     "SkillsSearchFrameworkSkillsRequestQuery",
     "SkillsSearchFrameworkSkillsRequestQueryAnyOf",
+    "SkillsSemanticSearchSkills200Response",
+    "SkillsSemanticSearchSkills200ResponseRecordsInner",
+    "SkillsSemanticSearchSkillsRequest",
     "SkillsSyncFrameworkSkills200Response",
     "SkillsUpdateRequest",
     "StorageResolve200Response",
@@ -631,6 +642,7 @@ from openapi_client.models.app_store_admin_get_all_listings_request import AppSt
 from openapi_client.models.app_store_admin_update_listing_status_request import AppStoreAdminUpdateListingStatusRequest as AppStoreAdminUpdateListingStatusRequest
 from openapi_client.models.app_store_admin_update_promotion_level_request import AppStoreAdminUpdatePromotionLevelRequest as AppStoreAdminUpdatePromotionLevelRequest
 from openapi_client.models.app_store_app_event_request import AppStoreAppEventRequest as AppStoreAppEventRequest
+from openapi_client.models.app_store_associate_listing_with_signing_authority_request import AppStoreAssociateListingWithSigningAuthorityRequest as AppStoreAssociateListingWithSigningAuthorityRequest
 from openapi_client.models.app_store_browse_listed_apps_request import AppStoreBrowseListedAppsRequest as AppStoreBrowseListedAppsRequest
 from openapi_client.models.app_store_create_listing_request import AppStoreCreateListingRequest as AppStoreCreateListingRequest
 from openapi_client.models.app_store_create_listing_request_listing import AppStoreCreateListingRequestListing as AppStoreCreateListingRequestListing
@@ -638,9 +650,12 @@ from openapi_client.models.app_store_get_boosts_for_listing200_response_inner im
 from openapi_client.models.app_store_get_installed_apps200_response import AppStoreGetInstalledApps200Response as AppStoreGetInstalledApps200Response
 from openapi_client.models.app_store_get_installed_apps200_response_records_inner import AppStoreGetInstalledApps200ResponseRecordsInner as AppStoreGetInstalledApps200ResponseRecordsInner
 from openapi_client.models.app_store_get_listing200_response import AppStoreGetListing200Response as AppStoreGetListing200Response
+from openapi_client.models.app_store_get_listing_signing_authority200_response import AppStoreGetListingSigningAuthority200Response as AppStoreGetListingSigningAuthority200Response
 from openapi_client.models.app_store_get_listings_for_integration200_response import AppStoreGetListingsForIntegration200Response as AppStoreGetListingsForIntegration200Response
 from openapi_client.models.app_store_get_listings_for_integration200_response_records_inner import AppStoreGetListingsForIntegration200ResponseRecordsInner as AppStoreGetListingsForIntegration200ResponseRecordsInner
 from openapi_client.models.app_store_get_listings_for_integration_request import AppStoreGetListingsForIntegrationRequest as AppStoreGetListingsForIntegrationRequest
+from openapi_client.models.app_store_get_my_credentials_from_app200_response import AppStoreGetMyCredentialsFromApp200Response as AppStoreGetMyCredentialsFromApp200Response
+from openapi_client.models.app_store_get_my_credentials_from_app200_response_records_inner import AppStoreGetMyCredentialsFromApp200ResponseRecordsInner as AppStoreGetMyCredentialsFromApp200ResponseRecordsInner
 from openapi_client.models.app_store_remove_boost_from_listing_request import AppStoreRemoveBoostFromListingRequest as AppStoreRemoveBoostFromListingRequest
 from openapi_client.models.app_store_update_listing_request import AppStoreUpdateListingRequest as AppStoreUpdateListingRequest
 from openapi_client.models.app_store_update_listing_request_updates import AppStoreUpdateListingRequestUpdates as AppStoreUpdateListingRequestUpdates
@@ -699,6 +714,7 @@ from openapi_client.models.boost_get_boost_recipients200_response_inner_to_displ
 from openapi_client.models.boost_get_boost_recipients_with_children_count_request import BoostGetBoostRecipientsWithChildrenCountRequest as BoostGetBoostRecipientsWithChildrenCountRequest
 from openapi_client.models.boost_get_boost_recipients_with_children_count_request_number_of_generations import BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations as BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations
 from openapi_client.models.boost_get_boost_siblings_request import BoostGetBoostSiblingsRequest as BoostGetBoostSiblingsRequest
+from openapi_client.models.boost_get_boost_skills200_response_inner import BoostGetBoostSkills200ResponseInner as BoostGetBoostSkills200ResponseInner
 from openapi_client.models.boost_get_boosts200_response_inner import BoostGetBoosts200ResponseInner as BoostGetBoosts200ResponseInner
 from openapi_client.models.boost_get_boosts_request import BoostGetBoostsRequest as BoostGetBoostsRequest
 from openapi_client.models.boost_get_boosts_request_query import BoostGetBoostsRequestQuery as BoostGetBoostsRequestQuery
@@ -731,6 +747,7 @@ from openapi_client.models.boost_get_skills_available_for_boost200_response_inne
 from openapi_client.models.boost_make_boost_parent_request import BoostMakeBoostParentRequest as BoostMakeBoostParentRequest
 from openapi_client.models.boost_remove_boost_admin_request import BoostRemoveBoostAdminRequest as BoostRemoveBoostAdminRequest
 from openapi_client.models.boost_remove_boost_parent_request import BoostRemoveBoostParentRequest as BoostRemoveBoostParentRequest
+from openapi_client.models.boost_revoke_boost_recipient_request import BoostRevokeBoostRecipientRequest as BoostRevokeBoostRecipientRequest
 from openapi_client.models.boost_search_skills_available_for_boost200_response import BoostSearchSkillsAvailableForBoost200Response as BoostSearchSkillsAvailableForBoost200Response
 from openapi_client.models.boost_search_skills_available_for_boost200_response_records_inner import BoostSearchSkillsAvailableForBoost200ResponseRecordsInner as BoostSearchSkillsAvailableForBoost200ResponseRecordsInner
 from openapi_client.models.boost_search_skills_available_for_boost_request import BoostSearchSkillsAvailableForBoostRequest as BoostSearchSkillsAvailableForBoostRequest
@@ -1002,6 +1019,8 @@ from openapi_client.models.inbox_claim200_response_inbox_credential_signing_auth
 from openapi_client.models.inbox_claim_request import InboxClaimRequest as InboxClaimRequest
 from openapi_client.models.inbox_claim_request_configuration import InboxClaimRequestConfiguration as InboxClaimRequestConfiguration
 from openapi_client.models.inbox_claim_request_credential import InboxClaimRequestCredential as InboxClaimRequestCredential
+from openapi_client.models.inbox_claim_request_credential_any_of import InboxClaimRequestCredentialAnyOf as InboxClaimRequestCredentialAnyOf
+from openapi_client.models.inbox_claim_request_credential_any_of1 import InboxClaimRequestCredentialAnyOf1 as InboxClaimRequestCredentialAnyOf1
 from openapi_client.models.inbox_finalize200_response import InboxFinalize200Response as InboxFinalize200Response
 from openapi_client.models.inbox_get_my_issued_credentials200_response import InboxGetMyIssuedCredentials200Response as InboxGetMyIssuedCredentials200Response
 from openapi_client.models.inbox_get_my_issued_credentials200_response_records_inner import InboxGetMyIssuedCredentials200ResponseRecordsInner as InboxGetMyIssuedCredentials200ResponseRecordsInner
@@ -1033,7 +1052,6 @@ from openapi_client.models.inbox_send_guardian_approval_email_request import Inb
 from openapi_client.models.inbox_send_guardian_approval_email_request_template import InboxSendGuardianApprovalEmailRequestTemplate as InboxSendGuardianApprovalEmailRequestTemplate
 from openapi_client.models.integrations_add_integration_request import IntegrationsAddIntegrationRequest as IntegrationsAddIntegrationRequest
 from openapi_client.models.integrations_add_integration_request_whitelisted_domains_inner import IntegrationsAddIntegrationRequestWhitelistedDomainsInner as IntegrationsAddIntegrationRequestWhitelistedDomainsInner
-from openapi_client.models.integrations_associate_integration_with_signing_authority_request import IntegrationsAssociateIntegrationWithSigningAuthorityRequest as IntegrationsAssociateIntegrationWithSigningAuthorityRequest
 from openapi_client.models.integrations_count_integrations_request import IntegrationsCountIntegrationsRequest as IntegrationsCountIntegrationsRequest
 from openapi_client.models.integrations_get_integration200_response import IntegrationsGetIntegration200Response as IntegrationsGetIntegration200Response
 from openapi_client.models.integrations_get_integrations200_response import IntegrationsGetIntegrations200Response as IntegrationsGetIntegrations200Response
@@ -1082,6 +1100,7 @@ from openapi_client.models.skill_frameworks_create_managed_batch_request import 
 from openapi_client.models.skill_frameworks_create_managed_batch_request_frameworks_inner import SkillFrameworksCreateManagedBatchRequestFrameworksInner as SkillFrameworksCreateManagedBatchRequestFrameworksInner
 from openapi_client.models.skill_frameworks_create_managed_request import SkillFrameworksCreateManagedRequest as SkillFrameworksCreateManagedRequest
 from openapi_client.models.skill_frameworks_create_request import SkillFrameworksCreateRequest as SkillFrameworksCreateRequest
+from openapi_client.models.skill_frameworks_get_all_available_frameworks_request import SkillFrameworksGetAllAvailableFrameworksRequest as SkillFrameworksGetAllAvailableFrameworksRequest
 from openapi_client.models.skill_frameworks_get_boosts_that_use_framework_request import SkillFrameworksGetBoostsThatUseFrameworkRequest as SkillFrameworksGetBoostsThatUseFrameworkRequest
 from openapi_client.models.skill_frameworks_get_by_id200_response import SkillFrameworksGetById200Response as SkillFrameworksGetById200Response
 from openapi_client.models.skill_frameworks_get_by_id200_response_skills import SkillFrameworksGetById200ResponseSkills as SkillFrameworksGetById200ResponseSkills
@@ -1105,6 +1124,9 @@ from openapi_client.models.skills_list_skill_tags200_response_inner import Skill
 from openapi_client.models.skills_search_framework_skills_request import SkillsSearchFrameworkSkillsRequest as SkillsSearchFrameworkSkillsRequest
 from openapi_client.models.skills_search_framework_skills_request_query import SkillsSearchFrameworkSkillsRequestQuery as SkillsSearchFrameworkSkillsRequestQuery
 from openapi_client.models.skills_search_framework_skills_request_query_any_of import SkillsSearchFrameworkSkillsRequestQueryAnyOf as SkillsSearchFrameworkSkillsRequestQueryAnyOf
+from openapi_client.models.skills_semantic_search_skills200_response import SkillsSemanticSearchSkills200Response as SkillsSemanticSearchSkills200Response
+from openapi_client.models.skills_semantic_search_skills200_response_records_inner import SkillsSemanticSearchSkills200ResponseRecordsInner as SkillsSemanticSearchSkills200ResponseRecordsInner
+from openapi_client.models.skills_semantic_search_skills_request import SkillsSemanticSearchSkillsRequest as SkillsSemanticSearchSkillsRequest
 from openapi_client.models.skills_sync_framework_skills200_response import SkillsSyncFrameworkSkills200Response as SkillsSyncFrameworkSkills200Response
 from openapi_client.models.skills_update_request import SkillsUpdateRequest as SkillsUpdateRequest
 from openapi_client.models.storage_resolve200_response import StorageResolve200Response as StorageResolve200Response

@@ -35,6 +35,7 @@ class TestActivityGetActivityStats200Response(unittest.TestCase):
         model = ActivityGetActivityStats200Response()
         if include_optional:
             return ActivityGetActivityStats200Response(
+                total_events = 1.337,
                 total = 1.337,
                 created = 1.337,
                 delivered = 1.337,
@@ -45,6 +46,7 @@ class TestActivityGetActivityStats200Response(unittest.TestCase):
             )
         else:
             return ActivityGetActivityStats200Response(
+                total_events = 1.337,
                 total = 1.337,
                 created = 1.337,
                 delivered = 1.337,

@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.inbox_get_my_issued_credentials200_response_records_inner_signing_authority import InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
     """
@@ -38,8 +39,9 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
     webhook_url: Optional[StrictStr] = Field(default=None, alias="webhookUrl")
     boost_uri: Optional[StrictStr] = Field(default=None, alias="boostUri")
     activity_id: Optional[StrictStr] = Field(default=None, alias="activityId")
+    integration_id: Optional[StrictStr] = Field(default=None, alias="integrationId")
     signing_authority: Optional[InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority] = Field(default=None, alias="signingAuthority")
-    __properties: ClassVar[List[str]] = ["id", "credential", "isSigned", "currentStatus", "isAccepted", "expiresAt", "createdAt", "issuerDid", "webhookUrl", "boostUri", "activityId", "signingAuthority"]
+    __properties: ClassVar[List[str]] = ["id", "credential", "isSigned", "currentStatus", "isAccepted", "expiresAt", "createdAt", "issuerDid", "webhookUrl", "boostUri", "activityId", "integrationId", "signingAuthority"]
 
     @field_validator('current_status')
     def current_status_validate_enum(cls, value):
@@ -49,7 +51,8 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -61,8 +64,7 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -113,6 +115,7 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
             "webhookUrl": obj.get("webhookUrl"),
             "boostUri": obj.get("boostUri"),
             "activityId": obj.get("activityId"),
+            "integrationId": obj.get("integrationId"),
             "signingAuthority": InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None
         })
         return _obj

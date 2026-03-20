@@ -33,13 +33,6 @@ class TestIntegrationsApi(unittest.TestCase):
         """
         pass
 
-    def test_integrations_associate_integration_with_signing_authority(self) -> None:
-        """Test case for integrations_associate_integration_with_signing_authority
-
-        Associate Integration with Signing Authority
-        """
-        pass
-
     def test_integrations_count_integrations(self) -> None:
         """Test case for integrations_count_integrations
 

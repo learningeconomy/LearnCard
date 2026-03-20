@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **description** | **str** |  | [optional] 
 **image** | **str** |  | [optional] 
 **source_uri** | **str** |  | [optional] 
+**is_public** | **bool** |  | [optional] 
 **status** | **str** |  | [optional] 
 
 ## Example

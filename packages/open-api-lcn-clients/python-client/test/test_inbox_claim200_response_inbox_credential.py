@@ -46,6 +46,7 @@ class TestInboxClaim200ResponseInboxCredential(unittest.TestCase):
                 webhook_url = '',
                 boost_uri = '',
                 activity_id = '',
+                integration_id = '',
                 signing_authority = openapi_client.models.inbox_claim_200_response_inbox_credential_signing_authority.inbox_claim_200_response_inboxCredential_signingAuthority(
                     endpoint = '', 
                     name = '', )

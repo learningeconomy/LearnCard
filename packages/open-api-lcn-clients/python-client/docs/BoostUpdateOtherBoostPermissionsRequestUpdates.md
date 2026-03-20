@@ -5,6 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**can_view** | **bool** |  | [optional] [default to True]
 **can_edit** | **bool** |  | [optional] 
 **can_issue** | **bool** |  | [optional] 
 **can_revoke** | **bool** |  | [optional] 
