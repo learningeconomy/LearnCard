@@ -13,6 +13,7 @@ import {
     newCredsStore,
     CredentialCategory,
     useToast,
+    useModal,
     ToastTypeEnum,
     getCategoryForCredential,
     useSyncAllCredentialsToContractsMutation,
@@ -74,6 +75,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
     const queryClient = useQueryClient();
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const { presentToast } = useToast();
+    const { closeModal } = useModal();
     const syncAll = useSyncAllCredentialsToContractsMutation();
     const aiInsightMutation = useAiInsightCredentialMutation();
 
@@ -464,9 +466,28 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             syncAll.mutate();
             aiInsightMutation.mutate();
             checklistStore.set.updateIsParsing(fileType, false);
+            closeModal();
+            setTimeout(() => {
+                presentToast(`Your journey is now reflected in portable, trusted credentials.`, {
+                    title: `${fileType} Successfully Parsed`,
+                    hasDismissButton: true,
+                    type: ToastTypeEnum.Success,
+                    hasCheckmark: true,
+                    duration: 5000,
+                });
+            }, 500);
         } catch (error) {
             checklistStore.set.updateIsParsing(fileType, false);
             console.error('handleSaveResume::error', error);
+            setTimeout(() => {
+                presentToast(`Something went wrong uploading your ${fileType}.`, {
+                    title: 'Error',
+                    hasDismissButton: true,
+                    type: ToastTypeEnum.Error,
+                    hasX: true,
+                    duration: 5000,
+                });
+            }, 500);
         }
     };
 
@@ -540,9 +561,28 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             await refetchCheckListStatus();
             syncAll.mutate();
             aiInsightMutation.mutate();
+            closeModal();
+            setTimeout(() => {
+                presentToast(`Your journey is now reflected in portable, trusted credentials.`, {
+                    title: `${fileType} Successfully Parsed`,
+                    hasDismissButton: true,
+                    type: ToastTypeEnum.Success,
+                    hasCheckmark: true,
+                    duration: 5000,
+                });
+            }, 500);
         } catch (error) {
             console.error('Error in parseFiles:', error);
             checklistStore.set.updateIsParsing(fileType, false);
+            setTimeout(() => {
+                presentToast(`Something went wrong uploading your ${fileType}.`, {
+                    title: 'Error',
+                    hasDismissButton: true,
+                    type: ToastTypeEnum.Error,
+                    hasX: true,
+                    duration: 5000,
+                });
+            }, 500);
             throw error;
         }
     };
