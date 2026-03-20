@@ -5,6 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**total_events** | **float** |  | 
 **total** | **float** |  | 
 **created** | **float** |  | 
 **delivered** | **float** |  | 

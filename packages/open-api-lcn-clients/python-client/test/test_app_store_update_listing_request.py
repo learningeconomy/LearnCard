@@ -54,7 +54,9 @@ class TestAppStoreUpdateListingRequest(unittest.TestCase):
                     screenshots = [
                         ''
                         ], 
-                    hero_background_color = '#62ECB0', )
+                    hero_background_color = '#62ECB0', 
+                    min_age = 1.337, 
+                    age_rating = '4+', )
             )
         else:
             return AppStoreUpdateListingRequest(
@@ -77,7 +79,9 @@ class TestAppStoreUpdateListingRequest(unittest.TestCase):
                     screenshots = [
                         ''
                         ], 
-                    hero_background_color = '#62ECB0', ),
+                    hero_background_color = '#62ECB0', 
+                    min_age = 1.337, 
+                    age_rating = '4+', ),
         )
         """
 

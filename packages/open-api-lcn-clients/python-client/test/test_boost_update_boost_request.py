@@ -49,6 +49,7 @@ class TestBoostUpdateBoostRequest(unittest.TestCase):
                     credential = null, 
                     default_permissions = openapi_client.models.boost_create_boost_request_claim_permissions.boost_createBoost_request_claimPermissions(
                         role = '', 
+                        can_view = True, 
                         can_edit = True, 
                         can_issue = True, 
                         can_revoke = True, 
@@ -59,7 +60,13 @@ class TestBoostUpdateBoostRequest(unittest.TestCase):
                         can_revoke_children = '', 
                         can_manage_children_permissions = '', 
                         can_manage_children_profiles = True, 
-                        can_view_analytics = True, ), )
+                        can_view_analytics = True, ), ),
+                skills = [
+                    openapi_client.models.boost_send_request_template_skills_inner.boost_send_request_template_skills_inner(
+                        framework_id = '', 
+                        id = '', 
+                        proficiency_level = 1.337, )
+                    ]
             )
         else:
             return BoostUpdateBoostRequest(
@@ -77,6 +84,7 @@ class TestBoostUpdateBoostRequest(unittest.TestCase):
                     credential = null, 
                     default_permissions = openapi_client.models.boost_create_boost_request_claim_permissions.boost_createBoost_request_claimPermissions(
                         role = '', 
+                        can_view = True, 
                         can_edit = True, 
                         can_issue = True, 
                         can_revoke = True, 

@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.inbox_claim200_response_inbox_credential_signing_authority import InboxClaim200ResponseInboxCredentialSigningAuthority
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class InboxClaim200ResponseInboxCredential(BaseModel):
     """
@@ -38,9 +39,10 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
     webhook_url: Optional[StrictStr] = Field(default=None, alias="webhookUrl")
     boost_uri: Optional[StrictStr] = Field(default=None, alias="boostUri")
     activity_id: Optional[StrictStr] = Field(default=None, alias="activityId")
+    integration_id: Optional[StrictStr] = Field(default=None, alias="integrationId")
     signing_authority: Optional[InboxClaim200ResponseInboxCredentialSigningAuthority] = Field(default=None, alias="signingAuthority")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["id", "credential", "isSigned", "currentStatus", "isAccepted", "expiresAt", "createdAt", "issuerDid", "webhookUrl", "boostUri", "activityId", "signingAuthority"]
+    __properties: ClassVar[List[str]] = ["id", "credential", "isSigned", "currentStatus", "isAccepted", "expiresAt", "createdAt", "issuerDid", "webhookUrl", "boostUri", "activityId", "integrationId", "signingAuthority"]
 
     @field_validator('current_status')
     def current_status_validate_enum(cls, value):
@@ -50,7 +52,8 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -62,8 +65,7 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -138,6 +140,11 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
         if self.activity_id is None and "activity_id" in self.model_fields_set:
             _dict['activityId'] = None
 
+        # set to None if integration_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.integration_id is None and "integration_id" in self.model_fields_set:
+            _dict['integrationId'] = None
+
         return _dict
 
     @classmethod
@@ -161,6 +168,7 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
             "webhookUrl": obj.get("webhookUrl"),
             "boostUri": obj.get("boostUri"),
             "activityId": obj.get("activityId"),
+            "integrationId": obj.get("integrationId"),
             "signingAuthority": InboxClaim200ResponseInboxCredentialSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None
         })
         # store additional fields in additional_properties

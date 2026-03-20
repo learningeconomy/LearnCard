@@ -16,6 +16,7 @@ Name | Type | Description | Notes
 **webhook_url** | **str** |  | [optional] 
 **boost_uri** | **str** |  | [optional] 
 **activity_id** | **str** |  | [optional] 
+**integration_id** | **str** |  | [optional] 
 **signing_authority** | [**InboxClaim200ResponseInboxCredentialSigningAuthority**](InboxClaim200ResponseInboxCredentialSigningAuthority.md) |  | [optional] 
 
 ## Example
