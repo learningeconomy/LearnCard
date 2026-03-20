@@ -118,7 +118,7 @@ export const ChatBotBubbleAnswer: React.FC<{
                         <p className="text-grayscale-800 mr-1 font-semibold text-[17px]">
                             {answer}
                         </p>
-                        {!disableEdit && isDesktop && index === 0 && (
+                        {!disableEdit && (
                             <button
                                 onClick={() => {
                                     handleEditChatBotAnswer(index);
