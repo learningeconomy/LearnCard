@@ -713,6 +713,7 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<boolean>;
     deleteAppStoreListing: (listingId: string) => Promise<boolean>;
     submitAppStoreListingForReview: (listingId: string) => Promise<boolean>;
+    unsubmitAppStoreListing: (listingId: string) => Promise<boolean>;
     getListingsForIntegration: (
         integrationId: string,
         options?: Partial<PaginationOptionsType>
