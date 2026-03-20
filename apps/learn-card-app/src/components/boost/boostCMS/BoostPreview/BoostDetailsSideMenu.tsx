@@ -5,6 +5,7 @@ import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import { IonFooter, IonPage } from '@ionic/react';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import EndorsementThumb from 'learn-card-base/svgs/EndorsmentThumb';
+import CredentialResultsBox from './CredentialResultsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
@@ -36,6 +37,7 @@ type BoostDetailsSideMenuProps = {
     existingEndorsements?: VC[];
     hideEndorsementRequestCard?: boolean;
     isEarnedBoost?: boolean;
+    isClrChildCredential?: boolean;
 };
 const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     credential,
@@ -47,6 +49,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     existingEndorsements,
     hideEndorsementRequestCard,
     isEarnedBoost,
+    isClrChildCredential = false,
 }) => {
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
@@ -56,10 +59,17 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     });
     const isMobile = window.innerWidth < 992;
 
-    const { description, criteria, alignment, attachments, title, evidence, skills } = useGetVCInfo(
-        credential,
-        categoryType
-    );
+    const {
+        description,
+        criteria,
+        alignment,
+        attachments,
+        title,
+        evidence,
+        skills,
+        results,
+        creditsEarned,
+    } = useGetVCInfo(credential, categoryType);
 
     const credentialDarkColor = getCategoryDarkColor(categoryType);
 
@@ -114,6 +124,8 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                             </span>
                         )}
                     </TruncateTextBox>
+
+                    <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
 
                     {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
 

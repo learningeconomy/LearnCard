@@ -47,7 +47,7 @@ import {
     isBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
-import { VC } from '@learncard/types';
+import { VC, VerificationItem } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
 import { getDefaultDisplayType } from '../boostHelpers';
@@ -73,6 +73,8 @@ type BoostEarnedCardProps = {
     isInSkillsModal?: boolean;
     hideOptionsMenu?: boolean;
     textColor?: string;
+    isClrChildCredential?: boolean;
+    parentVerificationItems?: VerificationItem[];
 };
 
 export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
@@ -95,6 +97,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     isInSkillsModal,
     hideOptionsMenu = false,
     textColor,
+    isClrChildCredential = false,
+    parentVerificationItems = [],
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal({
         mobile: ModalTypes.FullScreen,
@@ -227,12 +231,25 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         ) : undefined;
 
     const presentModal = () => {
+        const inheritedVerificationItems = isClrChildCredential
+            ? parentVerificationItems
+            : undefined;
+
+        let verificationItems;
+        if (isClrChildCredential) {
+            verificationItems = inheritedVerificationItems;
+        } else if (isBoost) {
+            verificationItems = undefined;
+        } else {
+            verificationItems = [];
+        }
+
         const earnedBoostIdCardProps = {
             credential: cred,
             categoryType: categoryType,
             issuerOverride: issuerName,
             issueeOverride: issueeName,
-            verificationItems: undefined,
+            verificationItems,
             handleCloseModal: () => closeModal(),
             handleShareBoost: () => presentShareBoostLink(),
             onDotsClick: () => {
@@ -275,6 +292,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             },
             formattedDisplayType: formattedAchievementType,
             isEarnedBoost: true,
+            isClrChildCredential,
         };
 
         const earnedBoostModalProps = {
@@ -282,7 +300,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             categoryType: categoryType,
             issuerOverride: issuerName,
             issueeOverride: issueeName,
-            verificationItems: isBoost ? undefined : [],
+            verificationItems,
             handleShareBoost: () => presentShareBoostLink(),
             handleCloseModal: () => closeModal(),
             subjectImageComponent: subjectProfileImageElement,
@@ -306,6 +324,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             previewType,
             displayType: displayType,
             isEarnedBoost: true,
+            isClrChildCredential,
         };
 
         const bgImage = isCertificate || isID || isAwardDisplay ? backgroundImage : undefined;

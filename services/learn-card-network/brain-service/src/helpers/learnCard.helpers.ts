@@ -44,12 +44,20 @@ const getDidKitPlugin = async (allowRemoteContexts = false): Promise<DIDKitPlugi
     if (cached) return cached;
 
     const promise = (async () => {
+        if (process.env.SKIP_DIDKIT_NAPI) {
+            const didkitModule = await import('@learncard/didkit-plugin');
+            const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
+            const wasmBuffer = await readFile(
+                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
+            );
+            return await getWasmPlugin(wasmBuffer, allowRemoteContexts);
+        }
+
         try {
             const didkitModule = await import('@learncard/didkit-plugin-node');
             const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
             return await getNativePlugin(undefined, allowRemoteContexts);
-        } catch (e) {
-            console.log('Native DIDKit plugin not available, falling back to WASM');
+        } catch {
             const didkitModule = await import('@learncard/didkit-plugin');
             const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
             const wasmBuffer = await readFile(
@@ -147,7 +155,9 @@ export const getLearnCard = async (
 
         const expirationLc = await templateLc.addPlugin(expirationPlugin(templateLc));
 
-        learnCards[cacheKey] = await expirationLc.addPlugin(getLearnCardPlugin(expirationLc)) as SeedLearnCard;
+        learnCards[cacheKey] = (await expirationLc.addPlugin(
+            getLearnCardPlugin(expirationLc)
+        )) as SeedLearnCard;
     }
 
     const learnCard = learnCards[cacheKey];
