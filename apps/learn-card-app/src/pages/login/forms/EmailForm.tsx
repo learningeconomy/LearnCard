@@ -147,6 +147,34 @@ const EmailForm: React.FC<EmailFormProps> = ({
         return false;
     };
 
+    const handleVerifyCode = async () => {
+        if (validateCode()) {
+            try {
+                setCodeError('');
+                setIsLoading(true);
+                const response = await verifyLoginVerificationCode({
+                    email: verificationEmail as string,
+                    code: code,
+                });
+                if (response?.token) {
+                    redirectStore.set.email(null);
+                    await signInWithCustomFirebaseToken(response?.token);
+                }
+                setIsLoading(false);
+            } catch (e) {
+                setIsLoading(false);
+                setCodeError('Unable to verify code. Please try again.');
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (currentStep === EmailFormStepsEnum.verification && code.length === 6 && !isLoading) {
+            // auto verify code when 6 digits are entered
+            handleVerifyCode();
+        }
+    }, [code, currentStep]);
+
     const handleDemoLogin = async () => {
         setIsLoading(true);
         try {
@@ -248,25 +276,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 }
             }
         } else if (currentStep === EmailFormStepsEnum.verification) {
-            if (validateCode()) {
-                try {
-                    setCodeError('');
-                    setIsLoading(true);
-
-                    const response = await verifyLoginVerificationCode({
-                        email: verificationEmail as string,
-                        code: code as string,
-                    });
-                    if (response?.token) {
-                        redirectStore.set.email(null);
-                        await signInWithCustomFirebaseToken(response?.token);
-                    }
-                    setIsLoading(false);
-                } catch (e) {
-                    setIsLoading(false);
-                    setCodeError('Unable to verify code. Please try again.');
-                }
-            }
+            await handleVerifyCode();
         } else if (currentStep === EmailFormStepsEnum.passwordExistingUser) {
             // todo: trigger login to existing account
         } else if (currentStep === EmailFormStepsEnum.passwordNewUser) {
@@ -323,7 +333,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
         activeStep = (
             <div
-                className={`w-full mb-[20px] ${
+                className={`w-full ${
                     emailErrorPlacement === 'below' ? 'flex flex-col' : 'flex items-center'
                 } justify-center`}
             >
@@ -364,10 +374,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
             </p>
         );
         activeStep = (
-            <IonCol
-                size="12"
-                className="w-full flex flex-col items-center justify-center ion-no-padding ion-no-margin mb-[20px]"
-            >
+            <IonCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
                 <ReactCodeInput
                     name="phoneVerification"
                     inputMode="numeric"
@@ -441,18 +448,18 @@ const EmailForm: React.FC<EmailFormProps> = ({
         <form onSubmit={handleOnClick} className="w-full">
             {formTitle && (
                 <IonCol size="12">
-                    <p
+                    <div
                         className={
                             formTitleClassNameOverride ?? 'w-full font-medium text-white normal'
                         }
                     >
                         {formTitle}
-                    </p>
+                    </div>
                 </IonCol>
             )}
 
             {activeStep}
-            <div className="flex items-center justify-center pb-[20px]">
+            <div className="flex items-center justify-center py-[20px] w-full mx-auto">
                 <button
                     className={`bg-emerald-900 text-white ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${buttonClassName}`}
                     onClick={handleOnClick}

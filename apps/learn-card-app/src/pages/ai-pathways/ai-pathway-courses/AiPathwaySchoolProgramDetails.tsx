@@ -10,9 +10,11 @@ import careerOneStopLogo from '../../../assets/images/career-one-stop-logo.png';
 import { useModal } from 'learn-card-base';
 
 import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
+import { getProgramLengthDisplay } from './ai-pathway-courses.helpers';
 
 const AiPathwaySchoolProgramDetails: React.FC<{ program: TrainingProgram }> = ({ program }) => {
     const { closeModal } = useModal();
+    const programLengthDisplay = getProgramLengthDisplay(program);
 
     const schoolUrl = program?.school?.url;
     const schoolImage = program?.school?.image_url;
@@ -71,7 +73,8 @@ const AiPathwaySchoolProgramDetails: React.FC<{ program: TrainingProgram }> = ({
                             <div className="flex items-center gap-2">
                                 <TimeCircle className="w-6 h-6 text-yellow-500" />
                                 <p className="text-base text-grayscale-800 font-semibold font-notoSans">
-                                    Total: {program?.ProgramLength?.[0]?.Value} to complete
+                                    Total:{' '}
+                                    <span className="capitalize">{programLengthDisplay}</span>
                                 </p>
                             </div>
                         </div>
