@@ -3294,13 +3294,10 @@ const FeatureSetupStep: React.FC<{
         .map(id => FEATURES.find(f => f.id === id))
         .filter((f): f is Feature => f !== undefined && f.requiresSetup);
 
-    // If no features need setup, skip to complete
-    useEffect(() => {
-        if (featuresNeedingSetup.length === 0) {
-            onComplete();
-        }
-    }, [featuresNeedingSetup.length, onComplete]);
-
+    // Skip rendering when no features need setup.
+    // The parent component handles auto-advancing past this step (see main component).
+    // We must NOT call onComplete() here because with display:none all steps are always
+    // mounted — an onComplete effect would fire immediately and cascade to the last step.
     if (featuresNeedingSetup.length === 0) {
         return null;
     }
@@ -7041,10 +7038,55 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
         });
     }, [selectedFeatures]);
 
-    const handleStepComplete = (stepId: string) => {
+    // Auto-advance past feature-setup when no features require setup
+    // (handles edge case where user arrives at step 3 after deselecting all features)
+    // Guard with hasRestoredState to avoid premature skip before selectedFeatures is restored.
+    useEffect(() => {
+        if (hasRestoredState && guideState.currentStep === 3 && featuresNeedingSetup.length === 0) {
+            guideState.markStepComplete('feature-setup');
+            guideState.goToStep(4);
+        }
+    }, [guideState.currentStep, featuresNeedingSetup.length, hasRestoredState]);
+
+    const guideTopRef = useRef<HTMLDivElement>(null);
+
+    const scrollToTop = useCallback(() => {
+        setTimeout(() => {
+            guideTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
+    }, []);
+
+    const [isTransitioning, setIsTransitioning] = useState(false);
+
+    const handleStepComplete = useCallback((stepId: string) => {
+        if (isTransitioning) return;
+        setIsTransitioning(true);
         guideState.markStepComplete(stepId);
         guideState.nextStep();
-    };
+        scrollToTop();
+        setTimeout(() => setIsTransitioning(false), 150);
+    }, [isTransitioning, guideState, scrollToTop]);
+
+    const handleBack = useCallback(() => {
+        guideState.prevStep();
+        scrollToTop();
+    }, [guideState, scrollToTop]);
+
+    const handleStepClick = useCallback((step: number) => {
+        guideState.goToStep(step);
+        scrollToTop();
+    }, [guideState, scrollToTop]);
+
+    // Allow backward nav freely; forward nav requires all preceding steps complete.
+    const canNavigateToStep = useCallback((index: number) => {
+        if (index === guideState.currentStep) return true;
+        if (index < guideState.currentStep) return true;
+        if (guideState.isStepComplete(STEPS[index].id)) return true;
+        for (let i = 0; i < index; i++) {
+            if (!guideState.isStepComplete(STEPS[i].id)) return false;
+        }
+        return true;
+    }, [guideState.currentStep, guideState.isStepComplete]);
 
     const handleChooseFeaturesComplete = () => {
         if (featuresNeedingSetup.length === 0) {
@@ -7057,112 +7099,82 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
         }
     };
 
-    const renderStep = () => {
-        switch (guideState.currentStep) {
-            case 0:
-                return (
-                    <GettingStartedStep
-                        onComplete={() => handleStepComplete('getting-started')}
-                        selectedIntegration={selectedIntegration}
-                        selectedListing={selectedListing}
-                        setSelectedListing={setSelectedListing}
-                    />
-                );
-
-            case 1:
-                return (
-                    <SigningAuthorityStep
-                        onComplete={() => handleStepComplete('signing-authority')}
-                        onBack={guideState.prevStep}
-                        appSlug={selectedListing?.slug}
-                    />
-                );
-
-            case 2:
-                return (
-                    <ChooseFeaturesStep
-                        onComplete={handleChooseFeaturesComplete}
-                        onBack={guideState.prevStep}
-                        selectedFeatures={selectedFeatures}
-                        setSelectedFeatures={setSelectedFeatures}
-                    />
-                );
-
-            case 3:
-                // If no features need setup, skip to step 4
-                if (featuresNeedingSetup.length === 0) {
-                    // Auto-advance to next step
-                    setTimeout(() => {
-                        guideState.markStepComplete('feature-setup');
-                        guideState.goToStep(4);
-                    }, 0);
-                    return null;
-                }
-
-                return (
-                    <FeatureSetupStep
-                        onComplete={() => handleStepComplete('feature-setup')}
-                        onBack={guideState.prevStep}
-                        selectedFeatures={selectedFeatures}
-                        currentFeatureIndex={currentFeatureIndex}
-                        setCurrentFeatureIndex={setCurrentFeatureIndex}
-                        featureSetupState={featureSetupState}
-                        setFeatureSetupState={setFeatureSetupState}
-                        selectedListing={selectedListing}
-                        integrationId={selectedIntegration?.id}
-                    />
-                );
-
-            case 4:
-                return (
-                    <YourAppStep
-                        onBack={guideState.prevStep}
-                        onComplete={() => handleStepComplete('your-app')}
-                        selectedFeatures={selectedFeatures}
-                        selectedListing={selectedListing}
-                        featureSetupState={featureSetupState}
-                        integrationId={selectedIntegration?.id}
-                    />
-                );
-
-            case 5:
-                return (
-                    <GoLiveStep
-                        integration={selectedIntegration}
-                        guideType="embed-app"
-                        onBack={guideState.prevStep}
-                        completedItems={[
-                            'SDK installed and configured',
-                            'Signing authority configured',
-                            'App listing created',
-                            `${selectedFeatures.length} feature${
-                                selectedFeatures.length !== 1 ? 's' : ''
-                            } configured`,
-                            'Integration code generated',
-                        ]}
-                        title="Ready to Go Live!"
-                        description="Your embedded app integration is complete. Activate it to start using it in production."
-                    />
-                );
-
-            default:
-                return null;
-        }
-    };
-
     return (
-        <div className="mx-auto py-4 max-w-3xl">
+        <div ref={guideTopRef} className="mx-auto py-4 max-w-3xl">
             <div className="mb-8">
                 <StepProgress
                     currentStep={guideState.currentStep}
                     totalSteps={STEPS.length}
                     steps={STEPS}
                     completedSteps={guideState.state.completedSteps}
-                    onStepClick={guideState.goToStep}
+                    onStepClick={handleStepClick}
+                    isStepNavigable={canNavigateToStep}
                 />
             </div>
 
-            {renderStep()}
+            {/* All steps always mounted — only active step visible; prevents re-mount lag */}
+            <div style={{ display: guideState.currentStep === 0 ? 'block' : 'none' }}>
+                <GettingStartedStep
+                    onComplete={() => handleStepComplete('getting-started')}
+                    selectedIntegration={selectedIntegration}
+                    selectedListing={selectedListing}
+                    setSelectedListing={setSelectedListing}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 1 ? 'block' : 'none' }}>
+                <SigningAuthorityStep
+                    onComplete={() => handleStepComplete('signing-authority')}
+                    onBack={handleBack}
+                    appSlug={selectedListing?.slug}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 2 ? 'block' : 'none' }}>
+                <ChooseFeaturesStep
+                    onComplete={handleChooseFeaturesComplete}
+                    onBack={handleBack}
+                    selectedFeatures={selectedFeatures}
+                    setSelectedFeatures={setSelectedFeatures}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 3 ? 'block' : 'none' }}>
+                <FeatureSetupStep
+                    onComplete={() => handleStepComplete('feature-setup')}
+                    onBack={handleBack}
+                    selectedFeatures={selectedFeatures}
+                    currentFeatureIndex={currentFeatureIndex}
+                    setCurrentFeatureIndex={setCurrentFeatureIndex}
+                    featureSetupState={featureSetupState}
+                    setFeatureSetupState={setFeatureSetupState}
+                    selectedListing={selectedListing}
+                    integrationId={selectedIntegration?.id}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 4 ? 'block' : 'none' }}>
+                <YourAppStep
+                    onBack={handleBack}
+                    onComplete={() => handleStepComplete('your-app')}
+                    selectedFeatures={selectedFeatures}
+                    selectedListing={selectedListing}
+                    featureSetupState={featureSetupState}
+                    integrationId={selectedIntegration?.id}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 5 ? 'block' : 'none' }}>
+                <GoLiveStep
+                    integration={selectedIntegration}
+                    guideType="embed-app"
+                    onBack={handleBack}
+                    completedItems={[
+                        'SDK installed and configured',
+                        'Signing authority configured',
+                        'App listing created',
+                        `${selectedFeatures.length} feature${selectedFeatures.length !== 1 ? 's' : ''} configured`,
+                        'Integration code generated',
+                    ]}
+                    title="Ready to Go Live!"
+                    description="Your embedded app integration is complete. Activate it to start using it in production."
+                />
+            </div>
         </div>
     );
 };
