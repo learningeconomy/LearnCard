@@ -9,10 +9,12 @@ type Props = {
     onBack: () => void;
 };
 
-/** Read a nested VC path, returning '' for missing values */
+/** Read a nested VC path, returning '' for missing values. Handles array values (e.g. achievementType: ["Certificate"]) */
 const getField = (vc: any, path: string): string => {
     const value = path.split('.').reduce((obj, key) => obj?.[key], vc);
-    return typeof value === 'string' ? value : '';
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') return value[0];
+    return '';
 };
 
 /** Return the tags array or [] */
@@ -49,34 +51,14 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
     const name = getField(vc, 'credentialSubject.achievement.name');
 
     const updateField = (path: string, value: string) => {
-        setVc((prev: any) => setField(prev, path, value));
-    };
-
-    const tags = getTags(vc);
-
-    const addTag = () => {
-        const trimmed = tagInput.trim();
-        if (trimmed && !tags.includes(trimmed)) {
-            const clone = JSON.parse(JSON.stringify(vc));
-            if (!clone.credentialSubject) clone.credentialSubject = {};
-            if (!clone.credentialSubject.achievement) clone.credentialSubject.achievement = {};
-            clone.credentialSubject.achievement.tag = [...tags, trimmed];
-            setVc(clone);
-        }
-        setTagInput('');
-    };
-
-    const removeTag = (index: number) => {
-        const clone = JSON.parse(JSON.stringify(vc));
-        clone.credentialSubject.achievement.tag = tags.filter((_: string, i: number) => i !== index);
-        setVc(clone);
-    };
-
-    const handleTagKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            addTag();
-        }
+        setVc((prev: any) => {
+            let updated = setField(prev, path, value);
+            // Sync top-level name from achievement name (card display reads vc.name)
+            if (path === 'credentialSubject.achievement.name') {
+                updated = setField(updated, 'name', value);
+            }
+            return updated;
+        });
     };
 
     /** Convert ISO datetime to YYYY-MM-DD for date input */

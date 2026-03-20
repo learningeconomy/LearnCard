@@ -157,7 +157,17 @@ export const CheckListTranscripts: React.FC = () => {
 
     const handleEditCredential = (index: number, editedVc: any) => {
         setParsedCredentials(prev =>
-            prev.map((cred, i) => (i === index ? { ...cred, vc: editedVc } : cred))
+            prev.map((cred, i) => {
+                if (i !== index) return cred;
+                return {
+                    ...cred,
+                    vc: editedVc,
+                    metadata: {
+                        ...cred.metadata,
+                        name: editedVc?.credentialSubject?.achievement?.name || cred.metadata?.name,
+                    },
+                };
+            })
         );
     };
 

@@ -423,8 +423,33 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             syncAll.mutate();
             aiInsightMutation.mutate();
             setParsedCredentials([]);
+
+            const credCount = selectedVcs.length;
+            setTimeout(() => {
+                presentToast(
+                    credCount > 0
+                        ? `${credCount} credential${credCount > 1 ? 's' : ''} saved to your wallet.`
+                        : `Your ${fileType.toLowerCase()} has been saved.`,
+                    {
+                        title: 'Credentials Saved',
+                        hasDismissButton: true,
+                        type: ToastTypeEnum.Success,
+                        hasCheckmark: true,
+                        duration: 5000,
+                    }
+                );
+            }, 500);
         } catch (error) {
             console.error('storeSelectedCredentials::error', error);
+            setTimeout(() => {
+                presentToast(`Something went wrong saving your credentials.`, {
+                    title: 'Error',
+                    hasDismissButton: true,
+                    type: ToastTypeEnum.Error,
+                    hasX: true,
+                    duration: 5000,
+                });
+            }, 500);
         }
     };
 
