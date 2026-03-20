@@ -6714,6 +6714,8 @@ initializeApp();`);
                                         ? 'border-red-300 ring-red-200'
                                         : 'border-gray-200'
                                 }`}
+                                aria-describedby={urlRequiredError ? 'embed-url-error' : undefined}
+                                aria-invalid={urlRequiredError}
                             />
 
                             <p className="text-xs text-gray-400 mt-1">
@@ -6721,7 +6723,7 @@ initializeApp();`);
                             </p>
 
                             {urlRequiredError && (
-                                <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
+                                <p id="embed-url-error" className="text-sm text-red-500 mt-2 flex items-center gap-1" role="alert">
                                     <AlertCircle className="w-4 h-4" />
                                     Please enter your embed URL before continuing
                                 </p>
