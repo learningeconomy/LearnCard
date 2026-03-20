@@ -19,6 +19,7 @@ import {
     markAllNotificationsReadForUser,
     updateNotificationMeta,
 } from '@accesslayer/notifications/update';
+import { deleteNotificationById } from '@accesslayer/notifications/delete';
 import {
     NotificationQueryFiltersValidator,
     NotificationQueryInputValidator,
@@ -258,9 +259,6 @@ export const notificationsRouter = t.router({
                 );
 
                 if (originalNotifications && originalNotifications.length > 0) {
-                    const { deleteNotificationById } = await import(
-                        '@accesslayer/notifications/delete'
-                    );
                     for (const notification of originalNotifications) {
                         if (notification._id) {
                             await deleteNotificationById(notification._id);
