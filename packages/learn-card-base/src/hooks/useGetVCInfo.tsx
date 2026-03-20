@@ -54,6 +54,13 @@ export const useGetVCInfo = (
     vc: UnsignedVC | UnsignedAchievementCredential,
     categoryType?: string
 ) => {
+    type CredentialResultDisplay = {
+        name: string;
+        value: string;
+        resultType?: string;
+        description?: string;
+    };
+
     // --- Wallet context ---
     const { initWallet } = useWallet();
 
@@ -107,7 +114,8 @@ export const useGetVCInfo = (
 
         issuerName = hasExplicitName
             ? vcIssuerName
-            : (issuerAppListing?.display_name || (issuerAppLoading ? 'Loading app...' : issuerAppSlug));
+            : issuerAppListing?.display_name ||
+              (issuerAppLoading ? 'Loading app...' : issuerAppSlug);
 
         issuerLink = issuerAppListing?.listing_id
             ? `/app/${issuerAppListing.listing_id}`
@@ -305,6 +313,90 @@ export const useGetVCInfo = (
     const source = credentialSubject?.source ?? {};
     const { description, criteria, alignment } = getCredentialSubjectAchievementData(vc);
 
+    // CLR child AchievementCredentials can define resultDescription entries on
+    // credentialSubject.achievement and result entries on credentialSubject.result.
+    // Normalize both structures into arrays so rendering logic can stay consistent.
+    const achievementResultDescriptions = credentialSubject?.achievement?.resultDescription;
+    const resultDescriptions: any[] = [];
+
+    if (Array.isArray(achievementResultDescriptions)) {
+        resultDescriptions.push(...achievementResultDescriptions);
+    } else if (achievementResultDescriptions) {
+        resultDescriptions.push(achievementResultDescriptions);
+    }
+
+    const resultDescriptionMap = new Map(
+        resultDescriptions
+            .filter(resultDescription => resultDescription?.id)
+            .map(resultDescription => [resultDescription.id, resultDescription])
+    );
+
+    const rawResults: any[] = [];
+
+    if (Array.isArray(credentialSubject?.result)) {
+        rawResults.push(...credentialSubject.result);
+    } else if (credentialSubject?.result) {
+        rawResults.push(credentialSubject.result);
+    }
+
+    console.log('rawResults', rawResults);
+
+    const results: CredentialResultDisplay[] = rawResults
+        .map((result, index) => {
+            // CLR resultDescription may be either an id reference string or
+            // an inline object. Resolve by id first, then fall back to inline.
+            let resultDescriptionId: string | undefined;
+            if (typeof result?.resultDescription === 'string') {
+                resultDescriptionId = result.resultDescription;
+            } else if (typeof result?.resultDescription === 'object') {
+                resultDescriptionId = result.resultDescription?.id;
+            }
+
+            let linkedResultDescription;
+            if (resultDescriptionId) {
+                linkedResultDescription = resultDescriptionMap.get(resultDescriptionId);
+            }
+
+            let inlineResultDescription;
+            if (typeof result?.resultDescription === 'object') {
+                inlineResultDescription = result.resultDescription;
+            }
+
+            let name = linkedResultDescription?.name;
+            if (!name) {
+                name = inlineResultDescription?.name;
+            }
+            if (!name) {
+                name = `Result ${index + 1}`;
+            }
+
+            let resultType = linkedResultDescription?.resultType;
+            if (!resultType) {
+                resultType = inlineResultDescription?.resultType;
+            }
+
+            let description = linkedResultDescription?.description;
+            if (!description) {
+                description = inlineResultDescription?.description;
+            }
+
+            let value = '';
+            if (result?.value !== undefined && result?.value !== null) {
+                value = String(result.value);
+            } else if (result?.resultValue !== undefined && result?.resultValue !== null) {
+                value = String(result.resultValue);
+            }
+
+            return { name, value, resultType, description };
+        })
+        .filter(result => Boolean(result.name) || Boolean(result.value));
+
+    // CLR child credentials may include creditsEarned alongside result values.
+    const creditsEarned = credentialSubject?.creditsEarned;
+
+    console.log('results', results);
+    console.log('creditsEarned', creditsEarned);
+
     // Achievement type resolution
     let achievementType = '';
     if (vc?.boostCredential?.credentialSubject?.achievement?.achievementType) {
@@ -391,6 +483,8 @@ export const useGetVCInfo = (
         evidence,
         attachments,
         skills,
+        results,
+        creditsEarned,
         achievementType,
         formattedAchievementType,
         badgeThumbnail,

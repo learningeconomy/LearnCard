@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 import { Lightbox, LightboxItem } from '@learncard/react';
 import Video from 'learn-card-base/svgs/Video';
@@ -22,6 +24,21 @@ const AiPathwayContentPreview: React.FC<{ content: AiPathwayContent }> = ({ cont
     useEffect(() => {
         handleGetVideoMetadata();
     }, [content]);
+
+    const handleStartContent = async () => {
+        const fallbackUrl = content.url || '';
+
+        if (Capacitor?.isNativePlatform() && metaData?.type === 'youtube') {
+            const youtubeUrl = metaData.videoId
+                ? `https://www.youtube.com/watch?v=${metaData.videoId}`
+                : fallbackUrl;
+            if (!youtubeUrl) return;
+            await Browser.open({ url: youtubeUrl });
+            return;
+        }
+
+        setCurrentLightboxUrl(fallbackUrl);
+    };
 
     return (
         <div
@@ -99,7 +116,7 @@ const AiPathwayContentPreview: React.FC<{ content: AiPathwayContent }> = ({ cont
                         Close
                     </button>
                     <button
-                        onClick={() => setCurrentLightboxUrl(content.url || '')}
+                        onClick={handleStartContent}
                         className="p-[11px] bg-emerald-700 rounded-full text-white shadow-button-bottom flex-1 font-poppins text-[17px] font-semibold"
                     >
                         Start
