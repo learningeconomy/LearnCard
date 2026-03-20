@@ -75,6 +75,8 @@ export const LoginContent: React.FC = () => {
     const [showLinkedBanner, setShowLinkedBanner] = useState(false);
     const [accountHint, setAccountHint] = useState<string | null>(null);
     const [isPublicMode, setIsPublicMode] = useState(() => isPublicComputerMode());
+
+    const installIntent = redirectStore.use.installIntent();
     const authConfig = getAuthConfig();
     const configCapabilities = getConfigCapabilities();
     const isWeb = !Capacitor.isNativePlatform();
@@ -150,7 +152,7 @@ export const LoginContent: React.FC = () => {
 
         didRedirectRef.current = true;
 
-        const redirectTo = redirectStore.get.authRedirect() || query.get('redirectTo');
+        const redirectTo = redirectStore.get.authRedirect() || query.get('redirectTo') || query.get('returnUrl');
         const lcnRedirectTo = redirectStore.get.lcnRedirect();
         // const isChapiInteraction = chapiStore.get.isChapiInteraction();
         try {
@@ -173,9 +175,13 @@ export const LoginContent: React.FC = () => {
                 redirectStore.set.authRedirect(null);
                 chapiStore.set.isChapiInteraction(null);
                 history.push(redirectTo);
+                void handleGeneratePinUpdateToken();
+                void handlePromptOnboarding();
             } else if (lcnRedirectTo) {
                 redirectStore.set.lcnRedirect(null);
                 history.push(lcnRedirectTo);
+                void handleGeneratePinUpdateToken();
+                void handlePromptOnboarding();
             } else {
                 history.push('/launchpad');
                 void handleGeneratePinUpdateToken();
@@ -204,6 +210,7 @@ export const LoginContent: React.FC = () => {
             return () => clearTimeout(timer); // Add cleanup
         }
     }, [showConfirmation]);
+
     // custom logins associated with the app
     const extraSocialLogins = useMemo(
         () => [
@@ -313,6 +320,23 @@ export const LoginContent: React.FC = () => {
                         </IonRow>
                     )}
 
+                    {installIntent?.listingId && (
+                        <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center gap-3 justify-center">
+                                {installIntent.appIcon && (
+                                    <img
+                                        src={installIntent.appIcon}
+                                        alt=""
+                                        className="w-6 h-6 rounded-md object-cover shrink-0"
+                                    />
+                                )}
+                                <span className="text-sm text-white font-medium">
+                                    You'll be taken back to <span className="font-semibold">{installIntent.appName ?? 'the app'}</span> after sign in
+                                </span>
+                            </div>
+                        </IonRow>
+                    )}
+
                     <IonRow className="w-full flex flex-col items-center justify-center">
                         <GenericErrorBoundary hideGoHome>
                             {showSocialLogins && (
@@ -412,6 +436,7 @@ export const LoginContent: React.FC = () => {
                     </GenericErrorBoundary>
                 </>
             )}
+
         </div>
     );
 };
