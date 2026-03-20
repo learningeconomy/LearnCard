@@ -104,19 +104,19 @@ export async function getLearnCardNetworkPlugin(
     const client = apiToken
         ? await getApiTokenClient(url, apiToken, guardianApprovalGetter)
         : await getClient(
-              url,
-              async challenge => {
-                  const jwt = await learnCard.invoke.getDidAuthVp({
-                      proofFormat: 'jwt',
-                      challenge,
-                  });
+            url,
+            async challenge => {
+                const jwt = await learnCard.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge,
+                });
 
-                  if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+                if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-                  return jwt;
-              },
-              guardianApprovalGetter
-          );
+                return jwt;
+            },
+            guardianApprovalGetter
+        );
 
     let userData: LCNProfile | undefined;
 
@@ -364,7 +364,7 @@ export async function getLearnCardNetworkPlugin(
             getProfile: async (_learnCard, profileId) => {
                 try {
                     await ensureUser();
-                } catch {}
+                } catch { }
 
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
@@ -503,6 +503,76 @@ export async function getLearnCardNetworkPlugin(
 
             sendCredential: async (_learnCard, profileId, vc, metadataOrEncrypt, encrypt) => {
                 await ensureUser();
+
+                // Check if profileId is an external DID (federation case)
+                if (profileId.startsWith('did:web:')) {
+                    const didDoc = await _learnCard.invoke.resolveDid(profileId);
+
+                    const inboxService = didDoc.service?.find(s => {
+                        const type = Array.isArray(s.type) ? s.type[0] : s.type;
+                        return type === 'UniversalInboxService' || type === 'LearnCardInboxService';
+                    });
+
+                    const brainService = didDoc.service?.find(s => {
+                        const type = Array.isArray(s.type) ? s.type[0] : s.type;
+                        return type === 'LearnCardBrainService';
+                    });
+
+                    const serviceEndpoint =
+                        inboxService?.serviceEndpoint || brainService?.serviceEndpoint;
+
+                    if (serviceEndpoint) {
+                        // Handle metadata parameter
+                        let metadata: Record<string, unknown> | undefined;
+                        if (typeof metadataOrEncrypt === 'object') {
+                            metadata = metadataOrEncrypt;
+                        }
+
+                        const myProfile = await client.profile.getProfile.query();
+                        const issuerDid = myProfile?.did || (await client.utilities.getDid.query());
+                        const issuerDisplayName = myProfile?.displayName || 'Unknown Issuer';
+                        const signedCredential = await _learnCard.invoke.issueCredential(vc);
+                        const didAuthJwt = await _learnCard.invoke.getDidAuthVp({
+                            proofFormat: 'jwt',
+                            challenge: `inbox-federation-${crypto.randomUUID()}`,
+                        });
+
+                        let receiveUrl =
+                            inboxService?.serviceEndpoint || `${serviceEndpoint}/api/inbox/receive`;
+
+                        // Use HTTP for localhost to avoid SSL errors
+                        if (receiveUrl.includes('localhost')) {
+                            receiveUrl = receiveUrl.replace('https://', 'http://');
+                        }
+
+                        const response = await fetch(receiveUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${didAuthJwt}`,
+                            },
+                            body: JSON.stringify({
+                                recipientDid: profileId,
+                                credential: signedCredential,
+                                issuerDid,
+                                issuerDisplayName,
+                                configuration: {
+                                    ...metadata,
+                                    federatedFrom: issuerDid,
+                                },
+                            }),
+                            signal: AbortSignal.timeout(30000), // 30 second timeout
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.text();
+                            throw new Error(`Federation failed: ${error}`);
+                        }
+
+                        const result = await response.json();
+                        return result.issuanceId;
+                    }
+                }
 
                 // Handle backward compatibility: if metadataOrEncrypt is a boolean, it's the encrypt flag
                 let metadata: Record<string, unknown> | undefined;
@@ -982,10 +1052,9 @@ export async function getLearnCardNetworkPlugin(
                         boost = JSON.parse(rendered);
                     } catch (error) {
                         throw new Error(
-                            `Template substitution failed: ${
-                                error instanceof Error ? error.message : 'Unknown error'
+                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'
                             }. ` +
-                                `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
                         );
                     }
                 }
@@ -1121,8 +1190,7 @@ export async function getLearnCardNetworkPlugin(
                                     boost = JSON.parse(rendered);
                                 } catch (error) {
                                     throw new Error(
-                                        `Failed to apply template data: ${
-                                            error instanceof Error ? error.message : 'Unknown error'
+                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'
                                         }`
                                     );
                                 }
@@ -1972,6 +2040,15 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.activity.getActivityChain.query(options);
+            },
+
+            isServiceTrusted: async (_learnCard, serviceDid) => {
+                const trustedServices = await client.federation.getTrustedServices.query({});
+                return trustedServices.some(s => s.did === serviceDid);
+            },
+
+            getTrustedServices: async () => {
+                return client.federation.getTrustedServices.query({});
             },
         },
     };

@@ -4249,6 +4249,24 @@ importers:
         specifier: ^8.11.10
         version: 8.15.6
 
+  tests/federation-e2e:
+    dependencies:
+      '@learncard/core':
+        specifier: workspace:*
+        version: link:../../packages/learn-card-core
+      '@learncard/didkit-plugin':
+        specifier: workspace:*
+        version: link:../../packages/plugins/didkit
+      '@learncard/init':
+        specifier: workspace:*
+        version: link:../../packages/learn-card-init
+      '@learncard/types':
+        specifier: workspace:*
+        version: link:../../packages/learn-card-types
+      execa:
+        specifier: ^9.5.1
+        version: 9.6.0
+
   tools/executors/workspace/run-command:
     dependencies:
       execa:
