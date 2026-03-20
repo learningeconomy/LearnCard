@@ -230,6 +230,49 @@ const AppListingPage: React.FC = () => {
 
         try {
             await installMutation.mutateAsync(listing.listing_id);
+
+            // Show success modal asking if user wants to open the app
+            newModal(
+                <div className="p-6 text-center max-w-sm mx-auto">
+                    {listing.icon_url && (
+                        <img
+                            src={listing.icon_url}
+                            alt=""
+                            className="w-16 h-16 rounded-2xl mx-auto mb-4 object-cover shadow-md"
+                        />
+                    )}
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        {listing.display_name} installed
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-6">
+                        Would you like to open it now?
+                    </p>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => closeModal()}
+                            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                            Maybe later
+                        </button>
+                        {canLaunch && (
+                            <button
+                                onClick={() => {
+                                    closeModal();
+                                    handleLaunch();
+                                }}
+                                className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+                            >
+                                Open
+                            </button>
+                        )}
+                    </div>
+                </div>,
+                {
+                    sectionClassName: '!max-w-[400px]',
+                    hideButton: true,
+                },
+                { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+            );
         } catch (error) {
             console.error('Failed to install app:', error);
         } finally {

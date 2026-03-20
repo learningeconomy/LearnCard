@@ -77,7 +77,7 @@ type OnboardingNetworkFormProps = {
     setStep?: (step: OnboardingStepsEnum) => void;
     onSuccess?: () => void;
     skipRoleSlides?: boolean;
-    pendingInstall?: { listingId: string; appName: string } | null;
+    pendingInstall?: { listingId: string; appName: string; appIcon?: string } | null;
     formData: {
         name: string | null | undefined;
         dob: string | null | undefined;
@@ -775,6 +775,21 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     return (
         <div className="w-full h-full bg-white relative overflow-y-auto">
             <div className="max-w-[600px] mx-auto pt-[50px] px-4 relative">
+                {pendingInstall && (
+                    <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-3">
+                        {pendingInstall.appIcon && (
+                            <img
+                                src={pendingInstall.appIcon}
+                                alt=""
+                                className="w-8 h-8 rounded-lg object-cover shrink-0"
+                            />
+                        )}
+                        <p className="text-sm text-indigo-800 font-medium">
+                            After creating your account, you'll be able to install{' '}
+                            <span className="font-semibold">{pendingInstall.appName}</span>
+                        </p>
+                    </div>
+                )}
                 <OnboardingHeader text="Set up your profile to get started!" />
                 {isLoading && (
                     <div className="absolute top-0 left-0 w-full h-full z-[10000] flex flex-col items-center justify-center bg-white bg-opacity-70 backdrop-blur-[3px]">

@@ -29,6 +29,7 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
     const [pendingInstall, setPendingInstall] = useState<{
         listingId: string;
         appName: string;
+        appIcon?: string;
     } | null>(null);
 
     useEffect(() => {
@@ -38,7 +39,7 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
         // Claim installIntent — must happen after setting isOnboardingOpen
         const intent = redirectStore.get.installIntent();
         if (intent?.listingId) {
-            setPendingInstall({ listingId: intent.listingId, appName: intent.appName });
+            setPendingInstall({ listingId: intent.listingId, appName: intent.appName, appIcon: intent.appIcon });
             redirectStore.set.installIntent(null);
         }
 
@@ -71,6 +72,21 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
     return (
         <div className="w-full h-full bg-white flex flex-col overflow-y-auto relative">
             <div className="max-w-[600px] mx-auto pt-[50px] px-4 relative">
+                {pendingInstall && (
+                    <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-3">
+                        {pendingInstall.appIcon && (
+                            <img
+                                src={pendingInstall.appIcon}
+                                alt=""
+                                className="w-8 h-8 rounded-lg object-cover shrink-0"
+                            />
+                        )}
+                        <p className="text-sm text-indigo-800 font-medium">
+                            After creating your account, you'll be able to install{' '}
+                            <span className="font-semibold">{pendingInstall.appName}</span>
+                        </p>
+                    </div>
+                )}
                 <OnboardingHeader text="Select what best describes you!" />
                 <OnboardingRoles role={role} setRole={setRole} />
                 <OnboardingFooter
