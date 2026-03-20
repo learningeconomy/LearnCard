@@ -148,6 +148,12 @@ export const CheckListUploadResume: React.FC = () => {
         setParsedCredentials([]);
     };
 
+    const handleEditCredential = (index: number, editedVc: any) => {
+        setParsedCredentials(prev =>
+            prev.map((cred, i) => (i === index ? { ...cred, vc: editedVc } : cred))
+        );
+    };
+
     let buttonText = resume ? 'Update' : 'Add';
     buttonText = isUploading ? 'Uploading...' : buttonText;
     const buttonIcon = resume ? (
@@ -164,6 +170,7 @@ export const CheckListUploadResume: React.FC = () => {
                     fileType={UploadTypesEnum.Resume}
                     onConfirm={handleReviewConfirm}
                     onBack={handleReviewBack}
+                    onEditCredential={handleEditCredential}
                     isLoading={isSavingSelected}
                 />
             ) : (
