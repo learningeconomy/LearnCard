@@ -1333,7 +1333,7 @@ export const appStoreRouter = t.router({
 
                 for (const adminProfile of adminProfiles) {
                     await addNotificationToQueue({
-                        type: 'APP_LISTING_WITHDRAWN' as typeof LCNNotificationTypeEnumValidator.enum.APP_LISTING_SUBMITTED,
+                        type: 'APP_LISTING_WITHDRAWN',
                         to: adminProfile,
                         from: ctx.user.profile,
                         message: {
