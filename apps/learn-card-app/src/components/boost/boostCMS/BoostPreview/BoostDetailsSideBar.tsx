@@ -4,6 +4,7 @@ import X from '../../../svgs/X';
 import { IonFooter } from '@ionic/react';
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
+import CredentialResultsBox from './CredentialResultsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
@@ -39,6 +40,7 @@ type BoostDetailsSideBarProps = {
     existingEndorsements?: VC[];
     hideEndorsementRequestCard?: boolean;
     isEarnedBoost?: boolean;
+    isClrChildCredential?: boolean;
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
@@ -50,6 +52,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     existingEndorsements = [],
     hideEndorsementRequestCard = false,
     isEarnedBoost,
+    isClrChildCredential = false,
 }) => {
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
@@ -59,10 +62,17 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     });
     const { isMobile } = useDeviceTypeByWidth();
 
-    const { description, criteria, alignment, attachments, title, evidence, skills } = useGetVCInfo(
-        credential,
-        categoryType
-    );
+    const {
+        description,
+        criteria,
+        alignment,
+        attachments,
+        title,
+        evidence,
+        skills,
+        results,
+        creditsEarned,
+    } = useGetVCInfo(credential, categoryType);
 
     const isMediaDisplay = displayType === DisplayTypeEnum.Media;
 
@@ -107,6 +117,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                             </span>
                         )}
                     </TruncateTextBox>
+
+                    <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
 
                     {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
 

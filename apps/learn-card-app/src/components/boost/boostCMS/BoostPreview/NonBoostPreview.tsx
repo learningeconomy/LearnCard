@@ -6,6 +6,7 @@ import { Capacitor } from '@capacitor/core';
 import { IonPage } from '@ionic/react';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
+import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
@@ -53,6 +54,7 @@ type NonBoostPreviewProps = {
     showEndorsementBadge?: boolean;
     existingEndorsements?: VC[];
     isEarnedBoost?: boolean;
+    isClrChildCredential?: boolean;
 };
 
 const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
@@ -82,6 +84,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     showEndorsementBadge,
     existingEndorsements,
     isEarnedBoost,
+    isClrChildCredential = false,
 }) => {
     const { initWallet } = useWallet();
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
@@ -123,16 +126,13 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         // }
         newModal(
             <BoostDetailsSideMenu
-                credential={
-                    credential?.type.includes('ClrCredential')
-                        ? credential?.credentialSubject?.verifiableCredential[0]
-                        : credential
-                }
+                credential={selectedCredential}
                 categoryType={categoryType}
-                verificationItems={verifications}
+                verificationItems={detailVerificationItems}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 existingEndorsements={existingEndorsements}
                 isEarnedBoost={isEarnedBoost}
+                isClrChildCredential={isClrChildCredential}
             />,
             {
                 className: '!bg-transparent',
@@ -154,12 +154,18 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         />
     ) : null;
 
-    const verifications =
-        showVerifications && verificationItems && verificationItems.length > 0
-            ? verificationItems
-            : showVerifications
-            ? vcVerifications
-            : [];
+    let verifications: VerificationItem[] = [];
+    if (isClrChildCredential) {
+        verifications = [];
+    } else if (showVerifications && verificationItems && verificationItems.length > 0) {
+        verifications = verificationItems;
+    } else if (showVerifications) {
+        verifications = vcVerifications;
+    }
+
+    const detailVerificationItems = isClrChildCredential ? verificationItems : verifications;
+
+    const selectedCredential = credential;
 
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
@@ -190,7 +196,13 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                                 verificationItems={verifications}
                                 customThumbComponent={customThumbComponent}
                                 customBodyCardComponent={customBodyCardComponent}
-                                customFooterComponent={customFooterComponent}
+                                customFooterComponent={
+                                    isClrChildCredential ? (
+                                        <VerifiedChildCLRFooter />
+                                    ) : (
+                                        customFooterComponent
+                                    )
+                                }
                                 subjectDID={subjectDID}
                                 subjectImageComponent={subjectImageComponent}
                                 issuerImageComponent={issuerImageComponent}
@@ -221,16 +233,13 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 </footer>
                 {!isMobile && (
                     <BoostDetailsSideBar
-                        credential={
-                            credential?.type.includes('ClrCredential')
-                                ? credential?.credentialSubject?.verifiableCredential[0]
-                                : credential
-                        }
+                        credential={selectedCredential}
                         categoryType={categoryType}
-                        verificationItems={verifications}
+                        verificationItems={detailVerificationItems}
                         customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                         existingEndorsements={existingEndorsements}
                         isEarnedBoost={isEarnedBoost}
+                        isClrChildCredential={isClrChildCredential}
                     />
                 )}
             </div>
