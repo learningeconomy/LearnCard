@@ -1295,6 +1295,64 @@ export const appStoreRouter = t.router({
             return result;
         }),
 
+    unsubmitForReview: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/unsubmit-for-review',
+                tags: ['App Store'],
+                summary: 'Unsubmit Listing from Review',
+                description: 'Withdraw a PENDING_REVIEW listing back to DRAFT status',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            // Only PENDING_REVIEW listings can be unsubmitted
+            if (listing.app_listing_status !== 'PENDING_REVIEW') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `Cannot unsubmit listing with status "${listing.app_listing_status}". Only PENDING_REVIEW listings can be unsubmitted.`,
+                });
+            }
+
+            const result = await updateAppStoreListing(listing, {
+                app_listing_status: 'DRAFT',
+            });
+
+            // Notify all App Store admins that the submission was withdrawn
+            if (APP_STORE_ADMIN_PROFILE_IDS.length > 0) {
+                const adminProfiles = await getProfilesByProfileIds(APP_STORE_ADMIN_PROFILE_IDS);
+
+                for (const adminProfile of adminProfiles) {
+                    await addNotificationToQueue({
+                        type: 'APP_LISTING_WITHDRAWN',
+                        to: adminProfile,
+                        from: ctx.user.profile,
+                        message: {
+                            title: 'App Listing Withdrawn',
+                            body: `"${listing.display_name}" has been withdrawn from review.`,
+                        },
+                        data: {
+                            metadata: {
+                                listingId: listing.listing_id,
+                                listingName: listing.display_name,
+                            },
+                        },
+                    });
+                }
+            }
+
+            return result;
+        }),
+
     deleteListing: profileRoute
         .meta({
             openapi: {

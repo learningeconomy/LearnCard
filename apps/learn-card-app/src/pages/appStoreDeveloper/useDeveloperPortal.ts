@@ -338,6 +338,21 @@ export const useDeveloperPortal = () => {
         });
     };
 
+    // Mutation for unsubmitting a listing from review (withdraw pending submission)
+    const useUnsubmitForReview = () => {
+        return useMutation({
+            mutationFn: async (listingId: string): Promise<boolean> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.unsubmitAppStoreListing(listingId);
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listings'] });
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listing'] });
+            },
+        });
+    };
+
     // ========== Admin Hooks ==========
 
     // Query for checking if user is admin
@@ -482,6 +497,7 @@ export const useDeveloperPortal = () => {
         useUpdateListing,
         useDeleteListing,
         useSubmitForReview,
+        useUnsubmitForReview,
 
         // Admin hooks
         useIsAdmin,
