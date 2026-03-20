@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { UploadTypesEnum } from 'learn-card-base';
 import { useTheme } from '../../../../theme/hooks/useTheme';
+import CredentialEditView from './CredentialEditView';
 
-type ParsedCredential = { vc: any; metadata?: { name?: string; category?: string } };
+export type ParsedCredential = { vc: any; metadata?: { name?: string; category?: string } };
 
 type Props = {
     credentials: ParsedCredential[];
@@ -10,6 +11,7 @@ type Props = {
     onConfirm: (selectedVcs: any[]) => void;
     onBack: () => void;
     isLoading?: boolean;
+    onEditCredential?: (index: number, editedVc: any) => void;
 };
 
 const getCredentialDisplayName = (cred: ParsedCredential): string => {
@@ -32,10 +34,12 @@ export const CheckListCredentialReviewStep: React.FC<Props> = ({
     onConfirm,
     onBack,
     isLoading = false,
+    onEditCredential,
 }) => {
     const [selected, setSelected] = useState<Set<number>>(
         new Set(credentials.map((_, i) => i))
     );
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
@@ -62,6 +66,23 @@ export const CheckListCredentialReviewStep: React.FC<Props> = ({
     };
 
     const allSelected = selected.size === credentials.length;
+
+    const handleEditSave = (editedVc: any) => {
+        if (editingIndex !== null && onEditCredential) {
+            onEditCredential(editingIndex, editedVc);
+        }
+        setEditingIndex(null);
+    };
+
+    if (editingIndex !== null) {
+        return (
+            <CredentialEditView
+                credential={credentials[editingIndex]}
+                onSave={handleEditSave}
+                onBack={() => setEditingIndex(null)}
+            />
+        );
+    }
 
     return (
         <div className="w-full flex flex-col">
@@ -92,46 +113,73 @@ export const CheckListCredentialReviewStep: React.FC<Props> = ({
                         return (
                             <li
                                 key={i}
-                                onClick={() => toggle(i)}
-                                className={`flex items-center justify-between px-4 py-3 rounded-[12px] cursor-pointer border transition-colors ${
+                                className={`flex items-center justify-between px-4 py-3 rounded-[12px] border transition-colors ${
                                     isSelected
                                         ? `border-${primaryColor} bg-${primaryColor}/5`
                                         : 'border-grayscale-200 bg-grayscale-50'
                                 }`}
                             >
-                                <div className="flex flex-col min-w-0 pr-3">
-                                    <p className="text-sm font-semibold text-grayscale-900 truncate">
-                                        {name}
-                                    </p>
-                                    {category && (
-                                        <p className="text-xs text-grayscale-500 mt-0.5">
-                                            {category}
-                                        </p>
-                                    )}
-                                </div>
                                 <div
-                                    className={`min-w-[22px] min-h-[22px] w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center transition-colors ${
-                                        isSelected
-                                            ? `bg-${primaryColor} border-${primaryColor}`
-                                            : 'bg-white border-grayscale-300'
-                                    }`}
+                                    className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+                                    onClick={() => toggle(i)}
                                 >
-                                    {isSelected && (
+                                    <div
+                                        className={`min-w-[22px] min-h-[22px] w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center transition-colors ${
+                                            isSelected
+                                                ? `bg-${primaryColor} border-${primaryColor}`
+                                                : 'bg-white border-grayscale-300'
+                                        }`}
+                                    >
+                                        {isSelected && (
+                                            <svg
+                                                className="w-3 h-3 text-white"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                                strokeWidth={3}
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M5 13l4 4L19 7"
+                                                />
+                                            </svg>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <p className="text-sm font-semibold text-grayscale-900 truncate">
+                                            {name}
+                                        </p>
+                                        {category && (
+                                            <p className="text-xs text-grayscale-500 mt-0.5">
+                                                {category}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                {onEditCredential && (
+                                    <button
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            setEditingIndex(i);
+                                        }}
+                                        className="p-1.5 rounded-full hover:bg-grayscale-100 ml-2"
+                                    >
                                         <svg
-                                            className="w-3 h-3 text-white"
+                                            className="w-4 h-4 text-grayscale-500"
                                             fill="none"
                                             viewBox="0 0 24 24"
                                             stroke="currentColor"
-                                            strokeWidth={3}
+                                            strokeWidth={2}
                                         >
                                             <path
                                                 strokeLinecap="round"
                                                 strokeLinejoin="round"
-                                                d="M5 13l4 4L19 7"
+                                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
                                             />
                                         </svg>
-                                    )}
-                                </div>
+                                    </button>
+                                )}
                             </li>
                         );
                     })}
