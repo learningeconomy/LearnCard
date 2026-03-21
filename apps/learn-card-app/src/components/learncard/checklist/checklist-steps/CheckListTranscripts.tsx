@@ -6,6 +6,7 @@ import ChecklistLoader from '../loader/ChecklistLoader';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import CheckListItemSkeleton from './CheckListItemSkeleton';
 import CheckListManagerFooter from '../CheckListManager/CheckListManagerFooter';
+import CheckListCredentialReviewStep from './CheckListCredentialReviewStep';
 
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
@@ -30,7 +31,7 @@ export const CheckListTranscripts: React.FC = () => {
     const { initWallet } = useWallet();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { getFiles, isUploading, isSaving, parseFiles, base64Datas, rawArtifactCredentials } =
+    const { getFiles, isUploading, isSaving, fetchParsedCredentialsFromFiles, storeSelectedCredentials, parsedCredentials, setParsedCredentials, base64Datas, rawArtifactCredentials } =
         useUploadFile(UploadTypesEnum.Transcript);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
@@ -40,6 +41,8 @@ export const CheckListTranscripts: React.FC = () => {
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
+    const [showReview, setShowReview] = useState<boolean>(false);
+    const [isSavingSelected, setIsSavingSelected] = useState<boolean>(false);
 
     const [transcripts, setTranscripts] = useState<TranscriptType[]>([]);
 
@@ -49,8 +52,15 @@ export const CheckListTranscripts: React.FC = () => {
 
     useEffect(() => {
         if (base64Datas?.length > 0 && rawArtifactCredentials?.length > 0) {
-            parseFiles(UploadTypesEnum.Transcript).finally(() => {
-                handleSetTranscripts();
+            fetchParsedCredentialsFromFiles(UploadTypesEnum.Transcript).then(vcs => {
+                if (vcs.length > 0) {
+                    setShowReview(true);
+                } else {
+                    const [first, ...rest] = rawArtifactCredentials;
+                    storeSelectedCredentials([], first, UploadTypesEnum.Transcript, rest).finally(
+                        () => handleSetTranscripts()
+                    );
+                }
             });
         }
     }, [base64Datas, rawArtifactCredentials]);
@@ -131,81 +141,124 @@ export const CheckListTranscripts: React.FC = () => {
 
     const triggerFileInput = () => fileInputRef.current?.click();
 
+    const handleReviewConfirm = async (selectedVcs: any[]) => {
+        setIsSavingSelected(true);
+        const [first, ...rest] = rawArtifactCredentials;
+        await storeSelectedCredentials(selectedVcs, first, UploadTypesEnum.Transcript, rest);
+        setShowReview(false);
+        await handleSetTranscripts();
+        setIsSavingSelected(false);
+    };
+
+    const handleReviewBack = () => {
+        setShowReview(false);
+        setParsedCredentials([]);
+    };
+
+    const handleEditCredential = (index: number, editedVc: any) => {
+        setParsedCredentials(prev =>
+            prev.map((cred, i) => {
+                if (i !== index) return cred;
+                return {
+                    ...cred,
+                    vc: editedVc,
+                    metadata: {
+                        ...cred.metadata,
+                        name: editedVc?.credentialSubject?.achievement?.name || cred.metadata?.name,
+                    },
+                };
+            })
+        );
+    };
+
     let buttonText = transcripts?.length > 0 ? 'Add More' : 'Add';
     buttonText = isUploading ? 'Uploading...' : buttonText;
     const buttonIcon = <UploadIcon className="w-[25px] h-[26px] text-white mr-2" />;
 
     return (
         <>
-            {(isSaving || checklistStore.get.isParsing().transcript) && (
-                <ChecklistLoader fileType={UploadTypesEnum.Transcript} />
-            )}
-            <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
-                <div className="flex flex-col items-start justify-center py-2 w-full">
-                    <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
-                        Transcripts
-                    </h4>
-                    <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
-                        Upload academic transcripts or joint service transcripts.
-                    </p>
+            {showReview ? (
+                <CheckListCredentialReviewStep
+                    credentials={parsedCredentials}
+                    fileType={UploadTypesEnum.Transcript}
+                    onConfirm={handleReviewConfirm}
+                    onBack={handleReviewBack}
+                    isLoading={isSavingSelected}
+                    onEditCredential={handleEditCredential}
+                />
+            ) : (
+                <>
+                    {(isSaving || checklistStore.get.isParsing().transcript) && (
+                        <ChecklistLoader fileType={UploadTypesEnum.Transcript} />
+                    )}
+                    <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
+                        <div className="flex flex-col items-start justify-center py-2 w-full">
+                            <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
+                                Transcripts
+                            </h4>
+                            <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
+                                Upload academic transcripts or joint service transcripts.
+                            </p>
 
-                    <input
-                        multiple
-                        type="file"
-                        accept=".pdf,.txt,.docx"
-                        onChange={async e => {
-                            await getFiles(e, UploadTypesEnum.Transcript);
-                        }}
-                        ref={fileInputRef}
-                        style={{ display: 'none' }}
-                    />
+                            <input
+                                multiple
+                                type="file"
+                                accept=".pdf,.txt,.docx"
+                                onChange={async e => {
+                                    await getFiles(e, UploadTypesEnum.Transcript);
+                                }}
+                                ref={fileInputRef}
+                                style={{ display: 'none' }}
+                            />
 
-                    <button
-                        disabled={isUploading || isLoading}
-                        onClick={triggerFileInput}
-                        className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] bg-${primaryColor} text-white`}
-                    >
-                        {buttonIcon}
-                        {buttonText}
-                    </button>
-                </div>
-
-                {(isLoading || isDeleting) && <CheckListItemSkeleton />}
-
-                {!isLoading &&
-                    !isDeleting &&
-                    transcripts?.length > 0 &&
-                    transcripts?.map?.((transcript: TranscriptType) => {
-                        return (
-                            <div
-                                key={transcript?.id}
-                                className="flex items-center justify-between w-full mt-4 relative pb-4"
+                            <button
+                                disabled={isUploading || isLoading}
+                                onClick={triggerFileInput}
+                                className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] bg-${primaryColor} text-white`}
                             >
-                                <div className="flex items-center justify-start">
-                                    <DocIcon className="text-[#FF3636] h-[55px] min-h-[55px] min-w-[55px] w-[55px] mr-2" />
-                                    <div className="flex items-start justify-center text-left flex-col pr-4">
-                                        <p className="text-grayscale-800 text-sm font-semibold text-left line-clamp-2 break-all">
-                                            {transcript?.fileName}
-                                        </p>
-                                        <p className="w-full text-xs text-grayscale-600">
-                                            {transcript?.fileType} • {transcript?.fileSize}
-                                        </p>
-                                    </div>
-                                </div>
+                                {buttonIcon}
+                                {buttonText}
+                            </button>
+                        </div>
 
-                                <button
-                                    onClick={() => confirmDelete(transcript?.id)}
-                                    className="bg-white overflow-hidden rounded-full flex items-center justify-center shadow-bottom p-2 min-h-[35px] min-w-[35px] w-[35px] h-[35px]"
-                                >
-                                    <TrashBin className="text-blue-950 h-[25px] w-[25px]" />
-                                </button>
-                            </div>
-                        );
-                    })}
-            </div>
-            <CheckListManagerFooter
-                loading={isSaving || checklistStore.get.isParsing().transcript}
-            />
+                        {(isLoading || isDeleting) && <CheckListItemSkeleton />}
+
+                        {!isLoading &&
+                            !isDeleting &&
+                            transcripts?.length > 0 &&
+                            transcripts?.map?.((transcript: TranscriptType) => {
+                                return (
+                                    <div
+                                        key={transcript?.id}
+                                        className="flex items-center justify-between w-full mt-4 relative pb-4"
+                                    >
+                                        <div className="flex items-center justify-start">
+                                            <DocIcon className="text-[#FF3636] h-[55px] min-h-[55px] min-w-[55px] w-[55px] mr-2" />
+                                            <div className="flex items-start justify-center text-left flex-col pr-4">
+                                                <p className="text-grayscale-800 text-sm font-semibold text-left line-clamp-2 break-all">
+                                                    {transcript?.fileName}
+                                                </p>
+                                                <p className="w-full text-xs text-grayscale-600">
+                                                    {transcript?.fileType} • {transcript?.fileSize}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => confirmDelete(transcript?.id)}
+                                            className="bg-white overflow-hidden rounded-full flex items-center justify-center shadow-bottom p-2 min-h-[35px] min-w-[35px] w-[35px] h-[35px]"
+                                        >
+                                            <TrashBin className="text-blue-950 h-[25px] w-[25px]" />
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                    </div>
+                    <CheckListManagerFooter
+                        loading={isSaving || checklistStore.get.isParsing().transcript}
+                    />
+                </>
+            )}
         </>
     );
 };
