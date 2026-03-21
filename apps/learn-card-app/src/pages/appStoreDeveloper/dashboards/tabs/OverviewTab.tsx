@@ -46,6 +46,7 @@ import {
 import { ExportDialog } from '../components/ExportDialog';
 
 import { useWallet } from 'learn-card-base';
+import { openExternalLink } from 'src/helpers/externalLinkHelpers';
 
 interface OverviewTabProps {
     integration: LCNIntegration;
@@ -594,10 +595,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                         </button>
                     ))}
 
-                    <a
-                        href={docsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    <button
+                        onClick={() => openExternalLink(docsUrl)}
                         className="p-4 border border-gray-200 rounded-xl hover:border-cyan-300 hover:bg-cyan-50 transition-colors text-left group"
                     >
                         <ExternalLink className="w-8 h-8 text-cyan-600 mb-3" />
@@ -605,7 +604,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                             Documentation
                         </h3>
                         <p className="text-sm text-gray-500 mt-1">Learn how to integrate</p>
-                    </a>
+                    </button>
                 </div>
             </div>
 
@@ -794,7 +793,7 @@ function getDocsUrl(guideType?: string): string {
         case 'embed-app':
             return 'https://docs.learncard.com/sdks/partner-connect';
         case 'consent-flow':
-            return 'https://docs.learncard.com/consent-flow';
+            return 'https://docs.learncard.com/core-concepts/consent-and-permissions/consentflow-overview';
         default:
             return 'https://docs.learncard.com';
     }
