@@ -17,13 +17,6 @@ const getField = (vc: any, path: string): string => {
     return '';
 };
 
-/** Return the tags array or [] */
-const getTags = (vc: any): string[] => {
-    return Array.isArray(vc?.credentialSubject?.achievement?.tag)
-        ? vc.credentialSubject.achievement.tag
-        : [];
-};
-
 /** Set a nested path on a deep-cloned VC. Empty string removes the key. */
 const setField = (vc: any, path: string, value: string): any => {
     const clone = JSON.parse(JSON.stringify(vc));
@@ -44,7 +37,6 @@ const setField = (vc: any, path: string, value: string): any => {
 
 export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack }) => {
     const [vc, setVc] = useState<any>(() => JSON.parse(JSON.stringify(credential.vc)));
-    const [tagInput, setTagInput] = useState('');
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
@@ -172,39 +164,6 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                             className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 focus:outline-none focus:border-grayscale-400"
                         />
                     </div>
-                </div>
-
-                {/* Skills / Tags */}
-                <div>
-                    <label className="block text-sm font-semibold text-grayscale-700 mb-1">
-                        Skills / Tags
-                    </label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                        {tags.map((tag: string, i: number) => (
-                            <span
-                                key={i}
-                                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-${primaryColor}/10 text-${primaryColor}`}
-                            >
-                                {tag}
-                                <button
-                                    onClick={() => removeTag(i)}
-                                    className="ml-0.5 hover:opacity-70"
-                                >
-                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </span>
-                        ))}
-                    </div>
-                    <input
-                        type="text"
-                        value={tagInput}
-                        onChange={e => setTagInput(e.target.value)}
-                        onKeyDown={handleTagKeyDown}
-                        placeholder="Type a skill and press Enter..."
-                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:border-grayscale-400"
-                    />
                 </div>
             </div>
 
