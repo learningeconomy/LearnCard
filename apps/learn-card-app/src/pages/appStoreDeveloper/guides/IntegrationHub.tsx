@@ -293,8 +293,8 @@ const IntegrationHub: React.FC = () => {
                                 </h1>
 
                                 <p className="text-gray-500 max-w-lg mx-auto text-lg">
-                                    Select a project from the dropdown above to get started, or
-                                    browse the available guides below.
+                                    Select a project to get started, or browse the available guides
+                                    below.
                                 </p>
                             </div>
 
@@ -329,9 +329,51 @@ const IntegrationHub: React.FC = () => {
                                 })}
                             </div>
 
-                            <p className="text-center text-sm text-gray-500">
-                                Select a project above to access all {useCaseList.length} guides
-                            </p>
+                            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl p-6 shadow-lg shadow-cyan-100">
+                                <div className="flex items-start gap-4 mb-5">
+                                    <div className="w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-200 flex-shrink-0">
+                                        <Rocket className="w-7 h-7 text-white" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                                            {integrations.length === 1
+                                                ? 'You have 1 project'
+                                                : `You have ${integrations.length} projects`}
+                                        </h3>
+                                        <p className="text-gray-600">
+                                            Choose a project to continue building.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    {integrations.map(integration => (
+                                        <button
+                                            key={integration.id}
+                                            onClick={() => selectIntegration(integration.id)}
+                                            className="w-full flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-xl hover:border-cyan-400 hover:shadow-md hover:shadow-cyan-50 transition-all group text-left"
+                                        >
+                                            <div className="w-10 h-10 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                <Layout className="w-5 h-5 text-cyan-600" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-gray-800 truncate">
+                                                    {integration.name}
+                                                </p>
+                                                <p className="text-sm text-gray-500">
+                                                    {integration.guideType &&
+                                                    integration.guideType in USE_CASES
+                                                        ? USE_CASES[
+                                                              integration.guideType as UseCaseId
+                                                          ]?.title
+                                                        : 'Not started'}
+                                                </p>
+                                            </div>
+                                            <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     )}
 
