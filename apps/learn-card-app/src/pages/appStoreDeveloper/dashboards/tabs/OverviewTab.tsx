@@ -787,7 +787,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 function getDocsUrl(guideType?: string): string {
     switch (guideType) {
         case 'issue-credentials':
-            return 'https://docs.learncard.com/send-credentials';
+            return 'https://docs.learncard.com/how-to-guides/send-credentials';
         case 'embed-claim':
             return 'https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-embed-sdk';
         case 'embed-app':
