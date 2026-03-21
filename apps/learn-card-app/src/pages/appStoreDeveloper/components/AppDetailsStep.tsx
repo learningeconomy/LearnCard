@@ -13,11 +13,11 @@ interface AppDetailsStepProps {
 
 export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, errors }) => {
     const handleChange = (field: keyof AppStoreListingCreate, value: string) => {
-        onChange({ ...data, [field]: value });
+        onChange({ [field]: value });
     };
 
     const handleArrayChange = (field: 'highlights' | 'screenshots', values: string[]) => {
-        onChange({ ...data, [field]: values });
+        onChange({ [field]: values });
     };
 
     const addArrayItem = (field: 'highlights' | 'screenshots') => {
@@ -76,9 +76,8 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     value={data.display_name || ''}
                     onChange={e => handleChange('display_name', e.target.value)}
                     placeholder="My Amazing App"
-                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
-                        errors.display_name ? 'border-red-300' : 'border-gray-200'
-                    }`}
+                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${errors.display_name ? 'border-red-300' : 'border-gray-200'
+                        }`}
                     maxLength={50}
                 />
 
@@ -136,9 +135,8 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     value={data.tagline || ''}
                     onChange={e => handleChange('tagline', e.target.value)}
                     placeholder="A short, catchy description of your app"
-                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
-                        errors.tagline ? 'border-red-300' : 'border-gray-200'
-                    }`}
+                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${errors.tagline ? 'border-red-300' : 'border-gray-200'
+                        }`}
                     maxLength={100}
                 />
 
@@ -163,9 +161,8 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     value={data.full_description || ''}
                     onChange={e => handleChange('full_description', e.target.value)}
                     placeholder="Describe what your app does, its key features, and how it helps users..."
-                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[120px] resize-y ${
-                        errors.full_description ? 'border-red-300' : 'border-gray-200'
-                    }`}
+                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[120px] resize-y ${errors.full_description ? 'border-red-300' : 'border-gray-200'
+                        }`}
                     maxLength={2000}
                 />
 
