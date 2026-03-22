@@ -322,9 +322,9 @@ await learnCard.sendNotification({
 
 -   `title` _(optional)_: Notification title
 -   `body` _(optional)_: Notification body text
--   `actionPath` _(optional)_: Deep link path within the app (e.g. `'/prizes'`)
+-   `actionPath` _(optional)_: Deep link path within the app (e.g. `'/prizes'`). Must be an absolute pathname starting with `/`. This path is appended to the app's configured embed URL when the user taps the notification. For example, if your embed URL is `https://myapp.com` and `actionPath` is `'/challenges/42'`, the app will open at `https://myapp.com/challenges/42`. Hash routes (e.g. `'/#/page'`) are **not** supported — use pathname-based routing.
 -   `category` _(optional)_: Grouping category (e.g. `'reward'`, `'announcement'`, `'status'`)
--   `priority` _(optional)_: `'normal'` (default) or `'high'`
+-   `priority` _(optional)_: `'normal'` (default) or `'high'`. Affects visual styling of the notification card and toast. Does not change delivery priority or ordering.
 
 At least one of `title` or `body` is required.
 

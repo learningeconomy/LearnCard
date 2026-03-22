@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { LCNNotificationTypeEnumValidator } from '@learncard/types';
+import { LCNNotificationTypeEnumValidator, SendNotificationEventValidator } from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
 
@@ -980,28 +980,33 @@ const handleSendNotificationEvent = async (
     listingId: string,
     event: Record<string, unknown>
 ): Promise<Record<string, unknown>> => {
-    const title = event.title as string | undefined;
-    const body = event.body as string | undefined;
-    const actionPath = event.actionPath as string | undefined;
-    const category = event.category as string | undefined;
-    const priority = (event.priority as string) || 'normal';
+    const parsed = SendNotificationEventValidator.safeParse(event);
+
+    if (!parsed.success) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Invalid notification event: ${parsed.error.message}`,
+        });
+    }
+
+    const { title, body, actionPath, category, priority = 'normal' } = parsed.data;
 
     if (!title && !body) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'title or body is required' });
     }
 
-    // Rate limit: max 10 notifications per user per app per hour
+    // Rate limit: max 10 notifications per user per app per hour (atomic increment)
     const rateLimitKey = `app-notif-rate:${listingId}:${profile.profileId}`;
-    const currentCount = await cache.get(rateLimitKey);
+    const count = await cache.incr(rateLimitKey, 3600);
 
-    if (currentCount && parseInt(currentCount, 10) >= 10) {
+    if (count !== undefined && count > 10) {
+        // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
+        // while keeping the semantic code in the message for clients.
         throw new TRPCError({
             code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
             message: 'Rate limit exceeded: max 10 notifications per user per app per hour',
         });
     }
-
-    await cache.set(rateLimitKey, String((parseInt(currentCount ?? '0', 10) + 1)), 3600);
 
     const listing = await readAppStoreListingById(listingId);
 
@@ -1989,18 +1994,18 @@ export const appStoreRouter = t.router({
                 });
             }
 
-            // Rate limit: max 60 notifications per listing per hour
+            // Rate limit: max 60 notifications per listing per hour (atomic increment)
             const rateLimitKey = `app-notif-server-rate:${listingId}`;
-            const currentCount = await cache.get(rateLimitKey);
+            const count = await cache.incr(rateLimitKey, 3600);
 
-            if (currentCount && parseInt(currentCount, 10) >= 60) {
+            if (count !== undefined && count > 60) {
+                // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
+                // while keeping the semantic code in the message for clients.
                 throw new TRPCError({
                     code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
                     message: 'Rate limit exceeded: max 60 notifications per app per hour',
                 });
             }
-
-            await cache.set(rateLimitKey, String((parseInt(currentCount ?? '0', 10) + 1)), 3600);
 
             const recipientDid = getDidWeb(ctx.domain, recipientProfileId);
 
