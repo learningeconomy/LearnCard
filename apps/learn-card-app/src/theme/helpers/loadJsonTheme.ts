@@ -26,55 +26,9 @@ import {
     DEFAULT_NAVBAR,
 } from '../shared';
 
-// ─── Raw JSON shape ──────────────────────────────────────────────────────
+// ─── Raw JSON shape (inferred from the Zod source of truth) ─────────────
 
-interface ThemeJsonColors {
-    /** Uniform base applied to every credential category (formal-style). */
-    categoryBase?: Record<string, string>;
-
-    /** Per-category overrides. Merged on top of categoryBase if both exist. */
-    categories?: Record<string, Record<string, string>>;
-
-    launchPad?: Record<string, unknown>;
-    sideMenu?: Record<string, string>;
-    navbar?: Record<string, string>;
-    introSlides?: Record<string, unknown>;
-
-    /** Shorthand: a single placeholder applied to every category + defaults. */
-    placeholderBase?: Record<string, unknown>;
-
-    /** Explicit per-category placeholders (colorful-style). */
-    placeholders?: Record<string, unknown>;
-
-    defaults?: Record<string, unknown>;
-}
-
-interface ThemeJsonConfig {
-    id: string;
-    displayName: string;
-
-    /** Parent theme ID. All unset fields inherit from the parent. */
-    extends?: string;
-
-    /** Icon set name (key into ICON_SETS). Defaults to parent's set. */
-    iconSet?: string;
-
-    /**
-     * Per-category icon color overrides.
-     * Keys match the WALLET_ICON_PALETTE_DEFAULTS map keys
-     * (e.g. "Skills", "Boosts", "AiInsights").
-     * Values are partial IconPalette objects merged over the compiled defaults.
-     */
-    iconPalettes?: Record<string, Partial<IconPalette>>;
-
-    defaults?: {
-        viewMode?: 'list' | 'grid';
-    };
-
-    colors?: ThemeJsonColors;
-
-    styles?: Record<string, unknown>;
-}
+import type { ThemeJsonConfig } from '../validators/themeJson.validators';
 
 // ─── Glob imports (resolved at build time by Vite) ───────────────────────
 

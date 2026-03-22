@@ -4,6 +4,11 @@
  * Recursively merges `overrides` into `base`. Objects are merged key-by-key;
  * arrays and primitives in `overrides` replace the corresponding value in `base`.
  *
+ * Special handling:
+ *   - `undefined` values in overrides are skipped (base value preserved).
+ *   - `null` values in overrides are skipped (prevents accidentally erasing
+ *     a valid default with an explicit `null` in a partial config).
+ *
  * Used by:
  *   - prepare-native-config.ts (build-time merge of tenant overrides)
  *   - validate-tenant-configs.ts (CI validation)
@@ -20,7 +25,8 @@ export const deepMerge = (
         const baseVal = base[key];
         const overrideVal = overrides[key];
 
-        if (overrideVal === undefined) continue;
+        // Skip undefined and null — neither should erase a valid base value
+        if (overrideVal === undefined || overrideVal === null) continue;
 
         if (
             baseVal &&

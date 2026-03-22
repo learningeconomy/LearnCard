@@ -11,6 +11,7 @@ import type {
     TenantNativeConfig,
 } from './tenantConfig';
 import { getTenantBrandingEnum, getBrandingAssets } from './brandingHelpers';
+import { isProductionEnvironment } from './isProduction';
 export type { BrandingAssets } from './brandingHelpers';
 export { getBrandingAssets } from './brandingHelpers';
 
@@ -111,12 +112,7 @@ export const useBrandingAssets = () => {
 export const useTenantBaseUrl = (): string => {
     const config = useTenantConfig();
 
-    const isProduction =
-        // eslint-disable-next-line no-restricted-globals
-        (typeof IS_PRODUCTION !== 'undefined' && (IS_PRODUCTION as unknown as boolean)) ||
-        (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production');
-
-    if (isProduction) {
+    if (isProductionEnvironment()) {
         return `https://${config.domain}`;
     }
 
@@ -135,5 +131,3 @@ export const useLoginRedirectUrl = (): string => {
     return `${baseUrl}${path}`;
 };
 
-// Ambient declaration so TypeScript doesn't error on the typeof guard above.
-declare const IS_PRODUCTION: boolean | undefined;

@@ -43,12 +43,10 @@ export const enforceDefaultTheme = (): void => {
     try {
         const config = getResolvedTenantConfig();
 
-        console.log("RESOLVED CONFIG", config)
         if (config.features.themeSwitching === false) {
             const forced = getDefaultTheme();
 
             // Set immediately (covers case where hydration already happened)
-            console.log("FORCED THEME", forced)
             themeStore.set.theme(forced);
 
             // Subscribe to catch async persist hydration that may overwrite

@@ -34,11 +34,14 @@ export {
     tenantEcosystemConfigSchema,
     parseTenantConfig,
     parsePartialTenantConfig,
+    TENANT_CONFIG_SCHEMA_VERSION,
 } from './tenantConfigSchema';
 
 export { deepMerge } from './deepMerge';
+export { isProductionEnvironment } from './isProduction';
 
 import type { TenantConfig } from './tenantConfigSchema';
+import { isProductionEnvironment } from './isProduction';
 
 // -----------------------------------------------------------------
 // Helpers
@@ -50,20 +53,9 @@ import type { TenantConfig } from './tenantConfigSchema';
  * Replaces all scattered `IS_PRODUCTION ? 'https://domain' : 'http://localhost:3000'` patterns.
  */
 export const getTenantBaseUrl = (config: TenantConfig): string => {
-    // IS_PRODUCTION is a Vite `define` global only available in apps that set it.
-    // We use a typeof guard so this works safely in any environment.
-    const isProduction =
-        // eslint-disable-next-line no-restricted-globals
-        (typeof IS_PRODUCTION !== 'undefined' && (IS_PRODUCTION as unknown as boolean)) ||
-        (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production');
-
-    if (isProduction) {
+    if (isProductionEnvironment()) {
         return `https://${config.domain}`;
     }
 
     return `http://${config.devDomain ?? 'localhost:3000'}`;
 };
-
-// Ambient declaration so TypeScript doesn't error on the typeof guard above.
-// The actual value is injected by Vite's `define` in consuming apps.
-declare const IS_PRODUCTION: boolean | undefined;

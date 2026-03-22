@@ -15,9 +15,11 @@
  */
 
 import type { TenantConfig } from './tenantConfig';
-import { tenantConfigSchema } from './tenantConfigSchema';
+import { tenantConfigSchema, TENANT_CONFIG_SCHEMA_VERSION } from './tenantConfigSchema';
 
 export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
+    schemaVersion: TENANT_CONFIG_SCHEMA_VERSION,
+
     tenantId: 'learncard',
 
     domain: 'learncard.app',

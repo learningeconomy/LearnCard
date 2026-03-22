@@ -147,10 +147,18 @@ export const tenantEcosystemConfigSchema = z.object({
 }).passthrough();
 
 // -----------------------------------------------------------------
+// Schema version — bump when making breaking changes to the config shape.
+// Used by resolveTenantConfig() to invalidate stale caches.
+// -----------------------------------------------------------------
+
+export const TENANT_CONFIG_SCHEMA_VERSION = 1;
+
+// -----------------------------------------------------------------
 // Root schema
 // -----------------------------------------------------------------
 
 export const tenantConfigSchema = z.object({
+    schemaVersion: z.number().default(TENANT_CONFIG_SCHEMA_VERSION),
     tenantId: z.string(),
     domain: z.string(),
     devDomain: z.string().optional(),

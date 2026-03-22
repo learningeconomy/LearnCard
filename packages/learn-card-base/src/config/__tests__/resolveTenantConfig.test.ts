@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { resolveTenantConfig } from '../resolveTenantConfig';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../tenantDefaults';
+import { TENANT_CONFIG_SCHEMA_VERSION } from '../tenantConfigSchema';
 import type { TenantConfig } from '../tenantConfig';
 
 // ---------------------------------------------------------------------------
@@ -174,7 +175,7 @@ describe('resolveTenantConfig – full boot path', () => {
 
         // Only baked fetch should have been called (for /tenant-config.json)
         const fetchCalls = fetchMock.mock.calls.map((c: unknown[]) => c[0]);
-        const edgeCalls = fetchCalls.filter((url: string) =>
+        const edgeCalls = fetchCalls.filter((url: unknown) =>
             typeof url === 'string' && url.includes('__tenant-config')
         );
 
@@ -189,6 +190,7 @@ describe('resolveTenantConfig – full boot path', () => {
         localStorageMock['tenant-config-cache:from-cache'] = JSON.stringify({
             config: cachedConfig,
             cachedAt: Date.now(),
+            schemaVersion: TENANT_CONFIG_SCHEMA_VERSION,
         });
 
         // All fetches fail
@@ -199,6 +201,7 @@ describe('resolveTenantConfig – full boot path', () => {
         localStorageMock['tenant-config-cache'] = JSON.stringify({
             config: cachedConfig,
             cachedAt: Date.now(),
+            schemaVersion: TENANT_CONFIG_SCHEMA_VERSION,
         });
 
         const result = await resolveTenantConfig();

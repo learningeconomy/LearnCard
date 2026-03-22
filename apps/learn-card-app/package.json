@@ -133,6 +133,8 @@
         "prepare-config": "npx tsx scripts/prepare-native-config.ts",
         "generate-assets": "npx tsx scripts/generate-tenant-assets.ts",
         "validate-configs": "npx tsx scripts/validate-tenant-configs.ts",
+        "validate-themes": "npx tsx scripts/validate-theme-schemas.ts",
+        "create-tenant": "npx tsx scripts/create-tenant.ts",
         "config-editor": "npx tsx scripts/config-editor.ts",
         "docker-start": "npx tsx scripts/prepare-native-config.ts local && vite --host",
         "docker-start:tenant": "npx tsx scripts/prepare-native-config.ts ${TENANT:-learncard} && vite --host",

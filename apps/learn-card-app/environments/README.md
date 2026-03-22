@@ -4,22 +4,34 @@ Each subdirectory represents a tenant configuration for the LearnCard app.
 
 ```
 environments/
-├── learncard/          # Default LearnCard production
-│   ├── config.json     # Tenant config overrides (merged onto defaults)
-│   └── assets/         # Platform assets (icons, splash, branding)
+├── tenant-registry.json  # Shared hostname → tenant mapping (edge function + scripts)
+├── learncard/            # Default LearnCard production
+│   ├── config.json       # Tenant config overrides (merged onto defaults)
+│   └── assets/           # Platform assets (icons, splash, branding)
 │       ├── ios/
 │       ├── android/
 │       ├── web/
-│       ├── branding/   # In-app branding images
-│       └── config/     # Base config templates (capacitor, manifests)
+│       ├── branding/     # In-app branding images
+│       └── config/       # Base config templates (capacitor, manifests)
 ├── vetpass/
 │   ├── config.json
 │   └── assets/
-├── local/              # Local dev (localhost APIs, no analytics)
+├── local/                # Local dev (localhost APIs, no analytics)
 │   └── config.json
 ```
 
 ## Adding a new tenant
+
+The easiest way is the interactive scaffolding script:
+
+```bash
+pnpm create-tenant
+```
+
+This guides you through naming, domains, features, and optionally creates
+a custom theme — all with sensible defaults.
+
+### Manual setup
 
 1. **Create the directory and config:**
 
@@ -49,7 +61,20 @@ environments/
    This copies assets into the platform directories, patches Capacitor
    configs, and writes `public/tenant-config.json`.
 
-4. **Validate all configs (CI):**
+4. **Register the hostname** in `tenant-registry.json`:
+
+   ```jsonc
+   // environments/tenant-registry.json
+   {
+       "hostnames": {
+           "mytenant.app": { "tenantId": "mytenant", "domain": "mytenant.app" }
+       }
+   }
+   ```
+
+   The `create-tenant` script does this automatically.
+
+5. **Validate all configs (CI):**
 
    ```bash
    npx tsx scripts/validate-tenant-configs.ts
@@ -86,6 +111,10 @@ The config is a partial `TenantConfig` object. Fields are deep-merged onto
 | `features`     | Feature toggles                              |
 | `native`       | Bundle ID, deep link domains, Capgo channel  |
 
+The config supports an optional `schemaVersion` field (defaults to the current
+version). When the schema version changes, stale localStorage caches are
+automatically invalidated.
+
 See `tenantConfigSchema.ts` for the full schema with defaults.
 
 ## npm scripts
@@ -97,4 +126,6 @@ See `tenantConfigSchema.ts` for the full schema with defaults.
 | `pnpm docker-start:tenant`   | Apply `$TENANT` config + start dev   |
 | `pnpm generate-assets`       | Generate assets from a logo          |
 | `pnpm validate-configs`      | Validate all tenant configs (CI)     |
+| `pnpm validate-themes`       | Validate all theme.json files (CI)   |
+| `pnpm create-tenant`         | Interactive tenant scaffolding       |
 | `pnpm config-editor`         | Launch visual config editor (:4400)  |

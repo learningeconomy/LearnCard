@@ -5,9 +5,9 @@
  * The client-side `resolveTenantConfig()` fetches from `/__tenant-config`
  * and uses the result to configure the app.
  *
- * Hostname → TenantConfig mapping:
- *   - For known hostnames, returns the baked config for that tenant.
- *   - For unknown hostnames, returns the default LearnCard config.
+ * Hostname → TenantConfig mapping is driven by `environments/tenant-registry.json`
+ * — the single source of truth shared between this edge function, build scripts,
+ * and CI validation.
  *
  * Response is cached at the edge for 5 minutes with a 1-hour stale-while-revalidate.
  */
@@ -15,55 +15,68 @@
 import type { Context } from 'https://edge.netlify.com';
 
 // ---------------------------------------------------------------------------
-// Tenant registry
+// Shared tenant registry (loaded from environments/tenant-registry.json)
+//
+// Netlify edge functions run in Deno and can read files relative to the
+// project root. The JSON is read at function init time and cached for
+// the lifetime of the isolate.
 // ---------------------------------------------------------------------------
 
 interface TenantEntry {
     tenantId: string;
     domain: string;
-    // Only include overrides that differ from the default LearnCard config.
-    // The client merges these on top of DEFAULT_LEARNCARD_TENANT_CONFIG.
     configOverrides?: Record<string, unknown>;
 }
 
+interface TenantRegistry {
+    hostnames: Record<string, TenantEntry>;
+    defaultTenant: TenantEntry;
+}
+
 /**
- * Map of hostname → tenant entry.
+ * Load the shared tenant registry.
  *
- * To add a new tenant:
- *   1. Add an entry here with the production hostname as key.
- *   2. Optionally add configOverrides for any values that differ from defaults.
- *   3. Deploy — the edge function will start serving that tenant's config.
+ * In the Deno edge function runtime we read the JSON file that was deployed
+ * alongside the site. The file lives at `environments/tenant-registry.json`
+ * relative to the app root, which Netlify deploys from
+ * `apps/learn-card-app/`.
+ *
+ * If the file cannot be read (e.g. local dev without the file), we fall back
+ * to a minimal default registry.
  */
-const TENANT_REGISTRY: Record<string, TenantEntry> = {
-    'learncard.app': {
-        tenantId: 'learncard',
-        domain: 'learncard.app',
-    },
+const loadRegistry = (): TenantRegistry => {
+    try {
+        // Netlify edge functions resolve relative paths from the site root.
+        // Try multiple potential locations to be resilient to deploy layouts.
+        const paths = [
+            './environments/tenant-registry.json',
+            '../environments/tenant-registry.json',
+        ];
 
-    'learncardapp.netlify.app': {
-        tenantId: 'learncard',
-        domain: 'learncard.app',
-    },
+        for (const p of paths) {
+            try {
+                const text = Deno.readTextFileSync(p);
 
-    // Example: future tenant
-    // 'scoutpass.org': {
-    //     tenantId: 'scoutpass',
-    //     domain: 'scoutpass.org',
-    //     configOverrides: {
-    //         branding: {
-    //             appName: 'ScoutPass',
-    //             brandingKey: 'scoutPass',
-    //             defaultTheme: 'Formal',
-    //         },
-    //     },
-    // },
+                return JSON.parse(text) as TenantRegistry;
+            } catch {
+                // Try next path
+            }
+        }
+    } catch {
+        // Fallthrough to default
+    }
+
+    // Fallback: minimal LearnCard-only registry
+    return {
+        hostnames: {
+            'learncard.app': { tenantId: 'learncard', domain: 'learncard.app' },
+            'learncardapp.netlify.app': { tenantId: 'learncard', domain: 'learncard.app' },
+        },
+        defaultTenant: { tenantId: 'learncard', domain: 'learncard.app' },
+    };
 };
 
-// Default tenant when hostname is not recognized
-const DEFAULT_TENANT: TenantEntry = {
-    tenantId: 'learncard',
-    domain: 'learncard.app',
-};
+const registry = loadRegistry();
 
 // ---------------------------------------------------------------------------
 // Edge function handler
@@ -73,7 +86,7 @@ export default async (request: Request, _context: Context) => {
     const url = new URL(request.url);
     const hostname = url.hostname;
 
-    const tenant = TENANT_REGISTRY[hostname] ?? DEFAULT_TENANT;
+    const tenant = registry.hostnames[hostname] ?? registry.defaultTenant;
 
     const responseBody = {
         tenantId: tenant.tenantId,

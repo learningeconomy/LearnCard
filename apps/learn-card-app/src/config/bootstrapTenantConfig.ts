@@ -5,9 +5,12 @@
  * before React renders. Call `bootstrapTenantConfig()` once in main.tsx.
  */
 
+import * as Sentry from '@sentry/browser';
+
 import type { TenantConfig } from 'learn-card-base';
 import { resolveTenantConfig, setAuthConfigFromTenant, getTenantBaseUrl } from 'learn-card-base';
 import { initNetworkStoreFromTenant } from 'learn-card-base';
+import { setOnFetchFailure } from 'learn-card-base/config/resolveTenantConfig';
 
 import { initializeFirebaseFromTenant } from '../firebase/firebase';
 import { initSentryFromTenant } from '../constants/sentry';
@@ -96,6 +99,16 @@ export const getNativeBundleId = (): string => {
  *   5. Userflow product tours
  */
 export const bootstrapTenantConfig = async (): Promise<TenantConfig> => {
+    // Wire Sentry breadcrumbs for config fetch failures (before resolving)
+    setOnFetchFailure(({ endpoint, error }) => {
+        Sentry.addBreadcrumb({
+            category: 'tenant-config',
+            message: `fetchFreshConfig failed: ${error}`,
+            level: 'warning',
+            data: { endpoint },
+        });
+    });
+
     const config = await resolveTenantConfig();
 
     _resolvedConfig = config;

@@ -12,16 +12,54 @@
  */
 
 import type { TenantConfig } from './tenantConfig';
-import { parseTenantConfig, parsePartialTenantConfig } from './tenantConfigSchema';
+import { parseTenantConfig, parsePartialTenantConfig, TENANT_CONFIG_SCHEMA_VERSION } from './tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from './tenantDefaults';
 import { deepMerge } from './deepMerge';
 
 const CACHE_KEY_PREFIX = 'tenant-config-cache';
 const CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
 
+// ---------------------------------------------------------------------------
+// Optional fetch-failure callback (for Sentry breadcrumbs, telemetry, etc.)
+//
+// Apps call `setOnFetchFailure()` at boot to wire this up — keeps learn-card-base
+// free of any direct Sentry dependency.
+// ---------------------------------------------------------------------------
+
+export interface FetchFailureInfo {
+    endpoint: string;
+    error: string;
+}
+
+let _onFetchFailure: ((info: FetchFailureInfo) => void) | undefined;
+
+/**
+ * Register a callback invoked when `fetchFreshConfig` fails.
+ * Use this to add Sentry breadcrumbs or other telemetry from the app layer.
+ *
+ * @example
+ * ```ts
+ * import * as Sentry from '@sentry/browser';
+ * import { setOnFetchFailure } from 'learn-card-base/config/resolveTenantConfig';
+ *
+ * setOnFetchFailure(({ endpoint, error }) => {
+ *     Sentry.addBreadcrumb({
+ *         category: 'tenant-config',
+ *         message: `fetchFreshConfig failed: ${error}`,
+ *         level: 'warning',
+ *         data: { endpoint },
+ *     });
+ * });
+ * ```
+ */
+export const setOnFetchFailure = (cb: (info: FetchFailureInfo) => void): void => {
+    _onFetchFailure = cb;
+};
+
 interface CachedTenantConfig {
     config: TenantConfig;
     cachedAt: number;
+    schemaVersion?: number;
 }
 
 /** Build a tenant-scoped cache key. Falls back to generic key for backward compat reads. */
@@ -51,6 +89,12 @@ const readCache = (tenantHint?: string): TenantConfig | null => {
                 continue;
             }
 
+            // Invalidate cache if the schema version has changed
+            if (parsed.schemaVersion !== TENANT_CONFIG_SCHEMA_VERSION) {
+                localStorage.removeItem(key);
+                continue;
+            }
+
             return parseTenantConfig(parsed.config, `localStorage cache (${key})`);
         }
 
@@ -62,7 +106,7 @@ const readCache = (tenantHint?: string): TenantConfig | null => {
 
 const writeCache = (config: TenantConfig): void => {
     try {
-        const entry: CachedTenantConfig = { config, cachedAt: Date.now() };
+        const entry: CachedTenantConfig = { config, cachedAt: Date.now(), schemaVersion: TENANT_CONFIG_SCHEMA_VERSION };
         const key = cacheKeyFor(config.tenantId);
 
         localStorage.setItem(key, JSON.stringify(entry));
@@ -134,7 +178,14 @@ const fetchFreshConfig = async (endpoint?: string): Promise<TenantConfig | null>
         }
 
         return null;
-    } catch {
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        const url = endpoint ?? '/__tenant-config';
+
+        console.warn(`[TenantConfig] fetchFreshConfig failed (${url}): ${message}`);
+
+        _onFetchFailure?.({ endpoint: url, error: message });
+
         return null;
     }
 };
