@@ -305,6 +305,35 @@ if (recipients.hasMore) {
 
 **Returns:** `{ records: TemplateRecipientRecord[], hasMore: boolean, cursor?: string, total?: number }`
 
+### `sendNotification(input)`
+
+Send a notification to the current user from this app. The notification appears in the user's LearnCard notification inbox, even after they leave the app.
+
+```typescript
+await learnCard.sendNotification({
+    title: 'Sprint Bonus!',
+    body: '+10 coins from Sprint 42',
+    actionPath: '/',
+    category: 'reward',
+});
+```
+
+**Parameters:**
+
+-   `title` _(optional)_: Notification title
+-   `body` _(optional)_: Notification body text
+-   `actionPath` _(optional)_: Deep link path within the app (e.g. `'/prizes'`). Must be an absolute pathname starting with `/`. This path is appended to the app's configured embed URL when the user taps the notification. For example, if your embed URL is `https://myapp.com` and `actionPath` is `'/challenges/42'`, the app will open at `https://myapp.com/challenges/42`. Hash routes (e.g. `'/#/page'`) are **not** supported — use pathname-based routing.
+-   `category` _(optional)_: Grouping category (e.g. `'reward'`, `'announcement'`, `'status'`)
+-   `priority` _(optional)_: `'normal'` (default) or `'high'`. Affects visual styling of the notification card and toast. Does not change delivery priority or ordering.
+
+At least one of `title` or `body` is required.
+
+**Returns:** `{ sent: boolean }`
+
+> **Note:** This method sends a notification to the _current_ user (self-notification) via the `send-notification` app event. For server-to-server notifications to arbitrary users, use the `POST /app-store/listing/{listingId}/notify` brain-service route directly from your app backend.
+
+---
+
 ### `launchFeature(featurePath, initialPrompt?)`
 
 Launch a feature in the LearnCard host application.

@@ -268,6 +268,34 @@ export interface TemplateRecipientsResponse {
 }
 
 /**
+ * Input for sending a notification to the current user from this app.
+ * The notification appears in the user's LearnCard notification inbox.
+ */
+export interface AppNotificationInput {
+    /** Notification title */
+    title?: string;
+
+    /** Notification body text */
+    body?: string;
+
+    /** Deep link path within the app (e.g. '/prizes') */
+    actionPath?: string;
+
+    /** Grouping category (e.g. 'reward', 'announcement', 'status') */
+    category?: string;
+
+    /** Notification priority */
+    priority?: 'normal' | 'high';
+}
+
+/**
+ * Response from sendNotification
+ */
+export interface AppNotificationResponse {
+    sent: boolean;
+}
+
+/**
  * Error codes that can be returned by the LearnCard host
  */
 export type ErrorCode =

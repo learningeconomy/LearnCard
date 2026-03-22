@@ -36,6 +36,8 @@ import type {
     TemplateIssuanceStatusResponse,
     GetTemplateRecipientsInput,
     TemplateRecipientsResponse,
+    AppNotificationInput,
+    AppNotificationResponse,
     AppEvent,
     AppEventResponse,
     LearnCardError,
@@ -558,6 +560,30 @@ export class PartnerConnect {
      */
     public sendAppEvent<T = AppEventResponse>(event: AppEvent): Promise<T> {
         return this.sendMessage<T>('APP_EVENT', event);
+    }
+
+    /**
+     * Send a notification to the current user from this app.
+     * The notification appears in the user's LearnCard notification inbox.
+     *
+     * @param input - Notification content (title, body, actionPath, category, priority)
+     * @returns Promise resolving to `{ sent: true }` on success
+     *
+     * @example
+     * ```typescript
+     * await learnCard.sendNotification({
+     *   title: 'Sprint Bonus!',
+     *   body: '+10 coins from Sprint 42',
+     *   actionPath: '/',
+     *   category: 'reward',
+     * });
+     * ```
+     */
+    public sendNotification(input: AppNotificationInput): Promise<AppNotificationResponse> {
+        return this.sendAppEvent<AppNotificationResponse>({
+            type: 'send-notification',
+            ...input,
+        });
     }
 
     /**

@@ -227,6 +227,52 @@ const createBoostTemplate = async (learnCard, badgeDefinition) => {
 };
 ```
 
+#### 4. App Notifications
+
+Apps can send notifications to users via the Partner Connect SDK (self-notification while the user has the app open) or via a server-to-server brain-service route (primary path for async notifications).
+
+**SDK self-notification** (user has app open):
+
+```typescript
+// Notify the current user from within the app
+await learnCard.sendNotification({
+    title: 'Achievement Unlocked!',
+    body: 'You earned the Gold Star badge',
+    actionPath: '/achievements',
+    category: 'reward',
+    priority: 'normal',
+});
+```
+
+**Server-to-server notification** (app backend → brain-service):
+
+```typescript
+// From your app's backend, send a notification to any user who has the app installed
+const response = await fetch(`${brainServiceUrl}/app-store/listing/${listingId}/notify`, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${didAuthJwt}`,
+    },
+    body: JSON.stringify({
+        listingId: 'my-app-listing-id',
+        recipient: 'user123', // profileId or DID
+        title: 'New content available!',
+        body: 'Check out the latest challenge',
+        actionPath: '/challenges',
+        category: 'announcement',
+    }),
+});
+```
+
+**Key points:**
+
+-   The server route requires listing ownership (caller must own the integration)
+-   Recipient must have the app installed
+-   Rate limits: 10/hr per user (SDK path), 60/hr per listing (server path)
+-   Notifications appear in the user's LearnCard notification inbox as `APP_NOTIFICATION` type
+-   Filter notifications by app using `data.metadata.listingId` in lca-api queries
+
 ### Deployment Considerations
 
 #### Environment Variables

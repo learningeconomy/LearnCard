@@ -10,6 +10,7 @@ import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPo
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
 import { CredentialClaimModal } from './CredentialClaimModal';
 import { AppCredentialDashboard } from './AppCredentialDashboard';
+import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
 
 interface LaunchConfig {
     url?: string;
@@ -52,6 +53,8 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         setPendingCredential({ credentialUri, boostUri });
     }, []);
 
+    const { handleAppNotification, ToastOverlay } = useAppNotificationToast(appName);
+
     const handleDismissClaimModal = useCallback(() => {
         setPendingCredential(null);
     }, []);
@@ -90,6 +93,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         isInstalled,
         appId: appId?.toString(),
         onCredentialIssued: handleCredentialIssued,
+        onAppNotification: handleAppNotification,
     });
 
     // Initialize the PostMessage listener with trusted origins
@@ -198,6 +202,8 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                     onDismiss={handleDismissClaimModal}
                 />
             )}
+
+            {ToastOverlay}
         </IonPage>
     );
 };

@@ -778,6 +778,7 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'APP_LISTING_REJECTED',
     'APP_LISTING_WITHDRAWN',
     'DEVICE_LINK_REQUEST',
+    'APP_NOTIFICATION',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
@@ -1805,12 +1806,24 @@ export const GetTemplateRecipientsEventValidator = z
 
 export type GetTemplateRecipientsEvent = z.infer<typeof GetTemplateRecipientsEventValidator>;
 
+export const SendNotificationEventValidator = z.object({
+    type: z.literal('send-notification'),
+    title: z.string().optional(),
+    body: z.string().optional(),
+    actionPath: z.string().optional(),
+    category: z.string().optional(),
+    priority: z.enum(['normal', 'high']).optional(),
+});
+
+export type SendNotificationEvent = z.infer<typeof SendNotificationEventValidator>;
+
 // Add new event types here as the union grows
 export const AppEventValidator = z.discriminatedUnion('type', [
     SendCredentialEventValidator,
     CheckCredentialEventValidator,
     CheckIssuanceStatusEventValidator,
     GetTemplateRecipientsEventValidator,
+    SendNotificationEventValidator,
 ]);
 
 export type AppEvent = z.infer<typeof AppEventValidator>;
