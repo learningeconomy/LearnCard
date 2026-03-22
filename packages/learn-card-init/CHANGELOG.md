@@ -1,5 +1,33 @@
 # learn-card-core
 
+## 2.3.8
+
+### Patch Changes
+
+-   [#1075](https://github.com/learningeconomy/LearnCard/pull/1075) [`50fa611b714ae47fa3d6d56e7751ba59b5b71322`](https://github.com/learningeconomy/LearnCard/commit/50fa611b714ae47fa3d6d56e7751ba59b5b71322) Thanks [@smurflo2](https://github.com/smurflo2)! - Add guardianGatedRoute so backend has access to isChildProfile and hasGuardianApproval
+
+-   Updated dependencies [[`3935a7c28ded7270133496f30562bad54a14f200`](https://github.com/learningeconomy/LearnCard/commit/3935a7c28ded7270133496f30562bad54a14f200), [`50fa611b714ae47fa3d6d56e7751ba59b5b71322`](https://github.com/learningeconomy/LearnCard/commit/50fa611b714ae47fa3d6d56e7751ba59b5b71322), [`34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c`](https://github.com/learningeconomy/LearnCard/commit/34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c)]:
+    -   @learncard/network-plugin@2.10.10
+    -   @learncard/helpers@1.2.10
+    -   @learncard/types@5.13.0
+    -   @learncard/didkit-plugin@1.8.0
+    -   @learncard/core@9.4.10
+    -   @learncard/chapi-plugin@1.1.10
+    -   @learncard/did-web-plugin@1.1.10
+    -   @learncard/didkey-plugin@1.1.10
+    -   @learncard/didkit-plugin-node@0.2.6
+    -   @learncard/encryption-plugin@1.1.10
+    -   @learncard/learn-card-plugin@1.2.10
+    -   @learncard/learn-cloud-plugin@2.3.14
+    -   @learncard/vc-plugin@1.4.6
+    -   @learncard/vc-api-plugin@1.1.10
+    -   @learncard/vc-templates-plugin@1.1.10
+    -   @learncard/vpqr-plugin@1.1.10
+    -   @learncard/crypto-plugin@1.1.10
+    -   @learncard/dynamic-loader-plugin@1.1.10
+    -   @learncard/ethereum-plugin@1.1.11
+    -   @learncard/expiration-plugin@1.2.10
+
 ## 2.3.7
 
 ### Patch Changes

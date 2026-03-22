@@ -1,5 +1,13 @@
 # @learncard/app-store-demo-basic-launchpad
 
+## 0.0.14
+
+### Patch Changes
+
+-   Updated dependencies [[`50fa611b714ae47fa3d6d56e7751ba59b5b71322`](https://github.com/learningeconomy/LearnCard/commit/50fa611b714ae47fa3d6d56e7751ba59b5b71322)]:
+    -   @learncard/init@2.3.8
+    -   @learncard/partner-connect@0.2.10
+
 ## 0.0.13
 
 ### Patch Changes

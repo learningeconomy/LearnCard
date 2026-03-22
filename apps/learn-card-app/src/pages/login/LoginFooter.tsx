@@ -69,7 +69,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                                 openLCwebsite();
                             }
                         }}
-                        className="flex items-center text-emerald-100 font-bold text-xs hover:underline"
+                        className="flex items-center text-emerald-100 font-bold text-xs hover:underline min-w-[69px]"
                     >
                         Learn More
                     </a>

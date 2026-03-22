@@ -131,11 +131,10 @@ export const colors = {
             indicatorColor: 'indigo-500',
             borderColor: 'teal-500',
 
-            statusBarColor: 'teal-400',
-            headerBrandingTextColor: 'text-white',
-            headerTextColor: 'text-white',
-            backgroundPrimaryColor: '!bg-teal-400',
-            backgroundSecondaryColor: 'teal-200',
+            statusBarColor: 'light',
+            headerBrandingTextColor: 'text-grayscale-900',
+            backgroundPrimaryColor: '!bg-white',
+            backgroundSecondaryColor: 'grayscale-100',
         },
         [CredentialCategoryEnum.aiInsight]: {
             primaryColor: 'lime-300',

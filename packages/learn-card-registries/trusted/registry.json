@@ -213,6 +213,11 @@
             "name": "Whitehall Demo",
             "location": "Washington, DC, USA",
             "url": "https://www.learncard.com/"
+        },
+        "did:key:z6MkjQCNHNfmdQ59AkcxH721E86YvkhPd1YmPojTdLoaTjLW": {
+            "name": "LAiSER",
+            "location": "Washington, DC, USA",
+            "url": "https://laiser.gwu.edu"
         }
     }
 }
