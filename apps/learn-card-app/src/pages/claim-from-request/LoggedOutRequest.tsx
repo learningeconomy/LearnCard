@@ -8,10 +8,9 @@ import DoubleTrapezoid from 'learn-card-base/svgs/DoubeTrapezoid';
 import LCAColorBlockPlus from 'learn-card-base/svgs/LCAColorBlockPlus';
 import { IonRow } from '@ionic/react';
 import { useModal, ModalTypes } from 'learn-card-base';
-import LearnCardTextLogo from '../../components/svgs/LearnCardTextLogo';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import GenericErrorBoundary from 'learn-card-base/components/generic/GenericErrorBoundary';
 import LoginFooter from '../login/LoginFooter';
-import LearnCardBrandmark from '../../components/svgs/LearnCardBrandmark';
 import InteractWithWallet from './InteractWithWallet';
 const LoggedOutRequest: React.FC<{ vc_request_url?: string | (string | null)[] | null }> = ({
     vc_request_url,
@@ -79,6 +78,7 @@ export const SomeoneSentYouACredentialRequestMobile: React.FC<{
     onClick?: () => void;
     vc_request_url?: string | (string | null)[] | null;
 }> = ({ onClick, vc_request_url }) => {
+    const { textLogo, brandMark } = useTenantBrandingAssets();
     const { newModal, closeModal } = useModal();
     const handleInteractionModal = () => {
         newModal(
@@ -100,7 +100,7 @@ export const SomeoneSentYouACredentialRequestMobile: React.FC<{
 
                     <IonRow className="p-0 m-0 w-full flex items-center justify-center relative pb-[20px]">
                         <div className="flex flex-col items-center justify-center w-full">
-                            <LearnCardTextLogo />
+                            <img src={textLogo} alt="Logo" className="object-contain" />
                         </div>
                     </IonRow>
 
@@ -111,7 +111,7 @@ export const SomeoneSentYouACredentialRequestMobile: React.FC<{
                         className="bg-white text-grayscale-800 font-semibold flex items-center justify-center p-4 py-2 rounded-[15px] h-[54px]font-semibold text-[17px] shadow-soft-bottom"
                         onClick={onClick}
                     >
-                        <LearnCardBrandmark className="rounded-full h-[40px] w-[40px] mr-[10px]" />
+                        <img src={brandMark} alt="Brand mark" className="rounded-full h-[40px] w-[40px] mr-[10px]" />
                         Sign In to View and Claim
                     </button>
                     <div className="flex w-full items-center justify-center text-white font-semibold text-[14px] mt-[40px]">

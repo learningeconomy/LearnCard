@@ -6,6 +6,8 @@ import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
 import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
 import { LAUNCH_DARKLY_CONFIG } from './constants/launchDarkly';
+import { TenantConfigProvider } from 'learn-card-base';
+import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
 import App from './App';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
@@ -16,6 +18,10 @@ import * as Sentry from '@sentry/browser';
 (window as any).Buffer = Buffer;
 
 (async () => {
+    // Resolve and bootstrap TenantConfig before anything else.
+    // This sets up Firebase, auth config, network store, Sentry, and Userflow.
+    const tenantConfig = await bootstrapTenantConfig();
+
     if (Capacitor.isNativePlatform()) {
         try {
             // notifyAppReady
@@ -46,9 +52,11 @@ import * as Sentry from '@sentry/browser';
     if (container) {
         const root = createRoot(container);
         root.render(
-            <LDProvider>
-                <App />
-            </LDProvider>
+            <TenantConfigProvider config={tenantConfig}>
+                <LDProvider>
+                    <App />
+                </LDProvider>
+            </TenantConfigProvider>
         );
     }
 

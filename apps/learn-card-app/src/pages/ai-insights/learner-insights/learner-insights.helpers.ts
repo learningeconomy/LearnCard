@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 import { useWallet, useGetCurrentLCNUser } from 'learn-card-base';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
 import { ConsentFlowContractDetails } from '@learncard/types';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
@@ -79,9 +80,7 @@ export const createAiInsightsService = async (
     if (service) return service;
 
     if (!service) {
-        const serviceEndpoint = `${
-            IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
-        }/passport?contractUri=${uri}&teacherProfileId=${profileId}&insightsConsent=true`;
+        const serviceEndpoint = `${getAppBaseUrl()}/passport?contractUri=${uri}&teacherProfileId=${profileId}&insightsConsent=true`;
 
         const serviceData = {
             id: uri,

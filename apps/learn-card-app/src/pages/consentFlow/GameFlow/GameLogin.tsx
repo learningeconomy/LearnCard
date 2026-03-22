@@ -9,13 +9,14 @@ import EmailForm from '../../../pages/login/forms/EmailForm';
 import PhoneForm from '../../../pages/login/forms/PhoneForm';
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
-import LearnCardAppIcon from '../../../assets/images/lca-icon-v2.png';
+import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
 type GameLoginProps = {
     handleBackToGame: () => void;
 };
 
 export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
+    const { appIcon } = useTenantBrandingAssets();
     const [activeLoginType, setActiveLoginType] = useState<LoginTypesEnum>(LoginTypesEnum.email);
     const { appleLogin, googleLogin } = useFirebase();
 
@@ -98,8 +99,8 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
         <div className="flex flex-col gap-[10px]">
             <div className="w-full flex flex-col gap-[20px] justify-center items-center bg-white rounded-[20px] pt-[40px] pb-[20px] px-[30px] shadow-soft-bottom">
                 <img
-                    src={LearnCardAppIcon}
-                    alt="LearnCard App Icon"
+                    src={appIcon}
+                    alt="App Icon"
                     className="object-fit h-[50px] w-[50px] rounded-[10px]"
                 />
 

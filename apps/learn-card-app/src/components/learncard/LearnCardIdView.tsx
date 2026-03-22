@@ -6,7 +6,7 @@ import {
     useGetCurrentLCNUser,
     walletStore,
 } from 'learn-card-base';
-import LearnCardBrandmark from '../svgs/LearnCardBrandmark';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { getIdBackgroundStyles } from '../learncardID-CMS/learncard-cms.helpers';
 import { LCNProfile } from '@learncard/types';
 
@@ -80,7 +80,7 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
                 className="rounded-full h-[54px] w-[54px] absolute right-[10px] bottom-[10px] flex items-center justify-center bg-white"
                 // style={{ backgroundColor: credential?.boostID?.accentColor }}
             >
-                <LearnCardBrandmark className="rounded-full h-[50px] w-[50px]" />
+                <img src={useTenantBrandingAssets().brandMark} alt="Brand mark" className="rounded-full h-[50px] w-[50px]" />
             </div>
         </div>
     );

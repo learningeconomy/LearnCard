@@ -45,6 +45,10 @@ handler = "filterRequests"
 path = "/interactions/*"
 function = "interact"
 
+[[edge_functions]]
+path = "/__tenant-config"
+function = "tenant-config"
+
 
 [[headers]]
 for = "/.well-known/apple-app-site-association"

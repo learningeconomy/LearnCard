@@ -8,7 +8,7 @@ import { useTheme } from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors/index';
 
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
-import LearnCardTextLogo from '../../assets/images/learncard-text-logo.svg';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
 import SlimCaretRight from '../svgs/SlimCaretRight';
 import './IntroSlides.scss';
@@ -185,7 +185,7 @@ const LearnCardSlide1: React.FC<LearnCardSlideProps> = ({
     return (
         <>
             <section className="base-gradient flex flex-col items-center justify-center">
-                <img src={LearnCardTextLogo} alt="LearnCard text logo" className="mt-4" />
+                <img src={useTenantBrandingAssets().textLogo} alt="Logo" className="mt-4" />
             </section>
             <section className="absolute bottom-[50px]">
                 {showDesktopNav && (
@@ -290,7 +290,7 @@ const LearnCardSlide4: React.FC<LearnCardSlideProps> = ({ handleNextSlide, handl
     return (
         <>
             <section className="font-medium font-rubik flex flex-col items-center justify-center base-gradient">
-                <img src={LearnCardTextLogo} alt="LearnCard text logo" className="mt-4" />
+                <img src={useTenantBrandingAssets().textLogo} alt="Logo" className="mt-4" />
                 <IonSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
             </section>
         </>

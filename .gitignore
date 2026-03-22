@@ -24,6 +24,9 @@ node_modules
 *.sw?
 
 .nx-cache/
+
+# Generated tenant config (from prepare scripts — assets are tracked as source of truth)
+**/public/tenant-config.json
 .aider*
 
 # Personal AI tooling (not shared — teammates may use different setups)

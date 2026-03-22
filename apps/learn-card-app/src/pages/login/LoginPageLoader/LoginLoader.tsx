@@ -3,7 +3,7 @@ import Typewriter from 'typewriter-effect';
 import _ from 'lodash-es';
 
 import { IonContent, IonPage, IonRow } from '@ionic/react';
-import LearnCardTextLogo from '../../../assets/images/learncard-text-logo.svg';
+import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
 
@@ -21,6 +21,7 @@ const messages = _.shuffle([
 ]);
 
 export const LoginLoadingPage: React.FC = () => {
+    const { textLogo } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const { loaders } = theme.colors.defaults;
     const [currentColorIndex, setCurrentColorIndex] = useState(0);
@@ -43,8 +44,8 @@ export const LoginLoadingPage: React.FC = () => {
                     style={{ backgroundColor: colors[currentColorIndex] }}
                 >
                     <img
-                        src={LearnCardTextLogo}
-                        alt="LearnCard text logo"
+                        src={textLogo}
+                        alt="Logo"
                         className="mb-8 absolute top-[48%] left-[50%] translate-x-[-50%]"
                     />
                     <div className="w-full flex items-center justify-center text-center px-6 absolute top-[52%] left-[50%] translate-x-[-50%]">

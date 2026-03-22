@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback, useEffect } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import themeStore from '../store/themeStore';
+import themeStore, { isThemeSwitchingEnabled } from '../store/themeStore';
 import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
 
 import { useTheme } from '../hooks/useTheme';
@@ -75,6 +75,8 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     };
 
     const syncTheme = useCallback(() => {
+        if (!isThemeSwitchingEnabled()) return;
+
         const cachedTheme = themeStore.get.theme();
         if (cachedTheme !== preferences?.theme && preferences?.theme !== undefined) {
             handleSetTheme(preferences?.theme as ThemeEnum);
@@ -88,6 +90,8 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     }, [syncTheme]);
 
     if (flags?.enableThemeToggle === false) return null;
+
+    if (!isThemeSwitchingEnabled()) return null;
 
     if (viewMode === themeSelectorViewMode.Mini) {
         return (
