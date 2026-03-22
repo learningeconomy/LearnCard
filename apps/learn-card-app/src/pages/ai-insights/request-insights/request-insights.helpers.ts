@@ -1,5 +1,6 @@
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { currentUserStore } from 'learn-card-base';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 import { LCNProfile } from '@learncard/types';
 
 import ConnectIcon from 'learn-card-base/svgs/ConnectIcon';
@@ -51,9 +52,7 @@ export const buildTeacherStudentContract = ({
     expiresAt?: string;
     reasonForAccessing?: string;
 }) => {
-    const redirectUrl = !IS_PRODUCTION
-        ? 'http://localhost:3000/ai/insights'
-        : 'https://learncard.app/ai/insights';
+    const redirectUrl = `${getAppBaseUrl()}/ai/insights`;
 
     return {
         contract: {

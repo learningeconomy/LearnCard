@@ -3,6 +3,7 @@ const colors = require('tailwindcss/colors');
 module.exports = {
     content: [
         './src/**/*.{js,jsx,ts,tsx}',
+        './src/theme/schemas/*/theme.json',
         '../../packages/learn-card-base/src/**/*.{js,jsx,ts,tsx}',
     ],
     theme: {

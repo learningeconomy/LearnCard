@@ -24,6 +24,9 @@ node_modules
 *.sw?
 
 .nx-cache/
+
+# Generated tenant config (from prepare scripts — assets are tracked as source of truth)
+**/public/tenant-config.json
 .aider*
 
 # Personal AI tooling (not shared — teammates may use different setups)
@@ -33,3 +36,6 @@ node_modules
 docs/superpowers/plans/
 docs/superpowers/specs/
 .github/copilot-instructions.md
+
+# Local Netlify folder
+.netlify

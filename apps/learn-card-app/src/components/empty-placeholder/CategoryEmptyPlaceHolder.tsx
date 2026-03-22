@@ -3,7 +3,6 @@ import React from 'react';
 import { CredentialCategoryEnum } from 'learn-card-base';
 
 import { useTheme } from '../../theme/hooks/useTheme';
-import { ThemeEnum } from '../../theme/helpers/theme-helpers';
 import { IconSetEnum } from '../../theme/icons/index';
 
 export const CategoryEmptyPlaceholder: React.FC<{
@@ -16,7 +15,7 @@ export const CategoryEmptyPlaceholder: React.FC<{
 
     // ! The formal theme does not have a set of placeholders per category
     // ! So we use the floating bottle icon for all categories
-    if (theme.id === ThemeEnum.Formal) {
+    if (theme.id === 'formal') {
         return (
             <div className="w-full flex items-center justify-center relative mt-[100px]">
                 <FloatingBottleIcon className="w-[175px] h-[175px]" />

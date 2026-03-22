@@ -1,5 +1,6 @@
 import { ThemeEnum } from '../helpers/theme-helpers';
 import { CredentialCategoryEnum } from 'learn-card-base';
+import { createUniformCategoryColors } from '../shared/createUniformCategoryColors';
 
 export type CategoryColor = {
     primaryColor?: string;
@@ -419,171 +420,21 @@ export const colors = {
         },
     },
     [ThemeEnum.Formal]: {
-        [CredentialCategoryEnum.aiTopic]: {
-            primaryColor: 'off-white-50',
-            secondaryColor: 'grayscale-800',
-            indicatorColor: 'emerald-500',
-            borderColor: 'grayscale-100',
-
-            statusBarColor: 'light',
-            headerBrandingTextColor: 'text-grayscale-800',
-            headerTextColor: 'text-grayscale-800',
-            backgroundPrimaryColor: '!bg-white',
-            backgroundSecondaryColor: 'grayscale-100',
-        },
-        [CredentialCategoryEnum.aiPathway]: {
-            primaryColor: 'off-white-50',
-            secondaryColor: 'grayscale-800',
-            indicatorColor: 'emerald-500',
-            borderColor: 'grayscale-100',
-
-            statusBarColor: 'light',
-            headerBrandingTextColor: 'text-grayscale-800',
-            headerTextColor: 'text-grayscale-800',
-            backgroundPrimaryColor: '!bg-white',
-            backgroundSecondaryColor: 'grayscale-100',
-        },
-        [CredentialCategoryEnum.aiInsight]: {
-            primaryColor: 'off-white-50',
-            secondaryColor: 'grayscale-800',
-            indicatorColor: 'emerald-500',
-            borderColor: 'grayscale-100',
-
-            statusBarColor: 'light',
-            headerBrandingTextColor: 'text-grayscale-800',
-            headerTextColor: 'text-grayscale-800',
-            backgroundPrimaryColor: '!bg-white',
-            backgroundSecondaryColor: 'grayscale-100',
-        },
-        [CredentialCategoryEnum.skill]: {
-            primaryColor: 'off-white-50',
-            secondaryColor: 'grayscale-800',
-            indicatorColor: 'emerald-500',
-            borderColor: 'grayscale-100',
-
-            statusBarColor: 'light',
-            headerBrandingTextColor: 'text-grayscale-800',
-            headerTextColor: 'text-grayscale-800',
-            backgroundPrimaryColor: '!bg-white',
-            backgroundSecondaryColor: 'grayscale-100',
-        },
-        [CredentialCategoryEnum.socialBadge]: {
-            primaryColor: 'off-white-50',
-            secondaryColor: 'grayscale-800',
-            indicatorColor: 'emerald-500',
-            borderColor: 'grayscale-100',
-
-            statusBarColor: 'light',
-            headerBrandingTextColor: 'text-grayscale-800',
-            headerTextColor: 'text-grayscale-800',
-            backgroundPrimaryColor: '!bg-white',
-            backgroundSecondaryColor: 'grayscale-100',
-            tabActiveColor: 'bg-grayscale-200',
-        },
-        [CredentialCategoryEnum.achievement]: {
-            primaryColor: 'off-white-50',
-            secondaryColor: 'grayscale-800',
-            indicatorColor: 'emerald-500',
-            borderColor: 'grayscale-100',
-
-            statusBarColor: 'light',
-            headerBrandingTextColor: 'text-grayscale-800',
-            headerTextColor: 'text-grayscale-800',
-            backgroundPrimaryColor: '!bg-white',
-            backgroundSecondaryColor: 'grayscale-100',
-            tabActiveColor: 'bg-grayscale-200',
-        },
-        [CredentialCategoryEnum.learningHistory]: {
-            primaryColor: 'off-white-50',
-            secondaryColor: 'grayscale-800',
-            indicatorColor: 'emerald-500',
-            borderColor: 'grayscale-100',
-
-            statusBarColor: 'light',
-            headerBrandingTextColor: 'text-grayscale-800',
-            headerTextColor: 'text-grayscale-800',
-            backgroundPrimaryColor: '!bg-white',
-            backgroundSecondaryColor: 'grayscale-100',
-            tabActiveColor: 'bg-grayscale-200',
-        },
-        [CredentialCategoryEnum.accomplishment]: {
-            primaryColor: 'off-white-50',
-            secondaryColor: 'grayscale-800',
-            indicatorColor: 'emerald-500',
-            borderColor: 'grayscale-100',
-
-            statusBarColor: 'light',
-            headerBrandingTextColor: 'text-grayscale-800',
-            headerTextColor: 'text-grayscale-800',
-            backgroundPrimaryColor: '!bg-white',
-            backgroundSecondaryColor: 'grayscale-100',
-            tabActiveColor: 'bg-grayscale-200',
-        },
-        [CredentialCategoryEnum.accommodation]: {
-            primaryColor: 'off-white-50',
-            secondaryColor: 'grayscale-800',
-            indicatorColor: 'emerald-500',
-            borderColor: 'grayscale-100',
-
-            statusBarColor: 'light',
-            headerBrandingTextColor: 'text-grayscale-800',
-            headerTextColor: 'text-grayscale-800',
-            backgroundPrimaryColor: '!bg-white',
-            backgroundSecondaryColor: 'grayscale-100',
-            tabActiveColor: 'bg-grayscale-200',
-        },
-        [CredentialCategoryEnum.workHistory]: {
-            primaryColor: 'off-white-50',
-            secondaryColor: 'grayscale-800',
-            indicatorColor: 'emerald-500',
-            borderColor: 'grayscale-100',
-
-            statusBarColor: 'light',
-            headerBrandingTextColor: 'text-grayscale-800',
-            headerTextColor: 'text-grayscale-800',
-            backgroundPrimaryColor: '!bg-white',
-            backgroundSecondaryColor: 'grayscale-100',
-            tabActiveColor: 'bg-grayscale-200',
-        },
-        [CredentialCategoryEnum.resume]: {
-            primaryColor: 'off-white-50',
-            secondaryColor: 'grayscale-800',
-            indicatorColor: 'emerald-500',
-            borderColor: 'grayscale-100',
-
-            statusBarColor: 'light',
-            headerBrandingTextColor: 'text-grayscale-800',
-            headerTextColor: 'text-grayscale-800',
-            backgroundPrimaryColor: '!bg-white',
-            backgroundSecondaryColor: 'grayscale-100',
-            tabActiveColor: 'bg-grayscale-200',
-        },
-        [CredentialCategoryEnum.family]: {
-            primaryColor: 'off-white-50',
-            secondaryColor: 'grayscale-800',
-            indicatorColor: 'emerald-500',
-            borderColor: 'grayscale-100',
-
-            statusBarColor: 'light',
-            headerBrandingTextColor: 'text-grayscale-800',
-            headerTextColor: 'text-grayscale-800',
-            backgroundPrimaryColor: '!bg-white',
-            backgroundSecondaryColor: 'grayscale-100',
-            tabActiveColor: 'bg-grayscale-200',
-        },
-        [CredentialCategoryEnum.id]: {
-            primaryColor: 'off-white-50',
-            secondaryColor: 'grayscale-800',
-            indicatorColor: 'emerald-500',
-            borderColor: 'grayscale-100',
-
-            statusBarColor: 'light',
-            headerBrandingTextColor: 'text-grayscale-800',
-            headerTextColor: 'text-grayscale-800',
-            backgroundPrimaryColor: '!bg-white',
-            backgroundSecondaryColor: 'grayscale-100',
-            tabActiveColor: 'bg-grayscale-200',
-        },
+        // All categories share the same base, with tabActiveColor on most
+        ...createUniformCategoryColors(
+            {
+                primaryColor: 'off-white-50',
+                secondaryColor: 'grayscale-800',
+                indicatorColor: 'emerald-500',
+                borderColor: 'grayscale-100',
+                statusBarColor: 'light',
+                headerBrandingTextColor: 'text-grayscale-800',
+                headerTextColor: 'text-grayscale-800',
+                backgroundPrimaryColor: '!bg-white',
+                backgroundSecondaryColor: 'grayscale-100',
+                tabActiveColor: 'bg-grayscale-200',
+            },
+        ),
 
         launchPad: {
             contacts: {

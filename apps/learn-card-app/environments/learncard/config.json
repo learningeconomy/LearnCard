@@ -1,0 +1,5 @@
+{
+    "_comment": "Default LearnCard tenant — no overrides needed. The baked defaults in tenantDefaults.ts are used.",
+    "tenantId": "learncard",
+    "domain": "learncard.app"
+}

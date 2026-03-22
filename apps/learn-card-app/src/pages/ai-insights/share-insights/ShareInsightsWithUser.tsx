@@ -20,6 +20,7 @@ import {
 } from 'learn-card-base';
 
 import { LCNProfile } from '@learncard/types';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
 export const ShareInsightsWithUser: React.FC<{
     targetProfile: LCNProfile | string;
@@ -55,9 +56,7 @@ export const ShareInsightsWithUser: React.FC<{
 
         const insightsProfileIdToShare = childProfileId ?? currentLCNUser?.profileId;
 
-        const overrideShareLink = `${
-            IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
-        }/passport?shareInsights=true&learnerProfileId=${insightsProfileIdToShare}`;
+        const overrideShareLink = `${getAppBaseUrl()}/passport?shareInsights=true&learnerProfileId=${insightsProfileIdToShare}`;
 
         await sendShareRequest({
             targetProfileId: _targetProfile?.profileId,

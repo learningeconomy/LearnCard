@@ -1,0 +1,83 @@
+{
+    "tenantId": "vetpass",
+    "domain": "vetpass.app",
+    "devDomain": "localhost:3000",
+    "apis": {
+        "brainService": "TODO_BRAIN_SERVICE_URL",
+        "brainServiceApi": "TODO_BRAIN_SERVICE_API_URL",
+        "cloudService": "TODO_CLOUD_SERVICE_URL",
+        "lcaApi": "TODO_LCA_API_URL",
+        "xapi": "TODO_XAPI_URL"
+    },
+    "auth": {
+        "provider": "firebase",
+        "keyDerivation": "sss",
+        "sssServerUrl": "TODO_SSS_SERVER_URL",
+        "enableEmailBackupShare": true,
+        "requireEmailForPhoneUsers": true,
+        "firebase": {
+            "apiKey": "TODO_FIREBASE_API_KEY",
+            "authDomain": "vetpass.firebaseapp.com",
+            "projectId": "vetpass",
+            "storageBucket": "vetpass.appspot.com",
+            "messagingSenderId": "TODO_SENDER_ID",
+            "appId": "TODO_APP_ID",
+            "measurementId": "TODO_MEASUREMENT_ID"
+        },
+        "firebaseRedirectDomain": "vetpass.app",
+        "firebaseDynamicLinkDomain": "vetpass.app"
+    },
+    "branding": {
+        "name": "VetPass",
+        "shortName": "VP",
+        "defaultTheme": "vetpass",
+        "loginRedirectPath": "/waitingsofa?loginCompleted=true",
+        "brandingKey": "vetpass",
+        "headerText": "VETPASS",
+        "homeRoute": "/wallet",
+        "categoryLabels": {
+            "learningHistory": "Training",
+            "workHistory": "Service",
+            "accommodation": "Benefits",
+            "accomplishment": "Awards",
+            "socialBadge": "Badge"
+        },
+        "deleteSuccessStyles": {
+            "containerClass": "bg-white text-emerald-600",
+            "statusBarColor": "light"
+        }
+    },
+    "features": {
+        "aiFeatures": true,
+        "appStore": true,
+        "analytics": true,
+        "themeSwitching": false,
+        "introSlides": true
+    },
+    "observability": {
+        "sentryDsn": "TODO_SENTRY_DSN",
+        "sentryEnv": "production",
+        "sentryTraceDomains": [
+            "network.vetpass.app",
+            "api.vetpass.app",
+            "cloud.vetpass.app"
+        ],
+        "launchDarklyClientId": "TODO_LD_CLIENT_ID",
+        "userflowToken": "TODO_USERFLOW_TOKEN"
+    },
+    "links": {
+        "appStoreUrl": "TODO_APP_STORE_URL",
+        "playStoreUrl": "TODO_PLAY_STORE_URL"
+    },
+    "native": {
+        "bundleId": "com.vetpass.app",
+        "displayName": "VetPass",
+        "deepLinkDomains": [
+            "vetpass.app"
+        ],
+        "customSchemes": [
+            "dccrequest"
+        ],
+        "capgoChannel": "1.0.0"
+    }
+}

@@ -41,20 +41,18 @@ import OnboardingContainer from '../../components/onboarding/OnboardingContainer
 import EUParentalConsentModalContent from '../../components/onboarding/onboardingNetworkForm/components/EUParentalConsentModalContent';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import SocialLoginsButtons from './SocialLogins/SocialLoginsButtons';
-import LearnCardTextLogo from '../../assets/images/learncard-text-logo.svg';
-import LearnCardBrandMark from '../../assets/images/lca-brandmark.png';
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
-import DesktopLoginBG from '../../assets/images/desktop-login-bg.png';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import EndorsementSuccessfullRequestModal from '../../components/boost-endorsements/EndorsementRequestModal/EndorsementSuccessfullRequestModal';
 
 import { themeStore } from '../../theme/store/themeStore';
 import endorsementRequestStore from '../../stores/endorsementsRequestStore';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
-import { ThemeEnum } from '../../theme/helpers/theme-helpers';
 import { useTheme } from '../../theme/hooks/useTheme';
 
 export const LoginContent: React.FC = () => {
+    const { textLogo, brandMark, desktopLoginBg } = useTenantBrandingAssets();
     const { syncThemeDefaults } = useTheme();
     const { newModal, closeModal } = useModal();
     const isLoggedIn = useIsLoggedIn();
@@ -88,7 +86,7 @@ export const LoginContent: React.FC = () => {
         try {
             const result = await refetchPreferences();
             if (result?.data?.theme) {
-                const theme = result?.data?.theme ?? ThemeEnum.Colorful;
+                const theme = result?.data?.theme ?? 'colorful';
                 themeStore.set.theme(theme);
                 syncThemeDefaults(theme);
             }
@@ -161,7 +159,7 @@ export const LoginContent: React.FC = () => {
                 if (currentUser && isLoggedIn) {
                     // Child still logged in: set redirect to families and logout to allow parent login
                     redirectStore.set.lcnRedirect('/families?createFamily=true');
-                    handleLogout(BrandingEnum.learncard, {
+                    handleLogout({
                         appendQuery: { redirectTo: '/families?createFamily=true' },
                     });
                     return;
@@ -237,11 +235,11 @@ export const LoginContent: React.FC = () => {
             <IonRow className="p-0 m-0 w-full flex items-center justify-center relative pb-[20px]">
                 <div className="flex flex-col items-center justify-center w-full">
                     <img
-                        src={LearnCardBrandMark}
-                        alt="Learn Card brand mark"
+                        src={brandMark}
+                        alt="Brand mark"
                         className="w-[80px] h-[80px] mb-[20px]"
                     />
-                    <img src={LearnCardTextLogo} alt="Learn Card text logo" />
+                    <img src={textLogo} alt="Logo" />
                 </div>
             </IonRow>
             {showQrLogin && !qrApproved ? (
@@ -444,6 +442,7 @@ export const LoginContent: React.FC = () => {
 const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
     alternateBgComponent,
 }) => {
+    const { desktopLoginBg } = useTenantBrandingAssets();
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -487,7 +486,7 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
                                     {alternateBgComponent ? (
                                         alternateBgComponent
                                     ) : (
-                                        <img src={DesktopLoginBG} alt="" aria-hidden="true" />
+                                        <img src={desktopLoginBg} alt="" aria-hidden="true" />
                                     )}
                                 </div>
                             </>

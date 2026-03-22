@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
-import { useWallet, LEARNCARD_AI_URL } from 'learn-card-base';
+import { useWallet } from 'learn-card-base';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 import { CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
@@ -30,7 +31,7 @@ const queryKey = ['useAiInsightCredential'];
 export const createAiInsightCredential = async (wallet: BespokeLearnCard) => {
     const did = wallet.id.did();
     const aiInsightCredential = await fetch(
-        `${LEARNCARD_AI_URL}/credentials/ai-insight?did=${did}`,
+        `${networkStore.get.aiServiceUrl()}/credentials/ai-insight?did=${did}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

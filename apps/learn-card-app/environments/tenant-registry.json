@@ -1,0 +1,17 @@
+{
+    "_comment": "Shared tenant registry — maps hostnames to tenant IDs. Used by the Netlify edge function and build scripts. To add a new tenant, add entries here AND create environments/<tenantId>/config.json.",
+    "hostnames": {
+        "learncard.app": {
+            "tenantId": "learncard",
+            "domain": "learncard.app"
+        },
+        "learncardapp.netlify.app": {
+            "tenantId": "learncard",
+            "domain": "learncard.app"
+        }
+    },
+    "defaultTenant": {
+        "tenantId": "learncard",
+        "domain": "learncard.app"
+    }
+}

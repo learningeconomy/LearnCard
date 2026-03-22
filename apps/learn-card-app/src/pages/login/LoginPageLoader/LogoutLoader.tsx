@@ -4,9 +4,10 @@ import _ from 'lodash-es';
 
 import { IonContent, IonPage, IonRow } from '@ionic/react';
 
-import LearnCardTextLogo from '../../../assets/images/learncard-text-logo.svg';
+import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
 export const LogoutLoadingPage: React.FC = () => {
+    const { textLogo } = useTenantBrandingAssets();
     const [currentColorIndex, setCurrentColorIndex] = useState(0);
     const colors = useMemo(
         () => [
@@ -35,8 +36,8 @@ export const LogoutLoadingPage: React.FC = () => {
                     style={{ backgroundColor: colors[currentColorIndex] }}
                 >
                     <img
-                        src={LearnCardTextLogo}
-                        alt="LearnCard text logo"
+                        src={textLogo}
+                        alt="Logo"
                         className="mb-8 absolute top-[48%] left-[50%] translate-x-[-50%]"
                     />
                     <div className="w-full flex items-center justify-center text-center px-6 absolute top-[52%] left-[50%] translate-x-[-50%]">

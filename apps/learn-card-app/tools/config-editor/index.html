@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Config Editor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        * { box-sizing: border-box; margin: 0; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .container { max-width: 640px; width: 100%; padding: 24px; }
+        h1 { font-size: 24px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+        p { font-size: 14px; color: #64748b; margin-bottom: 32px; }
+        .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .card { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 28px 24px; text-decoration: none; color: inherit; transition: all .15s; display: flex; flex-direction: column; gap: 12px; }
+        .card:hover { border-color: #6366f1; box-shadow: 0 4px 24px rgba(99,102,241,.12); transform: translateY(-2px); }
+        .icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .card-title { font-size: 16px; font-weight: 600; color: #1e293b; }
+        .card-desc { font-size: 13px; color: #64748b; line-height: 1.5; }
+        .card-arrow { font-size: 13px; font-weight: 500; color: #6366f1; margin-top: auto; display: flex; align-items: center; gap: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LearnCard Config Editor</h1>
+        <p>Choose a tool to configure your app.</p>
+        <div class="cards">
+            <a href="/config" class="card">
+                <div class="icon" style="background: #eef2ff;">
+                    <svg width="24" height="24" viewBox="0 0 20 20" fill="#6366f1">
+                        <path fill-rule="evenodd" d="M7.84 1.804A1 1 0 018.82 1h2.36a1 1 0 01.98.804l.331 1.652a6.993 6.993 0 011.929 1.115l1.598-.54a1 1 0 011.186.447l1.18 2.044a1 1 0 01-.205 1.251l-1.267 1.113a7.047 7.047 0 010 2.228l1.267 1.113a1 1 0 01.206 1.25l-1.18 2.045a1 1 0 01-1.187.447l-1.598-.54a6.993 6.993 0 01-1.929 1.115l-.33 1.652a1 1 0 01-.98.804H8.82a1 1 0 01-.98-.804l-.331-1.652a6.993 6.993 0 01-1.929-1.115l-1.598.54a1 1 0 01-1.186-.447l-1.18-2.044a1 1 0 01.205-1.251l1.267-1.114a7.05 7.05 0 010-2.227L1.821 7.773a1 1 0 01-.206-1.25l1.18-2.045a1 1 0 011.187-.447l1.598.54A6.993 6.993 0 017.51 3.456l.33-1.652zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="card-title">Tenant Config</div>
+                <div class="card-desc">Edit per-environment tenant config.json files, manage assets, and launch dev servers.</div>
+                <div class="card-arrow">
+                    Open
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638l-3.96-4.158a.75.75 0 011.08-1.04l5.25 5.5a.75.75 0 010 1.04l-5.25 5.5a.75.75 0 11-1.08-1.04l3.96-4.158H3.75A.75.75 0 013 10z" clip-rule="evenodd"/></svg>
+                </div>
+            </a>
+            <a href="/themes" class="card">
+                <div class="icon" style="background: #fdf4ff;">
+                    <svg width="24" height="24" viewBox="0 0 20 20" fill="#a855f7">
+                        <path fill-rule="evenodd" d="M3.5 2A1.5 1.5 0 002 3.5V5c0 1.149.15 2.263.43 3.326a13.022 13.022 0 009.244 9.244c1.063.28 2.177.43 3.326.43h1.5a1.5 1.5 0 001.5-1.5v-1.148a1.5 1.5 0 00-1.175-1.465l-3.223-.645a1.5 1.5 0 00-1.12.208l-.044.028a1.5 1.5 0 01-1.554.075A11.528 11.528 0 016.28 9.768a1.5 1.5 0 01.074-1.554l.028-.044a1.5 1.5 0 00.208-1.12l-.645-3.223A1.5 1.5 0 004.648 2.5H3.5z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="card-title">Theme Editor</div>
+                <div class="card-desc">Create and edit JSON-based themes with a visual color picker and structured form editor.</div>
+                <div class="card-arrow">
+                    Open
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638l-3.96-4.158a.75.75 0 011.08-1.04l5.25 5.5a.75.75 0 010 1.04l-5.25 5.5a.75.75 0 11-1.08-1.04l3.96-4.158H3.75A.75.75 0 013 10z" clip-rule="evenodd"/></svg>
+                </div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,12 +1,11 @@
 import React, { useMemo, useCallback, useEffect } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import themeStore from '../store/themeStore';
+import themeStore, { isThemeSwitchingEnabled } from '../store/themeStore';
 import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
 
 import { useTheme } from '../hooks/useTheme';
-import { ThemeEnum } from '../helpers/theme-helpers';
-import { loadThemeSchema } from '../helpers/loadTheme';
+import { loadThemeSchema, getRegisteredThemeIds } from '../helpers/loadTheme';
 import { ThemeButton } from '../validators/theme.validators';
 import { ViewMode } from '../types/theme.types';
 import {
@@ -14,8 +13,6 @@ import {
     useGetPreferencesForDid,
     useUpdatePreferences,
 } from 'learn-card-base';
-
-const THEMES: ThemeEnum[] = [ThemeEnum.Colorful, ThemeEnum.Formal];
 
 export enum themeSelectorViewMode {
     Mini = 'mini',
@@ -29,7 +26,7 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     const { theme, syncThemeDefaults } = useTheme();
     const setTheme = themeStore.set.theme;
 
-    const schemas = useMemo(() => THEMES.map(loadThemeSchema), []);
+    const schemas = useMemo(() => getRegisteredThemeIds().map(loadThemeSchema), []);
 
     const { mutateAsync: createPreferences, isPending: isCreatingPreferences } =
         useCreatePreferences();
@@ -47,9 +44,9 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
         }));
     }, [schemas]);
 
-    const handleThemeChange = useCallback((t: ThemeEnum) => setTheme(t), [setTheme]);
+    const handleThemeChange = useCallback((t: string) => setTheme(t), [setTheme]);
 
-    const handleSetViewMode = (themeSelected: ThemeEnum) => {
+    const handleSetViewMode = (themeSelected: string) => {
         const schema = loadThemeSchema(themeSelected);
         if (schema?.defaults?.viewMode === ViewMode.Grid) {
             passportPageStore.set.setViewMode(PassportPageViewMode.grid);
@@ -58,7 +55,7 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
         }
     };
 
-    const handleSetTheme = async (themeSelected: ThemeEnum) => {
+    const handleSetTheme = async (themeSelected: string) => {
         if (!preferences?.theme) {
             await createPreferences({
                 theme: themeSelected,
@@ -75,9 +72,11 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     };
 
     const syncTheme = useCallback(() => {
+        if (!isThemeSwitchingEnabled()) return;
+
         const cachedTheme = themeStore.get.theme();
         if (cachedTheme !== preferences?.theme && preferences?.theme !== undefined) {
-            handleSetTheme(preferences?.theme as ThemeEnum);
+            handleSetTheme(preferences?.theme as string);
         }
     }, [preferences]);
 
@@ -88,6 +87,8 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     }, [syncTheme]);
 
     if (flags?.enableThemeToggle === false) return null;
+
+    if (!isThemeSwitchingEnabled()) return null;
 
     if (viewMode === themeSelectorViewMode.Mini) {
         return (

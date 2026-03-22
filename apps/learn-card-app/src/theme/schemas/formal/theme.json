@@ -1,0 +1,101 @@
+{
+    "id": "formal",
+    "displayName": "Formal",
+    "iconSet": "formal",
+
+    "defaults": {
+        "viewMode": "list"
+    },
+
+    "colors": {
+        "categoryBase": {
+            "primaryColor": "off-white-50",
+            "secondaryColor": "grayscale-800",
+            "indicatorColor": "emerald-500",
+            "borderColor": "grayscale-100",
+            "statusBarColor": "light",
+            "headerBrandingTextColor": "text-grayscale-800",
+            "headerTextColor": "text-grayscale-800",
+            "backgroundPrimaryColor": "!bg-white",
+            "backgroundSecondaryColor": "grayscale-100",
+            "tabActiveColor": "bg-grayscale-200"
+        },
+
+        "launchPad": {
+            "contacts": { "color": "grayscale-800" },
+            "aiSessions": { "color": "grayscale-800" },
+            "alerts": {
+                "color": "grayscale-800",
+                "indicatorTextColor": "text-emerald-500",
+                "indicatorBgColor": "bg-emerald-50"
+            },
+            "buttons": {
+                "unconnected": "bg-blue-500 text-white",
+                "connected": "bg-grayscale-100 text-blue-500"
+            }
+        },
+
+        "sideMenu": {
+            "linkActiveColor": "text-grayscale-900",
+            "linkInactiveColor": "text-grayscale-500",
+            "linkActiveBackgroundColor": "bg-grayscale-100/50",
+            "linkInactiveBackgroundColor": "bg-white",
+            "primaryButtonColor": "bg-grayscale-800 text-white",
+            "secondaryButtonColor": "bg-blue-500 text-white border-blue-500",
+            "indicatorColor": "text-emerald-500",
+            "syncingColor": "!text-blue-500",
+            "completedColor": "!text-emerald-700"
+        },
+
+        "navbar": {
+            "activeColor": "text-grayscale-900",
+            "inactiveColor": "text-grayscale-500",
+            "syncingColor": "!text-blue-500",
+            "completedColor": "!text-emerald-700"
+        },
+
+        "introSlides": {
+            "firstSlideBackground": "blue-500",
+            "secondSlideBackground": "grayscale-200",
+            "thirdSlideBackground": "grayscale-200",
+            "textColors": {
+                "primary": "grayscale-900",
+                "secondary": "white"
+            },
+            "pagination": {
+                "primary": "#3B82F6",
+                "secondary": "#A8ACBD"
+            }
+        },
+
+        "placeholderBase": {
+            "spilledCup": {
+                "backsplash": "#E2E3E9",
+                "spill": "#3B82F6",
+                "cupOutline": "#353E64"
+            }
+        },
+
+        "defaults": {
+            "primaryColor": "blue-500",
+            "primaryColorShade": "blue-200",
+            "loaders": ["#353E64"]
+        }
+    },
+
+    "styles": {
+        "wallet": {
+            "cardStyles": "h-[200px]",
+            "iconStyles": "w-[60px] h-[60px]"
+        },
+        "launchPad": {
+            "textStyles": "text-[14px]",
+            "iconStyles": "w-[55px] h-auto xxs:w-[55px] xxs:h-[55px] mb-2"
+        },
+        "defaults": {
+            "tabs": {
+                "borderRadius": "rounded-[5px]"
+            }
+        }
+    }
+}

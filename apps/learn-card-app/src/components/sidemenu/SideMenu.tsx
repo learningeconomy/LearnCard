@@ -14,7 +14,7 @@ import { useAnalytics } from '@analytics';
 import SideMenuFooter from './SideMenuFooter';
 import SideMenuRootLinks from './SideMenuRootLinks';
 import BurgerIcon from '../../components/svgs/Burger';
-import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import SideMenuSecondaryLinks from './SideMenuSecondaryLinks';
 import { IonMenu, IonContent, IonMenuToggle } from '@ionic/react';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
@@ -131,7 +131,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                             <BurgerIcon className="text-grayscale-800 h-[25px] w-[25px] mr-4" />
                                         )}
 
-                                        <LearnCardTextLogo className="text-grayscale-900 w-[85%] max-w-[150px]" />
+                                        <img src={useTenantBrandingAssets().textLogo} alt="Logo" className="w-[85%] max-w-[150px] object-contain" />
                                     </div>
                                 </IonMenuToggle>
                             </button>

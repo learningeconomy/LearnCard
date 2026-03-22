@@ -1,0 +1,20 @@
+{
+    "_comment": "Local dev overrides for VetPass. Merged on top of config.json via deepMerge.",
+    "devDomain": "localhost:3000",
+    "apis": {
+        "brainService": "http://localhost:4000/trpc",
+        "brainServiceApi": "http://localhost:4000/api",
+        "cloudService": "http://localhost:4100/trpc",
+        "lcaApi": "http://localhost:5100/trpc",
+        "xapi": "http://localhost:4100/xapi"
+    },
+    "auth": {
+        "sssServerUrl": "http://localhost:5100/api"
+    },
+    "features": {
+        "analytics": false
+    },
+    "observability": {
+        "sentryEnv": "development"
+    }
+}

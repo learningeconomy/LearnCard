@@ -1,0 +1,101 @@
+{
+    "id": "vetpass",
+    "displayName": "VetPass",
+    "extends": "formal",
+    "iconSet": "formal",
+    "defaults": {
+        "viewMode": "list"
+    },
+    "colors": {
+        "categoryBase": {
+            "primaryColor": "slate-50",
+            "indicatorColor": "slate-500",
+            "tabActiveColor": "bg-slate-100"
+        },
+        "categories": {
+            "aiInsight": {
+                "primaryColor": "slate-900",
+                "secondaryColor": "slate-800",
+                "indicatorColor": "amber-600"
+            }
+        },
+        "launchPad": {
+            "contacts": {
+                "color": "slate-700"
+            },
+            "aiSessions": {
+                "color": "red-500"
+            },
+            "alerts": {
+                "color": "slate-600",
+                "indicatorTextColor": "text-slate-600",
+                "indicatorBgColor": "bg-white"
+            },
+            "buttons": {
+                "unconnected": "bg-slate-500 text-white",
+                "connected": "bg-grayscale-100 text-slate-500"
+            }
+        },
+        "sideMenu": {
+            "primaryButtonColor": "bg-slate-500 text-white",
+            "secondaryButtonColor": "bg-lime-700 text-slate-300 border-slate-900",
+            "indicatorColor": "text-slate-500",
+            "syncingColor": "!text-slate-500"
+        },
+        "navbar": {
+            "syncingColor": "!text-slate-500"
+        },
+        "introSlides": {
+            "firstSlideBackground": "slate-500",
+            "secondSlideBackground": "red-400",
+            "thirdSlideBackground": "lime-500",
+            "textColors": {
+                "primary": "white",
+                "secondary": "white"
+            },
+            "pagination": {
+                "primary": "white",
+                "secondary": "#E2E3E9"
+            }
+        },
+        "placeholderBase": {
+            "spilledCup": {
+                "backsplash": "#cbd5e1",
+                "spill": "#f87171",
+                "cupOutline": "#334155"
+            }
+        },
+        "defaults": {
+            "primaryColor": "slate-500",
+            "primaryColorShade": "slate-200",
+            "loaders": [
+                "#64748b",
+                "#ef4444",
+                "#84cc16",
+                "#cbd5e1"
+            ]
+        }
+    },
+    "styles": {
+        "wallet": {
+            "cardStyles": "h-[240px]",
+            "iconStyles": "w-[100px] h-[100px]"
+        },
+        "launchPad": {
+            "textStyles": "text-[16px]",
+            "iconStyles": "w-[75px] h-auto xxs:w-[60px] xxs:h-[60px]",
+            "indicatorStyles": "shadow-soft-bottom"
+        }
+    },
+    "iconPalettes": {
+        "AiSessions": {
+            "primary": "#59ff00"
+        },
+        "AiInsights": {
+            "primary": "#131f00"
+        },
+        "AiPathways": {
+            "primary": "#005c50"
+        }
+    }
+}

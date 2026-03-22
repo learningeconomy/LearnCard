@@ -1,5 +1,6 @@
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
 export const QR_CODE_LOGO = 'https://cdn.filestackcontent.com/UDCRoOl7TyKkQOGWjApF';
 
@@ -9,12 +10,10 @@ export const UserQRCode: React.FC<{
     contractUri?: string;
     overrideShareLink?: string;
 }> = ({ profileId, walletDid, contractUri, overrideShareLink }) => {
-    let link = `learncard.app/connect?connect=true&did=${walletDid}`;
+    let link = `${getAppBaseUrl()}/connect?connect=true&did=${walletDid}`;
 
     if (contractUri) {
-        link = `${
-            IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
-        }/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
+        link = `${getAppBaseUrl()}/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
     }
 
     if (overrideShareLink) {

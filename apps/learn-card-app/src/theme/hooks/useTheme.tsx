@@ -8,7 +8,6 @@ import type { CategoryColor, ColorSetByEnum, ColorSetEnum } from '../colors';
 import type { ThemeCategory } from '../validators/theme.validators';
 
 import { ViewMode } from '../types/theme.types';
-import { ThemeEnum } from '../helpers/theme-helpers';
 import { loadThemeSchema } from '../helpers/loadTheme';
 import { CredentialCategoryEnum } from 'learn-card-base';
 
@@ -61,7 +60,7 @@ export const useTheme = () => {
             };
         })();
 
-    const syncThemeDefaults = (theme: ThemeEnum) => {
+    const syncThemeDefaults = (theme: string) => {
         const schema = loadThemeSchema(theme);
         const { defaults } = schema;
         passportPageStore.set.setViewMode(

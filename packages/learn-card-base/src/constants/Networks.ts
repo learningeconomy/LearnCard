@@ -5,7 +5,7 @@ export const SCOUTPASS_NETWORK_URL = 'https://scoutnetwork.org/trpc';
 export const LEARNCARD_NETWORK_STAGING_URL = 'https://staging.network.learncard.com/trpc';
 
 // LCN API URL
-export const LEARNCARD_NETWORK_API_URL = LCN_API_URL || 'https://network.learncard.com/api';
+export const LEARNCARD_NETWORK_API_URL = 'https://network.learncard.com/api';
 export const SCOUTPASS_NETWORK_API_URL = 'https://scoutnetwork.org/api';
 
 // LearnCloud

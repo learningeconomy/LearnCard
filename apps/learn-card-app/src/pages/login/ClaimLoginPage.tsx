@@ -13,7 +13,7 @@ import {
     SomeoneSentYouACredentialRequestMobile,
 } from '../claim-from-request/LoggedOutRequest';
 
-import DesktopLoginBG from '../../assets/images/desktop-login-bg.png';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { LoginContent } from './LoginPage';
@@ -22,6 +22,7 @@ const ClaimLoginPage: React.FC<{
     alternateBgComponent?: React.ReactNode;
     vc_request_url?: string | (string | null)[] | null;
 }> = ({ alternateBgComponent, vc_request_url }) => {
+    const { desktopLoginBg } = useTenantBrandingAssets();
     const showConfirmation = confirmationStore.use.showConfirmation();
     const { isDesktop } = useDeviceTypeByWidth();
     return (
@@ -44,7 +45,7 @@ const ClaimLoginPage: React.FC<{
                                 {alternateBgComponent ? (
                                     alternateBgComponent
                                 ) : (
-                                    <img src={DesktopLoginBG} alt="" aria-hidden="true" />
+                                    <img src={desktopLoginBg} alt="" aria-hidden="true" />
                                 )}
                             </div>
                         </>

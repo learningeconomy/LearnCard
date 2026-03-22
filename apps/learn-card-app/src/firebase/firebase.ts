@@ -1,7 +1,9 @@
 import { Capacitor } from '@capacitor/core';
-import { initializeApp, getApp } from 'firebase/app';
+import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { getAuth, deleteUser, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
+
+import type { TenantFirebaseConfig } from 'learn-card-base';
 
 export type RawFirebaseConfig = {
     apiKey: string;
@@ -14,7 +16,8 @@ export type RawFirebaseConfig = {
     measurementId: string;
 };
 
-export const firebaseConfig: RawFirebaseConfig = {
+/** Default Firebase config — used as fallback if no TenantConfig is provided */
+export const DEFAULT_FIREBASE_CONFIG: RawFirebaseConfig = {
     apiKey: 'AIzaSyDQJcEDxhxdxRAVdIDBzcE1x6D-KOj6N4o',
     authDomain: 'learncard.firebaseapp.com',
     projectId: 'learncard',
@@ -24,20 +27,62 @@ export const firebaseConfig: RawFirebaseConfig = {
     measurementId: 'G-XPHGSD6Q59',
 };
 
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+// Keep backward compat export name
+export const firebaseConfig: RawFirebaseConfig = DEFAULT_FIREBASE_CONFIG;
+
+let _firebaseInitialized = false;
+
+/**
+ * Initialize Firebase with the given config.
+ *
+ * Call this once at app boot with the TenantConfig's firebase settings.
+ * If called without arguments (or with undefined), falls back to the default config.
+ * Safe to call multiple times — subsequent calls are no-ops.
+ */
+export const initializeFirebaseFromTenant = (tenantFirebase?: TenantFirebaseConfig): void => {
+    if (_firebaseInitialized || getApps().length > 0) return;
+
+    const config: RawFirebaseConfig = tenantFirebase
+        ? {
+              apiKey: tenantFirebase.apiKey,
+              authDomain: tenantFirebase.authDomain,
+              projectId: tenantFirebase.projectId,
+              storageBucket: tenantFirebase.storageBucket,
+              messagingSenderId: tenantFirebase.messagingSenderId,
+              appId: tenantFirebase.appId,
+              measurementId: tenantFirebase.measurementId ?? '',
+          }
+        : DEFAULT_FIREBASE_CONFIG;
+
+    initializeApp(config);
+
+    try {
+        getAnalytics(getApp());
+    } catch {
+        // Analytics may not be available in all environments
+    }
+
+    _firebaseInitialized = true;
+
+    console.debug('learncard 🔥firebase init🔥');
+};
+
+// Auto-initialize with defaults if no one calls initializeFirebaseFromTenant before import.
+// This preserves backward compatibility — existing code that just imports { auth } will still work.
+if (getApps().length === 0) {
+    initializeFirebaseFromTenant();
+}
 
 const auth = () => {
     let _auth;
+
     if (Capacitor.isNativePlatform()) {
         _auth = initializeAuth(getApp(), { persistence: indexedDBLocalPersistence });
     } else {
         _auth = getAuth();
     }
+
     return _auth;
 };
-
-console.debug('auth', auth());
-console.debug('learncard 🔥firebase init🔥');
 
 export { auth, deleteUser };
