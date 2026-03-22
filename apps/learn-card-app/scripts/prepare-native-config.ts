@@ -6,20 +6,33 @@
  * Generates `public/tenant-config.json` for native (Capacitor) builds.
  *
  * Usage:
- *   npx tsx scripts/prepare-native-config.ts [tenant]
+ *   npx tsx scripts/prepare-native-config.ts [tenant] [--stage <stage>]
  *   npx tsx scripts/prepare-native-config.ts --reset
  *
  * Arguments:
  *   tenant  - The tenant identifier (default: "learncard").
  *             Maps to environments/<tenant>/config.json if it exists,
  *             otherwise falls back to the baked default config.
+ *   --stage - Optional stage overlay (e.g. "local", "staging").
+ *             Loads environments/<tenant>/config.<stage>.json on top
+ *             of config.json via deepMerge. Only diffs need to be in
+ *             the stage file.
  *   --reset - Undo all changes: restore git-tracked files and remove
  *             generated artifacts (public/branding/, tenant-config.json, etc.)
  *
+ * Merge order:
+ *   tenantDefaults → config.json → config.<stage>.json → final
+ *
  * Examples:
- *   npx tsx scripts/prepare-native-config.ts              # default LearnCard
- *   npx tsx scripts/prepare-native-config.ts scoutpass     # ScoutPass tenant
- *   npx tsx scripts/prepare-native-config.ts --reset       # undo everything
+ *   npx tsx scripts/prepare-native-config.ts                          # production learncard
+ *   npx tsx scripts/prepare-native-config.ts vetpass                   # production vetpass
+ *   npx tsx scripts/prepare-native-config.ts learncard --stage local   # local dev learncard
+ *   npx tsx scripts/prepare-native-config.ts vetpass --stage staging   # staging vetpass
+ *   npx tsx scripts/prepare-native-config.ts --reset                   # undo everything
+ *
+ * Backward compat:
+ *   npx tsx scripts/prepare-native-config.ts local
+ *   → treated as: learncard --stage local
  *
  * The generated file is read by resolveTenantConfig() at runtime via
  * the `loadBakedConfig()` step (fetches /tenant-config.json).
@@ -41,7 +54,49 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const APP_ROOT = resolve(__dirname, '..');
 
-const tenantArg = process.argv[2] ?? 'learncard';
+// ---------------------------------------------------------------------------
+// Parse CLI arguments
+// ---------------------------------------------------------------------------
+
+const KNOWN_STAGES = ['local', 'staging', 'production'] as const;
+type Stage = (typeof KNOWN_STAGES)[number];
+
+const parseArgs = (): { tenant: string; stage: Stage | undefined } => {
+    const args = process.argv.slice(2);
+
+    let tenant = 'learncard';
+    let stage: Stage | undefined;
+
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === '--stage' && args[i + 1]) {
+            stage = args[i + 1] as Stage;
+            i++; // skip the stage value
+        } else if (args[i] === '--reset') {
+            // handled below
+            tenant = '--reset';
+        } else if (!args[i]!.startsWith('--')) {
+            tenant = args[i]!;
+        }
+    }
+
+    // Backward compat: `prepare-native-config.ts local` → learncard --stage local
+    // Only applies when there's no explicit --stage and the tenant name matches a known stage
+    if (!stage && KNOWN_STAGES.includes(tenant as Stage) && tenant !== 'production') {
+        console.log(`ℹ️  Interpreting "${tenant}" as: learncard --stage ${tenant}`);
+
+        stage = tenant as Stage;
+        tenant = 'learncard';
+    }
+
+    // "production" stage is the same as no stage (just config.json)
+    if (stage === 'production') {
+        stage = undefined;
+    }
+
+    return { tenant, stage };
+};
+
+const { tenant: tenantArg, stage: stageArg } = parseArgs();
 
 // ---------------------------------------------------------------------------
 // 0. Handle --reset: undo all changes and exit
@@ -125,17 +180,38 @@ if (existsSync(envFilePath)) {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Deep-merge overrides onto defaults
+// 1b. Load stage overlay from environments/<tenant>/config.<stage>.json
+// ---------------------------------------------------------------------------
+
+let stageOverrides: Record<string, unknown> = {};
+
+if (stageArg) {
+    const stageFilePath = resolve(APP_ROOT, 'environments', tenantArg, `config.${stageArg}.json`);
+
+    if (existsSync(stageFilePath)) {
+        console.log(`🔧 Loading stage overlay from: environments/${tenantArg}/config.${stageArg}.json`);
+        stageOverrides = JSON.parse(readFileSync(stageFilePath, 'utf-8'));
+    } else {
+        console.log(`⚠️  No stage overlay at environments/${tenantArg}/config.${stageArg}.json — using base config only.`);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 2. Deep-merge: defaults → config.json → config.<stage>.json
 // ---------------------------------------------------------------------------
 
 const merged = deepMerge(
-    DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
-    tenantOverrides,
+    deepMerge(
+        DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
+        tenantOverrides,
+    ),
+    stageOverrides,
 );
 
 // Add build metadata
 merged['_source'] = 'baked-native';
 merged['_tenant'] = tenantArg;
+merged['_stage'] = stageArg ?? 'production';
 
 // ---------------------------------------------------------------------------
 // 3. Validate against the Zod schema

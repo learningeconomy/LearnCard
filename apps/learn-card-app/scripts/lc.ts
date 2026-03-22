@@ -51,8 +51,19 @@ const discoverTenants = (): string[] => {
     return readdirSync(ENVIRONMENTS_DIR).filter(name => {
         const full = join(ENVIRONMENTS_DIR, name);
 
-        return statSync(full).isDirectory() && existsSync(join(full, 'config.json'));
+        // Must have config.json; skip the legacy "local" directory (now learncard/config.local.json)
+        return statSync(full).isDirectory() && existsSync(join(full, 'config.json')) && name !== 'local';
     });
+};
+
+const discoverStages = (tenantId: string): string[] => {
+    const tenantDir = join(ENVIRONMENTS_DIR, tenantId);
+
+    if (!existsSync(tenantDir)) return [];
+
+    return readdirSync(tenantDir)
+        .filter(f => /^config\..+\.json$/.test(f))
+        .map(f => f.replace(/^config\./, '').replace(/\.json$/, ''));
 };
 
 const discoverThemes = (): string[] => {
@@ -97,7 +108,40 @@ const runCommand = (cmd: string, label: string): void => {
 // Menu actions
 // ---------------------------------------------------------------------------
 
-const startDev = async (tenantId?: string) => {
+const pickStage = async (tenantId: string): Promise<string> => {
+    const stages = discoverStages(tenantId);
+
+    if (stages.length === 0) {
+        return 'local';
+    }
+
+    console.log('');
+    console.log(bold('Available stages:'));
+    console.log('');
+    console.log(`  ${cyan('1')}  ${bold('local')} — local dev ${dim('(default)')}`);
+
+    stages.filter(s => s !== 'local').forEach((s, i) => {
+        console.log(`  ${cyan(`${i + 2}`)}  ${bold(s)}`);
+    });
+
+    console.log(`  ${cyan(`${stages.length + 1}`)}  ${bold('production')} — no stage overlay`);
+    console.log('');
+
+    const choice = await ask(`Pick a stage [1-${stages.length + 1}] ${dim('(default: 1 / local)')}: `);
+
+    if (!choice || choice === '1') return 'local';
+
+    const lastIdx = stages.length + 1;
+
+    if (choice === String(lastIdx)) return 'production';
+
+    const allStages = ['local', ...stages.filter(s => s !== 'local')];
+    const idx = parseInt(choice, 10) - 1;
+
+    return allStages[idx] ?? 'local';
+};
+
+const startDev = async (tenantId?: string, stageId?: string) => {
     const tenants = discoverTenants();
 
     if (!tenantId) {
@@ -107,9 +151,11 @@ const startDev = async (tenantId?: string) => {
 
         tenants.forEach((t, i) => {
             const name = getTenantDisplayName(t);
+            const stages = discoverStages(t);
+            const stageList = stages.length > 0 ? dim(` [${stages.join(', ')}]`) : '';
             const marker = t === 'learncard' ? dim(' (default)') : '';
 
-            console.log(`  ${cyan(`${i + 1}`)}  ${bold(t)} — ${name}${marker}`);
+            console.log(`  ${cyan(`${i + 1}`)}  ${bold(t)} — ${name}${marker}${stageList}`);
         });
 
         console.log('');
@@ -127,7 +173,20 @@ const startDev = async (tenantId?: string) => {
         }
     }
 
+    // Pick stage if not provided via CLI shortcut
+    if (!stageId) {
+        const stages = discoverStages(tenantId);
+
+        if (stages.length > 0) {
+            stageId = await pickStage(tenantId);
+        } else {
+            stageId = 'local';
+        }
+    }
+
     const displayName = getTenantDisplayName(tenantId);
+    const stageFlag = stageId === 'production' ? '' : ` --stage ${stageId}`;
+    const stageLabel = stageId === 'production' ? '' : ` (${stageId})`;
 
     console.log('');
     console.log(bold('How do you want to run?'));
@@ -142,8 +201,8 @@ const startDev = async (tenantId?: string) => {
     switch (mode) {
         case '2':
             runCommand(
-                `npx tsx scripts/prepare-native-config.ts ${tenantId} && vite --host`,
-                `Starting ${displayName} (${tenantId}) — app only`,
+                `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag} && vite --host`,
+                `Starting ${displayName}${stageLabel} — app only`,
             );
             break;
 
@@ -156,12 +215,9 @@ const startDev = async (tenantId?: string) => {
 
         case '1':
         default:
-            // For full stack, we set TENANT so docker-start:tenant picks it up
-            process.env.TENANT = tenantId;
-
             runCommand(
-                `TENANT=${tenantId} docker compose -f compose-local.yaml up --build`,
-                `Starting ${displayName} (${tenantId}) — full stack`,
+                `TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up --build`,
+                `Starting ${displayName}${stageLabel} — full stack`,
             );
             break;
     }
@@ -176,8 +232,10 @@ const pickTenantAndPrepare = async () => {
 
     tenants.forEach((t, i) => {
         const name = getTenantDisplayName(t);
+        const stages = discoverStages(t);
+        const stageList = stages.length > 0 ? dim(` [${stages.join(', ')}]`) : '';
 
-        console.log(`  ${cyan(`${i + 1}`)}  ${bold(t)} — ${name}`);
+        console.log(`  ${cyan(`${i + 1}`)}  ${bold(t)} — ${name}${stageList}`);
     });
 
     console.log('');
@@ -192,9 +250,12 @@ const pickTenantAndPrepare = async () => {
         tenantId = choice || 'learncard';
     }
 
+    const stageId = await pickStage(tenantId);
+    const stageFlag = stageId === 'production' ? '' : ` --stage ${stageId}`;
+
     runCommand(
-        `npx tsx scripts/prepare-native-config.ts ${tenantId}`,
-        `Preparing config for ${getTenantDisplayName(tenantId)} (${tenantId})`,
+        `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        `Preparing config for ${getTenantDisplayName(tenantId)} (${tenantId}, ${stageId})`,
     );
 };
 
@@ -210,21 +271,29 @@ const runValidators = () => {
 // ---------------------------------------------------------------------------
 
 const handleShortcuts = async (): Promise<boolean> => {
-    const [, , command, arg] = process.argv;
+    const args = process.argv.slice(2);
+    const command = args[0];
+    const arg = args[1];
+    const arg2 = args[2];
 
     if (!command) return false;
 
     switch (command) {
         case 'dev':
-            await startDev(arg);
+            await startDev(arg, arg2);
             return true;
 
-        case 'start':
+        case 'start': {
+            const tenant = arg ?? 'learncard';
+            const stage = arg2 ?? 'local';
+            const stageFlag = stage === 'production' ? '' : ` --stage ${stage}`;
+
             runCommand(
-                `npx tsx scripts/prepare-native-config.ts ${arg ?? 'learncard'} && vite --host`,
-                `Starting ${arg ?? 'learncard'} — app only`,
+                `npx tsx scripts/prepare-native-config.ts ${tenant}${stageFlag} && vite --host`,
+                `Starting ${tenant} (${stage}) — app only`,
             );
             return true;
+        }
 
         case 'validate':
             runValidators();
@@ -240,13 +309,16 @@ const handleShortcuts = async (): Promise<boolean> => {
 
             for (const t of discoverTenants()) {
                 const name = getTenantDisplayName(t);
+                const stages = discoverStages(t);
                 const domain = (() => {
                     try {
                         return JSON.parse(readFileSync(join(ENVIRONMENTS_DIR, t, 'config.json'), 'utf-8')).domain ?? '';
                     } catch { return ''; }
                 })();
 
-                console.log(`  ${green('•')} ${bold(t)} — ${name}${domain ? dim(` (${domain})`) : ''}`);
+                const stageList = stages.length > 0 ? dim(` stages: [${stages.join(', ')}]`) : '';
+
+                console.log(`  ${green('•')} ${bold(t)} — ${name}${domain ? dim(` (${domain})`) : ''}${stageList}`);
             }
 
             console.log('');

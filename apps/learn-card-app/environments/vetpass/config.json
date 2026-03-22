@@ -3,16 +3,16 @@
     "domain": "vetpass.app",
     "devDomain": "localhost:3000",
     "apis": {
-        "brainService": "http://localhost:4000/trpc",
-        "brainServiceApi": "http://localhost:4000/api",
-        "cloudService": "http://localhost:4100/trpc",
-        "lcaApi": "http://localhost:5100/trpc",
-        "xapi": "http://localhost:4100/xapi"
+        "brainService": "TODO_BRAIN_SERVICE_URL",
+        "brainServiceApi": "TODO_BRAIN_SERVICE_API_URL",
+        "cloudService": "TODO_CLOUD_SERVICE_URL",
+        "lcaApi": "TODO_LCA_API_URL",
+        "xapi": "TODO_XAPI_URL"
     },
     "auth": {
         "provider": "firebase",
         "keyDerivation": "sss",
-        "sssServerUrl": "http://localhost:5100/api",
+        "sssServerUrl": "TODO_SSS_SERVER_URL",
         "enableEmailBackupShare": true,
         "requireEmailForPhoneUsers": true,
         "firebase": {

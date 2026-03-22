@@ -3,8 +3,11 @@
 /**
  * validate-tenant-configs.ts
  *
- * Validates every tenant config in environments/<tenant>/config.json against
- * the Zod schema. Run this in CI to catch config drift before deploy.
+ * Validates every tenant config in environments/<tenant>/config.json (and any
+ * config.<stage>.json stage overlays) against the Zod schema. Also detects
+ * TODO_* sentinel placeholder values that haven't been filled in.
+ *
+ * Run this in CI to catch config drift before deploy.
  *
  * Usage:
  *   npx tsx scripts/validate-tenant-configs.ts
@@ -28,13 +31,13 @@ const APP_ROOT = resolve(__dirname, '..');
 const ENVIRONMENTS_DIR = resolve(APP_ROOT, 'environments');
 
 // ---------------------------------------------------------------------------
-// Discover tenants
+// Discover tenants (skip legacy "local" dir — now learncard/config.local.json)
 // ---------------------------------------------------------------------------
 
 const tenantDirs = readdirSync(ENVIRONMENTS_DIR).filter(name => {
     const full = join(ENVIRONMENTS_DIR, name);
 
-    return statSync(full).isDirectory();
+    return statSync(full).isDirectory() && name !== 'local';
 });
 
 if (tenantDirs.length === 0) {
@@ -43,13 +46,98 @@ if (tenantDirs.length === 0) {
 }
 
 // ---------------------------------------------------------------------------
-// Validate each tenant
+// TODO_* sentinel detection
+// ---------------------------------------------------------------------------
+
+const TODO_PATTERN = /^TODO_/;
+
+const findTodoSentinels = (obj: unknown, path = ''): string[] => {
+    const results: string[] = [];
+
+    if (typeof obj === 'string' && TODO_PATTERN.test(obj)) {
+        results.push(`${path} = "${obj}"`);
+    } else if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+        for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+            results.push(...findTodoSentinels(value, path ? `${path}.${key}` : key));
+        }
+    } else if (Array.isArray(obj)) {
+        obj.forEach((item, i) => {
+            results.push(...findTodoSentinels(item, `${path}[${i}]`));
+        });
+    }
+
+    return results;
+};
+
+// ---------------------------------------------------------------------------
+// Discover stage overlay files for a tenant
+// ---------------------------------------------------------------------------
+
+const discoverStageFiles = (tenantDir: string): string[] => {
+    return readdirSync(tenantDir)
+        .filter(f => /^config\..+\.json$/.test(f))
+        .map(f => f.replace(/^config\./, '').replace(/\.json$/, ''));
+};
+
+// ---------------------------------------------------------------------------
+// Validate a single config (base or merged with stage overlay)
 // ---------------------------------------------------------------------------
 
 let failures = 0;
+let warnings = 0;
+
+const validateConfig = (
+    label: string,
+    overrides: Record<string, unknown>,
+    stageOverrides?: Record<string, unknown>,
+): void => {
+    let merged = deepMerge(
+        DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
+        overrides,
+    );
+
+    if (stageOverrides) {
+        merged = deepMerge(merged, stageOverrides);
+    }
+
+    merged['_source'] = 'validation';
+
+    const result = tenantConfigSchema.safeParse(merged);
+
+    if (result.success) {
+        const todos = findTodoSentinels(result.data);
+
+        if (todos.length > 0) {
+            console.log(`✓  ${label} — valid (${todos.length} TODO placeholder(s)):`);
+
+            for (const t of todos) {
+                console.log(`      ⚠  ${t}`);
+            }
+
+            warnings += todos.length;
+        } else {
+            console.log(`✓  ${label} — valid`);
+        }
+    } else {
+        console.error(`✗  ${label} — INVALID:`);
+
+        for (const issue of result.error.issues) {
+            console.error(`      ${issue.path.join('.')}: ${issue.message}`);
+        }
+
+        failures++;
+    }
+};
+
+// ---------------------------------------------------------------------------
+// Validate each tenant (base config + stage overlays)
+// ---------------------------------------------------------------------------
+
+let totalConfigs = 0;
 
 for (const tenant of tenantDirs) {
-    const configPath = join(ENVIRONMENTS_DIR, tenant, 'config.json');
+    const tenantDir = join(ENVIRONMENTS_DIR, tenant);
+    const configPath = join(tenantDir, 'config.json');
 
     if (!existsSync(configPath)) {
         console.log(`⚠  ${tenant}/ — no config.json (assets-only tenant)`);
@@ -59,26 +147,25 @@ for (const tenant of tenantDirs) {
     try {
         const overrides = JSON.parse(readFileSync(configPath, 'utf-8'));
 
-        const merged = deepMerge(
-            DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
-            overrides,
-        );
+        // Validate base (production) config
+        validateConfig(tenant, overrides);
+        totalConfigs++;
 
-        merged['_source'] = 'validation';
-        merged['_tenant'] = tenant;
+        // Validate each stage overlay merged on top of base
+        const stages = discoverStageFiles(tenantDir);
 
-        const result = tenantConfigSchema.safeParse(merged);
+        for (const stage of stages) {
+            const stagePath = join(tenantDir, `config.${stage}.json`);
 
-        if (result.success) {
-            console.log(`✓  ${tenant} — valid (tenantId=${result.data.tenantId})`);
-        } else {
-            console.error(`✗  ${tenant} — INVALID:`);
+            try {
+                const stageOverrides = JSON.parse(readFileSync(stagePath, 'utf-8'));
 
-            for (const issue of result.error.issues) {
-                console.error(`      ${issue.path.join('.')}: ${issue.message}`);
+                validateConfig(`${tenant}/${stage}`, overrides, stageOverrides);
+                totalConfigs++;
+            } catch (err) {
+                console.error(`✗  ${tenant}/${stage} — failed to parse config.${stage}.json: ${err}`);
+                failures++;
             }
-
-            failures++;
         }
     } catch (err) {
         console.error(`✗  ${tenant} — failed to parse config.json: ${err}`);
@@ -93,8 +180,12 @@ for (const tenant of tenantDirs) {
 console.log('');
 
 if (failures > 0) {
-    console.error(`❌ ${failures} tenant config(s) failed validation.`);
+    console.error(`❌ ${failures} config(s) failed validation out of ${totalConfigs} checked.`);
     process.exit(1);
-} else {
-    console.log(`✅ All ${tenantDirs.length} tenant config(s) valid.`);
 }
+
+if (warnings > 0) {
+    console.log(`⚠️  ${warnings} TODO placeholder(s) found — fill these before deploying to production.`);
+}
+
+console.log(`✅ All ${totalConfigs} config(s) valid.`);
