@@ -22,9 +22,7 @@ const ephemeralCardsCache = getLRUCache<LearnCardFromSeed['returnValue']>();
 // Try native plugin first, fall back to WASM
 let didKitInitPromise: Promise<'node' | Buffer> | null = null;
 
-const resolveDidKitPluginFactory = (
-    module: Record<string, unknown>
-): (() => Promise<unknown>) => {
+const resolveDidKitPluginFactory = (module: Record<string, unknown>): (() => Promise<unknown>) => {
     const factory =
         (module as { getDidKitPlugin?: unknown }).getDidKitPlugin ??
         (module as { default?: { getDidKitPlugin?: unknown } }).default?.getDidKitPlugin;
@@ -40,22 +38,22 @@ const getDidKitInit = async (): Promise<'node' | Buffer> => {
     if (didKitInitPromise) return didKitInitPromise;
 
     didKitInitPromise = (async () => {
-        try {
-            // Check if native plugin is available by trying to load it
-            const didkitModule = await import('@learncard/didkit-plugin-node');
-            const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
-
-            // Test that it actually works
-            await getNativePlugin();
-            return 'node' as const;
-        } catch (e) {
-            console.log('Native DIDKit plugin not available, falling back to WASM');
-
-            // Return the WASM buffer for initLearnCard to use
+        if (process.env.SKIP_DIDKIT_NAPI) {
             const wasmBuffer = await readFile(
                 require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
             );
+            return wasmBuffer;
+        }
 
+        try {
+            const didkitModule = await import('@learncard/didkit-plugin-node');
+            const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
+            await getNativePlugin();
+            return 'node' as const;
+        } catch {
+            const wasmBuffer = await readFile(
+                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
+            );
             return wasmBuffer;
         }
     })();
@@ -102,9 +100,7 @@ export const getSigningAuthorityLearnCard = async (
             saFound: !!sa,
             hasSeed: !!sa?.seed,
         });
-        throw new Error(
-            `No signing authority found for ownerDID="${ownerDID}" name="${name}"`
-        );
+        throw new Error(`No signing authority found for ownerDID="${ownerDID}" name="${name}"`);
     }
 
     const cachedValue = saCardsCache.get(sa.seed);

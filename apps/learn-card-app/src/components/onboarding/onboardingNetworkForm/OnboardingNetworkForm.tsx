@@ -46,6 +46,7 @@ import {
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
+import redirectStore from 'learn-card-base/stores/redirectStore';
 import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import { LearnCardRoles, LearnCardRolesEnum, OnboardingStepsEnum } from '../onboarding.helpers';
 
@@ -75,6 +76,8 @@ type OnboardingNetworkFormProps = {
     role?: LearnCardRolesEnum | null;
     setStep?: (step: OnboardingStepsEnum) => void;
     onSuccess?: () => void;
+    skipRoleSlides?: boolean;
+    pendingInstall?: { listingId: string; appName: string; appIcon?: string } | null;
     formData: {
         name: string | null | undefined;
         dob: string | null | undefined;
@@ -96,6 +99,8 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     onSuccess,
     formData,
     updateFormData,
+    skipRoleSlides,
+    pendingInstall,
 }) => {
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
@@ -325,16 +330,24 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     setTimeout(async () => {
                         await onSuccess?.();
                     }, 1000);
-                    newModal(
-                        <OnboardingSwiperForSlides
-                            roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
-                            dob={dob}
-                        />,
-                        {
-                            sectionClassName: '!max-w-full',
-                        },
-                        { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-                    );
+
+                    if (skipRoleSlides && pendingInstall) {
+                        // Hand install intent back to AppListingPage — its useEffect fires once
+                        // isOnboardingOpen becomes false (set by OnboardingContainer on unmount)
+                        redirectStore.set.installIntent(pendingInstall);
+                    } else {
+                        // Default: show role-specific onboarding slides
+                        newModal(
+                            <OnboardingSwiperForSlides
+                                roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
+                                dob={dob}
+                            />,
+                            {
+                                sectionClassName: '!max-w-full',
+                            },
+                            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                        );
+                    }
                 }
 
                 if (role === LearnCardRolesEnum.teacher) {
@@ -762,6 +775,21 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     return (
         <div className="w-full h-full bg-white relative overflow-y-auto">
             <div className="max-w-[600px] mx-auto pt-[50px] px-4 relative">
+                {pendingInstall && (
+                    <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-3">
+                        {pendingInstall.appIcon && (
+                            <img
+                                src={pendingInstall.appIcon}
+                                alt=""
+                                className="w-8 h-8 rounded-lg object-cover shrink-0"
+                            />
+                        )}
+                        <p className="text-sm text-indigo-800 font-medium">
+                            After creating your account, you'll be able to install{' '}
+                            <span className="font-semibold">{pendingInstall.appName}</span>
+                        </p>
+                    </div>
+                )}
                 <OnboardingHeader text="Set up your profile to get started!" />
                 {isLoading && (
                     <div className="absolute top-0 left-0 w-full h-full z-[10000] flex flex-col items-center justify-center bg-white bg-opacity-70 backdrop-blur-[3px]">

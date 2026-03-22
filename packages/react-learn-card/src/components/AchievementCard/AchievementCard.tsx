@@ -27,7 +27,7 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({
 
     return (
         <div
-            className={`flex-col shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[8px] px-[8px] w-[190px] h-[265px] rounded-[20px] rounded-square-card-container`}
+            className={`flex-col shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[8px] px-[8px] w-[190px] h-[285px] rounded-[20px] rounded-square-card-container`}
         >
             <section
                 className={`relative flex h-[120px] ${thumbClass} flex-col justify-center items-center w-full rounded-[20px]`}

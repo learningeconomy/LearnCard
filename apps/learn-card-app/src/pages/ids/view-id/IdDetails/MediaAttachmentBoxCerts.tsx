@@ -15,9 +15,13 @@ import {
     getVideoMetadata as getVideoMetadataHelper,
 } from 'learn-card-base/helpers/attachment.helpers';
 import {
-    getEvidenceAttachments,
     getEvidenceAttachmentType,
+    isPdfAttachmentSource,
 } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    ResolvedDocumentResource,
+    resolvePdfDocumentResource,
+} from './helpers/pdfDocumentResource.helpers';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 
@@ -31,7 +35,7 @@ type Attachment = {
 
 type Evidence = {
     id: string;
-    type: ['Evidence'];
+    type: ('Evidence' | 'EvidenceFile')[];
     name: string;
     description: string;
     narrative: string;
@@ -55,6 +59,8 @@ type VideoMetadata = {
     imageUrl?: string;
 };
 
+type ParsedVideoMetadata = Awaited<ReturnType<typeof parseVideoMetadata>>;
+
 type MediaAttachmentsBoxProps = {
     attachments?: Attachment[];
     evidence?: Evidence[];
@@ -71,10 +77,13 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     const [documentMetadata, setDocumentMetadata] = useState<{
         [documentUrl: string]: MediaMetadata | undefined;
     }>({});
+    const [documentResources, setDocumentResources] = useState<{
+        [documentUrl: string]: ResolvedDocumentResource | undefined;
+    }>({});
     const [videoMetadata, setVideoMetadata] = useState<{
         [videoUrl: string]: VideoMetadata | undefined;
     }>({});
-    const [parsedMetaData, setParsedMetaData] = useState<VideoMetadata | null>(null);
+    const [parsedMetaData, setParsedMetaData] = useState<ParsedVideoMetadata | null>(null);
 
     const [evidenceAttachments, setEvidenceAttachments] = useState<Attachment[] | null>(null);
 
@@ -82,7 +91,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     const primaryColor = colors?.defaults?.primaryColor;
 
     useEffect(() => {
-        const getEvidenceAttachments = async () => {
+        const resolveEvidenceAttachments = async () => {
             if (!evidence) return;
 
             // Filter out CourseSyllabus and Textbook attachments as they are not attachments
@@ -95,16 +104,30 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
 
             const result = await Promise.all(
                 _evidence.map(async ev => {
-                    const type = await getEvidenceAttachmentType(ev.url ?? ev.id);
+                    let attachmentUrl = '';
+                    let type: Attachment['type'] = 'link';
+
+                    if (ev.url) {
+                        type = await getEvidenceAttachmentType(ev.url);
+                    } else if (typeof ev.id === 'string' && isPdfAttachmentSource(ev.id)) {
+                        type = 'document';
+                    } else if (ev?.type?.includes('EvidenceFile')) {
+                        type = (ev.genre as Attachment['type']) ?? 'document';
+                    } else {
+                        type = await getEvidenceAttachmentType(ev.id);
+                    }
+
+                    if (ev.url) {
+                        attachmentUrl = ev.url;
+                    } else if (typeof ev.id === 'string' && isPdfAttachmentSource(ev.id)) {
+                        attachmentUrl = ev.id;
+                    } else if (typeof ev.id === 'string') {
+                        attachmentUrl = ev.id;
+                    }
 
                     return {
                         title: ev.name,
-                        url:
-                            ev.url ??
-                            (typeof ev.id === 'string' &&
-                            ev.id.startsWith('data:application/pdf;base64,')
-                                ? ev.id
-                                : null),
+                        url: attachmentUrl,
                         description: ev.description,
                         narrative: ev.narrative ?? '',
                         type,
@@ -115,22 +138,8 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
             setEvidenceAttachments(result);
         };
 
-        getEvidenceAttachments();
+        resolveEvidenceAttachments();
     }, [evidence]);
-
-    useEffect(() => {
-        handleParseVideoMetadata();
-    }, []);
-
-    const handleParseVideoMetadata = async () => {
-        if (mediaAttachments.length > 0) {
-            const videoAttachment = mediaAttachments.find(a => a.type === 'video');
-            if (videoAttachment) {
-                const parsedVideoMetadata = await parseVideoMetadata(videoAttachment.url);
-                setParsedMetaData(parsedVideoMetadata);
-            }
-        }
-    };
 
     const allowedTypes = ['link', 'photo', 'video', 'document', 'text'] as const;
     const safeEvidenceAttachments = (evidenceAttachments ?? []).map(item => ({
@@ -160,35 +169,89 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
         }
     });
 
+    const firstVideoUrl = mediaAttachments.find(attachment => attachment.type === 'video')?.url;
+
     useEffect(() => {
-        const getMetadata = async (attachments: Attachment[]): Promise<any> => {
+        const handleParseVideoMetadata = async () => {
+            if (!firstVideoUrl) {
+                setParsedMetaData(null);
+                return;
+            }
+
+            const parsedVideoMetadata = await parseVideoMetadata(firstVideoUrl);
+            setParsedMetaData(parsedVideoMetadata);
+        };
+
+        handleParseVideoMetadata();
+    }, [firstVideoUrl]);
+
+    useEffect(() => {
+        let shouldIgnore = false;
+        const revokeResourceUrls: Array<() => void> = [];
+
+        const getMetadata = async (): Promise<void> => {
             const docMetadata: { [docUrl: string]: MediaMetadata | undefined } = {};
+            const resolvedDocuments: {
+                [docUrl: string]: ResolvedDocumentResource | undefined;
+            } = {};
             const videoMetadata: { [videoUrl: string]: VideoMetadata | undefined } = {};
+
             await Promise.all(
                 combinedAttachments.map(async attachment => {
                     if (attachment.type === 'document') {
+                        if (!attachment.url) return;
+
+                        if (isPdfAttachmentSource(attachment.url)) {
+                            const resolvedPdf = await resolvePdfDocumentResource(
+                                attachment.url,
+                                attachment.title
+                            );
+
+                            if (resolvedPdf) {
+                                docMetadata[attachment.url] = resolvedPdf.metadata;
+                                resolvedDocuments[attachment.url] = resolvedPdf.resource;
+                                if (resolvedPdf.resource.revokeUrls) {
+                                    revokeResourceUrls.push(resolvedPdf.resource.revokeUrls);
+                                }
+                                return;
+                            }
+                        }
+
                         docMetadata[attachment.url] = await getFileMetadata(attachment.url);
+                        resolvedDocuments[attachment.url] = {
+                            previewUrl: attachment.url,
+                            downloadUrl: attachment.url,
+                            isPdfDataSource: false,
+                        };
                     } else if (attachment.type === 'video') {
                         videoMetadata[attachment.url] = await getVideoMetadata(attachment.url);
                     }
                 })
             );
+
+            if (shouldIgnore) {
+                revokeResourceUrls.forEach(revoke => revoke());
+                return;
+            }
+
             setVideoMetadata(videoMetadata);
             setDocumentMetadata(docMetadata);
+            setDocumentResources(resolvedDocuments);
         };
 
-        const videos = combinedAttachments.filter(a => a.type === 'video');
-        getMetadata([...documentsAndLinks, ...videos]);
-    }, []);
+        getMetadata();
+
+        return () => {
+            shouldIgnore = true;
+            revokeResourceUrls.forEach(revoke => revoke());
+        };
+    }, [attachments, evidenceAttachments, getFileMetadata, getVideoMetadata]);
 
     const [currentLightboxUrl, setCurrentLightboxUrl] = useState<string | undefined>(undefined);
     const lightboxItems = mediaAttachments.filter(
         a => a.type === 'photo' || a.type === 'video'
     ) as LightboxItem[];
-    const handleMediaAttachmentClick = (
-        url: string,
-        type: 'photo' | 'document' | 'video' | 'link'
-    ) => {
+    const handleMediaAttachmentClick = (url: string, type: Attachment['type']) => {
         if (type === 'photo' || type === 'video') {
             setCurrentLightboxUrl(url);
         }
@@ -279,11 +342,16 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
             {documentsAndLinks.length > 0 && (
                 <div className="w-full flex flex-col gap-[5px]">
                     {documentsAndLinks.map((docOrLink, index) => {
+                        const documentResource =
+                            docOrLink.type === 'document'
+                                ? documentResources[docOrLink.url]
+                                : undefined;
                         const metadata =
                             docOrLink.type === 'document'
                                 ? documentMetadata[docOrLink.url]
                                 : undefined;
                         const { fileExtension, sizeInBytes, numberOfPages } = metadata ?? {};
+                        const previewUrl = documentResource?.previewUrl ?? docOrLink.url;
 
                         let baseUrl = '';
                         if (docOrLink.type === 'link') {
@@ -338,16 +406,26 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                             </div>
                                         )}
                                         {docOrLink.type === 'document' &&
-                                            docOrLink.url.includes(
-                                                'data:application/pdf;base64,'
-                                            ) && (
-                                                <a
-                                                    href={docOrLink.url}
-                                                    download={`${docOrLink.title}.pdf`}
-                                                    className="text-grayscale-700 font-[500] text-[12px] font-poppins hover:underline"
-                                                >
-                                                    Download PDF
-                                                </a>
+                                            documentResource?.isPdfDataSource && (
+                                                <div className="flex items-center gap-[12px] pt-[4px]">
+                                                    <a
+                                                        href={previewUrl}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="text-grayscale-700 font-[500] text-[12px] font-poppins hover:underline"
+                                                        onClick={e => e.stopPropagation()}
+                                                    >
+                                                        Preview PDF
+                                                    </a>
+                                                    <a
+                                                        href={documentResource.downloadUrl}
+                                                        download={documentResource.downloadName}
+                                                        className="text-grayscale-700 font-[500] text-[12px] font-poppins hover:underline"
+                                                        onClick={e => e.stopPropagation()}
+                                                    >
+                                                        Download PDF
+                                                    </a>
+                                                </div>
                                             )}
                                     </div>
                                 </div>
@@ -356,18 +434,23 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
 
                         const className = `row-attachment ${docOrLink.type} bg-grayscale-100 rounded-[15px] p-[10px] w-full font-poppins text-[12px] leading-[18px] tracking-[-0.33px] text-left`;
 
+                        const shouldRenderPreviewActionsOnly =
+                            docOrLink.type === 'document' && documentResource?.isPdfDataSource;
+
+                        if (shouldRenderPreviewActionsOnly) {
+                            return (
+                                <div key={index} className={className}>
+                                    {innerContent}
+                                </div>
+                            );
+                        }
+
                         return (
                             <a
                                 key={index}
-                                href={docOrLink.url}
+                                href={previewUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                download={
-                                    docOrLink.type === 'document' &&
-                                    docOrLink.url.includes('data:application/pdf;base64,')
-                                        ? `${docOrLink.title}.pdf`
-                                        : undefined
-                                }
                                 className={className}
                                 onClick={e => e.stopPropagation()}
                             >

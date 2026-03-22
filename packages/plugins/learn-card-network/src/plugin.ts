@@ -858,7 +858,7 @@ export async function getLearnCardNetworkPlugin(
                     updates: { ...(credential && { credential }), ...restUpdates },
                 };
 
-                if (Array.isArray(skills) && skills.length > 0) payload.skills = skills;
+                if (Array.isArray(skills)) payload.skills = skills;
 
                 return client.boost.updateBoost.mutate(payload);
             },
@@ -1810,6 +1810,12 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.appStore.submitForReview.mutate({ listingId });
+            },
+
+            unsubmitAppStoreListing: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.unsubmitForReview.mutate({ listingId });
             },
 
             getListingsForIntegration: async (_learnCard, integrationId, options = {}) => {

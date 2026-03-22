@@ -532,7 +532,8 @@ const IssueVerifyStep: React.FC<{
     onBack: () => void;
     onComplete: () => void;
     integrationId?: string;
-}> = ({ templates, apiToken, onTokenChange, onBack, onComplete, integrationId }) => {
+    isActive?: boolean;
+}> = ({ templates, apiToken, onTokenChange, onBack, onComplete, integrationId, isActive }) => {
     const [selectedTemplateUri, setSelectedTemplateUri] = useState<string>(
         templates[0]?.boostUri || ''
     );
@@ -556,8 +557,9 @@ const IssueVerifyStep: React.FC<{
     const pollIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const initialTimestampRef = useRef<string | null>(null);
 
-    // Fetch auth grants on mount
+    // Fetch auth grants on mount and when step becomes active
     useEffect(() => {
+        if (isActive === false) return;
         const fetchData = async () => {
             setLoadingGrants(true);
             try {
@@ -572,7 +574,7 @@ const IssueVerifyStep: React.FC<{
             }
         };
         fetchData();
-    }, []);
+    }, [isActive]);
 
     // Capture initial activity timestamp on mount (before user runs code)
     useEffect(() => {
@@ -1182,6 +1184,7 @@ const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) =>
                     onBack={guideState.prevStep}
                     onComplete={() => handleStepComplete('issue')}
                     integrationId={selectedIntegration?.id}
+                    isActive={guideState.currentStep === 3}
                 />
             </div>
             <div style={{ display: guideState.currentStep === 4 ? 'block' : 'none' }}>
