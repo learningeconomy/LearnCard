@@ -117,10 +117,29 @@ automatically invalidated.
 
 See `tenantConfigSchema.ts` for the full schema with defaults.
 
+## Quick start
+
+```bash
+pnpm lc                  # Interactive menu — pick a tenant, launch mode, etc.
+pnpm lc dev              # Full stack (Docker services + Vite) with tenant picker
+pnpm lc dev vetpass      # Full stack with a specific tenant
+pnpm lc start            # App only (Vite, no Docker) with default tenant
+pnpm lc start vetpass    # App only with a specific tenant
+pnpm lc validate         # Run all config + theme validators
+pnpm lc create           # Scaffold a new tenant
+pnpm lc tenants          # List available tenants + themes
+```
+
+If you don't need multi-tenant features, **`pnpm dev` still works exactly as before**.
+
 ## npm scripts
 
 | Script                        | Description                          |
 | ----------------------------- | ------------------------------------ |
+| **`pnpm lc`**                | **Interactive dev launcher** (start here) |
+| `pnpm dev`                   | Docker compose — full stack (unchanged) |
+| `pnpm dev:services`          | Docker services only (no app)        |
+| `pnpm start`                 | Vite dev server only                 |
 | `pnpm prepare-config`        | Apply default (learncard) config     |
 | `pnpm docker-start`          | Apply local config + start dev       |
 | `pnpm docker-start:tenant`   | Apply `$TENANT` config + start dev   |
