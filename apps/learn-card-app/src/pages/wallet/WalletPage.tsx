@@ -31,6 +31,7 @@ import WalletPageItemWrapper from './WalletPageItemWrapper';
 import DotIcon from 'learn-card-base/svgs/DotIcon';
 
 import { useTheme } from '../../theme/hooks/useTheme';
+import { chatBotStore } from '../../stores/chatBotStore';
 
 const ViewSharedCredentials = lazyWithRetry(
     () => import('learn-card-base/components/sharecreds/ViewSharedCredentials')
@@ -139,6 +140,10 @@ const WalletPage: React.FC = () => {
                     : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
             presentToast(msg, { type: ToastTypeEnum.Error });
             return;
+        }
+
+        if (path === '/ai/topics') {
+            chatBotStore.set.resetStore();
         }
 
         history.push(path);
