@@ -211,7 +211,11 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
     return (
         <div className="flex flex-col gap-[10px] px-[20px]">
-            <div className="bg-white rounded-[15px] p-[20px] max-h-[600px] overflow-y-auto">
+            <div
+                className={`bg-white rounded-[15px] p-[20px] ${
+                    !hideCreateFramework ? 'max-h-[400px]' : 'max-h-[600px]'
+                } overflow-y-auto`}
+            >
                 <h2 className="flex items-center justify-center gap-[10px] text-grayscale-900 font-poppins text-[22px] leading-[130%] tracking-[-0.25px] py-[10px]">
                     <SkillsFrameworkIcon
                         className="w-[35px] h-[35px]"
