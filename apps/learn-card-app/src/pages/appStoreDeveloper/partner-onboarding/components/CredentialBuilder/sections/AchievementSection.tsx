@@ -4,7 +4,13 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Trophy, Plus, X, ChevronDown, Folder } from 'lucide-react';
-import { constructCustomBoostType, isCustomBoostType, getCategoryTypeFromCustomType, getAchievementTypeFromCustomType, replaceUnderscoresWithWhiteSpace } from 'learn-card-base/helpers/boostCustomTypeHelpers';
+import {
+    constructCustomBoostType,
+    isCustomBoostType,
+    getCategoryTypeFromCustomType,
+    getAchievementTypeFromCustomType,
+    replaceUnderscoresWithWhiteSpace,
+} from 'learn-card-base/helpers/boostCustomTypeHelpers';
 
 import {
     OBv3CredentialTemplate,
@@ -36,7 +42,10 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
 }) => {
     const achievement = template.credentialSubject.achievement;
 
-    const updateAchievement = (key: keyof AchievementTemplate, value: TemplateFieldValue | AchievementTemplate['criteria'] | AlignmentTemplate[]) => {
+    const updateAchievement = (
+        key: keyof AchievementTemplate,
+        value: TemplateFieldValue | AchievementTemplate['criteria'] | AlignmentTemplate[]
+    ) => {
         onChange({
             ...template,
             credentialSubject: {
@@ -69,7 +78,11 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
         updateAchievement('alignment', [...(achievement.alignment || []), newAlignment]);
     };
 
-    const updateAlignment = (index: number, field: keyof AlignmentTemplate, value: TemplateFieldValue) => {
+    const updateAlignment = (
+        index: number,
+        field: keyof AlignmentTemplate,
+        value: TemplateFieldValue
+    ) => {
         const alignments = [...(achievement.alignment || [])];
         alignments[index] = { ...alignments[index], [field]: value };
         updateAchievement('alignment', alignments);
@@ -111,15 +124,18 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
     });
 
     // Categories available for custom types (user-friendly subset)
-    const walletCategories = useMemo(() => [
-        { value: 'Achievement', label: 'Achievement', walletFolder: 'Achievements' },
-        { value: 'Learning History', label: 'Learning History', walletFolder: 'Studies' },
-        { value: 'Work History', label: 'Work History', walletFolder: 'Experiences' },
-        { value: 'Social Badge', label: 'Social Badge', walletFolder: 'Boosts' },
-        { value: 'ID', label: 'ID', walletFolder: 'IDs' },
-        { value: 'Membership', label: 'Membership', walletFolder: 'Memberships' },
-        { value: 'Accommodation', label: 'Accommodation', walletFolder: 'Assistance' },
-    ], []);
+    const walletCategories = useMemo(
+        () => [
+            { value: 'Achievement', label: 'Achievement', walletFolder: 'Achievements' },
+            { value: 'Learning History', label: 'Learning History', walletFolder: 'Studies' },
+            { value: 'Work History', label: 'Work History', walletFolder: 'Experiences' },
+            { value: 'Social Badge', label: 'Social Badge', walletFolder: 'Boosts' },
+            { value: 'ID', label: 'ID', walletFolder: 'IDs' },
+            { value: 'Membership', label: 'Membership', walletFolder: 'Memberships' },
+            { value: 'Accommodation', label: 'Accommodation', walletFolder: 'Assistance' },
+        ],
+        []
+    );
 
     // Update achievementType when custom type settings change
     useEffect(() => {
@@ -157,7 +173,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
             <FieldEditor
                 label="Achievement Name"
                 field={achievement.name}
-                onChange={(f) => updateAchievement('name', f)}
+                onChange={f => updateAchievement('name', f)}
                 placeholder="e.g., Web Development Fundamentals"
                 helpText="The name of the achievement being recognized"
                 required
@@ -168,7 +184,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
             <FieldEditor
                 label="Achievement Description"
                 field={achievement.description}
-                onChange={(f) => updateAchievement('description', f)}
+                onChange={f => updateAchievement('description', f)}
                 placeholder="Describe the achievement..."
                 helpText="What did the recipient achieve?"
                 type="textarea"
@@ -181,7 +197,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                     <FieldEditor
                         label="Achievement Type"
                         field={achievement.achievementType || staticField('')}
-                        onChange={(f) => updateAchievement('achievementType', f)}
+                        onChange={f => updateAchievement('achievementType', f)}
                         helpText="The category of achievement per OBv3 spec"
                         type="select"
                         options={achievementTypeOptions}
@@ -189,15 +205,19 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                     />
                 ) : (
                     <div className="space-y-3">
-                        <label className="block text-xs font-medium text-gray-600">Achievement Type</label>
+                        <label className="block text-xs font-medium text-gray-600">
+                            Achievement Type
+                        </label>
 
                         {/* Category Selector */}
                         <div>
-                            <label className="block text-xs text-gray-500 mb-1">Wallet Category</label>
+                            <label className="block text-xs text-gray-500 mb-1">
+                                Wallet Category
+                            </label>
                             <div className="relative">
                                 <select
                                     value={customCategory}
-                                    onChange={(e) => setCustomCategory(e.target.value)}
+                                    onChange={e => setCustomCategory(e.target.value)}
                                     className="w-full px-3 py-2 pr-8 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent appearance-none bg-white"
                                 >
                                     {walletCategories.map(cat => (
@@ -208,20 +228,26 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                                 </select>
                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                             </div>
-                            <p className="text-xs text-gray-400 mt-1">Where this credential will appear in the recipient's wallet</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                                Where this credential will appear in the recipient's wallet
+                            </p>
                         </div>
 
                         {/* Custom Type Name */}
                         <div>
-                            <label className="block text-xs text-gray-500 mb-1">Custom Type Name</label>
+                            <label className="block text-xs text-gray-500 mb-1">
+                                Custom Type Name
+                            </label>
                             <input
                                 type="text"
                                 value={customTypeName}
-                                onChange={(e) => setCustomTypeName(e.target.value)}
+                                onChange={e => setCustomTypeName(e.target.value)}
                                 placeholder="e.g., Team Player, Course Completion, Work Experience"
                                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                             />
-                            <p className="text-xs text-gray-400 mt-1">A descriptive name for this type of credential</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                                A descriptive name for this type of credential
+                            </p>
                         </div>
 
                         {/* Preview */}
@@ -244,7 +270,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                     <input
                         type="checkbox"
                         checked={useCustomType}
-                        onChange={(e) => handleToggleCustomType(e.target.checked)}
+                        onChange={e => handleToggleCustomType(e.target.checked)}
                         className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
                     />
                     <span className="text-xs text-gray-600">
@@ -256,7 +282,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
             <FieldEditor
                 label="Achievement Image"
                 field={achievement.image || staticField('')}
-                onChange={(f) => updateAchievement('image', f)}
+                onChange={f => updateAchievement('image', f)}
                 placeholder="https://example.com/badge-image.png"
                 helpText="Badge or achievement image URL"
                 type="url"
@@ -267,7 +293,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
             <FieldEditor
                 label="Achievement ID"
                 field={achievement.id || staticField('')}
-                onChange={(f) => updateAchievement('id', f)}
+                onChange={f => updateAchievement('id', f)}
                 placeholder="urn:uuid:..."
                 helpText="Unique identifier for this achievement type"
                 showDynamicToggle={!disableDynamicFields}
@@ -277,11 +303,11 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
             <div className="mt-4 pt-4 border-t border-gray-100">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Additional Details</h4>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 xs:flex xs:flex-col">
                     <FieldEditor
                         label="Human Code"
                         field={achievement.humanCode || staticField('')}
-                        onChange={(f) => updateAchievement('humanCode', f)}
+                        onChange={f => updateAchievement('humanCode', f)}
                         placeholder="e.g., CS101"
                         helpText="Human-readable code (course number)"
                         showDynamicToggle={!disableDynamicFields}
@@ -290,7 +316,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                     <FieldEditor
                         label="Credits Available"
                         field={achievement.creditsAvailable || staticField('')}
-                        onChange={(f) => updateAchievement('creditsAvailable', f)}
+                        onChange={f => updateAchievement('creditsAvailable', f)}
                         placeholder="e.g., 3"
                         helpText="Number of credits"
                         showDynamicToggle={!disableDynamicFields}
@@ -299,7 +325,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                     <FieldEditor
                         label="Field of Study"
                         field={achievement.fieldOfStudy || staticField('')}
-                        onChange={(f) => updateAchievement('fieldOfStudy', f)}
+                        onChange={f => updateAchievement('fieldOfStudy', f)}
                         placeholder="e.g., Computer Science"
                         helpText="Academic discipline"
                         showDynamicToggle={!disableDynamicFields}
@@ -308,7 +334,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                     <FieldEditor
                         label="Specialization"
                         field={achievement.specialization || staticField('')}
-                        onChange={(f) => updateAchievement('specialization', f)}
+                        onChange={f => updateAchievement('specialization', f)}
                         placeholder="e.g., Web Development"
                         helpText="Area of specialization"
                         showDynamicToggle={!disableDynamicFields}
@@ -317,7 +343,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                     <FieldEditor
                         label="Version"
                         field={achievement.version || staticField('')}
-                        onChange={(f) => updateAchievement('version', f)}
+                        onChange={f => updateAchievement('version', f)}
                         placeholder="e.g., 1.0"
                         helpText="Version of this achievement"
                         showDynamicToggle={!disableDynamicFields}
@@ -326,7 +352,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                     <FieldEditor
                         label="Language"
                         field={achievement.inLanguage || staticField('')}
-                        onChange={(f) => updateAchievement('inLanguage', f)}
+                        onChange={f => updateAchievement('inLanguage', f)}
                         type="select"
                         options={[
                             { value: 'en-US', label: 'English (US)' },
@@ -394,7 +420,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                         type="text"
                         placeholder="Add tag and press Enter"
                         className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-amber-500"
-                        onKeyDown={(e) => {
+                        onKeyDown={e => {
                             if (e.key === 'Enter') {
                                 e.preventDefault();
                                 const input = e.currentTarget;
@@ -427,7 +453,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                     <FieldEditor
                         label="Criteria Narrative"
                         field={achievement.criteria?.narrative || staticField('')}
-                        onChange={(f) => updateCriteria('narrative', f)}
+                        onChange={f => updateCriteria('narrative', f)}
                         placeholder="Describe what was required to earn this achievement..."
                         helpText="Human-readable description of the criteria"
                         type="textarea"
@@ -437,7 +463,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                     <FieldEditor
                         label="Criteria ID"
                         field={achievement.criteria?.id || staticField('')}
-                        onChange={(f) => updateCriteria('id', f)}
+                        onChange={f => updateCriteria('id', f)}
                         placeholder="https://example.com/criteria/..."
                         helpText="URL to detailed criteria documentation"
                         type="url"
@@ -471,7 +497,10 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                 ) : (
                     <div className="space-y-4">
                         {(achievement.alignment || []).map((alignment, index) => (
-                            <div key={alignment.id} className="pl-3 border-l-2 border-amber-200 space-y-2">
+                            <div
+                                key={alignment.id}
+                                className="pl-3 border-l-2 border-amber-200 space-y-2"
+                            >
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-medium text-amber-700">
                                         Alignment {index + 1}
@@ -489,7 +518,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                                 <FieldEditor
                                     label="Target Name"
                                     field={alignment.targetName}
-                                    onChange={(f) => updateAlignment(index, 'targetName', f)}
+                                    onChange={f => updateAlignment(index, 'targetName', f)}
                                     placeholder="e.g., ISTE Standards for Students"
                                     helpText="Name of the framework or standard"
                                     showDynamicToggle={!disableDynamicFields}
@@ -498,18 +527,21 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                                 <FieldEditor
                                     label="Target URL"
                                     field={alignment.targetUrl}
-                                    onChange={(f) => updateAlignment(index, 'targetUrl', f)}
+                                    onChange={f => updateAlignment(index, 'targetUrl', f)}
                                     placeholder="https://..."
                                     helpText="URL to the standard or framework"
                                     type="url"
                                     showDynamicToggle={!disableDynamicFields}
-                                    error={getFieldError(validationErrors, `achievement.alignment.${index}.targetUrl`)}
+                                    error={getFieldError(
+                                        validationErrors,
+                                        `achievement.alignment.${index}.targetUrl`
+                                    )}
                                 />
 
                                 <FieldEditor
                                     label="Target Framework"
                                     field={alignment.targetFramework || staticField('')}
-                                    onChange={(f) => updateAlignment(index, 'targetFramework', f)}
+                                    onChange={f => updateAlignment(index, 'targetFramework', f)}
                                     placeholder="e.g., ISTE"
                                     helpText="Name of the framework"
                                     showDynamicToggle={!disableDynamicFields}
@@ -518,7 +550,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                                 <FieldEditor
                                     label="Target Code"
                                     field={alignment.targetCode || staticField('')}
-                                    onChange={(f) => updateAlignment(index, 'targetCode', f)}
+                                    onChange={f => updateAlignment(index, 'targetCode', f)}
                                     placeholder="e.g., 1.a"
                                     helpText="Code within the framework"
                                     showDynamicToggle={!disableDynamicFields}
