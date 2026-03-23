@@ -113,6 +113,150 @@ const config = {
                 >
                     7. Initiate Template Issue (SDK: initiateTemplateIssue)
                 </button>
+
+                <!-- ═══════════════════════════════════════════════════ -->
+                <!-- Notifications Section                              -->
+                <!-- ═══════════════════════════════════════════════════ -->
+                <hr class="border-gray-200 my-2" />
+                <p class="text-lg font-semibold text-teal-700">App Notifications:</p>
+
+                <div class="bg-teal-50 rounded-xl p-4 space-y-3 border border-teal-200">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Title</label>
+                            <input
+                                type="text"
+                                id="notif-title"
+                                value="Achievement Unlocked!"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Category</label>
+                            <select
+                                id="notif-category"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                            >
+                                <option value="reward">reward</option>
+                                <option value="announcement">announcement</option>
+                                <option value="status">status</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Body</label>
+                        <input
+                            type="text"
+                            id="notif-body"
+                            value="You earned the Gold Star badge"
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                        />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Action Path</label>
+                            <input
+                                type="text"
+                                id="notif-action-path"
+                                value="/achievements"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Priority</label>
+                            <select
+                                id="notif-priority"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                            >
+                                <option value="normal">normal</option>
+                                <option value="high">high</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button
+                        id="send-notif-btn"
+                        class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+                    >
+                        8. Send Notification (SDK: sendNotification)
+                    </button>
+
+                    <div id="notif-result" class="hidden text-sm p-3 rounded-lg"></div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════ -->
+                <!-- Counters Section                                   -->
+                <!-- ═══════════════════════════════════════════════════ -->
+                <hr class="border-gray-200 my-2" />
+                <p class="text-lg font-semibold text-amber-700">App Counters:</p>
+
+                <div class="bg-amber-50 rounded-xl p-4 space-y-3 border border-amber-200">
+                    <!-- Counter key + amount inputs -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Counter Key</label>
+                            <input
+                                type="text"
+                                id="counter-key"
+                                value="coins"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Amount</label>
+                            <input
+                                type="number"
+                                id="counter-amount"
+                                value="1"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Action buttons row -->
+                    <div class="grid grid-cols-3 gap-2">
+                        <button
+                            id="increment-counter-btn"
+                            class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl transition duration-200 shadow-lg text-sm"
+                        >
+                            9. Increment
+                        </button>
+
+                        <button
+                            id="get-counter-btn"
+                            class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl transition duration-200 shadow-lg text-sm"
+                        >
+                            10. Get Counter
+                        </button>
+
+                        <button
+                            id="get-all-counters-btn"
+                            class="bg-amber-400 hover:bg-amber-500 text-white font-bold py-2.5 rounded-xl transition duration-200 shadow-lg text-sm"
+                        >
+                            11. Get All
+                        </button>
+                    </div>
+
+                    <!-- Live counter display -->
+                    <div id="counter-display" class="bg-white rounded-lg p-3 border border-amber-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Counter Values</span>
+                            <span id="counter-updated" class="text-xs text-gray-400"></span>
+                        </div>
+
+                        <div id="counter-values" class="space-y-1">
+                            <p class="text-sm text-gray-400 italic">No counters loaded yet</p>
+                        </div>
+                    </div>
+
+                    <!-- Result feedback -->
+                    <div id="counter-result" class="hidden text-sm p-3 rounded-lg"></div>
+                </div>
             </div>
         </div>
 
@@ -740,6 +884,195 @@ const config = {
                 }
             }
 
+            // ==================== NOTIFICATIONS ====================
+
+            // Inline feedback helper for section-specific result divs
+            function showResult(elementId, message, type) {
+                const el = document.getElementById(elementId);
+                el.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
+
+                if (type === 'success') {
+                    el.classList.add('bg-green-100', 'text-green-800');
+                } else if (type === 'error') {
+                    el.classList.add('bg-red-100', 'text-red-800');
+                } else {
+                    el.classList.add('bg-blue-100', 'text-blue-800');
+                }
+
+                el.textContent = message;
+            }
+
+            // I. Send Notification
+            async function handleSendNotification() {
+                const title = document.getElementById('notif-title').value.trim();
+                const body = document.getElementById('notif-body').value.trim();
+                const actionPath = document.getElementById('notif-action-path').value.trim();
+                const category = document.getElementById('notif-category').value;
+                const priority = document.getElementById('notif-priority').value;
+
+                if (!title && !body) {
+                    showResult('notif-result', 'Please provide at least a title or body.', 'error');
+                    return;
+                }
+
+                showResult('notif-result', 'Sending notification...', 'info');
+
+                try {
+                    const result = await learnCard.sendNotification({
+                        title: title || undefined,
+                        body: body || undefined,
+                        actionPath: actionPath || undefined,
+                        category: category || undefined,
+                        priority,
+                    });
+
+                    console.log('NOTIFICATION RESULT:', result);
+
+                    if (result.sent) {
+                        showResult('notif-result', `Notification sent! Check your LearnCard inbox.`, 'success');
+                    } else {
+                        showResult('notif-result', 'Notification was not sent.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Notification error:', error);
+                    showResult('notif-result', `Failed: ${error.message || 'Unknown error'}`, 'error');
+                }
+            }
+
+            // ==================== COUNTERS ====================
+
+            // Render counter values into the display panel
+            function renderCounters(counters) {
+                const container = document.getElementById('counter-values');
+                const timestamp = document.getElementById('counter-updated');
+
+                if (!counters || counters.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-gray-400 italic">No counters found</p>';
+                    timestamp.textContent = '';
+                    return;
+                }
+
+                container.innerHTML = counters
+                    .map(c => {
+                        const time = c.updatedAt ? new Date(c.updatedAt).toLocaleTimeString() : 'never';
+                        return `
+                            <div class="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-amber-50 transition">
+                                <span class="font-mono text-sm font-semibold text-gray-700">${c.key}</span>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-lg font-bold text-amber-700">${c.value}</span>
+                                    <span class="text-xs text-gray-400">${time}</span>
+                                </div>
+                            </div>
+                        `;
+                    })
+                    .join('');
+
+                timestamp.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+            }
+
+            // J. Increment Counter
+            async function handleIncrementCounter() {
+                const key = document.getElementById('counter-key').value.trim();
+                const amount = parseInt(document.getElementById('counter-amount').value, 10);
+
+                if (!key) {
+                    showResult('counter-result', 'Please enter a counter key.', 'error');
+                    return;
+                }
+
+                if (isNaN(amount) || amount === 0) {
+                    showResult('counter-result', 'Amount must be a non-zero integer.', 'error');
+                    return;
+                }
+
+                showResult('counter-result', `Incrementing "${key}" by ${amount}...`, 'info');
+
+                try {
+                    const result = await learnCard.incrementCounter(key, amount);
+
+                    console.log('INCREMENT RESULT:', result);
+
+                    const direction = amount > 0 ? '+' : '';
+                    showResult(
+                        'counter-result',
+                        `${result.key}: ${result.previousValue} → ${result.newValue} (${direction}${amount})`,
+                        'success'
+                    );
+
+                    // Refresh the display with all counters
+                    await refreshAllCounters();
+                } catch (error) {
+                    console.error('Increment error:', error);
+                    showResult('counter-result', `Failed: ${error.message || 'Unknown error'}`, 'error');
+                }
+            }
+
+            // K. Get Single Counter
+            async function handleGetCounter() {
+                const key = document.getElementById('counter-key').value.trim();
+
+                if (!key) {
+                    showResult('counter-result', 'Please enter a counter key.', 'error');
+                    return;
+                }
+
+                showResult('counter-result', `Reading "${key}"...`, 'info');
+
+                try {
+                    const result = await learnCard.getCounter(key);
+
+                    console.log('GET COUNTER RESULT:', result);
+
+                    showResult(
+                        'counter-result',
+                        `${result.key} = ${result.value}${result.updatedAt ? ` (last updated ${new Date(result.updatedAt).toLocaleString()})` : ''}`,
+                        'success'
+                    );
+
+                    // Also refresh display
+                    await refreshAllCounters();
+                } catch (error) {
+                    console.error('Get counter error:', error);
+                    showResult('counter-result', `Failed: ${error.message || 'Unknown error'}`, 'error');
+                }
+            }
+
+            // L. Get All Counters
+            async function refreshAllCounters() {
+                try {
+                    const result = await learnCard.getCounters();
+
+                    console.log('GET ALL COUNTERS RESULT:', result);
+
+                    renderCounters(result.counters);
+                } catch (error) {
+                    console.error('Get all counters error:', error);
+                    renderCounters([]);
+                }
+            }
+
+            async function handleGetAllCounters() {
+                showResult('counter-result', 'Loading all counters...', 'info');
+
+                try {
+                    const result = await learnCard.getCounters();
+
+                    console.log('GET ALL COUNTERS RESULT:', result);
+
+                    renderCounters(result.counters);
+
+                    const count = result.counters.length;
+                    showResult(
+                        'counter-result',
+                        `Found ${count} counter${count !== 1 ? 's' : ''}`,
+                        count > 0 ? 'success' : 'info'
+                    );
+                } catch (error) {
+                    console.error('Get all counters error:', error);
+                    showResult('counter-result', `Failed: ${error.message || 'Unknown error'}`, 'error');
+                }
+            }
+
             // --- INITIALIZATION ---
             window.onload = function () {
                 // Attach event listeners to the buttons
@@ -773,6 +1106,22 @@ const config = {
                 document
                     .getElementById('initiate-template-issue-btn')
                     .addEventListener('click', handleInitiateTemplateIssue);
+
+                // Notifications
+                document
+                    .getElementById('send-notif-btn')
+                    ?.addEventListener('click', handleSendNotification);
+
+                // Counters
+                document
+                    .getElementById('increment-counter-btn')
+                    ?.addEventListener('click', handleIncrementCounter);
+                document
+                    .getElementById('get-counter-btn')
+                    ?.addEventListener('click', handleGetCounter);
+                document
+                    .getElementById('get-all-counters-btn')
+                    ?.addEventListener('click', handleGetAllCounters);
 
                 // Begin the SSO flow immediately when the app loads
                 initiateSSO();
