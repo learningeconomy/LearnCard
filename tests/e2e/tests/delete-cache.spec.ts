@@ -25,7 +25,7 @@ describe('Delete Functionality and Cache Invalidation', () => {
             expect(recordsBefore[0].uri).toEqual(uri);
 
             // Delete the credential
-            const deleted = await a.invoke.deleteCredential(uri);
+            const deleted = await a.store.LearnCloud.delete(uri);
             expect(deleted).toBe(true);
 
             // Verify credential is removed from index
@@ -37,7 +37,7 @@ describe('Delete Functionality and Cache Invalidation', () => {
             const nonExistentUri = 'learncloud:nonexistent:test123';
 
             // Try to delete a credential that doesn't exist
-            const result = await a.invoke.deleteCredential(nonExistentUri);
+            const result = await a.store.LearnCloud.delete(nonExistentUri);
             expect(result).toBe(false);
         });
 
@@ -49,7 +49,7 @@ describe('Delete Functionality and Cache Invalidation', () => {
             await a.index.LearnCloud.add({ id: 'test', uri });
 
             // User B tries to delete User A's credential
-            await expect(b.invoke.deleteCredential(uri)).rejects.toThrow();
+            await expect(b.store.LearnCloud.delete(uri)).rejects.toThrow();
 
             // Verify User A's credential is still intact
             const records = await a.index.LearnCloud.get();
@@ -71,7 +71,7 @@ describe('Delete Functionality and Cache Invalidation', () => {
             expect(receivedCreds).toHaveLength(1);
 
             // User B deletes the received credential
-            const deleted = await b.invoke.deleteCredential(uri);
+            const deleted = await b.store.LearnCloud.delete(uri);
             expect(deleted).toBe(true);
 
             // Verify credential is removed from User B's received credentials
@@ -98,7 +98,7 @@ describe('Delete Functionality and Cache Invalidation', () => {
             expect(cachedBefore).toEqual(vc);
 
             // Delete the credential
-            const deleted = await a.invoke.deleteCredential(uri);
+            const deleted = await a.store.LearnCloud.delete(uri);
             expect(deleted).toBe(true);
 
             // Verify cache is invalidated - reading should return undefined
@@ -117,7 +117,7 @@ describe('Delete Functionality and Cache Invalidation', () => {
             await a.read.get(uri);
 
             // Delete the credential (using default cache behavior)
-            const deleted = await a.invoke.deleteCredential(uri);
+            const deleted = await a.store.LearnCloud.delete(uri);
             expect(deleted).toBe(true);
 
             // Verify cache is cleared regardless
@@ -137,7 +137,7 @@ describe('Delete Functionality and Cache Invalidation', () => {
             expect(cachedBefore).toBeDefined();
 
             // Delete the credential
-            const deleted = await a.invoke.deleteCredential(uri);
+            const deleted = await a.store.LearnCloud.delete(uri);
             expect(deleted).toBe(true);
 
             // Verify cache is invalidated
@@ -183,7 +183,7 @@ describe('Delete Functionality and Cache Invalidation', () => {
             const uri = await a.store.LearnCloud.upload!(vp as any);
 
             // Delete the presentation
-            const deleted = await a.invoke.deleteCredential(uri);
+            const deleted = await a.store.LearnCloud.delete(uri);
             expect(deleted).toBe(true);
         });
     });
@@ -209,7 +209,7 @@ describe('Delete Functionality and Cache Invalidation', () => {
 
             // Delete all credentials
             for (const uri of uris) {
-                const deleted = await a.invoke.deleteCredential(uri);
+                const deleted = await a.store.LearnCloud.delete(uri);
                 expect(deleted).toBe(true);
             }
 
@@ -229,12 +229,12 @@ describe('Delete Functionality and Cache Invalidation', () => {
         test('delete returns false for malformed URIs', async () => {
             const malformedUri = 'invalid-uri-format';
 
-            const result = await a.invoke.deleteCredential(malformedUri);
+            const result = await a.store.LearnCloud.delete(malformedUri);
             expect(result).toBe(false);
         });
 
         test('delete handles empty URI gracefully', async () => {
-            const result = await a.invoke.deleteCredential('');
+            const result = await a.store.LearnCloud.delete('');
             expect(result).toBe(false);
         });
     });

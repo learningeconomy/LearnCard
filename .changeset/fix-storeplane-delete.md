@@ -3,7 +3,4 @@
 "@workspace/e2e-tests": patch
 ---
 
-Address PR #1118 review feedback - StorePlane delete method
-
-- Updated documentation examples to use LearnCloud instead of Ceramic
-- Added optional PlaneOptions parameter to delete method signature
+Added optional `delete` method to the Store Control Plane, allowing storage plugins to support credential deletion. When implemented, this method removes stored credentials and automatically invalidates the read cache.
