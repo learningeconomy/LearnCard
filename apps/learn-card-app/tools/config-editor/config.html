@@ -40,6 +40,8 @@
         input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 2px rgba(16,185,129,0.3); border-color: #10b981; }
         .pill { border-radius: 20px; }
         .override-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block; margin-right: 6px; flex-shrink: 0; margin-top: 7px; }
+        .override-dot.stage-dot { background: #3b82f6; }
+        .override-dot.base-inherited-dot { background: #d1d5db; }
         .scrollbar-thin::-webkit-scrollbar { width: 5px; }
         .scrollbar-thin::-webkit-scrollbar-thumb { background: #C5C8D3; border-radius: 4px; }
         .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
@@ -100,14 +102,16 @@ const SECTIONS = [
     {
         key: 'auth', label: 'Authentication', icon: '🔐',
         fields: [
-            { path: 'auth.provider', label: 'Provider', type: 'select', options: ['firebase', 'custom'] },
-            { path: 'auth.keyDerivation', label: 'Key Derivation', type: 'select', options: ['sss', 'web3auth'] },
-            { path: 'auth.sssServerUrl', label: 'SSS Server URL', type: 'string' },
-            { path: 'auth.enableEmailBackupShare', label: 'Email Backup Share', type: 'boolean' },
-            { path: 'auth.requireEmailForPhoneUsers', label: 'Require Email for Phone Users', type: 'boolean' },
-            { path: 'auth.firebaseRedirectDomain', label: 'Firebase Redirect Domain', type: 'string' },
-            { path: 'auth.firebaseDynamicLinkDomain', label: 'Firebase Dynamic Link Domain', type: 'string' },
-            { path: 'auth.allowedSignInMethods', label: 'Allowed Sign-In Methods', type: 'array', help: 'e.g. email, phone, google.com' },
+            { path: 'auth.provider', label: 'Provider', type: 'string', help: 'Auth provider name (e.g. firebase, custom). Must match a registered factory.' },
+            { path: 'auth.keyDerivation', label: 'Key Derivation', type: 'string', help: 'Key derivation strategy (e.g. sss, web3auth). Must match a registered factory.' },
+        ],
+    },
+    {
+        key: 'sss', label: 'SSS (Key Derivation)', icon: '🔑', parentPath: 'auth.sss',
+        fields: [
+            { path: 'auth.sss.serverUrl', label: 'SSS Server URL', type: 'string' },
+            { path: 'auth.sss.enableEmailBackupShare', label: 'Email Backup Share', type: 'boolean' },
+            { path: 'auth.sss.requireEmailForPhoneUsers', label: 'Require Email for Phone Users', type: 'boolean' },
         ],
     },
     {
@@ -120,6 +124,8 @@ const SECTIONS = [
             { path: 'auth.firebase.messagingSenderId', label: 'Messaging Sender ID', type: 'string' },
             { path: 'auth.firebase.appId', label: 'App ID', type: 'string' },
             { path: 'auth.firebase.measurementId', label: 'Measurement ID', type: 'string' },
+            { path: 'auth.firebase.redirectDomain', label: 'Redirect Domain', type: 'string' },
+            { path: 'auth.firebase.dynamicLinkDomain', label: 'Dynamic Link Domain', type: 'string' },
         ],
     },
     {
@@ -137,9 +143,7 @@ const SECTIONS = [
             { path: 'branding.name', label: 'App Name', type: 'string', required: true, preview: true },
             { path: 'branding.shortName', label: 'Short Name', type: 'string', preview: true },
             { path: 'branding.defaultTheme', label: 'Default Theme', type: 'select', optionsFrom: 'themes', preview: true },
-            { path: 'branding.primaryColor', label: 'Primary Color', type: 'color', preview: true },
-            { path: 'branding.secondaryColor', label: 'Secondary Color', type: 'color', preview: true },
-            { path: 'branding.fontFamily', label: 'Font Family', type: 'string' },
+            { path: 'branding.allowedThemes', label: 'Allowed Themes', type: 'array', help: 'Theme IDs users can switch between (empty = all)' },
             { path: 'branding.loginRedirectPath', label: 'Login Redirect Path', type: 'string' },
             { path: 'branding.brandingKey', label: 'Branding Key', type: 'string' },
             { path: 'branding.headerText', label: 'Header Text', type: 'string', preview: true },
@@ -209,8 +213,6 @@ const SECTIONS = [
             { path: 'native.deepLinkDomains', label: 'Deep Link Domains', type: 'array', help: 'Domains for universal links / app links' },
             { path: 'native.customSchemes', label: 'Custom URL Schemes', type: 'array', help: 'e.g. dccrequest, msprequest' },
             { path: 'native.capgoChannel', label: 'Capgo Channel', type: 'string' },
-            { path: 'native.iconSource', label: 'Icon Source', type: 'string', help: 'Path to app icon source image' },
-            { path: 'native.splashSource', label: 'Splash Source', type: 'string', help: 'Path to splash screen source image' },
         ],
     },
     {
@@ -278,16 +280,21 @@ api.get('/api/themes').then(list => { availableThemes = list; }).catch(() => {})
 
 // ─── Components ──────────────────────────────────────────────────────────────
 
-function FieldInput({ field, value, defaultValue, onChange }) {
+function FieldInput({ field, value, defaultValue, baseValue, activeStage, onChange }) {
     const isOverridden = value !== undefined && value !== '' && JSON.stringify(value) !== JSON.stringify(defaultValue);
+    const isStageOverridden = activeStage && value !== undefined && value !== '';
+    const isBaseOverridden = activeStage && baseValue !== undefined && baseValue !== '' && JSON.stringify(baseValue) !== JSON.stringify(defaultValue);
+
+    // In stage mode, placeholders/fallbacks should show the base config value (not global defaults)
+    const effectiveDefault = activeStage ? (baseValue ?? defaultValue) : defaultValue;
 
     if (field.type === 'boolean') {
-        const checked = value ?? defaultValue ?? false;
+        const checked = value ?? effectiveDefault ?? false;
 
         return h`
             <div class="field-row flex items-center justify-between px-4 py-3 rounded-xl transition-colors">
                 <div class="flex items-center gap-2">
-                    ${isOverridden ? h`<span class="override-dot" title="Overridden from default" />` : h`<span class="w-[6px] mr-[6px]" />`}
+                    ${isStageOverridden ? h`<span class="override-dot stage-dot" title="Overridden in stage overlay" />` : isOverridden ? h`<span class="override-dot" title="Overridden from default" />` : isBaseOverridden ? h`<span class="override-dot base-inherited-dot" title="Set in base config" />` : h`<span class="w-[6px] mr-[6px]" />`}
                     <div>
                         <div class="text-sm font-medium text-gs-800">${field.label}</div>
                         ${field.help ? h`<div class="text-xs text-gs-400 mt-0.5">${field.help}</div>` : null}
@@ -307,11 +314,11 @@ function FieldInput({ field, value, defaultValue, onChange }) {
         return h`
             <div class="field-row px-4 py-3 rounded-xl transition-colors">
                 <div class="flex items-center gap-2 mb-1.5">
-                    ${isOverridden ? h`<span class="override-dot" title="Overridden from default" />` : h`<span class="w-[6px] mr-[6px]" />`}
+                    ${isStageOverridden ? h`<span class="override-dot stage-dot" title="Overridden in stage overlay" />` : isOverridden ? h`<span class="override-dot" title="Overridden from default" />` : isBaseOverridden ? h`<span class="override-dot base-inherited-dot" title="Set in base config" />` : h`<span class="w-[6px] mr-[6px]" />`}
                     <label class="text-sm font-medium text-gs-800">${field.label}</label>
                 </div>
                 <select
-                    value=${value ?? defaultValue ?? ''}
+                    value=${value ?? effectiveDefault ?? ''}
                     onChange=${(e) => onChange(field.path, e.target.value)}
                     class="w-full py-2.5 px-3 border border-gs-200 rounded-xl text-sm text-gs-900 bg-white"
                 >
@@ -327,7 +334,7 @@ function FieldInput({ field, value, defaultValue, onChange }) {
     }
 
     if (field.type === 'array') {
-        const items = Array.isArray(value) ? value : (Array.isArray(defaultValue) ? defaultValue : []);
+        const items = Array.isArray(value) ? value : (Array.isArray(effectiveDefault) ? effectiveDefault : []);
         const isOverriddenArr = value !== undefined && JSON.stringify(value) !== JSON.stringify(defaultValue);
         const [draft, setDraft] = useState('');
 
@@ -351,9 +358,9 @@ function FieldInput({ field, value, defaultValue, onChange }) {
         return h`
             <div class="field-row px-4 py-3 rounded-xl transition-colors">
                 <div class="flex items-center gap-2 mb-1.5">
-                    ${isOverriddenArr ? h`<span class="override-dot" title="Overridden from default" />` : h`<span class="w-[6px] mr-[6px]" />`}
+                    ${(activeStage && Array.isArray(value)) ? h`<span class="override-dot stage-dot" title="Overridden in stage overlay" />` : isOverriddenArr ? h`<span class="override-dot" title="Overridden from default" />` : h`<span class="w-[6px] mr-[6px]" />`}
                     <label class="text-sm font-medium text-gs-800">${field.label}</label>
-                    ${defaultValue && !value ? h`<span class="text-xs text-gs-400 ml-auto">default</span>` : null}
+                    ${effectiveDefault && !value ? h`<span class="text-xs text-gs-400 ml-auto">${activeStage && baseValue !== undefined && baseValue !== '' ? 'base' : 'default'}</span>` : null}
                 </div>
                 <div class="flex flex-wrap gap-1.5 mb-2 min-h-[28px]">
                     ${items.map((item, idx) => h`
@@ -391,12 +398,12 @@ function FieldInput({ field, value, defaultValue, onChange }) {
     }
 
     if (field.type === 'color') {
-        const displayValue = value ?? defaultValue ?? '';
+        const displayValue = value ?? effectiveDefault ?? '';
 
         return h`
             <div class="field-row px-4 py-3 rounded-xl transition-colors">
                 <div class="flex items-center gap-2 mb-1.5">
-                    ${isOverridden ? h`<span class="override-dot" title="Overridden from default" />` : h`<span class="w-[6px] mr-[6px]" />`}
+                    ${isStageOverridden ? h`<span class="override-dot stage-dot" title="Overridden in stage overlay" />` : isOverridden ? h`<span class="override-dot" title="Overridden from default" />` : isBaseOverridden ? h`<span class="override-dot base-inherited-dot" title="Set in base config" />` : h`<span class="w-[6px] mr-[6px]" />`}
                     <label class="text-sm font-medium text-gs-800">${field.label}</label>
                 </div>
                 <div class="flex items-center gap-2">
@@ -410,7 +417,7 @@ function FieldInput({ field, value, defaultValue, onChange }) {
                         type="text"
                         value=${displayValue}
                         onChange=${(e) => onChange(field.path, e.target.value)}
-                        placeholder=${defaultValue || 'e.g. #4F46E5'}
+                        placeholder=${effectiveDefault || 'e.g. #4F46E5'}
                         class="flex-1 py-2.5 px-3 border border-gs-200 rounded-xl text-sm text-gs-900 bg-white placeholder:text-gs-400"
                     />
                     ${displayValue ? h`
@@ -425,18 +432,18 @@ function FieldInput({ field, value, defaultValue, onChange }) {
     return h`
         <div class="field-row px-4 py-3 rounded-xl transition-colors">
             <div class="flex items-center gap-2 mb-1.5">
-                ${isOverridden ? h`<span class="override-dot" title="Overridden from default" />` : h`<span class="w-[6px] mr-[6px]" />`}
+                ${isStageOverridden ? h`<span class="override-dot stage-dot" title="Overridden in stage overlay" />` : isOverridden ? h`<span class="override-dot" title="Overridden from default" />` : isBaseOverridden ? h`<span class="override-dot base-inherited-dot" title="Set in base config" />` : h`<span class="w-[6px] mr-[6px]" />`}
                 <label class="text-sm font-medium text-gs-800">
                     ${field.label}
                     ${field.required ? h`<span class="text-red-400 ml-0.5">*</span>` : null}
                 </label>
-                ${defaultValue && !value ? h`<span class="text-xs text-gs-400 ml-auto">default</span>` : null}
+                ${effectiveDefault && !value ? h`<span class="text-xs text-gs-400 ml-auto">${activeStage && baseValue !== undefined && baseValue !== '' ? 'base' : 'default'}</span>` : null}
             </div>
             <input
                 type="text"
                 value=${value ?? ''}
                 onChange=${(e) => onChange(field.path, e.target.value)}
-                placeholder=${defaultValue || field.help || ''}
+                placeholder=${effectiveDefault || field.help || ''}
                 class="w-full py-2.5 px-3 border border-gs-200 rounded-xl text-sm text-gs-900 bg-white placeholder:text-gs-400"
             />
             ${field.help ? h`<div class="text-xs text-gs-400 mt-1 pl-[18px]">${field.help}</div>` : null}
@@ -444,7 +451,23 @@ function FieldInput({ field, value, defaultValue, onChange }) {
     `;
 }
 
-function SectionCard({ section, merged, defaults, overrides, onChange, isExpanded, onToggle }) {
+function SectionCard({ section, merged, defaults, overrides, baseConfig, activeStage, onChange, isExpanded, onToggle }) {
+    // In stage mode, compute the merged base (defaults + baseConfig) so placeholders show the right values
+    const mergedBase = useMemo(() => {
+        if (!activeStage) return defaults;
+        const deepMerge = (a, b) => {
+            const r = { ...a };
+            for (const k of Object.keys(b)) {
+                if (a[k] && b[k] && typeof a[k] === 'object' && !Array.isArray(a[k]) && typeof b[k] === 'object' && !Array.isArray(b[k])) {
+                    r[k] = deepMerge(a[k], b[k]);
+                } else {
+                    r[k] = b[k];
+                }
+            }
+            return r;
+        };
+        return deepMerge(defaults, baseConfig || {});
+    }, [activeStage, defaults, baseConfig]);
     const overrideCount = section.fields.filter(f => {
         const val = getNestedValue(overrides, f.path);
 
@@ -479,6 +502,8 @@ function SectionCard({ section, merged, defaults, overrides, onChange, isExpande
                                 field=${field}
                                 value=${getNestedValue(overrides, field.path)}
                                 defaultValue=${getNestedValue(defaults, field.path)}
+                                baseValue=${activeStage ? getNestedValue(mergedBase, field.path) : undefined}
+                                activeStage=${activeStage}
                                 onChange=${onChange}
                             />
                         `)}
@@ -758,7 +783,7 @@ function BrandingPreview({ merged, activeTenant }) {
     `;
 }
 
-function JsonPanel({ overrides, validationErrors }) {
+function JsonPanel({ overrides, baseConfig, activeStage, validationErrors }) {
     const jsonStr = JSON.stringify(overrides, null, 2);
     const highlighted = syntaxHighlight(jsonStr);
     const lineCount = jsonStr.split('\n').length;
@@ -844,7 +869,7 @@ function OutputLog({ output, onClose }) {
     `;
 }
 
-function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
+function ActionsPanel({ activeTenant, activeStage, merged, onAssetsChanged }) {
     const [logoFile, setLogoFile] = useState(null);
     const [logoPreview, setLogoPreview] = useState(null);
     const [bgColor, setBgColor] = useState('#FFFFFF');
@@ -971,12 +996,12 @@ function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
         setApplying(true);
 
         try {
-            const result = await api.post('/api/actions/apply-config', { tenant: activeTenant });
+            const result = await api.post('/api/actions/apply-config', { tenant: activeTenant, stage: activeStage || undefined });
 
             setActionOutput(result.output);
 
             if (result.exitCode === 0) {
-                setActionSuccess('Config applied for ' + activeTenant);
+                setActionSuccess('Config applied for ' + activeTenant + (activeStage ? ' (' + activeStage + ')' : ''));
             } else {
                 setActionError('Apply failed (exit code ' + result.exitCode + ')');
             }
@@ -1051,7 +1076,7 @@ function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
         setDevLineCursor(0);
 
         try {
-            await api.post('/api/actions/dev-server/start', { tenant: activeTenant, netlify: netlifyMode });
+            await api.post('/api/actions/dev-server/start', { tenant: activeTenant, stage: activeStage || undefined, netlify: netlifyMode });
         } catch (err) {
             setActionError('Failed to start dev server: ' + String(err));
         }
@@ -1232,7 +1257,7 @@ function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
                     </div>
 
                     <${ActionButton}
-                        label=${'Start Dev Server: ' + (activeTenant || '...') + (netlifyMode ? ' (Netlify)' : '')}
+                        label=${'Start Dev Server: ' + (activeTenant || '...') + (activeStage ? ' [' + activeStage + ']' : '') + (netlifyMode ? ' (Netlify)' : '')}
                         icon=${h`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`}
                         onClick=${handleDevStart}
                         loading=${devStarting}
@@ -1355,7 +1380,7 @@ function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
                 </p>
 
                 <${ActionButton}
-                    label=${'Apply Config: ' + (activeTenant || '...')}
+                    label=${'Apply Config: ' + (activeTenant || '...') + (activeStage ? ' (' + activeStage + ')' : '')}
                     icon=${h`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>`}
                     onClick=${handleApplyConfig}
                     loading=${applying}
@@ -1383,8 +1408,11 @@ function ActionsPanel({ activeTenant, merged, onAssetsChanged }) {
 function App() {
     const [tenants, setTenants] = useState([]);
     const [activeTenant, setActiveTenant] = useState(null);
+    const [activeStage, setActiveStage] = useState(null);
+    const [stages, setStages] = useState([]);
     const [defaults, setDefaults] = useState({});
     const [overrides, setOverrides] = useState({});
+    const [baseConfig, setBaseConfig] = useState({});
     const [merged, setMerged] = useState({});
     const [validationErrors, setValidationErrors] = useState([]);
     const [expandedSections, setExpandedSections] = useState(new Set(['general', 'branding']));
@@ -1435,39 +1463,73 @@ function App() {
         api.get('/api/tenants').then(setTenants);
     }, []);
 
-    // Load tenant config
-    const loadTenant = useCallback(async (name) => {
+    // Load tenant config (optionally with a stage overlay)
+    const loadTenant = useCallback(async (name, stage) => {
         setActiveTenant(name);
+        setActiveStage(stage ?? null);
         setSaveStatus(null);
 
-        const data = await api.get('/api/tenant/' + name);
+        const qs = stage ? '?stage=' + encodeURIComponent(stage) : '';
+        const data = await api.get('/api/tenant/' + name + qs);
 
-        setOverrides(data.overrides);
+        setStages(data.stages || []);
+        setBaseConfig(data.base || {});
+
+        // In stage mode, "overrides" = the stage overlay (what we edit/save)
+        // In base mode, "overrides" = the base config.json
+        setOverrides(stage ? (data.stageOverlay || {}) : (data.overrides || {}));
         setMerged(data.merged);
         setValidationErrors([]);
     }, []);
 
+    // Switch to a different stage (or back to base)
+    const loadStage = useCallback((stage) => {
+        if (!activeTenant) return;
+
+        loadTenant(activeTenant, stage || undefined);
+    }, [activeTenant, loadTenant]);
+
+    // Create a new stage overlay
+    const handleCreateStage = useCallback(async (stageName) => {
+        if (!activeTenant || !stageName) return;
+
+        const result = await api.post('/api/tenant/' + activeTenant + '/stages', { stage: stageName });
+
+        if (result.created) {
+            setStages(result.stages || []);
+            loadTenant(activeTenant, stageName);
+        }
+    }, [activeTenant, loadTenant]);
+
     // Deep merge overrides onto defaults for preview
-    const recomputeMerged = useCallback((newOverrides) => {
-        const deepMergeLocal = (base, over) => {
-            const result = { ...base };
+    const deepMergeLocal = useCallback((base, over) => {
+        const result = { ...base };
 
-            for (const key of Object.keys(over)) {
-                const bv = base[key];
-                const ov = over[key];
+        for (const key of Object.keys(over)) {
+            const bv = base[key];
+            const ov = over[key];
 
-                if (bv && ov && typeof bv === 'object' && !Array.isArray(bv) && typeof ov === 'object' && !Array.isArray(ov)) {
-                    result[key] = deepMergeLocal(bv, ov);
-                } else {
-                    result[key] = ov;
-                }
+            if (bv && ov && typeof bv === 'object' && !Array.isArray(bv) && typeof ov === 'object' && !Array.isArray(ov)) {
+                result[key] = deepMergeLocal(bv, ov);
+            } else {
+                result[key] = ov;
             }
+        }
 
-            return result;
-        };
+        return result;
+    }, []);
+
+    const recomputeMerged = useCallback((newOverrides) => {
+        // In stage mode: defaults + baseConfig + stageOverlay
+        // In base mode:  defaults + overrides
+        if (activeStage) {
+            const mergedBase = deepMergeLocal(defaults, baseConfig);
+
+            return deepMergeLocal(mergedBase, newOverrides);
+        }
 
         return deepMergeLocal(defaults, newOverrides);
-    }, [defaults]);
+    }, [defaults, baseConfig, activeStage, deepMergeLocal]);
 
     // Validate with debounce
     const validateDebounced = useCallback((overridesToValidate) => {
@@ -1501,7 +1563,9 @@ function App() {
         setSaving(true);
 
         try {
-            const result = await api.put('/api/tenant/' + activeTenant, { overrides });
+            const qs = activeStage ? '?stage=' + encodeURIComponent(activeStage) : '';
+            const body = activeStage ? { stageOverlay: overrides } : { overrides };
+            const result = await api.put('/api/tenant/' + activeTenant + qs, body);
 
             if (result.saved) {
                 setSaveStatus('saved');
@@ -1515,7 +1579,7 @@ function App() {
         }
 
         setSaving(false);
-    }, [activeTenant, overrides]);
+    }, [activeTenant, activeStage, overrides]);
 
     // Create new tenant
     const handleCreateTenant = useCallback(async () => {
@@ -1585,8 +1649,38 @@ function App() {
                     ${activeTenant ? h`
                         <span class="text-gs-400 mx-1">/</span>
                         <span class="font-medium text-gs-700">${activeTenant}</span>
+                        <span class="text-gs-300 mx-1.5">|</span>
+                        <div class="flex items-center gap-1">
+                            <button
+                                onClick=${() => loadStage(null)}
+                                class="px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                                    !activeStage
+                                        ? 'bg-gs-900 text-white'
+                                        : 'bg-gs-100 text-gs-600 hover:bg-gs-200'
+                                }"
+                            >Base</button>
+                            ${stages.map(s => h`
+                                <button
+                                    key=${s}
+                                    onClick=${() => loadStage(s)}
+                                    class="px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                                        activeStage === s
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                                    }"
+                                >${s}</button>
+                            `)}
+                            <button
+                                onClick=${() => {
+                                    const name = prompt('New stage name (e.g. local, staging, dev):');
+                                    if (name) handleCreateStage(name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, ''));
+                                }}
+                                class="px-1.5 py-1 rounded-full text-xs text-gs-400 hover:text-gs-700 hover:bg-gs-100 transition-colors"
+                                title="Create new stage overlay"
+                            >+</button>
+                        </div>
                         ${overrideCount > 0 ? h`
-                            <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full">
+                            <span class="px-2 py-0.5 ${activeStage ? 'bg-blue-50 text-blue-700' : 'bg-emerald-50 text-emerald-700'} text-xs font-medium rounded-full ml-1.5">
                                 ${overrideCount} override${overrideCount > 1 ? 's' : ''}
                             </span>
                         ` : null}
@@ -1616,7 +1710,7 @@ function App() {
                             class="pill px-4 py-2 bg-gs-900 text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                         >
                             ${saving ? h`<span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />` : null}
-                            ${saving ? 'Saving...' : saveStatus === 'saved' ? 'Saved!' : 'Save Config'}
+                            ${saving ? 'Saving...' : saveStatus === 'saved' ? 'Saved!' : activeStage ? 'Save ' + activeStage : 'Save Config'}
                         </button>
                     ` : null}
                 </div>
@@ -1642,6 +1736,9 @@ function App() {
                                         ` : null}
                                         ${t.hasAssets ? h`
                                             <span class="w-1.5 h-1.5 rounded-full ${activeTenant === t.name ? 'bg-violet-400' : 'bg-violet-500'}" title="Has assets" />
+                                        ` : null}
+                                        ${t.stages && t.stages.length > 0 ? h`
+                                            <span class="text-[9px] ${activeTenant === t.name ? 'text-blue-300' : 'text-blue-500'}" title=${'Stages: ' + t.stages.join(', ')}>${t.stages.length}s</span>
                                         ` : null}
                                     </div>
                                 </button>
@@ -1691,6 +1788,8 @@ function App() {
                                     merged=${merged}
                                     defaults=${defaults}
                                     overrides=${overrides}
+                                    baseConfig=${baseConfig}
+                                    activeStage=${activeStage}
                                     onChange=${handleChange}
                                     isExpanded=${expandedSections.has(section.key)}
                                     onToggle=${() => toggleSection(section.key)}
@@ -1727,8 +1826,8 @@ function App() {
                             ${rightTab === 'preview'
                                 ? h`<${BrandingPreview} merged=${merged} activeTenant=${activeTenant} key=${'bp-' + assetsVersion} />`
                                 : rightTab === 'actions'
-                                ? h`<${ActionsPanel} activeTenant=${activeTenant} merged=${merged} onAssetsChanged=${() => setAssetsVersion(v => v + 1)} />`
-                                : h`<${JsonPanel} overrides=${overrides} validationErrors=${validationErrors} />`
+                                ? h`<${ActionsPanel} activeTenant=${activeTenant} activeStage=${activeStage} merged=${merged} onAssetsChanged=${() => setAssetsVersion(v => v + 1)} />`
+                                : h`<${JsonPanel} overrides=${overrides} baseConfig=${baseConfig} activeStage=${activeStage} validationErrors=${validationErrors} />`
                             }
                         </div>
                     </aside>

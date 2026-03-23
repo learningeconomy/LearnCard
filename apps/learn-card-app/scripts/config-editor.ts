@@ -308,7 +308,7 @@ const validateThemeConfig = (config: unknown): ThemeValidationResult => {
 // API handlers
 // ---------------------------------------------------------------------------
 
-const listTenants = (): { name: string; hasConfig: boolean; hasAssets: boolean }[] => {
+const listTenants = (): { name: string; hasConfig: boolean; hasAssets: boolean; stages: string[] }[] => {
     if (!existsSync(ENVIRONMENTS_DIR)) return [];
 
     return readdirSync(ENVIRONMENTS_DIR)
@@ -321,23 +321,68 @@ const listTenants = (): { name: string; hasConfig: boolean; hasAssets: boolean }
             name,
             hasConfig: existsSync(join(ENVIRONMENTS_DIR, name, 'config.json')),
             hasAssets: existsSync(join(ENVIRONMENTS_DIR, name, 'assets')),
+            stages: listTenantStages(name),
         }));
 };
 
-const readTenantConfig = (tenant: string): { overrides: Record<string, unknown>; merged: Record<string, unknown> } => {
+/**
+ * List available stage overlays for a tenant.
+ * Scans for config.<stage>.json files and returns the stage names.
+ */
+const listTenantStages = (tenant: string): string[] => {
+    const tenantDir = join(ENVIRONMENTS_DIR, tenant);
+
+    if (!existsSync(tenantDir)) return [];
+
+    return readdirSync(tenantDir)
+        .filter(f => /^config\.[a-zA-Z0-9_-]+\.json$/.test(f))
+        .map(f => f.replace(/^config\./, '').replace(/\.json$/, ''))
+        .sort();
+};
+
+const readTenantConfig = (
+    tenant: string,
+    stage?: string,
+): {
+    base: Record<string, unknown>;
+    stageOverlay: Record<string, unknown>;
+    overrides: Record<string, unknown>;
+    merged: Record<string, unknown>;
+    activeStage: string | null;
+} => {
     const configPath = join(ENVIRONMENTS_DIR, tenant, 'config.json');
-    let overrides: Record<string, unknown> = {};
+    let base: Record<string, unknown> = {};
 
     if (existsSync(configPath)) {
-        overrides = JSON.parse(readFileSync(configPath, 'utf-8'));
+        base = JSON.parse(readFileSync(configPath, 'utf-8'));
     }
 
-    const merged = deepMerge(
+    let stageOverlay: Record<string, unknown> = {};
+
+    if (stage) {
+        const stagePath = join(ENVIRONMENTS_DIR, tenant, `config.${stage}.json`);
+
+        if (existsSync(stagePath)) {
+            stageOverlay = JSON.parse(readFileSync(stagePath, 'utf-8'));
+        }
+    }
+
+    // Merge order: defaults → base config.json → stage overlay
+    const mergedBase = deepMerge(
         DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
-        overrides,
+        base,
     );
 
-    return { overrides, merged };
+    const merged = stage
+        ? deepMerge(mergedBase, stageOverlay)
+        : mergedBase;
+
+    // "overrides" is the combined diff against defaults (for backward compat)
+    const overrides = stage
+        ? deepMerge(base, stageOverlay)
+        : base;
+
+    return { base, stageOverlay, overrides, merged, activeStage: stage ?? null };
 };
 
 const validateConfig = (config: Record<string, unknown>): { valid: boolean; errors: string[]; data?: Record<string, unknown> } => {
@@ -353,15 +398,17 @@ const validateConfig = (config: Record<string, unknown>): { valid: boolean; erro
     };
 };
 
-const saveTenantConfig = (tenant: string, overrides: Record<string, unknown>): void => {
+const saveTenantConfig = (tenant: string, overrides: Record<string, unknown>, stage?: string): void => {
     const tenantDir = join(ENVIRONMENTS_DIR, tenant);
 
     if (!existsSync(tenantDir)) {
         mkdirSync(tenantDir, { recursive: true });
     }
 
+    const filename = stage ? `config.${stage}.json` : 'config.json';
+
     writeFileSync(
-        join(tenantDir, 'config.json'),
+        join(tenantDir, filename),
         JSON.stringify(overrides, null, 4) + '\n',
         'utf-8',
     );
@@ -871,6 +918,7 @@ const scaffoldTheme = (opts: ScaffoldOptions): { success: boolean; files: string
 interface DevServerState {
     phase: 'preparing' | 'starting' | 'running' | 'stopped' | 'error';
     tenant: string;
+    stage: string | null;
     netlify: boolean;
     output: string[];
     pid: number | null;
@@ -916,13 +964,14 @@ const killDevServer = (): void => {
 const NETLIFY_DEV_PORT = 8888;
 const VITE_TARGET_PORT = 3001;
 
-const startDevServer = (tenant: string, netlify = false): void => {
+const startDevServer = (tenant: string, stage?: string, netlify = false): void => {
     // Kill any existing server first
     if (devServer?.process) killDevServer();
 
     devServer = {
         phase: 'preparing',
         tenant,
+        stage: stage ?? null,
         netlify,
         output: [],
         pid: null,
@@ -932,12 +981,18 @@ const startDevServer = (tenant: string, netlify = false): void => {
         process: null,
     };
 
-    appendOutput(`▸ Applying config for "${tenant}"...`);
+    const stageLabel = stage ? ` (stage: ${stage})` : '';
+
+    appendOutput(`▸ Applying config for "${tenant}"${stageLabel}...`);
 
     // Phase 1: prepare-native-config
+    const prepareArgs = ['tsx', 'scripts/prepare-native-config.ts', tenant];
+
+    if (stage) prepareArgs.push('--stage', stage);
+
     const prepare = spawn(
         'npx',
-        ['tsx', 'scripts/prepare-native-config.ts', tenant],
+        prepareArgs,
         { cwd: APP_ROOT, shell: true, detached: true },
     );
 
@@ -1304,31 +1359,104 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
             return;
         }
 
+        // Tenant stages list: GET /api/tenant/:id/stages
+        const stagesMatch = path.match(/^\/api\/tenant\/([a-zA-Z0-9_-]+)\/stages$/);
+
+        if (stagesMatch && req.method === 'GET') {
+            json(res, 200, listTenantStages(stagesMatch[1]!));
+            return;
+        }
+
+        // Create a new stage overlay: POST /api/tenant/:id/stages
+        if (stagesMatch && req.method === 'POST') {
+            const tenant = stagesMatch[1]!;
+            const body = JSON.parse(await readBody(req));
+            const { stage, overlay } = body;
+
+            if (!stage || typeof stage !== 'string') {
+                json(res, 400, { error: 'Missing or invalid stage name' });
+                return;
+            }
+
+            if (!/^[a-zA-Z0-9_-]+$/.test(stage)) {
+                json(res, 400, { error: 'Stage name must be alphanumeric (dashes/underscores ok)' });
+                return;
+            }
+
+            const tenantDir = join(ENVIRONMENTS_DIR, tenant);
+            const stagePath = join(tenantDir, `config.${stage}.json`);
+
+            if (existsSync(stagePath)) {
+                json(res, 409, { error: `Stage '${stage}' already exists` });
+                return;
+            }
+
+            if (!existsSync(tenantDir)) {
+                mkdirSync(tenantDir, { recursive: true });
+            }
+
+            const initial = (overlay && typeof overlay === 'object') ? overlay : {};
+
+            writeFileSync(stagePath, JSON.stringify(initial, null, 4) + '\n', 'utf-8');
+            json(res, 200, { created: true, stage, stages: listTenantStages(tenant) });
+            return;
+        }
+
+        // Tenant config CRUD: GET/PUT /api/tenant/:id?stage=<stage>
         const tenantMatch = path.match(/^\/api\/tenant\/([a-zA-Z0-9_-]+)$/);
 
         if (tenantMatch) {
             const tenant = tenantMatch[1]!;
+            const stage = url.searchParams.get('stage') || undefined;
 
             if (req.method === 'GET') {
-                json(res, 200, readTenantConfig(tenant));
+                const result = readTenantConfig(tenant, stage);
+
+                json(res, 200, {
+                    ...result,
+                    stages: listTenantStages(tenant),
+                });
                 return;
             }
 
             if (req.method === 'PUT') {
                 const body = JSON.parse(await readBody(req));
-                const merged = deepMerge(
-                    DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
-                    body.overrides,
-                );
-                const validation = validateConfig(merged);
 
-                if (!validation.valid) {
-                    json(res, 400, { error: 'Validation failed', errors: validation.errors });
-                    return;
+                if (stage) {
+                    // Stage mode: body.stageOverlay is the sparse overlay to save.
+                    // Validate the fully merged result (defaults + base + overlay).
+                    const { base } = readTenantConfig(tenant);
+                    const mergedBase = deepMerge(
+                        DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
+                        base,
+                    );
+                    const merged = deepMerge(mergedBase, body.stageOverlay ?? body.overrides ?? {});
+                    const validation = validateConfig(merged);
+
+                    if (!validation.valid) {
+                        json(res, 400, { error: 'Validation failed', errors: validation.errors });
+                        return;
+                    }
+
+                    saveTenantConfig(tenant, body.stageOverlay ?? body.overrides ?? {}, stage);
+                    json(res, 200, { saved: true, stage, stageOverlay: body.stageOverlay ?? body.overrides, merged });
+                } else {
+                    // Base mode: original behavior
+                    const merged = deepMerge(
+                        DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
+                        body.overrides,
+                    );
+                    const validation = validateConfig(merged);
+
+                    if (!validation.valid) {
+                        json(res, 400, { error: 'Validation failed', errors: validation.errors });
+                        return;
+                    }
+
+                    saveTenantConfig(tenant, body.overrides);
+                    json(res, 200, { saved: true, overrides: body.overrides, merged });
                 }
 
-                saveTenantConfig(tenant, body.overrides);
-                json(res, 200, { saved: true, overrides: body.overrides, merged });
                 return;
             }
         }
@@ -1449,14 +1577,18 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
 
         if (path === '/api/actions/apply-config' && req.method === 'POST') {
             const body = JSON.parse(await readBody(req));
-            const { tenant } = body;
+            const { tenant, stage } = body;
 
             if (!tenant) {
                 json(res, 400, { error: 'Missing tenant' });
                 return;
             }
 
-            const result = await runScript('npx tsx', ['scripts/prepare-native-config.ts', tenant]);
+            const args = ['scripts/prepare-native-config.ts', tenant];
+
+            if (stage) args.push('--stage', stage);
+
+            const result = await runScript('npx tsx', args);
 
             json(res, result.exitCode === 0 ? 200 : 500, result);
             return;
@@ -1471,15 +1603,15 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
 
         if (path === '/api/actions/dev-server/start' && req.method === 'POST') {
             const body = JSON.parse(await readBody(req));
-            const { tenant, netlify: useNetlify } = body;
+            const { tenant, stage, netlify: useNetlify } = body;
 
             if (!tenant) {
                 json(res, 400, { error: 'Missing tenant' });
                 return;
             }
 
-            startDevServer(tenant, !!useNetlify);
-            json(res, 200, { started: true, tenant, netlify: !!useNetlify });
+            startDevServer(tenant, stage, !!useNetlify);
+            json(res, 200, { started: true, tenant, stage: stage ?? null, netlify: !!useNetlify });
             return;
         }
 
@@ -1497,6 +1629,7 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
                 active: true,
                 phase: devServer.phase,
                 tenant: devServer.tenant,
+                stage: devServer.stage,
                 netlify: devServer.netlify,
                 pid: devServer.pid,
                 url: devServer.url,
