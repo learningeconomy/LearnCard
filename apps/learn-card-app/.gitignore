@@ -60,6 +60,20 @@ android/app/src/main/res/mipmap-xxxhdpi/ic_launcher*.webp
 android/app/src/main/res/drawable/ic_launcher_background.xml
 android/app/src/main/res/values/ic_launcher_background.xml
 
+# Android — notification icons
+android/app/src/main/res/drawable/ic_notification.png
+android/app/src/main/res/drawable/ic_stat_name.png
+android/app/src/main/res/drawable-mdpi/ic_stat_name.png
+android/app/src/main/res/drawable-mdpi/ic_action_name.png
+android/app/src/main/res/drawable-hdpi/ic_stat_name.png
+android/app/src/main/res/drawable-hdpi/ic_action_name.png
+android/app/src/main/res/drawable-xhdpi/ic_stat_name.png
+android/app/src/main/res/drawable-xhdpi/ic_action_name.png
+android/app/src/main/res/drawable-xxhdpi/ic_stat_name.png
+android/app/src/main/res/drawable-xxhdpi/ic_action_name.png
+android/app/src/main/res/drawable-xxxhdpi/ic_stat_name.png
+android/app/src/main/res/drawable-xxxhdpi/ic_action_name.png
+
 # Android — splash screens
 android/app/src/main/res/drawable/splash.9.png
 android/app/src/main/res/drawable-hdpi/splash.9.png
@@ -84,9 +98,15 @@ android/app/src/main/res/drawable-port-xxxhdpi/splash.9.png
 # Android — capacitor config
 android/app/src/main/assets/capacitor.config.json
 
+# Firebase config files (tenant-specific)
+android/app/google-services.json
+ios/App/App/GoogleService-Info.plist
+
 # Web — icons, manifests, tenant config, branding
 public/assets/icon/favicon.png
 public/assets/icon/icon.png
+public/assets/icon/icon-192.png
+public/assets/icon/apple-touch-icon.png
 public/manifest.json
 public/manifest.webmanifest
 public/tenant-config.json

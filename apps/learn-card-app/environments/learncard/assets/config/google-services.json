@@ -1,0 +1,122 @@
+{
+  "project_info": {
+    "project_number": "776298253175",
+    "project_id": "learncard",
+    "storage_bucket": "learncard.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:776298253175:android:e0b067819ab22faba2ef72",
+        "android_client_info": {
+          "package_name": "com.learncard.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "776298253175-bjlqbr6md0nom4at99ufi8t1akg2e1f8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.learncard.app",
+            "certificate_hash": "d722d25dad71b4f5d6876f5ad6c0c723d13d63bf"
+          }
+        },
+        {
+          "client_id": "776298253175-fdkqenqbv0c1n5a3kvthdl9p9n0ubf07.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.learncard.app",
+            "certificate_hash": "3c3447a8fed51a2e709ece92a11e2d78fb1d08d6"
+          }
+        },
+        {
+          "client_id": "776298253175-lvqvtncoeet0spp8al2sb5vmjjnubvqm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.learncard.app",
+            "certificate_hash": "1e5bd16d967452d961253630d49815211a0542f5"
+          }
+        },
+        {
+          "client_id": "776298253175-kkf562eofl541vu0oedfdvrk40bpkbh7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhQ5LvV5cU3GL_MkbZ7hBHgXFTWBInnK8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "776298253175-kkf562eofl541vu0oedfdvrk40bpkbh7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "776298253175-74or0s6rg2k2mmdks6d45ro0i4te1bvf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.learncard.app"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:776298253175:android:e7d882c45fee7d1aa2ef72",
+        "android_client_info": {
+          "package_name": "com.metaversity.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "776298253175-ies9dapgli4epr418fb793h4ttjdi93j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.metaversity.app",
+            "certificate_hash": "0eb2a782920dbf85b8981c878aaf8f7deb18c6b1"
+          }
+        },
+        {
+          "client_id": "776298253175-msg6n8lt3uom9mt48gmn3e7q853k8gai.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.metaversity.app",
+            "certificate_hash": "3c3447a8fed51a2e709ece92a11e2d78fb1d08d6"
+          }
+        },
+        {
+          "client_id": "776298253175-kkf562eofl541vu0oedfdvrk40bpkbh7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhQ5LvV5cU3GL_MkbZ7hBHgXFTWBInnK8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "776298253175-kkf562eofl541vu0oedfdvrk40bpkbh7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "776298253175-74or0s6rg2k2mmdks6d45ro0i4te1bvf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.learncard.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

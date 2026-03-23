@@ -38,14 +38,21 @@
  *   │   │   └── ic_launcher_round.webp
  *   │   ├── drawable/
  *   │   │   ├── ic_launcher_background.xml
+ *   │   │   ├── ic_notification.png          96×96   (white silhouette)
+ *   │   │   ├── ic_stat_name.png             96×96   (white silhouette)
  *   │   │   └── splash.9.png
+ *   │   ├── drawable-{mdpi..xxxhdpi}/
+ *   │   │   ├── ic_stat_name.png             24→96px (white silhouette)
+ *   │   │   └── ic_action_name.png           24→96px (white silhouette)
  *   │   ├── drawable-{port|land}-{density}/
  *   │   │   └── splash.9.png
  *   │   └── values/
  *   │       └── ic_launcher_background.xml
  *   └── web/
  *       ├── favicon.png                     64×64
- *       └── icon.png                        512×512
+ *       ├── icon.png                        512×512
+ *       ├── icon-192.png                    192×192
+ *       └── apple-touch-icon.png            180×180
  *
  * After generation, run:
  *   npx tsx scripts/prepare-native-config.ts <tenant>
@@ -103,6 +110,15 @@ const ICON_PADDING_RATIO = 0.1;
 
 /** In-app branding icon size (used for app-icon and brand-mark) */
 const BRANDING_ICON_SIZE = 200;
+
+/**
+ * Android notification icon base size in dp.
+ * ic_stat_name / ic_action_name follow the same density scale as launcher icons.
+ */
+const ANDROID_NOTIFICATION_BASE_DP = 24;
+
+/** Default (non-density-qualified) notification icon size */
+const ANDROID_NOTIFICATION_DEFAULT_SIZE = 96;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -244,6 +260,67 @@ const generateAdaptiveForeground = async (
     })
         .composite([{ input: resizedLogo, gravity: 'centre' }])
         .webp({ quality: 90 })
+        .toFile(outputPath);
+};
+
+/**
+ * Generate a white-silhouette notification icon on a transparent background.
+ *
+ * Android requires notification icons to be white (#FFFFFF) on transparent.
+ * We convert the logo to greyscale, threshold to create an alpha mask, then
+ * composite solid white through that mask.
+ */
+const generateSilhouetteIcon = async (
+    logoBuffer: Buffer,
+    size: number,
+    outputPath: string,
+): Promise<void> => {
+    const padding = Math.round(size * ICON_PADDING_RATIO);
+    const logoSize = size - padding * 2;
+
+    // Extract alpha from the resized logo — non-transparent pixels become the silhouette.
+    // For logos without alpha (opaque PNGs), we derive alpha from luminance.
+    const resized = sharp(logoBuffer)
+        .resize(logoSize, logoSize, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } });
+
+    const { hasAlpha } = await sharp(logoBuffer).metadata();
+
+    let alphaMask: Buffer;
+
+    if (hasAlpha) {
+        // Use the existing alpha channel as-is
+        alphaMask = await resized.extractChannel('alpha').toBuffer();
+    } else {
+        // Opaque image — derive alpha from inverted greyscale (dark pixels → opaque)
+        alphaMask = await resized.greyscale().negate().toBuffer();
+    }
+
+    // Solid white at the logo size
+    const whitePlane = await sharp({
+        create: {
+            width: logoSize,
+            height: logoSize,
+            channels: 3 as const,
+            background: { r: 255, g: 255, b: 255 },
+        },
+    }).png().toBuffer();
+
+    // Join white RGB + alpha mask → white silhouette
+    const silhouette = await sharp(whitePlane)
+        .joinChannel(alphaMask)
+        .toBuffer();
+
+    // Composite onto transparent canvas with padding
+    await sharp({
+        create: {
+            width: size,
+            height: size,
+            channels: 4 as const,
+            background: { r: 0, g: 0, b: 0, alpha: 0 },
+        },
+    })
+        .composite([{ input: silhouette, gravity: 'centre' }])
+        .png()
         .toFile(outputPath);
 };
 
@@ -600,6 +677,37 @@ const generateAndroidIcons = async (
     generateAndroidBackgroundXml(bgHex, androidDir);
 };
 
+const generateAndroidNotificationIcons = async (
+    logoBuffer: Buffer,
+    outDir: string,
+): Promise<void> => {
+    const androidDir = path.join(outDir, 'android');
+
+    console.log('  🔔 Android Notification Icons (white silhouette)...');
+
+    // Density-qualified ic_stat_name + ic_action_name
+    for (const { name, scale } of ANDROID_DENSITIES) {
+        const drawableDir = path.join(androidDir, `drawable-${name}`);
+        ensureDir(drawableDir);
+
+        const iconSize = Math.round(ANDROID_NOTIFICATION_BASE_DP * scale);
+
+        await Promise.all([
+            generateSilhouetteIcon(logoBuffer, iconSize, path.join(drawableDir, 'ic_stat_name.png')),
+            generateSilhouetteIcon(logoBuffer, iconSize, path.join(drawableDir, 'ic_action_name.png')),
+        ]);
+    }
+
+    // Default (non-density-qualified) drawable — ic_notification + ic_stat_name
+    const defaultDrawable = path.join(androidDir, 'drawable');
+    ensureDir(defaultDrawable);
+
+    await Promise.all([
+        generateSilhouetteIcon(logoBuffer, ANDROID_NOTIFICATION_DEFAULT_SIZE, path.join(defaultDrawable, 'ic_notification.png')),
+        generateSilhouetteIcon(logoBuffer, ANDROID_NOTIFICATION_DEFAULT_SIZE, path.join(defaultDrawable, 'ic_stat_name.png')),
+    ]);
+};
+
 const generateAndroidSplashScreens = async (
     logoBuffer: Buffer,
     splashColor: RGB,
@@ -652,10 +760,12 @@ const generateWebAssets = async (
     const webDir = path.join(outDir, 'web');
     ensureDir(webDir);
 
-    console.log('  🌐 Web Favicon (64×64) + PWA Icon (512×512)...');
+    console.log('  🌐 Web Favicon (64×64) + PWA Icons (192, 512) + Apple Touch Icon (180)...');
 
     await Promise.all([
         generateSquareIcon(logoBuffer, 64, bgColor, path.join(webDir, 'favicon.png')),
+        generateSquareIcon(logoBuffer, 180, bgColor, path.join(webDir, 'apple-touch-icon.png')),
+        generateSquareIcon(logoBuffer, 192, bgColor, path.join(webDir, 'icon-192.png')),
         generateSquareIcon(logoBuffer, 512, bgColor, path.join(webDir, 'icon.png')),
     ]);
 };
@@ -778,6 +888,7 @@ Example:
     // Generate all asset categories
     await generateIosAssets(logoBuffer, bgColor, splashColor, outDir, skipSplash);
     await generateAndroidIcons(logoBuffer, bgColor, bgHex, outDir);
+    await generateAndroidNotificationIcons(logoBuffer, outDir);
 
     if (!skipSplash) {
         await generateAndroidSplashScreens(logoBuffer, splashColor, outDir);

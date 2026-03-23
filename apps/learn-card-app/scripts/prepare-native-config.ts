@@ -119,9 +119,17 @@ if (tenantArg === '--reset') {
         // Android — capacitor config
         'android/app/src/main/assets/capacitor.config.json',
 
+        // Android — Firebase
+        'android/app/google-services.json',
+
+        // iOS — Firebase
+        'ios/App/App/GoogleService-Info.plist',
+
         // Web
         'public/assets/icon/favicon.png',
         'public/assets/icon/icon.png',
+        'public/assets/icon/icon-192.png',
+        'public/assets/icon/apple-touch-icon.png',
         'public/manifest.json',
         'public/manifest.webmanifest',
         'public/tenant-config.json',
@@ -138,11 +146,17 @@ if (tenantArg === '--reset') {
         removeTargets.push(`android/app/src/main/res/drawable-${d}/splash.9.png`);
         removeTargets.push(`android/app/src/main/res/drawable-land-${d}/splash.9.png`);
         removeTargets.push(`android/app/src/main/res/drawable-port-${d}/splash.9.png`);
+        // Notification icons (density-qualified)
+        removeTargets.push(`android/app/src/main/res/drawable-${d}/ic_stat_name.png`);
+        removeTargets.push(`android/app/src/main/res/drawable-${d}/ic_action_name.png`);
     }
 
     removeTargets.push('android/app/src/main/res/drawable/splash.9.png');
     removeTargets.push('android/app/src/main/res/drawable/ic_launcher_background.xml');
     removeTargets.push('android/app/src/main/res/values/ic_launcher_background.xml');
+    // Notification icons (default drawable)
+    removeTargets.push('android/app/src/main/res/drawable/ic_notification.png');
+    removeTargets.push('android/app/src/main/res/drawable/ic_stat_name.png');
 
     let removed = 0;
 
@@ -308,17 +322,13 @@ if (existsSync(assetsDir)) {
         const webIconDest = resolve(APP_ROOT, 'public/assets/icon');
         mkdirSync(webIconDest, { recursive: true });
 
-        const faviconSrc = join(webSrc, 'favicon.png');
-        const iconSrc = join(webSrc, 'icon.png');
+        for (const webFile of ['favicon.png', 'icon.png', 'icon-192.png', 'apple-touch-icon.png']) {
+            const src = join(webSrc, webFile);
 
-        if (existsSync(faviconSrc)) {
-            cpSync(faviconSrc, join(webIconDest, 'favicon.png'));
-            copiedCount++;
-        }
-
-        if (existsSync(iconSrc)) {
-            cpSync(iconSrc, join(webIconDest, 'icon.png'));
-            copiedCount++;
+            if (existsSync(src)) {
+                cpSync(src, join(webIconDest, webFile));
+                copiedCount++;
+            }
         }
 
         console.log('   ✓ Web assets');
@@ -521,6 +531,15 @@ const patchManifest = (filePath: string): void => {
         raw.name = manifestName;
         raw.short_name = manifestShortName;
 
+        // Ensure the 192×192 icon entry exists (required for Chrome "Add to Home Screen")
+        const icons: Array<{ src: string; sizes: string; type: string; purpose?: string }> = raw.icons ?? [];
+        const has192 = icons.some((i: { sizes: string }) => i.sizes.includes('192'));
+
+        if (!has192) {
+            icons.push({ src: 'assets/icon/icon-192.png', type: 'image/png', sizes: '192x192', purpose: 'any' });
+            raw.icons = icons;
+        }
+
         writeFileSync(filePath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
         console.log(`   ✓ Patched ${filePath} (name="${manifestName}", short_name="${manifestShortName}")`);
     } catch (err) {
@@ -531,3 +550,117 @@ const patchManifest = (filePath: string): void => {
 console.log('\n📋 Patching web manifests with tenant branding name...');
 patchManifest(resolve(publicDir, 'manifest.json'));
 patchManifest(resolve(publicDir, 'manifest.webmanifest'));
+
+// ---------------------------------------------------------------------------
+// 9. Copy Firebase config files (tenant-specific or learncard fallback)
+// ---------------------------------------------------------------------------
+
+const FIREBASE_CONFIG_MAP: Array<{ src: string; dest: string }> = [
+    { src: 'config/google-services.json', dest: 'android/app/google-services.json' },
+    { src: 'config/GoogleService-Info.plist', dest: 'ios/App/App/GoogleService-Info.plist' },
+];
+
+console.log('\n🔥 Copying Firebase config files...');
+
+for (const { src, dest } of FIREBASE_CONFIG_MAP) {
+    const fileName = src.replace('config/', '');
+    let srcPath = join(configDir, fileName);
+
+    if (!existsSync(srcPath)) {
+        srcPath = join(fallbackConfigDir, fileName);
+    }
+
+    if (!existsSync(srcPath)) {
+        console.log(`   ⚠️  No ${fileName} found — skipping.`);
+        continue;
+    }
+
+    const destPath = resolve(APP_ROOT, dest);
+    mkdirSync(dirname(destPath), { recursive: true });
+    cpSync(srcPath, destPath);
+    console.log(`   ✓ ${dest}`);
+}
+
+// ---------------------------------------------------------------------------
+// 10. Patch iOS entitlements with tenant deep link domains
+// ---------------------------------------------------------------------------
+
+if (nativeConfig?.deepLinkDomains?.length) {
+    console.log('\n🔗 Patching iOS entitlements with deep link domains...');
+
+    const entitlementFiles = [
+        'ios/App/App/App.entitlements',
+        'ios/App/App/AppRelease.entitlements',
+    ];
+
+    const applinks = nativeConfig.deepLinkDomains.map((d: string) => `applinks:${d}`);
+
+    for (const relPath of entitlementFiles) {
+        const absPath = resolve(APP_ROOT, relPath);
+
+        if (!existsSync(absPath)) continue;
+
+        try {
+            let content = readFileSync(absPath, 'utf-8');
+
+            // Replace the associated-domains array content.
+            // The entitlements plist has a structure like:
+            //   <key>com.apple.developer.associated-domains</key>
+            //   <array>
+            //       <string>applinks:example.com</string>
+            //   </array>
+            const domainRegex = /(<key>com\.apple\.developer\.associated-domains<\/key>\s*<array>)([\s\S]*?)(<\/array>)/;
+            const match = content.match(domainRegex);
+
+            if (match) {
+                const newEntries = applinks.map((link: string) => `\n\t\t<string>${link}</string>`).join('');
+                content = content.replace(domainRegex, `$1${newEntries}\n\t$3`);
+
+                writeFileSync(absPath, content, 'utf-8');
+                console.log(`   ✓ Patched ${relPath} → [${applinks.join(', ')}]`);
+            } else {
+                console.log(`   ⚠️  No associated-domains key found in ${relPath} — skipping.`);
+            }
+        } catch (err) {
+            console.warn(`   ⚠️  Failed to patch ${relPath}:`, err);
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 11. Patch index.html with tenant branding name + apple-touch-icon
+// ---------------------------------------------------------------------------
+
+const indexHtmlPath = resolve(APP_ROOT, 'index.html');
+
+if (existsSync(indexHtmlPath)) {
+    console.log('\n📄 Patching index.html with tenant branding...');
+
+    try {
+        let html = readFileSync(indexHtmlPath, 'utf-8');
+
+        // Patch <title>
+        html = html.replace(/<title>[^<]*<\/title>/, `<title>${manifestName}</title>`);
+
+        // Patch apple-mobile-web-app-title
+        html = html.replace(
+            /(<meta\s+name="apple-mobile-web-app-title"\s+content=")[^"]*(")/,
+            `$1${manifestShortName}$2`,
+        );
+
+        // Add apple-touch-icon link if missing
+        if (!html.includes('apple-touch-icon')) {
+            html = html.replace(
+                /(<link rel="shortcut icon"[^>]*>)/,
+                '$1\n        <link rel="apple-touch-icon" href="/assets/icon/apple-touch-icon.png" />',
+            );
+        }
+
+        writeFileSync(indexHtmlPath, html, 'utf-8');
+        console.log(`   ✓ <title>${manifestName}</title>`);
+        console.log(`   ✓ apple-mobile-web-app-title="${manifestShortName}"`);
+        console.log('   ✓ apple-touch-icon link');
+    } catch (err) {
+        console.warn('   ⚠️  Failed to patch index.html:', err);
+    }
+}

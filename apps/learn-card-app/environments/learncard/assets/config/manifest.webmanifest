@@ -8,6 +8,12 @@
             "type": "image/x-icon"
         },
         {
+            "src": "assets/icon/icon-192.png",
+            "type": "image/png",
+            "sizes": "192x192",
+            "purpose": "any"
+        },
+        {
             "src": "assets/icon/icon.png",
             "type": "image/png",
             "sizes": "512x512",
