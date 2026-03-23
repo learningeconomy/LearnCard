@@ -213,6 +213,7 @@ const config = {
                                 type="number"
                                 id="counter-amount"
                                 value="1"
+                                step="1"
                                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                             />
                         </div>
@@ -980,7 +981,7 @@ const config = {
                     return;
                 }
 
-                if (isNaN(amount) || amount === 0) {
+                if (isNaN(amount) || amount === 0 || !Number.isInteger(amount)) {
                     showResult('counter-result', 'Amount must be a non-zero integer.', 'error');
                     return;
                 }

@@ -47,12 +47,13 @@ export const seedIntegration = async (
 export const seedListedApp = async (
     ownerProfileId: string,
     overrides?: Partial<AppStoreListingCreateType>,
-    integrationName: string = 'Dev App Integration'
+    integrationName: string = 'Dev App Integration',
+    whitelistedDomains: string[] = ['example.com']
 ): Promise<{
     listing: Awaited<ReturnType<typeof createAppStoreListing>>;
     integration: Awaited<ReturnType<typeof seedIntegration>>;
 }> => {
-    const integration = await seedIntegration(integrationName, ownerProfileId);
+    const integration = await seedIntegration(integrationName, ownerProfileId, whitelistedDomains);
 
     const listing = await createAppStoreListing(makeListingInput(overrides));
 
