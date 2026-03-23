@@ -196,15 +196,15 @@ The `delete` method allows you to remove a stored credential by its URI. This en
 
 ```typescript
 // Check if the storage provider supports delete
-if (learnCard.store.Ceramic.delete) {
-    const success = await learnCard.store.Ceramic.delete(uri);
+if (learnCard.store.LearnCloud.delete) {
+    const success = await learnCard.store.LearnCloud.delete(uri);
     if (success) {
         console.log('Credential deleted successfully');
     }
 }
 
 // Or with cache options
-const success = await learnCard.store.Ceramic.delete(uri, { cache: 'skip-cache' });
+const success = await learnCard.store.LearnCloud.delete(uri, { cache: 'skip-cache' });
 ```
 
 ### Example plugins that implement the Store Plane

@@ -71,7 +71,7 @@ export type StorePlane = {
         params?: EncryptionParams,
         options?: PlaneOptions
     ) => Promise<string>;
-    delete?: (uri: string) => Promise<boolean>;
+    delete?: (uri: string, options?: PlaneOptions) => Promise<boolean>;
 };
 
 export type PluginStorePlane = StorePlane;
