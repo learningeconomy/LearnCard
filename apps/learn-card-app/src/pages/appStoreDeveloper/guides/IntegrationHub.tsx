@@ -23,6 +23,7 @@ import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { USE_CASES, UseCaseId } from './types';
 import { useBetaAccess } from '../components/BetaGate';
+import { openExternalLink } from 'src/helpers/externalLinkHelpers';
 
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
     'award': Award,
@@ -118,10 +119,11 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
     return (
         <button
             onClick={onClick}
-            className={`group flex flex-col p-6 bg-white border-2 rounded-2xl hover:shadow-lg transition-all text-left ${isActive
+            className={`group flex flex-col p-6 bg-white border-2 rounded-2xl hover:shadow-lg transition-all text-left ${
+                isActive
                     ? 'border-cyan-500 shadow-lg shadow-cyan-50'
                     : 'border-gray-200 hover:border-cyan-300 hover:shadow-cyan-50'
-                }`}
+            }`}
         >
             <div className="flex items-start justify-between mb-4">
                 <div className={`w-12 h-12 ${bgColor} rounded-xl flex items-center justify-center`}>
@@ -360,10 +362,10 @@ const IntegrationHub: React.FC = () => {
                                                 </p>
                                                 <p className="text-sm text-gray-500">
                                                     {integration.guideType &&
-                                                        integration.guideType in USE_CASES
+                                                    integration.guideType in USE_CASES
                                                         ? USE_CASES[
-                                                            integration.guideType as UseCaseId
-                                                        ]?.title
+                                                              integration.guideType as UseCaseId
+                                                          ]?.title
                                                         : 'Not started'}
                                                 </p>
                                             </div>
@@ -419,29 +421,29 @@ const IntegrationHub: React.FC = () => {
                             </h2>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <a
-                                    href="https://docs.learncard.com"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                <button
+                                    onClick={() => openExternalLink('https://docs.learncard.com')}
                                     className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group"
                                 >
                                     <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
                                         <BookOpen className="w-5 h-5 text-gray-600" />
                                     </div>
 
-                                    <div className="flex-1">
+                                    <div className="flex-1 text-start">
                                         <p className="font-medium text-gray-800">Documentation</p>
                                         <p className="text-sm text-gray-500">Full API reference</p>
                                     </div>
 
                                     <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
-                                </a>
+                                </button>
 
-                                <a
-                                    href="https://github.com/learningeconomy/LearnCard"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group"
+                                <button
+                                    onClick={() =>
+                                        openExternalLink(
+                                            'https://github.com/learningeconomy/LearnCard'
+                                        )
+                                    }
+                                    className="flex items-start gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group"
                                 >
                                     <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
                                         <svg
@@ -453,13 +455,13 @@ const IntegrationHub: React.FC = () => {
                                         </svg>
                                     </div>
 
-                                    <div className="flex-1">
+                                    <div className="flex-1 text-start">
                                         <p className="font-medium text-gray-800">GitHub</p>
                                         <p className="text-sm text-gray-500">Open source SDKs</p>
                                     </div>
 
                                     <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
-                                </a>
+                                </button>
 
                                 <button
                                     onClick={() => history.push('/app-store/developer')}

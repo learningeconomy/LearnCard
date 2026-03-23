@@ -80,6 +80,7 @@ import type {
     LLMIntegrationMetadata,
     TemplateMetadata,
 } from '../types';
+import { openExternalLink } from 'src/helpers/externalLinkHelpers';
 
 // URL Check types and helper
 interface UrlCheckResult {
@@ -6723,7 +6724,11 @@ initializeApp();`);
                             </p>
 
                             {urlRequiredError && (
-                                <p id="embed-url-error" className="text-sm text-red-500 mt-2 flex items-center gap-1" role="alert">
+                                <p
+                                    id="embed-url-error"
+                                    className="text-sm text-red-500 mt-2 flex items-center gap-1"
+                                    role="alert"
+                                >
                                     <AlertCircle className="w-4 h-4" />
                                     Please enter your embed URL before continuing
                                 </p>
@@ -6912,27 +6917,25 @@ initializeApp();`);
 
             {/* Resources */}
             <div className="flex flex-wrap gap-3">
-                <a
-                    href="https://docs.learncard.com/sdks/partner-connect"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <button
+                    onClick={() =>
+                        openExternalLink('https://docs.learncard.com/sdks/partner-connect')
+                    }
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                 >
                     <FileText className="w-4 h-4" />
                     SDK Documentation
                     <ExternalLink className="w-3 h-3" />
-                </a>
+                </button>
 
-                <a
-                    href="https://github.com/learningeconomy/LearnCard"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <button
+                    onClick={() => openExternalLink('https://github.com/learningeconomy/LearnCard')}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                 >
                     <Code className="w-4 h-4" />
                     GitHub Examples
                     <ExternalLink className="w-3 h-3" />
-                </a>
+                </button>
             </div>
 
             {/* Navigation */}
