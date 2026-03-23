@@ -67,6 +67,7 @@ export const tenantBrandingConfigSchema = z.object({
     logoUrl: z.string().optional(),
     faviconUrl: z.string().optional(),
     defaultTheme: z.string().default('colorful'),
+    allowedThemes: z.array(z.string()).optional(),
     primaryColor: z.string().optional(),
     secondaryColor: z.string().optional(),
     fontFamily: z.string().optional(),

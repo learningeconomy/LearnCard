@@ -22,15 +22,38 @@ export const themeStore = createStore('themeStore')<{
 
 /**
  * Check whether theme switching is enabled for the current tenant.
- * Returns false when the tenant explicitly disables it.
+ * Returns false when the tenant explicitly disables it or when
+ * fewer than 2 themes are allowed (nothing to switch between).
  */
 export const isThemeSwitchingEnabled = (config?: TenantConfig): boolean => {
     try {
         const cfg = config ?? getResolvedTenantConfig();
 
-        return cfg.features.themeSwitching !== false;
+        if (cfg.features.themeSwitching === false) return false;
+
+        const allowed = cfg.branding.allowedThemes;
+
+        if (allowed && allowed.length < 2) return false;
+
+        return true;
     } catch {
         return true;
+    }
+};
+
+/**
+ * Get the list of theme IDs the current tenant allows.
+ * Falls back to ['colorful', 'formal'] when not configured.
+ */
+export const getAllowedThemes = (config?: TenantConfig): string[] => {
+    const DEFAULT_ALLOWED = ['colorful', 'formal'];
+
+    try {
+        const cfg = config ?? getResolvedTenantConfig();
+
+        return cfg.branding.allowedThemes ?? DEFAULT_ALLOWED;
+    } catch {
+        return DEFAULT_ALLOWED;
     }
 };
 

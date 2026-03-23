@@ -31,6 +31,7 @@
         "name": "VetPass",
         "shortName": "VP",
         "defaultTheme": "vetpass",
+        "allowedThemes": ["vetpass"],
         "loginRedirectPath": "/waitingsofa?loginCompleted=true",
         "brandingKey": "vetpass",
         "headerText": "VETPASS",

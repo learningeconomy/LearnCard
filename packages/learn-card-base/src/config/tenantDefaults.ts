@@ -68,6 +68,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         name: 'LearnCard',
         shortName: 'LC',
         defaultTheme: 'colorful',
+        allowedThemes: ['colorful', 'formal'],
         loginRedirectPath: '/waitingsofa?loginCompleted=true',
         brandingKey: 'learncard',
         headerText: 'LEARNCARD',

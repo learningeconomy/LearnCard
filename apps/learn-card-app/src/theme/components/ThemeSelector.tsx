@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback, useEffect } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import themeStore, { isThemeSwitchingEnabled } from '../store/themeStore';
+import themeStore, { isThemeSwitchingEnabled, getAllowedThemes } from '../store/themeStore';
 import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
 
 import { useTheme } from '../hooks/useTheme';
@@ -26,7 +26,13 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     const { theme, syncThemeDefaults } = useTheme();
     const setTheme = themeStore.set.theme;
 
-    const schemas = useMemo(() => getRegisteredThemeIds().map(loadThemeSchema), []);
+    const allowedThemeIds = useMemo(() => {
+        const allowed = new Set(getAllowedThemes());
+
+        return getRegisteredThemeIds().filter(id => allowed.has(id));
+    }, []);
+
+    const schemas = useMemo(() => allowedThemeIds.map(loadThemeSchema), [allowedThemeIds]);
 
     const { mutateAsync: createPreferences, isPending: isCreatingPreferences } =
         useCreatePreferences();
