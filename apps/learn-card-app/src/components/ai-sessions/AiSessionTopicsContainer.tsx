@@ -55,7 +55,10 @@ export const AiSessionTopicsContainer: React.FC = () => {
     const handleSetChatBotSelected = (chatBotType: NewAiSessionStepEnum) => {
         setChatBotSelected(chatBotType);
     };
-    const handleStartOver = () => setChatBotSelected(null);
+    const handleStartOver = () => {
+        chatBotStore.set.resetStore();
+        setChatBotSelected(null);
+    };
 
     const { openNewAiSessionModal } = useAiSession();
 

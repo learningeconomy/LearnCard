@@ -1,7 +1,7 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
@@ -20,7 +20,7 @@ const IntegrationDashboardPage: React.FC = () => {
     } = useDeveloperPortalContext();
 
     const handleBack = () => {
-        history.push('/app-store/developer');
+        history.push('/app-store/developer/guides');
     };
 
     const headerContent = (
@@ -65,7 +65,8 @@ const IntegrationDashboardPage: React.FC = () => {
                                 </h2>
 
                                 <p className="text-gray-500 mb-6">
-                                    The integration you're looking for doesn't exist or you don't have access to it.
+                                    The integration you're looking for doesn't exist or you don't
+                                    have access to it.
                                 </p>
 
                                 <button
@@ -88,9 +89,16 @@ const IntegrationDashboardPage: React.FC = () => {
 
             <IonContent className="ion-padding">
                 <div className="max-w-5xl mx-auto py-4">
-                    <UnifiedIntegrationDashboard
-                        integration={currentIntegration}
-                    />
+                    <button
+                        type="button"
+                        onClick={handleBack}
+                        className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span className="text-sm font-medium">Back to Projects</span>
+                    </button>
+
+                    <UnifiedIntegrationDashboard integration={currentIntegration} />
                 </div>
             </IonContent>
         </IonPage>
