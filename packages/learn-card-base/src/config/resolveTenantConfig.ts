@@ -166,6 +166,12 @@ const fetchFreshConfig = async (endpoint?: string): Promise<TenantConfig | null>
 
         // Fall back to partial parse — edge functions may return only overrides.
         // Deep-merge onto defaults to produce a complete config.
+        //
+        // NOTE: Partial configs are merged onto DEFAULT_LEARNCARD_TENANT_CONFIG,
+        // meaning non-overridden fields inherit LearnCard values (Firebase keys,
+        // API URLs, Sentry DSN, etc.). This is intentional while tenants share
+        // infrastructure. When tenants move to fully independent infra, the base
+        // config for merging should come from a tenant-specific default instead.
         const partial = parsePartialTenantConfig(raw, `fetch ${url} (partial)`);
 
         if (partial && typeof partial === 'object') {

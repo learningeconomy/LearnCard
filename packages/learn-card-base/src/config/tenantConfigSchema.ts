@@ -10,17 +10,31 @@
 
 import { z, type ZodIssue } from 'zod';
 
+/**
+ * URL string that also accepts `TODO_*` sentinel placeholders.
+ *
+ * Tenant configs under development use `TODO_BRAIN_SERVICE_URL` etc. as
+ * placeholders. The validate-tenant-configs script flags these as warnings.
+ * Using raw `.url()` would reject them at schema level, which is too strict
+ * for draft configs.
+ */
+const urlOrPlaceholder = () =>
+    z.string().refine(
+        (val) => val.startsWith('TODO_') || z.string().url().safeParse(val).success,
+        { message: 'Invalid URL (TODO_* placeholders are allowed)' },
+    );
+
 // -----------------------------------------------------------------
 // Sub-schemas
 // -----------------------------------------------------------------
 
 export const tenantApiConfigSchema = z.object({
-    brainService: z.string(),
-    brainServiceApi: z.string(),
-    cloudService: z.string(),
-    lcaApi: z.string(),
-    xapi: z.string().optional(),
-    aiService: z.string().optional(),
+    brainService: urlOrPlaceholder(),
+    brainServiceApi: urlOrPlaceholder(),
+    cloudService: urlOrPlaceholder(),
+    lcaApi: urlOrPlaceholder(),
+    xapi: urlOrPlaceholder().optional(),
+    aiService: urlOrPlaceholder().optional(),
     corsProxyApiKey: z.string().optional(),
 }).passthrough();
 
@@ -42,9 +56,9 @@ export const tenantWeb3AuthConfigSchema = z.object({
 }).passthrough();
 
 export const tenantAuthConfigSchema = z.object({
-    provider: z.string().default('firebase'),
+    provider: z.enum(['firebase', 'web3auth']).default('firebase'),
     keyDerivation: z.enum(['sss', 'web3auth']).default('sss'),
-    sssServerUrl: z.string().default('https://api.learncard.app/trpc'),
+    sssServerUrl: urlOrPlaceholder().default('https://api.learncard.app/trpc'),
     enableEmailBackupShare: z.boolean().default(true),
     requireEmailForPhoneUsers: z.boolean().default(true),
 
@@ -53,13 +67,12 @@ export const tenantAuthConfigSchema = z.object({
     firebaseDynamicLinkDomain: z.string().optional(),
 
     web3Auth: tenantWeb3AuthConfigSchema.optional(),
-    allowedSignInMethods: z.array(z.string()).optional(),
 }).passthrough();
 
 const deleteSuccessStylesSchema = z.object({
     containerClass: z.string(),
     statusBarColor: z.string(),
-});
+}).passthrough();
 
 export const tenantBrandingConfigSchema = z.object({
     name: z.string().default('LearnCard'),
@@ -68,9 +81,6 @@ export const tenantBrandingConfigSchema = z.object({
     faviconUrl: z.string().optional(),
     defaultTheme: z.string().default('colorful'),
     allowedThemes: z.array(z.string()).optional(),
-    primaryColor: z.string().optional(),
-    secondaryColor: z.string().optional(),
-    fontFamily: z.string().optional(),
     loginRedirectPath: z.string().default('/waitingsofa?loginCompleted=true'),
     brandingKey: z.string().optional(),
     headerText: z.string().optional(),
@@ -99,7 +109,7 @@ export const tenantBrandingConfigSchema = z.object({
             primaryLight: z.string().optional(),
             accent: z.string().optional(),
             stroke: z.string().optional(),
-        }).partial(),
+        }),
     ).optional(),
 
     deleteSuccessStyles: deleteSuccessStylesSchema.optional(),
@@ -117,19 +127,19 @@ export const tenantObservabilityConfigSchema = z.object({
     sentryDsn: z.string().optional(),
     sentryEnv: z.string().optional(),
     sentryTraceDomains: z.array(z.string()).optional(),
-    launchDarklyClientId: z.string(),
-    userflowToken: z.string(),
+    launchDarklyClientId: z.string().default(''),
+    userflowToken: z.string().default(''),
     googleMapsApiKey: z.string().optional(),
 
     analyticsProvider: z.enum(['posthog', 'firebase', 'noop']).default('noop'),
     posthogKey: z.string().optional(),
-    posthogHost: z.string().optional(),
+    posthogHost: urlOrPlaceholder().optional(),
 }).passthrough();
 
 export const tenantLinksConfigSchema = z.object({
-    appStoreUrl: z.string().optional(),
-    playStoreUrl: z.string().optional(),
-    externalAuthRedirectBase: z.string().optional(),
+    appStoreUrl: urlOrPlaceholder().optional(),
+    playStoreUrl: urlOrPlaceholder().optional(),
+    externalAuthRedirectBase: urlOrPlaceholder().optional(),
 }).passthrough();
 
 export const tenantNativeConfigSchema = z.object({
@@ -138,10 +148,9 @@ export const tenantNativeConfigSchema = z.object({
     deepLinkDomains: z.array(z.string()),
     customSchemes: z.array(z.string()).optional(),
     capgoChannel: z.string().optional(),
-    iconSource: z.string().optional(),
-    splashSource: z.string().optional(),
 }).passthrough();
 
+/** @planned — ecosystem fields reserved for multi-tenant org hierarchy support */
 export const tenantEcosystemConfigSchema = z.object({
     ecosystemId: z.string().optional(),
     rootOrgId: z.string().optional(),
@@ -219,9 +228,10 @@ export const parseTenantConfig = (raw: unknown, source: string): TenantConfig | 
  * Parse a partial config (e.g. from an edge function that only sends overrides).
  * Uses `.partial()` on the root so top-level sections are optional.
  */
+const partialTenantConfigSchema = tenantConfigSchema.partial();
+
 export const parsePartialTenantConfig = (raw: unknown, source: string): Partial<TenantConfig> | null => {
-    const partialSchema = tenantConfigSchema.partial();
-    const result = partialSchema.safeParse(raw);
+    const result = partialTenantConfigSchema.safeParse(raw);
 
     if (result.success) {
         return result.data as Partial<TenantConfig>;

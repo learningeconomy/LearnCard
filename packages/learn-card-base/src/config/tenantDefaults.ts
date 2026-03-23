@@ -37,7 +37,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
     },
 
     auth: {
-        provider: 'firebase',
+        provider: 'firebase' as const,
         keyDerivation: 'sss',
         sssServerUrl: 'https://api.learncard.app/trpc',
         enableEmailBackupShare: true,
@@ -56,12 +56,6 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         firebaseRedirectDomain: 'learncard.app',
         firebaseDynamicLinkDomain: 'learncard.app',
 
-        web3Auth: {
-            clientId: '',
-            network: '',
-            verifierId: '',
-            rpcTarget: 'https://rpc.ankr.com/eth',
-        },
     },
 
     branding: {
@@ -106,7 +100,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         userflowToken: 'ct_qq6z63mixbhyzbzsgmivgrftda',
         googleMapsApiKey: undefined,
 
-        analyticsProvider: 'noop' as const,
+        analyticsProvider: 'noop',
         posthogKey: undefined,
         posthogHost: undefined,
     },

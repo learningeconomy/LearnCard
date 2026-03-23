@@ -175,8 +175,8 @@ describe('resolveTenantConfig – full boot path', () => {
 
         // Only baked fetch should have been called (for /tenant-config.json)
         const fetchCalls = fetchMock.mock.calls.map((c: unknown[]) => c[0]);
-        const edgeCalls = fetchCalls.filter((url: unknown) =>
-            typeof url === 'string' && url.includes('__tenant-config')
+        const edgeCalls = fetchCalls.filter(
+            (url: unknown): url is string => typeof url === 'string' && url.includes('__tenant-config')
         );
 
         expect(edgeCalls).toHaveLength(0);
