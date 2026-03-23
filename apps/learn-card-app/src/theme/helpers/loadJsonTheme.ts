@@ -123,9 +123,13 @@ const remapCategoryKeys = (obj: Record<string, unknown>): Record<string, unknown
  * URL by looking it up in the glob map.
  */
 const resolveAsset = (themeId: string, relativePath: string): string => {
-    const globKey = `../schemas/${themeId}/assets/${relativePath.replace(/^\.\/assets\//, '')}`;
+    const fileName = relativePath.replace(/^\.\/assets\//, '');
+    const globKey = `../schemas/${themeId}/assets/${fileName}`;
 
-    return themeAssetModules[globKey] ?? relativePath;
+    // Fall back to the colorful theme's asset if the requested theme doesn't have it
+    const fallbackKey = `../schemas/colorful/assets/${fileName}`;
+
+    return themeAssetModules[globKey] ?? themeAssetModules[fallbackKey] ?? relativePath;
 };
 
 // ─── Theme resolution cache ──────────────────────────────────────────────
