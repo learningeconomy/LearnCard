@@ -80,9 +80,18 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     const syncTheme = useCallback(() => {
         if (!isThemeSwitchingEnabled()) return;
 
+        const preferred = preferences?.theme as string | undefined;
+
+        if (preferred === undefined) return;
+
+        const allowed = new Set(getAllowedThemes());
+
+        if (!allowed.has(preferred)) return;
+
         const cachedTheme = themeStore.get.theme();
-        if (cachedTheme !== preferences?.theme && preferences?.theme !== undefined) {
-            handleSetTheme(preferences?.theme as string);
+
+        if (cachedTheme !== preferred) {
+            handleSetTheme(preferred);
         }
     }, [preferences]);
 
@@ -136,8 +145,9 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
                 <div className="w-full px-4 flex flex-col gap-2">
                     <h4 className="w-full text-grayscale-900 text-[17px]">Choose Your Theme</h4>
                     <p className="w-full text-grayscale-600 text-xs">
-                        Switch between our signature, colorful experience and a classic, formal
-                        style.
+                        {allowedThemeIds.includes('colorful') && allowedThemeIds.includes('formal')
+                            ? 'Switch between our signature, colorful experience and a classic, formal style.'
+                            : 'Choose your preferred visual style.'}
                     </p>
                 </div>
 

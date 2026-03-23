@@ -58,25 +58,34 @@ export const getAllowedThemes = (config?: TenantConfig): string[] => {
 };
 
 /**
- * If the tenant disables theme switching, force-set the store to the
- * configured defaultTheme. Call this from bootstrapTenantConfig() after
- * the config is resolved so it overrides any stale persisted preference.
+ * Ensure the persisted theme is valid for the current tenant.
+ *
+ * - If theme switching is disabled, force-set to defaultTheme.
+ * - If the persisted theme isn't in allowedThemes, reset to defaultTheme.
+ *
+ * Call this from bootstrapTenantConfig() after the config is resolved so
+ * it overrides any stale persisted preference.
  */
 export const enforceDefaultTheme = (): void => {
     try {
         const config = getResolvedTenantConfig();
+        const defaultTheme = getDefaultTheme();
+        const allowed = new Set(getAllowedThemes(config));
+        const current = themeStore.get.theme();
 
-        if (config.features.themeSwitching === false) {
-            const forced = getDefaultTheme();
+        const needsReset =
+            config.features.themeSwitching === false ||
+            !allowed.has(current);
 
+        if (needsReset) {
             // Set immediately (covers case where hydration already happened)
-            themeStore.set.theme(forced);
+            themeStore.set.theme(defaultTheme);
 
             // Subscribe to catch async persist hydration that may overwrite
             // the value we just set. Once corrected, unsubscribe.
             const unsub = themeStore.store.subscribe(({ theme }) => {
-                if (theme !== forced) {
-                    themeStore.set.theme(forced);
+                if (theme !== defaultTheme) {
+                    themeStore.set.theme(defaultTheme);
                     unsub();
                 }
             });

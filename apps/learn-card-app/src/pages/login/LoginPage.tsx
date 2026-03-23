@@ -46,7 +46,8 @@ import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import EndorsementSuccessfullRequestModal from '../../components/boost-endorsements/EndorsementRequestModal/EndorsementSuccessfullRequestModal';
 
-import { themeStore } from '../../theme/store/themeStore';
+import themeStore, { getAllowedThemes } from '../../theme/store/themeStore';
+import { getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
 import endorsementRequestStore from '../../stores/endorsementsRequestStore';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useTheme } from '../../theme/hooks/useTheme';
@@ -86,7 +87,11 @@ export const LoginContent: React.FC = () => {
         try {
             const result = await refetchPreferences();
             if (result?.data?.theme) {
-                const theme = result?.data?.theme ?? 'colorful';
+                const allowed = new Set(getAllowedThemes());
+                const defaultTheme = getResolvedTenantConfig().branding.defaultTheme;
+                const preferred = result.data.theme as string;
+                const theme = allowed.has(preferred) ? preferred : defaultTheme;
+
                 themeStore.set.theme(theme);
                 syncThemeDefaults(theme);
             }
