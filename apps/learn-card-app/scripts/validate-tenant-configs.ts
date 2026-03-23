@@ -51,6 +51,61 @@ if (tenantDirs.length === 0) {
 
 const TODO_PATTERN = /^TODO_/;
 
+// ---------------------------------------------------------------------------
+// Fields that should be unique per tenant — inheriting LearnCard's values is
+// almost certainly a mistake.
+// ---------------------------------------------------------------------------
+
+interface UniqueFieldCheck {
+    path: string;
+    label: string;
+}
+
+const TENANT_UNIQUE_FIELDS: UniqueFieldCheck[] = [
+    { path: 'native.bundleId', label: 'Bundle ID' },
+    { path: 'native.displayName', label: 'Native Display Name' },
+    { path: 'native.deepLinkDomains', label: 'Deep Link Domains' },
+    { path: 'observability.sentryDsn', label: 'Sentry DSN' },
+    { path: 'observability.launchDarklyClientId', label: 'LaunchDarkly Client ID' },
+    { path: 'observability.userflowToken', label: 'Userflow Token' },
+    { path: 'links.appStoreUrl', label: 'App Store URL' },
+    { path: 'links.playStoreUrl', label: 'Play Store URL' },
+];
+
+const getNestedValue = (obj: Record<string, unknown>, path: string): unknown =>
+    path.split('.').reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), obj);
+
+/**
+ * Check if a non-learncard tenant's merged config still has LearnCard default
+ * values for fields that should be tenant-specific.
+ */
+const checkInheritedDefaults = (
+    tenant: string,
+    merged: Record<string, unknown>,
+): string[] => {
+    if (tenant === 'learncard') return [];
+
+    const inheritedWarnings: string[] = [];
+    const defaults = DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>;
+
+    for (const field of TENANT_UNIQUE_FIELDS) {
+        const mergedVal = getNestedValue(merged, field.path);
+        const defaultVal = getNestedValue(defaults, field.path);
+
+        if (
+            mergedVal !== undefined &&
+            defaultVal !== undefined &&
+            JSON.stringify(mergedVal) === JSON.stringify(defaultVal)
+        ) {
+            inheritedWarnings.push(
+                `${field.path} (${field.label}) — inherits LearnCard default: ${JSON.stringify(defaultVal)}`
+            );
+        }
+    }
+
+    return inheritedWarnings;
+};
+
 const findTodoSentinels = (obj: unknown, path = ''): string[] => {
     const results: string[] = [];
 
@@ -88,6 +143,7 @@ let warnings = 0;
 
 const validateConfig = (
     label: string,
+    tenant: string,
     overrides: Record<string, unknown>,
     stageOverrides?: Record<string, unknown>,
 ): void => {
@@ -117,6 +173,19 @@ const validateConfig = (
             warnings += todos.length;
         } else {
             console.log(`✓  ${label} — valid`);
+        }
+
+        // Check for inherited LearnCard defaults on fields that should be tenant-unique
+        const inherited = checkInheritedDefaults(tenant, merged);
+
+        if (inherited.length > 0) {
+            console.log(`      ⚠  ${inherited.length} field(s) inherit LearnCard defaults — override these for production:`);
+
+            for (const w of inherited) {
+                console.log(`         → ${w}`);
+            }
+
+            warnings += inherited.length;
         }
     } else {
         console.error(`✗  ${label} — INVALID:`);
@@ -148,7 +217,7 @@ for (const tenant of tenantDirs) {
         const overrides = JSON.parse(readFileSync(configPath, 'utf-8'));
 
         // Validate base (production) config
-        validateConfig(tenant, overrides);
+        validateConfig(tenant, tenant, overrides);
         totalConfigs++;
 
         // Validate each stage overlay merged on top of base
@@ -160,7 +229,7 @@ for (const tenant of tenantDirs) {
             try {
                 const stageOverrides = JSON.parse(readFileSync(stagePath, 'utf-8'));
 
-                validateConfig(`${tenant}/${stage}`, overrides, stageOverrides);
+                validateConfig(`${tenant}/${stage}`, tenant, overrides, stageOverrides);
                 totalConfigs++;
             } catch (err) {
                 console.error(`✗  ${tenant}/${stage} — failed to parse config.${stage}.json: ${err}`);

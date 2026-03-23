@@ -186,7 +186,7 @@ const SECTIONS = [
     {
         key: 'observability', label: 'Observability', icon: '📊',
         fields: [
-            { path: 'observability.sentryDsn', label: 'Sentry DSN', type: 'string' },
+            { path: 'observability.sentryDsn', label: 'Sentry DSN', type: 'string', required: true },
             { path: 'observability.sentryEnv', label: 'Sentry Environment', type: 'string' },
             { path: 'observability.sentryTraceDomains', label: 'Sentry Trace Domains', type: 'array', help: 'Domains to attach Sentry trace headers to' },
             { path: 'observability.launchDarklyClientId', label: 'LaunchDarkly Client ID', type: 'string', required: true },
@@ -200,17 +200,17 @@ const SECTIONS = [
     {
         key: 'links', label: 'Store Links', icon: '🔗',
         fields: [
-            { path: 'links.appStoreUrl', label: 'App Store URL', type: 'string' },
-            { path: 'links.playStoreUrl', label: 'Play Store URL', type: 'string' },
+            { path: 'links.appStoreUrl', label: 'App Store URL', type: 'string', required: true },
+            { path: 'links.playStoreUrl', label: 'Play Store URL', type: 'string', required: true },
             { path: 'links.externalAuthRedirectBase', label: 'External Auth Redirect Base', type: 'string' },
         ],
     },
     {
         key: 'native', label: 'Native / Capacitor', icon: '📱',
         fields: [
-            { path: 'native.bundleId', label: 'Bundle ID', type: 'string', help: 'e.g. com.vetpass.app' },
-            { path: 'native.displayName', label: 'Display Name', type: 'string' },
-            { path: 'native.deepLinkDomains', label: 'Deep Link Domains', type: 'array', help: 'Domains for universal links / app links' },
+            { path: 'native.bundleId', label: 'Bundle ID', type: 'string', required: true, help: 'e.g. com.vetpass.app' },
+            { path: 'native.displayName', label: 'Display Name', type: 'string', required: true },
+            { path: 'native.deepLinkDomains', label: 'Deep Link Domains', type: 'array', required: true, help: 'Domains for universal links / app links' },
             { path: 'native.customSchemes', label: 'Custom URL Schemes', type: 'array', help: 'e.g. dccrequest, msprequest' },
             { path: 'native.capgoChannel', label: 'Capgo Channel', type: 'string' },
         ],
