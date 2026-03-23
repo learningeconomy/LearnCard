@@ -78,6 +78,11 @@ import { getCredentialStatusForBoostAndProfile } from '@accesslayer/credential/r
 import { getBoostRecipients, getBoostPermissions } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import type { BoostInstance } from '@models';
+import {
+    handleIncrementCounterEvent,
+    handleGetCounterEvent,
+    handleGetCountersEvent,
+} from '@helpers/app-counter.helpers';
 
 // =============================================================================
 // VALIDATION HELPERS
@@ -2100,6 +2105,18 @@ export const appStoreRouter = t.router({
 
             if (eventType === 'send-notification') {
                 return handleSendNotificationEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'increment-counter') {
+                return handleIncrementCounterEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'get-counter') {
+                return handleGetCounterEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'get-counters') {
+                return handleGetCountersEvent(ctx, profile, resolvedListingId, event);
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });

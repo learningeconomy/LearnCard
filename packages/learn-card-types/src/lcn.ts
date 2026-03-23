@@ -1817,6 +1817,34 @@ export const SendNotificationEventValidator = z.object({
 
 export type SendNotificationEvent = z.infer<typeof SendNotificationEventValidator>;
 
+const counterKeyValidator = z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Key must be alphanumeric with _ or -');
+
+export const IncrementCounterEventValidator = z.object({
+    type: z.literal('increment-counter'),
+    key: counterKeyValidator,
+    amount: z.number().finite(),
+});
+
+export type IncrementCounterEvent = z.infer<typeof IncrementCounterEventValidator>;
+
+export const GetCounterEventValidator = z.object({
+    type: z.literal('get-counter'),
+    key: counterKeyValidator,
+});
+
+export type GetCounterEvent = z.infer<typeof GetCounterEventValidator>;
+
+export const GetCountersEventValidator = z.object({
+    type: z.literal('get-counters'),
+    keys: z.array(counterKeyValidator).min(1).max(50).optional(),
+});
+
+export type GetCountersEvent = z.infer<typeof GetCountersEventValidator>;
+
 // Add new event types here as the union grows
 export const AppEventValidator = z.discriminatedUnion('type', [
     SendCredentialEventValidator,
@@ -1824,6 +1852,9 @@ export const AppEventValidator = z.discriminatedUnion('type', [
     CheckIssuanceStatusEventValidator,
     GetTemplateRecipientsEventValidator,
     SendNotificationEventValidator,
+    IncrementCounterEventValidator,
+    GetCounterEventValidator,
+    GetCountersEventValidator,
 ]);
 
 export type AppEvent = z.infer<typeof AppEventValidator>;

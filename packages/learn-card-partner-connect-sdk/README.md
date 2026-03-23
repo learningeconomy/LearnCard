@@ -334,6 +334,73 @@ At least one of `title` or `body` is required.
 
 ---
 
+### `incrementCounter(key, amount)`
+
+Increment or decrement an app-scoped counter for the current user. Counters are scoped to (user, app, key). If the counter does not exist, it is created with the given amount as its initial value.
+
+```typescript
+// Add 10 coins
+const result = await learnCard.incrementCounter('coins', 10);
+console.log(result.newValue); // 10
+
+// Spend 5 coins
+const spent = await learnCard.incrementCounter('coins', -5);
+console.log(spent.newValue); // 5
+```
+
+**Parameters:**
+
+-   `key` _(required)_: Counter name. Must match `[a-zA-Z0-9_-]+`, max 64 characters.
+-   `amount` _(required)_: Numeric value to add. Use a negative number to decrement.
+
+**Returns:** `{ key: string, previousValue: number, newValue: number }`
+
+**Limits:**
+
+-   Max 50 distinct counter keys per user per app
+-   Max 100 writes per user per app per minute
+-   Values must be finite numbers
+
+---
+
+### `getCounter(key)`
+
+Read the current value of an app-scoped counter. Returns `{ value: 0 }` if the counter does not exist.
+
+```typescript
+const { value } = await learnCard.getCounter('coins');
+console.log('Balance:', value);
+```
+
+**Parameters:**
+
+-   `key` _(required)_: Counter name (same format as `incrementCounter`)
+
+**Returns:** `{ key: string, value: number, updatedAt: string | null }`
+
+---
+
+### `getCounters(keys?)`
+
+Read multiple app-scoped counters at once. If `keys` is omitted, returns all counters for this app.
+
+```typescript
+// Specific keys
+const { counters } = await learnCard.getCounters(['coins', 'spins', 'streak']);
+counters.forEach(c => console.log(c.key, c.value));
+
+// All counters
+const all = await learnCard.getCounters();
+```
+
+**Parameters:**
+
+-   `keys` _(optional)_: Array of counter names to fetch (max 50). Omit to return all.
+
+**Returns:** `{ counters: Array<{ key: string, value: number, updatedAt: string | null }> }`
+
+---
+
 ### `launchFeature(featurePath, initialPrompt?)`
 
 Launch a feature in the LearnCard host application.

@@ -296,6 +296,24 @@ export interface AppNotificationResponse {
 }
 
 /**
+ * Response from incrementCounter
+ */
+export interface CounterResponse {
+    key: string;
+    value: number;
+    previousValue?: number;
+    newValue?: number;
+    updatedAt?: string | null;
+}
+
+/**
+ * Response from getCounters
+ */
+export interface CountersResponse {
+    counters: CounterResponse[];
+}
+
+/**
  * Error codes that can be returned by the LearnCard host
  */
 export type ErrorCode =

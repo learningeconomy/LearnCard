@@ -38,6 +38,8 @@ import type {
     TemplateRecipientsResponse,
     AppNotificationInput,
     AppNotificationResponse,
+    CounterResponse,
+    CountersResponse,
     AppEvent,
     AppEventResponse,
     LearnCardError,
@@ -583,6 +585,78 @@ export class PartnerConnect {
         return this.sendAppEvent<AppNotificationResponse>({
             type: 'send-notification',
             ...input,
+        });
+    }
+
+    /**
+     * Increment or decrement an app-scoped counter for the current user.
+     *
+     * Counters are scoped to (user, app, key). If the counter does not exist,
+     * it is created with the given amount as its initial value.
+     *
+     * @param key - Counter name (alphanumeric, underscore, hyphen; max 64 chars)
+     * @param amount - Value to add (negative to decrement)
+     * @returns Promise resolving to `{ key, previousValue, newValue }`
+     *
+     * @example
+     * ```typescript
+     * const result = await learnCard.incrementCounter('coins', 10);
+     * console.log(result.newValue); // e.g. 110
+     *
+     * // Decrement
+     * await learnCard.incrementCounter('coins', -5);
+     * ```
+     */
+    public incrementCounter(key: string, amount: number): Promise<CounterResponse> {
+        return this.sendAppEvent<CounterResponse>({
+            type: 'increment-counter',
+            key,
+            amount,
+        });
+    }
+
+    /**
+     * Read the current value of an app-scoped counter for the current user.
+     *
+     * Returns `{ value: 0 }` if the counter does not exist.
+     *
+     * @param key - Counter name
+     * @returns Promise resolving to `{ key, value, updatedAt }`
+     *
+     * @example
+     * ```typescript
+     * const { value } = await learnCard.getCounter('coins');
+     * console.log('Balance:', value);
+     * ```
+     */
+    public getCounter(key: string): Promise<CounterResponse> {
+        return this.sendAppEvent<CounterResponse>({
+            type: 'get-counter',
+            key,
+        });
+    }
+
+    /**
+     * Read multiple app-scoped counters at once for the current user.
+     *
+     * If `keys` is omitted, returns all counters for this app.
+     *
+     * @param keys - Optional array of counter names to fetch (max 50)
+     * @returns Promise resolving to `{ counters: CounterResponse[] }`
+     *
+     * @example
+     * ```typescript
+     * const { counters } = await learnCard.getCounters(['coins', 'spins', 'streak']);
+     * counters.forEach(c => console.log(c.key, c.value));
+     *
+     * // Get all counters
+     * const all = await learnCard.getCounters();
+     * ```
+     */
+    public getCounters(keys?: string[]): Promise<CountersResponse> {
+        return this.sendAppEvent<CountersResponse>({
+            type: 'get-counters',
+            ...(keys ? { keys } : {}),
         });
     }
 
