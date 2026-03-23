@@ -1,5 +1,6 @@
 import { initLearnCard } from '@learncard/init';
 import { describe, test, expect } from 'vitest';
+import { URLS } from './helpers/ports';
 
 describe('Init', () => {
     // TODO: This test is kind of just a demo for a hacky way of making sure your did is correct.
@@ -7,8 +8,8 @@ describe('Init', () => {
     test('LCN plugin should not have your did right away, but you should be able to know that it does by awaiting getProfile', async () => {
         const learnCard = await initLearnCard({
             seed: 'a',
-            network: 'http://localhost:4000/trpc',
-            cloud: { url: 'http://localhost:4100/trpc' },
+            network: URLS.brainTrpc,
+            cloud: { url: URLS.cloudTrpc },
         });
 
         const didKey = learnCard.id.did('key');
@@ -33,16 +34,16 @@ describe('Init', () => {
 
         const learnCard2 = await initLearnCard({
             seed: 'a',
-            network: 'http://localhost:4000/trpc',
-            cloud: { url: 'http://localhost:4100/trpc' },
+            network: URLS.brainTrpc,
+            cloud: { url: URLS.cloudTrpc },
         });
 
         expect(learnCard2.id.did()).toEqual(didKey);
 
         const learnCard3 = await initLearnCard({
             seed: 'a',
-            network: 'http://localhost:4000/trpc',
-            cloud: { url: 'http://localhost:4100/trpc' },
+            network: URLS.brainTrpc,
+            cloud: { url: URLS.cloudTrpc },
         });
         await learnCard3.invoke.getProfile();
 

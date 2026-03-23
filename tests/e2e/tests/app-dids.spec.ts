@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { getLearnCardForUser, type LearnCard } from './helpers/learncard.helpers';
+import { PORTS, URLS } from './helpers/ports';
 
 /**
  * Helper to construct an app DID from a slug.
  */
 const getAppDidFromSlug = (slug: string): string => {
-    const domain = 'localhost%3A4000';
+    const domain = `localhost%3A${PORTS.brain}`;
     return `did:web:${domain}:app:${slug}`;
 };
 
@@ -73,7 +74,7 @@ describe('App DIDs End-to-End', () => {
             const expectedAppDid = getAppDidFromSlug(listing.slug);
 
             // 7. Test DID resolution endpoint
-            const didResponse = await fetch(`http://localhost:4000/app/${listing.slug}/did.json`);
+            const didResponse = await fetch(`${URLS.brainBase}/app/${listing.slug}/did.json`);
             expect(didResponse.status).toBe(200);
 
             const didDoc = await didResponse.json();
@@ -152,11 +153,11 @@ describe('App DIDs End-to-End', () => {
             );
 
             // Verify DID resolution works for draft apps (supports dev testing)
-            const didResponse = await fetch(`http://localhost:4000/app/${listing.slug}/did.json`);
+            const didResponse = await fetch(`${URLS.brainBase}/app/${listing.slug}/did.json`);
             expect(didResponse.status).toBe(200);
 
             const didDoc = await didResponse.json();
-            expect(didDoc.id).toBe(`did:web:localhost%3A4000:app:${listing.slug}`);
+            expect(didDoc.id).toBe(`did:web:localhost%3A${PORTS.brain}:app:${listing.slug}`);
             expect(didDoc.verificationMethod).toBeTruthy();
         });
     });
@@ -172,7 +173,7 @@ describe('App DIDs End-to-End', () => {
             ];
 
             for (const slug of maliciousSlugs) {
-                const response = await fetch(`http://localhost:4000/app/${slug}/did.json`);
+                const response = await fetch(`${URLS.brainBase}/app/${slug}/did.json`);
                 // Should return 404 or 400, not succeed with file contents
                 expect([400, 404, 422]).toContain(response.status);
 
@@ -201,7 +202,7 @@ describe('App DIDs End-to-End', () => {
 
             for (const slug of invalidSlugs) {
                 const response = await fetch(
-                    `http://localhost:4000/app/${encodeURIComponent(slug)}/did.json`
+                    `${URLS.brainBase}/app/${encodeURIComponent(slug)}/did.json`
                 );
                 expect([400, 404, 422]).toContain(response.status);
             }
@@ -221,7 +222,7 @@ describe('App DIDs End-to-End', () => {
             // Note: These will return 404 because no actual apps exist,
             // but they should not return validation errors
             for (const slug of validSlugs) {
-                const response = await fetch(`http://localhost:4000/app/${slug}/did.json`);
+                const response = await fetch(`${URLS.brainBase}/app/${slug}/did.json`);
                 expect(response.status).toBe(404); // App doesn't exist, but slug format is valid
             }
         });
@@ -248,12 +249,12 @@ describe('App DIDs End-to-End', () => {
             if (!listing?.slug) throw new Error('Listing slug not set');
 
             // DID resolution should fail gracefully when no SA exists
-            const didResponse = await fetch(`http://localhost:4000/app/${listing.slug}/did.json`);
+            const didResponse = await fetch(`${URLS.brainBase}/app/${listing.slug}/did.json`);
             expect(didResponse.status).toBe(404);
         });
 
         it('handles non-existent app slug', async () => {
-            const response = await fetch('http://localhost:4000/app/non-existent-app/did.json');
+            const response = await fetch(`${URLS.brainBase}/app/non-existent-app/did.json`);
             expect(response.status).toBe(404);
         });
 
@@ -289,7 +290,7 @@ describe('App DIDs End-to-End', () => {
                 true
             );
 
-            const response = await fetch(`http://localhost:4000/app/${listing.slug}/did.json`);
+            const response = await fetch(`${URLS.brainBase}/app/${listing.slug}/did.json`);
             expect(response.status).toBe(200);
 
             const contentType = response.headers.get('content-type');

@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 
 import { getLearnCardForUser, getLearnCard, LearnCard } from './helpers/learncard.helpers';
+import { URLS } from './helpers/ports';
 
 let a: NetworkLearnCardFromSeed['returnValue'];
 let b: NetworkLearnCardFromSeed['returnValue'];
@@ -1177,7 +1178,7 @@ describe('Credential Activity Tracking', () => {
                     const claimer = await getLearnCard('1'.repeat(64));
 
                     // Start the VC-API exchange
-                    const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
+                    const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
                     const vcapiResponse = await fetch(vcapiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1255,7 +1256,7 @@ describe('Credential Activity Tracking', () => {
                     // Create claimer with proper hex seed
                     const claimer = await getLearnCard('2'.repeat(64));
 
-                    const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
+                    const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
 
                     const initResponse = await fetch(vcapiUrl, {
                         method: 'POST',
@@ -1322,7 +1323,7 @@ describe('Credential Activity Tracking', () => {
                     // Create claimer with proper hex seed
                     const claimer1 = await getLearnCard('3'.repeat(64));
 
-                    const vcapiUrl1 = `http://localhost:4000/api/workflows/${interactionUrl1.workflowId}/exchanges/${interactionUrl1.interactionId}`;
+                    const vcapiUrl1 = `${URLS.brainApi}/workflows/${interactionUrl1.workflowId}/exchanges/${interactionUrl1.interactionId}`;
                     const init1 = await fetch(vcapiUrl1, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1364,7 +1365,7 @@ describe('Credential Activity Tracking', () => {
                     // Add and verify the contact method
                     await userWithEmail.invoke.addContactMethod({ type: 'email', value: testEmail });
                     const verificationDelivery = await (
-                        await fetch('http://localhost:4000/api/test/last-delivery')
+                        await fetch(`${URLS.brainApi}/test/last-delivery`)
                     ).json();
                     const verificationToken = verificationDelivery?.templateModel?.verificationToken;
                     await userWithEmail.invoke.verifyContactMethod(verificationToken);
@@ -1416,7 +1417,7 @@ describe('Credential Activity Tracking', () => {
                     // Add and verify the contact method
                     await userWithEmail2.invoke.addContactMethod({ type: 'email', value: testEmail2 });
                     const verificationDelivery2 = await (
-                        await fetch('http://localhost:4000/api/test/last-delivery')
+                        await fetch(`${URLS.brainApi}/test/last-delivery`)
                     ).json();
                     const verificationToken2 = verificationDelivery2?.templateModel?.verificationToken;
                     await userWithEmail2.invoke.verifyContactMethod(verificationToken2);
@@ -1454,7 +1455,7 @@ describe('Credential Activity Tracking', () => {
                     // Add and verify the contact method
                     await userWithEmail3.invoke.addContactMethod({ type: 'email', value: testEmail3 });
                     const verificationDelivery3 = await (
-                        await fetch('http://localhost:4000/api/test/last-delivery')
+                        await fetch(`${URLS.brainApi}/test/last-delivery`)
                     ).json();
                     const verificationToken3 = verificationDelivery3?.templateModel?.verificationToken;
                     await userWithEmail3.invoke.verifyContactMethod(verificationToken3);
@@ -1987,7 +1988,7 @@ describe('Credential Activity Tracking', () => {
 
             const claimer = await getLearnCard('4'.repeat(64));
 
-            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
+            const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
 
             // Init exchange
             const initResponse = await fetch(vcapiUrl, {

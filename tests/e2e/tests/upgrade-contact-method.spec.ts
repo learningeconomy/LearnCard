@@ -2,11 +2,12 @@ import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import Redis from 'ioredis';
 
 import { getLearnCard } from './helpers/learncard.helpers';
+import { URLS, PORTS } from './helpers/ports';
 
-const LCA_API_URL = 'http://localhost:5200';
+const LCA_API_URL = URLS.lcaApiBase;
 
 // redis3 is used by lca-api — exposed on host port 6381
-const redis = new Redis({ port: 6381 });
+const redis = new Redis({ port: PORTS.redis3 });
 
 const createMockAuthToken = (
     userId: string,

@@ -3,14 +3,15 @@ import { MongoClient } from 'mongodb';
 import neo4j from 'neo4j-driver';
 import { Client } from 'pg';
 import { getLearnCard } from '../tests/helpers/learncard.helpers';
+import { PORTS, URLS } from '../tests/helpers/ports';
 
-const redis1 = new Redis();
-const redis2 = new Redis({ port: 6380 });
-const mongoClient = new MongoClient('mongodb://localhost:27017');
-const neo4jDriver = neo4j.driver('bolt://localhost:7687');
+const redis1 = new Redis({ port: PORTS.redis1 });
+const redis2 = new Redis({ port: PORTS.redis2 });
+const mongoClient = new MongoClient(URLS.mongo);
+const neo4jDriver = neo4j.driver(URLS.neo4jBolt);
 const pgClient = new Client({
     host: 'localhost',
-    port: 5432,
+    port: PORTS.postgres,
     user: 'lrsql_user',
     password: 'lrsql_password',
     database: 'lrsql_db',
@@ -30,9 +31,9 @@ export async function clearDatabases() {
             redis2.flushall(),
 
             // Clear Didkit Cache in services
-            fetch('http://localhost:4000/test/clear-cache'),
-            fetch('http://localhost:4100/test/clear-cache'),
-            fetch('http://localhost:4200/test/clear-cache'),
+            fetch(URLS.brainClearCache),
+            fetch(URLS.cloudClearCache),
+            fetch(URLS.signingClearCache),
 
             // Clear Local Didkit Cache
             (async () => {

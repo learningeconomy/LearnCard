@@ -4,10 +4,11 @@ import XAPI, { type Statement, type Agent } from '@xapi/xapi';
 
 import { getLearnCardForUser, LearnCard, USERS } from './helpers/learncard.helpers';
 import { normalContract, normalFullTerms } from './helpers/contract.helpers';
+import { URLS } from './helpers/ports';
 
 const XAPI_CONTRACT_URI_EXTENSION = 'https://learncard.com/xapi/extensions/contractUri';
 
-const endpoint = 'http://localhost:4100/xapi';
+const endpoint = URLS.cloudXapi;
 
 let a: LearnCard;
 let b: LearnCard;

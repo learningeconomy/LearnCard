@@ -2,6 +2,7 @@ import { describe, test, expect } from 'vitest';
 
 import { getLearnCardForUser, getLearnCard, LearnCard } from './helpers/learncard.helpers';
 import { sendCredentialsViaInbox } from './helpers/inbox.helpers';
+import { URLS } from './helpers/ports';
 import { LCNIntegration } from '@learncard/types';
 
 let a: LearnCard;
@@ -54,7 +55,7 @@ describe('Inbox', () => {
             };
 
             // Send the boost using the HTTP route
-            const response = await fetch(`http://localhost:4000/api/inbox/issue`, {
+            const response = await fetch(URLS.inboxIssue, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -76,7 +77,7 @@ describe('Inbox', () => {
             });
 
             // Fetch the claimUrl from our new test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
 
             expect(deliveryData).toBeDefined();
@@ -91,7 +92,7 @@ describe('Inbox', () => {
             expect(interactionUrl.workflowId).toBeDefined();
             expect(interactionUrl.interactionId).toBeDefined();
 
-            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
+            const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
             const vcapiResponse = await fetch(vcapiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -180,7 +181,7 @@ describe('Inbox', () => {
             };
 
             // Send the boost using the HTTP route
-            const response = await fetch(`http://localhost:4000/api/inbox/issue`, {
+            const response = await fetch(URLS.inboxIssue, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -202,7 +203,7 @@ describe('Inbox', () => {
             });
 
             // Fetch the claimUrl from our new test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
 
             expect(deliveryData).toBeDefined();
@@ -217,7 +218,7 @@ describe('Inbox', () => {
             expect(interactionUrl.workflowId).toBeDefined();
             expect(interactionUrl.interactionId).toBeDefined();
 
-            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
+            const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
             const vcapiResponse = await fetch(vcapiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -266,7 +267,7 @@ describe('Inbox', () => {
             // Verify the contact method for user C
             await c.invoke.addContactMethod({ type: 'email', value: 'userC@test.com' });
             const verificationDelivery = await (
-                await fetch('http://localhost:4000/api/test/last-delivery')
+                await fetch(`${URLS.brainApi}/test/last-delivery`)
             ).json();
             const verificationToken = verificationDelivery?.templateModel?.verificationToken;
             await c.invoke.verifyContactMethod(verificationToken);
@@ -280,7 +281,7 @@ describe('Inbox', () => {
             };
 
             // Send the boost using the HTTP route
-            const response = await fetch(`http://localhost:4000/api/inbox/issue`, {
+            const response = await fetch(URLS.inboxIssue, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -301,7 +302,7 @@ describe('Inbox', () => {
             });
 
             // The claimUrl should be undefined because it's not sent if the recipient has an existing contact method
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
 
             const claimUrl = deliveryData?.templateModel?.claimUrl;
@@ -324,7 +325,7 @@ describe('Inbox', () => {
             await sendCredentialsViaInbox(a, token, 'userB@test.com', credentialNames);
 
             // Fetch the claimUrl from our new test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             const claimUrl = deliveryData.templateModel.claimUrl;
             expect(claimUrl).toBeDefined();
@@ -336,7 +337,7 @@ describe('Inbox', () => {
             expect(interactionUrl.workflowId).toBeDefined();
             expect(interactionUrl.interactionId).toBeDefined();
 
-            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
+            const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
             const vcapiResponse = await fetch(vcapiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -378,7 +379,7 @@ describe('Inbox', () => {
             await sendCredentialsViaInbox(a, token, 'userB@test.com', credentialNames);
 
             // Fetch the claimUrl from our new test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             const claimUrl = deliveryData.templateModel.claimUrl;
             expect(claimUrl).toBeDefined();
@@ -399,7 +400,7 @@ describe('Inbox', () => {
             });
 
             // accept the inbox credential
-            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
+            const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
             const vcapiResponse = await fetch(vcapiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -466,7 +467,7 @@ describe('Inbox', () => {
             };
 
             // Send the boost using the HTTP route
-            const response = await fetch(`http://localhost:4000/api/inbox/issue`, {
+            const response = await fetch(URLS.inboxIssue, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -495,7 +496,7 @@ describe('Inbox', () => {
             });
 
             // accept the inbox credential
-            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
+            const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
             const vcapiResponse = await fetch(vcapiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -568,7 +569,7 @@ describe('Inbox', () => {
             };
 
             // Send the boost using the HTTP route
-            const response = await fetch(`http://localhost:4000/api/inbox/issue`, {
+            const response = await fetch(URLS.inboxIssue, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -618,7 +619,7 @@ describe('Inbox', () => {
             };
 
             // Send the boost using the HTTP route
-            await fetch(`http://localhost:4000/api/inbox/issue`, {
+            await fetch(URLS.inboxIssue, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -629,7 +630,7 @@ describe('Inbox', () => {
 
             // Check if the ISSUANCE_DELIVERED notification was added to the queue
             const notificationQueueData = await fetch(
-                'http://localhost:4000/api/test/notification-queue'
+                `${URLS.brainApi}/test/notification-queue`
             );
             const notificationQueue = await notificationQueueData.json();
             expect(notificationQueue).toBeDefined();
@@ -670,7 +671,7 @@ describe('Inbox', () => {
             };
 
             // Send the boost using the HTTP route
-            await fetch(`http://localhost:4000/api/inbox/issue`, {
+            await fetch(URLS.inboxIssue, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -680,7 +681,7 @@ describe('Inbox', () => {
             });
 
             // Fetch the claimUrl from our new test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             const claimUrl = deliveryData.templateModel.claimUrl;
 
@@ -690,7 +691,7 @@ describe('Inbox', () => {
             }
 
             // accept the inbox credential
-            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
+            const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
             const vcapiResponse = await fetch(vcapiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -713,7 +714,7 @@ describe('Inbox', () => {
 
             // Check if the ISSUANCE_CLAIMED notification was added to the queue
             const notificationQueueData = await fetch(
-                'http://localhost:4000/api/test/notification-queue'
+                `${URLS.brainApi}/test/notification-queue`
             );
             const notificationQueue = await notificationQueueData.json();
             expect(notificationQueue).toBeDefined();
@@ -759,7 +760,7 @@ describe('Inbox', () => {
             };
 
             // Send the boost using the HTTP route
-            await fetch(`http://localhost:4000/api/inbox/issue`, {
+            await fetch(URLS.inboxIssue, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -769,7 +770,7 @@ describe('Inbox', () => {
             });
 
             // Fetch the claimUrl from our new test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             const claimUrl = deliveryData.templateModel.claimUrl;
 
@@ -779,7 +780,7 @@ describe('Inbox', () => {
             }
 
             // accept the inbox credential
-            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
+            const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`;
             const vcapiResponse = await fetch(vcapiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -802,7 +803,7 @@ describe('Inbox', () => {
 
             // Check if the ISSUANCE_ERROR notification was added to the queue
             const notificationQueueData = await fetch(
-                'http://localhost:4000/api/test/notification-queue'
+                `${URLS.brainApi}/test/notification-queue`
             );
             const notificationQueue = await notificationQueueData.json();
             expect(notificationQueue).toBeDefined();
@@ -894,7 +895,7 @@ describe('Inbox', () => {
 
             // Send challenge
             const challengeResponse = await fetch(
-                `http://localhost:4000/api/contact-methods/challenge`,
+                `${URLS.brainApi}/contact-methods/challenge`,
                 {
                     method: 'POST',
                     headers: {
@@ -905,12 +906,12 @@ describe('Inbox', () => {
             );
 
             // Fetch the verification token from our new test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             console.log(deliveryData);
             const otpChallenge = deliveryData.templateModel.verificationToken;
 
-            const res = await fetch(`http://localhost:4000/api/contact-methods/session`, {
+            const res = await fetch(`${URLS.brainApi}/contact-methods/session`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -933,7 +934,7 @@ describe('Inbox', () => {
                 },
             };
 
-            const claimResponse = await fetch(`http://localhost:4000/api/inbox/claim`, {
+            const claimResponse = await fetch(`${URLS.brainApi}/inbox/claim`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -959,7 +960,7 @@ describe('Inbox', () => {
 
             // Send challenge
             const challengeResponse = await fetch(
-                `http://localhost:4000/api/contact-methods/challenge`,
+                `${URLS.brainApi}/contact-methods/challenge`,
                 {
                     method: 'POST',
                     headers: {

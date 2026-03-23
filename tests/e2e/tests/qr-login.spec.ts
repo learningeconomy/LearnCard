@@ -12,8 +12,9 @@
  */
 
 import { describe, test, expect, beforeAll } from 'vitest';
+import { URLS } from './helpers/ports';
 
-const LCA_API_URL = 'http://localhost:5200';
+const LCA_API_URL = URLS.lcaApiBase;
 
 const post = async (path: string, body: Record<string, unknown>) => {
     return fetch(`${LCA_API_URL}/api${path}`, {

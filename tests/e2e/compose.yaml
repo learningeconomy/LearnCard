@@ -8,7 +8,7 @@ services:
         expose:
             - 4000
         ports:
-            - '4000:4000'
+            - '${BRAIN_HOST_PORT:-4000}:4000'
 
         command: ['sh', '-c', 'cd services/learn-card-network/brain-service && pnpm dev']
 
@@ -40,7 +40,7 @@ services:
             IS_E2E_TEST: true
             SKIP_DIDKIT_NAPI: '1'
 
-            DOMAIN_NAME: localhost%3A4000
+            DOMAIN_NAME: localhost%3A${BRAIN_HOST_PORT:-4000}
 
             NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
             NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
@@ -72,7 +72,7 @@ services:
         expose:
             - 4100
         ports:
-            - '4100:4100'
+            - '${CLOUD_HOST_PORT:-4100}:4100'
 
         command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && pnpm dev']
 
@@ -117,7 +117,7 @@ services:
         expose:
             - 4200
         ports:
-            - '4200:4200'
+            - '${SIGNING_HOST_PORT:-4200}:4200'
 
         command: ['sh', '-c', 'cd services/learn-card-network/simple-signing-service && pnpm dev']
 
@@ -141,7 +141,7 @@ services:
             SKIP_DIDKIT_NAPI: '1'
 
             SEED: c
-            AUTHORIZED_DIDS: did:web:localhost%3A4000
+            AUTHORIZED_DIDS: did:web:localhost%3A${BRAIN_HOST_PORT:-4000}
 
             MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
             MONGO_DB_NAME: ${MONGO_DB_NAME:-simple-signing}
@@ -158,7 +158,7 @@ services:
         expose:
             - 5200
         ports:
-            - '5200:5200'
+            - '${LCA_API_HOST_PORT:-5200}:5200'
 
         depends_on:
             mongodb:
@@ -177,7 +177,8 @@ services:
             IS_OFFLINE: true
             IS_E2E_TEST: true
             SEED: d
-            AUTHORIZED_DIDS: did:web:localhost%3A4000
+            AUTHORIZED_DIDS: did:web:localhost%3A${BRAIN_HOST_PORT:-4000}
+
             MONGO_URI: ${LCA_API_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
             MONGO_DB_NAME: ${LCA_API_MONGO_DB_NAME:-lca-api-e2e}
             REDIS_HOST: redis3
@@ -187,8 +188,8 @@ services:
     neo4j:
         image: neo4j:latest
         ports:
-            - '7687:7687'
-            - '7474:7474'
+            - '${NEO4J_BOLT_HOST_PORT:-7687}:7687'
+            - '${NEO4J_HTTP_HOST_PORT:-7474}:7474'
         healthcheck:
             test:
                 [
@@ -211,7 +212,7 @@ services:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
         ports:
-            - '6379:${REDIS_PORT:-6379}'
+            - '${REDIS1_HOST_PORT:-6379}:6379'
         networks:
             - learn-card
 
@@ -221,7 +222,7 @@ services:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
         ports:
-            - '6380:6379'
+            - '${REDIS2_HOST_PORT:-6380}:6379'
         networks:
             - learn-card
 
@@ -231,7 +232,7 @@ services:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
         ports:
-            - '6381:6379'
+            - '${REDIS3_HOST_PORT:-6381}:6379'
         networks:
             - learn-card
 
@@ -251,7 +252,7 @@ services:
         expose:
             - 27017
         ports:
-            - 27017:27017
+            - '${MONGO_HOST_PORT:-27017}:27017'
         extra_hosts:
             - 'localhost:host-gateway'
         healthcheck:
@@ -270,7 +271,7 @@ services:
         expose:
             - 9324
         ports:
-            - '9324:9324'
+            - '${ELASTICMQ_HOST_PORT:-9324}:9324'
         networks:
             - learn-card
 
@@ -283,7 +284,7 @@ services:
             POSTGRES_PASSWORD: lrsql_password
             POSTGRES_DB: lrsql_db
         ports:
-            - '5432:5432'
+            - '${POSTGRES_HOST_PORT:-5432}:5432'
 
     lrs:
         image: yetanalytics/lrsql:latest
@@ -294,7 +295,7 @@ services:
         extra_hosts:
             - 'localhost:host-gateway'
         ports:
-            - '8080:8080'
+            - '${LRS_HOST_PORT:-8080}:8080'
         depends_on:
             - postgres
             - cloud
