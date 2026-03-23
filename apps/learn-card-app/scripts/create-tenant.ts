@@ -182,7 +182,6 @@ const main = async () => {
         auth: {
             provider: 'firebase',
             keyDerivation: 'sss',
-            sssServerUrl: 'https://api.learncard.app/trpc',
             firebase: {
                 apiKey: 'TODO_FIREBASE_API_KEY',
                 authDomain: `${tenantId}.firebaseapp.com`,
@@ -190,6 +189,11 @@ const main = async () => {
                 storageBucket: `${tenantId}.appspot.com`,
                 messagingSenderId: 'TODO_MESSAGING_SENDER_ID',
                 appId: 'TODO_APP_ID',
+            },
+            sss: {
+                serverUrl: 'https://api.learncard.app/trpc',
+                enableEmailBackupShare: true,
+                requireEmailForPhoneUsers: true,
             },
         },
 

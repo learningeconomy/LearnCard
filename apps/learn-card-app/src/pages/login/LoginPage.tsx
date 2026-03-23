@@ -20,6 +20,7 @@ import {
     useGetPreferencesForDid,
     QrLoginRequester,
     getAuthConfig,
+    getSSSConfig,
 } from 'learn-card-base';
 
 import { Capacitor } from '@capacitor/core';
@@ -251,7 +252,7 @@ export const LoginContent: React.FC = () => {
                 <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4">
                     <div className="w-full bg-white rounded-[20px] shadow-2xl">
                         <QrLoginRequester
-                            serverUrl={authConfig.serverUrl}
+                            serverUrl={getSSSConfig().serverUrl}
                             onApproved={(deviceShare, _approverDid, hint, version) => {
                                 console.debug(
                                     '[QR Login] approved — share:',

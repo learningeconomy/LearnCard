@@ -12,9 +12,6 @@
     "auth": {
         "provider": "firebase",
         "keyDerivation": "sss",
-        "sssServerUrl": "TODO_SSS_SERVER_URL",
-        "enableEmailBackupShare": true,
-        "requireEmailForPhoneUsers": true,
         "firebase": {
             "apiKey": "TODO_FIREBASE_API_KEY",
             "authDomain": "vetpass.firebaseapp.com",
@@ -22,10 +19,15 @@
             "storageBucket": "vetpass.appspot.com",
             "messagingSenderId": "TODO_SENDER_ID",
             "appId": "TODO_APP_ID",
-            "measurementId": "TODO_MEASUREMENT_ID"
+            "measurementId": "TODO_MEASUREMENT_ID",
+            "redirectDomain": "vetpass.app",
+            "dynamicLinkDomain": "vetpass.app"
         },
-        "firebaseRedirectDomain": "vetpass.app",
-        "firebaseDynamicLinkDomain": "vetpass.app"
+        "sss": {
+            "serverUrl": "TODO_SSS_SERVER_URL",
+            "enableEmailBackupShare": true,
+            "requireEmailForPhoneUsers": true
+        }
     },
     "branding": {
         "name": "VetPass",

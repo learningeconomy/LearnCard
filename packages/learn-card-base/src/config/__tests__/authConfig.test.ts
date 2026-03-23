@@ -13,6 +13,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import {
     getAuthConfig,
+    getSSSConfig,
     shouldUseSSS,
     isEmailBackupShareEnabled,
 } from '../authConfig';
@@ -38,6 +39,7 @@ const clearAuthEnvVars = () => {
         'KEY_DERIVATION_PROVIDER',
         'SSS_SERVER_URL',
         'ENABLE_EMAIL_BACKUP_SHARE',
+        'REQUIRE_EMAIL_FOR_PHONE_USERS',
     ];
 
     for (const prefix of prefixes) {
@@ -66,8 +68,11 @@ describe('getAuthConfig', () => {
 
             expect(config.authProvider).toBe('firebase');
             expect(config.keyDerivation).toBe('sss');
-            expect(config.serverUrl).toBe('http://localhost:5100/api');
-            expect(config.enableEmailBackupShare).toBe(true);
+
+            const sss = getSSSConfig();
+            expect(sss.serverUrl).toBe('http://localhost:5100/api');
+            expect(sss.enableEmailBackupShare).toBe(true);
+            expect(sss.requireEmailForPhoneUsers).toBe(true);
         });
     });
 
@@ -91,17 +96,13 @@ describe('getAuthConfig', () => {
         it('reads VITE_SSS_SERVER_URL', () => {
             setEnv({ VITE_SSS_SERVER_URL: 'https://custom.server/api' });
 
-            const config = getAuthConfig();
-
-            expect(config.serverUrl).toBe('https://custom.server/api');
+            expect(getSSSConfig().serverUrl).toBe('https://custom.server/api');
         });
 
         it('reads VITE_ENABLE_EMAIL_BACKUP_SHARE=false', () => {
             setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'false' });
 
-            const config = getAuthConfig();
-
-            expect(config.enableEmailBackupShare).toBe(false);
+            expect(getSSSConfig().enableEmailBackupShare).toBe(false);
         });
 
     });
@@ -126,9 +127,7 @@ describe('getAuthConfig', () => {
         it('falls back to REACT_APP_SSS_SERVER_URL', () => {
             setEnv({ REACT_APP_SSS_SERVER_URL: 'https://react-app.server/api' });
 
-            const config = getAuthConfig();
-
-            expect(config.serverUrl).toBe('https://react-app.server/api');
+            expect(getSSSConfig().serverUrl).toBe('https://react-app.server/api');
         });
     });
 
@@ -150,19 +149,17 @@ describe('getAuthConfig', () => {
                 REACT_APP_SSS_SERVER_URL: 'https://react.server/api',
             });
 
-            const config = getAuthConfig();
-
-            expect(config.serverUrl).toBe('https://vite.server/api');
+            expect(getSSSConfig().serverUrl).toBe('https://vite.server/api');
         });
     });
 
-    describe('key derivation normalization', () => {
-        it('normalizes unknown key derivation values to sss', () => {
+    describe('key derivation passthrough', () => {
+        it('passes through unknown key derivation values (open string)', () => {
             setEnv({ VITE_KEY_DERIVATION: 'unknown-provider' });
 
             const config = getAuthConfig();
 
-            expect(config.keyDerivation).toBe('sss');
+            expect(config.keyDerivation).toBe('unknown-provider');
         });
 
         it('accepts web3auth explicitly', () => {
@@ -176,20 +173,18 @@ describe('getAuthConfig', () => {
 
     describe('boolean parsing', () => {
         it('enableEmailBackupShare defaults to true', () => {
-            const config = getAuthConfig();
-
-            expect(config.enableEmailBackupShare).toBe(true);
+            expect(getSSSConfig().enableEmailBackupShare).toBe(true);
         });
 
         it('enableEmailBackupShare is true for any value except "false"', () => {
             setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'true' });
-            expect(getAuthConfig().enableEmailBackupShare).toBe(true);
+            expect(getSSSConfig().enableEmailBackupShare).toBe(true);
 
             setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: '1' });
-            expect(getAuthConfig().enableEmailBackupShare).toBe(true);
+            expect(getSSSConfig().enableEmailBackupShare).toBe(true);
 
             setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'yes' });
-            expect(getAuthConfig().enableEmailBackupShare).toBe(true);
+            expect(getSSSConfig().enableEmailBackupShare).toBe(true);
         });
 
     });

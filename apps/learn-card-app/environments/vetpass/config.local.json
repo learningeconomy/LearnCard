@@ -9,7 +9,9 @@
         "xapi": "http://localhost:4100/xapi"
     },
     "auth": {
-        "sssServerUrl": "http://localhost:5100/api"
+        "sss": {
+            "serverUrl": "http://localhost:5100/api"
+        }
     },
     "features": {
         "analytics": false

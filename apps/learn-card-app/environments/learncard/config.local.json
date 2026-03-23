@@ -17,6 +17,8 @@
         "userflowToken": "ct_w53eaxhevvf2vejzrecekeq3nu"
     },
     "auth": {
-        "sssServerUrl": "http://localhost:5100/api"
+        "sss": {
+            "serverUrl": "http://localhost:5100/api"
+        }
     }
 }

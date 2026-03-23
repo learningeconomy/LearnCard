@@ -63,7 +63,7 @@ export const getLoginRedirectUrl = (): string => {
 export const getFirebaseRedirectDomain = (): string => {
     const config = getResolvedTenantConfig();
 
-    return config.auth.firebaseRedirectDomain ?? config.domain;
+    return config.auth.firebase?.redirectDomain ?? config.domain;
 };
 
 /**
@@ -73,7 +73,7 @@ export const getFirebaseRedirectDomain = (): string => {
 export const getFirebaseDynamicLinkDomain = (): string => {
     const config = getResolvedTenantConfig();
 
-    return config.auth.firebaseDynamicLinkDomain ?? config.domain;
+    return config.auth.firebase?.dynamicLinkDomain ?? config.domain;
 };
 
 /**

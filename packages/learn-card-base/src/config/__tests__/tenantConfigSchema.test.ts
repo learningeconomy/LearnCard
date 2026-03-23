@@ -43,6 +43,7 @@ describe('tenantConfigSchema', () => {
                     messagingSenderId: '123',
                     appId: '1:123:web:abc',
                 },
+                sss: {},
             },
             branding: {
                 name: 'Test App',
@@ -65,8 +66,8 @@ describe('tenantConfigSchema', () => {
         // Zod defaults should be applied
         expect(result.auth.provider).toBe('firebase');
         expect(result.auth.keyDerivation).toBe('sss');
-        expect(result.auth.enableEmailBackupShare).toBe(true);
-        expect(result.auth.requireEmailForPhoneUsers).toBe(true);
+        expect(result.auth.sss?.enableEmailBackupShare).toBe(true);
+        expect(result.auth.sss?.requireEmailForPhoneUsers).toBe(true);
         expect(result.branding.defaultTheme).toBe('colorful');
         expect(result.branding.loginRedirectPath).toBe('/waitingsofa?loginCompleted=true');
         expect(result.features.aiFeatures).toBe(true);

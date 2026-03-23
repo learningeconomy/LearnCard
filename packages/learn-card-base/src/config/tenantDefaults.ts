@@ -39,9 +39,6 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
     auth: {
         provider: 'firebase' as const,
         keyDerivation: 'sss',
-        sssServerUrl: 'https://api.learncard.app/trpc',
-        enableEmailBackupShare: true,
-        requireEmailForPhoneUsers: true,
 
         firebase: {
             apiKey: 'AIzaSyDQJcEDxhxdxRAVdIDBzcE1x6D-KOj6N4o',
@@ -51,11 +48,15 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
             messagingSenderId: '776298253175',
             appId: '1:776298253175:web:dd996767bf1a2a37a2ef72',
             measurementId: 'G-XPHGSD6Q59',
+            redirectDomain: 'learncard.app',
+            dynamicLinkDomain: 'learncard.app',
         },
 
-        firebaseRedirectDomain: 'learncard.app',
-        firebaseDynamicLinkDomain: 'learncard.app',
-
+        sss: {
+            serverUrl: 'https://api.learncard.app/trpc',
+            enableEmailBackupShare: true,
+            requireEmailForPhoneUsers: true,
+        },
     },
 
     branding: {

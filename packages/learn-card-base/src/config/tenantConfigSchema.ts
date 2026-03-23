@@ -46,6 +46,14 @@ export const tenantFirebaseConfigSchema = z.object({
     messagingSenderId: z.string(),
     appId: z.string(),
     measurementId: z.string().optional(),
+    redirectDomain: z.string().optional(),
+    dynamicLinkDomain: z.string().optional(),
+}).passthrough();
+
+export const tenantSSSConfigSchema = z.object({
+    serverUrl: urlOrPlaceholder().default('https://api.learncard.app/trpc'),
+    enableEmailBackupShare: z.boolean().default(true),
+    requireEmailForPhoneUsers: z.boolean().default(true),
 }).passthrough();
 
 export const tenantWeb3AuthConfigSchema = z.object({
@@ -56,16 +64,18 @@ export const tenantWeb3AuthConfigSchema = z.object({
 }).passthrough();
 
 export const tenantAuthConfigSchema = z.object({
-    provider: z.enum(['firebase', 'web3auth']).default('firebase'),
-    keyDerivation: z.enum(['sss', 'web3auth']).default('sss'),
-    sssServerUrl: urlOrPlaceholder().default('https://api.learncard.app/trpc'),
-    enableEmailBackupShare: z.boolean().default(true),
-    requireEmailForPhoneUsers: z.boolean().default(true),
+    // Open strings — must match a registered factory in providerRegistry.ts.
+    provider: z.string().default('firebase'),
+    keyDerivation: z.string().default('sss'),
 
+    // Provider-specific config blocks — only the one matching `provider`
+    // is used at runtime. Each block is self-contained with its own schema.
+    // Unknown providers pass through via the parent .passthrough().
     firebase: tenantFirebaseConfigSchema.optional(),
-    firebaseRedirectDomain: z.string().optional(),
-    firebaseDynamicLinkDomain: z.string().optional(),
 
+    // Key-derivation strategy config blocks — only the one matching
+    // `keyDerivation` is used at runtime.
+    sss: tenantSSSConfigSchema.optional(),
     web3Auth: tenantWeb3AuthConfigSchema.optional(),
 }).passthrough();
 
