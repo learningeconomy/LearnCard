@@ -28,7 +28,7 @@ import Toast from 'learn-card-base/components/toast/Toast';
 import { AnalyticsContextProvider } from '@analytics';
 import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator';
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
-import AuthKeyDebugWidget from './components/debug/AuthKeyDebugWidget';
+import DevDebugPanel from './components/debug/DevDebugPanel';
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import localforage from 'localforage';
 
@@ -173,7 +173,7 @@ const FullApp: React.FC = () => {
 
                                         {showScannerOverlay && <QRCodeScannerOverlay />}
 
-                                        <AuthKeyDebugWidget />
+                                        <DevDebugPanel />
                                     </IonApp>
                                 </ModalsProvider>
                             </ExternalAuthServiceProvider>
