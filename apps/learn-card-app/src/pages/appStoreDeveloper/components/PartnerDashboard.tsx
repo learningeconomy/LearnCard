@@ -33,6 +33,7 @@ interface PartnerDashboardProps {
     onCreateNew: () => void;
     onEditListing: (listing: ExtendedAppStoreListing) => void;
     onSubmitForReview: (listingId: string) => Promise<void>;
+    onUnsubmitForReview: (listingId: string) => Promise<void>;
     onDeleteListing: (listingId: string) => Promise<void>;
 }
 
@@ -43,6 +44,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
     onCreateNew,
     onEditListing,
     onSubmitForReview,
+    onUnsubmitForReview,
     onDeleteListing,
 }) => {
     const { newModal } = useModal();
@@ -92,6 +94,20 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
 
         setActionLoading(listingId);
         await onDeleteListing(listingId);
+        setSelectedListing(null);
+        setActionLoading(null);
+    };
+
+    const handleUnsubmit = async (listingId: string) => {
+        if (
+            !confirm(
+                'Are you sure you want to withdraw this submission? You can resubmit after making changes.'
+            )
+        )
+            return;
+
+        setActionLoading(listingId);
+        await onUnsubmitForReview(listingId);
         setSelectedListing(null);
         setActionLoading(null);
     };
@@ -527,6 +543,19 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                     >
                                         <Play className="w-4 h-4" />
                                         Preview
+                                    </button>
+
+                                    <button
+                                        onClick={() => handleUnsubmit(selectedListing.listing_id)}
+                                        disabled={actionLoading === selectedListing.listing_id}
+                                        className="flex items-center gap-2 px-3 py-2 bg-amber-100 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-200 transition-colors disabled:opacity-50"
+                                    >
+                                        {actionLoading === selectedListing.listing_id ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <RefreshCw className="w-4 h-4" />
+                                        )}
+                                        Unsubmit
                                     </button>
 
                                     <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-lg flex-1">

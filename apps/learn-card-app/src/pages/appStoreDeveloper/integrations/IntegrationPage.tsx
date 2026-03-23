@@ -72,10 +72,7 @@ const IntegrationPage: React.FC = () => {
 
             <IonContent className="ion-padding">
                 <div className="max-w-5xl mx-auto py-4">
-                    <DashboardRouter
-                        integration={currentIntegration}
-                        isLoading={false}
-                    />
+                    <DashboardRouter integration={currentIntegration} isLoading={false} />
                 </div>
             </IonContent>
         </IonPage>

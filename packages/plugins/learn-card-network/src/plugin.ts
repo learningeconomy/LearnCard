@@ -1812,6 +1812,12 @@ export async function getLearnCardNetworkPlugin(
                 return client.appStore.submitForReview.mutate({ listingId });
             },
 
+            unsubmitAppStoreListing: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.unsubmitForReview.mutate({ listingId });
+            },
+
             getListingsForIntegration: async (_learnCard, integrationId, options = {}) => {
                 await ensureUser();
 
