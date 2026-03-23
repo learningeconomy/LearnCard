@@ -131,6 +131,25 @@ npx tsx scripts/prepare-native-config.ts --reset
 Switching is git-clean — platform output files are gitignored. Only the
 `environments/` source directories are tracked.
 
+### Template files
+
+Some platform files (Vite's `index.html`, iOS entitlements) need to exist but
+are patched per-tenant. These use a **template pattern**:
+
+| Template (tracked) | Generated (gitignored) |
+| --- | --- |
+| `index.template.html` | `index.html` |
+| `ios/App/App/App.entitlements.template` | `ios/App/App/App.entitlements` |
+| `ios/App/App/AppRelease.entitlements.template` | `ios/App/App/AppRelease.entitlements` |
+
+`prepare-native-config.ts` copies the template → generated file, then patches
+it with tenant-specific values (title, deep link domains, etc.). On a fresh
+clone the generated files won't exist until you run the script (e.g. via
+`pnpm lc dev`).
+
+Firebase configs (`google-services.json`, `GoogleService-Info.plist`) are
+copied directly from tenant assets and are also gitignored.
+
 ## config.json format
 
 The config is a partial `TenantConfig` object. Fields are deep-merged onto

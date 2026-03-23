@@ -46,7 +46,7 @@ For detailed architecture, read the relevant AGENTS.md when working in that area
 | Partner Connect SDK | `packages/learn-card-partner-connect-sdk/AGENTS.md` | Security model, message lifecycle, adding methods |
 | App Store examples | `examples/app-store-apps/AGENTS.md` | Example app patterns, Astro + Partner Connect stack |
 | ScoutPass app | `apps/scouts/AGENTS.md` | Troop/Scout hierarchy, credential status, key components |
-| LearnCard app (E2E testing, architecture) | `apps/learn-card-app/AGENTS.md` | Playwright E2E test setup, auth, Ionic modal gotchas, credential flows |
+| LearnCard app (E2E testing, architecture) | `apps/learn-card-app/AGENTS.md` | Multi-tenant config, JSON themes, Playwright E2E, Ionic modal gotchas, credential flows |
 
 ## Quick Reference
 

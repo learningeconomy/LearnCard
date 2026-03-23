@@ -597,6 +597,12 @@ if (nativeConfig?.deepLinkDomains?.length) {
 
     for (const relPath of entitlementFiles) {
         const absPath = resolve(APP_ROOT, relPath);
+        const templatePath = absPath + '.template';
+
+        // Always start from the template so tenant switches produce a clean result
+        if (existsSync(templatePath)) {
+            cpSync(templatePath, absPath);
+        }
 
         if (!existsSync(absPath)) continue;
 
@@ -632,6 +638,12 @@ if (nativeConfig?.deepLinkDomains?.length) {
 // ---------------------------------------------------------------------------
 
 const indexHtmlPath = resolve(APP_ROOT, 'index.html');
+const indexTemplatePath = resolve(APP_ROOT, 'index.template.html');
+
+// Always start from the template so tenant switches produce a clean result
+if (existsSync(indexTemplatePath)) {
+    cpSync(indexTemplatePath, indexHtmlPath);
+}
 
 if (existsSync(indexHtmlPath)) {
     console.log('\n📄 Patching index.html with tenant branding...');

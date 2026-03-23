@@ -43,7 +43,9 @@ demoState.json
 # Run `prepare-native-config.ts learncard` to restore defaults.
 # ---------------------------------------------------------------------------
 
-# iOS
+# iOS — generated from .template files by prepare-native-config.ts
+ios/App/App/App.entitlements
+ios/App/App/AppRelease.entitlements
 ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon.png
 ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png
 ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-1.png
@@ -101,6 +103,9 @@ android/app/src/main/assets/capacitor.config.json
 # Firebase config files (tenant-specific)
 android/app/google-services.json
 ios/App/App/GoogleService-Info.plist
+
+# Web — generated from index.template.html by prepare-native-config.ts
+index.html
 
 # Web — icons, manifests, tenant config, branding
 public/assets/icon/favicon.png
