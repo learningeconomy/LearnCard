@@ -16,6 +16,7 @@ import { initializeFirebaseFromTenant } from '../firebase/firebase';
 import { initSentryFromTenant } from '../constants/sentry';
 import { initUserflowFromTenant } from '../constants/userflow';
 import { enforceDefaultTheme } from '../theme/store/themeStore';
+import { createConfigResolutionListener, emitConfigDebugEvent, emitConfigSuccess } from '../components/debug/configDebugEvents';
 
 // Module-level singleton so other modules can access config synchronously
 let _resolvedConfig: TenantConfig | null = null;
@@ -99,6 +100,10 @@ export const getNativeBundleId = (): string => {
  *   5. Userflow product tours
  */
 export const bootstrapTenantConfig = async (): Promise<TenantConfig> => {
+    const onEvent = createConfigResolutionListener();
+
+    emitConfigDebugEvent('bootstrap:start', 'Starting tenant config bootstrap');
+
     // Wire Sentry breadcrumbs for config fetch failures (before resolving)
     setOnFetchFailure(({ endpoint, error }) => {
         Sentry.addBreadcrumb({
@@ -109,27 +114,39 @@ export const bootstrapTenantConfig = async (): Promise<TenantConfig> => {
         });
     });
 
-    const config = await resolveTenantConfig();
+    const t0 = Date.now();
+
+    const config = await resolveTenantConfig({ onEvent });
 
     _resolvedConfig = config;
 
     // 1. Initialize Firebase with tenant-specific project config
     initializeFirebaseFromTenant(config.auth.firebase);
+    emitConfigDebugEvent('bootstrap:firebase_init', `Firebase initialized (project: ${config.auth.firebase?.projectId ?? 'default'})`, { data: { projectId: config.auth.firebase?.projectId } });
 
     // 2. Bridge auth config so getAuthConfig() returns tenant-aware values
     setAuthConfigFromTenant(config);
+    emitConfigDebugEvent('bootstrap:auth_config_set', `Auth config bridged (provider: ${config.auth.authProvider})`, { data: { authProvider: config.auth.authProvider, keyDerivation: config.auth.keyDerivation } });
 
     // 3. Populate network store with tenant API endpoints
     initNetworkStoreFromTenant(config.apis);
+    emitConfigDebugEvent('bootstrap:network_store_init', 'Network store populated with tenant API endpoints');
 
     // 4. Initialize Sentry from tenant observability config
     initSentryFromTenant();
+    emitConfigDebugEvent('bootstrap:sentry_init', `Sentry initialized (DSN: ${config.observability.sentryDsn ? 'configured' : 'none'})`);
 
     // 5. Initialize Userflow from tenant observability config
     initUserflowFromTenant();
+    emitConfigDebugEvent('bootstrap:userflow_init', `Userflow initialized (token: ${config.observability.userflowToken ? 'configured' : 'none'})`);
 
     // 6. Force theme to defaultTheme when tenant disables theme switching
     enforceDefaultTheme();
+    emitConfigDebugEvent('bootstrap:theme_enforced', `Theme enforcement ran (default: ${config.branding.defaultTheme})`, { data: { defaultTheme: config.branding.defaultTheme, themeSwitching: config.features.themeSwitching } });
+
+    const totalMs = Date.now() - t0;
+
+    emitConfigSuccess('bootstrap:complete', `Bootstrap complete in ${totalMs}ms — tenant: ${config.tenantId}`, { tenantId: config.tenantId, totalMs });
 
     return config;
 };

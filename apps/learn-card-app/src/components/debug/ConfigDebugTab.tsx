@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Globe,
     Database,
@@ -14,7 +14,15 @@ import {
 import { useTenantConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/config/tenantDefaults';
 
-import { KVRow, Section, truncate, useCopyToClipboard } from './debugComponents';
+import { KVRow, Section, truncate, useCopyToClipboard, EventTimeline } from './debugComponents';
+import type { TimelineEvent } from './debugComponents';
+
+import {
+    type ConfigDebugEvent,
+    subscribeToConfigDebugEvents,
+    getConfigDebugEvents,
+    clearConfigDebugEvents,
+} from './configDebugEvents';
 
 // ---------------------------------------------------------------------------
 // Fields that should be unique per tenant (mirrors validate-tenant-configs.ts)
@@ -46,10 +54,51 @@ const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => 
 // Config Debug Tab
 // ---------------------------------------------------------------------------
 
+const isConfigEvent = (e: ConfigDebugEvent): boolean =>
+    e.type.startsWith('config:') || e.type.startsWith('bootstrap:');
+
 export const ConfigDebugTab: React.FC = () => {
     const config = useTenantConfig();
     const [copied, setCopied] = useCopyToClipboard();
     const [showRawJson, setShowRawJson] = useState(false);
+    const [events, setEvents] = useState<ConfigDebugEvent[]>(() =>
+        getConfigDebugEvents().filter(isConfigEvent)
+    );
+
+    useEffect(() => {
+        const unsubscribe = subscribeToConfigDebugEvents((event) => {
+            if (event.id === 'clear') {
+                setEvents([]);
+            } else if (isConfigEvent(event)) {
+                setEvents(prev => [event, ...prev].slice(0, 200));
+            }
+        });
+
+        return unsubscribe;
+    }, []);
+
+    const handleClearEvents = useCallback(() => {
+        clearConfigDebugEvents();
+        setEvents([]);
+    }, []);
+
+    const handleExportEvents = useCallback(() => {
+        const exportData = {
+            exportedAt: new Date().toISOString(),
+            tenantId: config.tenantId,
+            domain: config.domain,
+            schemaVersion: config.schemaVersion,
+            events: events.map(e => ({
+                time: e.timestamp.toISOString(),
+                type: e.type,
+                level: e.level,
+                message: e.message,
+                data: e.data,
+            })),
+        };
+
+        setCopied('export-config', JSON.stringify(exportData, null, 2));
+    }, [config, events, setCopied]);
 
     const isLearnCard = config.tenantId === 'learncard';
 
@@ -190,6 +239,18 @@ export const ConfigDebugTab: React.FC = () => {
                     <KVRow label="Deep Link Domains" value={config.native.deepLinkDomains?.join(', ') ?? '—'} mono={false} copied={copied} onCopy={setCopied} />
                 </Section>
             )}
+
+            {/* ── Event Timeline ── */}
+            <EventTimeline
+                events={events as TimelineEvent[]}
+                copied={copied}
+                onCopy={setCopied}
+                onClear={handleClearEvents}
+                onExport={handleExportEvents}
+                exportCopied={copied === 'export-config'}
+                title="Config Events"
+                emptyMessage="Config resolution events appear at boot"
+            />
 
             {/* ── Raw JSON ── */}
             <div className="bg-gray-800/80 rounded-lg overflow-hidden">

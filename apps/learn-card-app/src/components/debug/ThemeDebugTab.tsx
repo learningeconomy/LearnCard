@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Palette,
     Layout,
@@ -16,7 +16,15 @@ import { getAllowedThemes, isThemeSwitchingEnabled } from '../../theme/store/the
 import { getRegisteredThemeIds } from '../../theme/helpers/loadTheme';
 import { loadThemeSchema } from '../../theme/helpers/loadTheme';
 
-import { KVRow, Section, useCopyToClipboard } from './debugComponents';
+import { KVRow, Section, useCopyToClipboard, EventTimeline } from './debugComponents';
+import type { TimelineEvent } from './debugComponents';
+
+import {
+    type ConfigDebugEvent,
+    subscribeToConfigDebugEvents,
+    getConfigDebugEvents,
+    clearConfigDebugEvents,
+} from './configDebugEvents';
 
 // ---------------------------------------------------------------------------
 // Color swatch component
@@ -38,12 +46,52 @@ const ColorSwatch: React.FC<{ label: string; color: string }> = ({ label, color 
 // Theme Debug Tab
 // ---------------------------------------------------------------------------
 
+const isThemeEvent = (e: ConfigDebugEvent): boolean =>
+    e.type.startsWith('theme:');
+
 export const ThemeDebugTab: React.FC = () => {
     const config = useTenantConfig();
     const activeThemeId = themeStore.use.theme();
     const theme = loadThemeSchema(activeThemeId);
     const [copied, setCopied] = useCopyToClipboard();
     const [showRawJson, setShowRawJson] = useState(false);
+    const [events, setEvents] = useState<ConfigDebugEvent[]>(() =>
+        getConfigDebugEvents().filter(isThemeEvent)
+    );
+
+    useEffect(() => {
+        const unsubscribe = subscribeToConfigDebugEvents((event) => {
+            if (event.id === 'clear') {
+                setEvents([]);
+            } else if (isThemeEvent(event)) {
+                setEvents(prev => [event, ...prev].slice(0, 200));
+            }
+        });
+
+        return unsubscribe;
+    }, []);
+
+    const handleClearEvents = useCallback(() => {
+        clearConfigDebugEvents();
+        setEvents([]);
+    }, []);
+
+    const handleExportEvents = useCallback(() => {
+        const exportData = {
+            exportedAt: new Date().toISOString(),
+            activeThemeId,
+            displayName: theme.displayName,
+            events: events.map(e => ({
+                time: e.timestamp.toISOString(),
+                type: e.type,
+                level: e.level,
+                message: e.message,
+                data: e.data,
+            })),
+        };
+
+        setCopied('export-theme', JSON.stringify(exportData, null, 2));
+    }, [activeThemeId, theme, events, setCopied]);
 
     const registeredThemes = useMemo(() => getRegisteredThemeIds(), []);
     const allowedThemes = useMemo(() => getAllowedThemes(config), [config]);
@@ -292,6 +340,18 @@ export const ThemeDebugTab: React.FC = () => {
                     ))}
                 </Section>
             )}
+
+            {/* ── Event Timeline ── */}
+            <EventTimeline
+                events={events as TimelineEvent[]}
+                copied={copied}
+                onCopy={setCopied}
+                onClear={handleClearEvents}
+                onExport={handleExportEvents}
+                exportCopied={copied === 'export-theme'}
+                title="Theme Events"
+                emptyMessage="Theme loading and enforcement events appear at boot"
+            />
 
             {/* ── Raw JSON ── */}
             <div className="bg-gray-800/80 rounded-lg overflow-hidden">

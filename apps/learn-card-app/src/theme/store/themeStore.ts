@@ -2,6 +2,7 @@ import { createStore } from '@udecode/zustood';
 
 import { getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
 import type { TenantConfig } from 'learn-card-base';
+import { emitConfigDebugEvent, emitConfigWarning } from '../../components/debug/configDebugEvents';
 
 const DEFAULT_THEME = 'colorful';
 
@@ -77,7 +78,17 @@ export const enforceDefaultTheme = (): void => {
             config.features.themeSwitching === false ||
             !allowed.has(current);
 
+        emitConfigDebugEvent('theme:enforce_default', `Checking theme enforcement (current: ${current}, default: ${defaultTheme}, switching: ${config.features.themeSwitching})`, {
+            data: { current, defaultTheme, needsReset, allowed: [...allowed], themeSwitching: config.features.themeSwitching },
+        });
+
         if (needsReset) {
+            const reason = config.features.themeSwitching === false
+                ? 'theme switching disabled'
+                : `"${current}" not in allowed themes`;
+
+            emitConfigWarning('theme:enforce_reset', `Resetting theme from "${current}" to "${defaultTheme}" (${reason})`, { current, defaultTheme, reason });
+
             // Set immediately (covers case where hydration already happened)
             themeStore.set.theme(defaultTheme);
 

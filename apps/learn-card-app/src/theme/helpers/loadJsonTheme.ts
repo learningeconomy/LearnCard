@@ -28,7 +28,8 @@ import {
 
 // ─── Raw JSON shape (inferred from the Zod source of truth) ─────────────
 
-import type { ThemeJsonConfig } from '../validators/themeJson.validators';
+import type { ThemeJsonConfig, ThemeJsonColors } from '../validators/themeJson.validators';
+import { emitConfigDebugEvent, emitConfigWarning, emitConfigSuccess } from '../../components/debug/configDebugEvents';
 
 // ─── Glob imports (resolved at build time by Vite) ───────────────────────
 
@@ -128,6 +129,12 @@ const resolveAsset = (themeId: string, relativePath: string): string => {
 
     // Fall back to the colorful theme's asset if the requested theme doesn't have it
     const fallbackKey = `../schemas/colorful/assets/${fileName}`;
+
+    if (!themeAssetModules[globKey] && themeAssetModules[fallbackKey]) {
+        emitConfigWarning('theme:asset_fallback', `Asset "${fileName}" missing from "${themeId}", using colorful fallback`, { themeId, fileName, globKey, fallbackKey });
+    } else if (!themeAssetModules[globKey] && !themeAssetModules[fallbackKey]) {
+        emitConfigWarning('theme:asset_fallback', `Asset "${fileName}" not found in "${themeId}" or colorful fallback`, { themeId, fileName });
+    }
 
     return themeAssetModules[globKey] ?? themeAssetModules[fallbackKey] ?? relativePath;
 };
@@ -363,10 +370,18 @@ export const loadAllJsonThemes = (): Theme[] => {
     const themes: Theme[] = [];
 
     for (const id of rawConfigs.keys()) {
-        const resolved = resolveExtends(id);
+        try {
+            const resolved = resolveExtends(id);
 
-        themes.push(buildTheme(resolved));
+            themes.push(buildTheme(resolved));
+
+            emitConfigSuccess('theme:loaded', `Theme "${id}" loaded${resolved.extends ? ` (extends ${resolved.extends})` : ''}`, { themeId: id, extends: resolved.extends, displayName: resolved.displayName });
+        } catch (err) {
+            emitConfigWarning('theme:loaded', `Failed to load theme "${id}": ${err instanceof Error ? err.message : String(err)}`, { themeId: id, error: err instanceof Error ? err.message : String(err) });
+        }
     }
+
+    emitConfigDebugEvent('theme:store_init', `${themes.length} theme(s) loaded: ${themes.map(t => t.id).join(', ')}`, { data: { count: themes.length, themeIds: themes.map(t => t.id) } });
 
     return themes;
 };
