@@ -1,59 +1,24 @@
 import { describe, it, beforeAll, beforeEach, afterAll, expect } from 'vitest';
 
 import { getUser } from './helpers/getClient';
-
-import { AppStoreListing, Integration, Profile } from '@models';
+import {
+    makeListingInput,
+    seedIntegration,
+    seedListedApp,
+    installAppForProfile,
+} from './helpers/app-store.helpers';
 
 import { createAppStoreListing } from '@accesslayer/app-store-listing/create';
-import {
-    associateListingWithIntegration,
-    installAppForProfile,
-} from '@accesslayer/app-store-listing/relationships/create';
-import { createIntegration } from '@accesslayer/integration/create';
-import { associateIntegrationWithProfile } from '@accesslayer/integration/relationships/create';
+import { associateListingWithIntegration } from '@accesslayer/app-store-listing/relationships/create';
+import { AppStoreListing, Integration, Profile } from '@models';
 import cache from '@cache';
 import { neogma } from '@instance';
 
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
 
-const makeListingInput = (overrides?: Record<string, unknown>) => ({
-    display_name: 'Counter Test App',
-    tagline: 'An app that uses counters',
-    full_description: 'Test application for app counter tests',
-    icon_url: 'https://example.com/icon.png',
-    app_listing_status: 'LISTED' as const,
-    launch_type: 'EMBEDDED_IFRAME' as const,
-    launch_config_json: JSON.stringify({ url: 'https://app.example.com' }),
-    category: 'Learning',
-    promotion_level: 'STANDARD' as const,
-    ...overrides,
-});
-
 const seedProfile = async (user: Awaited<ReturnType<typeof getUser>>, profileId: string) => {
     await user.clients.fullAuth.profile.createProfile({ profileId });
-};
-
-const seedIntegration = async (name: string, profileId: string) => {
-    const integration = await createIntegration({
-        name,
-        description: `Test integration for ${name}`,
-        whitelistedDomains: ['example.com'],
-    });
-
-    await associateIntegrationWithProfile(integration.id, profileId);
-
-    return integration;
-};
-
-const seedListedApp = async (ownerProfileId: string, overrides?: Record<string, unknown>) => {
-    const integration = await seedIntegration('Counter App Integration', ownerProfileId);
-
-    const listing = await createAppStoreListing(makeListingInput(overrides));
-
-    await associateListingWithIntegration(listing.listing_id, integration.id);
-
-    return { listing, integration };
 };
 
 const cleanupCounters = async () => {
