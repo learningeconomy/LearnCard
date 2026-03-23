@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
+import { ModalTypes, useModal } from 'learn-card-base';
 import { useTheme } from '../../../../theme/hooks/useTheme';
-import { OBV3_ACHIEVEMENT_TYPES } from '../../../../pages/appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { ParsedCredential } from './CheckListCredentialReviewStep';
+import AchievementTypeSelectorModal, {
+    formatAchievementType,
+    getWalletCategory,
+} from './AchievementTypeSelectorModal';
 
 type Props = {
     credential: ParsedCredential;
@@ -38,6 +42,7 @@ const setField = (vc: any, path: string, value: string): any => {
 export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack }) => {
     const [vc, setVc] = useState<any>(() => JSON.parse(JSON.stringify(credential.vc)));
     const { colors } = useTheme();
+    const { newModal, closeModal } = useModal();
     const primaryColor = colors?.defaults?.primaryColor;
 
     const name = getField(vc, 'credentialSubject.achievement.name');
@@ -88,6 +93,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                     </label>
                     <input
                         type="text"
+                        maxLength={100}
                         value={getField(vc, 'credentialSubject.achievement.name')}
                         onChange={e => updateField('credentialSubject.achievement.name', e.target.value)}
                         placeholder="e.g. Software Engineer at Acme Corp"
@@ -97,11 +103,17 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
 
                 {/* Description */}
                 <div>
-                    <label className="block text-sm font-semibold text-grayscale-700 mb-1">
-                        Description
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                        <label className="block text-sm font-semibold text-grayscale-700">
+                            Description
+                        </label>
+                        <span className="text-xs text-grayscale-400">
+                            {getField(vc, 'credentialSubject.achievement.description').length}/500
+                        </span>
+                    </div>
                     <textarea
                         rows={3}
+                        maxLength={500}
                         value={getField(vc, 'credentialSubject.achievement.description')}
                         onChange={e => updateField('credentialSubject.achievement.description', e.target.value)}
                         placeholder="Add a description..."
@@ -114,16 +126,69 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                     <label className="block text-sm font-semibold text-grayscale-700 mb-1">
                         Achievement Type
                     </label>
-                    <select
-                        value={getField(vc, 'credentialSubject.achievement.achievementType')}
-                        onChange={e => updateField('credentialSubject.achievement.achievementType', e.target.value)}
-                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 focus:outline-none focus:border-grayscale-400 bg-white"
-                    >
-                        <option value="">Select type...</option>
-                        {OBV3_ACHIEVEMENT_TYPES.map(type => (
-                            <option key={type} value={type}>{type}</option>
-                        ))}
-                    </select>
+                    {(() => {
+                        const currentType = getField(vc, 'credentialSubject.achievement.achievementType');
+                        const category = currentType ? getWalletCategory(currentType) : '';
+                        return (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        newModal(
+                                            <AchievementTypeSelectorModal
+                                                selected={currentType}
+                                                onSelect={type => {
+                                                    updateField('credentialSubject.achievement.achievementType', type);
+                                                    closeModal();
+                                                }}
+                                            />,
+                                            {
+                                                sectionClassName:
+                                                    '!bg-transparent !border-none !shadow-none !rounded-none',
+                                            },
+                                            {
+                                                desktop: ModalTypes.Center,
+                                                mobile: ModalTypes.Center,
+                                            }
+                                        );
+                                    }}
+                                    className="w-full flex items-center justify-between px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm bg-white"
+                                >
+                                    <span className={currentType ? 'text-grayscale-900' : 'text-grayscale-400'}>
+                                        {currentType ? formatAchievementType(currentType) : 'Select type...'}
+                                    </span>
+                                    <svg className="w-4 h-4 text-grayscale-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                {category && (
+                                    <p className="text-xs text-grayscale-500 mt-1">
+                                        Wallet category: <span className="font-medium">{category}</span>
+                                    </p>
+                                )}
+                            </>
+                        );
+                    })()}
+                </div>
+
+                {/* Criteria */}
+                <div>
+                    <div className="flex items-center justify-between mb-1">
+                        <label className="block text-sm font-semibold text-grayscale-700">
+                            Criteria
+                        </label>
+                        <span className="text-xs text-grayscale-400">
+                            {getField(vc, 'credentialSubject.achievement.criteria.narrative').length}/500
+                        </span>
+                    </div>
+                    <textarea
+                        rows={5}
+                        maxLength={500}
+                        value={getField(vc, 'credentialSubject.achievement.criteria.narrative')}
+                        onChange={e => updateField('credentialSubject.achievement.criteria.narrative', e.target.value)}
+                        placeholder="Criteria for earning this credential..."
+                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:border-grayscale-400 resize-y"
+                    />
                 </div>
 
                 {/* Role */}
@@ -133,6 +198,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                     </label>
                     <input
                         type="text"
+                        maxLength={100}
                         value={getField(vc, 'credentialSubject.role')}
                         onChange={e => updateField('credentialSubject.role', e.target.value)}
                         placeholder="e.g. Software Engineer"

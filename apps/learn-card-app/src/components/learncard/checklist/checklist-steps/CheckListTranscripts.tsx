@@ -7,6 +7,7 @@ import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import CheckListItemSkeleton from './CheckListItemSkeleton';
 import CheckListManagerFooter from '../CheckListManager/CheckListManagerFooter';
 import CheckListCredentialReviewStep from './CheckListCredentialReviewStep';
+import { getWalletCategory } from './AchievementTypeSelectorModal';
 
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
@@ -159,12 +160,16 @@ export const CheckListTranscripts: React.FC = () => {
         setParsedCredentials(prev =>
             prev.map((cred, i) => {
                 if (i !== index) return cred;
+                const achievementType = editedVc?.credentialSubject?.achievement?.achievementType;
+                const type = Array.isArray(achievementType) ? achievementType[0] : achievementType;
+                const category = type ? getWalletCategory(type) || undefined : undefined;
                 return {
                     ...cred,
                     vc: editedVc,
                     metadata: {
                         ...cred.metadata,
                         name: editedVc?.credentialSubject?.achievement?.name || cred.metadata?.name,
+                        ...(category ? { category } : {}),
                     },
                 };
             })
