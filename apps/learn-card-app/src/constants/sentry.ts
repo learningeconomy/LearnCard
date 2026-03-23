@@ -15,6 +15,8 @@ export type UseSentryIdentifyOptions = {
  * Call this after bootstrapTenantConfig() has resolved.
  * Falls back to Vite-injected globals if TenantConfig is not yet available.
  */
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 export const initSentryFromTenant = (): void => {
     let dsn: string | undefined;
     let env: string | undefined;
@@ -28,7 +30,7 @@ export const initSentryFromTenant = (): void => {
         if (config.observability.sentryTraceDomains) {
             traceDomains = [
                 'localhost',
-                ...config.observability.sentryTraceDomains.map(d => new RegExp(`^https://${d.replace(/\./g, '\\.')}`)),
+                ...config.observability.sentryTraceDomains.map(d => new RegExp(`^https://${escapeRegExp(d)}`)),
             ];
         }
     } catch {
