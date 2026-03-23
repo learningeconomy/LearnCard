@@ -280,6 +280,153 @@ const runValidators = () => {
     );
 };
 
+const generateAssets = async () => {
+    const tenants = discoverTenants();
+
+    console.log('');
+    console.log(bold('Generate tenant assets from a logo'));
+    console.log(dim('  Creates iOS, Android, web, and branding assets.'));
+    console.log('');
+
+    // 1. Pick tenant
+    tenants.forEach((t, i) => {
+        const name = getTenantDisplayName(t);
+        const hasAssets = existsSync(join(ENVIRONMENTS_DIR, t, 'assets'));
+        const assetLabel = hasAssets ? dim(' (has assets — will overwrite)') : '';
+
+        console.log(`  ${cyan(`${i + 1}`)}  ${bold(t)} — ${name}${assetLabel}`);
+    });
+
+    console.log('');
+
+    const tenantChoice = await ask(`Pick a tenant [1-${tenants.length}]: `);
+    let tenantId: string;
+
+    if (/^\d+$/.test(tenantChoice)) {
+        tenantId = tenants[parseInt(tenantChoice, 10) - 1] ?? tenants[0]!;
+    } else {
+        tenantId = tenantChoice || tenants[0]!;
+    }
+
+    // 2. Logo path
+    console.log('');
+    console.log(dim('  Tip: You can drag a file from Finder into the terminal to paste its path.'));
+    console.log(dim('  Recommended: PNG or SVG, at least 1024×1024.'));
+    console.log('');
+
+    let logoPath = await ask('Logo file path: ');
+
+    if (!logoPath) {
+        console.log(yellow('  No logo path provided. Aborting.'));
+        rl.close();
+        return;
+    }
+
+    // Strip quotes that drag-and-drop sometimes adds
+    logoPath = logoPath.replace(/^["']|["']$/g, '').trim();
+
+    // 3. Display name
+    const configName = getTenantDisplayName(tenantId);
+    const nameDefault = configName !== tenantId ? configName : tenantId.charAt(0).toUpperCase() + tenantId.slice(1);
+
+    console.log('');
+
+    const nameInput = await ask(`Display name ${dim(`(default: ${nameDefault})`)}: `);
+    const displayName = nameInput || nameDefault;
+
+    // 4. Background color
+    console.log('');
+    console.log(dim('  Icon & splash background color. Use hex format: #1A3C5E'));
+
+    const bgInput = await ask(`Background color ${dim('(default: #FFFFFF)')}: `);
+    const bgHex = bgInput || '#FFFFFF';
+
+    // 5. Splash background color
+    const splashInput = await ask(`Splash background color ${dim(`(default: same as bg ${bgHex})`)}: `);
+    const splashHex = splashInput || '';
+
+    // 6. Optional: skip splash?
+    console.log('');
+
+    const skipSplashInput = await ask(`Skip splash screens? ${dim('(y/N)')}: `);
+    const skipSplash = skipSplashInput.toLowerCase() === 'y';
+
+    // 7. Optional overrides
+    console.log('');
+    console.log(dim('  Optional overrides (press Enter to skip and auto-generate):'));
+    console.log('');
+
+    const textLogoInput = await ask(`Text logo file ${dim('(Enter to auto-generate)')}: `);
+    const desktopBgInput = await ask(`Desktop login BG file ${dim('(Enter to auto-generate)')}: `);
+    const desktopBgAltInput = await ask(`Desktop login BG alt file ${dim('(Enter to auto-generate)')}: `);
+
+    // Build command
+    let cmd = `npx tsx scripts/generate-tenant-assets.ts ${tenantId} ${JSON.stringify(logoPath)}`;
+    let shortcut = `pnpm lc generate ${tenantId} ${JSON.stringify(logoPath)}`;
+
+    cmd += ` --bg "${bgHex}"`;
+    shortcut += ` --bg "${bgHex}"`;
+
+    if (displayName !== nameDefault) {
+        cmd += ` --name "${displayName}"`;
+        shortcut += ` --name "${displayName}"`;
+    }
+
+    if (splashHex) {
+        cmd += ` --splash-bg "${splashHex}"`;
+        shortcut += ` --splash-bg "${splashHex}"`;
+    }
+
+    if (skipSplash) {
+        cmd += ' --no-splash';
+        shortcut += ' --no-splash';
+    }
+
+    const cleanPath = (p: string) => p.replace(/^["']|["']$/g, '').trim();
+
+    if (textLogoInput) {
+        cmd += ` --text-logo ${JSON.stringify(cleanPath(textLogoInput))}`;
+    }
+
+    if (desktopBgInput) {
+        cmd += ` --desktop-bg ${JSON.stringify(cleanPath(desktopBgInput))}`;
+    }
+
+    if (desktopBgAltInput) {
+        cmd += ` --desktop-bg-alt ${JSON.stringify(cleanPath(desktopBgAltInput))}`;
+    }
+
+    // Summary
+    console.log('');
+    console.log(bold('Summary:'));
+    console.log(`  Tenant:     ${bold(tenantId)}`);
+    console.log(`  Logo:       ${logoPath}`);
+    console.log(`  Name:       ${displayName}`);
+    console.log(`  Icon BG:    ${bgHex}`);
+    console.log(`  Splash BG:  ${splashHex || bgHex}`);
+    console.log(`  Skip splash: ${skipSplash ? 'yes' : 'no'}`);
+
+    if (textLogoInput) console.log(`  Text logo:  ${cleanPath(textLogoInput)}`);
+    if (desktopBgInput) console.log(`  Desktop BG: ${cleanPath(desktopBgInput)}`);
+    if (desktopBgAltInput) console.log(`  Desktop BG alt: ${cleanPath(desktopBgAltInput)}`);
+
+    console.log('');
+
+    const confirm = await ask(`Proceed? ${dim('(Y/n)')}: `);
+
+    if (confirm.toLowerCase() === 'n') {
+        console.log(dim('  Cancelled.'));
+        rl.close();
+        return;
+    }
+
+    runCommand(
+        cmd,
+        `Generating assets for ${displayName} (${tenantId})`,
+        shortcut,
+    );
+};
+
 // ---------------------------------------------------------------------------
 // CLI shortcut handling
 // ---------------------------------------------------------------------------
@@ -328,6 +475,23 @@ const handleShortcuts = async (): Promise<boolean> => {
         case 'validate':
             runValidators();
             return true;
+
+        case 'generate': {
+            // pnpm lc generate <tenant> <logo> [--bg ...] [--name ...] etc.
+            // Pass all args directly to generate-tenant-assets.ts
+            if (arg) {
+                const passthrough = args.slice(1).join(' ');
+
+                runCommand(
+                    `npx tsx scripts/generate-tenant-assets.ts ${passthrough}`,
+                    `Generating assets for ${arg}`,
+                );
+            } else {
+                await generateAssets();
+            }
+
+            return true;
+        }
 
         case 'create':
             runCommand('npx tsx scripts/create-tenant.ts', 'Create a new tenant');
@@ -389,7 +553,7 @@ const main = async () => {
     console.log(`  ${cyan('5')}  ${bold('Open config editor')}      ${dim('— visual config editor on :4400')}`);
     console.log(`  ${cyan('6')}  ${bold('Generate tenant assets')}  ${dim('— create icons/splash from a logo')}`);
     console.log('');
-    console.log(dim('  Or run directly: pnpm lc dev | start | validate | create | switch | editor | tenants'));
+    console.log(dim('  Or run directly: pnpm lc dev | start | validate | create | switch | editor | generate | tenants'));
     console.log('');
 
     const choice = await ask('Pick an option [1-6]: ');
@@ -416,10 +580,7 @@ const main = async () => {
             break;
 
         case '6':
-            console.log('');
-            console.log(dim('Usage: npx tsx scripts/generate-tenant-assets.ts <tenant> <logo-path> --bg "#hex" --name "Name"'));
-            console.log('');
-            rl.close();
+            await generateAssets();
             break;
 
         default:
