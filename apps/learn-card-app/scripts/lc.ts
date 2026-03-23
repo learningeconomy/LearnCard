@@ -87,10 +87,16 @@ const getTenantDisplayName = (tenantId: string): string => {
     }
 };
 
-const runCommand = (cmd: string, label: string): void => {
+const runCommand = (cmd: string, label: string, shortcut?: string): void => {
     console.log('');
     console.log(green(`▶ ${label}`));
     console.log(dim(`  $ ${cmd}`));
+
+    if (shortcut) {
+        console.log('');
+        console.log(dim(`  💡 Next time, run: ${cyan(shortcut)}`));
+    }
+
     console.log('');
 
     rl.close();
@@ -198,11 +204,14 @@ const startDev = async (tenantId?: string, stageId?: string) => {
 
     const mode = await ask(`Pick a mode [1-3] ${dim('(default: 1)')}: `);
 
+    const stageArg = stageId === 'local' ? '' : ` ${stageId}`;
+
     switch (mode) {
         case '2':
             runCommand(
                 `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag} && vite --host`,
                 `Starting ${displayName}${stageLabel} — app only`,
+                `pnpm lc start ${tenantId}${stageArg}`,
             );
             break;
 
@@ -218,6 +227,7 @@ const startDev = async (tenantId?: string, stageId?: string) => {
             runCommand(
                 `TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up --build`,
                 `Starting ${displayName}${stageLabel} — full stack`,
+                `pnpm lc dev ${tenantId}${stageArg}`,
             );
             break;
     }
@@ -253,9 +263,12 @@ const pickTenantAndPrepare = async () => {
     const stageId = await pickStage(tenantId);
     const stageFlag = stageId === 'production' ? '' : ` --stage ${stageId}`;
 
+    const stageArg = stageId === 'local' ? '' : ` ${stageId}`;
+
     runCommand(
         `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         `Preparing config for ${getTenantDisplayName(tenantId)} (${tenantId}, ${stageId})`,
+        `pnpm lc switch ${tenantId}${stageArg}`,
     );
 };
 
@@ -263,6 +276,7 @@ const runValidators = () => {
     runCommand(
         'npx tsx scripts/validate-tenant-configs.ts && npx tsx scripts/validate-theme-schemas.ts',
         'Validating all tenant configs + theme schemas',
+        'pnpm lc validate',
     );
 };
 
@@ -279,6 +293,22 @@ const handleShortcuts = async (): Promise<boolean> => {
     if (!command) return false;
 
     switch (command) {
+        case 'editor':
+            runCommand('npx tsx scripts/config-editor.ts', 'Config editor');
+            return true;
+
+        case 'switch': {
+            const switchTenant = arg ?? 'learncard';
+            const switchStage = arg2 ?? 'local';
+            const switchStageFlag = switchStage === 'production' ? '' : ` --stage ${switchStage}`;
+
+            runCommand(
+                `npx tsx scripts/prepare-native-config.ts ${switchTenant}${switchStageFlag}`,
+                `Preparing config for ${switchTenant} (${switchStage})`,
+            );
+            return true;
+        }
+
         case 'dev':
             await startDev(arg, arg2);
             return true;
@@ -359,7 +389,7 @@ const main = async () => {
     console.log(`  ${cyan('5')}  ${bold('Open config editor')}      ${dim('— visual config editor on :4400')}`);
     console.log(`  ${cyan('6')}  ${bold('Generate tenant assets')}  ${dim('— create icons/splash from a logo')}`);
     console.log('');
-    console.log(dim('  Or run directly: pnpm lc dev [tenant] | start [tenant] | validate | create | tenants'));
+    console.log(dim('  Or run directly: pnpm lc dev | start | validate | create | switch | editor | tenants'));
     console.log('');
 
     const choice = await ask('Pick an option [1-6]: ');
@@ -378,11 +408,11 @@ const main = async () => {
             break;
 
         case '4':
-            runCommand('npx tsx scripts/create-tenant.ts', 'Create a new tenant');
+            runCommand('npx tsx scripts/create-tenant.ts', 'Create a new tenant', 'pnpm lc create');
             break;
 
         case '5':
-            runCommand('npx tsx scripts/config-editor.ts', 'Config editor');
+            runCommand('npx tsx scripts/config-editor.ts', 'Config editor', 'pnpm lc editor');
             break;
 
         case '6':
