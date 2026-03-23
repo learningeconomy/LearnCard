@@ -29,10 +29,6 @@ export const handleIncrementCounterEvent = async (
 
     const { key, amount } = parsed.data;
 
-    if (!Number.isSafeInteger(amount) && !Number.isFinite(amount)) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'amount must be a finite number' });
-    }
-
     // Rate limit: max 100 counter writes per user per app per minute
     const rateLimitKey = `app-counter-rate:${listingId}:${profile.profileId}`;
     const rateCount = await cache.incr(rateLimitKey, 60);

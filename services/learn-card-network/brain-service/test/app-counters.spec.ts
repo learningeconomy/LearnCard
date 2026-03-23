@@ -301,6 +301,48 @@ describe('App Counters', () => {
             ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         });
 
+        it('enforces max 50 counter keys per user per app', async () => {
+            const { listing } = await seedListedApp('usera');
+
+            await installAppForProfile('usera', listing.listing_id);
+
+            const rateLimitKey = `app-counter-rate:${listing.listing_id}:usera`;
+            await cache.delete([rateLimitKey]);
+
+            // Create 50 distinct keys (at the limit)
+            for (let i = 0; i < 50; i++) {
+                await userA.clients.fullAuth.appStore.appEvent({
+                    listingId: listing.listing_id,
+                    event: { type: 'increment-counter', key: `key-${i}`, amount: 1 },
+                });
+            }
+
+            await cache.delete([rateLimitKey]);
+
+            // 51st distinct key should be rejected
+            await expect(
+                userA.clients.fullAuth.appStore.appEvent({
+                    listingId: listing.listing_id,
+                    event: { type: 'increment-counter', key: 'key-overflow', amount: 1 },
+                })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: expect.stringContaining('50'),
+            });
+
+            await cache.delete([rateLimitKey]);
+
+            // Incrementing an existing key should still work
+            const result = await userA.clients.fullAuth.appStore.appEvent({
+                listingId: listing.listing_id,
+                event: { type: 'increment-counter', key: 'key-0', amount: 5 },
+            });
+
+            expect(result).toMatchObject({ key: 'key-0', newValue: 6 });
+
+            await cache.delete([rateLimitKey]);
+        });
+
         it('rate limits at 100 writes per user per app per minute', async () => {
             const { listing } = await seedListedApp('usera');
 
@@ -505,6 +547,48 @@ describe('App Counters', () => {
             });
 
             expect(result).toMatchObject({ counters: [] });
+        });
+    });
+
+    // ==================== cross-app isolation ====================
+
+    describe('cross-app isolation', () => {
+        it('counters for one app do not leak into another app', async () => {
+            const { listing: listingA } = await seedListedApp('usera', {
+                display_name: 'App A',
+            });
+
+            const listingB = await createAppStoreListing(
+                makeListingInput({ display_name: 'App B' })
+            );
+
+            const integrationB = await seedIntegration('App B Integration', 'usera');
+
+            await associateListingWithIntegration(listingB.listing_id, integrationB.id);
+
+            await installAppForProfile('usera', listingA.listing_id);
+            await installAppForProfile('usera', listingB.listing_id);
+
+            // Increment counter in app A
+            await userA.clients.fullAuth.appStore.appEvent({
+                listingId: listingA.listing_id,
+                event: { type: 'increment-counter', key: 'coins', amount: 100 },
+            });
+
+            // Read from app B — should be empty
+            const getResult = await userA.clients.fullAuth.appStore.appEvent({
+                listingId: listingB.listing_id,
+                event: { type: 'get-counter', key: 'coins' },
+            });
+
+            expect(getResult).toMatchObject({ key: 'coins', value: 0 });
+
+            const getAllResult = await userA.clients.fullAuth.appStore.appEvent({
+                listingId: listingB.listing_id,
+                event: { type: 'get-counters' },
+            });
+
+            expect(getAllResult).toMatchObject({ counters: [] });
         });
     });
 });

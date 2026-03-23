@@ -351,7 +351,7 @@ console.log(spent.newValue); // 5
 **Parameters:**
 
 -   `key` _(required)_: Counter name. Must match `[a-zA-Z0-9_-]+`, max 64 characters.
--   `amount` _(required)_: Numeric value to add. Use a negative number to decrement.
+-   `amount` _(required)_: Integer value to add. Use a negative integer to decrement.
 
 **Returns:** `{ key: string, previousValue: number, newValue: number }`
 
@@ -359,7 +359,7 @@ console.log(spent.newValue); // 5
 
 -   Max 50 distinct counter keys per user per app
 -   Max 100 writes per user per app per minute
--   Values must be finite numbers
+-   Amount must be a finite integer
 
 ---
 

@@ -298,19 +298,26 @@ export interface AppNotificationResponse {
 /**
  * Response from incrementCounter
  */
-export interface CounterResponse {
+export interface IncrementCounterResponse {
+    key: string;
+    previousValue: number;
+    newValue: number;
+}
+
+/**
+ * Response from getCounter
+ */
+export interface GetCounterResponse {
     key: string;
     value: number;
-    previousValue?: number;
-    newValue?: number;
-    updatedAt?: string | null;
+    updatedAt: string | null;
 }
 
 /**
  * Response from getCounters
  */
-export interface CountersResponse {
-    counters: CounterResponse[];
+export interface GetCountersResponse {
+    counters: GetCounterResponse[];
 }
 
 /**

@@ -1826,7 +1826,7 @@ const counterKeyValidator = z
 export const IncrementCounterEventValidator = z.object({
     type: z.literal('increment-counter'),
     key: counterKeyValidator,
-    amount: z.number().finite(),
+    amount: z.number().int().finite(),
 });
 
 export type IncrementCounterEvent = z.infer<typeof IncrementCounterEventValidator>;

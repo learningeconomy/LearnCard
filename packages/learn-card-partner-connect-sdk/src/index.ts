@@ -38,8 +38,9 @@ import type {
     TemplateRecipientsResponse,
     AppNotificationInput,
     AppNotificationResponse,
-    CounterResponse,
-    CountersResponse,
+    IncrementCounterResponse,
+    GetCounterResponse,
+    GetCountersResponse,
     AppEvent,
     AppEventResponse,
     LearnCardError,
@@ -607,8 +608,8 @@ export class PartnerConnect {
      * await learnCard.incrementCounter('coins', -5);
      * ```
      */
-    public incrementCounter(key: string, amount: number): Promise<CounterResponse> {
-        return this.sendAppEvent<CounterResponse>({
+    public incrementCounter(key: string, amount: number): Promise<IncrementCounterResponse> {
+        return this.sendAppEvent<IncrementCounterResponse>({
             type: 'increment-counter',
             key,
             amount,
@@ -629,8 +630,8 @@ export class PartnerConnect {
      * console.log('Balance:', value);
      * ```
      */
-    public getCounter(key: string): Promise<CounterResponse> {
-        return this.sendAppEvent<CounterResponse>({
+    public getCounter(key: string): Promise<GetCounterResponse> {
+        return this.sendAppEvent<GetCounterResponse>({
             type: 'get-counter',
             key,
         });
@@ -653,8 +654,8 @@ export class PartnerConnect {
      * const all = await learnCard.getCounters();
      * ```
      */
-    public getCounters(keys?: string[]): Promise<CountersResponse> {
-        return this.sendAppEvent<CountersResponse>({
+    public getCounters(keys?: string[]): Promise<GetCountersResponse> {
+        return this.sendAppEvent<GetCountersResponse>({
             type: 'get-counters',
             ...(keys ? { keys } : {}),
         });
