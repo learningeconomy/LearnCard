@@ -14,9 +14,10 @@
     "observability": {
         "sentryEnv": "development",
         "launchDarklyClientId": "63dabf3082caed12cac3e55b",
-        "userflowToken": "ct_w53eaxhevvf2vejzrecekeq3nu"
+        "analyticsProvider": "noop",
     },
     "auth": {
+        "keyDerivation": "sss",
         "sss": {
             "serverUrl": "http://localhost:5100/api"
         }

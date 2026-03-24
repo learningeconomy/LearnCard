@@ -17,6 +17,7 @@
         "userflowToken": "ct_w53eaxhevvf2vejzrecekeq3nu"
     },
     "auth": {
+        "keyDerivation": "sss",
         "sss": {
             "serverUrl": "https://staging.api.learncard.com/api"
         }
