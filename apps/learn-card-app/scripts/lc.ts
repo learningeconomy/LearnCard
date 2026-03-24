@@ -14,13 +14,18 @@
  *   pnpm lc dev vetpass  # shortcut: start vetpass tenant with Docker
  *   pnpm lc start        # shortcut: Vite only (no Docker)
  *   pnpm lc validate     # shortcut: run all validators
+ *   pnpm lc native       # interactive native/Capacitor menu
+ *   pnpm lc native dev vetpass ios   # live-reload on device
+ *   pnpm lc native sync vetpass      # prepare + build + cap sync
+ *   pnpm lc native open ios          # open Xcode/Android Studio
  */
 
 import { createInterface } from 'readline';
-import { readdirSync, existsSync, readFileSync, statSync } from 'fs';
+import { readdirSync, existsSync, readFileSync, writeFileSync, statSync } from 'fs';
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
+import { networkInterfaces } from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -428,6 +433,367 @@ const generateAssets = async () => {
 };
 
 // ---------------------------------------------------------------------------
+// Reusable tenant picker (returns tenantId)
+// ---------------------------------------------------------------------------
+
+const pickTenant = async (defaultTenant = 'learncard'): Promise<string> => {
+    const tenants = discoverTenants();
+
+    console.log('');
+    console.log(bold('Available tenants:'));
+    console.log('');
+
+    tenants.forEach((t, i) => {
+        const name = getTenantDisplayName(t);
+        const marker = t === defaultTenant ? dim(' (default)') : '';
+
+        console.log(`  ${cyan(`${i + 1}`)}  ${bold(t)} — ${name}${marker}`);
+    });
+
+    console.log('');
+
+    const choice = await ask(`Pick a tenant [1-${tenants.length}] or name ${dim(`(default: ${defaultTenant})`)}: `);
+
+    if (!choice) return defaultTenant;
+
+    if (/^\d+$/.test(choice)) {
+        return tenants[parseInt(choice, 10) - 1] ?? defaultTenant;
+    }
+
+    return choice;
+};
+
+// ---------------------------------------------------------------------------
+// Native / Capacitor commands
+// ---------------------------------------------------------------------------
+
+type Platform = 'ios' | 'android';
+
+const pickPlatform = async (): Promise<Platform> => {
+    console.log('');
+    console.log(bold('Platform:'));
+    console.log('');
+    console.log(`  ${cyan('1')}  ${bold('ios')}     — Open in Xcode / run on iOS simulator`);
+    console.log(`  ${cyan('2')}  ${bold('android')} — Open in Android Studio / run on device`);
+    console.log('');
+
+    const choice = await ask(`Pick a platform [1-2] ${dim('(default: 1 / ios)')}: `);
+
+    return choice === '2' ? 'android' : 'ios';
+};
+
+const getLanIp = (): string | null => {
+    const nets = networkInterfaces();
+
+    for (const name of Object.keys(nets)) {
+        for (const net of nets[name] ?? []) {
+            // Skip internal (loopback) and non-IPv4 addresses
+            if (!net.internal && net.family === 'IPv4') {
+                return net.address;
+            }
+        }
+    }
+
+    return null;
+};
+
+const CAP_CONFIG_TS = resolve(APP_ROOT, 'capacitor.config.ts');
+const CAP_CONFIG_BACKUP = resolve(APP_ROOT, 'capacitor.config.ts.bak');
+
+const patchCapConfigSource = (serverUrl: string): void => {
+    const content = readFileSync(CAP_CONFIG_TS, 'utf-8');
+
+    // Back up the original so we can restore it cleanly after sync
+    writeFileSync(CAP_CONFIG_BACKUP, content, 'utf-8');
+
+    // Inject a `server` property into the config object, right before the closing `};`
+    const serverBlock = `    server: {\n        url: '${serverUrl}',\n        cleartext: true,\n    },\n`;
+
+    // Insert before the final `};` that closes the config object
+    const patched = content.replace(
+        /(\n};\s*\nexport default config;)/,
+        `\n${serverBlock}};\n\nexport default config;`,
+    );
+
+    if (patched === content) {
+        console.warn(`   ⚠️  Could not find insertion point in capacitor.config.ts — patching failed`);
+        return;
+    }
+
+    writeFileSync(CAP_CONFIG_TS, patched, 'utf-8');
+    console.log(`   ${green('✓')} Patched capacitor.config.ts → server.url = ${serverUrl}`);
+};
+
+const unpatchCapConfigSource = (): void => {
+    if (!existsSync(CAP_CONFIG_BACKUP)) {
+        console.warn('   ⚠️  No backup found — skipping unpatch');
+        return;
+    }
+
+    const original = readFileSync(CAP_CONFIG_BACKUP, 'utf-8');
+
+    writeFileSync(CAP_CONFIG_TS, original, 'utf-8');
+
+    // Remove the backup file
+    try { execSync(`rm -f "${CAP_CONFIG_BACKUP}"`, { cwd: APP_ROOT }); } catch { /* ignore */ }
+
+    console.log(`   ${green('✓')} Restored capacitor.config.ts from backup`);
+};
+
+const execBlocking = (cmd: string, label: string): void => {
+    console.log('');
+    console.log(green(`▶ ${label}`));
+    console.log(dim(`  $ ${cmd}`));
+    console.log('');
+
+    try {
+        execSync(cmd, { cwd: APP_ROOT, stdio: 'inherit' });
+    } catch (err) {
+        console.error(`\n❌ Command failed: ${cmd}`);
+        throw err;
+    }
+};
+
+const nativeSync = async (tenantId?: string, stageId?: string) => {
+    if (!tenantId) {
+        tenantId = await pickTenant();
+    }
+
+    if (!stageId) {
+        stageId = 'local';
+    }
+
+    const stageFlag = stageId === 'production' ? '' : ` --stage ${stageId}`;
+    const displayName = getTenantDisplayName(tenantId);
+
+    console.log('');
+    console.log(bold(`📱 Native sync: ${displayName} (${tenantId})`));
+
+    execBlocking(
+        `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        'Preparing tenant config',
+    );
+
+    execBlocking(
+        'npx cap sync',
+        'Running Capacitor sync',
+    );
+
+    console.log('');
+    console.log(green('✅ Native sync complete.'));
+    console.log(dim('   Run `pnpm lc native open ios` or `pnpm lc native open android` to open the IDE.'));
+    console.log('');
+
+    rl.close();
+};
+
+const nativeOpen = async (platform?: Platform) => {
+    if (!platform) {
+        platform = await pickPlatform();
+    }
+
+    rl.close();
+
+    const label = platform === 'ios' ? 'Opening Xcode' : 'Opening Android Studio';
+
+    runCommand(`npx cap open ${platform}`, label, `pnpm lc native open ${platform}`);
+};
+
+const nativeRun = async (tenantId?: string, platform?: Platform) => {
+    if (!tenantId) {
+        tenantId = await pickTenant();
+    }
+
+    if (!platform) {
+        platform = await pickPlatform();
+    }
+
+    const stageFlag = ' --stage local';
+    const displayName = getTenantDisplayName(tenantId);
+
+    console.log('');
+    console.log(bold(`📱 Native run: ${displayName} → ${platform}`));
+
+    execBlocking(
+        `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        'Preparing tenant config',
+    );
+
+    execBlocking('npx cap sync', 'Running Capacitor sync');
+
+    const runFlag = platform === 'android' ? ' --target' : '';
+
+    rl.close();
+
+    runCommand(
+        `npx cap run ${platform}${runFlag}`,
+        `Running on ${platform}`,
+        `pnpm lc native run ${tenantId} ${platform}`,
+    );
+};
+
+const nativeDev = async (tenantId?: string, platform?: Platform) => {
+    if (!tenantId) {
+        tenantId = await pickTenant();
+    }
+
+    if (!platform) {
+        platform = await pickPlatform();
+    }
+
+    const displayName = getTenantDisplayName(tenantId);
+    const lanIp = getLanIp();
+
+    if (!lanIp) {
+        console.error('\n❌ Could not detect a LAN IP address.');
+        console.error('   Make sure you are connected to a local network (Wi-Fi or Ethernet).');
+        rl.close();
+        process.exit(1);
+    }
+
+    const vitePort = 5173;
+    const serverUrl = `http://${lanIp}:${vitePort}`;
+
+    console.log('');
+    console.log(bold(`📱 Native live-reload: ${displayName} → ${platform}`));
+    console.log(`   LAN IP:     ${cyan(lanIp)}`);
+    console.log(`   Server URL:  ${cyan(serverUrl)}`);
+    console.log('');
+
+    // Step 1: Prepare tenant config
+    execBlocking(
+        `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage local`,
+        'Step 1/4 — Preparing tenant config',
+    );
+
+    // Step 2: Patch capacitor.config.ts source with server.url
+    console.log('');
+    console.log(green('▶ Step 2/4 — Patching capacitor.config.ts with live-reload URL'));
+    patchCapConfigSource(serverUrl);
+
+    // Step 3: Cap sync (reads from the patched TS source → generates platform JSONs with server.url)
+    execBlocking('npx cap sync', 'Step 3/4 — Capacitor sync (with live-reload URL)');
+
+    // Step 4: Restore the original capacitor.config.ts so git stays clean
+    console.log('');
+    console.log(green('▶ Step 4/4 — Restoring capacitor.config.ts (git stays clean)'));
+    unpatchCapConfigSource();
+
+    // Now launch Vite + open the IDE
+    console.log('');
+    console.log(green('🚀 Starting Vite dev server + opening native IDE'));
+    console.log('');
+    console.log(`   The app on your ${platform === 'ios' ? 'iOS Simulator / device' : 'Android device'} will`);
+    console.log(`   load from ${bold(serverUrl)} with live-reload.`);
+    console.log('');
+    console.log(dim('   Press Ctrl+C to stop the Vite dev server.'));
+    console.log('');
+
+    rl.close();
+
+    // Open the native IDE in background, then start vite in foreground
+    const openCmd = platform === 'ios' ? 'npx cap open ios' : 'npx cap open android';
+
+    const child = spawn('sh', ['-c', `${openCmd} & vite --host --port ${vitePort}`], {
+        cwd: APP_ROOT,
+        stdio: 'inherit',
+        env: { ...process.env },
+    });
+
+    child.on('exit', code => process.exit(code ?? 0));
+};
+
+const nativeMenu = async () => {
+    console.log('');
+    console.log(bold('📱 Native / Capacitor'));
+    console.log('');
+    console.log(`  ${cyan('1')}  ${bold('Live-reload dev')}   ${dim('— Vite --host + cap sync + open IDE (auto LAN IP)')}`);
+    console.log(`  ${cyan('2')}  ${bold('Sync')}              ${dim('— prepare config + cap sync (no build)')}`);
+    console.log(`  ${cyan('3')}  ${bold('Open IDE')}           ${dim('— open Xcode or Android Studio')}`);
+    console.log(`  ${cyan('4')}  ${bold('Run')}               ${dim('— build + sync + run on device/simulator')}`);
+    console.log('');
+    console.log(dim('  Or run directly: pnpm lc native dev|sync|open|run [tenant] [ios|android]'));
+    console.log('');
+
+    const choice = await ask('Pick an option [1-4]: ');
+
+    switch (choice) {
+        case '1':
+            await nativeDev();
+            break;
+
+        case '2':
+            await nativeSync();
+            break;
+
+        case '3':
+            await nativeOpen();
+            break;
+
+        case '4':
+            await nativeRun();
+            break;
+
+        default:
+            console.log(yellow('Unknown option. Try 1-4.'));
+            rl.close();
+            break;
+    }
+};
+
+const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
+    const subcommand = args[0];
+    const arg1 = args[1];
+    const arg2 = args[2];
+
+    const asPlatform = (s?: string): Platform | undefined => {
+        if (s === 'ios' || s === 'android') return s;
+        return undefined;
+    };
+
+    if (!subcommand) {
+        // Interactive native menu
+        await nativeMenu();
+        return true;
+    }
+
+    switch (subcommand) {
+        case 'dev': {
+            // pnpm lc native dev [tenant] [ios|android]
+            const platform = asPlatform(arg2) ?? asPlatform(arg1);
+            const tenant = arg1 && !asPlatform(arg1) ? arg1 : undefined;
+
+            await nativeDev(tenant, platform);
+            return true;
+        }
+
+        case 'sync': {
+            // pnpm lc native sync [tenant]
+            await nativeSync(arg1);
+            return true;
+        }
+
+        case 'open': {
+            // pnpm lc native open [ios|android]
+            await nativeOpen(asPlatform(arg1));
+            return true;
+        }
+
+        case 'run': {
+            // pnpm lc native run [tenant] [ios|android]
+            const platform = asPlatform(arg2) ?? asPlatform(arg1);
+            const tenant = arg1 && !asPlatform(arg1) ? arg1 : undefined;
+
+            await nativeRun(tenant, platform);
+            return true;
+        }
+
+        default:
+            return false;
+    }
+};
+
+// ---------------------------------------------------------------------------
 // CLI shortcut handling
 // ---------------------------------------------------------------------------
 
@@ -493,6 +859,20 @@ const handleShortcuts = async (): Promise<boolean> => {
             return true;
         }
 
+        case 'native': {
+            // pnpm lc native [dev|sync|open|run] [tenant] [ios|android]
+            const nativeArgs = args.slice(1);
+            const handled = await handleNativeShortcut(nativeArgs);
+
+            if (!handled) {
+                console.log(yellow(`Unknown native subcommand: ${nativeArgs[0]}`));
+                console.log(dim('  Available: dev, sync, open, run'));
+                rl.close();
+            }
+
+            return true;
+        }
+
         case 'create':
             runCommand('npx tsx scripts/create-tenant.ts', 'Create a new tenant');
             return true;
@@ -552,11 +932,12 @@ const main = async () => {
     console.log(`  ${cyan('4')}  ${bold('Create a new tenant')}     ${dim('— interactive scaffolding')}`);
     console.log(`  ${cyan('5')}  ${bold('Open config editor')}      ${dim('— visual config editor on :4400')}`);
     console.log(`  ${cyan('6')}  ${bold('Generate tenant assets')}  ${dim('— create icons/splash from a logo')}`);
+    console.log(`  ${cyan('7')}  ${bold('Native / Capacitor')}     ${dim('— sync, open IDE, live-reload on device')}`);
     console.log('');
-    console.log(dim('  Or run directly: pnpm lc dev | start | validate | create | switch | editor | generate | tenants'));
+    console.log(dim('  Or run directly: pnpm lc dev | start | validate | create | switch | editor | generate | native | tenants'));
     console.log('');
 
-    const choice = await ask('Pick an option [1-6]: ');
+    const choice = await ask('Pick an option [1-7]: ');
 
     switch (choice) {
         case '1':
@@ -583,8 +964,12 @@ const main = async () => {
             await generateAssets();
             break;
 
+        case '7':
+            await nativeMenu();
+            break;
+
         default:
-            console.log(yellow('Unknown option. Try 1-6.'));
+            console.log(yellow('Unknown option. Try 1-7.'));
             rl.close();
             break;
     }
