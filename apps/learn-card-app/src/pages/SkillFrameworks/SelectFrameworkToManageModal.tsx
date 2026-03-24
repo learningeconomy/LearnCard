@@ -186,12 +186,6 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
             await wallet.invoke.syncFrameworkSkills({ id: framework.id });
 
-            try {
-                await annotateBackendSkillsWithIcons(framework.id, wallet);
-            } catch (iconError) {
-                console.error('Failed to generate icons for skills:', iconError);
-            }
-
             await queryClient.invalidateQueries({ queryKey: ['listMySkillFrameworks'] });
             await queryClient.invalidateQueries({ queryKey: ['skillFrameworks'] });
             await queryClient.invalidateQueries({ queryKey: ['allAvailableSkillFrameworks'] });
@@ -201,6 +195,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                 type: ToastTypeEnum.Success,
                 duration: 2500,
             });
+            closeModal();
         } catch (error: unknown) {
             presentToast(error instanceof Error ? error.message : 'Unable to import framework.', {
                 type: ToastTypeEnum.Error,
