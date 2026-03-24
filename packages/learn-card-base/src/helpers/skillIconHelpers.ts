@@ -50,10 +50,10 @@ export const collectSkillsNeedingIcons = (nodes?: SkillTreeNode[]): SkillIconInf
     return skills;
 };
 
-const ICON_BATCH_SIZE = 100;
+const ICON_BATCH_SIZE = 50;
 
 /**
- * Generates icons for skill names in batches (API limit is 100 names per request)
+ * Generates icons for skill names in batches (API limit is 50 names per request)
  */
 const generateIconsInBatches = async (
     names: string[],
@@ -99,25 +99,29 @@ export const annotateBackendSkillsWithIcons = async (
     if (skillsNeedingIcons.length === 0) return 0;
 
     const names = skillsNeedingIcons.map(s => s.statement);
+
     const iconMap = await generateIconsInBatches(names, wallet.invoke.generateSkillIcons);
 
-    let updated = 0;
-    for (const skill of skillsNeedingIcons) {
-        const icon = iconMap[skill.statement];
-        if (icon) {
+    const skillsWithIcons = skillsNeedingIcons.filter(s => iconMap[s.statement]);
+
+    const results = await Promise.all(
+        skillsWithIcons.map(async skill => {
             try {
                 await wallet.invoke.updateSkill({
                     frameworkId,
                     id: skill.id,
-                    icon,
+                    icon: iconMap[skill.statement]!,
                 });
-                updated++;
-                onProgress?.(updated, skillsNeedingIcons.length);
+                return true;
             } catch (e) {
                 console.error(`Failed to update icon for skill ${skill.id}:`, e);
+                return false;
             }
-        }
-    }
+        })
+    );
+
+    const updated = results.filter(Boolean).length;
+    onProgress?.(updated, skillsWithIcons.length);
 
     return updated;
 };
