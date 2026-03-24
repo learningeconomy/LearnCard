@@ -23,10 +23,13 @@ export const CategoryEmptyPlaceholder: React.FC<{
         );
     }
 
+    const defaultSizeClass = 'w-[200px] h-[200px]';
+    const cls = iconClassName || defaultSizeClass;
+
     return (
         <div className="w-full flex items-center justify-center relative mt-[100px]">
-            {IconWithLightShape && <IconWithLightShape className={iconClassName} />}
-            {!IconWithLightShape && IconWithShape && <IconWithShape className={iconClassName} />}
+            {IconWithLightShape && <IconWithLightShape className={cls} />}
+            {!IconWithLightShape && IconWithShape && <IconWithShape className={cls} />}
         </div>
     );
 };

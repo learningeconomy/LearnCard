@@ -390,7 +390,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
             <div className="flex items-center justify-center mt-[20px] pb-[20px]">
                 <button
                     onClick={handleOnClick}
-                    className={`bg-emerald-900 text-white ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${buttonClassName}`}
+                    className={`bg-grayscale-900 text-white ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${buttonClassName}`}
                     disabled={disabled}
                 >
                     {buttonTitle}

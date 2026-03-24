@@ -312,7 +312,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
         formTitle = null;
 
         const defaultEmailInputClassName =
-            'bg-emerald-600 text-white placeholder:text-white white-placeholder';
+            'bg-white/20 text-white placeholder:text-white white-placeholder';
         const resolvedEmailInputClassName = emailInputClassName ?? defaultEmailInputClassName;
 
         const emailError = errors.email?.[0];
@@ -461,7 +461,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
             {activeStep}
             <div className="flex items-center justify-center py-[20px] w-full mx-auto">
                 <button
-                    className={`bg-emerald-900 text-white ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${buttonClassName}`}
+                    className={`bg-grayscale-900 text-white ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${buttonClassName}`}
                     onClick={handleOnClick}
                     disabled={disabled}
                 >

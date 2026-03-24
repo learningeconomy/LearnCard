@@ -4,6 +4,7 @@ import { useHistory } from 'react-router-dom';
 import { IonCol, IonContent, IonPage, IonRow, IonSpinner } from '@ionic/react';
 
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
+import { useTheme } from '../../theme/hooks/useTheme';
 import LoginLoadingPage from '../login/LoginPageLoader/LoginLoader';
 
 import {
@@ -17,17 +18,21 @@ import {
 
 const LoadingPage: React.FC = () => {
     const { textLogo } = useTenantBrandingAssets();
+    const { theme } = useTheme();
+    const loaderColor = theme.colors.defaults.loaders?.[0] ?? '#8B5CF6';
 
     return (
         <IonPage>
             <IonContent
                 fullscreen
-                color="purple-loader"
                 className="flex items-center justify-center"
             >
-                <IonRow className="h-full w-full flex items-center justify-center">
+                <IonRow
+                    className="h-full w-full flex items-center justify-center"
+                    style={{ backgroundColor: loaderColor }}
+                >
                     <IonCol className="w-full flex items-center justify-center flex-col">
-                        <img src={textLogo} alt="Logo" className="mb-8" />
+                        <img src={textLogo} alt="Logo" className="mb-8 max-w-[300px] max-h-[80px] object-contain" />
                     </IonCol>
                 </IonRow>
             </IonContent>
@@ -39,17 +44,21 @@ export default LoadingPage;
 
 export const LoadingPageDumb: React.FC = () => {
     const { textLogo } = useTenantBrandingAssets();
+    const { theme } = useTheme();
+    const loaderColor = theme.colors.defaults.loaders?.[0] ?? '#8B5CF6';
 
     return (
         <IonPage>
             <IonContent
                 fullscreen
-                color="purple-loader"
                 className="flex items-center justify-center"
             >
-                <IonRow className="h-full w-full flex items-center justify-center">
+                <IonRow
+                    className="h-full w-full flex items-center justify-center"
+                    style={{ backgroundColor: loaderColor }}
+                >
                     <IonCol className="w-full flex items-center justify-center flex-col">
-                        <img src={textLogo} alt="Logo" className="mb-8" />
+                        <img src={textLogo} alt="Logo" className="mb-8 max-w-[300px] max-h-[80px] object-contain" />
                     </IonCol>
                 </IonRow>
             </IonContent>

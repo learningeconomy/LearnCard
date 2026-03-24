@@ -46,7 +46,7 @@ export const LoginLoadingPage: React.FC = () => {
                     <img
                         src={textLogo}
                         alt="Logo"
-                        className="mb-8 absolute top-[48%] left-[50%] translate-x-[-50%]"
+                        className="mb-8 absolute top-[48%] left-[50%] translate-x-[-50%] max-w-[300px] max-h-[80px] object-contain"
                     />
                     <div className="w-full flex items-center justify-center text-center px-6 absolute top-[52%] left-[50%] translate-x-[-50%]">
                         <Typewriter

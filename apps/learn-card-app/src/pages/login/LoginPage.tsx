@@ -54,7 +54,7 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import { useTheme } from '../../theme/hooks/useTheme';
 
 export const LoginContent: React.FC = () => {
-    const { textLogo, brandMarkLight, desktopLoginBg } = useTenantBrandingAssets();
+    const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
     const { syncThemeDefaults } = useTheme();
     const { newModal, closeModal } = useModal();
     const isLoggedIn = useIsLoggedIn();
@@ -240,12 +240,22 @@ export const LoginContent: React.FC = () => {
         <div className="w-full h-full flex flex-col items-center justify-center p-0 m-0 px-[30px] overflow-y-auto  pt-[150px] pb-[100px] sm:pt-[0px] sm:pb-[0px] ">
             <IonRow className="p-0 m-0 w-full flex items-center justify-center relative pb-[20px]">
                 <div className="flex flex-col items-center justify-center w-full">
-                    <img
-                        src={brandMarkLight}
-                        alt="Brand mark"
-                        className="w-[80px] h-[80px] mb-[20px]"
-                    />
-                    <img src={textLogo} alt="Logo" />
+                    {fullLogoDark ? (
+                        <img
+                            src={fullLogoDark}
+                            alt="Logo"
+                            className="max-w-[300px] max-h-[160px] object-contain"
+                        />
+                    ) : (
+                        <>
+                            <img
+                                src={brandMarkLight}
+                                alt="Brand mark"
+                                className="w-[80px] h-[80px] mb-[20px]"
+                            />
+                            <img src={textLogo} alt="Logo" className="max-w-[300px] max-h-[80px] object-contain" />
+                        </>
+                    )}
                 </div>
             </IonRow>
             {showQrLogin && !qrApproved ? (
@@ -449,6 +459,8 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
     alternateBgComponent,
 }) => {
     const { desktopLoginBg } = useTenantBrandingAssets();
+    const { theme } = useTheme();
+    const loginBgColor = theme.colors.defaults.loaders?.[0] ?? '#059669';
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -472,27 +484,33 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
     }, [isMobile, isDesktop, isSuccessEndorsementModalOpen]);
 
     return (
-        <IonPage color="emerald-700" className="flex flex-col h-full">
+        <IonPage className="flex flex-col h-full" style={{ backgroundColor: loginBgColor }}>
             {showConfirmation && (
                 <DeleteUserSuccessConfirmation branding={BrandingEnum.learncard} />
             )}
             <IonContent
                 fullscreen
-                className="flex flex-col flex-grow bg-emerald-700"
-                color="emerald-700"
+                className="flex flex-col flex-grow"
+                style={{ '--background': loginBgColor } as React.CSSProperties}
             >
-                <IonGrid className="h-full w-full flex items-center justify-center bg-emerald-700">
+                <IonGrid className="h-full w-full flex items-center justify-center" style={{ backgroundColor: loginBgColor }}>
                     <LoginContent />
                     {/* Desktop background image */}
                     {isDesktop &&
                         !endorsementRequest?.relationship?.label &&
                         !endorsementRequest?.description && (
                             <>
-                                <div className="w-full h-full p-0 m-0 flex items-center justify-center">
+                                <div className="w-full h-full p-0 m-0 flex items-center justify-center overflow-hidden">
                                     {alternateBgComponent ? (
                                         alternateBgComponent
                                     ) : (
-                                        <img src={desktopLoginBg} alt="" aria-hidden="true" />
+                                        <img
+                                            src={desktopLoginBg}
+                                            alt=""
+                                            aria-hidden="true"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                        />
                                     )}
                                 </div>
                             </>

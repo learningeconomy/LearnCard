@@ -14,6 +14,7 @@ import {
 } from '../claim-from-request/LoggedOutRequest';
 
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
+import { useTheme } from '../../theme/hooks/useTheme';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { LoginContent } from './LoginPage';
@@ -23,29 +24,37 @@ const ClaimLoginPage: React.FC<{
     vc_request_url?: string | (string | null)[] | null;
 }> = ({ alternateBgComponent, vc_request_url }) => {
     const { desktopLoginBg } = useTenantBrandingAssets();
+    const { theme } = useTheme();
+    const loginBgColor = theme.colors.defaults.loaders?.[0] ?? '#059669';
     const showConfirmation = confirmationStore.use.showConfirmation();
     const { isDesktop } = useDeviceTypeByWidth();
     return (
-        <IonPage color="emerald-700" className="flex flex-col h-full">
+        <IonPage className="flex flex-col h-full" style={{ backgroundColor: loginBgColor }}>
             {showConfirmation && (
                 <DeleteUserSuccessConfirmation branding={BrandingEnum.learncard} />
             )}
             <IonContent
                 fullscreen
-                className="flex flex-col flex-grow bg-emerald-700"
-                color="emerald-700"
+                className="flex flex-col flex-grow"
+                style={{ '--background': loginBgColor } as React.CSSProperties}
             >
-                <IonGrid className="h-full w-full flex items-center justify-center bg-emerald-700">
+                <IonGrid className="h-full w-full flex items-center justify-center" style={{ backgroundColor: loginBgColor }}>
                     {!isDesktop && <MobileClaimLoginContainer vc_request_url={vc_request_url} />}
                     {/* Desktop background image */}
                     {isDesktop && (
                         <>
                             <LoginContent />
-                            <div className="w-full h-full p-0 m-0 flex items-center justify-center">
+                            <div className="w-full h-full p-0 m-0 flex items-center justify-center overflow-hidden">
                                 {alternateBgComponent ? (
                                     alternateBgComponent
                                 ) : (
-                                    <img src={desktopLoginBg} alt="" aria-hidden="true" />
+                                    <img
+                                        src={desktopLoginBg}
+                                        alt=""
+                                        aria-hidden="true"
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                    />
                                 )}
                             </div>
                         </>
