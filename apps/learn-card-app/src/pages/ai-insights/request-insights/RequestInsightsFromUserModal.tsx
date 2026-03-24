@@ -5,7 +5,7 @@ import queryString from 'query-string';
 import RequestInsightsSkeletonLoader from './RequestInsightsSkeletonLoader';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConnectIcon from 'learn-card-base/svgs/ConnectIcon';
-import { IonFooter } from '@ionic/react';
+import { IonFooter, IonIcon } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 
 import {
@@ -16,24 +16,41 @@ import {
     useGetProfile,
     useToast,
     useGetCurrentLCNUser,
+    useCurrentUser,
+    useIsLoggedIn,
+    redirectStore,
 } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
 
 import { useGetAiInsightsServicesContract } from '../learner-insights/learner-insights.helpers';
+import { person } from 'ionicons/icons';
 
 export const RequestInsightsFromUserModal: React.FC<{
     profile: LCNProfile;
     contractUri: string;
     onSuccessCallback?: () => void;
-}> = ({ profile, contractUri, onSuccessCallback }) => {
+    redirectToLink?: string;
+}> = ({ profile, contractUri, onSuccessCallback, redirectToLink }) => {
     const { presentToast } = useToast();
     const { closeModal, closeAllModals } = useModal();
+    const history = useHistory();
+    const currentUser = useCurrentUser();
+    const isLoggedIn = useIsLoggedIn();
+
+    const isAuthenticated = Boolean(currentUser) && isLoggedIn;
 
     const { mutateAsync: sendAiInsightsContractRequest, isPending } =
         useSendAiInsightsContractRequest();
 
     const handleSendRequest = async () => {
         const profileId = profile?.profileId ?? '';
+
+        if (!isAuthenticated) {
+            redirectStore.set.authRedirect(redirectToLink || '/login');
+            closeModal();
+            history.push(`/login?redirectTo=${encodeURIComponent(redirectToLink || '/login')}`);
+            return;
+        }
 
         const shareLink = `${
             IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
@@ -56,10 +73,16 @@ export const RequestInsightsFromUserModal: React.FC<{
             <div className="w-full flex items-center justify-center px-4 max-w-[600px]">
                 <div className="bg-white py-12 w-full flex flex-col items-center gap-4 justify-center shadow-box-bottom rounded-[24px]">
                     <div className="flex items-center gap-4">
-                        <ProfilePicture
-                            customContainerClass="text-grayscale-900 h-[64px] w-[64px] min-h-[64px] min-w-[64px]"
-                            customImageClass="w-full h-full object-cover"
-                        />
+                        {isAuthenticated ? (
+                            <ProfilePicture
+                                customContainerClass="text-grayscale-900 h-[64px] w-[64px] min-h-[64px] min-w-[64px]"
+                                customImageClass="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <div className="bg-grayscale-200 text-grayscale-700 h-[64px] w-[64px] min-h-[64px] min-w-[64px] rounded-full flex items-center justify-center text-sm font-semibold">
+                                <IonIcon icon={person} className="h-4 w-4" />
+                            </div>
+                        )}
 
                         <ConnectIcon className="text-grayscale-900 h-[48px] w-[48px]" />
 
@@ -69,9 +92,17 @@ export const RequestInsightsFromUserModal: React.FC<{
                             user={profile}
                         />
                     </div>
-                    <p className="text-grayscale-900 text-[22px] font-semibold text-center">
-                        Request Insights from <br /> {profile?.displayName}
-                    </p>
+                    {isAuthenticated ? (
+                        <p className="text-grayscale-900 text-[22px] font-semibold text-center">
+                            Request Insights from <br /> {profile?.displayName}
+                        </p>
+                    ) : (
+                        <p className="text-grayscale-900 text-[16px] text-center">
+                            Please <span className="font-semibold">Login</span> to{' '}
+                            <span className="font-semibold">Request Insights</span> from <br />{' '}
+                            <span className="font-semibold">{profile?.displayName}</span>
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -94,7 +125,11 @@ export const RequestInsightsFromUserModal: React.FC<{
                             onClick={handleSendRequest}
                             className="bg-indigo-500 py-[12px] rounded-[30px] font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] items-center justify-center"
                         >
-                            {isPending ? 'Sending...' : 'Send Request'}
+                            {isPending
+                                ? 'Sending...'
+                                : isAuthenticated
+                                ? 'Send Request'
+                                : 'Login to Request'}
                         </button>
 
                         <button
@@ -111,17 +146,22 @@ export const RequestInsightsFromUserModal: React.FC<{
     );
 };
 
-export const RequestInsightsFromUserModalWrapper: React.FC<{ profileId: string }> = ({
-    profileId,
-}) => {
+export const RequestInsightsFromUserModalWrapper: React.FC<{
+    profileId: string;
+    redirectToLink: string;
+}> = ({ profileId, redirectToLink }) => {
     const history = useHistory();
     const location = useLocation();
+    const currentUser = useCurrentUser();
+    const isLoggedIn = useIsLoggedIn();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { data: profile, isLoading } = useGetProfile(profileId);
 
+    const isAuthenticated = Boolean(currentUser) && isLoggedIn && Boolean(currentLCNUser?.did);
+
     const { contractUri, isLoading: contractLoading } = useGetAiInsightsServicesContract(
-        currentLCNUser?.did!,
-        true
+        currentLCNUser?.did ?? '',
+        isAuthenticated
     );
 
     const onSuccessCallback = () => {
@@ -131,15 +171,16 @@ export const RequestInsightsFromUserModalWrapper: React.FC<{ profileId: string }
         history.replace({ search: queryString.stringify(allOtherSearchParams) });
     };
 
-    if (isLoading || contractLoading) {
+    if (isLoading || (isAuthenticated && contractLoading)) {
         return <RequestInsightsSkeletonLoader />;
     }
 
     return (
         <RequestInsightsFromUserModal
             profile={profile}
-            contractUri={contractUri}
+            contractUri={contractUri ?? ''}
             onSuccessCallback={onSuccessCallback}
+            redirectToLink={redirectToLink}
         />
     );
 };
