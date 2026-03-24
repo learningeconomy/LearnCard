@@ -34,6 +34,7 @@ import {
     sideMenuMetaversityBrandingStyles,
 } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { aiRoutes } from '../../AppRouter';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -46,6 +47,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     const { getColorSet } = useTheme();
     const colors = getColorSet(ColorSetEnum.sideMenu);
     const resolvedAssets = useTenantBrandingAssets();
+    const brandingConfig = useBrandingConfig();
     const { isMobile } = useDeviceTypeByWidth();
     const flags = useFlags();
     const history = useHistory();
@@ -153,7 +155,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                     onClick={handleBoost}
                                     className={`text-[17px] flex items-center justify-center font-semibold py-[5px] rounded-full w-full max-w-[90%] border-solid border-[2px] h-[45px] max-h-[45px] shadow-soft-bottom ${colors.secondaryButtonColor}`}
                                 >
-                                    Add to LearnCard
+                                    Add to {brandingConfig.name}
                                     <GearPlusIcon className="ml-1 text-grayscale-800" />
                                 </IonMenuToggle>
                             </div>

@@ -15,6 +15,7 @@ import {
     checklistStore,
     checklistItems,
 } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 type CheckListButtonMode = 'default' | 'inline';
 
@@ -26,6 +27,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
     const { newModal } = useModal();
     const { completedItems } = useGetCheckListStatus();
     const { gate } = useLCNGatedAction();
+    const brandingConfig = useBrandingConfig();
 
     const { theme, colors } = useTheme();
     const { buildMyLCIcon } = theme.defaults;
@@ -82,7 +84,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 </div>
 
                 <h5 className="text-[17px] leading-[130%] font-poppins font-[600] text-grayscale-900 text-center">
-                    Build My LearnCard
+                    Build My {brandingConfig.name}
                 </h5>
 
                 {isParsing ? (
@@ -128,7 +130,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 </div>
                 <div className="flex flex-col">
                     <h5 className="text-[17px] font-poppins font-[600] text-grayscale-900 leading-[130%]">
-                        Build My LearnCard
+                        Build My {brandingConfig.name}
                     </h5>
                     {isParsing ? (
                         <p className="text-[14px] text-grayscale-900 font-poppins">
