@@ -2,18 +2,25 @@
  * Auth Configuration
  *
  * Environment-driven configuration for the auth coordinator.
- * Reads from environment variables with sensible defaults.
+ * Uses a **split-precedence model** based on the category of setting:
  *
- * For each key the lookup order is: tenant config override → VITE_ prefix → REACT_APP_ prefix → default.
+ * Provider / strategy selection (what auth system to use):
+ *   tenant config → ENV var → default
+ *   Config wins so tenant identity can't be accidentally overridden by a stale .env.
+ *
+ * Operational values (infrastructure URLs, keys, feature flags):
+ *   ENV var → tenant config → default
+ *   ENV wins so deployments can customize infra (local dev, staging, prod) without
+ *   touching config files. Self-hosters get standard 12-factor compliance.
  *
  * Environment Variables:
- *   VITE_AUTH_PROVIDER / REACT_APP_AUTH_PROVIDER                             — 'firebase' (default)
- *   VITE_KEY_DERIVATION / REACT_APP_KEY_DERIVATION_PROVIDER                  — 'sss' (default)
- *   VITE_SSS_SERVER_URL / REACT_APP_SSS_SERVER_URL                           — mapped to providerConfig.sss.serverUrl
- *   VITE_ENABLE_EMAIL_BACKUP_SHARE / REACT_APP_ENABLE_EMAIL_BACKUP_SHARE     — mapped to providerConfig.sss.enableEmailBackupShare
- *   VITE_REQUIRE_EMAIL_FOR_PHONE_USERS / REACT_APP_REQUIRE_EMAIL_FOR_PHONE_USERS — mapped to providerConfig.sss.requireEmailForPhoneUsers
+ *   VITE_AUTH_PROVIDER / REACT_APP_AUTH_PROVIDER                             — 'firebase' (default) [config wins]
+ *   VITE_KEY_DERIVATION / REACT_APP_KEY_DERIVATION_PROVIDER                  — 'sss' (default)      [config wins]
+ *   VITE_SSS_SERVER_URL / REACT_APP_SSS_SERVER_URL                           — providerConfig.sss.serverUrl               [ENV wins]
+ *   VITE_ENABLE_EMAIL_BACKUP_SHARE / REACT_APP_ENABLE_EMAIL_BACKUP_SHARE     — providerConfig.sss.enableEmailBackupShare   [ENV wins]
+ *   VITE_REQUIRE_EMAIL_FOR_PHONE_USERS / REACT_APP_REQUIRE_EMAIL_FOR_PHONE_USERS — providerConfig.sss.requireEmailForPhoneUsers [ENV wins]
  *   VITE_WEB3AUTH_CLIENT_ID / VITE_WEB3AUTH_NETWORK / VITE_WEB3AUTH_VERIFIER_ID / VITE_WEB3AUTH_RPC_TARGET
- *     — mapped to providerConfig.web3Auth
+ *     — providerConfig.web3Auth.*  [ENV wins]
  *
  * For self-hosting, set these in your .env file or deployment environment.
  */
@@ -61,9 +68,11 @@ let _authConfigOverrides: Partial<AuthConfig> | null = null;
  * Populate auth config from a TenantConfig.
  *
  * Call this once at app boot, before the auth coordinator initializes.
- * Values set here take priority over environment variables, so existing
- * `getAuthConfig()` callers automatically get tenant-aware values without
- * needing to be refactored.
+ *
+ * Provider/strategy selection from the tenant config takes priority over
+ * environment variables. Operational values (URLs, keys) are overridable
+ * by environment variables — see the split-precedence model in the module
+ * header for details.
  */
 export const setAuthConfigFromTenant = (tenant: TenantConfig): void => {
     // Build providerConfig from the tenant's provider- and strategy-specific blocks.
@@ -183,38 +192,50 @@ export const getAuthConfig = (): AuthConfig => {
         _authConfigOverrides?.keyDerivation ??
         readEnv('KEY_DERIVATION', 'KEY_DERIVATION_PROVIDER') ?? 'sss';
 
-    // Build providerConfig — tenant overrides take priority, env vars as fallback.
+    // Build providerConfig — start with tenant config, then overlay ENV vars.
+    //
+    // Split-precedence: ENV vars override operational values (URLs, keys,
+    // booleans) within each provider block so that deployments can customise
+    // infra without touching config files. Provider/strategy *selection*
+    // (authProvider, keyDerivation) is handled above and still config-wins.
     const providerConfig: Record<string, Record<string, unknown>> =
         _authConfigOverrides?.providerConfig
             ? { ..._authConfigOverrides.providerConfig }
             : {};
 
-    // Legacy SSS env var fallback (only if no tenant override provided sss)
-    if (!providerConfig.sss) {
-        const serverUrl = readEnv('SSS_SERVER_URL', 'SSS_SERVER_URL') ?? 'http://localhost:5100/api';
+    // SSS — ENV wins over tenant config for each operational value
+    {
+        const tenantSss = (providerConfig.sss ?? {}) as Record<string, unknown>;
+
+        const serverUrl =
+            readEnv('SSS_SERVER_URL', 'SSS_SERVER_URL') ??
+            (tenantSss.serverUrl as string | undefined) ??
+            'http://localhost:5100/api';
 
         const enableEmailBackupShareEnv = readEnv('ENABLE_EMAIL_BACKUP_SHARE', 'ENABLE_EMAIL_BACKUP_SHARE');
         const enableEmailBackupShare = enableEmailBackupShareEnv !== undefined
             ? enableEmailBackupShareEnv !== 'false'
-            : true;
+            : (tenantSss.enableEmailBackupShare as boolean | undefined) ?? true;
 
         const requireEmailEnv = readEnv('REQUIRE_EMAIL_FOR_PHONE_USERS', 'REQUIRE_EMAIL_FOR_PHONE_USERS');
         const requireEmailForPhoneUsers = requireEmailEnv !== undefined
             ? requireEmailEnv !== 'false'
-            : true;
+            : (tenantSss.requireEmailForPhoneUsers as boolean | undefined) ?? true;
 
-        providerConfig.sss = { serverUrl, enableEmailBackupShare, requireEmailForPhoneUsers };
+        providerConfig.sss = { ...tenantSss, serverUrl, enableEmailBackupShare, requireEmailForPhoneUsers };
     }
 
-    // Legacy Web3Auth env var fallback (only if no tenant override provided web3Auth)
-    if (!providerConfig.web3Auth) {
-        const clientId = readEnv('WEB3AUTH_CLIENT_ID', 'WEB3AUTH_CLIENT_ID') ?? '';
-        const network = readEnv('WEB3AUTH_NETWORK', 'WEB3AUTH_NETWORK') ?? '';
-        const verifierId = readEnv('WEB3AUTH_VERIFIER_ID', 'WEB3AUTH_VERIFIER_ID') ?? '';
-        const rpcTarget = readEnv('WEB3AUTH_RPC_TARGET', 'WEB3AUTH_RPC_TARGET') ?? 'https://cloudflare-eth.com';
+    // Web3Auth — ENV wins over tenant config for each operational value
+    {
+        const tenantW3A = (providerConfig.web3Auth ?? {}) as Record<string, unknown>;
 
-        if (clientId || network || verifierId) {
-            providerConfig.web3Auth = { clientId, network, verifierId, rpcTarget };
+        const clientId = readEnv('WEB3AUTH_CLIENT_ID', 'WEB3AUTH_CLIENT_ID') ?? (tenantW3A.clientId as string | undefined) ?? '';
+        const network = readEnv('WEB3AUTH_NETWORK', 'WEB3AUTH_NETWORK') ?? (tenantW3A.network as string | undefined) ?? '';
+        const verifierId = readEnv('WEB3AUTH_VERIFIER_ID', 'WEB3AUTH_VERIFIER_ID') ?? (tenantW3A.verifierId as string | undefined) ?? '';
+        const rpcTarget = readEnv('WEB3AUTH_RPC_TARGET', 'WEB3AUTH_RPC_TARGET') ?? (tenantW3A.rpcTarget as string | undefined) ?? 'https://cloudflare-eth.com';
+
+        if (clientId || network || verifierId || Object.keys(tenantW3A).length > 0) {
+            providerConfig.web3Auth = { ...tenantW3A, clientId, network, verifierId, rpcTarget };
         }
     }
 
