@@ -8,6 +8,35 @@
         "learncardapp.netlify.app": {
             "tenantId": "learncard",
             "domain": "learncard.app"
+        },
+        "lc-test-tenant.netlify.app": {
+            "tenantId": "vetpass",
+            "domain": "vetpass.app",
+            "configOverrides": {
+                "branding": {
+                    "name": "VetPass",
+                    "shortName": "VP",
+                    "defaultTheme": "vetpass",
+                    "allowedThemes": ["vetpass"],
+                    "brandingKey": "vetpass",
+                    "headerText": "VETPASS",
+                    "homeRoute": "/wallet",
+                    "categoryLabels": {
+                        "learningHistory": "Training",
+                        "workHistory": "Service",
+                        "accommodation": "Benefits",
+                        "accomplishment": "Awards",
+                        "socialBadge": "Badge"
+                    }
+                },
+                "features": {
+                    "aiFeatures": true,
+                    "appStore": true,
+                    "analytics": true,
+                    "themeSwitching": false,
+                    "introSlides": true
+                }
+            }
         }
     },
     "defaultTenant": {
