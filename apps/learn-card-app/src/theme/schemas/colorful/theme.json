@@ -233,7 +233,10 @@
         "defaults": {
             "primaryColor": "indigo-500",
             "primaryColorShade": "indigo-200",
-            "loaders": ["#8B5CF6", "#06B6D4", "#059669", "#3B82F6"]
+            "loaders": ["#8B5CF6", "#06B6D4", "#059669", "#3B82F6"],
+            "loginBgColor": "#00ba88",
+            "loginButtonBgColor": "#047857",
+            "loginButtonTextColor": "#FFFFFF"
         }
     },
 

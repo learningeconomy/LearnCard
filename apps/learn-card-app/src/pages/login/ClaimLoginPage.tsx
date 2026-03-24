@@ -26,7 +26,7 @@ const ClaimLoginPage: React.FC<{
 }> = ({ alternateBgComponent, vc_request_url }) => {
     const { desktopLoginBg } = useTenantBrandingAssets();
     const { theme } = useTheme();
-    const loginBgColor = theme.colors.defaults.loaders?.[0] ?? '#059669';
+    const loginBgColor = theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
     const showConfirmation = confirmationStore.use.showConfirmation();
     const { isDesktop } = useDeviceTypeByWidth();
     return (

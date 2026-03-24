@@ -14,6 +14,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 import { useFirebase } from '../../../hooks/useFirebase';
+import { useTheme } from '../../../theme/hooks/useTheme';
 
 import { IonCol, IonInput, IonCheckbox, IonToggle, IonRouterLink } from '@ionic/react';
 import AppStoreDownloadButtons from '../appStoreButtons/AppStoreDownloadButtons';
@@ -55,6 +56,10 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     setShowSocialLogins,
     showSocialLogins,
 }) => {
+    const { theme } = useTheme();
+    const loginButtonBgColor = theme.colors.defaults.loginButtonBgColor;
+    const loginButtonTextColor = theme.colors.defaults.loginButtonTextColor;
+
     const {
         sendSmsAuthCode,
         verifySmsAuthCode,
@@ -390,7 +395,11 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
             <div className="flex items-center justify-center mt-[20px] pb-[20px]">
                 <button
                     onClick={handleOnClick}
-                    className={`bg-grayscale-900 text-white ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${buttonClassName}`}
+                    className={`ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${!loginButtonBgColor ? 'bg-grayscale-900' : ''} ${!loginButtonTextColor ? 'text-white' : ''} ${buttonClassName}`}
+                    style={{
+                        ...(loginButtonBgColor ? { backgroundColor: loginButtonBgColor } : {}),
+                        ...(loginButtonTextColor ? { color: loginButtonTextColor } : {}),
+                    }}
                     disabled={disabled}
                 >
                     {buttonTitle}

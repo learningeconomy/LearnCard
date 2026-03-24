@@ -33,7 +33,7 @@ export const SocialLoginsButtons: React.FC<{
 }) => {
     const { colors, theme } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
-    const loginBgColor = theme.colors.defaults.loaders?.[0] ?? '#059669';
+    const loginBgColor = theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
 
     const socialLogins = useSocialLogins(branding);
 

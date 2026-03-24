@@ -80,7 +80,10 @@
         "defaults": {
             "primaryColor": "blue-500",
             "primaryColorShade": "blue-200",
-            "loaders": ["#353E64"]
+            "loaders": ["#353E64"],
+            "loginBgColor": "#353E64",
+            "loginButtonBgColor": "#1E2440",
+            "loginButtonTextColor": "#FFFFFF"
         }
     },
 

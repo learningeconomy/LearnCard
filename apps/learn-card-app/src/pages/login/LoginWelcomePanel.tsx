@@ -14,7 +14,7 @@ const LoginWelcomePanel: React.FC = () => {
     const { theme } = useTheme();
 
     const loaderColors = theme.colors.defaults.loaders ?? [];
-    const baseColor = loaderColors[0] ?? '#059669';
+    const baseColor = theme.colors.defaults.loginBgColor ?? loaderColors[0] ?? '#059669';
     const accentColor = loaderColors[1] ?? loaderColors[0] ?? '#06B6D4';
 
     return (

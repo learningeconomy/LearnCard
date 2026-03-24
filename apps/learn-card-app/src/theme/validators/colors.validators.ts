@@ -138,6 +138,15 @@ export const defaultColorsSchema = z.object({
     primaryColorShade: z.string(),
     loaders: z.array(z.string()),
 
+    /** Hex color for the login page background. Undefined = loaders[0] fallback. */
+    loginBgColor: z.string().optional(),
+
+    /** Hex color for login page button background. Undefined = grayscale-900. */
+    loginButtonBgColor: z.string().optional(),
+
+    /** Hex color for login page button text. Undefined = white. */
+    loginButtonTextColor: z.string().optional(),
+
     /** Hex color for the Passport page background. Undefined = white. */
     passportBgColor: z.string().optional(),
 

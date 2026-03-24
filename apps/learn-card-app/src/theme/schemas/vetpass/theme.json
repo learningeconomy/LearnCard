@@ -280,6 +280,9 @@
                 "#396888",
                 "#66B8FF"
             ],
+            "loginBgColor": "#0089EE",
+            "loginButtonBgColor": "#11354E",
+            "loginButtonTextColor": "#FFFFFF",
             "passportBgColor": "#11354E",
             "passportTextColor": "text-white",
             "featuredCardBgColor": "#184463",
