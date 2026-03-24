@@ -161,6 +161,15 @@ const resolveColorHex = (val) => {
     return COLOR_LOOKUP[stripped] || null;
 };
 
+/** For compound values, extract the first bg-* token and resolve its color for swatch preview. */
+const resolveCompoundBgHex = (val) => {
+    if (!val || !val.includes(' ')) return null;
+    const bgToken = val.split(/\s+/).find(t => /^(!?bg-)/.test(t));
+    if (!bgToken) return null;
+    const stripped = bgToken.replace(/^(!?)(bg)-/, '');
+    return COLOR_LOOKUP[stripped] || null;
+};
+
 /** Check if a value is a compound (multi-class) Tailwind string */
 const isCompound = (val) => val && val.includes(' ');
 
@@ -1089,6 +1098,8 @@ const ColorField = ({ label, value, inheritedValue, onChange, onClear, hint }) =
     const displayValue = value ?? inheritedValue ?? '';
     const isInherited = value === undefined && inheritedValue !== undefined;
     const hex = resolveColorHex(displayValue);
+    const compoundHex = !hex ? resolveCompoundBgHex(displayValue) : null;
+    const swatchBg = hex || compoundHex;
 
     const openPicker = () => {
         const rect = swatchRef.current?.getBoundingClientRect();
@@ -1106,12 +1117,13 @@ const ColorField = ({ label, value, inheritedValue, onChange, onClear, hint }) =
                 {hint && <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1.3, maxWidth: 180 }}>{hint}</div>}
             </div>
             <div ref={swatchRef}
-                className={`swatch ${!hex && displayValue ? displayValue : ''}`}
-                style={{ background: hex || (!displayValue ? 'repeating-conic-gradient(#e2e8f0 0% 25%, white 0% 50%) 50%/12px 12px' : undefined) }}
+                className={`swatch ${!swatchBg && displayValue ? displayValue : ''}`}
+                style={{ background: swatchBg || (!displayValue ? 'repeating-conic-gradient(#e2e8f0 0% 25%, white 0% 50%) 50%/12px 12px' : undefined) }}
                 onClick={openPicker}
                 title={displayValue || 'Click to pick color'}
             >
-                {!hex && displayValue && <span style={{ fontSize: 9, fontWeight: 700, lineHeight: 1 }}>{isCompound(displayValue) ? 'Aa' : ''}</span>}
+                {!swatchBg && displayValue && <span style={{ fontSize: 9, fontWeight: 700, lineHeight: 1 }}>{isCompound(displayValue) ? 'Aa' : ''}</span>}
+                {compoundHex && <span style={{ fontSize: 8, fontWeight: 700, lineHeight: 1, color: 'white', textShadow: '0 1px 2px rgba(0,0,0,.4)' }}>Aa</span>}
             </div>
             <input
                 type="text"
@@ -1324,7 +1336,7 @@ const CategoriesSection = ({ config, parentConfig, setConfig }) => {
                                     {/* Color preview dots */}
                                     <div style={{ display: 'flex', gap: 2 }}>
                                         {previewColors.map((c, i) => (
-                                            <div key={i} className={!resolveColorHex(c) ? c : ''} style={{ width: 12, height: 12, borderRadius: '50%', background: resolveColorHex(c) || undefined, border: '1px solid rgba(0,0,0,.1)' }} />
+                                            <div key={i} className={!resolveColorHex(c) && !resolveCompoundBgHex(c) ? c : ''} style={{ width: 12, height: 12, borderRadius: '50%', background: resolveColorHex(c) || resolveCompoundBgHex(c) || undefined, border: '1px solid rgba(0,0,0,.1)' }} />
                                         ))}
                                         {previewColors.length === 0 && <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#e2e8f0' }} />}
                                     </div>
