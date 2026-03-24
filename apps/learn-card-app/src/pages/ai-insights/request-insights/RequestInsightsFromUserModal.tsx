@@ -18,11 +18,13 @@ import {
     useGetCurrentLCNUser,
     useCurrentUser,
     useIsLoggedIn,
+    useContractRequestStatusForProfile,
     redirectStore,
 } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
 
 import { useGetAiInsightsServicesContract } from '../learner-insights/learner-insights.helpers';
+import { RequestInsightStatusEnum } from './request-insights.helpers';
 import { person } from 'ionicons/icons';
 
 export const RequestInsightsFromUserModal: React.FC<{
@@ -30,7 +32,8 @@ export const RequestInsightsFromUserModal: React.FC<{
     contractUri: string;
     onSuccessCallback?: () => void;
     redirectToLink?: string;
-}> = ({ profile, contractUri, onSuccessCallback, redirectToLink }) => {
+    requestStatus?: 'pending' | 'accepted' | 'denied' | null;
+}> = ({ profile, contractUri, onSuccessCallback, redirectToLink, requestStatus }) => {
     const { presentToast } = useToast();
     const { closeModal, closeAllModals } = useModal();
     const history = useHistory();
@@ -38,12 +41,24 @@ export const RequestInsightsFromUserModal: React.FC<{
     const isLoggedIn = useIsLoggedIn();
 
     const isAuthenticated = Boolean(currentUser) && isLoggedIn;
+    const isPendingRequest = requestStatus === RequestInsightStatusEnum.pending;
+    const isAcceptedRequest = requestStatus === RequestInsightStatusEnum.accepted;
 
     const { mutateAsync: sendAiInsightsContractRequest, isPending } =
         useSendAiInsightsContractRequest();
 
     const handleSendRequest = async () => {
         const profileId = profile?.profileId ?? '';
+
+        if (isPendingRequest) {
+            presentToast('Insights request already pending.');
+            return;
+        }
+
+        if (isAcceptedRequest) {
+            presentToast('Insights request already accepted.');
+            return;
+        }
 
         if (!isAuthenticated) {
             redirectStore.set.authRedirect(redirectToLink || '/login');
@@ -67,6 +82,13 @@ export const RequestInsightsFromUserModal: React.FC<{
 
         onSuccessCallback?.();
     };
+
+    let requestButtonLabel = 'Login to Request';
+
+    if (isPending) requestButtonLabel = 'Sending...';
+    else if (isPendingRequest) requestButtonLabel = 'Request Pending';
+    else if (isAcceptedRequest) requestButtonLabel = 'Request Accepted';
+    else if (isAuthenticated) requestButtonLabel = 'Send Request';
 
     return (
         <div className="h-full w-full flex items-center justify-center">
@@ -121,15 +143,11 @@ export const RequestInsightsFromUserModal: React.FC<{
                         </button>
 
                         <button
-                            disabled={isPending}
+                            disabled={isPending || isPendingRequest || isAcceptedRequest}
                             onClick={handleSendRequest}
                             className="bg-indigo-500 py-[12px] rounded-[30px] font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] items-center justify-center"
                         >
-                            {isPending
-                                ? 'Sending...'
-                                : isAuthenticated
-                                ? 'Send Request'
-                                : 'Login to Request'}
+                            {requestButtonLabel}
                         </button>
 
                         <button
@@ -163,6 +181,13 @@ export const RequestInsightsFromUserModalWrapper: React.FC<{
         currentLCNUser?.did ?? '',
         isAuthenticated
     );
+    const { data: requestData, isLoading: requestLoading } = useContractRequestStatusForProfile(
+        undefined,
+        contractUri ?? '',
+        profileId
+    );
+
+    console.log('requestData', requestData);
 
     const onSuccessCallback = () => {
         // clear route params
@@ -171,7 +196,7 @@ export const RequestInsightsFromUserModalWrapper: React.FC<{
         history.replace({ search: queryString.stringify(allOtherSearchParams) });
     };
 
-    if (isLoading || (isAuthenticated && contractLoading)) {
+    if (isLoading || (isAuthenticated && contractLoading) || requestLoading) {
         return <RequestInsightsSkeletonLoader />;
     }
 
@@ -181,6 +206,7 @@ export const RequestInsightsFromUserModalWrapper: React.FC<{
             contractUri={contractUri ?? ''}
             onSuccessCallback={onSuccessCallback}
             redirectToLink={redirectToLink}
+            requestStatus={requestData?.status}
         />
     );
 };
