@@ -122,6 +122,32 @@ const { wallet: NavBarPassportIcon, launchPad: NavBarLaunchPadIcon } = NavBarIco
 const { passport: NavBarPassportIconFormal, launchPad: NavBarLaunchPadIconFormal } =
     NavBarFormalIcons;
 
+import {
+    VetpassAchievementsWithShape,
+    VetpassAiInsightsWithShape,
+    VetpassAiSessionsWithShape,
+    VetpassAssistanceWithShape,
+    VetpassBoostsWithShape,
+    VetpassExperiencesWithShape,
+    VetpassIDsWithShape,
+    VetpassPathwaysWithShape,
+    VetpassSkillsWithShape,
+    VetpassStudiesWithShape,
+    VetpassAchievementsIcon,
+    VetpassAiInsightsIcon,
+    VetpassAiSessionsIcon,
+    VetpassAssistanceIcon,
+    VetpassBoostsIcon,
+    VetpassPathwaysIcon,
+    VetpassExperiencesIcon,
+    VetpassIDsIcon,
+    VetpassPortfolioIcon,
+    VetpassSkillsIcon,
+    VetpassStudiesIcon,
+    VetpassPassportNavbar,
+    VetpassAppsNavbar,
+} from './vetpass';
+
 import FloatingBottle from '../../components/svgs/placeholders/FloatingBottle';
 import FloatingBottleFormal from '../../components/svgs/placeholders/formal/FloatingBottleFormal';
 import TelescopeIcon from '../../components/svgs/placeholders/TelescopeIcon';
@@ -312,7 +338,61 @@ export type PartialIconSetDef = {
     overrides: Partial<ThemeIconTable>;
 };
 
-export const PARTIAL_ICON_SETS: Record<string, PartialIconSetDef> = {};
+export const PARTIAL_ICON_SETS: Record<string, PartialIconSetDef> = {
+    vetpass: {
+        extends: 'formal',
+        overrides: {
+            [CredentialCategoryEnum.achievement]: {
+                Icon: VetpassAchievementsIcon,
+                IconWithShape: VetpassAchievementsWithShape,
+            },
+            [CredentialCategoryEnum.aiInsight]: {
+                Icon: VetpassAiInsightsIcon,
+                IconWithShape: VetpassAiInsightsWithShape,
+            },
+            [CredentialCategoryEnum.aiTopic]: {
+                Icon: VetpassAiSessionsIcon,
+                IconWithShape: VetpassAiSessionsWithShape,
+            },
+            [CredentialCategoryEnum.aiPathway]: {
+                Icon: VetpassPathwaysIcon,
+                IconWithShape: VetpassPathwaysWithShape,
+            },
+            [CredentialCategoryEnum.accommodation]: {
+                Icon: VetpassAssistanceIcon,
+                IconWithShape: VetpassAssistanceWithShape,
+            },
+            [CredentialCategoryEnum.socialBadge]: {
+                Icon: VetpassBoostsIcon,
+                IconWithShape: VetpassBoostsWithShape,
+            },
+            [CredentialCategoryEnum.workHistory]: {
+                Icon: VetpassExperiencesIcon,
+                IconWithShape: VetpassExperiencesWithShape,
+            },
+            [CredentialCategoryEnum.id]: {
+                Icon: VetpassIDsIcon,
+                IconWithShape: VetpassIDsWithShape,
+            },
+            [CredentialCategoryEnum.skill]: {
+                Icon: VetpassSkillsIcon,
+                IconWithShape: VetpassSkillsWithShape,
+            },
+            [CredentialCategoryEnum.learningHistory]: {
+                Icon: VetpassStudiesIcon,
+                IconWithShape: VetpassStudiesWithShape,
+            },
+            [CredentialCategoryEnum.accomplishment]: {
+                Icon: VetpassPortfolioIcon,
+            },
+
+            navbar: {
+                wallet: VetpassPassportNavbar,
+                launchPad: VetpassAppsNavbar,
+            },
+        },
+    },
+};
 
 /**
  * Resolve an icon set by name.

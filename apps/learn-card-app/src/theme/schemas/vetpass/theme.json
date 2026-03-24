@@ -1,7 +1,7 @@
 {
     "id": "vetpass",
     "displayName": "VetPass",
-    "iconSet": "formal",
+    "iconSet": "vetpass",
     "defaults": {
         "viewMode": "list"
     },
