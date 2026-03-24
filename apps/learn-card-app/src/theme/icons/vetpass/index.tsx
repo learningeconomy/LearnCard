@@ -46,10 +46,6 @@ import SvgAppsDefault from './menu-icons/Property_1_Apps_Default';
 import SvgAlertsActive from './menu-icons/Property_1_Alerts_Active';
 import SvgNotificationsDefault from './menu-icons/Property_1_Notifications_Default';
 
-// ─── Other icons ─────────────────────────────────────────────────────────────
-
-import SvgBlocks from './other-icons/Blocks_Streamline_Lucide_Line';
-import SvgResumeBuilder from './other-icons/Resume_Builder_Icon';
 
 // ─── Wrapper helpers ─────────────────────────────────────────────────────────
 
@@ -127,8 +123,3 @@ export const VetpassStudiesIcon = wrapIcon(SvgPageStudies);
 export const VetpassPassportNavbar = wrapNavbar(SvgPassportActive, SvgPassportDefault);
 export const VetpassAppsNavbar = wrapNavbar(SvgAppsActive, SvgAppsDefault);
 export const VetpassAlertsNavbar = wrapNavbar(SvgAlertsActive, SvgNotificationsDefault);
-
-// ─── Other / special icons ───────────────────────────────────────────────────
-
-export const VetpassBlocksIcon = wrapIcon(SvgBlocks);
-export const VetpassResumeBuilderIcon = wrapIcon(SvgResumeBuilder);

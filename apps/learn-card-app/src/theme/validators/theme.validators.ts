@@ -27,6 +27,7 @@ export const ThemeDefaultsSchema = z
         viewMode: z.nativeEnum(ViewMode).describe('View Modes for Credential Lists'),
         switcherIcon: z.string().describe('Theme Switcher Icon'),
         buildMyLCIcon: z.string().describe('Build My LearnCard Icon'),
+        resumeBuilderIcon: z.string().describe('Resume Builder Icon'),
     })
     .describe('Theme Defaults');
 export type ThemeDefaults = z.infer<typeof ThemeDefaultsSchema>;

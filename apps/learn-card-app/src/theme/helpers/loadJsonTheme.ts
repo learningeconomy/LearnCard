@@ -208,6 +208,7 @@ const buildTheme = (config: ThemeJsonConfig): Theme => {
     // Resolve image assets
     const switcherIcon = resolveAsset(config.id, './assets/switcher-icon.png');
     const buildMyLCIcon = resolveAsset(config.id, './assets/blocks-icon.png');
+    const resumeBuilderIcon = resolveAsset(config.id, './assets/resume-builder-icon.png');
 
     // Assemble styles
     const styles = config.styles ?? {};
@@ -280,6 +281,7 @@ const buildTheme = (config: ThemeJsonConfig): Theme => {
             viewMode,
             switcherIcon,
             buildMyLCIcon,
+            resumeBuilderIcon,
         },
         categories: DEFAULT_CATEGORIES,
         sideMenuRootLinks: DEFAULT_SIDE_MENU_ROOT_LINKS,

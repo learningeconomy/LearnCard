@@ -44,27 +44,52 @@ interface TenantRegistry {
  * If the file cannot be read (e.g. local dev without the file), we fall back
  * to a minimal default registry.
  */
+// Debug info collected at init time
+const _debug: { cwd: string; triedPaths: string[]; errors: string[]; foundPath: string | null } = {
+    cwd: '',
+    triedPaths: [],
+    errors: [],
+    foundPath: null,
+};
+
 const loadRegistry = (): TenantRegistry => {
     try {
-        // Netlify edge functions resolve relative paths from the site root.
-        // Try multiple potential locations to be resilient to deploy layouts.
-        const paths = [
-            './apps/learn-card-app/environments/tenant-registry.json',
-            './environments/tenant-registry.json',
-            '../environments/tenant-registry.json',
-        ];
+        _debug.cwd = Deno.cwd();
+    } catch (e) {
+        _debug.cwd = `error: ${e}`;
+    }
 
-        for (const p of paths) {
-            try {
-                const text = Deno.readTextFileSync(p);
+    // Also try to list what's in the cwd to understand the deploy layout
+    try {
+        const entries: string[] = [];
 
-                return JSON.parse(text) as TenantRegistry;
-            } catch {
-                // Try next path
-            }
+        for (const entry of Deno.readDirSync('.')) {
+            entries.push(`${entry.isDirectory ? 'd' : 'f'}:${entry.name}`);
         }
-    } catch {
-        // Fallthrough to default
+
+        _debug.errors.push(`cwd-ls: ${entries.join(', ')}`);
+    } catch (e) {
+        _debug.errors.push(`cwd-ls-error: ${e}`);
+    }
+
+    const paths = [
+        './apps/learn-card-app/environments/tenant-registry.json',
+        './environments/tenant-registry.json',
+        '../environments/tenant-registry.json',
+        '/var/task/apps/learn-card-app/environments/tenant-registry.json',
+    ];
+
+    _debug.triedPaths = paths;
+
+    for (const p of paths) {
+        try {
+            const text = Deno.readTextFileSync(p);
+            _debug.foundPath = p;
+
+            return JSON.parse(text) as TenantRegistry;
+        } catch (e) {
+            _debug.errors.push(`${p}: ${e instanceof Error ? e.message : String(e)}`);
+        }
     }
 
     // Fallback: minimal LearnCard-only registry
@@ -93,6 +118,11 @@ export default async (request: Request, _context: Context) => {
         tenantId: tenant.tenantId,
         domain: tenant.domain,
         ...(tenant.configOverrides ?? {}),
+        _debug: {
+            hostname,
+            registryHostnames: Object.keys(registry.hostnames),
+            ..._debug,
+        },
     };
 
     return new Response(JSON.stringify(responseBody), {

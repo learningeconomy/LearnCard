@@ -146,14 +146,21 @@ import {
     VetpassStudiesIcon,
     VetpassPassportNavbar,
     VetpassAppsNavbar,
-} from './vetpass';
+} from './vetpass/index';
 
 import FloatingBottle from '../../components/svgs/placeholders/FloatingBottle';
 import FloatingBottleFormal from '../../components/svgs/placeholders/formal/FloatingBottleFormal';
 import TelescopeIcon from '../../components/svgs/placeholders/TelescopeIcon';
 import TelescopeFormal from '../../components/svgs/placeholders/formal/TelescopeFormal';
 
-import type { ThemeIconTable, CategoryIcons } from './index';
+import type {
+    ThemeIconTable,
+    CategoryIcons,
+    LaunchPadIcons,
+    SideMenuIcons,
+    NavbarIcons,
+    PlaceholdersIcons,
+} from './index';
 
 // ─── Icon Sets ───────────────────────────────────────────────────────────
 
@@ -333,9 +340,22 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
  * };
  * ```
  */
+/**
+ * Overrides allow partial section objects (navbar, sideMenu, etc.)
+ * since `mergeIconTables` spread-merges them on top of the parent.
+ */
+type PartialIconSetOverrides = Partial<
+    Record<CredentialCategoryEnum, CategoryIcons>
+> & {
+    launchPad?: Partial<LaunchPadIcons>;
+    sideMenu?: Partial<SideMenuIcons>;
+    navbar?: Partial<NavbarIcons>;
+    placeholders?: Partial<PlaceholdersIcons>;
+};
+
 export type PartialIconSetDef = {
     extends: string;
-    overrides: Partial<ThemeIconTable>;
+    overrides: PartialIconSetOverrides;
 };
 
 export const PARTIAL_ICON_SETS: Record<string, PartialIconSetDef> = {
@@ -435,7 +455,7 @@ export const resolveIconSet = (
  */
 const mergeIconTables = (
     base: ThemeIconTable,
-    overrides: Partial<ThemeIconTable>,
+    overrides: PartialIconSetOverrides,
 ): ThemeIconTable => {
     const result: Record<string, unknown> = { ...base };
 
