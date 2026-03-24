@@ -18,6 +18,7 @@ import { useTheme } from '../../theme/hooks/useTheme';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { LoginContent } from './LoginPage';
+import LoginWelcomePanel from './LoginWelcomePanel';
 
 const ClaimLoginPage: React.FC<{
     alternateBgComponent?: React.ReactNode;
@@ -47,7 +48,7 @@ const ClaimLoginPage: React.FC<{
                             <div className="w-full h-full p-0 m-0 flex items-center justify-center overflow-hidden">
                                 {alternateBgComponent ? (
                                     alternateBgComponent
-                                ) : (
+                                ) : desktopLoginBg ? (
                                     <img
                                         src={desktopLoginBg}
                                         alt=""
@@ -55,6 +56,8 @@ const ClaimLoginPage: React.FC<{
                                         className="w-full h-full object-cover"
                                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                     />
+                                ) : (
+                                    <LoginWelcomePanel />
                                 )}
                             </div>
                         </>

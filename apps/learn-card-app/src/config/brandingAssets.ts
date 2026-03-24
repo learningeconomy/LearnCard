@@ -16,8 +16,8 @@ import type { BrandingAssets } from 'learn-card-base/config/TenantConfigProvider
 import DefaultTextLogo from '../assets/images/learncard-text-logo.svg';
 import DefaultBrandMark from '../assets/images/lca-brandmark.png';
 import DefaultAppIcon from '../assets/images/lca-icon-v2.png';
-import DefaultDesktopLoginBg from '../assets/images/desktop-login-bg.png';
-import DefaultDesktopLoginBgAlt from '../assets/images/desktop-login-bg-alt.png';
+// DefaultDesktopLoginBg and DefaultDesktopLoginBgAlt removed —
+// tenants without custom desktop bg images now show LoginWelcomePanel instead.
 
 export interface ResolvedBrandingAssets {
     /** Wordmark (text only) for dark backgrounds — white/light text. */
@@ -35,11 +35,11 @@ export interface ResolvedBrandingAssets {
     /** Small app icon (icon + bg color in rounded square). */
     appIcon: string;
 
-    /** Desktop login background. */
-    desktopLoginBg: string;
+    /** Desktop login background. Undefined when tenant doesn't provide one. */
+    desktopLoginBg: string | undefined;
 
-    /** Alternate desktop login background. */
-    desktopLoginBgAlt: string;
+    /** Alternate desktop login background. Undefined when tenant doesn't provide one. */
+    desktopLoginBgAlt: string | undefined;
 
     /** Full lockup (icon + wordmark) for light backgrounds. Undefined when not configured. */
     fullLogo: string | undefined;
@@ -58,8 +58,8 @@ export const resolveAssets = (assets: BrandingAssets): ResolvedBrandingAssets =>
     brandMark: assets.brandMarkUrl ?? DefaultBrandMark,
     brandMarkLight: assets.brandMarkLightUrl ?? assets.brandMarkUrl ?? DefaultBrandMark,
     appIcon: assets.appIconUrl ?? DefaultAppIcon,
-    desktopLoginBg: assets.desktopLoginBgUrl ?? DefaultDesktopLoginBg,
-    desktopLoginBgAlt: assets.desktopLoginBgAltUrl ?? DefaultDesktopLoginBgAlt,
+    desktopLoginBg: assets.desktopLoginBgUrl,
+    desktopLoginBgAlt: assets.desktopLoginBgAltUrl,
     fullLogo: assets.fullLogoUrl ?? assets.logoUrl,
     fullLogoDark: assets.fullLogoDarkUrl ?? assets.fullLogoUrl ?? assets.logoUrl,
 });
