@@ -347,10 +347,13 @@ if (existsSync(assetsDir)) {
 //   environments/<tenant>/assets/branding/
 //
 // Supported filenames (any common image extension):
-//   text-logo.*      → branding.textLogoUrl
-//   text-logo-dark.* → branding.textLogoDarkUrl
-//   brand-mark.*     → branding.brandMarkUrl
-//   app-icon.*       → branding.appIconUrl
+//   text-logo.*            → branding.textLogoUrl        (wordmark, dark bg)
+//   text-logo-dark.*       → branding.textLogoDarkUrl    (wordmark, light bg)
+//   brand-mark.*           → branding.brandMarkUrl       (icon, light bg)
+//   brand-mark-light.*     → branding.brandMarkLightUrl  (icon, dark bg)
+//   app-icon.*             → branding.appIconUrl
+//   full-logo.*            → branding.fullLogoUrl        (lockup, light bg)
+//   full-logo-dark.*       → branding.fullLogoDarkUrl    (lockup, dark bg)
 //   desktop-login-bg.*     → branding.desktopLoginBgUrl
 //   desktop-login-bg-alt.* → branding.desktopLoginBgAltUrl
 //
@@ -359,10 +362,13 @@ if (existsSync(assetsDir)) {
 // config already specifies an explicit URL for that field.
 
 const BRANDING_FILE_MAP: Array<{ prefix: string; configKey: keyof typeof validatedConfig.branding }> = [
-    { prefix: 'text-logo', configKey: 'textLogoUrl' },
     { prefix: 'text-logo-dark', configKey: 'textLogoDarkUrl' },
+    { prefix: 'text-logo', configKey: 'textLogoUrl' },
+    { prefix: 'brand-mark-light', configKey: 'brandMarkLightUrl' },
     { prefix: 'brand-mark', configKey: 'brandMarkUrl' },
     { prefix: 'app-icon', configKey: 'appIconUrl' },
+    { prefix: 'full-logo-dark', configKey: 'fullLogoDarkUrl' },
+    { prefix: 'full-logo', configKey: 'fullLogoUrl' },
     { prefix: 'desktop-login-bg-alt', configKey: 'desktopLoginBgAltUrl' },
     { prefix: 'desktop-login-bg', configKey: 'desktopLoginBgUrl' },
 ];
