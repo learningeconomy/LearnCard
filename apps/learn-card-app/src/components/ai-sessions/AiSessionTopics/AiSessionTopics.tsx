@@ -1,6 +1,5 @@
 import React, { useMemo, useRef, useCallback } from 'react';
 
-import { IonSpinner } from '@ionic/react';
 import AiSessionTopicItem from './AiSessionTopicItem';
 import AiSessionTopicItemSkeleton from './AiSessionTopicItemSkeleton';
 import AiSessionsTabs from '../AiSessionTopicsTabs/AiSessionTopicsTabs';
@@ -137,6 +136,12 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
     const isLoading = credentialsLoading || topicsLoading;
     const isFetching = credentialsFetching || topicsFetching;
 
+    const stableTopicsRef = useRef(sortedTopics);
+    if (!topicsLoading || stableTopicsRef.current.length === 0) {
+        stableTopicsRef.current = sortedTopics;
+    }
+    const displayTopics = stableTopicsRef.current;
+
     const noTopics = !isFetching && !isLoading && !aiTopics?.length;
 
     return (
@@ -152,7 +157,7 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
                 setSortBy={setSortBy}
             />
 
-            {isLoading && (
+            {credentialsLoading && (
                 <section className="h-full w-full relative scrollbar-hide">
                     <ul className="ion-padding pt-0 ">
                         {Array.from({ length: 8 }).map((_, index) => (
@@ -169,9 +174,9 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
             >
                 <ul className="ion-padding pt-1 pb-[200px] mt-[10px] mb-[20px]">
                     {isMobile && !isFetching && !isLoading && <ExperimentalFeatureBox />}
-                    {searchInput.length > 0 && sortedTopics ? (
+                    {searchInput.length > 0 && displayTopics ? (
                         <>
-                            {sortedTopics.map((t, index) => {
+                            {displayTopics.map((t, index) => {
                                 return (
                                     <AiSessionTopicItem
                                         key={index}
@@ -182,7 +187,7 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
                                     />
                                 );
                             })}
-                            {sortedTopics.length === 0 && (
+                            {displayTopics.length === 0 && (
                                 <div className="w-full flex items-center justify-center z-10 mt-4">
                                     <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
                                         <p className="text-grayscale-800 text-base font-normal font-notoSans">
@@ -195,7 +200,7 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
                         </>
                     ) : (
                         <>
-                            {sortedTopics.map((t, index) => {
+                            {displayTopics.map((t, index) => {
                                 const topicSessionsCount = t.sessions?.length || 0;
 
                                 return (
@@ -219,14 +224,12 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
                             </div>
                         </div>
                     )}
-                    {isFetching && !isLoading && !noTopics && (
-                        <div className="w-full flex items-center justify-center">
-                            <IonSpinner
-                                name="crescent"
-                                color="grayscale-900"
-                                className="scale-[2] mb-8 mt-6"
-                            />
-                        </div>
+                    {isFetching && !credentialsLoading && !noTopics && (
+                        <>
+                            {Array.from({ length: 8 }).map((_, index) => (
+                                <AiSessionTopicItemSkeleton key={`pagination-skeleton-${index}`} />
+                            ))}
+                        </>
                     )}
                 </ul>
             </section>

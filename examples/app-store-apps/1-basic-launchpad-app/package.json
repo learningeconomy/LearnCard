@@ -1,7 +1,7 @@
 {
   "name": "@learncard/app-store-demo-basic-launchpad",
   "type": "module",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "private": true,
   "scripts": {
     "dev": "astro dev",
@@ -11,13 +11,13 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/netlify": "5.5.4",
+    "@astrojs/netlify": "7.0.3",
     "@learncard/init": "workspace:*",
     "@learncard/partner-connect": "workspace:*",
-    "astro": "4.16.19"
+    "astro": "6.0.6"
   },
   "devDependencies": {
-    "@astrojs/tailwind": "^5.1.0",
+    "@astrojs/tailwind": "^6.0.2",
     "prettier-plugin-astro": "^0.5.4",
     "tailwindcss": "^3.4.0"
   }

@@ -48,14 +48,20 @@ export const currentUserStore = createStore('currentUserStore')<{
         currentUserIsLoggedIn: () => !!get.currentUser(),
         parentUserProfileId: () => get.parentUserDid()?.split(':').at(-1),
     }))
-    .extendActions(set => ({
+    .extendActions((set, get) => ({
         updateCurrentUserNameAndImage: (name: string, profileImage: string) => {
-            set.state(state => {
-                if (state.currentUser) {
-                    state.currentUser.name = name;
-                    state.currentUser.profileImage = profileImage;
+            const current = get.currentUser();
+            if (current) {
+                // Only update if values actually changed to prevent infinite loops
+                if (current.name !== name || current.profileImage !== profileImage) {
+                    // Use direct setter to ensure Zustood subscriptions trigger
+                    set.currentUser({
+                        ...current,
+                        name,
+                        profileImage,
+                    });
                 }
-            });
+            }
         },
     }));
 
