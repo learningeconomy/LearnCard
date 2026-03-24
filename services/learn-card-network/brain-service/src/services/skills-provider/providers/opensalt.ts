@@ -172,20 +172,28 @@ export function createOpenSaltProvider(options?: Options): SkillsProvider {
             parentIds.add(parentId);
         }
 
+        const parentsOfLeaves = new Set<string>();
+        for (const [childId, parentId] of parentByChildId.entries()) {
+            const childIsLeaf = !parentIds.has(childId);
+            if (childIsLeaf) {
+                parentsOfLeaves.add(parentId);
+            }
+        }
+
         const skills: Skill[] = [];
         for (const item of packageData.CFItems || []) {
             const statement = toItemStatement(item);
             if (!item.identifier || !statement) continue;
 
             const isLeaf = !parentIds.has(item.identifier);
+            const isParentOfLeaf = parentsOfLeaves.has(item.identifier);
 
             skills.push({
                 id: item.identifier,
                 statement,
                 description: toItemDescription(item),
                 code: item.humanCodingScheme ?? item.listEnumeration,
-                // type: toType(item.CFItemType),
-                type: isLeaf ? 'competency' : 'container',
+                type: isLeaf || isParentOfLeaf ? 'competency' : 'container', // bottom two levels are competencies
                 status: 'active',
                 parentId: parentByChildId.get(item.identifier) ?? null,
             });
