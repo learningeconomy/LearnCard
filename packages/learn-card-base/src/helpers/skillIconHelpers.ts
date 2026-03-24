@@ -50,19 +50,38 @@ export const collectSkillsNeedingIcons = (nodes?: SkillTreeNode[]): SkillIconInf
     return skills;
 };
 
-const ICON_BATCH_SIZE = 50;
+const ICON_BATCH_CHARACTER_LIMIT = 10000;
 
 /**
- * Generates icons for skill names in batches (API limit is 50 names per request)
+ * Generates icons for skill names in batches (API limit is ~10000 characters per request)
  */
 const generateIconsInBatches = async (
     names: string[],
     generateSkillIcons: (names: string[]) => Promise<Record<string, string>>
 ): Promise<Record<string, string>> => {
     const iconMap: Record<string, string> = {};
+    let i = 0;
 
-    for (let i = 0; i < names.length; i += ICON_BATCH_SIZE) {
-        const batch = names.slice(i, i + ICON_BATCH_SIZE);
+    while (i < names.length) {
+        const batch: string[] = [];
+        let charactersInBatch = 0;
+
+        while (
+            i < names.length &&
+            charactersInBatch + names[i].length <= ICON_BATCH_CHARACTER_LIMIT
+        ) {
+            charactersInBatch += names[i].length;
+            batch.push(names[i]);
+            i++;
+        }
+
+        // Handle case where a single name exceeds the limit
+        if (batch.length === 0 && i < names.length) {
+            batch.push(names[i]);
+            charactersInBatch = names[i].length;
+            i++;
+        }
+
         const batchIcons = await generateSkillIcons(batch);
         Object.assign(iconMap, batchIcons);
     }
