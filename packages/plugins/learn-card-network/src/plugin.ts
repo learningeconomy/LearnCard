@@ -104,19 +104,19 @@ export async function getLearnCardNetworkPlugin(
     const client = apiToken
         ? await getApiTokenClient(url, apiToken, guardianApprovalGetter)
         : await getClient(
-            url,
-            async challenge => {
-                const jwt = await learnCard.invoke.getDidAuthVp({
-                    proofFormat: 'jwt',
-                    challenge,
-                });
+              url,
+              async challenge => {
+                  const jwt = await learnCard.invoke.getDidAuthVp({
+                      proofFormat: 'jwt',
+                      challenge,
+                  });
 
-                if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+                  if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-                return jwt;
-            },
-            guardianApprovalGetter
-        );
+                  return jwt;
+              },
+              guardianApprovalGetter
+          );
 
     let userData: LCNProfile | undefined;
 
@@ -177,6 +177,38 @@ export async function getLearnCardNetworkPlugin(
             );
             return _learnCard.invoke.resolveFromLCN(boostUri);
         }
+    };
+
+    const getInboxEndpointForDid = async (
+        _learnCard: any,
+        recipientDid: string
+    ): Promise<string> => {
+        const serviceUrl = new URL(url);
+        const serviceDomain = `${serviceUrl.hostname}${
+            serviceUrl.port ? `%3A${serviceUrl.port}` : ''
+        }`;
+        const recipientParts = recipientDid.split(':');
+        const recipientDomain = recipientParts[2];
+
+        if (recipientDomain === serviceDomain) {
+            return `${serviceUrl.origin}/api/inbox/receive`;
+        }
+
+        const didDoc = await _learnCard.invoke.resolveDid(recipientDid);
+        const inboxService = didDoc.service?.find(
+            (service: { type: string | string[]; serviceEndpoint: string }) => {
+                const type = Array.isArray(service.type) ? service.type[0] : service.type;
+                return type === 'UniversalInboxService' || type === 'LearnCardInboxService';
+            }
+        );
+
+        if (!inboxService?.serviceEndpoint) {
+            throw new Error(
+                `Recipient DID ${recipientDid} does not have a UniversalInboxService endpoint in its DID document`
+            );
+        }
+
+        return inboxService.serviceEndpoint;
     };
 
     return {
@@ -364,7 +396,7 @@ export async function getLearnCardNetworkPlugin(
             getProfile: async (_learnCard, profileId) => {
                 try {
                     await ensureUser();
-                } catch { }
+                } catch {}
 
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
@@ -504,74 +536,56 @@ export async function getLearnCardNetworkPlugin(
             sendCredential: async (_learnCard, profileId, vc, metadataOrEncrypt, encrypt) => {
                 await ensureUser();
 
-                // Check if profileId is an external DID (federation case)
                 if (profileId.startsWith('did:web:')) {
-                    const didDoc = await _learnCard.invoke.resolveDid(profileId);
+                    const inboxEndpoint = await getInboxEndpointForDid(_learnCard, profileId);
 
-                    const inboxService = didDoc.service?.find(s => {
-                        const type = Array.isArray(s.type) ? s.type[0] : s.type;
-                        return type === 'UniversalInboxService' || type === 'LearnCardInboxService';
-                    });
-
-                    const brainService = didDoc.service?.find(s => {
-                        const type = Array.isArray(s.type) ? s.type[0] : s.type;
-                        return type === 'LearnCardBrainService';
-                    });
-
-                    const serviceEndpoint =
-                        inboxService?.serviceEndpoint || brainService?.serviceEndpoint;
-
-                    if (serviceEndpoint) {
-                        // Handle metadata parameter
-                        let metadata: Record<string, unknown> | undefined;
-                        if (typeof metadataOrEncrypt === 'object') {
-                            metadata = metadataOrEncrypt;
-                        }
-
-                        const myProfile = await client.profile.getProfile.query();
-                        const issuerDid = myProfile?.did || (await client.utilities.getDid.query());
-                        const issuerDisplayName = myProfile?.displayName || 'Unknown Issuer';
-                        const signedCredential = await _learnCard.invoke.issueCredential(vc);
-                        const didAuthJwt = await _learnCard.invoke.getDidAuthVp({
-                            proofFormat: 'jwt',
-                            challenge: `inbox-federation-${crypto.randomUUID()}`,
-                        });
-
-                        let receiveUrl =
-                            inboxService?.serviceEndpoint || `${serviceEndpoint}/api/inbox/receive`;
-
-                        // Use HTTP for localhost to avoid SSL errors
-                        if (receiveUrl.includes('localhost')) {
-                            receiveUrl = receiveUrl.replace('https://', 'http://');
-                        }
-
-                        const response = await fetch(receiveUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${didAuthJwt}`,
-                            },
-                            body: JSON.stringify({
-                                recipientDid: profileId,
-                                credential: signedCredential,
-                                issuerDid,
-                                issuerDisplayName,
-                                configuration: {
-                                    ...metadata,
-                                    federatedFrom: issuerDid,
-                                },
-                            }),
-                            signal: AbortSignal.timeout(30000), // 30 second timeout
-                        });
-
-                        if (!response.ok) {
-                            const error = await response.text();
-                            throw new Error(`Federation failed: ${error}`);
-                        }
-
-                        const result = await response.json();
-                        return result.issuanceId;
+                    // Handle metadata parameter
+                    let metadata: Record<string, unknown> | undefined;
+                    if (typeof metadataOrEncrypt === 'object') {
+                        metadata = metadataOrEncrypt;
                     }
+
+                    const myProfile = await client.profile.getProfile.query();
+                    const issuerDid = myProfile?.did || (await client.utilities.getDid.query());
+                    const issuerDisplayName = myProfile?.displayName || 'Unknown Issuer';
+                    const signedCredential = await _learnCard.invoke.issueCredential(vc);
+                    const didAuthJwt = await _learnCard.invoke.getDidAuthVp({
+                        proofFormat: 'jwt',
+                        challenge: `inbox-federation-${crypto.randomUUID()}`,
+                    });
+
+                    let receiveUrl = inboxEndpoint;
+
+                    if (receiveUrl.includes('localhost')) {
+                        receiveUrl = receiveUrl.replace('https://', 'http://');
+                    }
+
+                    const response = await fetch(receiveUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${didAuthJwt}`,
+                        },
+                        body: JSON.stringify({
+                            recipientDid: profileId,
+                            credential: signedCredential,
+                            issuerDid,
+                            issuerDisplayName,
+                            configuration: {
+                                ...metadata,
+                                federatedFrom: issuerDid,
+                            },
+                        }),
+                        signal: AbortSignal.timeout(30000),
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(`Federation failed: ${error}`);
+                    }
+
+                    const result = await response.json();
+                    return result.issuanceId;
                 }
 
                 // Handle backward compatibility: if metadataOrEncrypt is a boolean, it's the encrypt flag
@@ -1052,9 +1066,10 @@ export async function getLearnCardNetworkPlugin(
                         boost = JSON.parse(rendered);
                     } catch (error) {
                         throw new Error(
-                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'
+                            `Template substitution failed: ${
+                                error instanceof Error ? error.message : 'Unknown error'
                             }. ` +
-                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                                `Please check your templateData variables and ensure the rendered output is valid JSON.`
                         );
                     }
                 }
@@ -1151,9 +1166,69 @@ export async function getLearnCardNetworkPlugin(
                     const isDid = recipient.startsWith('did:');
                     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient);
                     const isPhone = /^\+?[\d\s-]{10,}$/.test(recipient.replace(/[\s-]/g, ''));
+                    const serviceUrl = new URL(url);
+                    const serviceDomain = `${serviceUrl.hostname}${
+                        serviceUrl.port ? `%3A${serviceUrl.port}` : ''
+                    }`;
+                    const recipientDomain = recipient.startsWith('did:web:')
+                        ? recipient.split(':')[2]
+                        : undefined;
+                    const isRemoteDidWebRecipient =
+                        recipient.startsWith('did:web:') && recipientDomain !== serviceDomain;
 
-                    // For DID/profileId recipients with local signing capability, sign client-side
-                    // This optimization reduces round trips by signing locally before sending
+                    if (isRemoteDidWebRecipient && input.templateUri) {
+                        const boostRecord = await _learnCard.invoke.getBoost(input.templateUri);
+                        let boost = boostRecord.boost;
+
+                        if (input.templateData && Object.keys(input.templateData).length > 0) {
+                            const boostString = JSON.stringify(boost);
+                            const rendered = renderTemplateJson(boostString, input.templateData);
+                            boost = JSON.parse(rendered);
+                        }
+
+                        if (isVC2Format(boost)) {
+                            boost.validFrom = new Date().toISOString();
+                        } else {
+                            boost.issuanceDate = new Date().toISOString();
+                        }
+
+                        boost.issuer = _learnCard.id.did();
+
+                        if (Array.isArray(boost.credentialSubject)) {
+                            boost.credentialSubject = boost.credentialSubject.map(subject => ({
+                                ...subject,
+                                id: recipient,
+                            }));
+                        } else {
+                            boost.credentialSubject = {
+                                ...boost.credentialSubject,
+                                id: recipient,
+                            };
+                        }
+
+                        if (boost.type?.includes('BoostCredential')) {
+                            boost.boostId = input.templateUri;
+                        }
+
+                        const signedCredential = await _learnCard.invoke.issueCredential(boost);
+                        const credentialUri = await _learnCard.invoke.sendCredential(
+                            recipient,
+                            signedCredential,
+                            {
+                                boostUri: input.templateUri,
+                                templateData: input.templateData,
+                                integrationId: input.integrationId,
+                            }
+                        );
+
+                        return {
+                            type: 'boost' as const,
+                            credentialUri,
+                            uri: input.templateUri,
+                            activityId: '',
+                        };
+                    }
+
                     const canIssueLocally = 'issueCredential' in _learnCard.invoke;
                     const isDirectRecipient = isDid || (!isEmail && !isPhone);
 
@@ -1190,7 +1265,8 @@ export async function getLearnCardNetworkPlugin(
                                     boost = JSON.parse(rendered);
                                 } catch (error) {
                                     throw new Error(
-                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'
+                                        `Failed to apply template data: ${
+                                            error instanceof Error ? error.message : 'Unknown error'
                                         }`
                                     );
                                 }
@@ -1220,6 +1296,25 @@ export async function getLearnCardNetworkPlugin(
                                 boost.boostId = input.templateUri;
 
                             const signedCredential = await _learnCard.invoke.issueCredential(boost);
+
+                            if (isDid && recipient.startsWith('did:web:')) {
+                                const credentialUri = await _learnCard.invoke.sendCredential(
+                                    recipient,
+                                    signedCredential,
+                                    {
+                                        boostUri: input.templateUri,
+                                        templateData: input.templateData,
+                                        integrationId: input.integrationId,
+                                    }
+                                );
+
+                                return {
+                                    type: 'boost' as const,
+                                    credentialUri,
+                                    uri: input.templateUri,
+                                    activityId: '',
+                                };
+                            }
 
                             return client.boost.send.mutate({
                                 ...input,

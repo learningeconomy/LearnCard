@@ -5,7 +5,9 @@
     "scripts": {
         "test": "echo 'Skipping Federation E2E tests in CI. Run test:federation:e2e if you want to run these!'",
         "test:federation:e2e": "vitest",
+        "test:federation:e2e:no-docker": "E2E_MANAGE_DOCKER=false vitest",
         "test:federation:run": "vitest run",
+        "test:federation:run:no-docker": "E2E_MANAGE_DOCKER=false vitest run",
         "logs": "docker compose logs -f"
     },
     "dependencies": {

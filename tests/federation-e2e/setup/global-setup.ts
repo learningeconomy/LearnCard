@@ -35,7 +35,7 @@ const healthCheckBrainB = async (): Promise<boolean> => {
     }
 };
 
-const MANAGE_DOCKER = process.env.E2E_MANAGE_DOCKER !== 'false';
+const MANAGE_DOCKER = process.env.E2E_MANAGE_DOCKER === 'true';
 
 export async function setup() {
     let start = performance.now();

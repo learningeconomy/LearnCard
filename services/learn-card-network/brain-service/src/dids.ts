@@ -147,16 +147,11 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         let finalDoc = { ...replacedDoc, controller: profile.did };
 
-        // Add brain-service service endpoint for federation
+        // Add UniversalInboxService endpoint for federation
         const protocol = domain.includes('localhost') ? 'http://' : 'https://';
         const baseUrl = `${protocol}${domain.replace(/%3A/g, ':')}`;
         finalDoc.service = [
             ...(finalDoc.service || []),
-            {
-                id: `${did}#brain-service`,
-                type: 'LearnCardBrainService',
-                serviceEndpoint: baseUrl,
-            },
             {
                 id: `${did}#universal-inbox`,
                 type: 'UniversalInboxService',

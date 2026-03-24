@@ -2,23 +2,20 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { t, openRoute } from '@routes';
-import { VCValidator, JWEValidator, LCNNotificationTypeEnumValidator } from '@learncard/types';
-import { isServiceTrusted, getTrustedServices } from '@helpers/federation.helpers';
-import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
-import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { VCValidator, JWEValidator } from '@learncard/types';
 import {
-    createFederatedInboxCredential,
-    getFederatedInboxCredentialById,
-    updateFederatedInboxCredentialStatus,
-} from '@accesslayer/federated-inbox-credential/create';
-import { getFederatedInboxCredentialsForProfile } from '@accesslayer/federated-inbox-credential/read';
+    isServiceTrusted,
+    getTrustedServices,
+    getServerDidWebDID,
+    getServerDidFromUserDid,
+} from '@helpers/federation.helpers';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getProfileIdFromDid } from '@helpers/did.helpers';
 
+import { getOrCreateFederatedProfile } from '@helpers/profile.helpers';
+import { sendCredential } from '@helpers/credential.helpers';
+
 export const federationRouter = t.router({
-    /**
-     * Receive a credential from a federated LearnCard Network instance
-     * This endpoint is called by remote brain-services to deliver credentials to local users
-     */
     receive: openRoute
         .meta({
             openapi: {
@@ -55,7 +52,6 @@ export const federationRouter = t.router({
         .mutation(async ({ input, ctx }) => {
             const { recipientDid, credential, issuerDid, issuerDisplayName, configuration } = input;
 
-            // Verify sender is authenticated via DID Auth
             if (!ctx.user?.did) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
@@ -65,7 +61,6 @@ export const federationRouter = t.router({
 
             const senderDid = ctx.user.did;
 
-            // Verify the sender is trusted
             const isTrusted = await isServiceTrusted(senderDid, ctx.domain);
             if (!isTrusted) {
                 throw new TRPCError({
@@ -74,7 +69,6 @@ export const federationRouter = t.router({
                 });
             }
 
-            // Resolve recipient profile locally
             const profileId = getProfileIdFromDid(recipientDid);
             if (!profileId) {
                 throw new TRPCError({
@@ -85,149 +79,61 @@ export const federationRouter = t.router({
 
             const recipientProfile = await getProfileByProfileId(profileId);
 
-            // Create inbox credential record
-            const inboxCredential = await createFederatedInboxCredential({
-                credential,
-                recipientProfileId: profileId,
-                senderServiceDid: senderDid,
-                issuerDid,
-                issuerDisplayName,
-                metadata: configuration,
-                status: recipientProfile ? 'PENDING_ACCEPTANCE' : 'PENDING_REGISTRATION',
-            });
+            const senderServerDid = getServerDidFromUserDid(senderDid);
+            const localServerDid = getServerDidWebDID(ctx.domain);
+            const isLocalSender = senderServerDid === localServerDid;
 
-            if (recipientProfile) {
-                // Send notification to recipient
-                await addNotificationToQueue({
-                    type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
-                    to: recipientProfile,
-                    from: { did: issuerDid, displayName: issuerDisplayName, profileId: '' },
-                    message: {
-                        title: 'Credential Received',
-                        body: `${issuerDisplayName} has sent you a credential`,
-                    },
-                    data: {
-                        inboxCredentialId: inboxCredential.id,
-                        federatedFrom: configuration?.federatedFrom,
-                    },
+            if (isLocalSender && recipientProfile) {
+                const federatedSender = await getOrCreateFederatedProfile(
+                    issuerDid,
+                    senderDid,
+                    issuerDisplayName
+                );
+
+                const credentialUri = await sendCredential(
+                    federatedSender,
+                    recipientProfile,
+                    credential,
+                    ctx.domain,
+                    configuration
+                );
+
+                return {
+                    issuanceId: credentialUri,
+                    claimUrl: undefined,
+                    status: 'PENDING_ACCEPTANCE',
+                };
+            }
+
+            if (!recipientProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Recipient not found on this service',
                 });
             }
 
-            return {
-                issuanceId: inboxCredential.id,
-                claimUrl: undefined,
-                status: recipientProfile ? 'PENDING_ACCEPTANCE' : 'PENDING_REGISTRATION',
-            };
-        }),
-
-    getMyFederatedCredentials: openRoute
-        .meta({
-            openapi: {
-                protect: true,
-                method: 'POST',
-                path: '/inbox/federated',
-                tags: ['Federation', 'Inbox'],
-                summary: 'Get federated inbox credentials for the authenticated user',
-                description: 'Retrieves credentials received from external brain-services',
-            },
-            requiredScope: 'inbox:read',
-        })
-        .input(
-            z.object({
-                limit: z.number().int().min(1).max(100).default(25),
-                cursor: z.string().optional(),
-            })
-        )
-        .output(
-            z.object({
-                hasMore: z.boolean(),
-                records: z.array(
-                    z.object({
-                        id: z.string(),
-                        credential: z.unknown(),
-                        senderServiceDid: z.string(),
-                        issuerDid: z.string().optional(),
-                        issuerDisplayName: z.string().optional(),
-                        createdAt: z.string(),
-                        status: z.enum([
-                            'PENDING_ACCEPTANCE',
-                            'PENDING_REGISTRATION',
-                            'ACCEPTED',
-                            'REJECTED',
-                        ]),
-                    })
-                ),
-            })
-        )
-        .query(async ({ ctx, input }) => {
-            if (!ctx.user?.did) {
-                throw new TRPCError({ code: 'UNAUTHORIZED' });
-            }
-
-            const profile = await getProfileByDid(ctx.user.did);
-            if (!profile) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
-            }
-
-            const { limit, cursor } = input;
-            const results = await getFederatedInboxCredentialsForProfile(profile.profileId, {
-                limit: limit + 1,
-                cursor,
-            });
-
-            const records = results.slice(0, limit);
-            const hasMore = results.length > limit;
-
-            return {
-                hasMore,
-                records: records.map(r => ({
-                    id: r.id,
-                    credential: r.credential,
-                    senderServiceDid: r.senderServiceDid,
-                    issuerDid: r.issuerDid,
-                    issuerDisplayName: r.issuerDisplayName,
-                    createdAt: r.createdAt,
-                    status: r.status,
-                })),
-            };
-        }),
-
-    acceptFederatedCredential: openRoute
-        .meta({
-            openapi: {
-                protect: true,
-                method: 'POST',
-                path: '/inbox/federated/{credentialId}/accept',
-                tags: ['Federation', 'Inbox'],
-                summary: 'Accept a federated inbox credential',
-                description: 'Accepts a credential received from an external brain-service',
-            },
-            requiredScope: 'inbox:write',
-        })
-        .input(z.object({ credentialId: z.string() }))
-        .output(z.boolean())
-        .mutation(async ({ ctx, input }) => {
-            if (!ctx.user?.did) {
-                throw new TRPCError({ code: 'UNAUTHORIZED' });
-            }
-
-            const credential = await getFederatedInboxCredentialById(input.credentialId);
-            if (!credential) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found' });
-            }
-
-            const profile = await getProfileByDid(ctx.user.did);
-            if (!profile || credential.recipientProfileId !== profile.profileId) {
-                throw new TRPCError({ code: 'UNAUTHORIZED' });
-            }
-
-            // Update credential status to ACCEPTED
-            const updatedCredential = await updateFederatedInboxCredentialStatus(
-                input.credentialId,
-                'ACCEPTED'
+            const federatedSender = await getOrCreateFederatedProfile(
+                issuerDid,
+                senderDid,
+                issuerDisplayName
             );
 
-            return !!updatedCredential;
+            const credentialUri = await sendCredential(
+                federatedSender,
+                recipientProfile,
+                credential,
+                ctx.domain,
+                {
+                    ...configuration,
+                    federatedFrom: configuration?.federatedFrom || senderDid,
+                }
+            );
+
+            return {
+                issuanceId: credentialUri,
+                claimUrl: undefined,
+                status: 'PENDING_ACCEPTANCE',
+            };
         }),
 
     getTrustedServices: openRoute

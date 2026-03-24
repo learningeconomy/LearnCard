@@ -64,6 +64,10 @@ export const LCNProfileValidator = z.object({
         .describe('Date of birth of the profile: e.g. "1990-01-01".'),
     country: z.string().optional().describe('Country for the profile.'),
     approved: z.boolean().optional().describe('Approval status for the profile.'),
+    isFederated: z
+        .boolean()
+        .optional()
+        .describe('Whether this profile represents a user from a federated service.'),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
 

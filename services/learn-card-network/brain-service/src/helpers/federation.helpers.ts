@@ -1,3 +1,5 @@
+import { getLearnCard } from '@helpers/learnCard.helpers';
+
 type TrustedService = {
     did: string;
     name: string;
@@ -6,12 +8,10 @@ type TrustedService = {
 
 let registryCache: { services: TrustedService[]; expiresAt: number } | null = null;
 
-/**
- * Gets the server's own did:web DID for comparison
- */
 export const getServerDidWebDID = (_domain: string): string => {
-    const domain = process.env.DOMAIN_NAME || _domain;
-    return `did:web:${domain}`;
+    const domain = (_domain || process.env.DOMAIN_NAME) ?? '';
+    const encodedDomain = domain.replace(/:/g, '%3A');
+    return `did:web:${encodedDomain}`;
 };
 
 /**
@@ -37,12 +37,11 @@ export const getServerDidFromUserDid = (userDid: string): string | null => {
  * and optionally a remote registry
  */
 export const isServiceTrusted = async (senderDid: string, domain: string): Promise<boolean> => {
-    // Always trust self
-    if (senderDid === getServerDidWebDID(domain)) return true;
-
     // Extract the server DID from the sender's user DID
     const senderServerDid = getServerDidFromUserDid(senderDid);
     if (!senderServerDid) return false;
+
+    if (senderServerDid === getServerDidWebDID(domain)) return true;
 
     // Check env whitelist first (for local overrides)
     const whitelist = (process.env.TRUSTED_BRAIN_SERVICES || '').split(',').filter(Boolean);
@@ -69,7 +68,7 @@ export const getTrustedServices = async (domain: string): Promise<TrustedService
     services.push({
         did: ownDid,
         name: 'Self',
-        endpoint: `https://${process.env.DOMAIN_NAME || 'network.learncard.com'}`,
+        endpoint: `https://${domain || process.env.DOMAIN_NAME}`,
     });
 
     // Add from env whitelist
@@ -137,18 +136,86 @@ export const clearTrustRegistryCache = (): void => {
 };
 
 /**
- * Extracts the brain-service endpoint from a DID document's service array
+ * Extracts the UniversalInboxService endpoint from a DID document's service array
  */
-export const extractBrainServiceEndpoint = (didDoc: {
-    service?: Array<{ id: string; type: string; serviceEndpoint: string }>;
+export const extractInboxServiceEndpoint = (didDoc: {
+    service?: Array<{ id: string; type: string | string[]; serviceEndpoint: string }>;
 }): string | null => {
     if (!didDoc.service || !Array.isArray(didDoc.service)) {
         return null;
     }
 
-    const brainService = didDoc.service.find(
-        s => s.type === 'LearnCardBrainService' || s.id.includes('brain-service')
-    );
+    const inboxService = didDoc.service.find(s => {
+        const type = Array.isArray(s.type) ? s.type[0] : s.type;
+        return type === 'UniversalInboxService';
+    });
 
-    return brainService?.serviceEndpoint || null;
+    return inboxService?.serviceEndpoint || null;
+};
+
+/**
+ * Result type for findInboxServiceEndpoint
+ */
+export type InboxServiceResult =
+    | { type: 'local'; endpoint: string }
+    | { type: 'remote'; endpoint: string }
+    | { type: 'not_found'; error: string };
+
+/**
+ * Finds the appropriate inbox service endpoint for a recipient DID.
+ *
+ * If the DID is a local did:web (matches the current domain), returns the local inbox endpoint.
+ * If the DID is a remote did:web, resolves the DID document and looks for UniversalInboxService.
+ * Returns an error result if no inbox service can be found.
+ *
+ * @param recipientDid - The recipient's DID (e.g., did:web:example.com:users:alice)
+ * @param domain - The current service's domain (e.g., localhost%3A4000 or learncard.com)
+ * @returns InboxServiceResult indicating local, remote, or not found
+ */
+export const findInboxServiceEndpoint = async (
+    recipientDid: string,
+    domain: string
+): Promise<InboxServiceResult> => {
+    // Check if it's a did:web
+    if (recipientDid.startsWith('did:web:')) {
+        const serverDid = getServerDidFromUserDid(recipientDid);
+        const localServerDid = getServerDidWebDID(domain);
+        const isLocalDID = serverDid === localServerDid;
+        const protocol = domain.includes('localhost') ? 'http://' : 'https://';
+        const baseUrl = `${protocol}${domain.replace(/%3A/g, ':')}`;
+        const localEndpoint = `${baseUrl}/api/inbox/receive`;
+
+        try {
+            const learnCard = await getLearnCard();
+            const didDoc = await learnCard.invoke.resolveDid(recipientDid);
+            const endpoint = extractInboxServiceEndpoint(didDoc);
+
+            if (endpoint) {
+                return {
+                    type: endpoint === localEndpoint ? 'local' : 'remote',
+                    endpoint,
+                };
+            }
+        } catch (error) {
+            console.error(`Failed to resolve DID ${recipientDid}:`, error);
+        }
+
+        if (isLocalDID) {
+            return {
+                type: 'local',
+                endpoint: localEndpoint,
+            };
+        }
+
+        return {
+            type: 'not_found',
+            error: `Recipient DID ${recipientDid} does not have a UniversalInboxService endpoint in its DID document`,
+        };
+    }
+
+    // For non-did:web DIDs (did:key, etc.), we can't federate
+    return {
+        type: 'not_found',
+        error: `Recipient DID ${recipientDid} is not a did:web and cannot be used for inbox federation`,
+    };
 };

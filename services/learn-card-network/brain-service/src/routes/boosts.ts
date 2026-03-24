@@ -165,6 +165,8 @@ import { updateDefaultPermissionsForBoost } from '@accesslayer/role/relationship
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { removeConnectionsForBoost } from '@helpers/connection.helpers';
 import { issueToInbox } from '@helpers/inbox.helpers';
+import { findInboxServiceEndpoint } from '@helpers/federation.helpers';
+import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
 import { SendOptions } from '@learncard/types';
 
 /**
@@ -876,6 +878,143 @@ export const boostsRouter = t.router({
                     }
 
                     // Existing flow for DID/profileId recipients
+                    const remoteInboxResult = input.recipient.startsWith('did:web:')
+                        ? await traceInternal('findInboxServiceEndpoint', () =>
+                              findInboxServiceEndpoint(input.recipient, domain)
+                          )
+                        : null;
+
+                    if (remoteInboxResult?.type === 'remote') {
+                        let signedVc: VC | JWE;
+
+                        if (input.signedCredential) {
+                            signedVc = input.signedCredential;
+                        } else {
+                            const signingAuthority = await traceDb(
+                                'getPrimarySigningAuthorityForUser:remoteInbox',
+                                () => getPrimarySigningAuthorityForUser(profile)
+                            );
+
+                            if (!signingAuthority) {
+                                throw new TRPCError({
+                                    code: 'PRECONDITION_FAILED',
+                                    message:
+                                        'You must register a signing authority before using send without a pre-signed credential. Please register one via registerSigningAuthority or sign the credential client-side.',
+                                });
+                            }
+
+                            let unsignedVc: UnsignedVC;
+
+                            try {
+                                unsignedVc = await traceInternal(
+                                    'prepareCredentialFromBoost:remoteInbox',
+                                    () =>
+                                        prepareCredentialFromBoost(boost!, boostUri, domain, {
+                                            templateData: input.templateData as Record<
+                                                string,
+                                                unknown
+                                            >,
+                                            issuerDid: signingAuthority.relationship.did,
+                                            recipientDid: input.recipient,
+                                        })
+                                );
+                            } catch (e) {
+                                console.error('Failed to prepare boost credential', e);
+                                throw new TRPCError({
+                                    code: 'INTERNAL_SERVER_ERROR',
+                                    message: 'Failed to prepare boost credential',
+                                });
+                            }
+
+                            signedVc = await traceInternal(
+                                'issueCredentialWithSigningAuthority:remoteInbox',
+                                () =>
+                                    issueCredentialWithSigningAuthority(
+                                        profile,
+                                        unsignedVc,
+                                        signingAuthority,
+                                        domain,
+                                        false
+                                    )
+                            );
+                        }
+
+                        const activityId = await traceDb('logCredentialSent:remoteInbox', () =>
+                            logCredentialSent({
+                                actorProfileId: profile.profileId,
+                                recipientType: 'profile',
+                                recipientIdentifier: input.recipient,
+                                boostUri,
+                                source: 'send',
+                                integrationId: input.integrationId,
+                                metadata: { templateData: input.templateData },
+                            })
+                        );
+
+                        const learnCard = await getDidWebLearnCard();
+                        const didAuthJwt = await learnCard.invoke.getDidAuthVp({
+                            proofFormat: 'jwt',
+                            challenge: `inbox-federation-${uuid()}`,
+                        });
+
+                        const response = await fetch(remoteInboxResult.endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${didAuthJwt}`,
+                            },
+                            body: JSON.stringify({
+                                recipientDid: input.recipient,
+                                credential: signedVc,
+                                issuerDid: profile.did,
+                                issuerDisplayName: profile.displayName,
+                                configuration: {
+                                    boostUri,
+                                    activityId,
+                                    integrationId: input.integrationId,
+                                    federatedFrom: profile.did,
+                                },
+                            }),
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.text();
+                            await traceDb('logCredentialFailed:remoteInbox', () =>
+                                logCredentialFailed({
+                                    activityId,
+                                    actorProfileId: profile.profileId,
+                                    recipientType: 'profile',
+                                    recipientIdentifier: input.recipient,
+                                    boostUri,
+                                    integrationId: input.integrationId,
+                                    source: 'send',
+                                    metadata: { error },
+                                })
+                            );
+                            throw new TRPCError({
+                                code: 'BAD_REQUEST',
+                                message: error,
+                            });
+                        }
+
+                        const inboxResult = (await response.json()) as {
+                            issuanceId: string;
+                            claimUrl?: string;
+                        };
+
+                        return {
+                            type: 'boost' as const,
+                            credentialUri: '',
+                            uri: boostUri,
+                            activityId,
+                            inbox: {
+                                issuanceId: inboxResult.issuanceId,
+                                status: 'PENDING',
+                                claimUrl: inboxResult.claimUrl,
+                            },
+                        };
+                    }
+
                     const recipientProfileId = await traceInternal('getProfileIdFromString', () =>
                         getProfileIdFromString(input.recipient, domain)
                     );

@@ -1,9 +1,22 @@
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, beforeEach } from 'vitest';
 
 import {
     getLearnCardForUserOnBrainA,
     getLearnCardForUserOnBrainB,
+    type BrainALearnCard,
+    type BrainBLearnCard,
 } from './helpers/learncard.helpers';
+import { testUnsignedBoost } from './helpers/credential.helpers';
+
+const clearIncomingCredentials = async (user: BrainALearnCard | BrainBLearnCard) => {
+    const incoming = await user.invoke.getIncomingCredentials();
+    for (const cred of incoming) {
+        if (cred.uri.startsWith('federated-inbox:')) {
+            continue;
+        }
+        await user.invoke.acceptCredential(cred.uri);
+    }
+};
 
 describe('Federation', () => {
     describe('Trust Registry', () => {
@@ -50,7 +63,7 @@ describe('Federation', () => {
     });
 
     describe('DID Resolution', () => {
-        test('Should resolve DID to brain-service endpoint', async () => {
+        test('Should resolve DID to UniversalInboxService endpoint', async () => {
             const userA = await getLearnCardForUserOnBrainA('a');
             const userB = await getLearnCardForUserOnBrainB('b');
 
@@ -60,38 +73,70 @@ describe('Federation', () => {
             expect(didADoc.service).toBeDefined();
             expect(didBDoc.service).toBeDefined();
 
-            const brainServiceA = didADoc.service?.find(
-                (s: { type: string }) => s.type === 'LearnCardBrainService'
-            );
-            const brainServiceB = didBDoc.service?.find(
-                (s: { type: string }) => s.type === 'LearnCardBrainService'
-            );
+            const inboxServiceA = didADoc.service?.find(s => {
+                const type = Array.isArray(s.type) ? s.type[0] : s.type;
+                return type === 'UniversalInboxService';
+            });
+            const inboxServiceB = didBDoc.service?.find(s => {
+                const type = Array.isArray(s.type) ? s.type[0] : s.type;
+                return type === 'UniversalInboxService';
+            });
 
-            expect(brainServiceA).toBeDefined();
-            expect(brainServiceB).toBeDefined();
-            expect(brainServiceA.serviceEndpoint).toContain('localhost:4000');
-            expect(brainServiceB.serviceEndpoint).toContain('localhost:4001');
+            expect(inboxServiceA).toBeDefined();
+            expect(inboxServiceB).toBeDefined();
+            expect(inboxServiceA?.serviceEndpoint).toContain('localhost:4000');
+            expect(inboxServiceB?.serviceEndpoint).toContain('localhost:4001');
         });
     });
 
     describe('Federated Inbox', () => {
+        beforeEach(async () => {
+            const userB = await getLearnCardForUserOnBrainB('b');
+            const userC = await getLearnCardForUserOnBrainB('c');
+            await clearIncomingCredentials(userB);
+            await clearIncomingCredentials(userC);
+        });
+
         test('User on brain-a can send credential to user on brain-b via DID', async () => {
             const userA = await getLearnCardForUserOnBrainA('a');
             const userB = await getLearnCardForUserOnBrainB('b');
 
+            const initialCount = (await userB.invoke.getIncomingCredentials()).length;
+
             const unsignedVc = userA.invoke.getTestVc(userB.id.did());
             const vc = await userA.invoke.issueCredential(unsignedVc);
 
-            // Send credential using DID instead of profileId - should automatically federate
             const result = await userA.invoke.sendCredential(userB.id.did(), vc);
 
             expect(result).toBeDefined();
+
+            const incoming = await userB.invoke.getIncomingCredentials();
+
+            expect(incoming.length).toBe(initialCount + 1);
+        });
+
+        test('User on brain-a can send a boost to user on brain-b via DID with generic send method', async () => {
+            const userA = await getLearnCardForUserOnBrainA('a');
+            const userB = await getLearnCardForUserOnBrainB('c');
+
+            const initialCount = (await userB.invoke.getIncomingCredentials()).length;
+
+            const boostUri = await userA.invoke.createBoost(testUnsignedBoost);
+
+            await userA.invoke.send({
+                recipient: userB.id.did(),
+                type: 'boost',
+                templateUri: boostUri,
+            });
+
+            const incoming = await userB.invoke.getIncomingCredentials();
+
+            expect(incoming.length).toBe(initialCount + 1);
         });
 
         test('Credential from untrusted service should be rejected', async () => {
             const userB = await getLearnCardForUserOnBrainB('b');
 
-            // Send directly via HTTP to simulate untrusted sender
             const response = await fetch('http://localhost:4001/api/inbox/receive', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -112,11 +157,9 @@ describe('Federation', () => {
             const userA = await getLearnCardForUserOnBrainA('a');
             const userB = await getLearnCardForUserOnBrainB('b');
 
-            // Create a boost on brain-b
             const unsignedVc = userB.invoke.getTestVc();
             const boostUri = await userB.invoke.createBoost(unsignedVc);
 
-            // User on brain-a should be able to resolve it
             const boost = await userA.invoke.getBoost(boostUri);
             expect(boost).toBeDefined();
             expect(boost.uri).toBe(boostUri);

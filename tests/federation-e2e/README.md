@@ -6,17 +6,17 @@ This package contains end-to-end tests for the LearnCard brain-service federatio
 
 The test environment consists of:
 
-- **brain-a**: Brain service instance on port 4000 (e.g., LearnCard app)
-- **brain-b**: Brain service instance on port 4001 (e.g., Scouts app)
-- **Shared infrastructure**: Neo4j, Redis, and ElasticMQ (both instances share the same database)
+-   **brain-a**: Brain service instance on port 4000 (e.g., LearnCard app)
+-   **brain-b**: Brain service instance on port 4001 (e.g., Scouts app)
+-   **Shared infrastructure**: Neo4j, Redis, and ElasticMQ (both instances share the same database)
 
 Each brain service is configured to trust the other via the `TRUSTED_BRAIN_SERVICES` environment variable.
 
 ## Prerequisites
 
-- Docker and Docker Compose
-- Node.js 18+
-- pnpm
+-   Docker and Docker Compose
+-   Node.js 18+
+-   pnpm
 
 ## Running Tests
 
@@ -47,25 +47,25 @@ docker compose down
 
 ### Trust Registry Tests
 
-- Brain services trust each other via environment whitelist
-- Self-trust verification
-- List trusted services
+-   Brain services trust each other via environment whitelist
+-   Self-trust verification
+-   List trusted services
 
 ### DID Resolution Tests
 
-- DID documents include `LearnCardBrainService` service endpoint
-- Cross-instance DID resolution
+-   DID documents include `UniversalInboxService` service endpoint
+-   Cross-instance DID resolution
 
 ### Federated Inbox Tests
 
-- Send credentials from brain-a to brain-b
-- Reject credentials from untrusted services
-- Federated credential delivery with notifications
+-   Send credentials from brain-a to brain-b
+-   Reject credentials from untrusted services
+-   Federated credential delivery with notifications
 
 ### External URI Resolution Tests
 
-- Resolve boosts across instances
-- Handle non-existent resources gracefully
+-   Resolve boosts across instances
+-   Handle non-existent resources gracefully
 
 ## Configuration
 
