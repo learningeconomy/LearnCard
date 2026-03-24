@@ -279,7 +279,12 @@
                 "#78852F",
                 "#396888",
                 "#66B8FF"
-            ]
+            ],
+            "passportBgColor": "#11354E",
+            "passportTextColor": "text-white",
+            "featuredCardBgColor": "#184463",
+            "featuredCardTextColor": "text-white",
+            "passportCardBgColor": "#FFFFFF"
         }
     },
     "styles": {

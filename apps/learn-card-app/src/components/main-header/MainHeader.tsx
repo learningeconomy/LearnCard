@@ -35,6 +35,7 @@ type MainHeaderProps = {
     category?: CredentialCategoryEnum;
     branding?: BrandingEnum;
     customClassName?: string;
+    style?: React.CSSProperties;
     children?: React.ReactNode;
     showBackButton?: boolean;
     subheaderType?: SubheaderTypeEnum;
@@ -51,6 +52,7 @@ type MainHeaderProps = {
 export const MainHeader: React.FC<MainHeaderProps> = ({
     category,
     customClassName,
+    style,
     children = null,
     subheaderType,
     showBackButton = false,
@@ -112,7 +114,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                 }`}
             />
             <IonToolbar className="ion-no-border" color={statusBarColor}>
-                <IonGrid className={`${customClassName} ${backgroundPrimaryColor}`}>
+                <IonGrid className={`${customClassName} ${backgroundPrimaryColor}`} style={style}>
                     <IonRow>
                         <IonCol size="2" className="flex justify-start items-center">
                             {showBackButton && (

@@ -137,6 +137,24 @@ export const defaultColorsSchema = z.object({
     primaryColor: z.string(),
     primaryColorShade: z.string(),
     loaders: z.array(z.string()),
+
+    /** Hex color for the Passport page background. Undefined = white. */
+    passportBgColor: z.string().optional(),
+
+    /** Tailwind text class for Passport heading text. Undefined = text-grayscale-900. */
+    passportTextColor: z.string().optional(),
+
+    /** Hex color for featured card backgrounds (checklist, resume builder). Undefined = white. */
+    featuredCardBgColor: z.string().optional(),
+
+    /** Tailwind text class for featured card text. Undefined = text-grayscale-900. */
+    featuredCardTextColor: z.string().optional(),
+
+    /** Hex color for Passport category card backgrounds. Undefined = use category primaryColor class. */
+    passportCardBgColor: z.string().optional(),
+
+    /** Tailwind text class for Passport category card labels. Undefined = text-grayscale-900. */
+    passportCardTextColor: z.string().optional(),
 });
 
 /**

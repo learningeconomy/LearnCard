@@ -6,6 +6,9 @@ import SlimCaretRight from '../svgs/SlimCaretRight';
 import ResumeBuilderIcon from '../../assets/images/resume-builder-icon.png';
 
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
+import { useTheme } from '../../theme/hooks/useTheme';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+
 type ResumeBuilderControllerMode = 'default' | 'inline';
 
 export const ResumeBuilderController: React.FC<{
@@ -15,6 +18,10 @@ export const ResumeBuilderController: React.FC<{
     const flags = useFlags();
     const history = useHistory();
     const { gate } = useLCNGatedAction();
+    const { colors } = useTheme();
+    const brandingConfig = useBrandingConfig();
+    const featuredCardBgColor = colors?.defaults?.featuredCardBgColor;
+    const featuredCardTextColor = colors?.defaults?.featuredCardTextColor;
 
     const handleResumeBuilderButton = async () => {
         const { prompted } = await gate();
@@ -31,7 +38,8 @@ export const ResumeBuilderController: React.FC<{
             <div
                 role="button"
                 onClick={handleResumeBuilderButton}
-                className={`w-full h-[150px] max-h-[150px] bg-white rounded-[28px] p-4 flex flex-col justify-start shadow-[0_8px_20px_rgba(15,23,42,0.12)] overflow-hidden ${className}`}
+                className={`w-full h-[150px] max-h-[150px] rounded-[28px] p-4 flex flex-col justify-start shadow-[0_8px_20px_rgba(15,23,42,0.12)] overflow-hidden ${className}`}
+                style={featuredCardBgColor ? { backgroundColor: featuredCardBgColor } : { backgroundColor: 'white' }}
             >
                 <div className="flex justify-center mb-2">
                     <div className="rounded-[14px] p-[8px] bg-white">
@@ -43,11 +51,11 @@ export const ResumeBuilderController: React.FC<{
                     </div>
                 </div>
 
-                <h5 className="text-[17px] leading-[130%] font-poppins font-[600] text-grayscale-900 text-center">
+                <h5 className={`text-[17px] leading-[130%] font-poppins font-[600] text-center ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
                     Resume Builder
                 </h5>
-                <p className="mt-1 text-[13px] leading-[125%] text-grayscale-700 font-poppins text-center line-clamp-2">
-                    Create &amp; share your resume built with your LearnCard credentials.
+                <p className={`mt-1 text-[13px] leading-[125%] font-poppins text-center line-clamp-2 ${featuredCardTextColor ? 'text-white/70' : 'text-grayscale-700'}`}>
+                    Build your resume with {brandingConfig.name} credentials.
                 </p>
             </div>
         );
@@ -57,7 +65,8 @@ export const ResumeBuilderController: React.FC<{
         <div
             role="button"
             onClick={handleResumeBuilderButton}
-            className={`w-full flex items-center justify-between max-w-[900px] bg-white rounded-[15px] p-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.12)] ${className}`}
+            className={`w-full flex items-center justify-between max-w-[900px] rounded-[15px] p-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.12)] ${className}`}
+            style={featuredCardBgColor ? { backgroundColor: featuredCardBgColor } : { backgroundColor: 'white' }}
         >
             <div className="flex items-center gap-[10px]">
                 <div className={`rounded-[10px] p-[5px] bg-white max-h-[40px] max-w-[40px]`}>
@@ -73,10 +82,10 @@ export const ResumeBuilderController: React.FC<{
                     /> */}
                 </div>
                 <div className="flex flex-col">
-                    <h5 className="text-[17px] font-poppins font-[600] text-grayscale-900 leading-[130%]">
+                    <h5 className={`text-[17px] font-poppins font-[600] leading-[130%] ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
                         {resumeExists ? 'Your Resume' : 'Build Your Resume'}
                     </h5>
-                    <p className="text-[14px] text-grayscale-900 font-poppins">
+                    <p className={`text-[14px] font-poppins ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
                         {resumeExists ? (
                             <span>
                                 Updated <span className="font-semibold">today</span>

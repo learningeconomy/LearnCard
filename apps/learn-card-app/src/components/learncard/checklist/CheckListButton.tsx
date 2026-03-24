@@ -32,6 +32,8 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
     const { theme, colors } = useTheme();
     const { buildMyLCIcon } = theme.defaults;
     const primaryColor = colors?.defaults?.primaryColor;
+    const featuredCardBgColor = colors?.defaults?.featuredCardBgColor;
+    const featuredCardTextColor = colors?.defaults?.featuredCardTextColor;
 
     const { resume, certificate, transcript, diploma, rawVC } =
         checklistStore.useTracked.isParsing();
@@ -63,7 +65,8 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
             <div
                 role="button"
                 onClick={handleCheckListButton}
-                className={`w-full h-[150px] max-h-[150px] bg-white rounded-[28px] p-4 flex flex-col justify-center shadow-[0_8px_20px_rgba(15,23,42,0.12)] overflow-hidden ${className}`}
+                className={`w-full h-[150px] max-h-[150px] rounded-[28px] p-4 flex flex-col justify-center shadow-[0_8px_20px_rgba(15,23,42,0.12)] overflow-hidden ${className}`}
+                style={featuredCardBgColor ? { backgroundColor: featuredCardBgColor } : { backgroundColor: 'white' }}
             >
                 <div className="flex justify-center mb-3">
                     <div
@@ -83,17 +86,17 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                     </div>
                 </div>
 
-                <h5 className="text-[17px] leading-[130%] font-poppins font-[600] text-grayscale-900 text-center">
+                <h5 className={`text-[17px] leading-[130%] font-poppins font-[600] text-center ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
                     Build My {brandingConfig.name}
                 </h5>
 
                 {isParsing ? (
-                    <p className="mt-2 text-[13px] leading-[130%] text-grayscale-700 font-poppins text-center">
+                    <p className={`mt-2 text-[13px] leading-[130%] font-poppins text-center ${featuredCardTextColor ? 'text-white/70' : 'text-grayscale-700'}`}>
                         Processing documents...
                     </p>
                 ) : (
                     <div className="mt-3">
-                        <div className="w-full h-[10px] rounded-full bg-grayscale-200 overflow-hidden">
+                        <div className={`w-full h-[10px] rounded-full overflow-hidden ${featuredCardBgColor ? 'bg-white/20' : 'bg-grayscale-200'}`}>
                             <div
                                 className={`h-full rounded-full ${
                                     progressColors[optimizedPercent as keyof typeof progressColors]
@@ -101,7 +104,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                                 style={{ width: `${optimizedPercent}%` }}
                             />
                         </div>
-                        <p className="mt-2 text-xs leading-[130%] text-grayscale-700 font-poppins">
+                        <p className={`mt-2 text-xs leading-[130%] font-poppins ${featuredCardTextColor ? 'text-white/70' : 'text-grayscale-700'}`}>
                             {optimizedPercent}% optimized
                         </p>
                     </div>
@@ -114,7 +117,8 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
         <div
             role="button"
             onClick={handleCheckListButton}
-            className={`w-full flex items-center justify-between max-w-[900px] bg-white rounded-[15px] p-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.12)] ${className}`}
+            className={`w-full flex items-center justify-between max-w-[900px] rounded-[15px] p-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.12)] ${className}`}
+            style={featuredCardBgColor ? { backgroundColor: featuredCardBgColor } : { backgroundColor: 'white' }}
         >
             <div className="flex items-center gap-[10px]">
                 <div
@@ -129,15 +133,15 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                     )}
                 </div>
                 <div className="flex flex-col">
-                    <h5 className="text-[17px] font-poppins font-[600] text-grayscale-900 leading-[130%]">
+                    <h5 className={`text-[17px] font-poppins font-[600] leading-[130%] ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
                         Build My {brandingConfig.name}
                     </h5>
                     {isParsing ? (
-                        <p className="text-[14px] text-grayscale-900 font-poppins">
+                        <p className={`text-[14px] font-poppins ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
                             Processing documents...
                         </p>
                     ) : (
-                        <p className="text-[14px] text-grayscale-900 font-poppins">
+                        <p className={`text-[14px] font-poppins ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
                             <span className="font-semibold">{completedItems}</span> of{' '}
                             <span className="font-semibold">{checklistItems.length}</span> Steps
                             Completed

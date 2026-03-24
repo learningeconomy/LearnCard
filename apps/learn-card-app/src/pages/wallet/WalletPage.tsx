@@ -49,9 +49,12 @@ const WalletPage: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
 
-    const { theme } = useTheme();
+    const { theme, colors } = useTheme();
     const { isMobile } = useDeviceTypeByWidth();
     const categories = theme.categories;
+
+    const passportBgColor = colors?.defaults?.passportBgColor;
+    const passportTextColor = colors?.defaults?.passportTextColor ?? 'text-grayscale-900';
 
     const [shareCredsIsOpen, setShareCredsIsOpen] = useState(false);
     const [viewCredsIsOpen, setViewCredsIsOpen] = useState(false);
@@ -182,16 +185,25 @@ const WalletPage: React.FC = () => {
     const isList = viewMode === PassportPageViewMode.list;
 
     return (
-        <IonPage className="bg-white">
-            <MainHeader customClassName="bg-white" />
+        <IonPage
+            className="bg-white"
+            style={passportBgColor ? { backgroundColor: passportBgColor } : undefined}
+        >
+            <MainHeader
+                customClassName={passportBgColor ? '' : 'bg-white'}
+                style={passportBgColor ? { backgroundColor: passportBgColor } : undefined}
+            />
             <GenericErrorBoundary>
-                <IonContent fullscreen>
+                <IonContent
+                    fullscreen
+                    style={passportBgColor ? { '--background': passportBgColor } as React.CSSProperties : undefined}
+                >
                     <div className="px-[20px]">
                         <div className="flex flex-col max-w-[600px] mx-auto">
                             <IonRow>
                                 <div className="flex justify-between items-center w-full">
                                     <div className="flex items-center gap-[10px] w-full">
-                                        <h2 className="text-grayscale-900 font-poppins text-[25px] tracking-[0.25px]">
+                                        <h2 className={`${passportTextColor} font-poppins text-[25px] tracking-[0.25px]`}>
                                             Passport
                                         </h2>
 
@@ -200,7 +212,7 @@ const WalletPage: React.FC = () => {
                                         - add support for new items count based on categories
                                         */}
                                         {totalNewCredentialsCount > 0 && (
-                                            <p className="text-emerald-700 font-poppins text-[17px] font-[600] leading-[130%] flex items-center gap-[5px]">
+                                            <p className={`${passportBgColor ? 'text-white/80' : 'text-emerald-700'} font-poppins text-[17px] font-[600] leading-[130%] flex items-center gap-[5px]`}>
                                                 <DotIcon className="w-[10px] h-[10px]" />{' '}
                                                 {totalNewCredentialsCount} New
                                             </p>
