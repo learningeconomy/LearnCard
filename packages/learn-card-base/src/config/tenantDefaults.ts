@@ -55,7 +55,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         sss: {
             serverUrl: 'https://api.learncard.app/trpc',
             enableEmailBackupShare: true,
-            requireEmailForPhoneUsers: true,
+            requireEmailForPhoneUsers: false,
         },
     },
 

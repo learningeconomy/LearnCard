@@ -140,7 +140,7 @@
         "docker-start": "npx tsx scripts/prepare-native-config.ts learncard --stage local && vite --host",
         "docker-start:tenant": "npx tsx scripts/prepare-native-config.ts ${TENANT:-learncard} --stage ${STAGE:-local} && vite --host",
         "serve": "vite",
-        "build": "NODE_OPTIONS=\"--max-old-space-size=16608\"  vite build",
+        "build": "npx tsx scripts/prepare-native-config.ts ${TENANT:-learncard} ${STAGE:+--stage $STAGE} && NODE_OPTIONS=\"--max-old-space-size=16608\" vite build",
         "docker-build": "npx tsx scripts/prepare-native-config.ts learncard --stage local && NODE_OPTIONS=\"--max-old-space-size=4608\" vite build -d",
         "test:unit": "vitest run",
         "test-playwright": "playwright test",

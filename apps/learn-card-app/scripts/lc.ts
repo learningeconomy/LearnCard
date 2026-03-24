@@ -904,6 +904,10 @@ const handleShortcuts = async (): Promise<boolean> => {
             runCommand('npx tsx scripts/create-tenant.ts', 'Create a new tenant');
             return true;
 
+        case 'create-theme':
+            runCommand('npx tsx scripts/create-theme.ts', 'Create a new theme');
+            return true;
+
         case 'tenants':
             console.log('');
             console.log(bold('Available tenants:'));
@@ -960,11 +964,12 @@ const main = async () => {
     console.log(`  ${cyan('5')}  ${bold('Open config editor')}      ${dim('— visual config editor on :4400')}`);
     console.log(`  ${cyan('6')}  ${bold('Generate tenant assets')}  ${dim('— create icons/splash from a logo')}`);
     console.log(`  ${cyan('7')}  ${bold('Native / Capacitor')}     ${dim('— sync, open IDE, live-reload on device')}`);
+    console.log(`  ${cyan('8')}  ${bold('Create a new theme')}     ${dim('— interactive theme scaffolding')}`);
     console.log('');
-    console.log(dim('  Or run directly: pnpm lc dev | start | validate | create | switch | editor | generate | native | tenants'));
+    console.log(dim('  Or run directly: pnpm lc dev | start | validate | create | create-theme | switch | editor | generate | native | tenants'));
     console.log('');
 
-    const choice = await ask('Pick an option [1-7]: ');
+    const choice = await ask('Pick an option [1-8]: ');
 
     switch (choice) {
         case '1':
@@ -995,8 +1000,12 @@ const main = async () => {
             await nativeMenu();
             break;
 
+        case '8':
+            runCommand('npx tsx scripts/create-theme.ts', 'Create a new theme', 'pnpm lc create-theme');
+            break;
+
         default:
-            console.log(yellow('Unknown option. Try 1-7.'));
+            console.log(yellow('Unknown option. Try 1-8.'));
             rl.close();
             break;
     }

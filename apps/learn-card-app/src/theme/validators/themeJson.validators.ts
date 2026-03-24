@@ -39,6 +39,8 @@ const themeJsonColorsSchema = z.object({
     defaults: z.record(z.string(), z.unknown()).optional(),
 }).passthrough();
 
+export type ThemeJsonColors = z.infer<typeof themeJsonColorsSchema>;
+
 // ── Icon palette sub-schema ──────────────────────────────────────────────
 
 const iconPaletteJsonSchema = z.object({

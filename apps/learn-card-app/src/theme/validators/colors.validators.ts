@@ -1,19 +1,53 @@
 import { z } from 'zod';
 import { CredentialCategoryEnum } from 'learn-card-base';
 
+/**
+ * Color fields use different Tailwind conventions depending on where they
+ * are consumed in components. The three conventions are:
+ *
+ * 1. **Bare token** — a Tailwind color token WITHOUT a utility prefix.
+ *    Components interpolate it: `bg-${primaryColor}`, `text-${indicatorColor}`.
+ *    Example values: `"cyan-301"`, `"indigo-500"`, `"grayscale-800"`.
+ *
+ * 2. **Full utility class** — a complete Tailwind class string with prefix.
+ *    Components use it directly in `className`.
+ *    Example values: `"text-white"`, `"!bg-cyan-400"`, `"bg-blue-300"`.
+ *
+ * 3. **Raw hex** — a CSS hex color value (used only in `placeholders`).
+ *    Passed directly to SVG fill/stroke props.
+ *    Example values: `"#93C5FD"`, `"#353E64"`.
+ */
 export const CategoryColorSchema = z
     .object({
-        primaryColor: z.string().optional().describe('Primary category color'),
-        secondaryColor: z.string().optional().describe('Secondary category color'),
-        indicatorColor: z.string().optional().describe('Notification indicator color'),
-        borderColor: z.string().optional().describe('Border color'),
+        /** Bare token — used as `bg-${primaryColor}`. E.g. `"cyan-301"` */
+        primaryColor: z.string().optional().describe('Bare Tailwind token for primary bg'),
 
-        statusBarColor: z.string().optional().describe('Status bar color'),
-        headerBrandingTextColor: z.string().optional().describe('Header branding text color'),
-        headerTextColor: z.string().optional().describe('Header text color'),
-        backgroundPrimaryColor: z.string().optional().describe('Background primary color'),
-        backgroundSecondaryColor: z.string().optional().describe('Background secondary color'),
-        tabActiveColor: z.string().optional().describe('Tab active color'),
+        /** Bare token — used as `bg-${secondaryColor}`. E.g. `"cyan-501"` */
+        secondaryColor: z.string().optional().describe('Bare Tailwind token for secondary bg'),
+
+        /** Bare token — used as `text-${indicatorColor}`. E.g. `"indigo-500"` */
+        indicatorColor: z.string().optional().describe('Bare Tailwind token for indicator icon'),
+
+        /** Bare token — used as `border-${borderColor}`. E.g. `"cyan-301"` */
+        borderColor: z.string().optional().describe('Bare Tailwind token for border'),
+
+        /** Bare token or `"light"` — Capacitor StatusBar color. E.g. `"cyan-400"`, `"light"` */
+        statusBarColor: z.string().optional().describe('Bare token or "light" for status bar'),
+
+        /** Full utility class — applied directly. E.g. `"text-white"`, `"text-grayscale-900"` */
+        headerBrandingTextColor: z.string().optional().describe('Full Tailwind text class for header branding'),
+
+        /** Full utility class — applied directly. E.g. `"text-white"` */
+        headerTextColor: z.string().optional().describe('Full Tailwind text class for header text'),
+
+        /** Full utility class — applied directly. E.g. `"!bg-cyan-400"`, `"!bg-white"` */
+        backgroundPrimaryColor: z.string().optional().describe('Full Tailwind bg class for header background'),
+
+        /** Bare token — used as `bg-${backgroundSecondaryColor}`. E.g. `"cyan-200"` */
+        backgroundSecondaryColor: z.string().optional().describe('Bare Tailwind token for content background'),
+
+        /** Full utility class — applied directly. E.g. `"bg-blue-300"` */
+        tabActiveColor: z.string().optional().describe('Full Tailwind bg class for active tab'),
     })
     .describe('Credential Category Colors');
 export type CategoryColor = z.infer<typeof CategoryColorSchema>;

@@ -8,7 +8,7 @@
             "clientId": "BBB5ReobO60-olXYx2JB7s5pkJplYnBHz4E99Cdf9aaNokNt3XzvVvRL9UQfziK_PMEuBYcgdMEW_WCHNPdUGPg",
             "network": "testnet",
             "verifierId": "learncardapp-firebase",
-            "rpcTarget": "https://mainnet.infura.io/v3/af590ea7328444e4b20c75bb401b6105",
+            "rpcTarget": "https://mainnet.infura.io/v3/af590ea7328444e4b20c75bb401b6105"
         }
     },
     "observability": {

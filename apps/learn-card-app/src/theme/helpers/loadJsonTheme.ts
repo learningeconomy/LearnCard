@@ -17,7 +17,7 @@ import type { Theme } from '../validators/theme.validators';
 import { validateThemeData } from '../validators/theme.validators';
 import { ViewMode } from '../types/theme.types';
 
-import { ICON_SETS } from '../icons/iconSets';
+import { resolveIconSet } from '../icons/iconSets';
 import type { CategoryIcons } from '../icons';
 import {
     DEFAULT_CATEGORIES,
@@ -28,8 +28,14 @@ import {
 
 // ─── Raw JSON shape (inferred from the Zod source of truth) ─────────────
 
-import type { ThemeJsonConfig, ThemeJsonColors } from '../validators/themeJson.validators';
+import type { ThemeJsonConfig } from '../validators/themeJson.validators';
 import { emitConfigDebugEvent, emitConfigWarning, emitConfigSuccess } from '../../components/debug/configDebugEvents';
+import {
+    ALL_CATEGORIES,
+    CATEGORY_KEY_TO_VALUE,
+    expandCategoryColors,
+    expandPlaceholders,
+} from './themeExpansion';
 
 // ─── Glob imports (resolved at build time by Vite) ───────────────────────
 
@@ -44,80 +50,7 @@ const themeAssetModules = import.meta.glob<string>(
 );
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
-
-const ALL_CATEGORIES = Object.values(CredentialCategoryEnum);
-
-/**
- * Map from enum key (camelCase, used in JSON) → enum value (spaced string, used at runtime).
- * e.g. 'socialBadge' → 'Social Badge'
- */
-const CATEGORY_KEY_TO_VALUE: Record<string, CredentialCategoryEnum> = {};
-
-for (const [key, value] of Object.entries(CredentialCategoryEnum)) {
-    CATEGORY_KEY_TO_VALUE[key] = value as CredentialCategoryEnum;
-}
-
-/** Resolve a JSON category key to its runtime enum value, falling through as-is if no mapping. */
-const resolveCategoryKey = (key: string): string => CATEGORY_KEY_TO_VALUE[key] ?? key;
-
-/**
- * Expand `categoryBase` + optional `categories` overrides into a full
- * per-`CredentialCategoryEnum` color map.
- */
-const expandCategoryColors = (
-    colors: ThemeJsonColors,
-): Record<string, Record<string, string>> => {
-    const base = colors.categoryBase ?? {};
-    const overrides = colors.categories ?? {};
-
-    const result: Record<string, Record<string, string>> = {};
-
-    for (const cat of ALL_CATEGORIES) {
-        // Find overrides using either the enum value or the JSON key
-        const jsonKey = Object.entries(CATEGORY_KEY_TO_VALUE).find(([, v]) => v === cat)?.[0];
-        const catOverrides = overrides[cat] ?? (jsonKey ? overrides[jsonKey] : undefined);
-
-        result[cat] = { ...base, ...catOverrides };
-    }
-
-    return result;
-};
-
-/**
- * Expand `placeholderBase` into per-category placeholder entries,
- * or pass through explicit `placeholders` as-is.
- */
-const expandPlaceholders = (
-    colors: ThemeJsonColors,
-): Record<string, unknown> => {
-    if (colors.placeholders) {
-        // Remap JSON keys (camelCase) to enum values (spaced strings)
-        return remapCategoryKeys(colors.placeholders);
-    }
-
-    if (!colors.placeholderBase) return {};
-
-    const result: Record<string, unknown> = {};
-
-    for (const cat of ALL_CATEGORIES) {
-        result[cat] = { ...colors.placeholderBase };
-    }
-
-    result['defaults'] = { ...colors.placeholderBase };
-
-    return result;
-};
-
-/** Remap object keys from JSON enum keys to runtime enum values. */
-const remapCategoryKeys = (obj: Record<string, unknown>): Record<string, unknown> => {
-    const result: Record<string, unknown> = {};
-
-    for (const [key, value] of Object.entries(obj)) {
-        result[resolveCategoryKey(key)] = value;
-    }
-
-    return result;
-};
+// Pure expansion utilities live in ./themeExpansion.ts for testability.
 
 /**
  * Resolve an asset path like `"./assets/switcher-icon.png"` to a Vite-hashed
@@ -265,16 +198,9 @@ const buildTheme = (config: ThemeJsonConfig): Theme => {
         defaults: colors.defaults ?? {},
     };
 
-    // Resolve icon set
+    // Resolve icon set (supports full sets and partial sets with inheritance)
     const iconSetName = config.iconSet ?? 'colorful';
-    const iconSet = ICON_SETS[iconSetName];
-
-    if (!iconSet) {
-        throw new Error(
-            `Icon set "${iconSetName}" not found for theme "${config.id}". ` +
-            `Available: ${Object.keys(ICON_SETS).join(', ')}`,
-        );
-    }
+    const iconSet = resolveIconSet(iconSetName);
 
     // Resolve view mode
     const viewMode = config.defaults?.viewMode === 'grid' ? ViewMode.Grid : ViewMode.List;

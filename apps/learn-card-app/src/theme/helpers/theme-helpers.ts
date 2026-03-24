@@ -1,12 +1,7 @@
 /**
- * @deprecated Legacy enum used only as keys for the compiled icon/color/style
- * tables in `icons/index.tsx`, `colors/index.ts`, `styles/index.ts`.
+ * Legacy ThemeEnum has been removed.
  *
- * JSON-based themes (the current system) use string-keyed `ICON_SETS` in
- * `iconSets.ts` instead and don't need entries here. New themes should be
- * added as `schemas/{id}/theme.json` files — not as new enum members.
+ * All themes are now JSON-driven via `schemas/<id>/theme.json`.
+ * Icon sets are registered in `icons/iconSets.ts` keyed by plain strings.
+ * Theme IDs are plain strings (e.g. 'colorful', 'formal', 'vetpass').
  */
-export enum ThemeEnum {
-    Colorful = 'colorful',
-    Formal = 'formal',
-}

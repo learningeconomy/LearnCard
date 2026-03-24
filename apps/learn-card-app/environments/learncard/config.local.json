@@ -14,7 +14,7 @@
     "observability": {
         "sentryEnv": "development",
         "launchDarklyClientId": "63dabf3082caed12cac3e55b",
-        "analyticsProvider": "noop",
+        "analyticsProvider": "noop"
     },
     "auth": {
         "keyDerivation": "sss",

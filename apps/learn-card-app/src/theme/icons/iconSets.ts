@@ -127,10 +127,14 @@ import FloatingBottleFormal from '../../components/svgs/placeholders/formal/Floa
 import TelescopeIcon from '../../components/svgs/placeholders/TelescopeIcon';
 import TelescopeFormal from '../../components/svgs/placeholders/formal/TelescopeFormal';
 
-import type { ThemeIconTable } from './index';
+import type { ThemeIconTable, CategoryIcons } from './index';
 
 // ─── Icon Sets ───────────────────────────────────────────────────────────
 
+/**
+ * Complete icon set definitions. Each entry is a fully-specified icon table
+ * that can be used directly by themes.
+ */
 export const ICON_SETS: Record<string, ThemeIconTable> = {
     colorful: {
         [CredentialCategoryEnum.aiTopic]: {
@@ -282,4 +286,93 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             telescope: TelescopeFormal,
         },
     },
+};
+
+// ─── Icon set composition (partial overrides + inheritance) ─────────────
+
+/**
+ * Partial icon set definitions that inherit from a parent.
+ *
+ * Register a partial icon set here to create a new icon set that reuses
+ * most icons from an existing set but overrides specific ones.
+ *
+ * Example:
+ * ```ts
+ * PARTIAL_ICON_SETS['vetpass'] = {
+ *     extends: 'colorful',
+ *     overrides: {
+ *         [CredentialCategoryEnum.skill]: { Icon: VetpassSkillIcon },
+ *         launchPad: { contacts: VetpassContactsIcon, aiSessions: WandWithShape, alerts: AlertWithShape },
+ *     },
+ * };
+ * ```
+ */
+export type PartialIconSetDef = {
+    extends: string;
+    overrides: Partial<ThemeIconTable>;
+};
+
+export const PARTIAL_ICON_SETS: Record<string, PartialIconSetDef> = {};
+
+/**
+ * Resolve an icon set by name.
+ *
+ * 1. If the name matches a full `ICON_SETS` entry, return it directly.
+ * 2. If it matches a `PARTIAL_ICON_SETS` entry, recursively resolve the
+ *    parent and deep-merge the overrides on top.
+ * 3. Falls back to `'colorful'` if the name is unknown.
+ */
+export const resolveIconSet = (
+    name: string,
+    _seen: Set<string> = new Set(),
+): ThemeIconTable => {
+    // Direct full set
+    if (ICON_SETS[name]) return ICON_SETS[name];
+
+    // Partial set with inheritance
+    const partial = PARTIAL_ICON_SETS[name];
+
+    if (partial) {
+        if (_seen.has(name)) {
+            throw new Error(`Circular icon set extends: ${[..._seen, name].join(' → ')}`);
+        }
+
+        _seen.add(name);
+
+        const parent = resolveIconSet(partial.extends, _seen);
+
+        return mergeIconTables(parent, partial.overrides);
+    }
+
+    // Fallback
+    return ICON_SETS['colorful'];
+};
+
+/**
+ * Deep-merge a partial icon table on top of a base table.
+ * Category icon objects are merged at the Icon/IconWithShape/IconWithLightShape level.
+ * Section objects (launchPad, sideMenu, navbar, placeholders) are spread-merged.
+ */
+const mergeIconTables = (
+    base: ThemeIconTable,
+    overrides: Partial<ThemeIconTable>,
+): ThemeIconTable => {
+    const result: Record<string, unknown> = { ...base };
+
+    for (const [key, value] of Object.entries(overrides)) {
+        if (key === 'launchPad' || key === 'sideMenu' || key === 'navbar' || key === 'placeholders') {
+            // Section-level merge
+            result[key] = {
+                ...(base[key as keyof ThemeIconTable] as Record<string, unknown>),
+                ...(value as Record<string, unknown>),
+            };
+        } else {
+            // Category icon merge — merge Icon/IconWithShape/IconWithLightShape
+            const baseIcons = (base as Record<string, unknown>)[key] as CategoryIcons | undefined;
+
+            result[key] = { ...baseIcons, ...(value as CategoryIcons) };
+        }
+    }
+
+    return result as ThemeIconTable;
 };
