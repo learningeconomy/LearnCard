@@ -331,13 +331,14 @@ const generateAssets = async () => {
         fillOnly = modeChoice !== '2';
     }
 
-    // 3. Logo path
+    // 3. Logo path (primary icon / brand mark)
     console.log('');
-    console.log(dim('  Tip: You can drag a file from Finder into the terminal to paste its path.'));
+    console.log(dim('  Tip: Drag a file from Finder into the terminal to paste its path.'));
+    console.log(dim('  The primary logo is the icon/mark — used for app icons, favicon, etc.'));
     console.log(dim('  Recommended: PNG or SVG, at least 1024×1024.'));
     console.log('');
 
-    let logoPath = await ask('Logo file path: ');
+    let logoPath = await ask('Primary icon / brand mark file path: ');
 
     if (!logoPath) {
         console.log(yellow('  No logo path provided. Aborting.'));
@@ -348,7 +349,7 @@ const generateAssets = async () => {
     // Strip quotes that drag-and-drop sometimes adds
     logoPath = logoPath.replace(/^["']|["']$/g, '').trim();
 
-    // 3. Display name
+    // 3b. Display name
     const configName = getTenantDisplayName(tenantId);
     const nameDefault = configName !== tenantId ? configName : tenantId.charAt(0).toUpperCase() + tenantId.slice(1);
 
@@ -374,12 +375,46 @@ const generateAssets = async () => {
     const skipSplashInput = await ask(`Skip splash screens? ${dim('(y/N)')}: `);
     const skipSplash = skipSplashInput.toLowerCase() === 'y';
 
-    // 7. Optional overrides
+    // 7. Logo variant overrides
     console.log('');
-    console.log(dim('  Optional overrides (press Enter to skip and auto-generate):'));
+    console.log(bold('Logo variant overrides'));
+    console.log(dim('  If you have Figma exports for different logo variants, provide them below.'));
+    console.log(dim('  Press Enter to skip any variant — it will be auto-generated.'));
     console.log('');
 
-    const textLogoInput = await ask(`Text logo file ${dim('(Enter to auto-generate)')}: `);
+    // -- Icon for dark backgrounds --
+    console.log(dim('  Icon / brand mark — light/white version for dark backgrounds.'));
+    console.log(dim('  (e.g. white version of your icon for use on dark/colored surfaces)'));
+    const iconLightInput = await ask(`Icon for dark backgrounds ${dim('(Enter to auto-generate)')}: `);
+
+    console.log('');
+
+    // -- Wordmark for dark backgrounds --
+    console.log(dim('  Wordmark (text only, no icon) — white/light text for dark backgrounds.'));
+    console.log(dim('  (Used on: loading page, intro slides, login page)'));
+    const wordmarkInput = await ask(`Wordmark for dark backgrounds ${dim('(Enter to auto-generate)')}: `);
+
+    // -- Wordmark for light backgrounds --
+    console.log(dim('  Wordmark (text only, no icon) — dark text for light backgrounds.'));
+    console.log(dim('  (Used on: side menu header, AI sessions desktop header)'));
+    const wordmarkLightInput = await ask(`Wordmark for light backgrounds ${dim('(Enter to auto-generate)')}: `);
+
+    console.log('');
+
+    // -- Full lockup for light backgrounds --
+    console.log(dim('  Full lockup (icon + wordmark combined) — dark logo for light backgrounds.'));
+    console.log(dim('  (Used for: og:image, share cards, external embeds)'));
+    const fullLogoInput = await ask(`Full lockup for light backgrounds ${dim('(Enter to skip)')}: `);
+
+    // -- Full lockup for dark backgrounds --
+    console.log(dim('  Full lockup (icon + wordmark combined) — light logo for dark backgrounds.'));
+    console.log(dim('  (Used for: splash screens, share cards on dark surfaces)'));
+    const fullLogoDarkInput = await ask(`Full lockup for dark backgrounds ${dim('(Enter to skip)')}: `);
+
+    console.log('');
+
+    // -- Desktop backgrounds --
+    console.log(dim('  Desktop login background images (optional overrides).'));
     const desktopBgInput = await ask(`Desktop login BG file ${dim('(Enter to auto-generate)')}: `);
     const desktopBgAltInput = await ask(`Desktop login BG alt file ${dim('(Enter to auto-generate)')}: `);
 
@@ -415,8 +450,34 @@ const generateAssets = async () => {
 
     const cleanPath = (p: string) => p.replace(/^["']|["']$/g, '').trim();
 
-    if (textLogoInput) {
-        cmd += ` --text-logo ${JSON.stringify(cleanPath(textLogoInput))}`;
+    if (iconLightInput) {
+        const cleaned = cleanPath(iconLightInput);
+        cmd += ` --icon-light ${JSON.stringify(cleaned)}`;
+        shortcut += ` --icon-light ${JSON.stringify(cleaned)}`;
+    }
+
+    if (wordmarkInput) {
+        const cleaned = cleanPath(wordmarkInput);
+        cmd += ` --wordmark ${JSON.stringify(cleaned)}`;
+        shortcut += ` --wordmark ${JSON.stringify(cleaned)}`;
+    }
+
+    if (wordmarkLightInput) {
+        const cleaned = cleanPath(wordmarkLightInput);
+        cmd += ` --wordmark-light ${JSON.stringify(cleaned)}`;
+        shortcut += ` --wordmark-light ${JSON.stringify(cleaned)}`;
+    }
+
+    if (fullLogoInput) {
+        const cleaned = cleanPath(fullLogoInput);
+        cmd += ` --full-logo ${JSON.stringify(cleaned)}`;
+        shortcut += ` --full-logo ${JSON.stringify(cleaned)}`;
+    }
+
+    if (fullLogoDarkInput) {
+        const cleaned = cleanPath(fullLogoDarkInput);
+        cmd += ` --full-logo-light ${JSON.stringify(cleaned)}`;
+        shortcut += ` --full-logo-light ${JSON.stringify(cleaned)}`;
     }
 
     if (desktopBgInput) {
@@ -430,17 +491,36 @@ const generateAssets = async () => {
     // Summary
     console.log('');
     console.log(bold('Summary:'));
-    console.log(`  Tenant:     ${bold(tenantId)}`);
-    console.log(`  Mode:       ${fillOnly ? 'fill missing only' : 'full regeneration'}`);
-    console.log(`  Logo:       ${logoPath}`);
-    console.log(`  Name:       ${displayName}`);
-    console.log(`  Icon BG:    ${bgHex}`);
-    console.log(`  Splash BG:  ${splashHex || bgHex}`);
-    console.log(`  Skip splash: ${skipSplash ? 'yes' : 'no'}`);
+    console.log(`  Tenant:       ${bold(tenantId)}`);
+    console.log(`  Mode:         ${fillOnly ? 'fill missing only' : 'full regeneration'}`);
+    console.log(`  Primary icon: ${logoPath}`);
+    console.log(`  Name:         ${displayName}`);
+    console.log(`  Icon BG:      ${bgHex}`);
+    console.log(`  Splash BG:    ${splashHex || bgHex}`);
+    console.log(`  Skip splash:  ${skipSplash ? 'yes' : 'no'}`);
 
-    if (textLogoInput) console.log(`  Text logo:  ${cleanPath(textLogoInput)}`);
-    if (desktopBgInput) console.log(`  Desktop BG: ${cleanPath(desktopBgInput)}`);
-    if (desktopBgAltInput) console.log(`  Desktop BG alt: ${cleanPath(desktopBgAltInput)}`);
+    // Show which variants were provided
+    const variants: Array<[string, string]> = [];
+
+    if (iconLightInput) variants.push(['Icon (dark bg)', cleanPath(iconLightInput)]);
+    if (wordmarkInput) variants.push(['Wordmark (dark bg)', cleanPath(wordmarkInput)]);
+    if (wordmarkLightInput) variants.push(['Wordmark (light bg)', cleanPath(wordmarkLightInput)]);
+    if (fullLogoInput) variants.push(['Full lockup (light bg)', cleanPath(fullLogoInput)]);
+    if (fullLogoDarkInput) variants.push(['Full lockup (dark bg)', cleanPath(fullLogoDarkInput)]);
+    if (desktopBgInput) variants.push(['Desktop BG', cleanPath(desktopBgInput)]);
+    if (desktopBgAltInput) variants.push(['Desktop BG alt', cleanPath(desktopBgAltInput)]);
+
+    if (variants.length > 0) {
+        console.log('');
+        console.log(bold('  Logo variants:'));
+
+        for (const [label, val] of variants) {
+            console.log(`    ${label}: ${val}`);
+        }
+    } else {
+        console.log('');
+        console.log(dim('  No logo variants provided — all will be auto-generated.'));
+    }
 
     console.log('');
 

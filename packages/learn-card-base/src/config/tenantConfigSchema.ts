@@ -102,9 +102,12 @@ export const tenantBrandingConfigSchema = z.object({
     textLogoUrl: z.string().optional(),
     textLogoDarkUrl: z.string().optional(),
     brandMarkUrl: z.string().optional(),
+    brandMarkLightUrl: z.string().optional(),
     appIconUrl: z.string().optional(),
     desktopLoginBgUrl: z.string().optional(),
     desktopLoginBgAltUrl: z.string().optional(),
+    fullLogoUrl: z.string().optional(),
+    fullLogoDarkUrl: z.string().optional(),
 
     categoryLabels: z.record(z.string(), z.string()).optional(),
     categoryColors: z.record(z.string(), z.string()).optional(),

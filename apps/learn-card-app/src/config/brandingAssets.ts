@@ -20,13 +20,32 @@ import DefaultDesktopLoginBg from '../assets/images/desktop-login-bg.png';
 import DefaultDesktopLoginBgAlt from '../assets/images/desktop-login-bg-alt.png';
 
 export interface ResolvedBrandingAssets {
+    /** Wordmark (text only) for dark backgrounds — white/light text. */
     textLogo: string;
-    /** Dark variant for light backgrounds. Undefined when not configured. */
+
+    /** Wordmark (text only) for light backgrounds — dark text. Undefined when not configured. */
     textLogoDark: string | undefined;
+
+    /** Icon / brand mark for light backgrounds (dark icon). */
     brandMark: string;
+
+    /** Icon / brand mark for dark backgrounds (light/white icon). Falls back to brandMark. */
+    brandMarkLight: string;
+
+    /** Small app icon (icon + bg color in rounded square). */
     appIcon: string;
+
+    /** Desktop login background. */
     desktopLoginBg: string;
+
+    /** Alternate desktop login background. */
     desktopLoginBgAlt: string;
+
+    /** Full lockup (icon + wordmark) for light backgrounds. Undefined when not configured. */
+    fullLogo: string | undefined;
+
+    /** Full lockup (icon + wordmark) for dark backgrounds. Undefined when not configured. */
+    fullLogoDark: string | undefined;
 }
 
 /**
@@ -37,9 +56,12 @@ export const resolveAssets = (assets: BrandingAssets): ResolvedBrandingAssets =>
     textLogo: assets.textLogoUrl ?? DefaultTextLogo,
     textLogoDark: assets.textLogoDarkUrl,
     brandMark: assets.brandMarkUrl ?? DefaultBrandMark,
+    brandMarkLight: assets.brandMarkLightUrl ?? assets.brandMarkUrl ?? DefaultBrandMark,
     appIcon: assets.appIconUrl ?? DefaultAppIcon,
     desktopLoginBg: assets.desktopLoginBgUrl ?? DefaultDesktopLoginBg,
     desktopLoginBgAlt: assets.desktopLoginBgAltUrl ?? DefaultDesktopLoginBgAlt,
+    fullLogo: assets.fullLogoUrl ?? assets.logoUrl,
+    fullLogoDark: assets.fullLogoDarkUrl ?? assets.fullLogoUrl ?? assets.logoUrl,
 });
 
 /**
@@ -56,8 +78,12 @@ export const useTenantBrandingAssets = (): ResolvedBrandingAssets => {
         assets.textLogoUrl,
         assets.textLogoDarkUrl,
         assets.brandMarkUrl,
+        assets.brandMarkLightUrl,
         assets.appIconUrl,
         assets.desktopLoginBgUrl,
         assets.desktopLoginBgAltUrl,
+        assets.fullLogoUrl,
+        assets.fullLogoDarkUrl,
+        assets.logoUrl,
     ]);
 };

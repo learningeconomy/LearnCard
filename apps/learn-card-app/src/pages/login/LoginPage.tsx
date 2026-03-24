@@ -54,7 +54,7 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import { useTheme } from '../../theme/hooks/useTheme';
 
 export const LoginContent: React.FC = () => {
-    const { textLogo, brandMark, desktopLoginBg } = useTenantBrandingAssets();
+    const { textLogo, brandMarkLight, desktopLoginBg } = useTenantBrandingAssets();
     const { syncThemeDefaults } = useTheme();
     const { newModal, closeModal } = useModal();
     const isLoggedIn = useIsLoggedIn();
@@ -241,7 +241,7 @@ export const LoginContent: React.FC = () => {
             <IonRow className="p-0 m-0 w-full flex items-center justify-center relative pb-[20px]">
                 <div className="flex flex-col items-center justify-center w-full">
                     <img
-                        src={brandMark}
+                        src={brandMarkLight}
                         alt="Brand mark"
                         className="w-[80px] h-[80px] mb-[20px]"
                     />

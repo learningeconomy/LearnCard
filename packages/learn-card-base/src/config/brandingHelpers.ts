@@ -134,16 +134,33 @@ export const getHeaderText = (branding: TenantBrandingConfig): string => {
 // -----------------------------------------------------------------
 
 export interface BrandingAssets {
-    /** Wordmark / text logo (SVG or image URL). Light variant for dark backgrounds. */
+    /**
+     * Wordmark only (text, no icon) — light/white variant for dark backgrounds.
+     * Used on: loading page, intro slides, login page (colored bg).
+     */
     textLogoUrl: string | undefined;
 
-    /** Dark variant of the text logo for light backgrounds (side menu, headers). */
+    /**
+     * Wordmark only (text, no icon) — dark variant for light backgrounds.
+     * Used on: side menu header, AI sessions desktop header (white bg).
+     */
     textLogoDarkUrl: string | undefined;
 
-    /** Brand mark / app icon used on login page hero. */
+    /**
+     * Icon / brand mark — dark variant for light backgrounds.
+     * Used on: login page hero, approve account, credential request cards.
+     * This is the "primary" icon; use on white or light-colored surfaces.
+     */
     brandMarkUrl: string | undefined;
 
-    /** Small app icon used in loaders, consent flow, onboarding, etc. */
+    /**
+     * Icon / brand mark — light/white variant for dark backgrounds.
+     * Used on: loading page, intro slides, any surface with a dark or
+     * colored background. Falls back to brandMarkUrl if not provided.
+     */
+    brandMarkLightUrl: string | undefined;
+
+    /** Small app icon (icon + bg color in a rounded square). Used in loaders, consent flow, onboarding. */
     appIconUrl: string | undefined;
 
     /** Desktop login page background image. */
@@ -155,7 +172,21 @@ export interface BrandingAssets {
     /** Favicon URL for web. */
     faviconUrl: string | undefined;
 
-    /** General logo URL (og:image, share cards, etc.). */
+    /**
+     * Full lockup logo (icon + wordmark combined) — for light backgrounds.
+     * Used for: og:image, share cards, external embeds.
+     * If not set, the app composes brandMark + textLogo at render time.
+     */
+    fullLogoUrl: string | undefined;
+
+    /**
+     * Full lockup logo (icon + wordmark combined) — for dark backgrounds.
+     * Used for: splash screens, share cards on dark surfaces.
+     * Falls back to fullLogoUrl if not provided.
+     */
+    fullLogoDarkUrl: string | undefined;
+
+    /** @deprecated Use fullLogoUrl instead. General logo URL (og:image, share cards). */
     logoUrl: string | undefined;
 }
 
@@ -169,9 +200,12 @@ export const getBrandingAssets = (branding: TenantBrandingConfig): BrandingAsset
     textLogoUrl: branding.textLogoUrl,
     textLogoDarkUrl: branding.textLogoDarkUrl,
     brandMarkUrl: branding.brandMarkUrl,
+    brandMarkLightUrl: branding.brandMarkLightUrl,
     appIconUrl: branding.appIconUrl,
     desktopLoginBgUrl: branding.desktopLoginBgUrl,
     desktopLoginBgAltUrl: branding.desktopLoginBgAltUrl,
     faviconUrl: branding.faviconUrl,
+    fullLogoUrl: branding.fullLogoUrl,
+    fullLogoDarkUrl: branding.fullLogoDarkUrl,
     logoUrl: branding.logoUrl,
 });

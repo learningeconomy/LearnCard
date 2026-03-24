@@ -9,7 +9,7 @@ import { usePathQuery } from 'learn-card-base';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
 const ApproveAccount: React.FC = () => {
-    const { textLogo, brandMark } = useTenantBrandingAssets();
+    const { textLogo, brandMarkLight } = useTenantBrandingAssets();
     const isLocalHost = false;
     //if running dockerized then uncomment the below and replace the explicit false value for isLocalHost
     //  typeof window !== 'undefined' &&
@@ -94,7 +94,7 @@ const ApproveAccount: React.FC = () => {
                 <div className="h-full w-full flex flex-col items-center justify-center px-6 text-center text-white">
                     <div className="flex flex-col items-center justify-center w-full mb-6">
                         <img
-                            src={brandMark}
+                            src={brandMarkLight}
                             alt="Brand mark"
                             className="w-[64px] h-[64px] mb-3"
                         />

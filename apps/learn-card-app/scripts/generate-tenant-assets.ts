@@ -1,33 +1,63 @@
 /**
  * generate-tenant-assets.ts
  *
- * Generates all image assets for a tenant from a single source logo.
+ * Generates all image assets for a tenant from source logo variant(s).
+ *
+ * The first positional argument (<logo-path>) is the primary icon/mark — used for
+ * native app icons, favicon, notification icons, and as the default for all derived
+ * branding assets. Additional logo variants can be provided via flags to produce a
+ * complete brand kit.
  *
  * Usage:
  *   npx tsx scripts/generate-tenant-assets.ts <tenant> <logo-path> [options]
  *
- * Options:
- *   --bg <hex>              Background color for icons (default: #FFFFFF)
- *   --splash-bg <hex>       Splash screen background color (defaults to --bg)
- *   --no-splash             Skip splash screen generation
- *   --fill                  Only generate missing assets (skip existing files)
- *   --yes                   Skip confirmation prompt
- *   --name <text>           Tenant display name for text logo (auto-read from
- *                           environments/<tenant>/config.json branding.name if not set)
- *   --text-logo <path>      Override: use this file instead of auto-generating
- *   --text-logo-dark <path> Override: dark variant for light backgrounds
- *   --desktop-bg <path>     Override: use this file instead of auto-generating
- *   --desktop-bg-alt <path> Override: use this file instead of auto-generating
+ * General options:
+ *   --bg <hex>                Background color for icons (default: #FFFFFF)
+ *   --splash-bg <hex>         Splash screen background color (defaults to --bg)
+ *   --no-splash               Skip splash screen generation
+ *   --fill                    Only generate missing assets (skip existing files)
+ *   --yes                     Skip confirmation prompt
+ *   --name <text>             Tenant display name for text logo (auto-read from
+ *                             environments/<tenant>/config.json branding.name if not set)
+ *
+ * Logo variant overrides (all optional — omitted variants are auto-generated):
+ *
+ *   Icon / brand mark:
+ *   --icon-light <path>       Icon for dark backgrounds (white/light version).
+ *                             Saved as brand-mark-light.png. Falls back to main logo.
+ *
+ *   Wordmark (text only, no icon):
+ *   --wordmark <path>         Wordmark for dark backgrounds (white/light text).
+ *                             Saved as text-logo (SVG/PNG). Auto-generated if omitted.
+ *   --wordmark-light <path>   Wordmark for light backgrounds (dark text).
+ *                             Saved as text-logo-dark. Auto-generated if omitted.
+ *
+ *   Full lockup (icon + wordmark combined):
+ *   --full-logo <path>        Full lockup for light backgrounds (dark logo).
+ *                             Saved as full-logo.png. Used for og:image, share cards.
+ *   --full-logo-light <path>  Full lockup for dark backgrounds (light/white logo).
+ *                             Saved as full-logo-dark.png. Used for splash overlays.
+ *
+ *   Desktop backgrounds:
+ *   --desktop-bg <path>       Override: use this file instead of auto-generating
+ *   --desktop-bg-alt <path>   Override: use this file instead of auto-generating
+ *
+ *   Legacy aliases (still supported):
+ *   --text-logo <path>        Alias for --wordmark
+ *   --text-logo-dark <path>   Alias for --wordmark-light
  *
  * Outputs to: environments/<tenant>/assets/
  *
  * Generated structure:
  *   environments/<tenant>/assets/
  *   ├── branding/
- *   │   ├── app-icon.png                    200×200  (auto-generated)
- *   │   ├── brand-mark.png                  200×200  (auto-generated)
- *   │   ├── text-logo.svg                   (auto-generated or --text-logo)
- *   │   ├── text-logo-dark.svg              (auto-generated or --text-logo-dark)
+ *   │   ├── app-icon.png                    200×200  (auto-generated from main logo)
+ *   │   ├── brand-mark.png                  200×200  (auto-generated from main logo)
+ *   │   ├── brand-mark-light.png            200×200  (from --icon-light or auto-generated)
+ *   │   ├── text-logo.svg                   (from --wordmark or auto-generated)
+ *   │   ├── text-logo-dark.svg              (from --wordmark-light or auto-generated)
+ *   │   ├── full-logo.png                   (from --full-logo, optional)
+ *   │   ├── full-logo-dark.png              (from --full-logo-light, optional)
  *   │   ├── desktop-login-bg.png            (auto-generated or --desktop-bg)
  *   │   └── desktop-login-bg-alt.png        (auto-generated or --desktop-bg-alt)
  *   ├── ios/
@@ -467,9 +497,42 @@ const DESKTOP_BG_HEIGHT = 1080;
 
 interface BrandingOptions {
     tenantDisplayName: string;
+
+    /**
+     * Icon / brand mark for dark backgrounds (light/white version).
+     * If provided, copied as brand-mark-light.{ext}. Otherwise auto-generated
+     * as a white-on-transparent version of the main logo.
+     */
+    iconLightPath?: string;
+
+    /**
+     * Wordmark (text only, no icon) for dark backgrounds (white/light text).
+     * Mapped from --wordmark or --text-logo. If omitted, auto-generated SVG.
+     */
     textLogoPath?: string;
+
+    /**
+     * Wordmark (text only, no icon) for light backgrounds (dark text).
+     * Mapped from --wordmark-light or --text-logo-dark. If omitted, auto-generated SVG.
+     */
     textLogoDarkPath?: string;
+
+    /**
+     * Full lockup (icon + wordmark combined) for light backgrounds (dark logo).
+     * Copied as full-logo.{ext}. Used for og:image, share cards.
+     */
+    fullLogoPath?: string;
+
+    /**
+     * Full lockup (icon + wordmark combined) for dark backgrounds (light/white logo).
+     * Copied as full-logo-dark.{ext}. Used for splash overlays.
+     */
+    fullLogoDarkPath?: string;
+
+    /** Desktop login background image override. */
     desktopBgPath?: string;
+
+    /** Alternate desktop login background image override. */
     desktopBgAltPath?: string;
 }
 
@@ -566,6 +629,21 @@ const generateDesktopBg = async (
     await sharp(Buffer.from(svg)).png().toFile(outputPath);
 };
 
+/**
+ * Copy a user-provided override file into the branding directory.
+ * Returns true if the file was found and copied, false otherwise.
+ */
+const copyOverride = (srcPath: string, destPath: string, label: string): boolean => {
+    if (!fs.existsSync(srcPath)) {
+        console.warn(`  ⚠  ${label} file not found: ${srcPath}`);
+        return false;
+    }
+
+    fs.cpSync(srcPath, destPath);
+    console.log(`  🎨 Copied ${path.basename(destPath)} (${label})`);
+    return true;
+};
+
 const generateBrandingAssets = async (
     logoBuffer: Buffer,
     bgColor: RGB,
@@ -575,71 +653,75 @@ const generateBrandingAssets = async (
     const brandingDir = path.join(outDir, 'branding');
     ensureDir(brandingDir);
 
-    // 1. App icon + brand mark (always auto-generated from logo)
-    console.log(`  🎨 In-app Branding: app-icon.png + brand-mark.png (${BRANDING_ICON_SIZE}×${BRANDING_ICON_SIZE})...`);
+    // ── 1. App icon (icon + bg color, square) ────────────────────────────
+    console.log(`  🎨 app-icon.png (${BRANDING_ICON_SIZE}×${BRANDING_ICON_SIZE})...`);
+    await generateSquareIcon(logoBuffer, BRANDING_ICON_SIZE, bgColor, path.join(brandingDir, 'app-icon.png'));
 
-    await Promise.all([
-        generateSquareIcon(logoBuffer, BRANDING_ICON_SIZE, bgColor, path.join(brandingDir, 'app-icon.png')),
-        generateSquareIcon(logoBuffer, BRANDING_ICON_SIZE, bgColor, path.join(brandingDir, 'brand-mark.png')),
-    ]);
+    // ── 2. Brand mark — dark icon for light backgrounds ──────────────────
+    console.log(`  🎨 brand-mark.png (${BRANDING_ICON_SIZE}×${BRANDING_ICON_SIZE}) — icon for light backgrounds...`);
+    await generateSquareIcon(logoBuffer, BRANDING_ICON_SIZE, bgColor, path.join(brandingDir, 'brand-mark.png'));
 
-    // 2. Text logo (light variant — white fill for dark backgrounds)
+    // ── 3. Brand mark light — light/white icon for dark backgrounds ──────
+    if (options.iconLightPath) {
+        const ext = path.extname(options.iconLightPath);
+        copyOverride(options.iconLightPath, path.join(brandingDir, `brand-mark-light${ext}`), '--icon-light');
+    } else {
+        // Auto-generate: same icon on a transparent background (no colored square)
+        // so it shows up on dark surfaces. Uses white bg for the square variant.
+        const whiteBg: RGB = { r: 255, g: 255, b: 255 };
+        await generateSquareIcon(logoBuffer, BRANDING_ICON_SIZE, whiteBg, path.join(brandingDir, 'brand-mark-light.png'));
+        console.log(`  🎨 Auto-generated brand-mark-light.png (${BRANDING_ICON_SIZE}×${BRANDING_ICON_SIZE}, white bg)`);
+    }
+
+    // ── 4. Text logo — wordmark for dark backgrounds (white/light text) ──
     if (options.textLogoPath) {
-        if (!fs.existsSync(options.textLogoPath)) {
-            console.warn(`  ⚠  --text-logo file not found: ${options.textLogoPath}`);
-        } else {
-            const ext = path.extname(options.textLogoPath);
-            const dest = path.join(brandingDir, `text-logo${ext}`);
-            fs.cpSync(options.textLogoPath, dest);
-            console.log(`  🎨 Copied text-logo${ext} (override)`);
-        }
+        const ext = path.extname(options.textLogoPath);
+        copyOverride(options.textLogoPath, path.join(brandingDir, `text-logo${ext}`), '--wordmark');
     } else {
         const svg = generateTextLogoSvg(options.tenantDisplayName, 'white');
         fs.writeFileSync(path.join(brandingDir, 'text-logo.svg'), svg, 'utf-8');
         console.log(`  🎨 Auto-generated text-logo.svg ("${options.tenantDisplayName.toUpperCase()}", fill=white)`);
     }
 
-    // 2b. Text logo dark variant — dark fill for light backgrounds (side menu, headers)
+    // ── 5. Text logo dark — wordmark for light backgrounds (dark text) ───
     if (options.textLogoDarkPath) {
-        if (!fs.existsSync(options.textLogoDarkPath)) {
-            console.warn(`  ⚠  --text-logo-dark file not found: ${options.textLogoDarkPath}`);
-        } else {
-            const ext = path.extname(options.textLogoDarkPath);
-            const dest = path.join(brandingDir, `text-logo-dark${ext}`);
-            fs.cpSync(options.textLogoDarkPath, dest);
-            console.log(`  🎨 Copied text-logo-dark${ext} (override)`);
-        }
+        const ext = path.extname(options.textLogoDarkPath);
+        copyOverride(options.textLogoDarkPath, path.join(brandingDir, `text-logo-dark${ext}`), '--wordmark-light');
     } else {
         const darkSvg = generateTextLogoSvg(options.tenantDisplayName, TEXT_LOGO_DARK_FILL);
         fs.writeFileSync(path.join(brandingDir, 'text-logo-dark.svg'), darkSvg, 'utf-8');
         console.log(`  🎨 Auto-generated text-logo-dark.svg ("${options.tenantDisplayName.toUpperCase()}", fill=${TEXT_LOGO_DARK_FILL})`);
     }
 
-    // 3. Desktop login background — override file or auto-generate gradient
+    // ── 6. Full lockup — combined icon + wordmark for light backgrounds ──
+    if (options.fullLogoPath) {
+        const ext = path.extname(options.fullLogoPath);
+        copyOverride(options.fullLogoPath, path.join(brandingDir, `full-logo${ext}`), '--full-logo');
+    } else {
+        console.log('  🎨 Skipping full-logo (no --full-logo provided — app composes icon + wordmark at runtime)');
+    }
+
+    // ── 7. Full lockup dark — combined for dark backgrounds ──────────────
+    if (options.fullLogoDarkPath) {
+        const ext = path.extname(options.fullLogoDarkPath);
+        copyOverride(options.fullLogoDarkPath, path.join(brandingDir, `full-logo-dark${ext}`), '--full-logo-light');
+    } else {
+        console.log('  🎨 Skipping full-logo-dark (no --full-logo-light provided)');
+    }
+
+    // ── 8. Desktop login background ──────────────────────────────────────
     if (options.desktopBgPath) {
-        if (!fs.existsSync(options.desktopBgPath)) {
-            console.warn(`  ⚠  --desktop-bg file not found: ${options.desktopBgPath}`);
-        } else {
-            const ext = path.extname(options.desktopBgPath);
-            const dest = path.join(brandingDir, `desktop-login-bg${ext}`);
-            fs.cpSync(options.desktopBgPath, dest);
-            console.log(`  🎨 Copied desktop-login-bg${ext} (override)`);
-        }
+        const ext = path.extname(options.desktopBgPath);
+        copyOverride(options.desktopBgPath, path.join(brandingDir, `desktop-login-bg${ext}`), '--desktop-bg');
     } else {
         await generateDesktopBg(bgColor, DESKTOP_BG_WIDTH, DESKTOP_BG_HEIGHT, path.join(brandingDir, 'desktop-login-bg.png'), 'primary');
         console.log(`  🎨 Auto-generated desktop-login-bg.png (${DESKTOP_BG_WIDTH}×${DESKTOP_BG_HEIGHT} gradient)`);
     }
 
-    // 4. Desktop login background alt — override file or auto-generate gradient variant
+    // ── 9. Desktop login background alt ──────────────────────────────────
     if (options.desktopBgAltPath) {
-        if (!fs.existsSync(options.desktopBgAltPath)) {
-            console.warn(`  ⚠  --desktop-bg-alt file not found: ${options.desktopBgAltPath}`);
-        } else {
-            const ext = path.extname(options.desktopBgAltPath);
-            const dest = path.join(brandingDir, `desktop-login-bg-alt${ext}`);
-            fs.cpSync(options.desktopBgAltPath, dest);
-            console.log(`  🎨 Copied desktop-login-bg-alt${ext} (override)`);
-        }
+        const ext = path.extname(options.desktopBgAltPath);
+        copyOverride(options.desktopBgAltPath, path.join(brandingDir, `desktop-login-bg-alt${ext}`), '--desktop-bg-alt');
     } else {
         await generateDesktopBg(bgColor, DESKTOP_BG_WIDTH, DESKTOP_BG_HEIGHT, path.join(brandingDir, 'desktop-login-bg-alt.png'), 'alt');
         console.log(`  🎨 Auto-generated desktop-login-bg-alt.png (${DESKTOP_BG_WIDTH}×${DESKTOP_BG_HEIGHT} gradient variant)`);
@@ -658,7 +740,12 @@ interface AssetCategory {
 
 const DENSITY_NAMES = ANDROID_DENSITIES.map(d => d.name);
 
-const buildAssetManifest = (skipSplash: boolean, textLogoExt?: string): AssetCategory[] => {
+const buildAssetManifest = (
+    skipSplash: boolean,
+    textLogoExt?: string,
+    fullLogoExt?: string,
+    fullLogoDarkExt?: string,
+): AssetCategory[] => {
     const categories: AssetCategory[] = [];
 
     // iOS
@@ -742,11 +829,16 @@ const buildAssetManifest = (skipSplash: boolean, textLogoExt?: string): AssetCat
     const brandingFiles = [
         'branding/app-icon.png',
         'branding/brand-mark.png',
+        'branding/brand-mark-light.png',
         `branding/text-logo${textLogoExt ?? '.svg'}`,
         'branding/text-logo-dark.svg',
         'branding/desktop-login-bg.png',
         'branding/desktop-login-bg-alt.png',
     ];
+
+    // Full lockup files are optional — only listed if the user provided them
+    if (fullLogoExt) brandingFiles.push(`branding/full-logo${fullLogoExt}`);
+    if (fullLogoDarkExt) brandingFiles.push(`branding/full-logo-dark${fullLogoDarkExt}`);
 
     categories.push({ name: 'branding', description: 'In-app Branding Assets', files: brandingFiles });
 
@@ -938,22 +1030,34 @@ const main = async (): Promise<void> => {
 Usage:
   npx tsx scripts/generate-tenant-assets.ts <tenant> <logo-path> [options]
 
-Options:
-  --bg <hex>              Icon background color      (default: #FFFFFF)
-  --splash-bg <hex>       Splash background color    (defaults to --bg)
-  --no-splash             Skip splash screen generation
-  --fill                  Only generate missing assets (skip existing files)
-  --yes                   Skip confirmation prompt
-  --name <text>           Tenant display name for text logo
-                          (auto-read from environments/<tenant>/config.json if not set)
-  --text-logo <path>      Override: use this file instead of auto-generating
-  --text-logo-dark <path> Override: dark variant for light backgrounds
-  --desktop-bg <path>     Override: use this file instead of auto-generating
-  --desktop-bg-alt <path> Override: use this file instead of auto-generating
+General options:
+  --bg <hex>                Icon background color        (default: #FFFFFF)
+  --splash-bg <hex>         Splash background color      (defaults to --bg)
+  --no-splash               Skip splash screen generation
+  --fill                    Only generate missing assets  (skip existing files)
+  --yes                     Skip confirmation prompt
+  --name <text>             Tenant display name for text logo
+                            (auto-read from config.json branding.name if not set)
+
+Logo variant overrides (all optional — omitted variants are auto-generated):
+  --icon-light <path>       Icon for dark backgrounds    (light/white version)
+  --wordmark <path>         Wordmark for dark backgrounds (white/light text)
+  --wordmark-light <path>   Wordmark for light backgrounds (dark text)
+  --full-logo <path>        Full lockup for light bgs    (icon + wordmark, dark)
+  --full-logo-light <path>  Full lockup for dark bgs     (icon + wordmark, light)
+  --desktop-bg <path>       Desktop login background override
+  --desktop-bg-alt <path>   Desktop login alt background override
+
+Legacy aliases (still supported):
+  --text-logo <path>        Alias for --wordmark
+  --text-logo-dark <path>   Alias for --wordmark-light
 
 Example:
-  npx tsx scripts/generate-tenant-assets.ts vetpass ~/logo.png --bg "#1A3C5E" --name "VetPass"
-  npx tsx scripts/generate-tenant-assets.ts vetpass ~/logo.png --bg "#1A3C5E" --fill
+  npx tsx scripts/generate-tenant-assets.ts vetpass ~/icon.png --bg "#1A3C5E" --name "VetPass"
+  npx tsx scripts/generate-tenant-assets.ts vetpass ~/icon.png --bg "#1A3C5E" \\
+    --icon-light ~/icon-white.png \\
+    --wordmark ~/wordmark-white.svg --wordmark-light ~/wordmark-dark.svg \\
+    --full-logo ~/lockup-dark.png --full-logo-light ~/lockup-white.png
 `);
         process.exit(1);
     }
@@ -967,8 +1071,13 @@ Example:
     let fillOnly = false;
     let skipPrompt = false;
     let nameOverride: string | undefined;
+
+    // Logo variant paths
+    let iconLightPath: string | undefined;
     let textLogoPath: string | undefined;
     let textLogoDarkPath: string | undefined;
+    let fullLogoPath: string | undefined;
+    let fullLogoDarkPath: string | undefined;
     let desktopBgPath: string | undefined;
     let desktopBgAltPath: string | undefined;
 
@@ -985,10 +1094,16 @@ Example:
             skipPrompt = true;
         } else if (args[i] === '--name' && args[i + 1]) {
             nameOverride = args[++i]!;
-        } else if (args[i] === '--text-logo' && args[i + 1]) {
+        } else if (args[i] === '--icon-light' && args[i + 1]) {
+            iconLightPath = path.resolve(args[++i]!);
+        } else if ((args[i] === '--wordmark' || args[i] === '--text-logo') && args[i + 1]) {
             textLogoPath = path.resolve(args[++i]!);
-        } else if (args[i] === '--text-logo-dark' && args[i + 1]) {
+        } else if ((args[i] === '--wordmark-light' || args[i] === '--text-logo-dark') && args[i + 1]) {
             textLogoDarkPath = path.resolve(args[++i]!);
+        } else if (args[i] === '--full-logo' && args[i + 1]) {
+            fullLogoPath = path.resolve(args[++i]!);
+        } else if (args[i] === '--full-logo-light' && args[i + 1]) {
+            fullLogoDarkPath = path.resolve(args[++i]!);
         } else if (args[i] === '--desktop-bg' && args[i + 1]) {
             desktopBgPath = path.resolve(args[++i]!);
         } else if (args[i] === '--desktop-bg-alt' && args[i + 1]) {
@@ -1044,7 +1159,9 @@ Example:
 
     // Build asset manifest and check existing files
     const textLogoExt = textLogoPath ? path.extname(textLogoPath) : undefined;
-    const manifest = buildAssetManifest(skipSplash, textLogoExt);
+    const fullLogoExt = fullLogoPath ? path.extname(fullLogoPath) : undefined;
+    const fullLogoDarkExt = fullLogoDarkPath ? path.extname(fullLogoDarkPath) : undefined;
+    const manifest = buildAssetManifest(skipSplash, textLogoExt, fullLogoExt, fullLogoDarkExt);
 
     const allFiles = manifest.flatMap(c => c.files);
     const existingFiles = allFiles.filter(f => fs.existsSync(path.join(outDir, f)));
@@ -1173,8 +1290,11 @@ Example:
     if (shouldGenerate('branding')) {
         await generateBrandingAssets(logoBuffer, bgColor, outDir, {
             tenantDisplayName,
+            iconLightPath,
             textLogoPath,
             textLogoDarkPath,
+            fullLogoPath,
+            fullLogoDarkPath: fullLogoDarkPath,
             desktopBgPath,
             desktopBgAltPath,
         });
