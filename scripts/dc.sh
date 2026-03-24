@@ -72,7 +72,37 @@ if [[ "$OFFSET" -ne 0 ]]; then
     echo "│  neo4j:    localhost:$NEO4J_BOLT_HOST_PORT (bolt) / localhost:$NEO4J_HTTP_HOST_PORT (http)"
     echo "│  mongo:    localhost:$MONGO_HOST_PORT"
     echo "│  postgres: localhost:$POSTGRES_HOST_PORT"
+    echo "│  lrs:      localhost:$LRS_HOST_PORT"
     echo "└─────────────────────────────────────────────┘"
+fi
+
+# --- Port conflict check -----------------------------------------------------
+
+check_port() {
+    local port=$1 name=$2
+    if lsof -iTCP:"$port" -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo "⚠  Port $port ($name) is already in use" >&2
+        CONFLICTS=1
+    fi
+}
+
+CONFLICTS=0
+for pair in \
+    "$BRAIN_HOST_PORT:brain" \
+    "$CLOUD_HOST_PORT:cloud" \
+    "$SIGNING_HOST_PORT:signing" \
+    "$LCA_API_HOST_PORT:lca-api" \
+    "$NEO4J_BOLT_HOST_PORT:neo4j-bolt" \
+    "$MONGO_HOST_PORT:mongo" \
+    "$POSTGRES_HOST_PORT:postgres" \
+    "$REDIS1_HOST_PORT:redis1" \
+    "$REDIS2_HOST_PORT:redis2" \
+    "$REDIS3_HOST_PORT:redis3"; do
+    check_port "${pair%%:*}" "${pair#*:}"
+done
+
+if [[ "$CONFLICTS" -eq 1 ]]; then
+    echo "Hint: set PORT_OFFSET to avoid collisions (e.g. PORT_OFFSET=100)" >&2
 fi
 
 # --- Exec --------------------------------------------------------------------

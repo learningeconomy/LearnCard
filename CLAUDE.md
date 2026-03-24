@@ -48,6 +48,15 @@ For detailed architecture, read the relevant AGENTS.md when working in that area
 | ScoutPass app | `apps/scouts/AGENTS.md` | Troop/Scout hierarchy, credential status, key components |
 | LearnCard app (E2E testing, architecture) | `apps/learn-card-app/AGENTS.md` | Playwright E2E test setup, auth, Ionic modal gotchas, credential flows |
 
+## Docker Port Namespacing
+
+Use `scripts/dc.sh` instead of raw `docker compose` to avoid port collisions between stacks (e.g. local dev + e2e).
+
+- `PORT_OFFSET=0` (default) — no change, original ports
+- `PORT_OFFSET=100` — shifts all host ports by 100 (brain→4100, cloud→4200, etc.)
+- `LC_PROJECT` — override the compose project name (default: derived from git branch)
+- E2E tests read `PORT_OFFSET` via `tests/e2e/tests/helpers/ports.ts` — all test code should import `URLS`/`PORTS` from there, never hardcode `localhost:PORT`
+
 ## Quick Reference
 
 For common API patterns and key file locations, see `PATTERNS.md` in the repo root.
