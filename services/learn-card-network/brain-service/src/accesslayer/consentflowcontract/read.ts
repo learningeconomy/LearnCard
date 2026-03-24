@@ -68,7 +68,7 @@ export const getSharedInsightsRequestsForTargetProfile = async (
         readStatus: 'unseen' | 'seen' | null;
     }[]
 > => {
-    const result = await new QueryBuilder(new BindParam({ targetProfileId }))
+    const incomingRequestsResult = await new QueryBuilder(new BindParam({ targetProfileId }))
         .match({ model: ConsentFlowContract, identifier: 'c' })
         .match('(c)-[r:REQUESTED_FOR]->(target:Profile)')
         .where('target.profileId = $targetProfileId')
@@ -86,7 +86,25 @@ export const getSharedInsightsRequestsForTargetProfile = async (
         .return(['writer', 'r'])
         .run();
 
-    const mappedResults = result.records.map(rec => {
+    const outgoingRequestsResult = await new QueryBuilder(new BindParam({ targetProfileId }))
+        .match({ model: ConsentFlowContract, identifier: 'c' })
+        .match({
+            related: [
+                { identifier: 'c', model: ConsentFlowContract },
+                `-[:${ConsentFlowContract.getRelationshipByAlias('createdBy').name}|:${
+                    ConsentFlowContract.getRelationshipByAlias('canWrite').name
+                }]-`,
+                { identifier: 'writer', model: Profile },
+            ],
+        })
+        .where('writer.profileId = $targetProfileId')
+        .match('(c)-[r:REQUESTED_FOR]->(target:Profile)')
+        .where('target.profileId <> $targetProfileId')
+        .where("r.status IN ['pending', 'accepted']")
+        .return(['target', 'r'])
+        .run();
+
+    const incomingMappedResults = incomingRequestsResult.records.map(rec => {
         const { writer, r } = rec.toObject();
 
         return {
@@ -95,6 +113,18 @@ export const getSharedInsightsRequestsForTargetProfile = async (
             readStatus: (r.properties?.readStatus ?? null) as 'unseen' | 'seen' | null,
         };
     });
+
+    const outgoingMappedResults = outgoingRequestsResult.records.map(rec => {
+        const { target, r } = rec.toObject();
+
+        return {
+            profile: inflateObject<ProfileType>(target.properties),
+            status: r.properties?.status as 'pending' | 'accepted',
+            readStatus: (r.properties?.readStatus ?? null) as 'unseen' | 'seen' | null,
+        };
+    });
+
+    const mappedResults = [...incomingMappedResults, ...outgoingMappedResults];
 
     const dedupedByProfileId = new Map<string, (typeof mappedResults)[number]>();
 
