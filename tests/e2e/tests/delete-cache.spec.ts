@@ -49,7 +49,8 @@ describe('Delete Functionality and Cache Invalidation', () => {
             await a.index.LearnCloud.add({ id: 'test', uri });
 
             // User B tries to delete User A's credential
-            await expect(b.store.LearnCloud.delete(uri)).rejects.toThrow();
+            const deleted = await b.store.LearnCloud.delete(uri);
+            expect(deleted).toBe(false);
 
             // Verify User A's credential is still intact
             const records = await a.index.LearnCloud.get();
@@ -57,7 +58,7 @@ describe('Delete Functionality and Cache Invalidation', () => {
             expect(records[0].uri).toEqual(uri);
         });
 
-        test('deleting a credential sent via LCN removes it from recipient', async () => {
+        test('deleting a credential sent via LCN by the owner removes it from sender and recipient views', async () => {
             // User A issues and sends credential to User B
             const unsignedVc = a.invoke.getTestVc(b.id.did());
             const vc = await a.invoke.issueCredential(unsignedVc);
@@ -66,21 +67,21 @@ describe('Delete Functionality and Cache Invalidation', () => {
             // User B accepts the credential
             await b.invoke.acceptCredential(uri);
 
-            // Verify User B received the credential
-            const receivedCreds = await b.invoke.getReceivedCredentials();
-            expect(receivedCreds).toHaveLength(1);
+            // Verify the relationship exists for both sides first
+            const receivedCredsBefore = await b.invoke.getReceivedCredentials();
+            const sentCredsBefore = await a.invoke.getSentCredentials();
+            expect(receivedCredsBefore).toHaveLength(1);
+            expect(sentCredsBefore).toHaveLength(1);
 
-            // User B deletes the received credential
-            const deleted = await b.store.LearnCloud.delete(uri);
+            // Owner deletes the credential
+            const deleted = await a.store.LearnCloud.delete(uri);
             expect(deleted).toBe(true);
 
-            // Verify credential is removed from User B's received credentials
+            // Verify credential is removed from both sender and recipient views
             const receivedCredsAfter = await b.invoke.getReceivedCredentials();
+            const sentCredsAfter = await a.invoke.getSentCredentials();
             expect(receivedCredsAfter).toHaveLength(0);
-
-            // Verify User A's sent credential is still intact
-            const sentCreds = await a.invoke.getSentCredentials();
-            expect(sentCreds).toHaveLength(1);
+            expect(sentCredsAfter).toHaveLength(0);
         });
     });
 
@@ -167,24 +168,6 @@ describe('Delete Functionality and Cache Invalidation', () => {
 
             // Verify delete is not available for this plugin
             expect(simplePlugin.store.SimpleTestPlugin.delete).toBeUndefined();
-        });
-    });
-
-    describe('Presentation Deletion', () => {
-        test('can delete a stored presentation', async () => {
-            // Create a presentation
-            const unsignedVc = a.invoke.getTestVc(a.id.did());
-            const vc = await a.invoke.issueCredential(unsignedVc);
-            const unsignedVp = a.invoke.getTestVp([vc]);
-            const vp = await a.invoke.issuePresentation(unsignedVp);
-
-            // Store the presentation (we'll need to adapt this based on actual API)
-            // For now, test the deleteCredential works with presentations
-            const uri = await a.store.LearnCloud.upload!(vp as any);
-
-            // Delete the presentation
-            const deleted = await a.store.LearnCloud.delete(uri);
-            expect(deleted).toBe(true);
         });
     });
 

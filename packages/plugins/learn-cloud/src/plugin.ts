@@ -405,6 +405,45 @@ export const getLearnCloudPlugin = async (
 
                 return client.storage.store.mutate({ item: jwe });
             },
+            delete: async (_learnCard, uri) => {
+                _learnCard.debug?.("learnCard.store['LearnCloud'].delete", { uri });
+
+                let deleted = false;
+
+                if ('deleteCredential' in _learnCard.invoke) {
+                    try {
+                        deleted = Boolean(await (_learnCard.invoke as any).deleteCredential(uri));
+                    } catch (error) {
+                        _learnCard.debug?.('LearnCloud store.delete invoke.deleteCredential failed', error);
+
+                        const errorText = String((error as any)?.message ?? error);
+                        if (/UNAUTHORIZED|FORBIDDEN|do not own/i.test(errorText)) {
+                            throw error;
+                        }
+                    }
+                }
+
+                if (!deleted) {
+                    try {
+                        deleted = Boolean(await client.storage.delete.mutate({ uri }));
+                    } catch (error) {
+                        _learnCard.debug?.('LearnCloud store.delete storage.delete failed', error);
+                    }
+                }
+
+                if (!deleted) return false;
+
+                try {
+                    const records = await _learnCard.index.LearnCloud.get({ uri });
+                    for (const record of records) {
+                        await _learnCard.index.LearnCloud.remove(record.id, { cache: 'skip-cache' });
+                    }
+                } catch (error) {
+                    _learnCard.debug?.('LearnCloud store.delete index cleanup failed', error);
+                }
+
+                return true;
+            },
         },
         index: {
             get: async (_learnCard, query) => {
