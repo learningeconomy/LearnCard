@@ -49,6 +49,7 @@ const loadRegistry = (): TenantRegistry => {
         // Netlify edge functions resolve relative paths from the site root.
         // Try multiple potential locations to be resilient to deploy layouts.
         const paths = [
+            './apps/learn-card-app/environments/tenant-registry.json',
             './environments/tenant-registry.json',
             '../environments/tenant-registry.json',
         ];
