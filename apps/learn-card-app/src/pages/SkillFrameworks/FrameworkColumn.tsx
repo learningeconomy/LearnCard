@@ -359,7 +359,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                     ) : (
                         <div className="rounded-full bg-grayscale-900 w-[60px] h-[60px] flex items-center justify-center p-[12px] shrink-0">
                             <span className="text-[28px] h-[36px] w-[36px] leading-[36px] font-fluentEmoji cursor-none pointer-events-none select-none">
-                                {columnNode?.icon}
+                                {columnNode?.icon || (columnNode?.role === 'tier' ? '🗃️' : '🧩')}
                             </span>
                         </div>
                     )}
@@ -383,7 +383,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
 
                     {columnNode && (
                         <InfoIcon
-                            className="ml-auto w-[24px] h-[24px] text-grayscale-600"
+                            className="ml-auto w-[24px] h-[24px] text-grayscale-600 shrink-0"
                             version="thinner"
                         />
                     )}
