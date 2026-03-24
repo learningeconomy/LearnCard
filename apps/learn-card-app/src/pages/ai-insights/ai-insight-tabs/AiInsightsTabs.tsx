@@ -38,10 +38,6 @@ export const AiInsightsTabs: React.FC<{
 
     const currentUserRole = useGetCurrentUserRole();
 
-    if (currentUserRole === LearnCardRolesEnum.learner) {
-        return null;
-    }
-
     return (
         <div className={`${className} flex items-center gap-[10px]`}>
             {aiInsightsTabs.map(tab => {
