@@ -186,6 +186,12 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
             await wallet.invoke.syncFrameworkSkills({ id: framework.id });
 
+            try {
+                await annotateBackendSkillsWithIcons(framework.id, wallet);
+            } catch (iconError) {
+                console.error('Failed to generate icons for skills:', iconError);
+            }
+
             await queryClient.invalidateQueries({ queryKey: ['listMySkillFrameworks'] });
             await queryClient.invalidateQueries({ queryKey: ['skillFrameworks'] });
             await queryClient.invalidateQueries({ queryKey: ['allAvailableSkillFrameworks'] });
