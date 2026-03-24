@@ -43,12 +43,13 @@ export const LoginLoadingPage: React.FC = () => {
                     className="h-full w-full transition-colors duration-1000 ease-in-out flex items-center justify-center text-white text-2xl"
                     style={{ backgroundColor: colors[currentColorIndex] }}
                 >
+                    <div className="flex flex-col items-center justify-center">
                     <img
                         src={textLogo}
                         alt="Logo"
-                        className="mb-8 absolute top-[48%] left-[50%] translate-x-[-50%] max-w-[300px] max-h-[80px] object-contain"
+                        className="mb-8 max-w-[300px] max-h-[80px] object-contain"
                     />
-                    <div className="w-full flex items-center justify-center text-center px-6 absolute top-[52%] left-[50%] translate-x-[-50%]">
+                    <div className="w-full flex items-center justify-center text-center px-6">
                         <Typewriter
                             options={{
                                 strings: messages,
@@ -58,6 +59,7 @@ export const LoginLoadingPage: React.FC = () => {
                                 deleteSpeed: 50,
                             }}
                         />
+                    </div>
                     </div>
                 </IonRow>
             </IonContent>
