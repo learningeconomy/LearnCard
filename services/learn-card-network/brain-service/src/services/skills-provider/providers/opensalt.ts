@@ -161,7 +161,7 @@ export function createOpenSaltProvider(options?: Options): SkillsProvider {
         if (!frameworkId) return [];
 
         const parentByChildId = new Map<string, string>();
-        const parentIds = new Set<string>();
+        const childrenByParentId = new Map<string, string[]>();
         for (const association of packageData.CFAssociations || []) {
             if (association.associationType !== 'isChildOf') continue;
             const childId = association.originNodeURI?.identifier;
@@ -169,31 +169,51 @@ export function createOpenSaltProvider(options?: Options): SkillsProvider {
             if (!childId || !parentId) continue;
             if (parentId === frameworkId) continue;
             parentByChildId.set(childId, parentId);
-            parentIds.add(parentId);
-        }
-
-        const parentsOfLeaves = new Set<string>();
-        for (const [childId, parentId] of parentByChildId.entries()) {
-            const childIsLeaf = !parentIds.has(childId);
-            if (childIsLeaf) {
-                parentsOfLeaves.add(parentId);
+            const siblings = childrenByParentId.get(parentId);
+            if (siblings) {
+                siblings.push(childId);
+            } else {
+                childrenByParentId.set(parentId, [childId]);
             }
         }
+
+        // Compute max descendant depth for each node (memoized).
+        // A leaf has depth 0; a node's depth is 1 + max(children depths).
+        // A node is a competency iff its max descendant depth <= 1 (no grandchildren).
+        const maxDepthCache = new Map<string, number>();
+        const getMaxDescendantDepth = (nodeId: string): number => {
+            const cached = maxDepthCache.get(nodeId);
+            if (cached !== undefined) return cached;
+
+            const children = childrenByParentId.get(nodeId);
+            if (!children || children.length === 0) {
+                maxDepthCache.set(nodeId, 0);
+                return 0;
+            }
+
+            let maxChildDepth = 0;
+            for (const childId of children) {
+                const childDepth = getMaxDescendantDepth(childId);
+                if (childDepth > maxChildDepth) maxChildDepth = childDepth;
+            }
+            const depth = 1 + maxChildDepth;
+            maxDepthCache.set(nodeId, depth);
+            return depth;
+        };
 
         const skills: Skill[] = [];
         for (const item of packageData.CFItems || []) {
             const statement = toItemStatement(item);
             if (!item.identifier || !statement) continue;
 
-            const isLeaf = !parentIds.has(item.identifier);
-            const isParentOfLeaf = parentsOfLeaves.has(item.identifier);
+            const maxDescendantDepth = getMaxDescendantDepth(item.identifier);
 
             skills.push({
                 id: item.identifier,
                 statement,
                 description: toItemDescription(item),
                 code: item.humanCodingScheme ?? item.listEnumeration,
-                type: isLeaf || isParentOfLeaf ? 'competency' : 'container', // bottom two levels are competencies
+                type: maxDescendantDepth <= 1 ? 'competency' : 'container', // competency if at most one layer of children
                 status: 'active',
                 parentId: parentByChildId.get(item.identifier) ?? null,
             });
