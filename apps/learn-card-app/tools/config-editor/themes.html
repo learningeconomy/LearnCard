@@ -123,7 +123,32 @@ for (const [family, hexes] of Object.entries(TW)) {
 }
 Object.assign(COLOR_LOOKUP, SPECIAL_COLORS);
 
-const FAMILIES = Object.keys(TW);
+const STANDARD_FAMILIES = Object.keys(TW);
+
+// Custom app-specific color families (from tailwind.config.js)
+// These are available in Tailwind but absent from the standard palette grid
+const CUSTOM_TW = {
+    grayscale:      ['#FBFBFC','#EFF0F5','#E2E3E9','#C5C8D3','#A8ACBD','#8B91A7','#6F7590','#52597A','#353E64','#18224E',null],
+    spice:          ['#FFEDE7','#FFDBCF','#FFB7A0','#FF9470','#FF7040','#FF5820','#FF4000','#DF3800','#BF3000','#802000',null],
+    navy:           ['#F0F5F7','#D6E1E8','#BCCDD8','#87A4B8','#537C98','#396888','#1E5378','#184463','#11354E','#0B2232',null],
+    'baltic-blue':  ['#EBF5FF','#CCE7FF','#99CFFF','#66B8FF','#33A0FF','#0089EE','#006DCC','#0055A3','#003D7A','#002551',null],
+    'vp-red':       ['#FEF2F2','#FDE3E4','#FBC6C8','#F7999C','#E45A5E','#C3323C','#A52830','#872025','#69181C','#4B1013',null],
+    'army-green':   ['#F4F5EE','#E4E7D5','#C9CEAB','#ADB682','#929D58','#78852F','#5F6A25','#47501C','#2F3512','#181B09',null],
+    sand:           ['#FAF8F5','#F2EDE6','#E5DBCD','#D8C9B4','#CBB79B','#BEA582','#A08A6A','#7A6A51','#544937','#2E281E',null],
+};
+
+const CUSTOM_FAMILIES = Object.keys(CUSTOM_TW);
+
+// Merge custom into TW and COLOR_LOOKUP
+for (const [family, hexes] of Object.entries(CUSTOM_TW)) {
+    TW[family] = hexes;
+
+    SHADES.forEach((shade, i) => {
+        if (hexes[i]) COLOR_LOOKUP[`${family}-${shade}`] = hexes[i];
+    });
+}
+
+const FAMILIES = [...STANDARD_FAMILIES, ...CUSTOM_FAMILIES];
 
 /** Resolve a single-token theme color string to hex. Returns null for compound (multi-class) values. */
 const resolveColorHex = (val) => {
@@ -379,6 +404,257 @@ const generateThemeFromBrand = ({ primaryHex, accentHex, style }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
+// PALETTE-FIRST GENERATOR — role-based theme derivation from named ramps
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Semantic roles a color ramp can fill
+const PALETTE_ROLES = [
+    { key: 'primary',  label: 'Primary Dark',   hint: 'Dark headers, backgrounds, primary buttons' },
+    { key: 'action',   label: 'Action / CTA',   hint: 'Links, active states, interactive elements' },
+    { key: 'accent',   label: 'Accent',          hint: 'Highlights, indicators, secondary decoration' },
+    { key: 'danger',   label: 'Danger / Alert',  hint: 'Error states, warnings, destructive actions' },
+    { key: 'neutral',  label: 'Neutral',         hint: 'Text, borders, subtle backgrounds' },
+    { key: 'warm',     label: 'Warm / Earthy',   hint: 'Optional warm tone for softer backgrounds' },
+];
+
+// Pre-built palette presets
+const PALETTE_PRESETS = {
+    vetpass: {
+        label: 'VetPass',
+        desc: 'Navy, Baltic Blue, Red, Army Green, Sand',
+        ramps: {
+            primary: 'navy',
+            action: 'baltic-blue',
+            accent: 'army-green',
+            danger: 'vp-red',
+            neutral: 'grayscale',
+            warm: 'sand',
+        },
+    },
+    learncard: {
+        label: 'LearnCard',
+        desc: 'Indigo, Emerald, Cyan, Rose, Slate',
+        ramps: {
+            primary: 'indigo',
+            action: 'emerald',
+            accent: 'cyan',
+            danger: 'rose',
+            neutral: 'slate',
+            warm: 'amber',
+        },
+    },
+    ocean: {
+        label: 'Ocean',
+        desc: 'Blue, Teal, Sky, Orange, Stone',
+        ramps: {
+            primary: 'blue',
+            action: 'teal',
+            accent: 'sky',
+            danger: 'orange',
+            neutral: 'stone',
+            warm: 'amber',
+        },
+    },
+    forest: {
+        label: 'Forest',
+        desc: 'Emerald, Lime, Teal, Red, Neutral',
+        ramps: {
+            primary: 'emerald',
+            action: 'lime',
+            accent: 'teal',
+            danger: 'red',
+            neutral: 'neutral',
+            warm: 'amber',
+        },
+    },
+    sunset: {
+        label: 'Sunset',
+        desc: 'Purple, Orange, Amber, Rose, Zinc',
+        ramps: {
+            primary: 'purple',
+            action: 'orange',
+            accent: 'amber',
+            danger: 'rose',
+            neutral: 'zinc',
+            warm: 'amber',
+        },
+    },
+};
+
+// Vibrant category color pools — assign each category a distinct family
+const PALETTE_VIBRANT_CATEGORY_MAP = [
+    // [category, roleKey, shade-primaryColor, shade-secondary, shade-bgPrimary, shade-bgSecondary]
+    { cat: 'achievement',     role: 'action',  altRole: 'accent' },
+    { cat: 'socialBadge',     role: 'primary', altRole: 'action' },
+    { cat: 'learningHistory', role: 'accent',  altRole: 'primary' },
+    { cat: 'workHistory',     role: 'warm',    altRole: 'action' },
+    { cat: 'accomplishment',  role: 'danger',  altRole: 'accent' },
+    { cat: 'accommodation',   role: 'action',  altRole: 'danger' },
+    { cat: 'id',              role: 'primary', altRole: 'accent' },
+    { cat: 'family',          role: 'warm',    altRole: 'primary' },
+    { cat: 'skill',           role: 'accent',  altRole: 'action' },
+    { cat: 'aiTopic',         role: 'action',  altRole: 'accent' },
+    { cat: 'aiPathway',       role: 'accent',  altRole: 'primary' },
+    { cat: 'aiInsight',       role: 'primary', altRole: 'action' },
+];
+
+const generateThemeFromPalette = ({ roles, style }) => {
+    // roles: { primary: 'navy', action: 'baltic-blue', accent: 'army-green', ... }
+    const r = {
+        primary: roles.primary || 'indigo',
+        action: roles.action || 'emerald',
+        accent: roles.accent || 'cyan',
+        danger: roles.danger || 'rose',
+        neutral: roles.neutral || 'slate',
+        warm: roles.warm || 'amber',
+    };
+
+    // Helper to build a vibrant category from a role family
+    const buildVibrantCat = (family, accentFamily) => {
+        const hex400 = COLOR_LOOKUP[`${family}-400`];
+        const light = hex400 ? isLightColor(hex400) : false;
+        const textCls = light ? 'text-grayscale-900' : 'text-white';
+
+        return {
+            primaryColor: `${family}-300`,
+            secondaryColor: `${family}-500`,
+            indicatorColor: `${accentFamily}-200`,
+            borderColor: `${family}-300`,
+            statusBarColor: light ? 'light' : `${family}-400`,
+            headerBrandingTextColor: textCls,
+            headerTextColor: textCls,
+            backgroundPrimaryColor: light ? '!bg-white' : `!bg-${family}-400`,
+            backgroundSecondaryColor: light ? `${r.neutral}-100` : `${family}-200`,
+            tabActiveColor: `bg-${family}-300`,
+        };
+    };
+
+    const buildUniformCat = (family) => ({
+        primaryColor: `${family}-50`,
+        secondaryColor: `${r.neutral}-800`,
+        indicatorColor: `${family}-500`,
+        borderColor: `${r.neutral}-100`,
+        statusBarColor: 'light',
+        headerBrandingTextColor: `text-${r.neutral}-800`,
+        headerTextColor: `text-${r.neutral}-800`,
+        backgroundPrimaryColor: '!bg-white',
+        backgroundSecondaryColor: `${r.neutral}-100`,
+        tabActiveColor: `bg-${family}-100`,
+    });
+
+    // --- Categories ---
+    const categories = {};
+
+    if (style === 'vibrant') {
+        for (const mapping of PALETTE_VIBRANT_CATEGORY_MAP) {
+            const family = r[mapping.role] || r.action;
+            const altFamily = r[mapping.altRole] || r.accent;
+            categories[mapping.cat] = buildVibrantCat(family, altFamily);
+        }
+    } else {
+        for (const mapping of PALETTE_VIBRANT_CATEGORY_MAP) {
+            categories[mapping.cat] = buildUniformCat(r[mapping.role] || r.primary);
+        }
+    }
+
+    // --- LaunchPad ---
+    const launchPad = {
+        contacts: { color: `${r.primary}-700` },
+        aiSessions: { color: `${r.action}-500` },
+        alerts: {
+            color: `${r.primary}-600`,
+            indicatorTextColor: `text-${r.danger}-600`,
+            indicatorBgColor: 'bg-white',
+        },
+        buttons: {
+            unconnected: `bg-${r.action}-500 text-white`,
+            connected: `bg-${r.neutral}-100 text-${r.action}-500`,
+        },
+    };
+
+    // --- Side Menu ---
+    const sideMenu = {
+        linkActiveColor: `text-${r.neutral}-900`,
+        linkInactiveColor: style === 'vibrant' ? `text-${r.neutral}-700` : `text-${r.neutral}-500`,
+        linkActiveBackgroundColor: `bg-${r.neutral}-100/50`,
+        linkInactiveBackgroundColor: 'bg-white',
+        primaryButtonColor: `bg-${r.action}-500 text-white`,
+        secondaryButtonColor: `bg-${r.accent}-500 text-white border-${r.accent}-500`,
+        indicatorColor: style === 'vibrant' ? `text-${r.danger}-500` : `text-${r.action}-500`,
+        syncingColor: `!text-${r.action}-500`,
+        completedColor: '!text-emerald-700',
+    };
+
+    // --- Navbar ---
+    const navbar = {
+        activeColor: `text-${r.neutral}-900`,
+        inactiveColor: style === 'vibrant' ? `text-${r.neutral}-600` : `text-${r.neutral}-500`,
+        syncingColor: `!text-${r.action}-500`,
+        completedColor: '!text-emerald-700',
+    };
+
+    // --- Intro Slides ---
+    const introSlides = {
+        firstSlideBackground: `${r.primary}-500`,
+        secondSlideBackground: `${r.action}-400`,
+        thirdSlideBackground: `${r.accent}-500`,
+        textColors: { primary: 'white', secondary: 'white' },
+        pagination: { primary: 'white', secondary: '#E2E3E9' },
+    };
+
+    // --- Defaults ---
+    const colorDefaults = {
+        primaryColor: `${r.action}-500`,
+        primaryColorShade: `${r.action}-200`,
+        loaders: [
+            COLOR_LOOKUP[`${r.action}-500`],
+            COLOR_LOOKUP[`${r.accent}-500`],
+            COLOR_LOOKUP[`${r.primary}-500`],
+            COLOR_LOOKUP[`${r.action}-300`],
+        ].filter(Boolean),
+    };
+
+    // --- Placeholders ---
+    const placeholders = {};
+
+    for (const mapping of PALETTE_VIBRANT_CATEGORY_MAP) {
+        if (mapping.cat.startsWith('ai')) continue;
+
+        const family = r[mapping.role] || r.action;
+
+        placeholders[mapping.cat] = {
+            spilledCup: {
+                backsplash: COLOR_LOOKUP[`${family}-300`] || '#E2E3E9',
+                spill: COLOR_LOOKUP[`${r.action}-400`] || '#3B82F6',
+                cupOutline: COLOR_LOOKUP[`${family}-700`] || '#353E64',
+            },
+        };
+    }
+
+    placeholders.defaults = {
+        spilledCup: {
+            backsplash: COLOR_LOOKUP[`${r.primary}-200`] || '#E2E3E9',
+            spill: COLOR_LOOKUP[`${r.action}-400`] || '#3B82F6',
+            cupOutline: COLOR_LOOKUP[`${r.primary}-700`] || '#353E64',
+        },
+    };
+
+    return {
+        defaults: { viewMode: style === 'vibrant' ? 'grid' : 'list' },
+        colors: { categories, launchPad, sideMenu, navbar, introSlides, placeholders, defaults: colorDefaults },
+        styles: {
+            wallet: { cardStyles: 'h-[240px]', iconStyles: 'w-[100px] h-[100px]' },
+            launchPad: {
+                textStyles: 'text-[16px]',
+                iconStyles: 'w-[75px] h-auto xxs:w-[60px] xxs:h-[60px]',
+                indicatorStyles: 'shadow-soft-bottom',
+            },
+            defaults: { tabs: { borderRadius: 'rounded-[5px]' } },
+        },
+    };
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // THEME SCHEMA DEFINITIONS — documents what fields exist and their purpose
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -585,9 +861,13 @@ const ColorPicker = ({ value, onSelect, onClose, position }) => {
     const [channels, setChannels] = useState(() => parseChannels(value));
     const ref = useRef(null);
 
-    const filteredFamilies = search
-        ? FAMILIES.filter(f => f.includes(search.toLowerCase()))
-        : FAMILIES;
+    const filteredStandard = search
+        ? STANDARD_FAMILIES.filter(f => f.includes(search.toLowerCase()))
+        : STANDARD_FAMILIES;
+
+    const filteredCustom = search
+        ? CUSTOM_FAMILIES.filter(f => f.includes(search.toLowerCase()))
+        : CUSTOM_FAMILIES;
 
     const style = useMemo(() => {
         if (!position) return { top: 100, left: 100 };
@@ -709,8 +989,8 @@ const ColorPicker = ({ value, onSelect, onClose, position }) => {
                     ))}
                 </div>
 
-                {/* Color grid */}
-                {filteredFamilies.map(family => (
+                {/* Color grid — standard families */}
+                {filteredStandard.map(family => (
                     <div key={family} style={{ display: 'flex', gap: 2, marginBottom: 2, alignItems: 'center' }}>
                         <div style={{ width: 56, fontSize: 11, color: '#64748b', fontWeight: 500, textAlign: 'right', paddingRight: 4 }}>
                             {family}
@@ -733,6 +1013,41 @@ const ColorPicker = ({ value, onSelect, onClose, position }) => {
                         })}
                     </div>
                 ))}
+
+                {/* Separator + custom app palette families */}
+                {filteredCustom.length > 0 && (
+                    <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '10px 0 6px', paddingLeft: 60 }}>
+                            <div style={{ height: 1, flex: 1, background: '#e2e8f0' }} />
+                            <span style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>App Palette</span>
+                            <div style={{ height: 1, flex: 1, background: '#e2e8f0' }} />
+                        </div>
+                        {filteredCustom.map(family => (
+                            <div key={family} style={{ display: 'flex', gap: 2, marginBottom: 2, alignItems: 'center' }}>
+                                <div style={{ width: 56, fontSize: 11, color: '#6366f1', fontWeight: 500, textAlign: 'right', paddingRight: 4 }}>
+                                    {family}
+                                </div>
+                                {TW[family].map((hex, i) => {
+                                    if (!hex) return <div key={i} style={{ width: 32, height: 32 }} />;
+                                    const token = `${family}-${SHADES[i]}`;
+                                    return (
+                                        <div key={i} className="color-grid-cell"
+                                            style={{ background: hex }}
+                                            title={token}
+                                            onClick={() => handleColorClick(token)}
+                                        >
+                                            {activeColor === token && (
+                                                <svg style={{ position: 'absolute', inset: 0, margin: 'auto', width: 14, height: 14 }} viewBox="0 0 20 20" fill="none">
+                                                    <path d="M5 10l3.5 3.5L15 7" stroke={SHADES[i] < 400 ? '#1e293b' : '#fff'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ))}
+                    </>
+                )}
 
                 {/* Live preview */}
                 {composed && (
@@ -1569,33 +1884,278 @@ const JSONSection = ({ config, setConfig }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
+// LAYER 3: MINI VISUAL PREVIEW MOCKUP
+// ═══════════════════════════════════════════════════════════════════════════
+
+const PREVIEW_CATEGORIES = ['achievement', 'socialBadge', 'learningHistory', 'workHistory', 'id', 'skill'];
+
+const ThemePreviewMockup = ({ preview }) => {
+    if (!preview) return null;
+
+    const cats = preview.colors?.categories || {};
+    const sideMenu = preview.colors?.sideMenu || {};
+    const navbar = preview.colors?.navbar || {};
+    const introSlides = preview.colors?.introSlides || {};
+
+    // Resolve a token to a hex value, supporting compound classes
+    const r = (token) => {
+        if (!token) return '#e2e8f0';
+
+        const stripped = token.replace(/^(!?)(bg-|text-|border-)/, '');
+
+        return resolveColorHex(stripped) || '#e2e8f0';
+    };
+
+    return (
+        <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>UI Mockup</div>
+
+            <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', borderRadius: 10, padding: 8, overflow: 'hidden' }}>
+
+                {/* ── Side Menu mockup ── */}
+                <div style={{
+                    width: 80, minHeight: 180, borderRadius: 8, background: 'white',
+                    display: 'flex', flexDirection: 'column', padding: '8px 6px', gap: 3,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.06)', flexShrink: 0,
+                }}>
+                    {/* Logo placeholder */}
+                    <div style={{ height: 14, borderRadius: 3, background: '#e2e8f0', marginBottom: 4 }} />
+
+                    {/* Nav items */}
+                    {['Home', 'Wallet', 'AI', 'Settings'].map((label, i) => {
+                        const isActive = i === 1;
+                        const activeBg = r(sideMenu.linkActiveBackgroundColor);
+                        const activeText = r(sideMenu.linkActiveColor);
+                        const inactiveText = r(sideMenu.linkInactiveColor);
+
+                        return (
+                            <div key={label} style={{
+                                padding: '3px 5px', borderRadius: 4, fontSize: 8, fontWeight: 500,
+                                background: isActive ? activeBg : 'transparent',
+                                color: isActive ? activeText : inactiveText,
+                                transition: 'all 0.15s',
+                            }}>
+                                {label}
+                            </div>
+                        );
+                    })}
+
+                    <div style={{ flex: 1 }} />
+
+                    {/* Primary button */}
+                    <div style={{
+                        padding: '3px 5px', borderRadius: 4, fontSize: 7, fontWeight: 600,
+                        background: r(sideMenu.primaryButtonColor), color: 'white',
+                        textAlign: 'center',
+                    }}>
+                        Connect
+                    </div>
+                </div>
+
+                {/* ── Main content area ── */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+
+                    {/* Category header mockup */}
+                    <div style={{
+                        height: 28, borderRadius: 6,
+                        background: r(cats.achievement?.backgroundPrimaryColor),
+                        display: 'flex', alignItems: 'center', padding: '0 8px', gap: 4,
+                    }}>
+                        <div style={{ fontSize: 9, fontWeight: 600, color: r(cats.achievement?.headerTextColor) }}>
+                            Achievements
+                        </div>
+                        <div style={{ flex: 1 }} />
+                        <div style={{
+                            width: 12, height: 12, borderRadius: '50%',
+                            background: r(cats.achievement?.indicatorColor),
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <span style={{ fontSize: 6, fontWeight: 700, color: 'white' }}>3</span>
+                        </div>
+                    </div>
+
+                    {/* Passport grid mockup — 2x3 mini cards */}
+                    <div style={{
+                        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4,
+                    }}>
+                        {PREVIEW_CATEGORIES.map(key => {
+                            const cat = cats[key];
+                            if (!cat) return <div key={key} style={{ height: 48, borderRadius: 5, background: '#e2e8f0' }} />;
+
+                            const bgHex = r(cat.backgroundPrimaryColor);
+                            const primaryHex = r(cat.primaryColor);
+                            const secondaryHex = r(cat.secondaryColor);
+                            const borderHex = r(cat.borderColor);
+
+                            return (
+                                <div key={key} style={{
+                                    height: 48, borderRadius: 5, background: bgHex,
+                                    border: `1px solid ${borderHex}`,
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                    gap: 2, position: 'relative', overflow: 'hidden',
+                                }}>
+                                    {/* Icon circle */}
+                                    <div style={{
+                                        width: 16, height: 16, borderRadius: '50%',
+                                        background: primaryHex, opacity: 0.8,
+                                    }} />
+
+                                    {/* Label */}
+                                    <div style={{ fontSize: 6, fontWeight: 500, color: secondaryHex, textAlign: 'center', lineHeight: 1 }}>
+                                        {(CATEGORY_LABELS[key] || key).slice(0, 8)}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Navbar mockup */}
+                    <div style={{
+                        display: 'flex', justifyContent: 'space-around', alignItems: 'center',
+                        background: 'white', borderRadius: 6, padding: '4px 0',
+                        boxShadow: '0 -1px 3px rgba(0,0,0,0.04)',
+                    }}>
+                        {['Home', 'Wallet', 'AI', 'More'].map((label, i) => (
+                            <div key={label} style={{
+                                fontSize: 7, fontWeight: 500, textAlign: 'center',
+                                color: i === 0 ? r(navbar.activeColor) : r(navbar.inactiveColor),
+                            }}>
+                                <div style={{
+                                    width: 10, height: 10, borderRadius: 2, margin: '0 auto 1px',
+                                    background: i === 0 ? r(navbar.activeColor) : r(navbar.inactiveColor),
+                                    opacity: 0.3,
+                                }} />
+                                {label}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* ── Intro slides mini strip ── */}
+                <div style={{
+                    width: 32, display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0,
+                }}>
+                    <div style={{ fontSize: 7, fontWeight: 600, color: '#94a3b8', textAlign: 'center', marginBottom: 2 }}>Intro</div>
+                    {[introSlides.firstSlideBackground, introSlides.secondSlideBackground, introSlides.thirdSlideBackground].map((token, i) => (
+                        <div key={i} style={{
+                            height: 48, borderRadius: 4, background: r(token),
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <span style={{ fontSize: 7, fontWeight: 600, color: 'white', opacity: 0.7 }}>{i + 1}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // CREATE THEME MODAL
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ─── Reusable: Inline ramp swatch strip ─────────────────────────────────────
+
+const RampStrip = ({ family, size = 18, onClick, selected }) => {
+    const hexes = TW[family];
+
+    if (!hexes) return null;
+
+    return (
+        <div
+            onClick={onClick}
+            style={{
+                display: 'flex', gap: 1, borderRadius: 4, overflow: 'hidden', cursor: onClick ? 'pointer' : 'default',
+                outline: selected ? '2px solid #6366f1' : '2px solid transparent',
+                outlineOffset: 2, transition: 'outline-color 0.15s',
+            }}
+        >
+            {hexes.map((hex, i) => hex ? (
+                <div key={i} style={{ width: size, height: size, background: hex }} title={`${family}-${SHADES[i]}`} />
+            ) : null)}
+        </div>
+    );
+};
+
+// ─── Palette Role Selector (dropdown of all families) ────────────────────────
+
+const RoleSelector = ({ role, value, onChange }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <div style={{ width: 110, flexShrink: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#1e293b' }}>{role.label}</div>
+            <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1.3 }}>{role.hint}</div>
+        </div>
+
+        <select
+            className="field-input"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            style={{ width: 140, fontSize: 12 }}
+        >
+            <optgroup label="App Palette">
+                {CUSTOM_FAMILIES.map(f => <option key={f} value={f}>{f}</option>)}
+            </optgroup>
+            <optgroup label="Standard">
+                {STANDARD_FAMILIES.map(f => <option key={f} value={f}>{f}</option>)}
+            </optgroup>
+        </select>
+
+        <RampStrip family={value} size={16} />
+    </div>
+);
+
 const CreateThemeModal = ({ themes, onClose, onCreate }) => {
-    const [mode, setMode] = useState('generate');
+    const [mode, setMode] = useState('palette');
     const [id, setId] = useState('');
     const [displayName, setDisplayName] = useState('');
     const [baseTheme, setBaseTheme] = useState(themes[0]?.id || '');
 
+    // Legacy generate mode state
     const [primaryHex, setPrimaryHex] = useState('#4F46E5');
     const [accentHex, setAccentHex] = useState('#10B981');
     const [autoAccent, setAutoAccent] = useState(true);
     const [genStyle, setGenStyle] = useState('vibrant');
+
+    // Palette wizard state
+    const [palettePreset, setPalettePreset] = useState('learncard');
+    const [roles, setRoles] = useState({ ...PALETTE_PRESETS.learncard.ramps });
+    const [paletteStyle, setPaletteStyle] = useState('vibrant');
 
     const [creating, setCreating] = useState(false);
     const toast = useToast();
 
     const sanitizedId = id.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
 
+    // Legacy generate preview
     const effectiveAccent = autoAccent ? null : accentHex;
     const resolvedAccentFamily = autoAccent ? pickComplementary(nearestTwFamily(primaryHex)) : nearestTwFamily(accentHex);
 
-    const previewPalette = useMemo(() => {
+    const legacyPreview = useMemo(() => {
         if (mode !== 'generate') return null;
         try { return generateThemeFromBrand({ primaryHex, accentHex: effectiveAccent, style: genStyle }); }
         catch { return null; }
     }, [mode, primaryHex, effectiveAccent, genStyle]);
+
+    // Palette wizard preview
+    const palettePreview = useMemo(() => {
+        if (mode !== 'palette') return null;
+        try { return generateThemeFromPalette({ roles, style: paletteStyle }); }
+        catch { return null; }
+    }, [mode, roles, paletteStyle]);
+
+    const activePreview = mode === 'palette' ? palettePreview : legacyPreview;
+
+    const applyPreset = (key) => {
+        const preset = PALETTE_PRESETS[key];
+        if (!preset) return;
+        setPalettePreset(key);
+        setRoles({ ...preset.ramps });
+    };
+
+    const updateRole = (key, family) => {
+        setRoles(prev => ({ ...prev, [key]: family }));
+        setPalettePreset('custom');
+    };
 
     const handleCreate = async () => {
         if (!sanitizedId || !displayName.trim()) return;
@@ -1607,6 +2167,15 @@ const CreateThemeModal = ({ themes, onClose, onCreate }) => {
                     id: sanitizedId,
                     displayName: displayName.trim(),
                     ...(baseTheme ? { extends: baseTheme } : {}),
+                });
+            } else if (mode === 'palette') {
+                const generated = generateThemeFromPalette({ roles, style: paletteStyle });
+
+                await api.saveTheme(sanitizedId, {
+                    id: sanitizedId,
+                    displayName: displayName.trim(),
+                    iconSet: paletteStyle === 'vibrant' ? 'colorful' : 'formal',
+                    ...generated,
                 });
             } else {
                 const generated = generateThemeFromBrand({ primaryHex, accentHex: effectiveAccent, style: genStyle });
@@ -1634,7 +2203,7 @@ const CreateThemeModal = ({ themes, onClose, onCreate }) => {
 
     const tabStyle = (active) => ({
         flex: 1, padding: '8px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
-        fontSize: 13, fontWeight: 500, transition: 'all 0.15s',
+        fontSize: 12, fontWeight: 500, transition: 'all 0.15s',
         background: active ? 'white' : 'transparent',
         color: active ? '#1e293b' : '#64748b',
         boxShadow: active ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
@@ -1642,19 +2211,23 @@ const CreateThemeModal = ({ themes, onClose, onCreate }) => {
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
+            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 620, maxHeight: '92vh', overflowY: 'auto' }}>
                 <h2 style={{ margin: '0 0 4px 0', fontSize: 18, fontWeight: 600, color: '#1e293b' }}>Create New Theme</h2>
-                <p style={{ margin: '0 0 16px 0', fontSize: 13, color: '#64748b' }}>Generate a brand palette or extend an existing theme.</p>
+                <p style={{ margin: '0 0 16px 0', fontSize: 13, color: '#64748b' }}>Build from a palette, generate from brand colors, or extend an existing theme.</p>
 
                 {/* Mode tabs */}
                 <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#f1f5f9', borderRadius: 8, padding: 3 }}>
+                    <button onClick={() => setMode('palette')} style={tabStyle(mode === 'palette')}>
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style={{ verticalAlign: -2, marginRight: 4 }}><path fillRule="evenodd" d="M4.5 2A2.5 2.5 0 002 4.5v3.879a2.5 2.5 0 00.732 1.767l7.5 7.5a2.5 2.5 0 003.536 0l3.878-3.878a2.5 2.5 0 000-3.536l-7.5-7.5A2.5 2.5 0 008.38 2H4.5zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/></svg>
+                        Palette Wizard
+                    </button>
                     <button onClick={() => setMode('generate')} style={tabStyle(mode === 'generate')}>
-                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style={{ verticalAlign: -2, marginRight: 4 }}><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.061 1.06a.75.75 0 001.06 1.06l1.06-1.06zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.06 1.06a.75.75 0 001.06 1.06l1.06-1.06zM18 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 015 10z"/></svg>
-                        Generate from Brand
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style={{ verticalAlign: -2, marginRight: 4 }}><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6z"/></svg>
+                        Brand Colors
                     </button>
                     <button onClick={() => setMode('extend')} style={tabStyle(mode === 'extend')}>
                         <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style={{ verticalAlign: -2, marginRight: 4 }}><path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z"/><path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.44A1.5 1.5 0 008.378 6H4.5z"/></svg>
-                        Extend Existing
+                        Extend
                     </button>
                 </div>
 
@@ -1674,7 +2247,68 @@ const CreateThemeModal = ({ themes, onClose, onCreate }) => {
                         placeholder="e.g. My Brand Theme" style={{ width: '100%' }} />
                 </div>
 
-                {/* Extend mode */}
+                {/* ── Palette Wizard mode ── */}
+                {mode === 'palette' && (
+                    <>
+                        {/* Preset selector */}
+                        <div style={fldStyle}>
+                            <label style={lblStyle}>Start from a Preset</label>
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                {Object.entries(PALETTE_PRESETS).map(([key, preset]) => (
+                                    <button key={key} onClick={() => applyPreset(key)}
+                                        style={{
+                                            padding: '8px 12px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                                            border: palettePreset === key ? '2px solid #6366f1' : '2px solid #e2e8f0',
+                                            background: palettePreset === key ? '#eef2ff' : 'white',
+                                            transition: 'all 0.15s', minWidth: 100,
+                                        }}
+                                    >
+                                        <div style={{ fontSize: 12, fontWeight: 600, color: '#1e293b' }}>{preset.label}</div>
+                                        <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{preset.desc}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Role assignments */}
+                        <div style={fldStyle}>
+                            <label style={lblStyle}>Assign Color Roles</label>
+                            <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
+                                {PALETTE_ROLES.map(role => (
+                                    <RoleSelector
+                                        key={role.key}
+                                        role={role}
+                                        value={roles[role.key] || 'slate'}
+                                        onChange={(family) => updateRole(role.key, family)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Style toggle */}
+                        <div style={fldStyle}>
+                            <label style={lblStyle}>Style</label>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                {[{ value: 'vibrant', label: 'Vibrant', desc: 'Unique color per category' },
+                                  { value: 'uniform', label: 'Uniform', desc: 'Professional, single palette' }]
+                                .map(opt => (
+                                    <button key={opt.value} onClick={() => setPaletteStyle(opt.value)}
+                                        style={{
+                                            flex: 1, padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                                            border: paletteStyle === opt.value ? '2px solid #6366f1' : '2px solid #e2e8f0',
+                                            background: paletteStyle === opt.value ? '#eef2ff' : 'white',
+                                            textAlign: 'left', transition: 'all 0.15s',
+                                        }}>
+                                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{opt.label}</div>
+                                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{opt.desc}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* ── Extend mode ── */}
                 {mode === 'extend' && (
                     <div style={{ marginBottom: 24 }}>
                         <label style={lblStyle}>Extend From</label>
@@ -1688,7 +2322,7 @@ const CreateThemeModal = ({ themes, onClose, onCreate }) => {
                     </div>
                 )}
 
-                {/* Generate mode */}
+                {/* ── Legacy generate mode ── */}
                 {mode === 'generate' && (
                     <>
                         <div style={fldStyle}>
@@ -1745,58 +2379,68 @@ const CreateThemeModal = ({ themes, onClose, onCreate }) => {
                                 ))}
                             </div>
                         </div>
-
-                        {previewPalette && (
-                            <div style={{ marginBottom: 20 }}>
-                                <label style={lblStyle}>Category Palette Preview</label>
-                                <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                                    {GEN_CATEGORIES.map(key => {
-                                        const cat = previewPalette.colors.categories[key];
-                                        if (!cat) return null;
-                                        const hex = resolveColorHex(cat.primaryColor);
-                                        return (
-                                            <div key={key} title={`${CATEGORY_LABELS[key] || key}: ${cat.primaryColor}`} style={{
-                                                width: 30, height: 30, borderRadius: 6,
-                                                background: hex || '#e2e8f0',
-                                                border: '2px solid white',
-                                                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                                            }} />
-                                        );
-                                    })}
-                                </div>
-                                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>
-                                    {GEN_CATEGORIES.map(k => CATEGORY_LABELS[k] || k).join(' \u00b7 ')}
-                                </div>
-
-                                {/* Non-category color preview */}
-                                <div style={{ display: 'flex', gap: 6, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                                    {[
-                                        { label: 'Primary', token: previewPalette.colors.defaults.primaryColor },
-                                        { label: 'Accent', token: previewPalette.colors.launchPad.aiSessions.color },
-                                        { label: 'Slide 1', token: previewPalette.colors.introSlides.firstSlideBackground },
-                                        { label: 'Slide 2', token: previewPalette.colors.introSlides.secondSlideBackground },
-                                        { label: 'Slide 3', token: previewPalette.colors.introSlides.thirdSlideBackground },
-                                    ].map(({ label, token }) => (
-                                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                                            <div style={{
-                                                width: 14, height: 14, borderRadius: 3,
-                                                background: resolveColorHex(token) || '#ccc',
-                                                border: '1px solid rgba(0,0,0,0.1)',
-                                            }} />
-                                            <span style={{ fontSize: 10, color: '#94a3b8' }}>{label}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </>
+                )}
+
+                {/* ── Live preview (shared by palette + generate) ── */}
+                {activePreview && (mode === 'palette' || mode === 'generate') && (
+                    <div style={{ marginBottom: 20, background: '#f8fafc', borderRadius: 10, padding: 14 }}>
+                        <label style={{ ...lblStyle, marginBottom: 8 }}>Live Preview</label>
+
+                        {/* Category color strip */}
+                        <div style={{ marginBottom: 10 }}>
+                            <div style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Categories</div>
+                            <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                                {(mode === 'palette' ? PALETTE_VIBRANT_CATEGORY_MAP.map(m => m.cat) : GEN_CATEGORIES).map(key => {
+                                    const cat = activePreview.colors.categories[key];
+                                    if (!cat) return null;
+                                    const hex = resolveColorHex(cat.primaryColor);
+                                    return (
+                                        <div key={key} title={`${CATEGORY_LABELS[key] || key}: ${cat.primaryColor}`} style={{
+                                            width: 30, height: 30, borderRadius: 6,
+                                            background: hex || '#e2e8f0',
+                                            border: '2px solid white',
+                                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                        }} />
+                                    );
+                                })}
+                            </div>
+                            <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>
+                                {(mode === 'palette' ? PALETTE_VIBRANT_CATEGORY_MAP.map(m => m.cat) : GEN_CATEGORIES)
+                                    .map(k => CATEGORY_LABELS[k] || k).join(' \u00b7 ')}
+                            </div>
+                        </div>
+
+                        {/* UI color chips */}
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                            {[
+                                { label: 'Primary', token: activePreview.colors.defaults.primaryColor },
+                                { label: 'Action', token: activePreview.colors.launchPad.aiSessions.color },
+                                { label: 'Slide 1', token: activePreview.colors.introSlides.firstSlideBackground },
+                                { label: 'Slide 2', token: activePreview.colors.introSlides.secondSlideBackground },
+                                { label: 'Slide 3', token: activePreview.colors.introSlides.thirdSlideBackground },
+                            ].map(({ label, token }) => (
+                                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                    <div style={{
+                                        width: 14, height: 14, borderRadius: 3,
+                                        background: resolveColorHex(token) || '#ccc',
+                                        border: '1px solid rgba(0,0,0,0.1)',
+                                    }} />
+                                    <span style={{ fontSize: 10, color: '#94a3b8' }}>{label}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Mini passport grid mockup (Layer 3) */}
+                        <ThemePreviewMockup preview={activePreview} />
+                    </div>
                 )}
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                     <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
                     <button className="btn btn-primary" onClick={handleCreate}
                         disabled={!sanitizedId || !displayName.trim() || creating}>
-                        {creating ? 'Creating...' : mode === 'generate' ? 'Generate & Create' : 'Create Theme'}
+                        {creating ? 'Creating...' : mode === 'palette' ? 'Generate & Create' : mode === 'generate' ? 'Generate & Create' : 'Create Theme'}
                     </button>
                 </div>
             </div>
@@ -1868,6 +2512,7 @@ const Sidebar = ({ themes, selectedId, onSelect, onCreateClick }) => (
 // ═══════════════════════════════════════════════════════════════════════════
 
 const TABS = [
+    { id: 'preview', label: 'Preview' },
     { id: 'general', label: 'General' },
     { id: 'categories', label: 'Categories' },
     { id: 'ui', label: 'UI Colors' },
@@ -1876,6 +2521,119 @@ const TABS = [
     { id: 'styles', label: 'Styles' },
     { id: 'json', label: 'JSON' },
 ];
+
+// Build a preview-compatible object from a raw theme config (merging parent)
+const buildPreviewFromConfig = (config, parentConfig) => {
+    const merged = parentConfig
+        ? JSON.parse(JSON.stringify(parentConfig))
+        : {};
+
+    // Deep merge config over parent
+    const deepMergeObj = (target, source) => {
+        for (const key of Object.keys(source)) {
+            if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) && target[key] && typeof target[key] === 'object') {
+                deepMergeObj(target[key], source[key]);
+            } else {
+                target[key] = source[key];
+            }
+        }
+
+        return target;
+    };
+
+    deepMergeObj(merged, config);
+
+    return {
+        colors: {
+            categories: merged.colors?.categories || {},
+            sideMenu: merged.colors?.sideMenu || {},
+            navbar: merged.colors?.navbar || {},
+            introSlides: merged.colors?.introSlides || {},
+            launchPad: merged.colors?.launchPad || {},
+            defaults: merged.colors?.defaults || {},
+        },
+    };
+};
+
+// Full preview tab for the editor showing the mockup + palette ramp summary
+const PreviewTab = ({ config, parentConfig }) => {
+    const preview = useMemo(
+        () => buildPreviewFromConfig(config, parentConfig),
+        [config, parentConfig],
+    );
+
+    const allCatKeys = Object.keys(preview.colors.categories);
+
+    return (
+        <div className="section-card">
+            <div className="section-title">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#6366f1' }}>
+                    <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
+                    <path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                </svg>
+                Live Theme Preview
+            </div>
+
+            <ThemePreviewMockup preview={preview} />
+
+            {/* Category color summary */}
+            <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Category Palette</div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    {allCatKeys.map(key => {
+                        const cat = preview.colors.categories[key];
+                        const hex = resolveColorHex(cat?.primaryColor);
+
+                        return (
+                            <div key={key} title={`${CATEGORY_LABELS[key] || key}: ${cat?.primaryColor || 'none'}`}
+                                style={{
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                                }}>
+                                <div style={{
+                                    width: 32, height: 32, borderRadius: 6,
+                                    background: hex || '#e2e8f0',
+                                    border: '2px solid white',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                }} />
+                                <span style={{ fontSize: 8, color: '#94a3b8', maxWidth: 40, textAlign: 'center', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {(CATEGORY_LABELS[key] || key).slice(0, 6)}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* UI color summary chips */}
+            <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 8 }}>UI Colors</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {[
+                        { label: 'Primary', token: preview.colors.defaults?.primaryColor },
+                        { label: 'Primary Shade', token: preview.colors.defaults?.primaryColorShade },
+                        { label: 'Nav Active', token: preview.colors.navbar?.activeColor },
+                        { label: 'Nav Inactive', token: preview.colors.navbar?.inactiveColor },
+                        { label: 'Menu Active', token: preview.colors.sideMenu?.linkActiveColor },
+                        { label: 'Menu Btn', token: preview.colors.sideMenu?.primaryButtonColor },
+                        { label: 'Slide 1', token: preview.colors.introSlides?.firstSlideBackground },
+                        { label: 'Slide 2', token: preview.colors.introSlides?.secondSlideBackground },
+                        { label: 'Slide 3', token: preview.colors.introSlides?.thirdSlideBackground },
+                    ].filter(c => c.token).map(({ label, token }) => (
+                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', background: '#f1f5f9', borderRadius: 6 }}>
+                            <div style={{
+                                width: 14, height: 14, borderRadius: 3,
+                                background: resolveColorHex(token?.replace(/^(!?)(bg-|text-|border-)/, '')) || '#ccc',
+                                border: '1px solid rgba(0,0,0,0.1)',
+                            }} />
+                            <span style={{ fontSize: 10, color: '#64748b', fontWeight: 500 }}>{label}</span>
+                            <code style={{ fontSize: 9, color: '#94a3b8' }}>{token}</code>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const ThemeEditor = ({ themeId, themes, onDeleted, onSaved }) => {
     const [config, setConfig] = useState(null);
@@ -2022,6 +2780,9 @@ const ThemeEditor = ({ themeId, themes, onDeleted, onSaved }) => {
             {/* Content */}
             <div style={{ flex: 1, overflowY: 'auto', padding: 24, background: '#f8fafc' }}>
                 <div style={{ maxWidth: 800 }}>
+                    {activeTab === 'preview' && (
+                        <PreviewTab config={config} parentConfig={parentConfig} />
+                    )}
                     {activeTab === 'general' && (
                         <GeneralSection config={config} parentConfig={parentConfig} themes={themes} onChange={handleFieldChange} />
                     )}
