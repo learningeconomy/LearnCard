@@ -1,0 +1,330 @@
+{
+    "id": "vetpass",
+    "displayName": "VetPass",
+    "iconSet": "colorful",
+
+    "defaults": {
+        "viewMode": "grid"
+    },
+
+    "iconPalettes": {
+        "AiSessions": {
+            "primary": "#006DCC",
+            "primaryLight": "#99CFFF",
+            "accent": "#33A0FF",
+            "stroke": "#184463"
+        },
+        "AiPathways": {
+            "primary": "#184463",
+            "primaryLight": "#BCCDD8",
+            "accent": "#006DCC",
+            "stroke": "#0B2232"
+        },
+        "AiInsights": {
+            "primary": "#C3323C",
+            "primaryLight": "#FDE3E4",
+            "accent": "#E45A5E",
+            "stroke": "#872025"
+        },
+        "Skills": {
+            "primary": "#396888",
+            "primaryLight": "#D6E1E8",
+            "accent": "#537C98",
+            "stroke": "#184463"
+        },
+        "Boosts": {
+            "primary": "#006DCC",
+            "primaryLight": "#CCE7FF",
+            "accent": "#33A0FF",
+            "stroke": "#0055A3"
+        },
+        "Achievements": {
+            "primary": "#184463",
+            "primaryLight": "#D6E1E8",
+            "accent": "#396888",
+            "stroke": "#0B2232"
+        },
+        "Studies": {
+            "primary": "#5F6A25",
+            "primaryLight": "#E4E7D5",
+            "accent": "#78852F",
+            "stroke": "#47501C"
+        },
+        "Portfolio": {
+            "primary": "#7A6A51",
+            "primaryLight": "#F2EDE6",
+            "accent": "#A08A6A",
+            "stroke": "#544937"
+        },
+        "Assistance": {
+            "primary": "#C3323C",
+            "primaryLight": "#FDE3E4",
+            "accent": "#E45A5E",
+            "stroke": "#872025"
+        },
+        "Experiences": {
+            "primary": "#1E5378",
+            "primaryLight": "#BCCDD8",
+            "accent": "#396888",
+            "stroke": "#11354E"
+        },
+        "Families": {
+            "primary": "#BEA582",
+            "primaryLight": "#FAF8F5",
+            "accent": "#CBB79B",
+            "stroke": "#7A6A51"
+        },
+        "IDs": {
+            "primary": "#11354E",
+            "primaryLight": "#D6E1E8",
+            "accent": "#1E5378",
+            "stroke": "#0B2232"
+        }
+    },
+
+    "colors": {
+        "categories": {
+            "aiTopic": {
+                "primaryColor": "baltic-blue-300",
+                "secondaryColor": "baltic-blue-600",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "baltic-blue-300",
+                "statusBarColor": "baltic-blue-600",
+                "headerBrandingTextColor": "text-white",
+                "headerTextColor": "text-white",
+                "backgroundPrimaryColor": "!bg-baltic-blue-600",
+                "backgroundSecondaryColor": "baltic-blue-100"
+            },
+            "aiPathway": {
+                "primaryColor": "navy-300",
+                "secondaryColor": "navy-600",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "navy-300",
+                "statusBarColor": "navy-600",
+                "headerBrandingTextColor": "text-white",
+                "headerTextColor": "text-white",
+                "backgroundPrimaryColor": "!bg-navy-600",
+                "backgroundSecondaryColor": "navy-100"
+            },
+            "aiInsight": {
+                "primaryColor": "vp-red-300",
+                "secondaryColor": "vp-red-600",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "vp-red-200",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-navy-900",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "navy-50"
+            },
+            "skill": {
+                "primaryColor": "navy-300",
+                "secondaryColor": "navy-500",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "navy-200",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-navy-900",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "navy-50"
+            },
+            "socialBadge": {
+                "primaryColor": "baltic-blue-300",
+                "secondaryColor": "baltic-blue-600",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "baltic-blue-200",
+                "statusBarColor": "baltic-blue-600",
+                "headerBrandingTextColor": "text-white",
+                "headerTextColor": "text-white",
+                "backgroundPrimaryColor": "!bg-baltic-blue-600",
+                "backgroundSecondaryColor": "baltic-blue-100",
+                "tabActiveColor": "bg-baltic-blue-200"
+            },
+            "achievement": {
+                "primaryColor": "navy-300",
+                "secondaryColor": "navy-700",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "navy-200",
+                "statusBarColor": "navy-700",
+                "headerBrandingTextColor": "text-white",
+                "headerTextColor": "text-white",
+                "backgroundPrimaryColor": "!bg-navy-700",
+                "backgroundSecondaryColor": "navy-100",
+                "tabActiveColor": "bg-navy-200"
+            },
+            "learningHistory": {
+                "primaryColor": "army-green-300",
+                "secondaryColor": "army-green-600",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "army-green-200",
+                "statusBarColor": "army-green-600",
+                "headerBrandingTextColor": "text-white",
+                "headerTextColor": "text-white",
+                "backgroundPrimaryColor": "!bg-army-green-600",
+                "backgroundSecondaryColor": "army-green-100",
+                "tabActiveColor": "bg-army-green-200"
+            },
+            "accomplishment": {
+                "primaryColor": "sand-300",
+                "secondaryColor": "sand-600",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "sand-200",
+                "statusBarColor": "sand-600",
+                "headerBrandingTextColor": "text-white",
+                "headerTextColor": "text-white",
+                "backgroundPrimaryColor": "!bg-sand-600",
+                "backgroundSecondaryColor": "sand-100",
+                "tabActiveColor": "bg-sand-200"
+            },
+            "accommodation": {
+                "primaryColor": "vp-red-200",
+                "secondaryColor": "vp-red-600",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "vp-red-200",
+                "statusBarColor": "vp-red-600",
+                "headerBrandingTextColor": "text-white",
+                "headerTextColor": "text-white",
+                "backgroundPrimaryColor": "!bg-vp-red-600",
+                "backgroundSecondaryColor": "vp-red-50",
+                "tabActiveColor": "bg-vp-red-200"
+            },
+            "workHistory": {
+                "primaryColor": "navy-300",
+                "secondaryColor": "navy-600",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "navy-200",
+                "statusBarColor": "navy-600",
+                "headerBrandingTextColor": "text-white",
+                "headerTextColor": "text-white",
+                "backgroundPrimaryColor": "!bg-navy-600",
+                "backgroundSecondaryColor": "navy-100",
+                "tabActiveColor": "bg-navy-200"
+            },
+            "family": {
+                "primaryColor": "sand-400",
+                "secondaryColor": "sand-700",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "sand-300",
+                "statusBarColor": "sand-600",
+                "headerBrandingTextColor": "text-white",
+                "headerTextColor": "text-white",
+                "backgroundPrimaryColor": "!bg-sand-600",
+                "backgroundSecondaryColor": "sand-100",
+                "tabActiveColor": "bg-sand-200"
+            },
+            "id": {
+                "primaryColor": "navy-400",
+                "secondaryColor": "navy-800",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "navy-300",
+                "statusBarColor": "navy-700",
+                "headerBrandingTextColor": "text-white",
+                "headerTextColor": "text-white",
+                "backgroundPrimaryColor": "!bg-navy-700",
+                "backgroundSecondaryColor": "navy-100",
+                "tabActiveColor": "bg-navy-200"
+            }
+        },
+
+        "launchPad": {
+            "contacts": { "color": "navy-700" },
+            "aiSessions": { "color": "baltic-blue-600" },
+            "alerts": {
+                "color": "vp-red-500",
+                "indicatorTextColor": "text-vp-red-500",
+                "indicatorBgColor": "bg-white"
+            },
+            "buttons": {
+                "unconnected": "bg-baltic-blue-600 text-white",
+                "connected": "bg-navy-50 text-baltic-blue-600"
+            }
+        },
+
+        "sideMenu": {
+            "linkActiveColor": "text-navy-900",
+            "linkInactiveColor": "text-navy-400",
+            "linkActiveBackgroundColor": "bg-navy-50/50",
+            "linkInactiveBackgroundColor": "bg-white",
+            "primaryButtonColor": "bg-navy-700 text-white",
+            "secondaryButtonColor": "bg-baltic-blue-600 text-white border-baltic-blue-600",
+            "indicatorColor": "text-vp-red-500",
+            "syncingColor": "!text-baltic-blue-600",
+            "completedColor": "!text-emerald-700"
+        },
+
+        "navbar": {
+            "activeColor": "text-navy-800",
+            "inactiveColor": "text-navy-300",
+            "syncingColor": "!text-baltic-blue-600",
+            "completedColor": "!text-emerald-700"
+        },
+
+        "introSlides": {
+            "firstSlideBackground": "navy-700",
+            "secondSlideBackground": "baltic-blue-600",
+            "thirdSlideBackground": "navy-500",
+            "textColors": {
+                "primary": "white",
+                "secondary": "white"
+            },
+            "pagination": {
+                "primary": "white",
+                "secondary": "#BCCDD8"
+            }
+        },
+
+        "placeholders": {
+            "socialBadge": {
+                "spilledCup": { "backsplash": "#99CFFF", "spill": "#006DCC", "cupOutline": "#0055A3" }
+            },
+            "learningHistory": {
+                "spilledCup": { "backsplash": "#E4E7D5", "spill": "#78852F", "cupOutline": "#47501C" }
+            },
+            "achievement": {
+                "spilledCup": { "backsplash": "#D6E1E8", "spill": "#33A0FF", "cupOutline": "#184463" }
+            },
+            "accomplishment": {
+                "spilledCup": { "backsplash": "#F2EDE6", "spill": "#006DCC", "cupOutline": "#7A6A51" }
+            },
+            "workHistory": {
+                "spilledCup": { "backsplash": "#BCCDD8", "spill": "#33A0FF", "cupOutline": "#1E5378" }
+            },
+            "accommodation": {
+                "spilledCup": { "backsplash": "#FDE3E4", "spill": "#C3323C", "cupOutline": "#872025" }
+            },
+            "id": {
+                "spilledCup": { "backsplash": "#D6E1E8", "spill": "#C3323C", "cupOutline": "#11354E" }
+            },
+            "family": {
+                "spilledCup": { "backsplash": "#F2EDE6", "spill": "#33A0FF", "cupOutline": "#544937" }
+            },
+            "skill": {
+                "spilledCup": { "backsplash": "#BCCDD8", "spill": "#006DCC", "cupOutline": "#184463" }
+            },
+            "defaults": {
+                "spilledCup": { "backsplash": "#D6E1E8", "spill": "#33A0FF", "cupOutline": "#184463" }
+            }
+        },
+
+        "defaults": {
+            "primaryColor": "baltic-blue-600",
+            "primaryColorShade": "baltic-blue-200",
+            "loaders": ["#006DCC", "#184463", "#33A0FF", "#1E5378"]
+        }
+    },
+
+    "styles": {
+        "wallet": {
+            "cardStyles": "h-[240px]",
+            "iconStyles": "w-[100px] h-[100px]"
+        },
+        "launchPad": {
+            "textStyles": "text-[16px]",
+            "iconStyles": "w-[75px] h-auto xxs:w-[60px] xxs:h-[60px]",
+            "indicatorStyles": "shadow-soft-bottom"
+        },
+        "defaults": {
+            "tabs": {
+                "borderRadius": "rounded-[5px]"
+            }
+        }
+    }
+}
