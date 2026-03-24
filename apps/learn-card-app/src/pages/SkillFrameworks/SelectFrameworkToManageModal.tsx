@@ -10,6 +10,7 @@ import {
     useToast,
     ToastTypeEnum,
     useGetSkillFrameworkById,
+    annotateBackendSkillsWithIcons,
 } from 'learn-card-base';
 
 import Plus from 'learn-card-base/svgs/Plus';
@@ -145,6 +146,13 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
             setSyncingFrameworkId(framework.id);
             const wallet = await initWallet();
             await wallet.invoke.syncFrameworkSkills({ id: framework.id });
+
+            try {
+                await annotateBackendSkillsWithIcons(framework.id, wallet);
+            } catch (iconError) {
+                console.error('Failed to generate icons for skills:', iconError);
+            }
+
             await queryClient.invalidateQueries({ queryKey: ['skillFrameworks'] });
             presentToast('Framework synced successfully.', {
                 type: ToastTypeEnum.Success,
@@ -175,7 +183,14 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
             const wallet = await initWallet();
             const framework = await wallet.invoke.createSkillFramework({ frameworkId: ref });
+
             await wallet.invoke.syncFrameworkSkills({ id: framework.id });
+
+            try {
+                await annotateBackendSkillsWithIcons(framework.id, wallet);
+            } catch (iconError) {
+                console.error('Failed to generate icons for skills:', iconError);
+            }
 
             await queryClient.invalidateQueries({ queryKey: ['listMySkillFrameworks'] });
             await queryClient.invalidateQueries({ queryKey: ['skillFrameworks'] });
