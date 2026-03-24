@@ -247,7 +247,8 @@
             "secondaryButtonColor": "bg-baltic-blue-600 text-white border-baltic-blue-600",
             "indicatorColor": "text-vp-red-500",
             "syncingColor": "!text-baltic-blue-600",
-            "completedColor": "!text-emerald-700"
+            "completedColor": "!text-emerald-700",
+            "logoColor": "text-navy-900"
         },
 
         "navbar": {

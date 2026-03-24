@@ -172,7 +172,8 @@
             "secondaryButtonColor": "bg-gradient-rainbow text-white border-white",
             "indicatorColor": "text-rose-500",
             "syncingColor": "!text-indigo-500",
-            "completedColor": "!text-emerald-700"
+            "completedColor": "!text-emerald-700",
+            "logoColor": "text-grayscale-900"
         },
 
         "navbar": {

@@ -100,6 +100,7 @@ export const tenantBrandingConfigSchema = z.object({
     // Relative paths resolve against the app's public directory; absolute
     // URLs (https://) are used as-is.
     textLogoUrl: z.string().optional(),
+    textLogoDarkUrl: z.string().optional(),
     brandMarkUrl: z.string().optional(),
     appIconUrl: z.string().optional(),
     desktopLoginBgUrl: z.string().optional(),

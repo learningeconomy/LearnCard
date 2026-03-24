@@ -348,6 +348,7 @@ if (existsSync(assetsDir)) {
 //
 // Supported filenames (any common image extension):
 //   text-logo.*      → branding.textLogoUrl
+//   text-logo-dark.* → branding.textLogoDarkUrl
 //   brand-mark.*     → branding.brandMarkUrl
 //   app-icon.*       → branding.appIconUrl
 //   desktop-login-bg.*     → branding.desktopLoginBgUrl
@@ -359,6 +360,7 @@ if (existsSync(assetsDir)) {
 
 const BRANDING_FILE_MAP: Array<{ prefix: string; configKey: keyof typeof validatedConfig.branding }> = [
     { prefix: 'text-logo', configKey: 'textLogoUrl' },
+    { prefix: 'text-logo-dark', configKey: 'textLogoDarkUrl' },
     { prefix: 'brand-mark', configKey: 'brandMarkUrl' },
     { prefix: 'app-icon', configKey: 'appIconUrl' },
     { prefix: 'desktop-login-bg-alt', configKey: 'desktopLoginBgAltUrl' },

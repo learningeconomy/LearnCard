@@ -134,8 +134,11 @@ export const getHeaderText = (branding: TenantBrandingConfig): string => {
 // -----------------------------------------------------------------
 
 export interface BrandingAssets {
-    /** Wordmark / text logo (SVG or image URL). Used on login, loading, intro slides, side menu. */
+    /** Wordmark / text logo (SVG or image URL). Light variant for dark backgrounds. */
     textLogoUrl: string | undefined;
+
+    /** Dark variant of the text logo for light backgrounds (side menu, headers). */
+    textLogoDarkUrl: string | undefined;
 
     /** Brand mark / app icon used on login page hero. */
     brandMarkUrl: string | undefined;
@@ -164,6 +167,7 @@ export interface BrandingAssets {
  */
 export const getBrandingAssets = (branding: TenantBrandingConfig): BrandingAssets => ({
     textLogoUrl: branding.textLogoUrl,
+    textLogoDarkUrl: branding.textLogoDarkUrl,
     brandMarkUrl: branding.brandMarkUrl,
     appIconUrl: branding.appIconUrl,
     desktopLoginBgUrl: branding.desktopLoginBgUrl,

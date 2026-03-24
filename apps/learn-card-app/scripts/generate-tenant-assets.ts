@@ -15,6 +15,7 @@
  *   --name <text>           Tenant display name for text logo (auto-read from
  *                           environments/<tenant>/config.json branding.name if not set)
  *   --text-logo <path>      Override: use this file instead of auto-generating
+ *   --text-logo-dark <path> Override: dark variant for light backgrounds
  *   --desktop-bg <path>     Override: use this file instead of auto-generating
  *   --desktop-bg-alt <path> Override: use this file instead of auto-generating
  *
@@ -26,6 +27,7 @@
  *   │   ├── app-icon.png                    200×200  (auto-generated)
  *   │   ├── brand-mark.png                  200×200  (auto-generated)
  *   │   ├── text-logo.svg                   (auto-generated or --text-logo)
+ *   │   ├── text-logo-dark.svg              (auto-generated or --text-logo-dark)
  *   │   ├── desktop-login-bg.png            (auto-generated or --desktop-bg)
  *   │   └── desktop-login-bg-alt.png        (auto-generated or --desktop-bg-alt)
  *   ├── ios/
@@ -466,6 +468,7 @@ const DESKTOP_BG_HEIGHT = 1080;
 interface BrandingOptions {
     tenantDisplayName: string;
     textLogoPath?: string;
+    textLogoDarkPath?: string;
     desktopBgPath?: string;
     desktopBgAltPath?: string;
 }
@@ -478,7 +481,10 @@ interface BrandingOptions {
  * Uses a system sans-serif font. The viewBox is sized to fit the text with
  * generous letter-spacing matching the original aesthetic.
  */
-const generateTextLogoSvg = (name: string): string => {
+/** Default dark fill for the text logo on light backgrounds (matches grayscale-900). */
+const TEXT_LOGO_DARK_FILL = '#18224E';
+
+const generateTextLogoSvg = (name: string, fill = 'currentColor'): string => {
     const text = name.toUpperCase();
     const fontSize = 18;
     const letterSpacing = 6;
@@ -494,7 +500,7 @@ const generateTextLogoSvg = (name: string): string => {
         `  <text x="0" y="${fontSize}"`,
         '        font-family="Poppins, \'Noto Sans\', system-ui, -apple-system, sans-serif"',
         `        font-size="${fontSize}" font-weight="700"`,
-        `        letter-spacing="${letterSpacing}" fill="currentColor">`,
+        `        letter-spacing="${letterSpacing}" fill="${fill}">`,
         `    ${text}`,
         '  </text>',
         '</svg>',
@@ -577,7 +583,7 @@ const generateBrandingAssets = async (
         generateSquareIcon(logoBuffer, BRANDING_ICON_SIZE, bgColor, path.join(brandingDir, 'brand-mark.png')),
     ]);
 
-    // 2. Text logo — override file or auto-generate SVG from tenant name
+    // 2. Text logo (light variant — white fill for dark backgrounds)
     if (options.textLogoPath) {
         if (!fs.existsSync(options.textLogoPath)) {
             console.warn(`  ⚠  --text-logo file not found: ${options.textLogoPath}`);
@@ -588,9 +594,25 @@ const generateBrandingAssets = async (
             console.log(`  🎨 Copied text-logo${ext} (override)`);
         }
     } else {
-        const svg = generateTextLogoSvg(options.tenantDisplayName);
+        const svg = generateTextLogoSvg(options.tenantDisplayName, 'white');
         fs.writeFileSync(path.join(brandingDir, 'text-logo.svg'), svg, 'utf-8');
-        console.log(`  🎨 Auto-generated text-logo.svg ("${options.tenantDisplayName.toUpperCase()}")`);
+        console.log(`  🎨 Auto-generated text-logo.svg ("${options.tenantDisplayName.toUpperCase()}", fill=white)`);
+    }
+
+    // 2b. Text logo dark variant — dark fill for light backgrounds (side menu, headers)
+    if (options.textLogoDarkPath) {
+        if (!fs.existsSync(options.textLogoDarkPath)) {
+            console.warn(`  ⚠  --text-logo-dark file not found: ${options.textLogoDarkPath}`);
+        } else {
+            const ext = path.extname(options.textLogoDarkPath);
+            const dest = path.join(brandingDir, `text-logo-dark${ext}`);
+            fs.cpSync(options.textLogoDarkPath, dest);
+            console.log(`  🎨 Copied text-logo-dark${ext} (override)`);
+        }
+    } else {
+        const darkSvg = generateTextLogoSvg(options.tenantDisplayName, TEXT_LOGO_DARK_FILL);
+        fs.writeFileSync(path.join(brandingDir, 'text-logo-dark.svg'), darkSvg, 'utf-8');
+        console.log(`  🎨 Auto-generated text-logo-dark.svg ("${options.tenantDisplayName.toUpperCase()}", fill=${TEXT_LOGO_DARK_FILL})`);
     }
 
     // 3. Desktop login background — override file or auto-generate gradient
@@ -721,6 +743,7 @@ const buildAssetManifest = (skipSplash: boolean, textLogoExt?: string): AssetCat
         'branding/app-icon.png',
         'branding/brand-mark.png',
         `branding/text-logo${textLogoExt ?? '.svg'}`,
+        'branding/text-logo-dark.svg',
         'branding/desktop-login-bg.png',
         'branding/desktop-login-bg-alt.png',
     ];
@@ -924,6 +947,7 @@ Options:
   --name <text>           Tenant display name for text logo
                           (auto-read from environments/<tenant>/config.json if not set)
   --text-logo <path>      Override: use this file instead of auto-generating
+  --text-logo-dark <path> Override: dark variant for light backgrounds
   --desktop-bg <path>     Override: use this file instead of auto-generating
   --desktop-bg-alt <path> Override: use this file instead of auto-generating
 
@@ -944,6 +968,7 @@ Example:
     let skipPrompt = false;
     let nameOverride: string | undefined;
     let textLogoPath: string | undefined;
+    let textLogoDarkPath: string | undefined;
     let desktopBgPath: string | undefined;
     let desktopBgAltPath: string | undefined;
 
@@ -962,6 +987,8 @@ Example:
             nameOverride = args[++i]!;
         } else if (args[i] === '--text-logo' && args[i + 1]) {
             textLogoPath = path.resolve(args[++i]!);
+        } else if (args[i] === '--text-logo-dark' && args[i + 1]) {
+            textLogoDarkPath = path.resolve(args[++i]!);
         } else if (args[i] === '--desktop-bg' && args[i + 1]) {
             desktopBgPath = path.resolve(args[++i]!);
         } else if (args[i] === '--desktop-bg-alt' && args[i + 1]) {
@@ -1147,6 +1174,7 @@ Example:
         await generateBrandingAssets(logoBuffer, bgColor, outDir, {
             tenantDisplayName,
             textLogoPath,
+            textLogoDarkPath,
             desktopBgPath,
             desktopBgAltPath,
         });

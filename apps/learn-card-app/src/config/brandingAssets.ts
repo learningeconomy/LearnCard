@@ -21,6 +21,8 @@ import DefaultDesktopLoginBgAlt from '../assets/images/desktop-login-bg-alt.png'
 
 export interface ResolvedBrandingAssets {
     textLogo: string;
+    /** Dark variant for light backgrounds. Undefined when not configured. */
+    textLogoDark: string | undefined;
     brandMark: string;
     appIcon: string;
     desktopLoginBg: string;
@@ -33,6 +35,7 @@ export interface ResolvedBrandingAssets {
  */
 export const resolveAssets = (assets: BrandingAssets): ResolvedBrandingAssets => ({
     textLogo: assets.textLogoUrl ?? DefaultTextLogo,
+    textLogoDark: assets.textLogoDarkUrl,
     brandMark: assets.brandMarkUrl ?? DefaultBrandMark,
     appIcon: assets.appIconUrl ?? DefaultAppIcon,
     desktopLoginBg: assets.desktopLoginBgUrl ?? DefaultDesktopLoginBg,
@@ -51,6 +54,7 @@ export const useTenantBrandingAssets = (): ResolvedBrandingAssets => {
 
     return useMemo(() => resolveAssets(assets), [
         assets.textLogoUrl,
+        assets.textLogoDarkUrl,
         assets.brandMarkUrl,
         assets.appIconUrl,
         assets.desktopLoginBgUrl,

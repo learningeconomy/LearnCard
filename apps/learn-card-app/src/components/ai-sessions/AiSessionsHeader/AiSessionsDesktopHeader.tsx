@@ -2,6 +2,7 @@ import React from 'react';
 
 import X from '../../svgs/X';
 import BurgerIcon from '../../svgs/Burger';
+import LearnCardTextLogo from '../../svgs/LearnCardTextLogo';
 import { IonMenuToggle } from '@ionic/react';
 import IDSleeve from 'learn-card-base/svgs/IDSleeve';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
@@ -15,7 +16,7 @@ import { useTheme } from '../../../theme/hooks/useTheme';
 export const AiSessionsDesktopHeader: React.FC<{
     app?: LaunchPadAppListItem;
 }> = ({ app }) => {
-    const { appIcon, textLogo } = useTenantBrandingAssets();
+    const { appIcon, textLogoDark } = useTenantBrandingAssets();
     const isCollapsed = sideMenuStore.useTracked.isCollapsed();
 
     const { colors } = useTheme();
@@ -53,7 +54,11 @@ export const AiSessionsDesktopHeader: React.FC<{
                             />
                         </div>
                     </IonMenuToggle>
-                    <img src={textLogo} alt="Logo" className="w-[85%] max-w-[150px] object-contain" />
+                    {textLogoDark ? (
+                        <img src={textLogoDark} alt="Logo" className="w-[85%] max-w-[150px] object-contain" />
+                    ) : (
+                        <LearnCardTextLogo className="text-grayscale-900 w-[85%] max-w-[150px]" />
+                    )}
                     <div className="h-[25px] w-[25px]" />
                 </div>
 

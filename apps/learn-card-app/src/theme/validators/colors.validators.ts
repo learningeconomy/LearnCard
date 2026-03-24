@@ -84,6 +84,8 @@ export const SideMenuColorsSchema = z
         indicatorColor: z.string().describe('Notification indicator color'),
         syncingColor: z.string().describe('Syncing indicator color'),
         completedColor: z.string().describe('Completed indicator color'),
+        /** Tailwind text-color class for the inline SVG text logo (e.g. "text-grayscale-900"). */
+        logoColor: z.string().optional().describe('Text color for the inline SVG text logo'),
     })
     .describe('SideMenu Colors');
 export type SideMenuColors = z.infer<typeof SideMenuColorsSchema>;
