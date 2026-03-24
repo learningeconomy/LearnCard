@@ -1450,6 +1450,15 @@ const UIColorsSection = ({ config, parentConfig, setConfig }) => (
             fields={[
                 { key: 'primaryColor', label: 'Primary Color', hint: 'App-wide accent color used for buttons, links, and highlights' },
                 { key: 'primaryColorShade', label: 'Primary Shade', hint: 'Lighter shade of primary — used for hover states and backgrounds' },
+                { key: 'loginBgColor', label: 'Login Background', hint: 'Hex color for the login page background (optional — falls back to loaders[0])' },
+                { key: 'loginButtonBgColor', label: 'Login Button Background', hint: 'Hex color for the login page submit button background (optional — falls back to grayscale-900)' },
+                { key: 'loginButtonTextColor', label: 'Login Button Text', hint: 'Hex color for the login page submit button text (optional — falls back to white)' },
+                { key: 'passportBgColor', label: 'Passport Background', hint: 'Hex color for the Passport page background (optional — falls back to white)' },
+                { key: 'passportTextColor', label: 'Passport Text', hint: 'Tailwind text class for Passport heading text, e.g. "text-white" (optional — falls back to text-grayscale-900)' },
+                { key: 'passportCardBgColor', label: 'Passport Card Background', hint: 'Hex color for category card backgrounds on the Passport page (optional — falls back to category primaryColor class)' },
+                { key: 'passportCardTextColor', label: 'Passport Card Text', hint: 'Tailwind text class for category card labels, e.g. "text-white" (optional — falls back to text-grayscale-900)' },
+                { key: 'featuredCardBgColor', label: 'Featured Card Background', hint: 'Hex color for Build My LC / Resume Builder card backgrounds (optional — falls back to white)' },
+                { key: 'featuredCardTextColor', label: 'Featured Card Text', hint: 'Tailwind text class for featured card text, e.g. "text-white" (optional — falls back to text-grayscale-900)' },
             ]} />
     </>
 );
