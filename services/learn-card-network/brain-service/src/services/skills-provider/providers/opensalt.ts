@@ -161,6 +161,7 @@ export function createOpenSaltProvider(options?: Options): SkillsProvider {
         if (!frameworkId) return [];
 
         const parentByChildId = new Map<string, string>();
+        const parentIds = new Set<string>();
         for (const association of packageData.CFAssociations || []) {
             if (association.associationType !== 'isChildOf') continue;
             const childId = association.originNodeURI?.identifier;
@@ -168,6 +169,7 @@ export function createOpenSaltProvider(options?: Options): SkillsProvider {
             if (!childId || !parentId) continue;
             if (parentId === frameworkId) continue;
             parentByChildId.set(childId, parentId);
+            parentIds.add(parentId);
         }
 
         const skills: Skill[] = [];
@@ -175,12 +177,15 @@ export function createOpenSaltProvider(options?: Options): SkillsProvider {
             const statement = toItemStatement(item);
             if (!item.identifier || !statement) continue;
 
+            const isLeaf = !parentIds.has(item.identifier);
+
             skills.push({
                 id: item.identifier,
                 statement,
                 description: toItemDescription(item),
                 code: item.humanCodingScheme ?? item.listEnumeration,
-                type: toType(item.CFItemType),
+                // type: toType(item.CFItemType),
+                type: isLeaf ? 'competency' : 'container',
                 status: 'active',
                 parentId: parentByChildId.get(item.identifier) ?? null,
             });
