@@ -10,6 +10,8 @@
  *   --bg <hex>              Background color for icons (default: #FFFFFF)
  *   --splash-bg <hex>       Splash screen background color (defaults to --bg)
  *   --no-splash             Skip splash screen generation
+ *   --fill                  Only generate missing assets (skip existing files)
+ *   --yes                   Skip confirmation prompt
  *   --name <text>           Tenant display name for text logo (auto-read from
  *                           environments/<tenant>/config.json branding.name if not set)
  *   --text-logo <path>      Override: use this file instead of auto-generating
@@ -62,6 +64,7 @@
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs';
+import { createInterface } from 'readline';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -622,6 +625,136 @@ const generateBrandingAssets = async (
 };
 
 // ---------------------------------------------------------------------------
+// Asset manifest & preview
+// ---------------------------------------------------------------------------
+
+interface AssetCategory {
+    name: string;
+    description: string;
+    files: string[];
+}
+
+const DENSITY_NAMES = ANDROID_DENSITIES.map(d => d.name);
+
+const buildAssetManifest = (skipSplash: boolean, textLogoExt?: string): AssetCategory[] => {
+    const categories: AssetCategory[] = [];
+
+    // iOS
+    const iosFiles = ['ios/AppIcon.png'];
+
+    if (!skipSplash) {
+        iosFiles.push(
+            'ios/splash-2732x2732.png',
+            'ios/splash-2732x2732-1.png',
+            'ios/splash-2732x2732-2.png',
+        );
+    }
+
+    categories.push({ name: 'ios', description: 'iOS App Icon + Splash', files: iosFiles });
+
+    // Android icons (mipmap + background XMLs)
+    const androidIconFiles: string[] = [];
+
+    for (const d of DENSITY_NAMES) {
+        androidIconFiles.push(
+            `android/mipmap-${d}/ic_launcher.webp`,
+            `android/mipmap-${d}/ic_launcher_foreground.webp`,
+            `android/mipmap-${d}/ic_launcher_round.webp`,
+        );
+    }
+
+    androidIconFiles.push(
+        'android/values/ic_launcher_background.xml',
+        'android/drawable/ic_launcher_background.xml',
+    );
+
+    categories.push({ name: 'android-icons', description: 'Android Adaptive + Legacy + Round Icons', files: androidIconFiles });
+
+    // Android notification icons
+    const androidNotifFiles: string[] = [];
+
+    for (const d of DENSITY_NAMES) {
+        androidNotifFiles.push(
+            `android/drawable-${d}/ic_stat_name.png`,
+            `android/drawable-${d}/ic_action_name.png`,
+        );
+    }
+
+    androidNotifFiles.push(
+        'android/drawable/ic_notification.png',
+        'android/drawable/ic_stat_name.png',
+    );
+
+    categories.push({ name: 'android-notifications', description: 'Android Notification Icons (white silhouette)', files: androidNotifFiles });
+
+    // Android splash screens
+    if (!skipSplash) {
+        const androidSplashFiles: string[] = [];
+
+        for (const density of Object.keys(ANDROID_SPLASH_SIZES)) {
+            androidSplashFiles.push(
+                `android/drawable-${density}/splash.9.png`,
+                `android/drawable-port-${density}/splash.9.png`,
+                `android/drawable-land-${density}/splash.9.png`,
+            );
+        }
+
+        androidSplashFiles.push('android/drawable/splash.9.png');
+
+        categories.push({ name: 'android-splash', description: 'Android Splash Screens (9-patch)', files: androidSplashFiles });
+    }
+
+    // Web
+    categories.push({
+        name: 'web',
+        description: 'Web Favicon + PWA Icons + Apple Touch Icon',
+        files: [
+            'web/favicon.png',
+            'web/icon.png',
+            'web/icon-192.png',
+            'web/apple-touch-icon.png',
+        ],
+    });
+
+    // Branding
+    const brandingFiles = [
+        'branding/app-icon.png',
+        'branding/brand-mark.png',
+        `branding/text-logo${textLogoExt ?? '.svg'}`,
+        'branding/desktop-login-bg.png',
+        'branding/desktop-login-bg-alt.png',
+    ];
+
+    categories.push({ name: 'branding', description: 'In-app Branding Assets', files: brandingFiles });
+
+    return categories;
+};
+
+const askConfirmation = async (question: string): Promise<boolean> => {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+
+    return new Promise(resolve => {
+        rl.question(question, answer => {
+            rl.close();
+            resolve(answer.trim().toLowerCase() !== 'n');
+        });
+    });
+};
+
+const cleanGeneratedAssets = (outDir: string): void => {
+    if (!fs.existsSync(outDir)) return;
+
+    for (const entry of fs.readdirSync(outDir)) {
+        // Never delete the config/ subdirectory — it contains hand-placed files
+        if (entry === 'config') continue;
+
+        const full = path.join(outDir, entry);
+
+        fs.rmSync(full, { recursive: true });
+    }
+};
+
+// ---------------------------------------------------------------------------
 // Orchestration
 // ---------------------------------------------------------------------------
 
@@ -786,6 +919,8 @@ Options:
   --bg <hex>              Icon background color      (default: #FFFFFF)
   --splash-bg <hex>       Splash background color    (defaults to --bg)
   --no-splash             Skip splash screen generation
+  --fill                  Only generate missing assets (skip existing files)
+  --yes                   Skip confirmation prompt
   --name <text>           Tenant display name for text logo
                           (auto-read from environments/<tenant>/config.json if not set)
   --text-logo <path>      Override: use this file instead of auto-generating
@@ -794,6 +929,7 @@ Options:
 
 Example:
   npx tsx scripts/generate-tenant-assets.ts vetpass ~/logo.png --bg "#1A3C5E" --name "VetPass"
+  npx tsx scripts/generate-tenant-assets.ts vetpass ~/logo.png --bg "#1A3C5E" --fill
 `);
         process.exit(1);
     }
@@ -804,6 +940,8 @@ Example:
     let bgHex = '#FFFFFF';
     let splashBgHex: string | undefined;
     let skipSplash = false;
+    let fillOnly = false;
+    let skipPrompt = false;
     let nameOverride: string | undefined;
     let textLogoPath: string | undefined;
     let desktopBgPath: string | undefined;
@@ -816,6 +954,10 @@ Example:
             splashBgHex = args[++i]!;
         } else if (args[i] === '--no-splash') {
             skipSplash = true;
+        } else if (args[i] === '--fill') {
+            fillOnly = true;
+        } else if (args[i] === '--yes') {
+            skipPrompt = true;
         } else if (args[i] === '--name' && args[i + 1]) {
             nameOverride = args[++i]!;
         } else if (args[i] === '--text-logo' && args[i + 1]) {
@@ -873,38 +1015,145 @@ Example:
 
     const outDir = path.join(ENVIRONMENTS_DIR, tenant, 'assets');
 
-    // Clean previous output
-    if (fs.existsSync(outDir)) {
-        fs.rmSync(outDir, { recursive: true });
-    }
+    // Build asset manifest and check existing files
+    const textLogoExt = textLogoPath ? path.extname(textLogoPath) : undefined;
+    const manifest = buildAssetManifest(skipSplash, textLogoExt);
 
-    console.log(`\n🎨 Generating assets for tenant "${tenant}"\n`);
+    const allFiles = manifest.flatMap(c => c.files);
+    const existingFiles = allFiles.filter(f => fs.existsSync(path.join(outDir, f)));
+    const missingFiles = allFiles.filter(f => !fs.existsSync(path.join(outDir, f)));
+
+    // Check for config/ files that would be preserved
+    const configDir = path.join(outDir, 'config');
+    const configFileCount = fs.existsSync(configDir) ? countFiles(configDir) : 0;
+
+    // Preview
+    const mode = fillOnly ? 'fill-missing' : 'full';
+
+    console.log(`\n🎨 Asset generation for "${tenant}" (${mode} mode)\n`);
     console.log(`  Logo:       ${logoPath} (${logoMeta.width}×${logoMeta.height})`);
     console.log(`  Name:       ${tenantDisplayName}`);
     console.log(`  Icon BG:    ${bgHex}`);
     console.log(`  Splash BG:  ${splashBg}`);
     console.log(`  Output:     ${outDir}\n`);
 
-    // Generate all asset categories
-    await generateIosAssets(logoBuffer, bgColor, splashColor, outDir, skipSplash);
-    await generateAndroidIcons(logoBuffer, bgColor, bgHex, outDir);
-    await generateAndroidNotificationIcons(logoBuffer, outDir);
+    if (fillOnly) {
+        // Show what's missing vs existing per category
+        let totalMissing = 0;
+        let totalExisting = 0;
 
-    if (!skipSplash) {
+        for (const category of manifest) {
+            const missing = category.files.filter(f => !fs.existsSync(path.join(outDir, f)));
+            const existing = category.files.filter(f => fs.existsSync(path.join(outDir, f)));
+
+            totalMissing += missing.length;
+            totalExisting += existing.length;
+
+            if (missing.length > 0) {
+                console.log(`  📦 ${category.description}`);
+                console.log(`     Will generate: ${missing.length} file(s)`);
+
+                // Show first few files as examples
+                const preview = missing.slice(0, 3);
+
+                for (const f of preview) {
+                    console.log(`       + ${f}`);
+                }
+
+                if (missing.length > 3) {
+                    console.log(`       ... and ${missing.length - 3} more`);
+                }
+
+                console.log('');
+            } else {
+                console.log(`  ✅ ${category.description} — all ${existing.length} file(s) exist, skipping`);
+            }
+        }
+
+        if (totalMissing === 0) {
+            console.log('\n  All assets already exist! Nothing to generate.\n');
+            process.exit(0);
+        }
+
+        console.log(`\n  Summary: ${totalMissing} missing, ${totalExisting} existing (will skip)\n`);
+    } else {
+        // Full mode — show what will be regenerated
+        for (const category of manifest) {
+            const existing = category.files.filter(f => fs.existsSync(path.join(outDir, f)));
+            const label = existing.length > 0
+                ? `${category.files.length} file(s) (${existing.length} will be overwritten)`
+                : `${category.files.length} file(s)`;
+
+            console.log(`  📦 ${category.description} — ${label}`);
+        }
+
+        if (configFileCount > 0) {
+            console.log(`\n  🔒 config/ directory (${configFileCount} file(s)) — will be preserved`);
+        }
+
+        console.log(`\n  Total: ${allFiles.length} file(s) to generate, ${existingFiles.length} existing will be overwritten\n`);
+    }
+
+    // Confirmation
+    if (!skipPrompt) {
+        const proceed = await askConfirmation('  Proceed? (Y/n): ');
+
+        if (!proceed) {
+            console.log('\n  Cancelled.\n');
+            process.exit(0);
+        }
+    }
+
+    // Clean previous output (preserving config/)
+    if (!fillOnly) {
+        cleanGeneratedAssets(outDir);
+    }
+
+    // Determine which categories need generation
+    const shouldGenerate = (categoryName: string): boolean => {
+        if (!fillOnly) return true;
+
+        const category = manifest.find(c => c.name === categoryName);
+
+        if (!category) return false;
+
+        return category.files.some(f => !fs.existsSync(path.join(outDir, f)));
+    };
+
+    console.log('');
+
+    // Generate asset categories (skip categories with no missing files in fill mode)
+    if (shouldGenerate('ios')) {
+        await generateIosAssets(logoBuffer, bgColor, splashColor, outDir, skipSplash);
+    }
+
+    if (shouldGenerate('android-icons')) {
+        await generateAndroidIcons(logoBuffer, bgColor, bgHex, outDir);
+    }
+
+    if (shouldGenerate('android-notifications')) {
+        await generateAndroidNotificationIcons(logoBuffer, outDir);
+    }
+
+    if (!skipSplash && shouldGenerate('android-splash')) {
         await generateAndroidSplashScreens(logoBuffer, splashColor, outDir);
     }
 
-    await generateWebAssets(logoBuffer, bgColor, outDir);
+    if (shouldGenerate('web')) {
+        await generateWebAssets(logoBuffer, bgColor, outDir);
+    }
 
-    await generateBrandingAssets(logoBuffer, bgColor, outDir, {
-        tenantDisplayName,
-        textLogoPath,
-        desktopBgPath,
-        desktopBgAltPath,
-    });
+    if (shouldGenerate('branding')) {
+        await generateBrandingAssets(logoBuffer, bgColor, outDir, {
+            tenantDisplayName,
+            textLogoPath,
+            desktopBgPath,
+            desktopBgAltPath,
+        });
+    }
 
     // Summary
-    const fileCount = countFiles(outDir);
+    const fileCount = countFiles(outDir) - configFileCount;
 
     console.log(`\n✅ Generated ${fileCount} asset files in:\n   ${outDir}\n`);
     console.log('Next steps:');

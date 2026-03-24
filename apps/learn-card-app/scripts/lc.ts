@@ -313,7 +313,25 @@ const generateAssets = async () => {
         tenantId = tenantChoice || tenants[0]!;
     }
 
-    // 2. Logo path
+    // 2. Generation mode
+    const hasExistingAssets = existsSync(join(ENVIRONMENTS_DIR, tenantId, 'assets'));
+
+    let fillOnly = false;
+
+    if (hasExistingAssets) {
+        console.log('');
+        console.log(bold('This tenant already has assets. How do you want to generate?'));
+        console.log('');
+        console.log(`  ${cyan('1')}  ${bold('Fill missing')} — only generate assets that don\'t exist yet ${dim('(safe)')}`);
+        console.log(`  ${cyan('2')}  ${bold('Full regen')}  — regenerate all assets (overwrites existing) ${dim('(config/ preserved)')}`);
+        console.log('');
+
+        const modeChoice = await ask(`Pick a mode [1-2] ${dim('(default: 1 / fill)')}: `);
+
+        fillOnly = modeChoice !== '2';
+    }
+
+    // 3. Logo path
     console.log('');
     console.log(dim('  Tip: You can drag a file from Finder into the terminal to paste its path.'));
     console.log(dim('  Recommended: PNG or SVG, at least 1024×1024.'));
@@ -387,6 +405,14 @@ const generateAssets = async () => {
         shortcut += ' --no-splash';
     }
 
+    if (fillOnly) {
+        cmd += ' --fill';
+        shortcut += ' --fill';
+    }
+
+    // Skip the generate script's own confirmation — we already confirmed here
+    cmd += ' --yes';
+
     const cleanPath = (p: string) => p.replace(/^["']|["']$/g, '').trim();
 
     if (textLogoInput) {
@@ -405,6 +431,7 @@ const generateAssets = async () => {
     console.log('');
     console.log(bold('Summary:'));
     console.log(`  Tenant:     ${bold(tenantId)}`);
+    console.log(`  Mode:       ${fillOnly ? 'fill missing only' : 'full regeneration'}`);
     console.log(`  Logo:       ${logoPath}`);
     console.log(`  Name:       ${displayName}`);
     console.log(`  Icon BG:    ${bgHex}`);
