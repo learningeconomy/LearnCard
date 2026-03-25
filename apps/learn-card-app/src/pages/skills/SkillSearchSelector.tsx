@@ -9,11 +9,14 @@ import {
     useGetProfile,
     useToast,
     ToastTypeEnum,
+    conditionalPluralize,
 } from 'learn-card-base';
 
 import X from 'learn-card-base/svgs/X';
 import Search from 'learn-card-base/svgs/Search';
+import VerifiedBadgeIcon from 'learn-card-base/svgs/VerifiedBadgeIcon';
 import SelfAssignedSkillRow from './SelfAssignedSkillRow';
+import SkillTag from './SkillTag';
 import { IonInput, IonSpinner } from '@ionic/react';
 import { GenericErrorView } from 'learn-card-base/components/generic/GenericErrorBoundary';
 
@@ -203,7 +206,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                             type="text"
                             value={searchInput}
                             placeholder={
-                                isAdd ? 'Search by skill or occupation...' : 'Search skills...'
+                                isAdd ? 'Search by skill, goal, or job...' : 'Search skills...'
                             }
                             onIonInput={e => setSearchInput(e.detail.value)}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[14px] !pl-[44px] !text-left !pr-[36px]"
@@ -221,16 +224,35 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                         )}
                     </div>
 
-                    {!noResults && (
-                        <>
-                            {isAdd
-                                ? hasSearchQuery && (
-                                      <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
-                                          Suggested Skills
-                                      </p>
-                                  )
-                                : null}
-                        </>
+                    {selectedSkills.length > 0 && (
+                        <div className="py-[10px] border-t-[1px] border-solid border-grayscale-200 flex flex-col gap-[10px]">
+                            <h4 className="flex gap-[5px] items-center text-grayscale-900 font-poppins text-[14px] font-bold">
+                                <VerifiedBadgeIcon />
+                                {conditionalPluralize(selectedSkills.length, 'Self Assigned Skill')}
+
+                                {selectedSkills.length > 4 && (
+                                    <button className="ml-auto text-grayscale-600 text-[14px] font-bold">
+                                        View All
+                                    </button>
+                                )}
+                            </h4>
+
+                            {selectedSkills.map((skill, index) => (
+                                <SkillTag
+                                    key={skill.id}
+                                    skillId={skill.id}
+                                    frameworkId={frameworkId}
+                                    proficiencyLevel={skill.proficiency}
+                                    handleRemoveSkill={() => handleToggleSelect(skill.id)}
+                                />
+                            ))}
+                        </div>
+                    )}
+
+                    {!noResults && isAdd && hasSearchQuery && (
+                        <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
+                            Suggested Skills
+                        </p>
                     )}
                     {noResults && (
                         <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
