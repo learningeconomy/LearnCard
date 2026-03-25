@@ -6,20 +6,20 @@ import {
     ExternalLink,
     CheckCircle2,
     Code,
-    Key,
     Package,
     Zap,
     Check,
     Database,
     Copy,
     Info,
-    ChevronDown,
-    ChevronUp,
-    Loader2,
     Send,
+    Plus,
+    Trash2,
 } from 'lucide-react';
 
-import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { Clipboard } from '@capacitor/clipboard';
+
+import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
 
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
@@ -39,6 +39,11 @@ type AuthGrant = {
     scope: string;
     description?: string;
 };
+
+const SCOPE_OPTIONS = [
+    { label: 'Full Access', value: '*:*', description: 'Complete access to all resources' },
+    { label: 'Credentials Only', value: 'credential:* presentation:*', description: 'Issue and manage credentials' },
+];
 
 const STEPS = [
     { id: 'create-contract', title: 'Create Contract' },
@@ -287,51 +292,100 @@ const APISetupStep: React.FC<{
     onTokenChange: (token: string) => void;
 }> = ({ onComplete, onBack, apiToken, onTokenChange }) => {
     const { initWallet } = useWallet();
-
     const { presentToast } = useToast();
+    const confirm = useConfirmation();
 
-    // API Token selector state
     const [authGrants, setAuthGrants] = useState<Partial<AuthGrant>[]>([]);
     const [loadingGrants, setLoadingGrants] = useState(false);
     const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
-    const [showTokenSelector, setShowTokenSelector] = useState(false);
     const [fetchError, setFetchError] = useState<string | null>(null);
+    const [creating, setCreating] = useState(false);
+    const [newTokenName, setNewTokenName] = useState('');
+    const [selectedScope, setSelectedScope] = useState('*:*');
+    const [showCreateForm, setShowCreateForm] = useState(false);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
 
-    // Fetch auth grants on mount
-    useEffect(() => {
-        const fetchGrants = async () => {
-            setLoadingGrants(true);
-            setFetchError(null);
-            try {
-                const wallet = await initWallet();
-                const grants = await wallet.invoke.getAuthGrants() || [];
-                const activeGrants = grants.filter((g: Partial<AuthGrant>) => g.status === 'active');
-                setAuthGrants(activeGrants);
-            } catch (err) {
-                console.error('Failed to fetch grants:', err);
-                setFetchError('Failed to load API tokens. Please try refreshing the page.');
-            } finally {
-                setLoadingGrants(false);
-            }
-        };
-        fetchGrants();
-    }, []);
-
-    // Select a token
-    const selectToken = async (grantId: string) => {
+    const fetchAuthGrants = useCallback(async () => {
+        setLoadingGrants(true);
+        setFetchError(null);
         try {
             const wallet = await initWallet();
-            const token = await wallet.invoke.getAPITokenForAuthGrant(grantId);
-            onTokenChange(token);
-            setSelectedGrantId(grantId);
-            setShowTokenSelector(false);
+            const grants = await wallet.invoke.getAuthGrants() || [];
+            const activeGrants = grants.filter((g: Partial<AuthGrant>) => g.status === 'active');
+            setAuthGrants(activeGrants);
         } catch (err) {
-            console.error('Failed to get token:', err);
-            presentToast('Failed to retrieve API token', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            console.error('Failed to fetch grants:', err);
+            setFetchError('Failed to load API tokens. Please try refreshing the page.');
+        } finally {
+            setLoadingGrants(false);
+        }
+    }, [initWallet]);
+
+    useEffect(() => {
+        fetchAuthGrants();
+    }, []);
+
+    const createToken = async () => {
+        if (!newTokenName.trim()) return;
+        try {
+            setCreating(true);
+            const wallet = await initWallet();
+            await wallet.invoke.addAuthGrant({
+                name: newTokenName.trim(),
+                description: 'Created from Connect Website Guide',
+                scope: selectedScope,
+            });
+            presentToast('API Token created!', { hasDismissButton: true });
+            setNewTokenName('');
+            setShowCreateForm(false);
+            fetchAuthGrants();
+        } catch (err) {
+            console.error('Failed to create token:', err);
+            presentToast('Failed to create token', { type: ToastTypeEnum.Error, hasDismissButton: true });
+        } finally {
+            setCreating(false);
         }
     };
 
-    // Get selected grant name for display
+    const copyToken = async (grantId: string) => {
+        try {
+            const wallet = await initWallet();
+            const token = await wallet.invoke.getAPITokenForAuthGrant(grantId);
+            await Clipboard.write({ string: token });
+            setCopiedId(grantId);
+            setTimeout(() => setCopiedId(null), 2000);
+            onTokenChange(token);
+            setSelectedGrantId(grantId);
+            presentToast('Token copied!', { hasDismissButton: true });
+        } catch (err) {
+            console.error('Failed to copy token:', err);
+            presentToast('Failed to copy token', { type: ToastTypeEnum.Error, hasDismissButton: true });
+        }
+    };
+
+    const revokeToken = async (grant: Partial<AuthGrant>) => {
+        const confirmed = await confirm({
+            text: `Delete "${grant.name}"?`,
+            onConfirm: async () => {},
+            cancelButtonClassName: 'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px]',
+            confirmButtonClassName: 'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
+        });
+        if (!confirmed) return;
+        try {
+            const wallet = await initWallet();
+            if (grant.status === 'active') {
+                await wallet.invoke.revokeAuthGrant(grant.id!);
+            } else {
+                await wallet.invoke.deleteAuthGrant(grant.id!);
+            }
+            presentToast('Token removed', { hasDismissButton: true });
+            fetchAuthGrants();
+        } catch (err) {
+            console.error('Failed to remove token:', err);
+        }
+    };
+
+    const hasActiveToken = authGrants.length > 0;
     const selectedGrant = authGrants.find(g => g.id === selectedGrantId);
     const displayTokenName = selectedGrant?.name || (apiToken ? 'Selected Token' : 'No token selected');
 
@@ -346,88 +400,123 @@ const APISetupStep: React.FC<{
             </div>
 
             <StatusIndicator
-                status={apiToken ? 'ready' : loadingGrants ? 'loading' : fetchError ? 'warning' : 'incomplete'}
-                label={apiToken ? `Token: ${displayTokenName}` : 'API Token'}
-                description={fetchError || (apiToken ? 'Ready to use' : 'Select an API token to authenticate')}
+                status={apiToken ? 'ready' : loadingGrants ? 'loading' : fetchError ? 'warning' : hasActiveToken ? 'incomplete' : 'warning'}
+                label={apiToken ? `Token: ${displayTokenName}` : loadingGrants ? 'Checking...' : hasActiveToken ? `${authGrants.length} token${authGrants.length > 1 ? 's' : ''} ready` : 'No API tokens found'}
+                description={fetchError || (apiToken ? 'Ready to use' : hasActiveToken ? 'Copy a token to use in your code' : 'Create one to continue')}
             />
 
-            {/* API Token Selector */}
-            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                            <Key className="w-5 h-5 text-indigo-600" />
-                        </div>
+            {/* Create form */}
+            {showCreateForm && (
+                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Token Name</label>
 
-                        <div>
-                            <p className="text-sm font-medium text-gray-700">API Token</p>
-
-                            <p className="text-xs text-gray-500">
-                                {apiToken ? (
-                                    <span className="text-emerald-600 flex items-center gap-1">
-                                        <CheckCircle2 className="w-3 h-3" />
-                                        {displayTokenName}
-                                    </span>
-                                ) : (
-                                    <span className="text-amber-600">Select a token to use</span>
-                                )}
-                            </p>
-                        </div>
+                        <input
+                            type="text"
+                            value={newTokenName}
+                            onChange={(e) => setNewTokenName(e.target.value)}
+                            placeholder="e.g., Production Server"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
                     </div>
 
-                    <button
-                        onClick={() => setShowTokenSelector(!showTokenSelector)}
-                        className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
-                    >
-                        {showTokenSelector ? 'Hide' : apiToken ? 'Change' : 'Select'}
-                        {showTokenSelector ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Permissions</label>
+
+                        <select
+                            value={selectedScope}
+                            onChange={(e) => setSelectedScope(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                            {SCOPE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                        </select>
+
+                        <p className="text-xs text-gray-500 mt-1">
+                            {SCOPE_OPTIONS.find(o => o.value === selectedScope)?.description}
+                        </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <button
+                            onClick={createToken}
+                            disabled={creating || !newTokenName.trim()}
+                            className="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
+                        >
+                            {creating ? 'Creating...' : 'Create Token'}
+                        </button>
+
+                        <button
+                            onClick={() => { setShowCreateForm(false); setNewTokenName(''); }}
+                            className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </div>
                 </div>
+            )}
 
-                {showTokenSelector && (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                        {loadingGrants ? (
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Loading tokens...
-                            </div>
-                        ) : authGrants.length === 0 ? (
-                            <div className="text-sm text-gray-500">
-                                <p className="mb-2">No API tokens found.</p>
+            {/* Token list */}
+            {!loadingGrants && authGrants.length > 0 && (
+                <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 overflow-hidden">
+                    {authGrants.map((grant) => (
+                        <div key={grant.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
+                            <div className="flex-1 min-w-0">
+                                <p className="font-medium text-gray-800">{grant.name}</p>
 
-                                <p className="text-xs text-gray-400">
-                                    Go to <strong>Admin Tools → API Keys</strong> to create one, then come back here.
+                                <p className="text-sm text-gray-500">
+                                    Created {new Date(grant.createdAt!).toLocaleDateString()}
                                 </p>
                             </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {authGrants.map((grant) => (
-                                    <button
-                                        key={grant.id}
-                                        onClick={() => selectToken(grant.id!)}
-                                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                                            selectedGrantId === grant.id
-                                                ? 'bg-indigo-50 border-indigo-300'
-                                                : 'bg-white border-gray-200 hover:border-indigo-300'
-                                        }`}
-                                    >
-                                        <div className="text-left">
-                                            <p className="text-sm font-medium text-gray-700">{grant.name}</p>
 
-                                            <p className="text-xs text-gray-500">
-                                                Created {new Date(grant.createdAt!).toLocaleDateString()}
-                                            </p>
-                                        </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => copyToken(grant.id!)}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                                        selectedGrantId === grant.id
+                                            ? 'bg-emerald-50 text-emerald-700'
+                                            : 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100'
+                                    }`}
+                                >
+                                    {copiedId === grant.id ? (
+                                        <Check className="w-4 h-4" />
+                                    ) : selectedGrantId === grant.id ? (
+                                        <CheckCircle2 className="w-4 h-4" />
+                                    ) : (
+                                        <Copy className="w-4 h-4" />
+                                    )}
+                                    {selectedGrantId === grant.id ? 'Selected' : 'Copy'}
+                                </button>
 
-                                        {selectedGrantId === grant.id && (
-                                            <CheckCircle2 className="w-5 h-5 text-indigo-600" />
-                                        )}
-                                    </button>
-                                ))}
+                                <button
+                                    onClick={() => revokeToken(grant)}
+                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
                             </div>
-                        )}
-                    </div>
-                )}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Create button */}
+            {!showCreateForm && (
+                <button
+                    onClick={() => setShowCreateForm(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 rounded-xl w-full justify-center font-medium transition-colors"
+                >
+                    <Plus className="w-4 h-4" />
+                    Create New Token
+                </button>
+            )}
+
+            {/* Security warning */}
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                <p className="text-sm text-red-800">
+                    <strong>Security:</strong> Never expose your API token in client-side code or commit it to version control.
+                </p>
             </div>
 
             <StepCard step={1} title="Install LearnCard SDK" icon={<Package className="w-4 h-4 text-gray-400 ml-auto" />}>
