@@ -42,6 +42,7 @@ import {
     OBv3CredentialTemplate,
 } from '../../partner-onboarding/components/CredentialBuilder';
 import { fieldNameToVariable } from '../../partner-onboarding/types';
+import { getResolvedTenantConfig } from '../../../../config/bootstrapTenantConfig';
 
 interface IntegrationCodeTabProps {
     integration: LCNIntegration;
@@ -454,7 +455,7 @@ console.log('Activity ID:', result.activityId); // Use to track lifecycle
 # Get your API Token from the "API Tokens" tab in your dashboard.
 # Create a token with "Full Access" or "Credentials Only" scope.
 
-curl -X POST "https://network.learncard.com/api/send" \\
+curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
   -H "Authorization: Bearer ${apiKey}" \\
   -H "Content-Type: application/json" \\
   -d '${payloadJson}'

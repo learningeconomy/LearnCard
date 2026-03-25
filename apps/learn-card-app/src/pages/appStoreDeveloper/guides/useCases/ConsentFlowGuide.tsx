@@ -32,6 +32,7 @@ import { ConsentFlowContractSelector } from '../../components/ConsentFlowContrac
 import { CodeBlock } from '../../components/CodeBlock';
 import OBv3CredentialBuilder from '../../../../components/credentials/OBv3CredentialBuilder';
 import type { GuideProps } from '../GuidePage';
+import { getAppBaseUrl } from '../../../../config/bootstrapTenantConfig';
 
 type AuthGrant = {
     id: string;
@@ -204,7 +205,7 @@ const RedirectHandlerStep: React.FC<{
 const contractUri = '${contractUri || 'YOUR_CONTRACT_URI'}';
 const redirectUri = '${redirectUrl || 'https://your-app.com/api/learncard/callback'}';
 
-const consentUrl = \`https://learncard.app/consent-flow?contractUri=\${encodeURIComponent(contractUri)}&redirectUri=\${encodeURIComponent(redirectUri)}\`;
+const consentUrl = \`${getAppBaseUrl()}/consent-flow?contractUri=\${encodeURIComponent(contractUri)}&redirectUri=\${encodeURIComponent(redirectUri)}\`;
 
 // Redirect the user
 window.location.href = consentUrl;`}
@@ -428,7 +429,7 @@ const APISetupStep: React.FC<{
                 </p>
 
                 <CodeBlock
-                    code={`import { initLearnCard } from '@learncard/init';
+                    code={`import type { LCNIntegration } from '@learncard/types';
 
 const learnCard = await initLearnCard({ 
     apiKey: '${apiToken || 'YOUR_API_TOKEN'}',
