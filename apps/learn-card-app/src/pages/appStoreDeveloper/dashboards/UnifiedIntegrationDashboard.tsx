@@ -500,6 +500,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                         config={config}
                         stats={stats}
                         templates={templates}
+                        appListings={appListings}
                         onNavigate={setActiveTab}
                         refreshKey={refreshKey}
                     />
