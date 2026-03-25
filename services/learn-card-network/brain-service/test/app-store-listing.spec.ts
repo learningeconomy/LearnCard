@@ -10,6 +10,7 @@ import {
     getListingsForIntegration,
     countListingsForIntegration,
     getListedApps,
+    getListedAppsWithSubmitter,
     getInstalledAppsForProfile,
     countInstalledAppsForProfile,
     checkIfProfileInstalledApp,
@@ -142,6 +143,7 @@ describe('AppStoreListing', () => {
                         android_app_store_id: 'com.example.app.android',
                         privacy_policy_url: 'https://example.com/privacy',
                         terms_url: 'https://example.com/terms',
+                        contact_email: 'developer@example.com',
                     })
                 );
 
@@ -150,6 +152,34 @@ describe('AppStoreListing', () => {
                 expect(listing.android_app_store_id).toBe('com.example.app.android');
                 expect(listing.privacy_policy_url).toBe('https://example.com/privacy');
                 expect(listing.terms_url).toBe('https://example.com/terms');
+                expect(listing.contact_email).toBe('developer@example.com');
+            });
+
+            it('creates and updates contact_email field', async () => {
+                // Create without contact_email
+                const listing = await createAppStoreListing(makeListingInput());
+                expect(listing.contact_email).toBeUndefined();
+
+                // Update to add contact_email
+                await updateAppStoreListing(listing, {
+                    contact_email: 'support@example.com',
+                });
+                const afterAdd = await readAppStoreListingById(listing.listing_id);
+                expect(afterAdd?.contact_email).toBe('support@example.com');
+
+                // Update to change contact_email
+                await updateAppStoreListing(afterAdd!, {
+                    contact_email: 'newcontact@example.com',
+                });
+                const afterChange = await readAppStoreListingById(listing.listing_id);
+                expect(afterChange?.contact_email).toBe('newcontact@example.com');
+
+                // Update to remove contact_email (cast to any to test null handling)
+                await updateAppStoreListing(afterChange!, {
+                    contact_email: null as any,
+                });
+                const afterRemove = await readAppStoreListingById(listing.listing_id);
+                expect(afterRemove?.contact_email).toBeUndefined();
             });
 
             it('creates listing with custom listing_id', async () => {
@@ -553,6 +583,45 @@ describe('AppStoreListing', () => {
                 expect(count).toBe(2);
             });
         });
+
+        describe('Submitter Info', () => {
+            it('getListedAppsWithSubmitter returns submitter info for listings', async () => {
+                const integration = await seedIntegration('Test Integration', 'usera');
+                const listing = await createAppStoreListing(
+                    makeListingInput({
+                        display_name: 'App With Submitter',
+                        app_listing_status: 'LISTED',
+                        contact_email: 'dev@example.com',
+                    })
+                );
+
+                await associateListingWithIntegration(listing.listing_id, integration.id);
+
+                const results = await getListedAppsWithSubmitter({ limit: 10 });
+                const found = results.find(l => l.listing_id === listing.listing_id);
+
+                expect(found).toBeDefined();
+                expect(found?.display_name).toBe('App With Submitter');
+                expect(found?.contact_email).toBe('dev@example.com');
+                expect(found?.submitter).toBeDefined();
+                expect(found?.submitter?.profileId).toBe('usera');
+            });
+
+            it('getListedAppsWithSubmitter returns undefined submitter for unlinked listings', async () => {
+                const listing = await createAppStoreListing(
+                    makeListingInput({
+                        display_name: 'Orphan App',
+                        app_listing_status: 'LISTED',
+                    })
+                );
+
+                const results = await getListedAppsWithSubmitter({ limit: 10 });
+                const found = results.find(l => l.listing_id === listing.listing_id);
+
+                expect(found).toBeDefined();
+                expect(found?.submitter).toBeUndefined();
+            });
+        });
     });
 
     describe('Router', () => {
@@ -746,6 +815,28 @@ describe('AppStoreListing', () => {
                 expect(after?.display_name).toBe('Updated App');
                 expect(after?.tagline).toBe('New tagline');
             });
+
+            it('can create and update contact_email via router', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                // Create listing with contact_email
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({ contact_email: 'dev@example.com' }),
+                });
+
+                const created = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(created?.contact_email).toBe('dev@example.com');
+
+                // Update contact_email
+                await userA.clients.fullAuth.appStore.updateListing({
+                    listingId,
+                    updates: { contact_email: 'support@example.com' },
+                });
+
+                const updated = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(updated?.contact_email).toBe('support@example.com');
+            });
         });
 
         describe('deleteListing', () => {
@@ -775,13 +866,14 @@ describe('AppStoreListing', () => {
                 ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
             });
 
-            it('changes status from DRAFT to PENDING_REVIEW', async () => {
+            it('changes status from DRAFT to PENDING_REVIEW and sets submitted_at', async () => {
                 const integrationId = await seedIntegrationViaRouter(userA);
                 const listingId = await seedListingViaRouter(userA, integrationId);
 
-                // Verify starts as DRAFT
+                // Verify starts as DRAFT with no submitted_at
                 const before = await readAppStoreListingById(listingId);
                 expect(before?.app_listing_status).toBe('DRAFT');
+                expect(before?.submitted_at).toBeUndefined();
 
                 // Submit for review
                 const result = await userA.clients.fullAuth.appStore.submitForReview({
@@ -789,9 +881,11 @@ describe('AppStoreListing', () => {
                 });
                 expect(result).toBe(true);
 
-                // Verify status changed to PENDING_REVIEW
+                // Verify status changed to PENDING_REVIEW and submitted_at is set
                 const after = await readAppStoreListingById(listingId);
                 expect(after?.app_listing_status).toBe('PENDING_REVIEW');
+                expect(after?.submitted_at).toBeDefined();
+                expect(typeof after?.submitted_at).toBe('string');
             });
 
             it('rejects submission of non-DRAFT listings', async () => {
@@ -948,9 +1042,9 @@ describe('AppStoreListing', () => {
                 const listingId = await seedListingViaRouter(userA, integrationId);
                 await setListingStatus(listingId, 'LISTED');
 
-                await expect(
-                    noAuthClient.appStore.installApp({ listingId })
-                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+                await expect(noAuthClient.appStore.installApp({ listingId })).rejects.toMatchObject(
+                    { code: 'UNAUTHORIZED' }
+                );
 
                 await expect(
                     userA.clients.partialAuth.appStore.installApp({ listingId })
@@ -1523,10 +1617,7 @@ describe('AppStoreListing', () => {
                     userA.clients.fullAuth.appStore.createListing({
                         integrationId,
                         listing: makeRouterListingInput({
-                            highlights: [
-                                'Safe highlight',
-                                '<script>evil()</script>',
-                            ],
+                            highlights: ['Safe highlight', '<script>evil()</script>'],
                         }),
                     })
                 ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
@@ -1540,7 +1631,8 @@ describe('AppStoreListing', () => {
                     listing: makeRouterListingInput({
                         display_name: 'Legitimate App Name',
                         tagline: 'A great app for learning!',
-                        full_description: 'This app helps users learn new skills. Features include video tutorials and quizzes.',
+                        full_description:
+                            'This app helps users learn new skills. Features include video tutorials and quizzes.',
                         highlights: [
                             'Easy to use interface',
                             'Progress tracking',
@@ -1885,10 +1977,7 @@ describe('AppStoreListing', () => {
                         android_app_store_id: 'com.complete.app',
                         hero_background_color: '#4A90D9',
                         highlights: ['Feature 1', 'Feature 2', 'Feature 3'],
-                        screenshots: [
-                            'https://example.com/ss1.png',
-                            'https://example.com/ss2.png',
-                        ],
+                        screenshots: ['https://example.com/ss1.png', 'https://example.com/ss2.png'],
                     }),
                 });
 
@@ -1921,15 +2010,23 @@ describe('AppStoreListing', () => {
                 await userB.clients.fullAuth.appStore.installApp({ listingId });
 
                 // Verify both installed
-                expect(await userA.clients.fullAuth.appStore.isAppInstalled({ listingId })).toBe(true);
-                expect(await userB.clients.fullAuth.appStore.isAppInstalled({ listingId })).toBe(true);
+                expect(await userA.clients.fullAuth.appStore.isAppInstalled({ listingId })).toBe(
+                    true
+                );
+                expect(await userB.clients.fullAuth.appStore.isAppInstalled({ listingId })).toBe(
+                    true
+                );
 
                 // UserA uninstalls
                 await userA.clients.fullAuth.appStore.uninstallApp({ listingId });
 
                 // UserA should no longer have it, but UserB should still have it
-                expect(await userA.clients.fullAuth.appStore.isAppInstalled({ listingId })).toBe(false);
-                expect(await userB.clients.fullAuth.appStore.isAppInstalled({ listingId })).toBe(true);
+                expect(await userA.clients.fullAuth.appStore.isAppInstalled({ listingId })).toBe(
+                    false
+                );
+                expect(await userB.clients.fullAuth.appStore.isAppInstalled({ listingId })).toBe(
+                    true
+                );
             });
 
             it('deleting a listing removes it from browse results', async () => {
