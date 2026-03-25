@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { capitalize } from 'lodash-es';
 import moment from 'moment';
 
@@ -108,6 +109,18 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
     // ... than 300px of element is visible.
     const onScreen: boolean = useOnScreen<HTMLDivElement>(ref, '-130px');
 
+    const queryClient = useQueryClient();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+
+    const refetchNotifications = () => {
+        queryClient.invalidateQueries({
+            queryKey: ['useGetUserNotifications', switchedDid ?? ''],
+        });
+        queryClient.invalidateQueries({
+            queryKey: ['useGetUnreadUserNotifications', switchedDid ?? ''],
+        });
+    };
+
     const { mutate: updateNotification } = useUpdateNotification();
 
     const handleReadStatus = async () => {
@@ -203,6 +216,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                     true,
                     () => {
                         presentToast('AI Insights shared!');
+                        refetchNotifications();
                     },
                     notification?.data?.metadata?.targetProfileId as string,
                     notification?.from?.profileId as string,
@@ -256,6 +270,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                 true,
                 () => {
                     presentToast('AI Insights shared!');
+                    refetchNotifications();
                 },
                 notification?.from?.profileId as string,
                 undefined,
