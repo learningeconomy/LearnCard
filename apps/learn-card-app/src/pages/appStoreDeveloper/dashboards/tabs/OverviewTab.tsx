@@ -22,8 +22,9 @@ import {
     Filter,
     ChevronDown,
     Download,
+    Layout,
 } from 'lucide-react';
-import type { LCNIntegration } from '@learncard/types';
+import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
 import { useModal, ModalTypes } from 'learn-card-base';
 
@@ -53,6 +54,7 @@ interface OverviewTabProps {
     config: DashboardConfig;
     stats: DashboardStats;
     templates: CredentialTemplate[];
+    appListings?: AppStoreListing[];
     onNavigate: (tabId: string) => void;
     refreshKey?: number;
 }
@@ -465,10 +467,12 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     config,
     stats,
     templates,
+    appListings,
     onNavigate,
     refreshKey,
 }) => {
     const [eventTypeFilter, setEventTypeFilter] = useState<CredentialEventType | 'ALL'>('ALL');
+    const [listingFilter, setListingFilter] = useState<string>('ALL');
 
     const {
         activity,
@@ -481,6 +485,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     } = useIntegrationActivity(templates, {
         limit: 25,
         integrationId: integration.id,
+        listingId: listingFilter === 'ALL' ? undefined : listingFilter,
         eventType: eventTypeFilter === 'ALL' ? undefined : eventTypeFilter,
     });
 
@@ -622,24 +627,51 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                             Download CSV
                         </button>
                     </div>
-                    <div className="relative">
-                        <select
-                            value={eventTypeFilter}
-                            onChange={e =>
-                                setEventTypeFilter(e.target.value as CredentialEventType | 'ALL')
-                            }
-                            className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-8 py-[5px] text-sm
-                                       text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500
-                                       focus:border-transparent cursor-pointer transition-colors"
-                        >
-                            {EVENT_TYPE_FILTER_OPTIONS.map(option => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
-                        <Filter className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        <ChevronDown className="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <div className="flex items-center gap-2">
+                        {/* App Listing Filter */}
+                        {appListings && appListings.length > 0 && (
+                            <div className="relative">
+                                <select
+                                    value={listingFilter}
+                                    onChange={e => setListingFilter(e.target.value)}
+                                    className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-8 py-[5px] text-sm
+                                               text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500
+                                               focus:border-transparent cursor-pointer transition-colors max-w-[180px]"
+                                >
+                                    <option value="ALL">All Apps</option>
+                                    {appListings.map(listing => (
+                                        <option key={listing.listing_id} value={listing.listing_id}>
+                                            {listing.display_name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <Layout className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <ChevronDown className="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            </div>
+                        )}
+
+                        {/* Event Type Filter */}
+                        <div className="relative">
+                            <select
+                                value={eventTypeFilter}
+                                onChange={e =>
+                                    setEventTypeFilter(
+                                        e.target.value as CredentialEventType | 'ALL'
+                                    )
+                                }
+                                className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-8 py-[5px] text-sm
+                                           text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500
+                                           focus:border-transparent cursor-pointer transition-colors"
+                            >
+                                {EVENT_TYPE_FILTER_OPTIONS.map(option => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <Filter className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <ChevronDown className="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                     </div>
                 </div>
                 {showExportDialog && (
@@ -648,6 +680,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                             integrationId={integration.id}
                             integrationName={integration.name}
                             initialEventType={eventTypeFilter === 'ALL' ? '' : eventTypeFilter}
+                            initialListingId={listingFilter === 'ALL' ? '' : listingFilter}
+                            appListings={appListings}
                             onClose={() => setShowExportDialog(false)}
                         />
                     </div>
