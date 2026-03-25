@@ -274,7 +274,10 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                 },
                 notification?.from?.profileId as string,
                 undefined,
-                true
+                true,
+                () => {
+                    refetchNotifications();
+                }
             );
         }
     };
