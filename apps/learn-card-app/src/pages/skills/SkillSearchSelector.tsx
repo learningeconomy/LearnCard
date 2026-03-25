@@ -13,9 +13,10 @@ import {
 } from 'learn-card-base';
 
 import X from 'learn-card-base/svgs/X';
+import Plus from '../../components/svgs/Plus';
 import Search from 'learn-card-base/svgs/Search';
 import VerifiedBadgeIcon from 'learn-card-base/svgs/VerifiedBadgeIcon';
-import SelfAssignedSkillRow from './SelfAssignedSkillRow';
+import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import SkillTag from './SkillTag';
 import { IonInput, IonSpinner } from '@ionic/react';
 import { GenericErrorView } from 'learn-card-base/components/generic/GenericErrorBoundary';
@@ -249,60 +250,51 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                         </div>
                     )}
 
-                    {!noResults && isAdd && hasSearchQuery && (
-                        <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
-                            Suggested Skills
-                        </p>
-                    )}
+                    <div className="py-[10px] border-t-[1px] border-solid border-grayscale-200 flex flex-col gap-[10px]">
+                        <h4 className="text-grayscale-900 font-poppins text-[14px] font-bold">
+                            Add Skills
+                        </h4>
+
+                        {searchLoading && (
+                            <div className="flex-1 flex justify-center pt-[30px]">
+                                <IonSpinner color="dark" name="crescent" />
+                            </div>
+                        )}
+
+                        {!searchLoading &&
+                            suggestedSkills.map(skill => {
+                                if (selectedSkills.find(selected => selected.id === skill.id)) {
+                                    return undefined;
+                                }
+
+                                return (
+                                    <button
+                                        onClick={() => handleToggleSelect(skill.id!, skill)}
+                                        className="p-[10px] flex gap-[10px] items-center background-grayscale-50 rounded-[15px] shadow-bottom-2-4"
+                                    >
+                                        <CompetencyIcon icon={skill.icon!} />
+                                        <span className="text-grayscale-900 font-poppinstext-[17px] line-clamp-2">
+                                            {skill?.targetName}
+                                        </span>
+                                        <Plus
+                                            className="h-[25px] w-[25px] text-grayscale-700 ml-auto"
+                                            strokeWidth="2"
+                                        />
+                                    </button>
+                                );
+                            })}
+                    </div>
+
                     {noResults && (
                         <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
                             No results or suggestions
                         </p>
                     )}
 
-                    {searchLoading ? (
+                    {/* {searchLoading ? (
                         <div className="flex-1 flex justify-center pt-[30px]">
                             <IonSpinner color="dark" name="crescent" />
                         </div>
-                    ) : isReview ? (
-                        <>
-                            {selectedSkills.map(selected => {
-                                const savedSkill = sasBoostSkills?.find(
-                                    (s: { id: string }) => s.id === selected.id
-                                );
-                                const cachedSkill = selectedSkillNodesCache.get(selected.id);
-                                const suggestedSkill = suggestedSkills.find(
-                                    (s: SkillFrameworkNode) => s.id === selected.id
-                                );
-
-                                const skill = savedSkill
-                                    ? convertApiSkillNodeToSkillTreeNode(savedSkill as any)
-                                    : cachedSkill ?? suggestedSkill;
-
-                                if (!skill) return null;
-
-                                return (
-                                    <SelfAssignedSkillRow
-                                        key={selected.id}
-                                        skill={skill}
-                                        framework={selfAssignedSkillFramework}
-                                        handleToggleSelect={() => handleToggleSelect(selected.id)}
-                                        isNodeSelected={true}
-                                        shouldCollapseOptions={shouldCollapseOptions}
-                                        proficiencyLevel={selected.proficiency}
-                                        onChangeProficiency={level =>
-                                            onSelectedSkillsChange(
-                                                selectedSkills.map(s =>
-                                                    s.id === selected.id
-                                                        ? { ...s, proficiency: level }
-                                                        : s
-                                                )
-                                            )
-                                        }
-                                    />
-                                );
-                            })}
-                        </>
                     ) : (
                         <>
                             {suggestedSkills.map(skill => {
@@ -334,7 +326,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                 );
                             })}
                         </>
-                    )}
+                    )} */}
 
                     {showSuggestSkill && searchInput && !searchLoading && (
                         <div className="flex flex-col gap-[20px] w-full pt-[20px] border-t-[1px] border-grayscale-200 border-solid">
