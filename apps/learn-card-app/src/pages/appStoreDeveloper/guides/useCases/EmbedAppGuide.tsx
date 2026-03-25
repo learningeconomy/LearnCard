@@ -6975,6 +6975,11 @@ initializeApp();`);
                                 });
                             } catch (error) {
                                 console.error('Failed to save config before continuing:', error);
+                                presentToast('Failed to save configuration. Please try again.', {
+                                    type: ToastTypeEnum.Error,
+                                    hasDismissButton: true,
+                                });
+                                return;
                             }
                         }
 
