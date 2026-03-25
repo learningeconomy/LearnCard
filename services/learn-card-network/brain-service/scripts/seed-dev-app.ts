@@ -3,8 +3,8 @@
  * Seed a dev partner app into the local brain-service database.
  *
  * Prerequisites:
- *   - Neo4j running (docker compose up neo4j)
- *   - .env with NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD
+ *   - Neo4j + Redis running (e.g. `pnpm dev:services` from apps/learn-card-app)
+ *   - OR a .env here with NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD
  *
  * Usage:
  *   pnpm seed:dev-app
@@ -15,23 +15,26 @@
  * Re-running is safe — the script is idempotent via slug-based lookup.
  */
 
-import dotenv from 'dotenv';
+// ---------------------------------------------------------------------------
+// Environment bootstrap — MUST run before any imports that trigger neogma/cache
+// initialization (e.g. @models, @accesslayer/*). ES `import` statements are
+// hoisted by esbuild/tsx, so we use require() for dotenv and set defaults here
+// at the top level before the dynamic imports in main().
+// ---------------------------------------------------------------------------
 
-dotenv.config();
+/* eslint-disable @typescript-eslint/no-var-requires */
+require('dotenv').config();
 
-// These imports trigger neogma/cache initialization from env vars
-import { Profile } from '@models';
-import { createProfile } from '@accesslayer/profile/create';
-import { getProfileByProfileId } from '@accesslayer/profile/read';
-import { readAppStoreListingBySlug } from '@accesslayer/app-store-listing/read';
-import {
-    seedIntegration,
-    seedListedApp,
-    installAppForProfile,
-} from '../test/helpers/app-store.helpers';
+// Fall back to local docker-compose defaults so the script works without a .env
+// when services are already running via `pnpm dev:services` from learn-card-app.
+process.env.NEO4J_URI ??= 'bolt://localhost:7687';
+process.env.NEO4J_USERNAME ??= 'neo4j';
+process.env.NEO4J_PASSWORD ??= 'this-is-the-password';
+process.env.REDIS_HOST ??= 'localhost';
+process.env.REDIS_PORT ??= '6379';
 
 // ---------------------------------------------------------------------------
-// CLI argument parsing
+// CLI argument parsing (no side-effectful imports needed)
 // ---------------------------------------------------------------------------
 
 const args = process.argv.slice(2);
@@ -56,10 +59,17 @@ const domain = getArg('--domain', parsedUrl.hostname);
 const slug = getArg('--slug', appName.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
 
 // ---------------------------------------------------------------------------
-// Main
+// Main — dynamic imports so env vars are set before neogma initializes
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
+    const { createProfile } = await import('@accesslayer/profile/create');
+    const { getProfileByProfileId } = await import('@accesslayer/profile/read');
+    const { readAppStoreListingBySlug } = await import('@accesslayer/app-store-listing/read');
+    const { seedListedApp, installAppForProfile } = await import(
+        '../test/helpers/app-store.helpers'
+    );
+
     console.log('\n🔧 Seeding dev partner app...\n');
 
     // 1. Ensure owner profile exists
