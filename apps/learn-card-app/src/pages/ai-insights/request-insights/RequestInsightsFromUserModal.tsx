@@ -187,8 +187,6 @@ export const RequestInsightsFromUserModalWrapper: React.FC<{
         profileId
     );
 
-    console.log('requestData', requestData);
-
     const onSuccessCallback = () => {
         // clear route params
         const params = queryString.parse(location.search);
