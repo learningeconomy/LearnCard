@@ -43,6 +43,7 @@ export const CheckListUploadResume: React.FC = () => {
     const [showReview, setShowReview] = useState<boolean>(false);
     const [isSavingSelected, setIsSavingSelected] = useState<boolean>(false);
     const [savedCredentialCount, setSavedCredentialCount] = useState<number>(0);
+    const [loaderDismissed, setLoaderDismissed] = useState<boolean>(false);
 
     const [resume, setResume] = useState<ResumeType | null>(null);
 
@@ -192,8 +193,11 @@ export const CheckListUploadResume: React.FC = () => {
                 />
             ) : (
                 <>
-                    {(isSaving || checklistStore.get.isParsing().resume) && (
-                        <ChecklistLoader fileType={UploadTypesEnum.Resume} />
+                    {(isSaving || checklistStore.get.isParsing().resume) && !loaderDismissed && (
+                        <ChecklistLoader
+                            fileType={UploadTypesEnum.Resume}
+                            onDismiss={() => setLoaderDismissed(true)}
+                        />
                     )}
                     <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
                         <div className="flex flex-col items-start justify-center py-2 w-full">
@@ -225,10 +229,27 @@ export const CheckListUploadResume: React.FC = () => {
                                 </div>
                             )}
 
+                            {loaderDismissed && checklistStore.get.isParsing().resume && (
+                                <div className="w-full flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2.5 mb-4">
+                                    <svg
+                                        className="w-4 h-4 text-indigo-500 shrink-0 animate-spin"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    <p className="text-xs text-indigo-700 font-medium">
+                                        Processing your resume in the background...
+                                    </p>
+                                </div>
+                            )}
+
                             <input
                                 type="file"
                                 accept=".pdf,.txt,.docx"
                                 onChange={async e => {
+                                    setLoaderDismissed(false);
                                     await getFile(e, UploadTypesEnum.Resume);
                                 }}
                                 ref={fileInputRef}

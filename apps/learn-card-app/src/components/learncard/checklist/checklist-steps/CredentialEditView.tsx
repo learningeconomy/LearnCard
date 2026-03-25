@@ -191,21 +191,6 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                     />
                 </div>
 
-                {/* Role */}
-                <div>
-                    <label className="block text-sm font-semibold text-grayscale-700 mb-1">
-                        Role
-                    </label>
-                    <input
-                        type="text"
-                        maxLength={100}
-                        value={getField(vc, 'credentialSubject.role')}
-                        onChange={e => updateField('credentialSubject.role', e.target.value)}
-                        placeholder="e.g. Software Engineer"
-                        className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:border-grayscale-400"
-                    />
-                </div>
-
                 {/* Dates */}
                 <div className="flex gap-3">
                     <div className="flex-1">

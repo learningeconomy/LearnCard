@@ -76,7 +76,7 @@ const fileTypeQuotes: Record<UploadTypesEnum, string[]> = {
     ],
 };
 
-export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum }> = ({ fileType }) => {
+export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum; onDismiss?: () => void }> = ({ fileType, onDismiss }) => {
     const { closeModal } = useModal();
     const activeQuotes = fileTypeQuotes?.[fileType ?? UploadTypesEnum.Resume];
 
@@ -120,7 +120,7 @@ export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum }> = ({ fileT
 
                 <div className="w-full flex items-center justify-center">
                     <button
-                        onClick={() => closeModal()}
+                        onClick={() => (onDismiss ? onDismiss() : closeModal())}
                         className={`px-6 py-2 rounded-full text-white font-semibold bg-${primaryColor}`}
                     >
                         Notify me when it's ready
