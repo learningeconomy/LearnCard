@@ -17,8 +17,6 @@ import {
     Trash2,
 } from 'lucide-react';
 
-import { Clipboard } from '@capacitor/clipboard';
-
 import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
 
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
@@ -303,7 +301,7 @@ const APISetupStep: React.FC<{
     const [newTokenName, setNewTokenName] = useState('');
     const [selectedScope, setSelectedScope] = useState('*:*');
     const [showCreateForm, setShowCreateForm] = useState(false);
-    const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [copiedToken, setCopiedToken] = useState(false);
 
     const fetchAuthGrants = useCallback(async () => {
         setLoadingGrants(true);
@@ -347,19 +345,15 @@ const APISetupStep: React.FC<{
         }
     };
 
-    const copyToken = async (grantId: string) => {
+    const selectToken = async (grantId: string) => {
         try {
             const wallet = await initWallet();
             const token = await wallet.invoke.getAPITokenForAuthGrant(grantId);
-            await Clipboard.write({ string: token });
-            setCopiedId(grantId);
-            setTimeout(() => setCopiedId(null), 2000);
             onTokenChange(token);
             setSelectedGrantId(grantId);
-            presentToast('Token copied!', { hasDismissButton: true });
         } catch (err) {
-            console.error('Failed to copy token:', err);
-            presentToast('Failed to copy token', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            console.error('Failed to select token:', err);
+            presentToast('Failed to retrieve API token', { type: ToastTypeEnum.Error, hasDismissButton: true });
         }
     };
 
@@ -402,7 +396,7 @@ const APISetupStep: React.FC<{
             <StatusIndicator
                 status={apiToken ? 'ready' : loadingGrants ? 'loading' : fetchError ? 'warning' : hasActiveToken ? 'incomplete' : 'warning'}
                 label={apiToken ? `Token: ${displayTokenName}` : loadingGrants ? 'Checking...' : hasActiveToken ? `${authGrants.length} token${authGrants.length > 1 ? 's' : ''} ready` : 'No API tokens found'}
-                description={fetchError || (apiToken ? 'Ready to use' : hasActiveToken ? 'Copy a token to use in your code' : 'Create one to continue')}
+                description={fetchError || (apiToken ? 'Ready to use' : hasActiveToken ? 'Select a token to use in your code' : 'Create one to continue')}
             />
 
             {/* Create form */}
@@ -461,43 +455,68 @@ const APISetupStep: React.FC<{
             {!loadingGrants && authGrants.length > 0 && (
                 <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 overflow-hidden">
                     {authGrants.map((grant) => (
-                        <div key={grant.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
-                            <div className="flex-1 min-w-0">
-                                <p className="font-medium text-gray-800">{grant.name}</p>
-
-                                <p className="text-sm text-gray-500">
-                                    Created {new Date(grant.createdAt!).toLocaleDateString()}
-                                </p>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => copyToken(grant.id!)}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                                        selectedGrantId === grant.id
-                                            ? 'bg-emerald-50 text-emerald-700'
-                                            : 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100'
-                                    }`}
-                                >
-                                    {copiedId === grant.id ? (
-                                        <Check className="w-4 h-4" />
-                                    ) : selectedGrantId === grant.id ? (
-                                        <CheckCircle2 className="w-4 h-4" />
-                                    ) : (
-                                        <Copy className="w-4 h-4" />
+                        <button
+                            key={grant.id}
+                            onClick={() => selectToken(grant.id!)}
+                            className={`w-full flex items-center justify-between p-4 transition-colors ${
+                                selectedGrantId === grant.id
+                                    ? 'bg-indigo-50'
+                                    : 'hover:bg-gray-50'
+                            }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                    selectedGrantId === grant.id
+                                        ? 'border-indigo-600 bg-indigo-600'
+                                        : 'border-gray-300'
+                                }`}>
+                                    {selectedGrantId === grant.id && (
+                                        <Check className="w-3 h-3 text-white" />
                                     )}
-                                    {selectedGrantId === grant.id ? 'Selected' : 'Copy'}
-                                </button>
+                                </div>
 
-                                <button
-                                    onClick={() => revokeToken(grant)}
-                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                <div className="text-left">
+                                    <p className="font-medium text-gray-800">{grant.name}</p>
+
+                                    <p className="text-sm text-gray-500">
+                                        Created {new Date(grant.createdAt!).toLocaleDateString()}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
+
+                            <button
+                                onClick={(e) => { e.stopPropagation(); revokeToken(grant); }}
+                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </button>
                     ))}
+                </div>
+            )}
+
+            {/* Selected token display */}
+            {apiToken && selectedGrantId && (
+                <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-medium text-indigo-700">Your API Token</p>
+
+                        <button
+                            onClick={async () => {
+                                await navigator.clipboard.writeText(apiToken);
+                                setCopiedToken(true);
+                                setTimeout(() => setCopiedToken(false), 2000);
+                            }}
+                            className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors"
+                        >
+                            {copiedToken ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                            {copiedToken ? 'Copied!' : 'Copy'}
+                        </button>
+                    </div>
+
+                    <p className="text-xs font-mono text-indigo-900 bg-indigo-100 p-2 rounded-lg break-all select-all">
+                        {apiToken}
+                    </p>
                 </div>
             )}
 
