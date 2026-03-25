@@ -40,6 +40,8 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
         }
     }, [sasBoostSkills]);
 
+    const skillsExist = sasBoostSkills?.length > 0;
+
     const handleFinish = async () => {
         setIsUpdating(true);
         try {
@@ -76,7 +78,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
 
             <div className="flex flex-col gap-[10px]">
                 <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
-                    Choose your current skills
+                    {skillsExist ? 'Manage your current skills' : 'Choose your current skills'}
                 </h3>
             </div>
 
