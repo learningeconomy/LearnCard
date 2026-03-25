@@ -35,6 +35,7 @@ export const activityRouter = t.router({
                 boostUri: z.string().optional(),
                 eventType: CredentialActivityEventTypeValidator.optional(),
                 integrationId: z.string().optional(),
+                listingId: z.string().optional(),
                 startDate: z.string().datetime().optional(),
                 endDate: z.string().datetime().optional(),
                 groupByLatestStatus: z.boolean().optional(), // When true, returns unique credentials filtered by current status (for CSV export)
@@ -49,6 +50,7 @@ export const activityRouter = t.router({
                 boostUri,
                 eventType,
                 integrationId,
+                listingId,
                 startDate,
                 endDate,
                 groupByLatestStatus,
@@ -60,6 +62,7 @@ export const activityRouter = t.router({
                 boostUri,
                 eventType,
                 integrationId,
+                listingId,
                 startDate,
                 endDate,
                 groupByLatestStatus,
@@ -92,6 +95,7 @@ export const activityRouter = t.router({
             z.object({
                 boostUris: z.array(z.string()).optional(),
                 integrationId: z.string().optional(),
+                listingId: z.string().optional(),
                 eventType: CredentialActivityEventTypeValidator.optional(),
                 startDate: z.string().datetime().optional(),
                 endDate: z.string().datetime().optional(),
@@ -100,11 +104,12 @@ export const activityRouter = t.router({
         .output(CredentialActivityStatsValidator)
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUris, integrationId, eventType, startDate, endDate } = input;
+            const { boostUris, integrationId, listingId, eventType, startDate, endDate } = input;
 
             return getActivityStatsForProfile(profile.profileId, {
                 boostUris,
                 integrationId,
+                listingId,
                 eventType,
                 startDate,
                 endDate,
