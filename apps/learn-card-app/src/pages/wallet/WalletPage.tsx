@@ -191,14 +191,25 @@ const WalletPage: React.FC = () => {
         >
             <MainHeader
                 customClassName={passportBgColor ? '' : 'bg-white'}
-                style={passportBgColor ? { backgroundColor: passportBgColor } : undefined}
+                style={passportBgColor
+                    ? isMobile
+                        ? {
+                            background: 'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.8))',
+                            backdropFilter: 'blur(5px)',
+                            WebkitBackdropFilter: 'blur(5px)',
+                            borderBottom: '1px solid white',
+                        }
+                        : { backgroundColor: passportBgColor }
+                    : undefined
+                }
+                notificationColorOverride={passportBgColor && !isMobile ? 'text-white' : undefined}
             />
             <GenericErrorBoundary>
                 <IonContent
                     fullscreen
                     style={passportBgColor ? { '--background': passportBgColor } as React.CSSProperties : undefined}
                 >
-                    <div className="px-[20px]">
+                    <div className={`px-[20px] ${passportBgColor ? 'pt-[12px]' : ''}`}>
                         <div className="flex flex-col max-w-[600px] mx-auto">
                             <IonRow>
                                 <div className="flex justify-between items-center w-full">
@@ -236,12 +247,12 @@ const WalletPage: React.FC = () => {
                             </IonRow>
                             {isMobile ? (
                                 <>
-                                    <CheckListButton className="mb-[10px] mt-[10px]" />
-                                    <ResumeBuilderController className="mb-[10px]" />
+                                    <CheckListButton className="mb-[10px] mt-[16px]" />
+                                    <ResumeBuilderController className="mb-[16px]" />
                                 </>
                             ) : (
                                 <div
-                                    className={`w-full flex gap-[10px] pb-[10px] ${
+                                    className={`w-full flex gap-[10px] pt-[6px] pb-[16px] ${
                                         showInlineWalletActions ? 'flex-row' : 'flex-col'
                                     }`}
                                 >

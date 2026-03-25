@@ -31,7 +31,7 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
     };
 
     return (
-        <div className="w-full flex items-center justify-center bg-white py-4">
+        <div className="w-full flex items-center justify-center bg-white py-4 relative z-10">
             <div className="w-full flex flex-col items-center justify-center px-3">
                 <p className="text-grayscale-500 font-semibold text-[17px] font-poppins flex items-center">
                     <span className="mr-2">{emoji}</span>

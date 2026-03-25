@@ -135,6 +135,7 @@ export const tenantFeatureConfigSchema = z.object({
     analytics: z.boolean().default(true),
     themeSwitching: z.boolean().default(true),
     introSlides: z.boolean().default(true),
+    launchPadQuickActions: z.boolean().default(true),
 }).passthrough();
 
 export const tenantObservabilityConfigSchema = z.object({

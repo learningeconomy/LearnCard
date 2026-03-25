@@ -47,6 +47,7 @@ type MainHeaderProps = {
     hidePlusBtn?: boolean;
     count?: number;
     countLoading?: boolean;
+    notificationColorOverride?: string;
 };
 
 export const MainHeader: React.FC<MainHeaderProps> = ({
@@ -65,6 +66,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     hidePlusBtn = false,
     count,
     countLoading,
+    notificationColorOverride,
 }) => {
     const { getThemedCategoryColors } = useTheme();
     const colors = getThemedCategoryColors(category as CredentialCategoryEnum);
@@ -139,7 +141,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                         <IonCol size="10" className="flex justify-end items-center">
                             {isLoggedIn ? (
                                 <>
-                                    <NotificationButton />
+                                    <NotificationButton colorOverride={notificationColorOverride} />
                                     <QRCodeScannerButton branding={branding} />
                                 </>
                             ) : (

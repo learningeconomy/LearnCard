@@ -55,7 +55,8 @@
         "appStore": true,
         "analytics": true,
         "themeSwitching": false,
-        "introSlides": true
+        "introSlides": true,
+        "launchPadQuickActions": false
     },
     "observability": {
         "sentryDsn": "TODO_SENTRY_DSN",

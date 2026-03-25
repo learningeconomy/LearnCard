@@ -83,7 +83,10 @@
             "loaders": ["#353E64"],
             "loginBgColor": "#353E64",
             "loginButtonBgColor": "#1E2440",
-            "loginButtonTextColor": "#FFFFFF"
+            "loginButtonTextColor": "#FFFFFF",
+            "actionModalButtonColors": ["#E2E3E9", "#D1D5DB", "#C5C8D3", "#B0B4C3", "#A8ACBD", "#C5C8D3"],
+            "actionModalTextColor": "#18224E",
+            "actionModalButtonBorderColor": "#C5C8D3"
         }
     },
 

@@ -164,6 +164,21 @@ export const defaultColorsSchema = z.object({
 
     /** Tailwind text class for Passport category card labels. Undefined = text-grayscale-900. */
     passportCardTextColor: z.string().optional(),
+
+    /** Array of hex colors for action modal buttons. Undefined = hardcoded colorful palette. */
+    actionModalButtonColors: z.array(z.string()).optional(),
+
+    /** Hex color for action modal button text. Undefined = grayscale-900. */
+    actionModalTextColor: z.string().optional(),
+
+    /** Hex color for the action modal card background. Undefined = white. */
+    actionModalCardBgColor: z.string().optional(),
+
+    /** Hex color for the action modal card text. Undefined = grayscale-900. */
+    actionModalCardTextColor: z.string().optional(),
+
+    /** Hex color for the action modal button border. Undefined = white. */
+    actionModalButtonBorderColor: z.string().optional(),
 });
 
 /**

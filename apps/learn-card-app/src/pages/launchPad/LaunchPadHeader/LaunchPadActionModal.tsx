@@ -163,10 +163,13 @@ const getIconForActionButton = (
 const ActionButton: React.FC<{
     label: string;
     bg: string;
+    bgHex?: string;
+    textColor?: string;
+    borderColor?: string;
     to?: string;
     onClick?: () => void;
     role?: string;
-}> = ({ label, bg, to, onClick, role }) => {
+}> = ({ label, bg, bgHex, textColor, borderColor, to, onClick, role }) => {
     const history = useHistory();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { handlePresentBoostModal } = useBoostModal(undefined, undefined, true, true);
@@ -389,7 +392,12 @@ const ActionButton: React.FC<{
         <button
             type="button"
             onClick={handleClick}
-            className={`${bg} w-full text-left flex px-5 py-4  text-[18px] font-poppins font-semibold text-grayscale-900 rounded-[20px] border border-solid border-[3px] border-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
+            className={`${!bgHex ? bg : ''} w-full text-left flex px-5 py-4 text-[18px] font-poppins font-semibold ${!textColor ? 'text-grayscale-900' : ''} rounded-[20px] border border-solid border-[3px] ${!borderColor ? 'border-white' : ''} shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
+            style={{
+                ...(bgHex ? { backgroundColor: bgHex } : {}),
+                ...(textColor ? { color: textColor } : {}),
+                ...(borderColor ? { borderColor } : {}),
+            }}
         >
             <div className="flex items-center justify-center">
                 <span className="mr-2">
@@ -405,6 +413,12 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const { newModal, closeModal } = useModal();
     const history = useHistory();
     const { initWallet } = useWallet();
+    const { colors: themeColors } = useTheme();
+    const actionModalButtonColors = themeColors?.defaults?.actionModalButtonColors;
+    const actionModalTextColor = themeColors?.defaults?.actionModalTextColor;
+    const actionModalCardBgColor = themeColors?.defaults?.actionModalCardBgColor;
+    const actionModalCardTextColor = themeColors?.defaults?.actionModalCardTextColor;
+    const actionModalButtonBorderColor = themeColors?.defaults?.actionModalButtonBorderColor;
     const { data: lcNetworkProfile } = useGetProfile();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { data: contractsData, refetch: refetchContracts } = useGetContracts();
@@ -645,11 +659,15 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 type="button"
                 aria-label="Close modal"
                 onClick={closeModal}
-                className="self-end mt-[8px] h-[20px] w-[40px] rounded-full bg-transparent text-[#2A2F55] flex items-center justify-center"
+                className="self-end mt-[8px] h-[20px] w-[40px] rounded-full bg-transparent flex items-center justify-center"
+                style={{ color: actionModalCardTextColor ?? '#2A2F55' }}
             >
                 <X className="w-[20px] h-[20px]" />
             </button>
-            <div className="rounded-[15px] bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px]">
+            <div
+                className={`rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px] ${!actionModalCardBgColor ? 'bg-white' : ''}`}
+                style={actionModalCardBgColor ? { backgroundColor: actionModalCardBgColor } : undefined}
+            >
                 <div className="w-full flex items-center justify-center">
                     <ProfilePicture
                         customContainerClass="flex justify-center items-center h-[48px] w-[48px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[48px] min-h-[48px]"
@@ -706,7 +724,8 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                           }
                                       )
                         }
-                        className="rounded-[10px] border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold"
+                        className={`rounded-[10px] border border-solid text-sm font-poppins font-semibold ${actionModalCardBgColor ? 'border-white/20' : 'border-[#E2E3E9] bg-grayscale-white'}`}
+                        style={actionModalCardTextColor ? { color: actionModalCardTextColor } : { color: 'var(--ion-color-grayscale-700)' }}
                     >
                         <span className="p-[3px] flex items-center justify-center gap-2">
                             <span
@@ -725,7 +744,10 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                     </button>
                 </div>
 
-                <h3 className="text-center text-[22px] font-poppins font-semibold text-grayscale-900 mt-[12px]">
+                <h3
+                    className={`text-center text-[22px] font-poppins font-semibold mt-[12px] ${!actionModalCardTextColor ? 'text-grayscale-900' : ''}`}
+                    style={actionModalCardTextColor ? { color: actionModalCardTextColor } : undefined}
+                >
                     What would you like to do?
                 </h3>
             </div>
@@ -735,7 +757,10 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                     <ActionButton
                         key={`${label}-${i}`}
                         label={label}
-                        bg={colorByLabel[label] ?? bgColors[i % bgColors.length]}
+                        bg={!actionModalButtonColors ? (colorByLabel[label] ?? bgColors[i % bgColors.length]) : ''}
+                        bgHex={actionModalButtonColors ? actionModalButtonColors[i % actionModalButtonColors.length] : undefined}
+                        textColor={actionModalTextColor}
+                        borderColor={actionModalButtonBorderColor}
                         role={activeRole}
                         onClick={
                             label === 'View Family' && familyUri
