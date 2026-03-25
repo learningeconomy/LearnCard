@@ -22,10 +22,13 @@ const getField = (vc: any, path: string): string => {
     return '';
 };
 
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 /** Set a nested path on a deep-cloned VC. Empty string removes the key. */
 const setField = (vc: any, path: string, value: string): any => {
     const clone = JSON.parse(JSON.stringify(vc));
     const keys = path.split('.');
+    if (keys.some(k => UNSAFE_KEYS.has(k))) return clone;
     let obj = clone;
     for (let i = 0; i < keys.length - 1; i++) {
         if (!obj[keys[i]]) obj[keys[i]] = {};
