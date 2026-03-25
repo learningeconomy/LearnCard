@@ -122,7 +122,7 @@ export type LearnCardNetworkPluginDependentMethods = {
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginMethods = {
-    createProfile: (profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>) => Promise<string>;
+    createProfile: (profile: Omit<LCNProfile, 'did' | 'isServiceProfile'> & { authToken?: string }) => Promise<string>;
     createServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
