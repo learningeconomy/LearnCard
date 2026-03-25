@@ -170,7 +170,7 @@ const loadBakedConfig = async (onEvent?: OnConfigEvent): Promise<TenantConfig | 
  *   For web CNAME, the edge function serves this at the app's own domain.
  *   For native, this would be the central config service URL with a `?domain=` param.
  */
-const fetchFreshConfig = async (endpoint?: string, onEvent?: OnConfigEvent): Promise<TenantConfig | null> => {
+const fetchFreshConfig = async (endpoint?: string, onEvent?: OnConfigEvent, mergeBase?: TenantConfig): Promise<TenantConfig | null> => {
     try {
         const url = endpoint ?? '/__tenant-config';
 
@@ -203,20 +203,22 @@ const fetchFreshConfig = async (endpoint?: string, onEvent?: OnConfigEvent): Pro
         }
 
         // Fall back to partial parse — edge functions may return only overrides.
-        // Deep-merge onto defaults to produce a complete config.
+        // Deep-merge onto the best available base to produce a complete config.
         //
-        // NOTE: Partial configs are merged onto DEFAULT_LEARNCARD_TENANT_CONFIG,
-        // meaning non-overridden fields inherit LearnCard values (Firebase keys,
-        // API URLs, Sentry DSN, etc.). This is intentional while tenants share
-        // infrastructure. When tenants move to fully independent infra, the base
-        // config for merging should come from a tenant-specific default instead.
+        // When a baked config exists (native builds, CI-injected tenant-config.json),
+        // partials are merged onto it so tenant-specific values are preserved.
+        // Otherwise, falls back to DEFAULT_LEARNCARD_TENANT_CONFIG.
         const partial = parsePartialTenantConfig(raw, `fetch ${url} (partial)`);
 
         if (partial && typeof partial === 'object') {
-            onEvent?.('config:fetch_partial_merge', `Partial config fetched, merging onto defaults (${durationMs}ms)`, { url, durationMs, overrideKeys: Object.keys(partial as Record<string, unknown>) });
+            const mergeSource = mergeBase ? `baked config (${mergeBase.tenantId})` : 'defaults';
+
+            onEvent?.('config:fetch_partial_merge', `Partial config fetched, merging onto ${mergeSource} (${durationMs}ms)`, { url, durationMs, overrideKeys: Object.keys(partial as Record<string, unknown>), mergeBase: mergeSource });
+
+            const base = mergeBase ?? DEFAULT_LEARNCARD_TENANT_CONFIG;
 
             const merged = deepMerge(
-                DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
+                base as unknown as Record<string, unknown>,
                 partial as Record<string, unknown>,
             );
 
@@ -315,7 +317,7 @@ export const resolveTenantConfig = async (
     let fresh: TenantConfig | null = null;
 
     if (!options.offlineOnly) {
-        fresh = await fetchFreshConfig(options.configEndpoint, onEvent);
+        fresh = await fetchFreshConfig(options.configEndpoint, onEvent, baked ?? undefined);
 
         if (fresh) {
             writeCache(fresh, onEvent);
