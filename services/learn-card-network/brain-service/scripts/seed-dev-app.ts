@@ -2,8 +2,12 @@
 /**
  * Seed a dev partner app into the local brain-service database.
  *
+ * This script uses raw Cypher queries via a standalone Neogma instance so it
+ * doesn't depend on the brain-service model layer (which has circular deps
+ * that break under tsx's CJS transform).
+ *
  * Prerequisites:
- *   - Neo4j + Redis running (e.g. `pnpm dev:services` from apps/learn-card-app)
+ *   - Neo4j running (e.g. `pnpm dev:services` from apps/learn-card-app)
  *   - OR a .env here with NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD
  *
  * Usage:
@@ -15,26 +19,20 @@
  * Re-running is safe — the script is idempotent via slug-based lookup.
  */
 
-// ---------------------------------------------------------------------------
-// Environment bootstrap — MUST run before any imports that trigger neogma/cache
-// initialization (e.g. @models, @accesslayer/*). ES `import` statements are
-// hoisted by esbuild/tsx, so we use require() for dotenv and set defaults here
-// at the top level before the dynamic imports in main().
-// ---------------------------------------------------------------------------
+import * as dotenv from 'dotenv';
+import { Neogma } from 'neogma';
+import { v4 as uuid } from 'uuid';
 
-/* eslint-disable @typescript-eslint/no-var-requires */
-require('dotenv').config();
+dotenv.config();
 
 // Fall back to local docker-compose defaults so the script works without a .env
 // when services are already running via `pnpm dev:services` from learn-card-app.
-process.env.NEO4J_URI ??= 'bolt://localhost:7687';
-process.env.NEO4J_USERNAME ??= 'neo4j';
-process.env.NEO4J_PASSWORD ??= 'this-is-the-password';
-process.env.REDIS_HOST ??= 'localhost';
-process.env.REDIS_PORT ??= '6379';
+const NEO4J_URI = process.env.NEO4J_URI ?? 'bolt://localhost:7687';
+const NEO4J_USERNAME = process.env.NEO4J_USERNAME ?? 'neo4j';
+const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD ?? 'this-is-the-password';
 
 // ---------------------------------------------------------------------------
-// CLI argument parsing (no side-effectful imports needed)
+// CLI argument parsing
 // ---------------------------------------------------------------------------
 
 const args = process.argv.slice(2);
@@ -59,87 +57,176 @@ const domain = getArg('--domain', parsedUrl.hostname);
 const slug = getArg('--slug', appName.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
 
 // ---------------------------------------------------------------------------
-// Main — dynamic imports so env vars are set before neogma initializes
+// Helpers — mirrors the access-layer logic but uses raw Cypher to avoid
+// importing @models (which has circular deps that break under tsx/CJS).
+// ---------------------------------------------------------------------------
+
+const transformProfileId = (raw: string): string => raw.toLowerCase().replace(':', '%3A');
+
+// ---------------------------------------------------------------------------
+// Main
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-    const { createProfile } = await import('@accesslayer/profile/create');
-    const { getProfileByProfileId } = await import('@accesslayer/profile/read');
-    const { readAppStoreListingBySlug } = await import('@accesslayer/app-store-listing/read');
-    const { seedListedApp, installAppForProfile } = await import(
-        '../test/helpers/app-store.helpers'
-    );
+    const neogma = new Neogma({ url: NEO4J_URI, username: NEO4J_USERNAME, password: NEO4J_PASSWORD });
+    const run = neogma.queryRunner.run.bind(neogma.queryRunner);
 
     console.log('\n🔧 Seeding dev partner app...\n');
 
-    // 1. Ensure owner profile exists
-    let ownerProfile = await getProfileByProfileId(ownerProfileId);
+    const normalizedProfileId = transformProfileId(ownerProfileId);
 
-    if (!ownerProfile) {
-        console.log(`  Creating owner profile: ${ownerProfileId}`);
-
-        ownerProfile = await createProfile({
-            profileId: ownerProfileId,
+    // 1. Ensure owner profile exists (MERGE = idempotent)
+    const profileResult = await run(
+        `MERGE (p:Profile {profileId: $profileId})
+         ON CREATE SET p.displayName = $displayName,
+                       p.shortBio    = $shortBio,
+                       p.did         = $did
+         RETURN p, p.did AS existed`,
+        {
+            profileId: normalizedProfileId,
             displayName: ownerProfileId,
             shortBio: 'Dev seed profile',
-        });
-    } else {
-        console.log(`  Owner profile already exists: ${ownerProfileId}`);
+            did: `did:seed:${normalizedProfileId}`,
+        }
+    );
+
+    const profileNode = profileResult.records[0]?.get('p')?.properties;
+
+    if (profileNode) {
+        console.log(`  Owner profile ready: ${normalizedProfileId}`);
     }
 
     // 2. Check for existing listing by slug (idempotency)
-    const existing = await readAppStoreListingBySlug(slug);
+    const existingResult = await run(
+        `MATCH (listing:AppStoreListing {slug: $slug})
+         RETURN listing.listing_id AS listing_id
+         LIMIT 1`,
+        { slug }
+    );
 
-    if (existing) {
-        console.log(`  Listing already exists for slug "${slug}": ${existing.listing_id}`);
+    const existingId = existingResult.records[0]?.get('listing_id');
+
+    if (existingId) {
+        console.log(`  Listing already exists for slug "${slug}": ${existingId}`);
         console.log(`  Skipping creation. Delete it manually or use a different --slug.\n`);
-        printSummary(existing.listing_id);
+        printSummary(existingId);
+        await neogma.driver.close();
         return;
     }
 
-    // 3. Create integration + listing
+    // 3. Create integration
+    const integrationId = uuid();
     const whitelistedDomains = [domain, `${domain}:${parsedUrl.port || '80'}`];
 
-    const { listing, integration } = await seedListedApp(
-        ownerProfileId,
+    await run(
+        `CREATE (i:Integration {
+            id: $id,
+            name: $name,
+            description: $description,
+            publishableKey: $publishableKey,
+            whitelistedDomains: $whitelistedDomains,
+            status: 'setup',
+            createdAt: $createdAt
+         })
+         WITH i
+         MATCH (p:Profile {profileId: $profileId})
+         CREATE (i)-[:CREATED_BY]->(p)
+         RETURN i`,
         {
-            display_name: appName,
-            slug,
-            tagline: `Dev app at ${appUrl}`,
-            full_description: `Locally seeded partner app pointing at ${appUrl}`,
-            launch_config_json: JSON.stringify({ url: appUrl }),
-        },
-        `${appName} Integration`,
-        whitelistedDomains
+            id: integrationId,
+            name: `${appName} Integration`,
+            description: `Integration for ${appName}`,
+            publishableKey: `pk_${uuid()}`,
+            whitelistedDomains,
+            status: 'setup',
+            createdAt: new Date().toISOString(),
+            profileId: normalizedProfileId,
+        }
     );
 
-    console.log(`  Integration created: ${integration.id}`);
+    console.log(`  Integration created: ${integrationId}`);
     console.log(`  Whitelisted domains: ${whitelistedDomains.join(', ')}`);
-    console.log(`  Listing created:     ${listing.listing_id}`);
+
+    // 4. Create app store listing + link to integration
+    const listingId = uuid();
+
+    await run(
+        `CREATE (l:AppStoreListing {
+            listing_id: $listingId,
+            slug: $slug,
+            display_name: $displayName,
+            tagline: $tagline,
+            full_description: $fullDescription,
+            icon_url: $iconUrl,
+            app_listing_status: $status,
+            launch_type: $launchType,
+            launch_config_json: $launchConfigJson,
+            category: $category,
+            promotion_level: $promotionLevel
+         })
+         WITH l
+         MATCH (i:Integration {id: $integrationId})
+         CREATE (i)-[:PUBLISHES_LISTING]->(l)
+         RETURN l`,
+        {
+            listingId,
+            slug,
+            displayName: appName,
+            tagline: `Dev app at ${appUrl}`,
+            fullDescription: `Locally seeded partner app pointing at ${appUrl}`,
+            iconUrl: 'https://example.com/icon.png',
+            status: 'LISTED',
+            launchType: 'EMBEDDED_IFRAME',
+            launchConfigJson: JSON.stringify({ url: appUrl }),
+            category: 'Learning',
+            promotionLevel: 'STANDARD',
+            integrationId,
+        }
+    );
+
+    console.log(`  Listing created:     ${listingId}`);
     console.log(`  Slug:                ${slug}`);
-    console.log(`  Status:              ${listing.app_listing_status}`);
+    console.log(`  Status:              LISTED`);
     console.log(`  Launch URL:          ${appUrl}`);
 
-    // 4. Optionally install for a second profile
+    // 5. Optionally install for a second profile
     if (installForProfileId && installForProfileId !== ownerProfileId) {
-        let installProfile = await getProfileByProfileId(installForProfileId);
+        const normalizedInstallId = transformProfileId(installForProfileId);
 
-        if (!installProfile) {
-            console.log(`\n  Creating install profile: ${installForProfileId}`);
-
-            installProfile = await createProfile({
-                profileId: installForProfileId,
+        await run(
+            `MERGE (p:Profile {profileId: $profileId})
+             ON CREATE SET p.displayName = $displayName,
+                           p.shortBio    = $shortBio,
+                           p.did         = $did
+             RETURN p`,
+            {
+                profileId: normalizedInstallId,
                 displayName: installForProfileId,
                 shortBio: 'Dev seed user',
-            });
-        }
+                did: `did:seed:${normalizedInstallId}`,
+            }
+        );
 
-        await installAppForProfile(installForProfileId, listing.listing_id);
+        await run(
+            `MATCH (p:Profile {profileId: $profileId})
+             MATCH (l:AppStoreListing {listing_id: $listingId})
+             MERGE (p)-[r:INSTALLS]->(l)
+             ON CREATE SET r.listing_id   = $listingId,
+                           r.installed_at = $installedAt
+             RETURN r`,
+            {
+                profileId: normalizedInstallId,
+                listingId,
+                installedAt: new Date().toISOString(),
+            }
+        );
 
         console.log(`  App installed for: ${installForProfileId}`);
     }
 
-    printSummary(listing.listing_id);
+    printSummary(listingId);
+
+    await neogma.driver.close();
 }
 
 function printSummary(listingId: string): void {
