@@ -129,8 +129,9 @@ export const ConfigDebugTab: React.FC = () => {
 
     const handleCopyFullConfig = useCallback(async () => {
         try {
-            await navigator.clipboard.writeText(JSON.stringify(config, null, 2));
-            setCopied('full-config', config);
+            const json = JSON.stringify(config, null, 2);
+
+            setCopied('full-config', json);
         } catch { /* ignore */ }
     }, [config, setCopied]);
 
@@ -181,9 +182,12 @@ export const ConfigDebugTab: React.FC = () => {
                 title="API Endpoints"
                 icon={<Database className="w-3 h-3 text-gray-500" />}
             >
-                <KVRow label="Brain URL" value={config.apis.brainUrl ? truncate(config.apis.brainUrl, 40) : '—'} copied={copied} onCopy={setCopied} />
-                <KVRow label="Cache URL" value={config.apis.cacheUrl ? truncate(config.apis.cacheUrl, 40) : '—'} copied={copied} onCopy={setCopied} />
-                <KVRow label="Upload URL" value={config.apis.uploadUrl ? truncate(config.apis.uploadUrl, 40) : '—'} copied={copied} onCopy={setCopied} />
+                <KVRow label="Brain Service" value={config.apis.brainService ? truncate(config.apis.brainService, 40) : '—'} copied={copied} onCopy={setCopied} />
+                <KVRow label="Brain API" value={config.apis.brainServiceApi ? truncate(config.apis.brainServiceApi, 40) : '—'} copied={copied} onCopy={setCopied} />
+                <KVRow label="Cloud Service" value={config.apis.cloudService ? truncate(config.apis.cloudService, 40) : '—'} copied={copied} onCopy={setCopied} />
+                <KVRow label="LCA API" value={config.apis.lcaApi ? truncate(config.apis.lcaApi, 40) : '—'} copied={copied} onCopy={setCopied} />
+                <KVRow label="xAPI" value={config.apis.xapi ? truncate(config.apis.xapi, 40) : '—'} copied={copied} onCopy={setCopied} />
+                <KVRow label="AI Service" value={config.apis.aiService ? truncate(config.apis.aiService, 40) : '—'} copied={copied} onCopy={setCopied} />
             </Section>
 
             {/* ── Links ── */}
