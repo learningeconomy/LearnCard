@@ -429,9 +429,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 presentToast(
                     credCount > 0
                         ? `${credCount} credential${credCount > 1 ? 's' : ''} saved to your wallet.`
-                        : `Your ${fileType.toLowerCase()} has been saved.`,
+                        : `${fileType === UploadTypesEnum.Resume ? 'Resume' : fileType.charAt(0).toUpperCase() + fileType.slice(1)} saved, no credentials added to wallet.`,
                     {
-                        title: 'Credentials Saved',
+                        title: credCount > 0 ? 'Credentials Saved' : 'Saved',
                         hasDismissButton: true,
                         type: ToastTypeEnum.Success,
                         hasCheckmark: true,
