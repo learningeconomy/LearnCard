@@ -64,6 +64,7 @@ import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile, getProfileIdFromString } from '@helpers/did.helpers';
 import {
     syncCredentialsToContract,
+    updateRequestedForStatusIfExists,
     updateTerms,
     upsertRequestedForRelationship,
     withdrawTerms,
@@ -1071,6 +1072,14 @@ export const contractsRouter = t.router({
                 { terms, expiresAt, oneTime },
                 ctx.domain
             );
+
+            try {
+                await updateRequestedForStatusIfExists(
+                    contractDetails.contract.id,
+                    profile.profileId,
+                    'accepted'
+                );
+            } catch {}
 
             const relationship = await getContractTermsForProfile(
                 profile,

@@ -86,24 +86,7 @@ export const getSharedInsightsRequestsForTargetProfile = async (
         .return(['writer', 'r', 'c'])
         .run();
 
-    const outgoingRequestsResult = await new QueryBuilder(new BindParam({ targetProfileId }))
-        .match({ model: ConsentFlowContract, identifier: 'c' })
-        .match({
-            related: [
-                { identifier: 'c', model: ConsentFlowContract },
-                `-[:${ConsentFlowContract.getRelationshipByAlias('createdBy').name}|:${
-                    ConsentFlowContract.getRelationshipByAlias('canWrite').name
-                }]-`,
-                { identifier: 'writer', model: Profile },
-            ],
-        })
-        .where('writer.profileId = $targetProfileId')
-        .match('(c)-[r:REQUESTED_FOR]->(target:Profile)')
-        .where("target.profileId <> $targetProfileId AND r.status IN ['pending', 'accepted']")
-        .return(['target', 'r', 'c'])
-        .run();
-
-    const incomingMappedResults = incomingRequestsResult.records.map(rec => {
+    const mappedResults = incomingRequestsResult.records.map(rec => {
         const { writer, r, c } = rec.toObject();
 
         return {
@@ -113,19 +96,6 @@ export const getSharedInsightsRequestsForTargetProfile = async (
             contractId: c.properties.id as string,
         };
     });
-
-    const outgoingMappedResults = outgoingRequestsResult.records.map(rec => {
-        const { target, r, c } = rec.toObject();
-
-        return {
-            profile: inflateObject<ProfileType>(target.properties),
-            status: r.properties?.status as 'pending' | 'accepted',
-            readStatus: (r.properties?.readStatus ?? null) as 'unseen' | 'seen' | null,
-            contractId: c.properties.id as string,
-        };
-    });
-
-    const mappedResults = [...incomingMappedResults, ...outgoingMappedResults];
 
     const dedupedByProfileId = new Map<string, (typeof mappedResults)[number]>();
 

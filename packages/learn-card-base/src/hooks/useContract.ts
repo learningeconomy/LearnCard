@@ -134,7 +134,8 @@ export const useSharedInsightsRequestsForProfile = (targetProfileId: string, ena
         queryKey: ['useSharedInsightsRequestsForProfile', targetProfileId],
         queryFn: async () => {
             const wallet = await initWallet();
-            return wallet.invoke.getSharedInsightsRequestsForProfile(targetProfileId) ?? [];
+            const result = await wallet.invoke.getSharedInsightsRequestsForProfile(targetProfileId);
+            return result ?? [];
         },
         enabled: enabled && Boolean(targetProfileId),
     });
