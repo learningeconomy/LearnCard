@@ -14,6 +14,8 @@ import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
     useWallet,
     useConfirmation,
+    useToast,
+    ToastTypeEnum,
     checklistStore,
     useGetCheckListStatus,
     UploadTypesEnum,
@@ -37,6 +39,7 @@ export const CheckListUploadResume: React.FC = () => {
         useUploadFile(UploadTypesEnum.Resume);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
+    const { presentToast } = useToast();
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
@@ -62,20 +65,37 @@ export const CheckListUploadResume: React.FC = () => {
 
     useEffect(() => {
         if (base64Data && rawArtifactCredential) {
-            fetchParsedCredentials(UploadTypesEnum.Resume).then(vcs => {
-                if (vcs.length > 0) {
-                    // Persist to store so it survives unmount
-                    checklistStore.set.setPendingReview('resume', {
-                        credentials: vcs,
-                        rawArtifact: rawArtifactCredential,
+            fetchParsedCredentials(UploadTypesEnum.Resume)
+                .then(vcs => {
+                    if (vcs.length > 0) {
+                        // Persist to store so it survives unmount
+                        checklistStore.set.setPendingReview('resume', {
+                            credentials: vcs,
+                            rawArtifact: rawArtifactCredential,
+                        });
+                        setShowReview(true);
+                    } else {
+                        storeSelectedCredentials([], rawArtifactCredential, UploadTypesEnum.Resume).finally(
+                            () => handleSetResume()
+                        );
+                    }
+                })
+                .catch(error => {
+                    const msg = error?.message || 'Something went wrong';
+                    // Strip nested "Error: Error:" prefixes from the AI service
+                    const cleanMsg = msg.replace(/^(Error:\s*)+/i, '');
+                    presentToast(cleanMsg, {
+                        title: 'Could not extract credentials',
+                        hasDismissButton: true,
+                        type: ToastTypeEnum.Error,
+                        hasX: true,
+                        duration: 7000,
                     });
-                    setShowReview(true);
-                } else {
+                    // Still store the raw artifact so the file isn't lost
                     storeSelectedCredentials([], rawArtifactCredential, UploadTypesEnum.Resume).finally(
                         () => handleSetResume()
                     );
-                }
-            });
+                });
         }
     }, [base64Data, rawArtifactCredential]);
 

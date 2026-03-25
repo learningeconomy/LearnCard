@@ -13,6 +13,8 @@ import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
     useWallet,
     useConfirmation,
+    useToast,
+    ToastTypeEnum,
     checklistStore,
     useGetCheckListStatus,
     UploadTypesEnum,
@@ -36,6 +38,7 @@ export const CheckListTranscripts: React.FC = () => {
         useUploadFile(UploadTypesEnum.Transcript);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
+    const { presentToast } = useToast();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -61,22 +64,38 @@ export const CheckListTranscripts: React.FC = () => {
 
     useEffect(() => {
         if (base64Datas?.length > 0 && rawArtifactCredentials?.length > 0) {
-            fetchParsedCredentialsFromFiles(UploadTypesEnum.Transcript).then(vcs => {
-                if (vcs.length > 0) {
-                    const [first, ...rest] = rawArtifactCredentials;
-                    checklistStore.set.setPendingReview('transcript', {
-                        credentials: vcs,
-                        rawArtifact: first,
-                        additionalRawArtifacts: rest.length > 0 ? rest : undefined,
+            fetchParsedCredentialsFromFiles(UploadTypesEnum.Transcript)
+                .then(vcs => {
+                    if (vcs.length > 0) {
+                        const [first, ...rest] = rawArtifactCredentials;
+                        checklistStore.set.setPendingReview('transcript', {
+                            credentials: vcs,
+                            rawArtifact: first,
+                            additionalRawArtifacts: rest.length > 0 ? rest : undefined,
+                        });
+                        setShowReview(true);
+                    } else {
+                        const [first, ...rest] = rawArtifactCredentials;
+                        storeSelectedCredentials([], first, UploadTypesEnum.Transcript, rest).finally(
+                            () => handleSetTranscripts()
+                        );
+                    }
+                })
+                .catch(error => {
+                    const msg = error?.message || 'Something went wrong';
+                    const cleanMsg = msg.replace(/^(Error:\s*)+/i, '');
+                    presentToast(cleanMsg, {
+                        title: 'Could not extract credentials',
+                        hasDismissButton: true,
+                        type: ToastTypeEnum.Error,
+                        hasX: true,
+                        duration: 7000,
                     });
-                    setShowReview(true);
-                } else {
                     const [first, ...rest] = rawArtifactCredentials;
                     storeSelectedCredentials([], first, UploadTypesEnum.Transcript, rest).finally(
                         () => handleSetTranscripts()
                     );
-                }
-            });
+                });
         }
     }, [base64Datas, rawArtifactCredentials]);
 

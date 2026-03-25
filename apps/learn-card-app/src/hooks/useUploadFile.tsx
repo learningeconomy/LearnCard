@@ -347,7 +347,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         } catch (error) {
             checklistStore.set.updateIsParsing(fileType, false);
             console.error('fetchParsedCredentials::error', error);
-            return [];
+            throw error;
         }
     };
 
@@ -373,7 +373,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         } catch (error) {
             checklistStore.set.updateIsParsing(fileType, false);
             console.error('fetchParsedCredentialsFromFiles::error', error);
-            return [];
+            throw error;
         }
     };
 
