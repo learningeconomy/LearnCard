@@ -88,6 +88,8 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
 
     const { returnTo: urlReturnTo, recipientToken } = queryString.parse(location.search);
     const returnTo = urlReturnTo || contractDetails?.redirectUrl?.trim(); // prefer url param
+    const shouldDisableRedirect =
+        disableRedirect || Boolean(insightsProfile) || Boolean(childInsightsProfile);
 
     const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
     const shouldGetAnAdult = isSwitchedProfile && !isPreview && !insightsProfile;
@@ -142,13 +144,13 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             // Sync any auto-boost credentials (if any). No need to wait.
             fetchNewContractCredentials();
 
-            if (successCallback) {
-                successCallback?.();
-            } else {
+            successCallback?.();
+
+            if (!successCallback || shouldDisableRedirect) {
                 closeAllModals();
             }
 
-            if (!disableRedirect) {
+            if (!shouldDisableRedirect) {
                 if (redirectUrl) {
                     // If the consentToContract call returned a specific redirect url, use it over everything else
                     window.location.href = redirectUrl;

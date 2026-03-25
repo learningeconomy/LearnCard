@@ -205,7 +205,8 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                         presentToast('AI Insights shared!');
                     },
                     notification?.data?.metadata?.targetProfileId as string,
-                    notification?.from?.profileId as string
+                    notification?.from?.profileId as string,
+                    true
                 );
                 return;
             } else {
@@ -256,7 +257,9 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                 () => {
                     presentToast('AI Insights shared!');
                 },
-                notification?.from?.profileId as string
+                notification?.from?.profileId as string,
+                undefined,
+                true
             );
         }
     };
