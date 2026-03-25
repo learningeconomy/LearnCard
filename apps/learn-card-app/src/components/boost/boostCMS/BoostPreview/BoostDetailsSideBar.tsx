@@ -29,6 +29,7 @@ import {
     DisplayTypeEnum,
 } from 'learn-card-base';
 import { VC, VerificationItem } from '@learncard/types';
+import moment from 'moment';
 
 type BoostDetailsSideBarProps = {
     credential: VC;
@@ -60,6 +61,18 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     const { createdAt, credentialSubject } = getInfoFromCredential(credential, 'MMMM DD, YYYY', {
         uppercaseDate: false,
     });
+
+    const activityStartDate = credential?.credentialSubject?.activityStartDate;
+    const activityEndDate = credential?.credentialSubject?.activityEndDate;
+    const dateRangeText =
+        activityStartDate || activityEndDate
+            ? [
+                  activityStartDate && moment(activityStartDate).format('MMM YYYY'),
+                  activityEndDate && moment(activityEndDate).format('MMM YYYY'),
+              ]
+                  .filter(Boolean)
+                  .join(' – ')
+            : null;
     const { isMobile } = useDeviceTypeByWidth();
 
     const {
@@ -105,10 +118,16 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                     >
                         {isMediaDisplay && <BoostSideMenuMediaDetails credential={credential} />}
 
+                        {!isMediaDisplay && dateRangeText && (
+                            <span className="text-grayscale-500 font-poppins text-[12px] font-[500] w-full">
+                                {dateRangeText}
+                            </span>
+                        )}
+
                         {!isMediaDisplay && (
                             <span
                                 className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
-                                    description
+                                    description || dateRangeText
                                         ? 'pt-[10px] border-t-[1px] border-solid border-grayscale-200'
                                         : ''
                                 }`}
