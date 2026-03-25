@@ -17,6 +17,7 @@ import {
     useIonModal,
 } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
+import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import Camera from 'learn-card-base/svgs/Camera';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
@@ -194,7 +195,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
     const copyToClipBoard = async () => {
         try {
             await Clipboard.write({
-                string: `https://learncard.app/connect?did=${walletDid}`,
+                string: `${getAppBaseUrl()}/connect?did=${walletDid}`,
             });
             presentToast('Contact link copied to clipboard', {
                 duration: 3000,
@@ -213,7 +214,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
             await Share.share({
                 title: 'Add contact',
                 text: '',
-                url: `https://learncard.app/connect?did=${walletDid}`,
+                url: `${getAppBaseUrl()}/connect?did=${walletDid}`,
                 dialogTitle: '',
             });
         } else {

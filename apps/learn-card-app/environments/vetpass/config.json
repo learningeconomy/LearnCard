@@ -10,23 +10,12 @@
         "xapi": "TODO_XAPI_URL"
     },
     "auth": {
-        "provider": "firebase",
-        "keyDerivation": "sss",
-        "firebase": {
-            "apiKey": "TODO_FIREBASE_API_KEY",
-            "authDomain": "vetpass.firebaseapp.com",
-            "projectId": "vetpass",
-            "storageBucket": "vetpass.appspot.com",
-            "messagingSenderId": "TODO_SENDER_ID",
-            "appId": "TODO_APP_ID",
-            "measurementId": "TODO_MEASUREMENT_ID",
-            "redirectDomain": "vetpass.app",
-            "dynamicLinkDomain": "vetpass.app"
-        },
-        "sss": {
-            "serverUrl": "TODO_SSS_SERVER_URL",
-            "enableEmailBackupShare": true,
-            "requireEmailForPhoneUsers": true
+        "keyDerivation": "web3auth",
+        "web3auth": {
+            "clientId": "BBB5ReobO60-olXYx2JB7s5pkJplYnBHz4E99Cdf9aaNokNt3XzvVvRL9UQfziK_PMEuBYcgdMEW_WCHNPdUGPg",
+            "network": "testnet",
+            "verifierId": "learncardapp-firebase",
+            "rpcTarget": "https://mainnet.infura.io/v3/af590ea7328444e4b20c75bb401b6105"
         }
     },
     "branding": {
@@ -60,7 +49,7 @@
     },
     "observability": {
         "sentryDsn": "TODO_SENTRY_DSN",
-        "sentryEnv": "production",
+        "sentryEnv": "production-vetpass",
         "sentryTraceDomains": [
             "network.vetpass.app",
             "api.vetpass.app",
@@ -77,7 +66,10 @@
         "bundleId": "com.vetpass.app",
         "displayName": "VetPass",
         "deepLinkDomains": [
-            "vetpass.app"
+            "vetpass.app",
+            "alpha.vetpass.app",
+            "learncard.app",
+            "staging.learncard.app"
         ],
         "customSchemes": [
             "dccrequest"

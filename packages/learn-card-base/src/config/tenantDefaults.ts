@@ -118,6 +118,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
             'learncard.app',
             'learncardapp.netlify.app',
             'learncardapp.netlify.com',
+            'lcw.app'
         ],
         customSchemes: ['dccrequest', 'msprequest', 'asuprequest'],
         capgoChannel: '1.0.4',

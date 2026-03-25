@@ -5,6 +5,7 @@ import { ProfilePicture, UserProfilePicture, useIsLoggedIn } from 'learn-card-ba
 import { getProfileIdFromLCNDidWeb } from 'learn-card-base/helpers/credentialHelpers';
 import { useGetProfile } from 'learn-card-base/react-query/queries/queries';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
 import ResumePreviewInfoChip from './ResumePreviewInfoChip';
 import ResumeBuilderToggle from '../ResumeBuilderToggle';
@@ -174,7 +175,7 @@ const ResumePreviewUserInfo: React.FC<{
                             <TrustedIcon className="w-4 h-4" />
                         </div>
 
-                        <QRCodeSVG value={qrCodeValue || 'https://learncard.app'} size={44} />
+                        <QRCodeSVG value={qrCodeValue || getAppBaseUrl()} size={44} />
                     </div>
                 )}
             </div>

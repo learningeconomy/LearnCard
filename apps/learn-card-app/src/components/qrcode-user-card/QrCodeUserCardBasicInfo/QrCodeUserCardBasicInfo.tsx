@@ -88,7 +88,7 @@ const QrCodeUserCardBasicInfo: React.FC<{
                         onClick={copyToClipBoard}
                         className={`text-base flex items-center text-center font-medium text-grayscale-900`}
                     >
-                        <ChainLink className="h-[20px]" /> {`learncard.app/...${profileId}`}
+                        <ChainLink className="h-[20px]" /> {`${getAppBaseUrl().replace(/^https?:\/\//, '')}/...${profileId}`}
                     </button>
                 )}
             </div>

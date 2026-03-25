@@ -9,6 +9,10 @@
             "tenantId": "learncard",
             "domain": "learncard.app"
         },
+        "alpha.vetpass.app": {
+            "tenantId": "vetpass",
+            "domain": "alpha.vetpass.app"
+        },
         "lc-test-tenant.netlify.app": {
             "tenantId": "vetpass",
             "domain": "vetpass.app",

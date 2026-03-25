@@ -1,0 +1,10 @@
+{
+    "domain": "alpha.vetpass.app",
+    "apis": {
+        "brainService": "https://staging.network.learncard.com/trpc",
+        "brainServiceApi": "https://staging.network.learncard.com/api",
+        "cloudService": "https://staging.cloud.learncard.com/trpc",
+        "lcaApi": "https://staging.api.learncard.com/trpc",
+        "xapi": "https://staging.network.learncard.com/xapi"
+    }
+}

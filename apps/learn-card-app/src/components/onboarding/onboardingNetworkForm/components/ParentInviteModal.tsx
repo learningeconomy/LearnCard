@@ -5,6 +5,7 @@ import { Clipboard } from '@capacitor/clipboard';
 import { IonSpinner } from '@ionic/react';
 
 import { useWallet } from 'learn-card-base';
+import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -33,7 +34,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
             const challenge = uuidv4();
             const generated: { challenge: string; profileId: string } =
                 await wallet?.invoke?.generateInvite(challenge, expiration);
-            const _inviteLink = `https://learncard.app/invite?challenge=${generated?.challenge}&profileId=${generated?.profileId}`;
+            const _inviteLink = `${getAppBaseUrl()}/invite?challenge=${generated?.challenge}&profileId=${generated?.profileId}`;
             setInviteLink(_inviteLink);
         } catch (e) {
             presentToast('Failed to generate invite link', {
