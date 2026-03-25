@@ -163,9 +163,8 @@ export const CheckListUploadResume: React.FC = () => {
     };
 
     const handleReviewBack = () => {
+        // Keep pending review in store so user can return to it via the checklist
         setShowReview(false);
-        setParsedCredentials([]);
-        checklistStore.set.setPendingReview('resume', null);
     };
 
     const handleEditCredential = (index: number, editedVc: any) => {
