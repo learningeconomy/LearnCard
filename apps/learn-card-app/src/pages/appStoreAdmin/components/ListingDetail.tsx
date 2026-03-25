@@ -53,7 +53,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
     const { newModal } = useModal();
     const history = useHistory();
     const [showPreviewMenu, setShowPreviewMenu] = useState(false);
-    console.log('listing', listing);
+
     const launchTypeInfo = LAUNCH_TYPE_INFO[listing.launch_type];
     const categoryLabel = CATEGORY_OPTIONS.find(c => c.value === listing.category)?.label;
 
