@@ -32,6 +32,7 @@ const AiInsightsLearningSnapshots: React.FC<{
         useAiInsightCredential();
 
     const resolvedAiInsightCredential = aiInsightCredential ?? currentUserAiInsightCredential;
+
     const shouldLoadCurrentUserCredential = aiInsightCredential === undefined;
     const hasSnapshotContent = [
         resolvedAiInsightCredential?.insights?.strongestArea?.title,
