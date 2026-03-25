@@ -510,9 +510,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     <input
                         type="email"
                         value={data.contact_email || ''}
-                        onChange={e =>
-                            handleChange('contact_email', e.target.value.trim().toLowerCase())
-                        }
+                        onChange={e => handleChange('contact_email', e.target.value.trim())}
                         placeholder="Email address"
                         className={`flex-1 w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                             errors.contact_email ? 'border-red-300' : 'border-gray-200'
