@@ -975,6 +975,7 @@ export const boostsRouter = t.router({
                                     federatedFrom: profile.did,
                                 },
                             }),
+                            signal: AbortSignal.timeout(10000),
                         });
 
                         if (!response.ok) {

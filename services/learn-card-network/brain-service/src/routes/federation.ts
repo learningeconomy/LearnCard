@@ -83,6 +83,21 @@ export const federationRouter = t.router({
             const localServerDid = getServerDidWebDID(ctx.domain);
             const isLocalSender = senderServerDid === localServerDid;
 
+            // Verify that the issuerDid belongs to the sender's service.
+            // This prevents impersonation attacks where a malicious service sends
+            // credentials claiming to be from users on a different trusted service.
+            // Example: Service B sends to Service D on behalf of User A on Service B.
+            // senderDid = did:web:service-b.com (Service B's DID)
+            // issuerDid = did:web:service-b.com:users:a (User A's DID on Service B)
+            // We verify getServerDidFromUserDid(issuerDid) === senderDid
+            const issuerServerDid = getServerDidFromUserDid(issuerDid);
+            if (issuerDid !== senderDid && issuerServerDid !== senderDid) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Issuer DID does not belong to sender service',
+                });
+            }
+
             if (isLocalSender && recipientProfile) {
                 const federatedSender = await getOrCreateFederatedProfile(
                     issuerDid,
