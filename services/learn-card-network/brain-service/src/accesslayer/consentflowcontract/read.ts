@@ -81,8 +81,7 @@ export const getSharedInsightsRequestsForTargetProfile = async (
                 { identifier: 'writer', model: Profile },
             ],
         })
-        .where('writer.profileId <> $targetProfileId')
-        .where("r.status IN ['pending', 'accepted']")
+        .where("writer.profileId <> $targetProfileId AND r.status IN ['pending', 'accepted']")
         .return(['writer', 'r'])
         .run();
 
@@ -99,8 +98,7 @@ export const getSharedInsightsRequestsForTargetProfile = async (
         })
         .where('writer.profileId = $targetProfileId')
         .match('(c)-[r:REQUESTED_FOR]->(target:Profile)')
-        .where('target.profileId <> $targetProfileId')
-        .where("r.status IN ['pending', 'accepted']")
+        .where("target.profileId <> $targetProfileId AND r.status IN ['pending', 'accepted']")
         .return(['target', 'r'])
         .run();
 
