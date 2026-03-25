@@ -48,6 +48,10 @@ export const formatAchievementType = (type: string): string => {
     return formatPascalCase(type);
 };
 
+/** Map a raw internal category value (e.g. "Work History") to its display label (e.g. "Experiences") */
+export const getCategoryDisplayLabel = (internal: string): string =>
+    CATEGORY_DISPLAY_LABELS[internal] || internal;
+
 /** Get the user-facing wallet category label for an achievement type */
 export const getWalletCategory = (type: string): string => {
     let internal: string;

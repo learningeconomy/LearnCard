@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { UploadTypesEnum } from 'learn-card-base';
 import { useTheme } from '../../../../theme/hooks/useTheme';
 import CredentialEditView from './CredentialEditView';
-import { getWalletCategory } from './AchievementTypeSelectorModal';
+import { getWalletCategory, getCategoryDisplayLabel } from './AchievementTypeSelectorModal';
 
 export type ParsedCredential = { vc: any; metadata?: { name?: string; category?: string } };
 
@@ -26,7 +26,7 @@ const getCredentialDisplayName = (cred: ParsedCredential): string => {
 };
 
 const getCredentialCategory = (cred: ParsedCredential): string => {
-    if (cred.metadata?.category) return cred.metadata.category;
+    if (cred.metadata?.category) return getCategoryDisplayLabel(cred.metadata.category);
     const achievementType = cred.vc?.credentialSubject?.achievement?.achievementType;
     const type = Array.isArray(achievementType) ? achievementType[0] : achievementType;
     if (type) {
