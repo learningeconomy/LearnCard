@@ -37,6 +37,12 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
     const optimizedPercent =
         checklistItems.length > 0 ? Math.round((completedItems / checklistItems.length) * 100) : 0;
 
+    const { resume: pendingResume, transcript: pendingTranscript } =
+        checklistStore.useTracked.pendingReview();
+    const pendingReviewCount =
+        (pendingResume?.credentials?.length ?? 0) + (pendingTranscript?.credentials?.length ?? 0);
+    const hasPendingReview = pendingReviewCount > 0;
+
     const handleCheckListButton = async () => {
         const { prompted } = await gate();
         if (prompted) return;
@@ -89,6 +95,10 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                     <p className="mt-2 text-[13px] leading-[130%] text-grayscale-700 font-poppins text-center">
                         Processing documents...
                     </p>
+                ) : hasPendingReview ? (
+                    <p className="mt-2 text-[13px] leading-[130%] text-amber-600 font-poppins font-semibold text-center">
+                        {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''} ready for review
+                    </p>
                 ) : (
                     <div className="mt-3">
                         <div className="w-full h-[10px] rounded-full bg-grayscale-200 overflow-hidden">
@@ -133,6 +143,10 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                     {isParsing ? (
                         <p className="text-[14px] text-grayscale-900 font-poppins">
                             Processing documents...
+                        </p>
+                    ) : hasPendingReview ? (
+                        <p className="text-[14px] text-amber-600 font-poppins font-semibold">
+                            {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''} ready for review
                         </p>
                     ) : (
                         <p className="text-[14px] text-grayscale-900 font-poppins">
