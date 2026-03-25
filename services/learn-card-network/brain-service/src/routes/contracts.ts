@@ -2218,6 +2218,7 @@ export const contractsRouter = t.router({
                     profile: LCNProfileValidator,
                     status: z.enum(['pending', 'accepted', 'denied']).nullable(),
                     readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
+                    contractUri: z.string().optional(),
                 })
             )
         )
@@ -2242,7 +2243,14 @@ export const contractsRouter = t.router({
                 });
             }
 
-            return getSharedInsightsRequestsForTargetProfile(resolvedTargetProfileId);
+            const results = await getSharedInsightsRequestsForTargetProfile(
+                resolvedTargetProfileId
+            );
+
+            return results.map(({ contractId, ...rest }) => ({
+                ...rest,
+                contractUri: constructUri('contract', contractId, ctx.domain),
+            }));
         }),
 
     forwardContractRequestToProfile: profileRoute

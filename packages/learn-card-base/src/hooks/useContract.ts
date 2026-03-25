@@ -127,6 +127,7 @@ export const useSharedInsightsRequestsForProfile = (targetProfileId: string, ena
               profile: LCNProfile;
               status: 'pending' | 'accepted' | 'denied' | null;
               readStatus?: 'unseen' | 'seen' | null;
+              contractUri?: string;
           }[]
         | undefined
     >({

@@ -66,6 +66,7 @@ export const getSharedInsightsRequestsForTargetProfile = async (
         profile: ProfileType;
         status: 'pending' | 'accepted';
         readStatus: 'unseen' | 'seen' | null;
+        contractId: string;
     }[]
 > => {
     const incomingRequestsResult = await new QueryBuilder(new BindParam({ targetProfileId }))
@@ -82,7 +83,7 @@ export const getSharedInsightsRequestsForTargetProfile = async (
             ],
         })
         .where("writer.profileId <> $targetProfileId AND r.status IN ['pending', 'accepted']")
-        .return(['writer', 'r'])
+        .return(['writer', 'r', 'c'])
         .run();
 
     const outgoingRequestsResult = await new QueryBuilder(new BindParam({ targetProfileId }))
@@ -99,26 +100,28 @@ export const getSharedInsightsRequestsForTargetProfile = async (
         .where('writer.profileId = $targetProfileId')
         .match('(c)-[r:REQUESTED_FOR]->(target:Profile)')
         .where("target.profileId <> $targetProfileId AND r.status IN ['pending', 'accepted']")
-        .return(['target', 'r'])
+        .return(['target', 'r', 'c'])
         .run();
 
     const incomingMappedResults = incomingRequestsResult.records.map(rec => {
-        const { writer, r } = rec.toObject();
+        const { writer, r, c } = rec.toObject();
 
         return {
             profile: inflateObject<ProfileType>(writer.properties),
             status: r.properties?.status as 'pending' | 'accepted',
             readStatus: (r.properties?.readStatus ?? null) as 'unseen' | 'seen' | null,
+            contractId: c.properties.id as string,
         };
     });
 
     const outgoingMappedResults = outgoingRequestsResult.records.map(rec => {
-        const { target, r } = rec.toObject();
+        const { target, r, c } = rec.toObject();
 
         return {
             profile: inflateObject<ProfileType>(target.properties),
             status: r.properties?.status as 'pending' | 'accepted',
             readStatus: (r.properties?.readStatus ?? null) as 'unseen' | 'seen' | null,
+            contractId: c.properties.id as string,
         };
     });
 
