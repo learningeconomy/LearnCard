@@ -79,6 +79,9 @@ export * from './state';
 // Export utilities from shared-types migration
 export * from './Utilities';
 
+// Export app install helpers
+export * from './app-install';
+
 /**
  * Checks if a DID is an app-specific did:web
  *

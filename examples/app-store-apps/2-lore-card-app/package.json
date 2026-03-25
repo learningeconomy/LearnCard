@@ -1,7 +1,7 @@
 {
   "name": "@learncard/app-store-demo-lore-card",
   "type": "module",
-  "version": "0.0.13",
+  "version": "0.0.15",
   "private": true,
   "description": "LoreCard - Social-Emotional Learning Badges for Tabletop RPG Players",
   "scripts": {
@@ -12,10 +12,10 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/netlify": "5.5.4",
+    "@astrojs/netlify": "7.0.3",
     "@learncard/init": "workspace:*",
     "@learncard/partner-connect": "workspace:*",
-    "astro": "4.16.19"
+    "astro": "6.0.6"
   },
   "devDependencies": {
     "prettier-plugin-astro": "^0.5.4"

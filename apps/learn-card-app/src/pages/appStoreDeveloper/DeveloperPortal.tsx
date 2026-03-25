@@ -31,12 +31,18 @@ const DeveloperPortal: React.FC = () => {
         useListingsForIntegration,
         useDeleteListing,
         useSubmitForReview,
+        useUnsubmitForReview,
     } = useDeveloperPortal();
 
-    const { data: listings, isLoading: isLoadingListings, refetch: refetchListings } = useListingsForIntegration(currentIntegrationId);
+    const {
+        data: listings,
+        isLoading: isLoadingListings,
+        refetch: refetchListings,
+    } = useListingsForIntegration(currentIntegrationId);
 
     const deleteMutation = useDeleteListing();
     const submitMutation = useSubmitForReview();
+    const unsubmitMutation = useUnsubmitForReview();
 
     // If no integration ID in URL, redirect to landing page
     if (!currentIntegrationId && !isLoadingIntegrations) {
@@ -64,6 +70,10 @@ const DeveloperPortal: React.FC = () => {
 
     const handleSubmitForReview = async (listingId: string) => {
         await submitMutation.mutateAsync(listingId);
+    };
+
+    const handleUnsubmitForReview = async (listingId: string) => {
+        await unsubmitMutation.mutateAsync(listingId);
     };
 
     const handleRefresh = () => {
@@ -122,6 +132,7 @@ const DeveloperPortal: React.FC = () => {
                         onCreateNew={handleCreateNew}
                         onEditListing={handleEditListing}
                         onSubmitForReview={handleSubmitForReview}
+                        onUnsubmitForReview={handleUnsubmitForReview}
                         onDeleteListing={handleDeleteListing}
                     />
                 </div>

@@ -21,6 +21,7 @@ Then, either instantiate a LearnCard Network enabled LearnCard, or add the Netwo
 {% tabs %}
 {% tab title="Direct Instantiation" %}
 {% code lineNumbers="true" %}
+
 ```typescript
 import { initLearnCard } from '@learncard/init';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
@@ -31,10 +32,12 @@ const networkLearnCard = await initLearnCard({
     didkit,
 });
 ```
+
 {% endcode %}
 {% endtab %}
 
 {% tab title="Add Plugin" %}
+
 ```typescript
 import { initLearnCard } from '@learncard/init';
 import { getLearnCardNetworkPlugin } from '@learncard/network-plugin';
@@ -51,12 +54,32 @@ const networkLearnCard = await learnCard.addPlugin(
     await getLearnCardNetworkPlugin(learnCard, lcnAPI)
 );
 ```
+
 {% endtab %}
 {% endtabs %}
 
 When using the LearnCard Network Plugin, challenge-based DID Authentication is handled for you, so no further steps are necessary.
 
-#### 2.  Using a [scoped API Token](../../how-to-guides/deploy-infrastructure/generate-api-tokens.md)
+#### Guardian-gated routes (child / managed profiles)
+
+Some Network routes are **guardian-gated** for child (managed) profiles. When calling those routes, the client can optionally include a guardian approval token in an `x-guardian-approval` header.
+
+This header value is a **JWT Verifiable Presentation** (VP) created by a guardian profile, and it is validated server-side. If the header is missing or invalid, the route will behave as if `hasGuardianApproval = false`.
+
+If you want the Network Plugin to attach this header automatically, pass a `guardianApprovalGetter` option:
+
+```typescript
+const networkLearnCard = await learnCard.addPlugin(
+    await getLearnCardNetworkPlugin(learnCard, lcnAPI, {
+        guardianApprovalGetter: async () => {
+            // Return a JWT VP string (or undefined if no approval is available)
+            return undefined;
+        },
+    })
+);
+```
+
+#### 2. Using a [scoped API Token](../../how-to-guides/deploy-infrastructure/generate-api-tokens.md)
 
 ```typescript
 // Step 1: Create an AuthGrant with specific permissions
@@ -83,6 +106,8 @@ const response = await fetch(
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
+            // Optional: include guardian approval when calling guardian-gated routes
+            // 'x-guardian-approval': guardianApprovalJwtVp,
         },
         body: JSON.stringify(payload),
     }
@@ -147,28 +172,36 @@ sequenceDiagram
 If you choose to use the API endpoints directly, you'll need to manage challenge-based DID Authentication for each request. Here's a simplified TypeScript example to help you implement this authentication method:
 
 ```typescript
- 
 async function getClient(
-  url = 'https://network.learncard.com/api': string,
-  didAuthFunction: (challenge?: string) => Promise<string>
+    url: string = 'https://network.learncard.com/api',
+    didAuthFunction: (challenge?: string) => Promise<string>,
+    guardianApprovalGetter?: () => string | undefined | Promise<string | undefined>
 ) {
-  let challenges: string[] = [];
+    let challenges: string[] = [];
 
-  const getChallenges = async (amount = 95 + Math.round((Math.random() - 0.5) * 5)): Promise<string[]> => {
-    // Call the API to get a list of challenges
-    // Replace this line with your preferred way of making API calls
-    const response = await fetch(url + "/challenges?amount=" + amount);
-    return await response.json();
-  };
+    const getChallenges = async (
+        amount = 95 + Math.round((Math.random() - 0.5) * 5)
+    ): Promise<string[]> => {
+        // Call the API to get a list of challenges
+        // Replace this line with your preferred way of making API calls
+        const response = await fetch(url + '/challenges?amount=' + amount);
+        return await response.json();
+    };
 
-  challenges = await getChallenges();
+    challenges = await getChallenges();
 
-  async function getAuthHeaders() {
-    if (challenges.length === 0) challenges.push(...(await getChallenges()));
-    return { Authorization: `Bearer ${await didAuthFunction(challenges.pop())}` };
-  }
+    async function getAuthHeaders() {
+        if (challenges.length === 0) challenges.push(...(await getChallenges()));
+        const guardianApproval = guardianApprovalGetter
+            ? await guardianApprovalGetter()
+            : undefined;
+        return {
+            Authorization: `Bearer ${await didAuthFunction(challenges.pop())}`,
+            ...(guardianApproval ? { 'x-guardian-approval': guardianApproval } : {}),
+        };
+    }
 
-  // Use getAuthHeaders in your API calls to set the Authorization header
+    // Use getAuthHeaders in your API calls to set the Authorization header
 }
 
 export default getClient;
@@ -205,4 +238,3 @@ Each API endpoint requires specific scopes for authorization:
 | `signingAuthorities:write` | Manage signing authorities | `registerSigningAuthority`       |
 
 The authorization system also supports wildcard scopes like `*:read` (read access to all resources) and `*:*` (full access).
-

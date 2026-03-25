@@ -1,5 +1,6 @@
 export enum AdminToolOptionsEnum {
     API_TOKENS = 'API Tokens',
+    LEARNER_CONTEXT_TEST = 'Learner Context Test',
     SIGNING_AUTHORITY = 'Signing Authority',
     NETWORKS = 'Networks',
     STORAGE = 'Storage',
@@ -51,6 +52,14 @@ export const developerToolOptions: AdminToolOption[] = [
     },
     {
         id: 2,
+        label: 'Learner Context Test UX',
+        title: 'Learner Context Test UX',
+        description: 'Pick wallet credentials, choose a backend URL, and inspect formatter output.',
+        actionLabel: 'Open Test UX',
+        type: AdminToolOptionsEnum.LEARNER_CONTEXT_TEST,
+    },
+    {
+        id: 3,
         label: 'Signing Authorities',
         title: 'Signing Authorities',
         description: 'Manage your credential signing infrastructure.',
@@ -58,7 +67,7 @@ export const developerToolOptions: AdminToolOption[] = [
         type: AdminToolOptionsEnum.SIGNING_AUTHORITY,
     },
     {
-        id: 3,
+        id: 4,
         label: 'Networks',
         title: 'Networks',
         description: 'Select your preferred network environment.',
@@ -66,7 +75,7 @@ export const developerToolOptions: AdminToolOption[] = [
         type: AdminToolOptionsEnum.NETWORKS,
     },
     {
-        id: 4,
+        id: 5,
         label: 'Storage',
         title: 'Storage',
         description: 'Configure your data storage settings.',
@@ -74,7 +83,7 @@ export const developerToolOptions: AdminToolOption[] = [
         type: AdminToolOptionsEnum.STORAGE,
     },
     {
-        id: 5,
+        id: 6,
         label: 'Sync All Credentials to Contracts',
         title: 'Sync All Credentials to Contracts',
         description:
@@ -83,7 +92,7 @@ export const developerToolOptions: AdminToolOption[] = [
         type: AdminToolOptionsEnum.SYNC_ALL_CREDENTIALS,
     },
     {
-        id: 6,
+        id: 7,
         label: 'Developer CLI',
         title: 'LearnCard CLI',
         description: 'Interactive terminal for exploring and testing the LearnCard API.',

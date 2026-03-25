@@ -1,5 +1,25 @@
 # learn-card-core
 
+## 2.3.15
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.11
+    -   @learncard/helpers@1.2.11
+    -   @learncard/learn-cloud-client@1.6.15
+    -   @learncard/didkit-plugin@1.8.1
+
+## 2.3.14
+
+### Patch Changes
+
+-   Updated dependencies [[`50fa611b714ae47fa3d6d56e7751ba59b5b71322`](https://github.com/learningeconomy/LearnCard/commit/50fa611b714ae47fa3d6d56e7751ba59b5b71322), [`34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c`](https://github.com/learningeconomy/LearnCard/commit/34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c)]:
+    -   @learncard/helpers@1.2.10
+    -   @learncard/didkit-plugin@1.8.0
+    -   @learncard/learn-cloud-client@1.6.14
+    -   @learncard/core@9.4.10
+
 ## 2.3.13
 
 ### Patch Changes

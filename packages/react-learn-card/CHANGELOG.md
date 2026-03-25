@@ -1,5 +1,21 @@
 # @welibraryos/react-learn-card
 
+## 2.9.18
+
+### Patch Changes
+
+-   [#1097](https://github.com/learningeconomy/LearnCard/pull/1097) [`26de4ce53c2e8b6c2bb3e461789e976178250179`](https://github.com/learningeconomy/LearnCard/commit/26de4ce53c2e8b6c2bb3e461789e976178250179) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1674 - Enhance CLR Credential
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.9
+
+## 2.9.17
+
+### Patch Changes
+
+-   Updated dependencies [[`50fa611b714ae47fa3d6d56e7751ba59b5b71322`](https://github.com/learningeconomy/LearnCard/commit/50fa611b714ae47fa3d6d56e7751ba59b5b71322)]:
+    -   @learncard/init@2.3.8
+
 ## 2.9.16
 
 ### Patch Changes

@@ -50,77 +50,126 @@ jobs:
             ### Monorepo Context
 
             This is a pnpm + Nx monorepo. Key areas:
-            - `services/` — Production backend services (brain-service, lca-api, learn-cloud-service, simple-signing-service). These handle auth, credentials, signing, Neo4j/MongoDB data, and serverless deployment. **High risk.**
-            - `packages/learn-card-types/` — Shared Zod validators and types used across the entire stack. Changes here ripple everywhere. **High risk.**
-            - `packages/learn-card-core/` — Core wallet and plugin system. **High risk.**
-            - `packages/learn-card-init/` — Assembles the plugin stack. **High risk.**
-            - `packages/plugins/crypto/`, `packages/plugins/encryption/`, `packages/plugins/didkey/`, `packages/plugins/didkit/` — Cryptographic and DID operations. **High risk.**
-            - `packages/plugins/learn-card-network/` — Network plugin bridging to brain-service (plugin.ts is ~78KB). **High risk.**
-            - `apps/` — Frontend apps (learn-card-app, scouts). Medium risk — user-facing but no server-side auth.
-            - `packages/learn-card-base/` — React hooks, queries, UI components. **Medium risk.**
-            - `packages/react-learn-card/` — React component library. **Medium risk.**
-            - `docs/` — GitBook documentation. **Low risk.**
-            - `examples/` — Example/demo apps. **Low risk.**
-            - `reference/` — Docusaurus reference docs. **Low risk.**
-            - `.changeset/` — Version changeset files. **Low risk.**
-            - `tools/`, `scripts/` — Build tooling and dev scripts. **Low risk.**
+
+            **High risk (never auto-approve):**
+            - `services/` — Production backend services (brain-service, lca-api, learn-cloud-service, simple-signing-service). Auth, credentials, signing, Neo4j/MongoDB, serverless deployment.
+            - `packages/learn-card-types/` — Shared Zod validators and types used across the entire stack.
+            - `packages/learn-card-core/` — Core wallet/plugin system.
+            - `packages/learn-card-init/` — Assembles the plugin stack.
+            - `packages/plugins/crypto/`, `packages/plugins/encryption/`, `packages/plugins/didkey/`, `packages/plugins/didkit/` — Cryptographic and DID operations.
+            - `packages/plugins/learn-card-network/` — Network plugin bridging to brain-service.
+
+            **Medium risk (auto-approvable in Lane 3 only):**
+            - `apps/` — Frontend apps (learn-card-app, scouts). User-facing but no server-side auth.
+            - `packages/learn-card-base/` — React hooks, queries, UI components.
+            - `packages/react-learn-card/` — React component library.
+
+            **Low risk (auto-approvable in Lanes 1, 2, 4):**
+            - `docs/` — GitBook documentation.
+            - `examples/` — Example/demo apps.
+            - `reference/` — Docusaurus reference docs.
+            - `.changeset/` — Version changeset files.
+            - `tools/`, `scripts/` — Build tooling and dev scripts.
 
             ### Review Process
 
-            1. **Fetch the diff** using `gh pr diff $PR_NUMBER` and the file list with `gh pr view $PR_NUMBER --json files`.
-            2. **Review the code** for correctness, style, and potential issues. Leave inline comments for anything notable. Follow the project style: strict TypeScript, arrow functions, named imports, 4-space JSX indentation.
-            3. **Evaluate Auto-Approval eligibility** using the criteria below.
-            4. **Post a summary** with your review findings and your auto-approval decision.
+            1. **Fetch the diff** using `gh pr diff $PR_NUMBER` and the file list with `gh pr view $PR_NUMBER --json files,labels`.
+            2. **Review the code** for correctness, style, and potential issues. Leave inline comments only for actual issues or important observations. Follow the project style: strict TypeScript, arrow functions, named imports, 4-space JSX indentation.
+            3. **Check for hard-stop rules** (see below). If any are triggered, the PR cannot be auto-approved regardless of lane.
+            4. **Determine which approval lane the PR falls into** (if any).
+            5. **Post a summary** with your review findings and your auto-approval decision.
 
-            ### Auto-Approval Criteria
+            ### Hard-Stop Rules (never auto-approve if ANY of these are true)
 
-            A PR is eligible for auto-approval if **ALL** of the following are true:
+            **Blocked labels:**
+            - `do-not-merge`, `needs-manual-review`
 
-            **Size:**
-            - Total lines changed (additions + deletions) ≤ 200
+            **Blocked authors:**
+            - Commits authored by `claude`, `github-actions`, or any bot account
 
-            **No high-risk files are modified:**
-            - `services/` — Any file in brain-service, lca-api, learn-cloud-service, or simple-signing-service (routes, access layers, models, helpers, lambda entry points)
-            - `packages/learn-card-types/src/lcn.ts` — Central type definitions
-            - `packages/learn-card-core/` — Core wallet/plugin system
-            - `packages/learn-card-init/` — Plugin stack initialization
-            - `packages/plugins/crypto/`, `packages/plugins/encryption/`, `packages/plugins/didkey/`, `packages/plugins/didkit/` — Crypto/DID plugins
-            - `packages/plugins/learn-card-network/src/plugin.ts` or `types.ts` — Network plugin
-            - `Dockerfile*`, `serverless*.yml`, `compose*.yaml`, `lambda.ts` — Infrastructure/deployment
-            - `.github/workflows/` — CI/CD pipelines
-            - Root monorepo config: `nx.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, root `package.json`
-            - `heroku.yml`, `Procfile` — Deployment
+            **Blocked labels opt-in override:**
+            - If the PR has the label `auto-approve/docs`, `auto-approve/tests`, `auto-approve/ui`, or `auto-approve/tooling`, the lane check is still performed — the label is a signal, not a bypass. If files don't match the claimed lane, do NOT approve.
 
-            **No dangerous content patterns in the diff:**
-            - New tRPC procedures or HTTP endpoints being added
-            - Changes to access control, permissions, roles, or Neo4j relationship queries
-            - Removal or weakening of existing tests (deleting assertions, skipping tests)
-            - `eval()`, `dangerouslySetInnerHTML`, or `innerHTML` usage
+            **Hard-stop content patterns (if found in the diff, never auto-approve):**
+            - `eval(` usage
+            - `dangerouslySetInnerHTML` or `innerHTML =` usage
             - Hardcoded secrets, API keys, seeds, or private keys
-            - Changes to `CREDENTIAL_RECEIVED`, `CONNECTED_WITH`, or other Neo4j relationship logic
-            - New or modified Zod validators in shared type packages
+            - New tRPC procedures or HTTP endpoint definitions being added
+            - Auth, permission, or role enforcement code being changed
+            - `Dockerfile*`, `serverless*.yml`, `compose*.yaml`, `lambda.ts` changes
+            - `.github/workflows/` changes
+            - Root monorepo config changes: `nx.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, root `package.json`
+            - `heroku.yml`, `Procfile` changes
+            - Removal or weakening of existing tests (deleting assertions, `.skip`, commenting out tests)
 
-            **Typical auto-approvable PRs:**
-            - Documentation changes (`docs/`, `*.md`, `AGENTS.md`, `CLAUDE.md`)
-            - New or expanded tests in `test/` or `tests/` directories (not removing/weakening)
-            - Changeset files (`.changeset/*.md`)
-            - Example app changes (`examples/`)
-            - Reference doc changes (`reference/`)
-            - Minor UI tweaks in `apps/` (styling, copy, component layout) under 200 lines
-            - React component or hook changes in `packages/react-learn-card/` or `packages/learn-card-base/` that are clearly cosmetic or additive
-            - Typo, formatting, or comment-only changes anywhere
-            - Build script or tooling changes in `tools/`, `scripts/`
-            - Non-security package.json dependency bumps within individual packages (patch/minor only)
+            **Always-blocked paths (never auto-approve if touched):**
+            - `services/` — any file
+            - `packages/learn-card-types/` — any file
+            - `packages/learn-card-core/` — any file
+            - `packages/learn-card-init/` — any file
+            - `packages/plugins/crypto/`, `packages/plugins/encryption/`, `packages/plugins/didkey/`, `packages/plugins/didkit/`
+            - `packages/plugins/learn-card-network/src/plugin.ts` or `types.ts`
 
-            ### Decision
+            ### Auto-Approval Lanes
 
-            - **If eligible:** Approve the PR with `gh pr review $PR_NUMBER --approve --body "Auto-approved: <one-line reason>"`.
-            - **If NOT eligible:** Do NOT approve. Post a review comment explaining why it doesn't qualify and list any issues found. Use `gh pr review $PR_NUMBER --comment --body "<review>"`.
-            - **If borderline:** Do NOT approve, but note in your review that the PR is close to auto-approvable and explain what would need to change.
+            A PR may be auto-approved if it matches **one** of these lanes and triggers **no** hard-stop rules.
+
+            **Lane 1 — Docs / reference / metadata**
+            - All changed files are in `docs/`, `reference/`, `.changeset/`, or are `*.md` / `*.mdx` files anywhere in the repo.
+            - No code, workflow, infrastructure, or dependency lockfile changes.
+            - LOC limit: ≤ 1000 lines changed (additions + deletions).
+            - Label hint: `auto-approve/docs`
+
+            **Lane 2 — Tests only**
+            - All changed files are test files (`*.test.ts`, `*.spec.ts`, `*.test.tsx`, `*.spec.tsx`) or test fixtures/helpers under `test/`, `tests/`, or `__tests__/` directories.
+            - No production code changed (exception: test-support utilities under test directories are fine).
+            - No tests are skipped, deleted, or weakened.
+            - LOC limit: ≤ 600 lines changed.
+            - Label hint: `auto-approve/tests`
+
+            **Lane 3 — Low-risk UI / frontend**
+            - All changed files are in `apps/`, `packages/react-learn-card/`, or `packages/learn-card-base/`.
+            - None of the changed files match these risky filename patterns: `*authentication*`, `*authorization*`, `*permission*`, `*access*`, `*provider*` (auth providers), `*client*` (API clients), `*query*` (react-query definitions), `*api*`, `*network*`, `*env*`, `*secret*`, `*credentials*` (credential issuance/verification logic — display-only is fine).
+            - Changes are presentational: JSX/TSX component markup, CSS/SCSS/Tailwind styles, copy/text, layout, stories (`*.stories.tsx`), or additive UI behavior.
+            - No dangerous content patterns.
+            - LOC limit: ≤ 400 lines changed.
+            - Label hint: `auto-approve/ui`
+
+            **Lane 4 — Low-risk tooling / examples / config**
+            - All changed files are in `examples/`, `tools/`, `scripts/`, or are package-local config files (non-root `package.json`, `tsconfig.json`, `.eslintrc*`, `.prettierrc*`, `project.json`, `vite.config.*`, `jest.config.*`).
+            - No deploy, infra, workflow, root workspace, or secret-related changes.
+            - Dependency bumps in package-local `package.json` are OK if patch/minor only (no major version bumps).
+            - LOC limit: ≤ 500 lines changed.
+            - Label hint: `auto-approve/tooling`
+
+            ### Manual-Review Markers (do not auto-approve, but not alarming)
+
+            These indicate the PR needs human review but is not inherently suspicious:
+            - Shared Zod validator changes (`packages/learn-card-types/`)
+            - Network client or query layer changes
+            - Major dependency version bumps
+            - Package exports or public API surface changes
+            - Cross-cutting changes spanning more than one risk tier
+            - Changes that don't fit neatly into any lane
+
+            When you encounter these, say so clearly: "This PR needs manual review because [reason], but nothing concerning was found."
+
+            ### Decision (3-state model)
+
+            **Approve** — PR matches a lane, passes all hard-stop checks, and is within LOC limits:
+            `gh pr review $PR_NUMBER --approve --body "Auto-approved (Lane N — <lane name>): <one-line reason>"`
+
+            **Comment-only / manual review required** — PR is outside auto-approval scope but nothing is wrong:
+            `gh pr review $PR_NUMBER --comment --body "<concise summary of review findings and why manual review is needed>"`
+
+            **Flag concern** — PR contains something that looks risky, suspicious, or incorrect:
+            `gh pr review $PR_NUMBER --comment --body "⚠️ <description of concern>\n\n<rest of review>"`
 
             ### Important Rules
 
             - NEVER auto-approve your own changes (commits authored by `claude` or `github-actions`).
-            - NEVER auto-approve PRs labeled `do-not-merge` or `needs-manual-review`.
-            - When in doubt, do NOT approve. It is always safe to leave a thorough review without approving.
-            - Always be transparent about why you are or are not auto-approving.
+            - NEVER auto-approve if any hard-stop rule is triggered, even if a label suggests otherwise.
+            - A label like `auto-approve/docs` is a hint, not an override. Always verify the files actually match the lane.
+            - When in doubt, choose "comment-only." It is always safe to leave a thorough review without approving.
+            - Keep summaries concise. Only leave inline comments for actual issues, not routine observations.
+            - Always be transparent about which lane matched (or why none did) and your decision rationale.

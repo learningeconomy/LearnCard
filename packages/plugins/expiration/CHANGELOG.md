@@ -1,5 +1,21 @@
 # learn-card-core
 
+## 1.2.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.11
+    -   @learncard/vc-plugin@1.4.7
+
+## 1.2.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.10
+    -   @learncard/vc-plugin@1.4.6
+
 ## 1.2.9
 
 ### Patch Changes

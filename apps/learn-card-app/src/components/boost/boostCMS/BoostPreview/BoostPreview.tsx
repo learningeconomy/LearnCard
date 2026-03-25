@@ -8,6 +8,7 @@ import { boostPreviewStore } from 'learn-card-base';
 import BoostMediaPreview from './BoostMediaPreview';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
+import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 
@@ -66,6 +67,7 @@ export type BoostPreviewProps = {
     existingEndorsements?: VC[];
     previewType?: PreviewTypeEnum;
     isEarnedBoost?: boolean;
+    isClrChildCredential?: boolean;
 };
 
 export const useVerification = (credential: VC) => {
@@ -134,6 +136,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     existingEndorsements,
     previewType,
     isEarnedBoost,
+    isClrChildCredential = false,
 }) => {
     const unwrappedCredential = unwrapBoostCredential(_credential);
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCredential);
@@ -152,12 +155,18 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     const vcVerifications = useVerification(credential);
     const [isFront, setIsFront] = useState(true);
 
-    const verifications =
-        showVerifications && verificationItems && verificationItems.length > 0
-            ? verificationItems
-            : showVerifications
-            ? vcVerifications
-            : [];
+    let verifications: VerificationItem[] = [];
+    if (isClrChildCredential) {
+        verifications = [];
+    } else if (showVerifications && verificationItems && verificationItems.length > 0) {
+        verifications = verificationItems;
+    } else if (showVerifications) {
+        verifications = vcVerifications;
+    }
+
+    const detailVerificationItems = isClrChildCredential ? verificationItems : verifications;
+
+    const selectedCredential = credential;
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
 
@@ -181,17 +190,14 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         // }
         newModal(
             <BoostDetailsSideMenu
-                credential={
-                    credential?.type.includes('ClrCredential')
-                        ? credential?.credentialSubject?.verifiableCredential[0]
-                        : credential
-                }
+                credential={selectedCredential}
                 categoryType={categoryType}
-                verificationItems={verifications}
+                verificationItems={detailVerificationItems}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 displayType={displayType}
                 existingEndorsements={existingEndorsements}
                 isEarnedBoost={isEarnedBoost}
+                isClrChildCredential={isClrChildCredential}
             />,
             {
                 className: '!bg-transparent',
@@ -249,7 +255,13 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                                 verificationItems={verifications}
                                 customThumbComponent={customThumbComponent}
                                 customBodyCardComponent={customBodyCardComponent}
-                                customFooterComponent={customFooterComponent}
+                                customFooterComponent={
+                                    isClrChildCredential ? (
+                                        <VerifiedChildCLRFooter />
+                                    ) : (
+                                        customFooterComponent
+                                    )
+                                }
                                 subjectDID={subjectDID}
                                 subjectImageComponent={subjectImageComponent}
                                 issuerImageComponent={issuerImageComponent}
@@ -287,17 +299,14 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 </footer>
                 {!isMobile && (
                     <BoostDetailsSideBar
-                        credential={
-                            credential?.type.includes('ClrCredential')
-                                ? credential?.credentialSubject?.verifiableCredential[0]
-                                : credential
-                        }
+                        credential={selectedCredential}
                         categoryType={categoryType}
-                        verificationItems={verifications}
+                        verificationItems={detailVerificationItems}
                         customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                         displayType={displayType}
                         existingEndorsements={existingEndorsements}
                         isEarnedBoost={isEarnedBoost}
+                        isClrChildCredential={isClrChildCredential}
                     />
                 )}
             </div>
