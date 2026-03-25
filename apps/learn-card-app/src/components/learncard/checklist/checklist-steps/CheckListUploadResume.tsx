@@ -50,7 +50,13 @@ export const CheckListUploadResume: React.FC = () => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
+    // Restore pending review from store on mount
     useEffect(() => {
+        const pending = checklistStore.get.pendingReview().resume;
+        if (pending && pending.credentials.length > 0) {
+            setParsedCredentials(pending.credentials);
+            setShowReview(true);
+        }
         handleSetResume();
     }, []);
 
@@ -58,6 +64,11 @@ export const CheckListUploadResume: React.FC = () => {
         if (base64Data && rawArtifactCredential) {
             fetchParsedCredentials(UploadTypesEnum.Resume).then(vcs => {
                 if (vcs.length > 0) {
+                    // Persist to store so it survives unmount
+                    checklistStore.set.setPendingReview('resume', {
+                        credentials: vcs,
+                        rawArtifact: rawArtifactCredential,
+                    });
                     setShowReview(true);
                 } else {
                     storeSelectedCredentials([], rawArtifactCredential, UploadTypesEnum.Resume).finally(
@@ -140,7 +151,11 @@ export const CheckListUploadResume: React.FC = () => {
 
     const handleReviewConfirm = async (selectedVcs: any[]) => {
         setIsSavingSelected(true);
-        await storeSelectedCredentials(selectedVcs, rawArtifactCredential, UploadTypesEnum.Resume);
+        // Use rawArtifact from store if component was remounted
+        const pending = checklistStore.get.pendingReview().resume;
+        const artifact = rawArtifactCredential || pending?.rawArtifact;
+        await storeSelectedCredentials(selectedVcs, artifact, UploadTypesEnum.Resume);
+        checklistStore.set.setPendingReview('resume', null);
         setSavedCredentialCount(selectedVcs.length);
         setShowReview(false);
         await handleSetResume();
@@ -150,11 +165,12 @@ export const CheckListUploadResume: React.FC = () => {
     const handleReviewBack = () => {
         setShowReview(false);
         setParsedCredentials([]);
+        checklistStore.set.setPendingReview('resume', null);
     };
 
     const handleEditCredential = (index: number, editedVc: any) => {
-        setParsedCredentials(prev =>
-            prev.map((cred, i) => {
+        setParsedCredentials(prev => {
+            const updated = prev.map((cred, i) => {
                 if (i !== index) return cred;
                 const achievementType = editedVc?.credentialSubject?.achievement?.achievementType;
                 const type = Array.isArray(achievementType) ? achievementType[0] : achievementType;
@@ -168,8 +184,14 @@ export const CheckListUploadResume: React.FC = () => {
                         ...(category ? { category } : {}),
                     },
                 };
-            })
-        );
+            });
+            // Keep store in sync with edits
+            const pending = checklistStore.get.pendingReview().resume;
+            if (pending) {
+                checklistStore.set.setPendingReview('resume', { ...pending, credentials: updated });
+            }
+            return updated;
+        });
     };
 
     let buttonText = resume ? 'Update' : 'Add';

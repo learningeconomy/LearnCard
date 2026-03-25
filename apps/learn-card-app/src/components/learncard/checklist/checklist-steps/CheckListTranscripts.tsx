@@ -49,7 +49,13 @@ export const CheckListTranscripts: React.FC = () => {
 
     const [transcripts, setTranscripts] = useState<TranscriptType[]>([]);
 
+    // Restore pending review from store on mount
     useEffect(() => {
+        const pending = checklistStore.get.pendingReview().transcript;
+        if (pending && pending.credentials.length > 0) {
+            setParsedCredentials(pending.credentials);
+            setShowReview(true);
+        }
         handleSetTranscripts();
     }, []);
 
@@ -57,6 +63,12 @@ export const CheckListTranscripts: React.FC = () => {
         if (base64Datas?.length > 0 && rawArtifactCredentials?.length > 0) {
             fetchParsedCredentialsFromFiles(UploadTypesEnum.Transcript).then(vcs => {
                 if (vcs.length > 0) {
+                    const [first, ...rest] = rawArtifactCredentials;
+                    checklistStore.set.setPendingReview('transcript', {
+                        credentials: vcs,
+                        rawArtifact: first,
+                        additionalRawArtifacts: rest.length > 0 ? rest : undefined,
+                    });
                     setShowReview(true);
                 } else {
                     const [first, ...rest] = rawArtifactCredentials;
@@ -146,8 +158,13 @@ export const CheckListTranscripts: React.FC = () => {
 
     const handleReviewConfirm = async (selectedVcs: any[]) => {
         setIsSavingSelected(true);
-        const [first, ...rest] = rawArtifactCredentials;
+        const pending = checklistStore.get.pendingReview().transcript;
+        const first = rawArtifactCredentials?.[0] || pending?.rawArtifact;
+        const rest = rawArtifactCredentials?.length > 1
+            ? rawArtifactCredentials.slice(1)
+            : pending?.additionalRawArtifacts || [];
         await storeSelectedCredentials(selectedVcs, first, UploadTypesEnum.Transcript, rest);
+        checklistStore.set.setPendingReview('transcript', null);
         setSavedCredentialCount(selectedVcs.length);
         setShowReview(false);
         await handleSetTranscripts();
@@ -157,11 +174,12 @@ export const CheckListTranscripts: React.FC = () => {
     const handleReviewBack = () => {
         setShowReview(false);
         setParsedCredentials([]);
+        checklistStore.set.setPendingReview('transcript', null);
     };
 
     const handleEditCredential = (index: number, editedVc: any) => {
-        setParsedCredentials(prev =>
-            prev.map((cred, i) => {
+        setParsedCredentials(prev => {
+            const updated = prev.map((cred, i) => {
                 if (i !== index) return cred;
                 const achievementType = editedVc?.credentialSubject?.achievement?.achievementType;
                 const type = Array.isArray(achievementType) ? achievementType[0] : achievementType;
@@ -175,8 +193,13 @@ export const CheckListTranscripts: React.FC = () => {
                         ...(category ? { category } : {}),
                     },
                 };
-            })
-        );
+            });
+            const pending = checklistStore.get.pendingReview().transcript;
+            if (pending) {
+                checklistStore.set.setPendingReview('transcript', { ...pending, credentials: updated });
+            }
+            return updated;
+        });
     };
 
     let buttonText = transcripts?.length > 0 ? 'Add More' : 'Add';
