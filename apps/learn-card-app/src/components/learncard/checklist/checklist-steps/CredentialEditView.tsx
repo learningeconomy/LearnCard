@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ModalTypes, useModal } from 'learn-card-base';
+import { ModalTypes, useModal, useDeviceTypeByWidth } from 'learn-card-base';
 import { useTheme } from '../../../../theme/hooks/useTheme';
+import DatePickerInput from '../../../date-picker/DatePickerInput';
 import { ParsedCredential } from './CheckListCredentialReviewStep';
 import AchievementTypeSelectorModal, {
     formatAchievementType,
@@ -43,6 +44,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
     const [vc, setVc] = useState<any>(() => JSON.parse(JSON.stringify(credential.vc)));
     const { colors } = useTheme();
     const { newModal, closeModal } = useModal();
+    const { isMobile } = useDeviceTypeByWidth();
     const primaryColor = colors?.defaults?.primaryColor;
 
     const name = getField(vc, 'credentialSubject.achievement.name');
@@ -192,27 +194,29 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                 </div>
 
                 {/* Dates */}
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                     <div className="flex-1">
                         <label className="block text-sm font-semibold text-grayscale-700 mb-1">
                             Start Date
                         </label>
-                        <input
-                            type="date"
+                        <DatePickerInput
                             value={toDateInputValue(getField(vc, 'credentialSubject.activityStartDate'))}
-                            onChange={e => updateField('credentialSubject.activityStartDate', fromDateInputValue(e.target.value))}
-                            className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 focus:outline-none focus:border-grayscale-400"
+                            onChange={date => updateField('credentialSubject.activityStartDate', fromDateInputValue(date))}
+                            isMobile={isMobile}
+                            label="Start Date"
+                            maxDate={toDateInputValue(getField(vc, 'credentialSubject.activityEndDate')) || undefined}
                         />
                     </div>
                     <div className="flex-1">
                         <label className="block text-sm font-semibold text-grayscale-700 mb-1">
                             End Date
                         </label>
-                        <input
-                            type="date"
+                        <DatePickerInput
                             value={toDateInputValue(getField(vc, 'credentialSubject.activityEndDate'))}
-                            onChange={e => updateField('credentialSubject.activityEndDate', fromDateInputValue(e.target.value))}
-                            className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 focus:outline-none focus:border-grayscale-400"
+                            onChange={date => updateField('credentialSubject.activityEndDate', fromDateInputValue(date))}
+                            isMobile={isMobile}
+                            label="End Date"
+                            minDate={toDateInputValue(getField(vc, 'credentialSubject.activityStartDate')) || undefined}
                         />
                     </div>
                 </div>
