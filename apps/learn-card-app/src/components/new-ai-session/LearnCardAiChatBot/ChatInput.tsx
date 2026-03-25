@@ -124,6 +124,7 @@ const ChatInput: React.FC = () => {
                                 <button
                                     onClick={() => {
                                         closeAllModals();
+                                        chatBotStore.set.resetStore();
                                         history.push('/');
                                     }}
                                     className="bg-emerald-700 text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"

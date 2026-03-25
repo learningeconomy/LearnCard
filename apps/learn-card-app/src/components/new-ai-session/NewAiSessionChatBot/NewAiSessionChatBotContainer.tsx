@@ -70,7 +70,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
     const [showLoader, setShowLoader] = useState<boolean>(false);
 
     // If a preselected app is passed in the query or as a prop, use it
-    const preselectedAppId = Number(query.get('selectedAppId')) || selectedApp?.id || null;
+    const preselectedAppId = Number(query.get('selectedAppId')) || Number(selectedApp?.id) || null;
 
     const topicAnswer = chatBotQA.find(
         qa => qa.type === ChatBotQuestionsEnum.TopicSelection
