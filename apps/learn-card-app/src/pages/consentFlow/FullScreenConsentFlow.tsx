@@ -97,6 +97,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     const [step, setStep] = useState<ConsentFlowStep>(
         shouldGetAnAdult ? ConsentFlowStep.getAnAdult : ConsentFlowStep.confirmation
     );
+    const [isPostConsentLocal, setIsPostConsentLocal] = useState(false);
 
     // Guardian gate for child profiles - replaces fragmented usePin logic
     const { guardedAction, isChildProfile } = useGuardianGate({
@@ -146,7 +147,10 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
 
             successCallback?.();
 
-            if (!successCallback || shouldDisableRedirect) {
+            if (isInlineInsightsRequest) {
+                setIsPostConsentLocal(true);
+                setStep(ConsentFlowStep.confirmation);
+            } else if (!successCallback || shouldDisableRedirect) {
                 closeAllModals();
             }
 
@@ -217,8 +221,29 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 }, 301);
             }
         } catch (e) {
+            const err = e as any;
+            const isAlreadyConsented =
+                err?.data?.code === 'CONFLICT' || err?.message?.includes('already consented');
+
+            if (isAlreadyConsented) {
+                successCallback?.();
+
+                if (isInlineInsightsRequest) {
+                    setIsPostConsentLocal(true);
+                    setStep(ConsentFlowStep.confirmation);
+                } else if (!successCallback || shouldDisableRedirect) {
+                    closeAllModals();
+                }
+
+                if (childInsightsProfile && isSwitchedProfile) {
+                    await handleSwitchBackToParentAccount();
+                }
+
+                return;
+            }
+
             console.error(e);
-            presentToast(`Failed to accept contract: ${e.message}`, {
+            presentToast(`Failed to accept contract: ${err.message}`, {
                 type: ToastTypeEnum.Error,
             });
             setStep(ConsentFlowStep.confirmation);
@@ -250,7 +275,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 app={app}
                 handleAccept={handleAccept}
                 isPreview={isPreview}
-                isPostConsent={isPostConsent}
+                isPostConsent={isPostConsent || isPostConsentLocal}
                 hideProfileButton={hideProfileButton}
                 insightsProfile={
                     typeof insightsProfile === 'string' ? _insightsProfile : insightsProfile

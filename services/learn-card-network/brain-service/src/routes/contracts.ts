@@ -916,6 +916,13 @@ export const contractsRouter = t.router({
             }
 
             if (await hasProfileConsentedToContract(profile, contractDetails.contract)) {
+                try {
+                    await upsertRequestedForRelationship(
+                        contractDetails.contract.id,
+                        profile.profileId,
+                        'accepted'
+                    );
+                } catch {}
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: "You've already consented to this contract!",
