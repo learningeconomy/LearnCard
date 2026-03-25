@@ -80,13 +80,14 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
                 </h3>
             </div>
 
-            <div className="px-[3px]">
+            <div className="px-[3px] max-h-[450px] overflow-y-auto">
                 <SkillSearchSelector
                     selectedSkills={selectedSkills}
                     onSelectedSkillsChange={setSelectedSkills}
                     mode="add"
                     shouldCollapseOptions={false}
                     showSuggestSkill={true}
+                    className="pb-[20px]"
                 />
             </div>
 
