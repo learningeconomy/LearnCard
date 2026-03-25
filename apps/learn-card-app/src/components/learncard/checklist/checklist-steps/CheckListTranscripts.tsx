@@ -44,6 +44,7 @@ export const CheckListTranscripts: React.FC = () => {
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
     const [showReview, setShowReview] = useState<boolean>(false);
     const [isSavingSelected, setIsSavingSelected] = useState<boolean>(false);
+    const [savedCredentialCount, setSavedCredentialCount] = useState<number>(0);
 
     const [transcripts, setTranscripts] = useState<TranscriptType[]>([]);
 
@@ -146,6 +147,7 @@ export const CheckListTranscripts: React.FC = () => {
         setIsSavingSelected(true);
         const [first, ...rest] = rawArtifactCredentials;
         await storeSelectedCredentials(selectedVcs, first, UploadTypesEnum.Transcript, rest);
+        setSavedCredentialCount(selectedVcs.length);
         setShowReview(false);
         await handleSetTranscripts();
         setIsSavingSelected(false);
@@ -204,6 +206,27 @@ export const CheckListTranscripts: React.FC = () => {
                             <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
                                 Upload academic transcripts or joint service transcripts.
                             </p>
+
+                            {savedCredentialCount > 0 && (
+                                <div className="w-full flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 mb-4">
+                                    <svg
+                                        className="w-4 h-4 text-emerald-600 shrink-0"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2.5}
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M5 13l4 4L19 7"
+                                        />
+                                    </svg>
+                                    <p className="text-xs text-emerald-700 font-medium">
+                                        {savedCredentialCount} credential{savedCredentialCount !== 1 ? 's' : ''} saved to your wallet.
+                                    </p>
+                                </div>
+                            )}
 
                             <input
                                 multiple
