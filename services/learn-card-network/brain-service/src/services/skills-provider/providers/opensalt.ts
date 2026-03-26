@@ -43,19 +43,21 @@ const toStatus = (value?: string): string => {
     return 'active';
 };
 
-const toType = (value?: string): string => {
-    const normalized = value?.toLowerCase();
-    if (!normalized) return 'skill';
-    if (
-        normalized.includes('cluster') ||
-        normalized.includes('strand') ||
-        normalized.includes('component') ||
-        normalized.includes('grade level')
-    ) {
-        return 'container';
-    }
-    return 'skill';
-};
+// Not reliable enough to use
+//   And doesn't fit what the current UI can handle
+// const toType = (value?: string): string => {
+//     const normalized = value?.toLowerCase();
+//     if (!normalized) return 'skill';
+//     if (
+//         normalized.includes('cluster') ||
+//         normalized.includes('strand') ||
+//         normalized.includes('component') ||
+//         normalized.includes('grade level')
+//     ) {
+//         return 'container';
+//     }
+//     return 'skill';
+// };
 
 const toItemStatement = (item: CfItem): string | undefined => {
     const short = item.abbreviatedStatement?.trim();
