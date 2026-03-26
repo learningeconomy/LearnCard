@@ -2,9 +2,6 @@ import { UnsignedVC } from '@learncard/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import {
-    useModal,
-    useToast,
-    ToastTypeEnum,
     UploadTypesEnum,
     LEARNCARD_AI_URL,
 } from 'learn-card-base';
@@ -60,9 +57,6 @@ export const useFinishAssessmentMutation = () => {
 };
 
 export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
-    const { closeModal } = useModal();
-    const { presentToast } = useToast();
-
     return useMutation({
         mutationFn: async ({
             did,
@@ -96,35 +90,6 @@ export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
                 console.error('Failed to upload resume:', error);
                 throw new Error(error as string);
             }
-        },
-        onSuccess: async () => {
-            closeModal();
-            setTimeout(() => {
-                presentToast(`Your journey is now reflected in portable, trusted credentials.`, {
-                    title: `${fileType} Successfully Parsed`,
-                    hasDismissButton: true,
-                    type: ToastTypeEnum.Success,
-                    hasCheckmark: true,
-                    duration: 5000,
-                });
-            }, 500);
-        },
-        onError: async error => {
-            let message = `Something went wrong uploading your ${fileType}.`;
-
-            if (typeof error === 'object' && error !== null && 'message' in error) {
-                message = (error as any).message ?? message;
-            }
-
-            setTimeout(() => {
-                presentToast(message, {
-                    title: 'Error',
-                    hasDismissButton: true,
-                    type: ToastTypeEnum.Error,
-                    hasX: true,
-                    duration: 5000,
-                });
-            }, 500);
         },
     });
 };
