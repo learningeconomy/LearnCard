@@ -102,22 +102,12 @@ app.post('/api/send', async (req, res) => {
             // brain-service tRPC endpoint instead (server-side signing).
             const networkBase = networkUrl || 'https://api.learncard.com/trpc';
             console.log('Using direct HTTP send (API key mode)...');
-            const tRpcRes = await fetch(`${networkBase}/boost.send?batch=1`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${seed}`,
-                },
-                body: JSON.stringify({ '0': { json: sendArgs } }),
-            });
-            const tRpcData = await tRpcRes.json();
-            // tRPC batch response is an array: [{ result: { data: { json: ... } } }]
-            const batchResult = Array.isArray(tRpcData) ? tRpcData[0] : tRpcData;
-            if (!tRpcRes.ok || batchResult.error) {
-                const errDetail = batchResult.error?.json?.message || batchResult.error?.message || JSON.stringify(batchResult.error || batchResult);
-                throw new Error(`Server send failed: ${errDetail}`);
-            }
-            result = batchResult.result?.data?.json ?? batchResult;
+            // Use brain-client directly for API key mode to avoid SDK local signing.
+            // The SDK's send() tries to sign credentials locally, but API key wallets
+            // have no keypair. brain-client calls the server directly.
+            const { getApiTokenClient } = require('@learncard/network-brain-client');
+            const apiClient = await getApiTokenClient(networkBase, seed);
+            result = await apiClient.boost.send.mutate(sendArgs);
         } else {
             // Seed mode: has local signing keys, use SDK normally
             result = await wallet.invoke.send(sendArgs);
