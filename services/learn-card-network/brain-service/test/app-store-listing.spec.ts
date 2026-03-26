@@ -19,6 +19,7 @@ import { updateAppStoreListing } from '@accesslayer/app-store-listing/update';
 import { deleteAppStoreListing } from '@accesslayer/app-store-listing/delete';
 import {
     associateListingWithIntegration,
+    associateListingWithSubmitter,
     installAppForProfile,
 } from '@accesslayer/app-store-listing/relationships/create';
 import {
@@ -29,6 +30,7 @@ import {
     getIntegrationForListing,
     getProfilesInstalledApp,
     countProfilesInstalledApp,
+    getSubmitterForListing,
 } from '@accesslayer/app-store-listing/relationships/read';
 import { createIntegration } from '@accesslayer/integration/create';
 import { associateIntegrationWithProfile } from '@accesslayer/integration/relationships/create';
@@ -596,6 +598,7 @@ describe('AppStoreListing', () => {
                 );
 
                 await associateListingWithIntegration(listing.listing_id, integration.id);
+                await associateListingWithSubmitter(listing.listing_id, 'usera');
 
                 const results = await getListedAppsWithSubmitter({ limit: 10 });
                 const found = results.find(l => l.listing_id === listing.listing_id);
@@ -870,10 +873,11 @@ describe('AppStoreListing', () => {
                 const integrationId = await seedIntegrationViaRouter(userA);
                 const listingId = await seedListingViaRouter(userA, integrationId);
 
-                // Verify starts as DRAFT with no submitted_at
+                // Verify starts as DRAFT with no submitted_at on relationship
                 const before = await readAppStoreListingById(listingId);
                 expect(before?.app_listing_status).toBe('DRAFT');
-                expect(before?.submitted_at).toBeUndefined();
+                const submitterBefore = await getSubmitterForListing(listingId);
+                expect(submitterBefore?.submittedAt).toBeUndefined();
 
                 // Submit for review
                 const result = await userA.clients.fullAuth.appStore.submitForReview({
@@ -881,11 +885,12 @@ describe('AppStoreListing', () => {
                 });
                 expect(result).toBe(true);
 
-                // Verify status changed to PENDING_REVIEW and submitted_at is set
+                // Verify status changed to PENDING_REVIEW and submitted_at is set on relationship
                 const after = await readAppStoreListingById(listingId);
                 expect(after?.app_listing_status).toBe('PENDING_REVIEW');
-                expect(after?.submitted_at).toBeDefined();
-                expect(typeof after?.submitted_at).toBe('string');
+                const submitterAfter = await getSubmitterForListing(listingId);
+                expect(submitterAfter?.submittedAt).toBeDefined();
+                expect(typeof submitterAfter?.submittedAt).toBe('string');
             });
 
             it('rejects submission of non-DRAFT listings', async () => {
