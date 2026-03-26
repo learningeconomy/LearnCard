@@ -110,16 +110,45 @@ app.post('/api/send', async (req, res) => {
     }
 });
 
-// POST /api/init - Just initialize and return the DID (for testing connection)
+// POST /api/init - Initialize wallet and verify profile resolves
 app.post('/api/init', async (req, res) => {
     const { seed, networkUrl } = req.body;
     if (!seed) return res.status(400).json({ error: 'API key or seed is required' });
 
     try {
+        // Clear cache to force fresh init
+        const cacheKey = `${seed}:${networkUrl || 'default'}`;
+        walletCache.delete(cacheKey);
+
         const wallet = await getWallet(seed, networkUrl);
+
         let did = '';
-        try { did = wallet.id.did(); } catch { /* API key mode */ }
-        res.json({ success: true, did: did || '(API key mode — DID resolved server-side)' });
+        try { did = wallet.id.did(); } catch { /* API key mode — no local DID */ }
+
+        // Actually verify the profile resolves (this is the real test)
+        const profile = await wallet.invoke.getProfile();
+        if (profile && profile.profileId) {
+            console.log('Init verified — profile:', profile.profileId, 'displayName:', profile.displayName);
+            res.json({
+                success: true,
+                did: profile.did || did || '(unknown)',
+                profileId: profile.profileId,
+                displayName: profile.displayName,
+            });
+        } else {
+            console.warn('Init: wallet created but getProfile() returned:', profile);
+            walletCache.delete(cacheKey);
+            res.json({
+                success: false,
+                error: 'Wallet initialized but profile could not be resolved. The API token may not be associated with a valid account on this network.',
+                did: did || '(none)',
+                debug: {
+                    isApiKey: seed.startsWith('eyJ'),
+                    networkUrl: networkUrl || '(default/production)',
+                    profileResult: profile === undefined ? 'undefined' : profile === null ? 'null' : 'empty object',
+                },
+            });
+        }
     } catch (err) {
         console.error('Init failed:', err);
         res.status(500).json({ error: err.message });
