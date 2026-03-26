@@ -277,12 +277,13 @@ export const getListedAppsWithSubmitter = async ({
     const result = await neogma.queryRunner.run(
         `MATCH (listing:AppStoreListing)
          ${whereClause}
-         OPTIONAL MATCH (listing)<-[:PUBLISHES_LISTING]-(i:Integration)-[:CREATED_BY]->(p:Profile)
+         OPTIONAL MATCH (listing)<-[submitted:SUBMITTED_LISTING]-(p:Profile)
          OPTIONAL MATCH (p)-[:HAS_CONTACT_METHOD]->(cm:ContactMethod {type: 'email', isPrimary: true})
          RETURN listing, 
                 p.profileId AS submitterProfileId, 
                 p.displayName AS submitterDisplayName, 
-                COALESCE(p.email, cm.value) AS submitterEmail
+                COALESCE(p.email, cm.value) AS submitterEmail,
+                submitted.submitted_at AS submittedAt
          ORDER BY listing.promotion_level ASC, listing.listing_id DESC
          LIMIT $limit`,
         params
@@ -293,8 +294,14 @@ export const getListedAppsWithSubmitter = async ({
         const submitterProfileId = record.get('submitterProfileId');
         const submitterDisplayName = record.get('submitterDisplayName');
         const submitterEmail = record.get('submitterEmail');
+        const submittedAt = record.get('submittedAt');
 
         const inflatedListing = inflateObject<AppStoreListingType>(listing as any);
+
+        // Include submitted_at from relationship or node fallback
+        if (submittedAt) {
+            inflatedListing.submitted_at = submittedAt;
+        }
 
         if (submitterProfileId) {
             return {
