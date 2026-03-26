@@ -32,4 +32,5 @@ node_modules
 .superpowers/
 docs/superpowers/plans/
 docs/superpowers/specs/
+docs/superpowers
 .github/copilot-instructions.md

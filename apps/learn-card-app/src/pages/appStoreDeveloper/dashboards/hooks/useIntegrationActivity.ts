@@ -184,13 +184,19 @@ export interface IntegrationActivityResult {
  * @param templates - Credential templates to filter by (optional)
  * @param options.limit - Maximum number of activities to fetch
  * @param options.integrationId - Filter activities by integration ID for accurate per-integration stats
+ * @param options.listingId - Filter activities by app listing ID for per-app stats
  * @param options.eventType - Filter activities by event type (optional)
  */
 export function useIntegrationActivity(
     templates: CredentialTemplate[],
-    options: { limit?: number; integrationId?: string; eventType?: CredentialEventType } = {}
+    options: {
+        limit?: number;
+        integrationId?: string;
+        listingId?: string;
+        eventType?: CredentialEventType;
+    } = {}
 ): IntegrationActivityResult {
-    const { limit = 25, integrationId, eventType } = options;
+    const { limit = 25, integrationId, listingId, eventType } = options;
     const { initWallet } = useWallet();
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
@@ -226,19 +232,24 @@ export function useIntegrationActivity(
                 const wallet = await initWalletRef.current();
 
                 // Fetch activity records using unified API
-                // Use integrationId for server-side filtering when available
+                // Use integrationId/listingId for server-side filtering when available
                 const activityResult = await (wallet.invoke as any).getMyActivities?.({
                     limit,
                     integrationId,
+                    listingId,
                     eventType,
                 });
 
-                // Fetch stats using unified API with integrationId for accurate per-integration stats
-                // When integrationId is provided, don't also filter by boostUris — it's redundant
+                // Fetch stats using unified API with integrationId/listingId for accurate per-integration/app stats
+                // When integrationId or listingId is provided, don't also filter by boostUris — it's redundant
                 // and excludes activities without a FOR_BOOST relationship (e.g. embed claims)
                 const statsResult = await (wallet.invoke as any).getActivityStats?.({
-                    boostUris: !integrationId && boostUris.length > 0 ? boostUris : undefined,
+                    boostUris:
+                        !integrationId && !listingId && boostUris.length > 0
+                            ? boostUris
+                            : undefined,
                     integrationId,
+                    listingId,
                 });
 
                 if (cancelled) return;
@@ -287,7 +298,7 @@ export function useIntegrationActivity(
         return () => {
             cancelled = true;
         };
-    }, [boostUris.join(','), limit, integrationId, eventType, fetchKey]);
+    }, [boostUris.join(','), limit, integrationId, listingId, eventType, fetchKey]);
 
     const refetch = useCallback(() => {
         setCursor(undefined);
@@ -307,6 +318,7 @@ export function useIntegrationActivity(
                 limit,
                 cursor,
                 integrationId,
+                listingId,
                 eventType,
             });
 
@@ -323,7 +335,7 @@ export function useIntegrationActivity(
         } finally {
             setIsLoadingMore(false);
         }
-    }, [isLoadingMore, hasMore, cursor, limit, integrationId, eventType]);
+    }, [isLoadingMore, hasMore, cursor, limit, integrationId, listingId, eventType]);
 
     return { activity, isLoading, isLoadingMore, hasMore, error, refetch, loadMore, stats };
 }

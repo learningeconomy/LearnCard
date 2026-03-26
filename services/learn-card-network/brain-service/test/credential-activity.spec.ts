@@ -2,7 +2,7 @@ import { vi } from 'vitest';
 
 import { getClient, getUser } from './helpers/getClient';
 import { testVc } from './helpers/send';
-import { Profile, Credential, CredentialActivity } from '@models';
+import { Profile, Credential, CredentialActivity, AppStoreListing } from '@models';
 import * as Notifications from '@helpers/notifications.helpers';
 import { addNotificationToQueueSpy } from './helpers/spies';
 import { createCredentialActivity } from '@accesslayer/credential-activity/create';
@@ -30,6 +30,7 @@ describe('Credential Activity', () => {
         await Profile.delete({ detach: true, where: {} });
         await Credential.delete({ detach: true, where: {} });
         await CredentialActivity.delete({ detach: true, where: {} });
+        await AppStoreListing.delete({ detach: true, where: {} });
 
         await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
         await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
@@ -41,6 +42,7 @@ describe('Credential Activity', () => {
         await Profile.delete({ detach: true, where: {} });
         await Credential.delete({ detach: true, where: {} });
         await CredentialActivity.delete({ detach: true, where: {} });
+        await AppStoreListing.delete({ detach: true, where: {} });
     });
 
     describe('createCredentialActivity', () => {
@@ -394,6 +396,106 @@ describe('Credential Activity', () => {
             expect(allStats.delivered).toBeGreaterThanOrEqual(2);
         });
 
+        it('should filter stats by listingId', async () => {
+            const listingId = 'stats-listing-test';
+
+            // Create the AppStoreListing first so the relationship can be created
+            await AppStoreListing.createOne({
+                listing_id: listingId,
+                display_name: 'Test Listing',
+                tagline: 'Test tagline',
+                full_description: 'Test description',
+                icon_url: 'https://example.com/icon.png',
+                app_listing_status: 'LISTED',
+                launch_type: 'EMBEDDED_IFRAME',
+                launch_config_json: '{}',
+            });
+
+            // Create activities with listingId (via PERFORMED_BY_LISTING relationship)
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'appEvent',
+                listingId,
+            });
+
+            // Create activity without listingId
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'send',
+            });
+
+            const filteredStats = await getActivityStatsForProfile('usera', { listingId });
+            const allStats = await getActivityStatsForProfile('usera');
+
+            expect(filteredStats.delivered).toBe(1);
+            expect(allStats.delivered).toBeGreaterThanOrEqual(2);
+        });
+
+        it('should filter activities by listingId including chained events', async () => {
+            const listingId = 'activities-listing-test';
+
+            // Create the AppStoreListing first so the relationship can be created
+            await AppStoreListing.createOne({
+                listing_id: listingId,
+                display_name: 'Test Listing',
+                tagline: 'Test tagline',
+                full_description: 'Test description',
+                icon_url: 'https://example.com/icon.png',
+                app_listing_status: 'LISTED',
+                launch_type: 'EMBEDDED_IFRAME',
+                launch_config_json: '{}',
+            });
+
+            // Create initial DELIVERED activity with listingId
+            const activityId = await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'appEvent',
+                listingId,
+            });
+
+            // Create chained CLAIMED activity (same activityId, no listingId on creation)
+            // This simulates how chained events work - only the initial event has the listing relationship
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'CLAIMED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'appEvent',
+                activityId, // Same activityId chains the events together
+            });
+
+            // Create unrelated activity without listingId
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'send',
+            });
+
+            const filteredActivities = await getActivitiesForProfile('usera', {
+                limit: 10,
+                listingId,
+            });
+            const allActivities = await getActivitiesForProfile('usera', { limit: 10 });
+
+            // Should include both DELIVERED and CLAIMED events from the same chain
+            expect(filteredActivities).toHaveLength(2);
+            const eventTypes = filteredActivities.map(a => a.eventType);
+            expect(eventTypes).toContain('DELIVERED');
+            expect(eventTypes).toContain('CLAIMED');
+            expect(allActivities.length).toBeGreaterThanOrEqual(3);
+        });
+
         // Note: boostUri filtering requires FOR_BOOST relationship to actual Boost nodes
         // This is covered in E2E tests where real Boosts are created
     });
@@ -431,9 +533,9 @@ describe('Credential Activity', () => {
             });
 
             it('should not allow unauthenticated access to getActivityStats', async () => {
-                await expect(
-                    noAuthClient.activity.getActivityStats({})
-                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+                await expect(noAuthClient.activity.getActivityStats({})).rejects.toMatchObject({
+                    code: 'UNAUTHORIZED',
+                });
             });
 
             it('should not allow unauthenticated access to getActivity', async () => {
@@ -482,13 +584,17 @@ describe('Credential Activity', () => {
                 });
 
                 // UserA should only see their own activity
-                const userAActivities = await userA.clients.fullAuth.activity.getMyActivities({ limit: 10 });
+                const userAActivities = await userA.clients.fullAuth.activity.getMyActivities({
+                    limit: 10,
+                });
 
                 expect(userAActivities.records).toHaveLength(1);
                 expect(userAActivities.records[0].actorProfileId).toBe('usera');
 
                 // UserB should only see their own activity
-                const userBActivities = await userB.clients.fullAuth.activity.getMyActivities({ limit: 10 });
+                const userBActivities = await userB.clients.fullAuth.activity.getMyActivities({
+                    limit: 10,
+                });
 
                 expect(userBActivities.records).toHaveLength(1);
                 expect(userBActivities.records[0].actorProfileId).toBe('userb');
@@ -542,13 +648,17 @@ describe('Credential Activity', () => {
                 });
 
                 // UserA should be able to get their own activity
-                const ownActivity = await userA.clients.fullAuth.activity.getActivity({ activityId });
+                const ownActivity = await userA.clients.fullAuth.activity.getActivity({
+                    activityId,
+                });
 
                 expect(ownActivity).not.toBeNull();
                 expect(ownActivity?.activityId).toBe(activityId);
 
                 // UserB should NOT be able to get userA's activity
-                const otherActivity = await userB.clients.fullAuth.activity.getActivity({ activityId });
+                const otherActivity = await userB.clients.fullAuth.activity.getActivity({
+                    activityId,
+                });
 
                 expect(otherActivity).toBeNull();
             });
@@ -604,7 +714,9 @@ describe('Credential Activity', () => {
                     activityId,
                 });
 
-                const chain = await userA.clients.fullAuth.activity.getActivityChain({ activityId });
+                const chain = await userA.clients.fullAuth.activity.getActivityChain({
+                    activityId,
+                });
 
                 expect(chain).toHaveLength(2);
                 expect(chain[0]?.eventType).toBe('DELIVERED');
@@ -614,8 +726,8 @@ describe('Credential Activity', () => {
             });
 
             it('should return empty array for non-existent activity chain', async () => {
-                const chain = await userA.clients.fullAuth.activity.getActivityChain({ 
-                    activityId: 'non-existent-id' 
+                const chain = await userA.clients.fullAuth.activity.getActivityChain({
+                    activityId: 'non-existent-id',
                 });
 
                 expect(chain).toHaveLength(0);
@@ -631,12 +743,16 @@ describe('Credential Activity', () => {
                 });
 
                 // UserA should be able to get their own activity chain
-                const ownChain = await userA.clients.fullAuth.activity.getActivityChain({ activityId });
+                const ownChain = await userA.clients.fullAuth.activity.getActivityChain({
+                    activityId,
+                });
 
                 expect(ownChain).toHaveLength(1);
 
                 // UserB should NOT be able to get userA's activity chain
-                const otherChain = await userB.clients.fullAuth.activity.getActivityChain({ activityId });
+                const otherChain = await userB.clients.fullAuth.activity.getActivityChain({
+                    activityId,
+                });
 
                 expect(otherChain).toHaveLength(0);
             });
@@ -662,7 +778,9 @@ describe('Credential Activity', () => {
                     activityId,
                 });
 
-                const chain = await userA.clients.fullAuth.activity.getActivityChain({ activityId });
+                const chain = await userA.clients.fullAuth.activity.getActivityChain({
+                    activityId,
+                });
 
                 expect(chain).toHaveLength(2);
                 expect(chain[0]?.eventType).toBe('CREATED');
