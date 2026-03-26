@@ -216,9 +216,10 @@ https://learncard.app/consent-flow?uri=${encodeURIComponent(contractUri || 'YOUR
                     snippets={{
                         typescript: `import { initLearnCard } from '@learncard/init';
 
-// Initialize LearnCard (do this once at startup)
+// Initialize LearnCard with your API token (do this once at startup)
+// Get your token from the API Tokens tab
 const learnCard = await initLearnCard({
-    seed: process.env.LEARNCARD_SEED!,
+    apiKey: process.env.LEARNCARD_API_TOKEN!,
     network: true,
 });
 
