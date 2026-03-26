@@ -258,6 +258,29 @@ export type BoostCMSAlignment = {
     targetDescription?: string;
     targetCode?: string;
     targetType?: string;
+    frameworkId?: string; // Neo4j framework ID for backend skill linking
+};
+
+export enum FrameworkNodeRole {
+    competency = 'competency',
+    tier = 'tier',
+}
+
+export type SkillFrameworkNode = BoostCMSAlignment & {
+    id?: string;
+    role: FrameworkNodeRole;
+    icon?: string;
+    subskills?: SkillFrameworkNode[];
+};
+
+export type SkillFramework = {
+    id: string;
+    name: string;
+    image?: string;
+    description?: string;
+    networks?: any[];
+    admins?: any[];
+    skills: SkillFrameworkNode[];
 };
 
 export type BoostCMSMemberOptions = {

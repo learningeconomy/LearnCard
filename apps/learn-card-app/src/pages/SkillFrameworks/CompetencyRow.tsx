@@ -164,7 +164,7 @@ const CompetencyRow: React.FC<CompetencyRowProps> = ({
             </div>
             {subskills?.map((subskill, index) => (
                 <div className="flex items-center gap-[10px] pl-[10px]" key={index}>
-                    <CornerDownRightArrow className="w-[25px] h-[25px]" />
+                    <CornerDownRightArrow className="w-[25px] h-[25px] shrink-0" />
 
                     {subskill.role === FrameworkNodeRole.tier ? (
                         <TierRow
