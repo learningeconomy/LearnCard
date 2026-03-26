@@ -96,21 +96,29 @@ app.post('/api/send', async (req, res) => {
         if (integrationId) sendArgs.integrationId = integrationId;
 
         let result;
-        try {
-            result = await wallet.invoke.send(sendArgs);
-        } catch (sendErr) {
-            // API key mode has no local signing keys, so the SDK's local-issuance
-            // path fails with "No plugin supports keypair type undefined".
-            // Retry without templateUri to force the server-side-only path
-            // (brain-service resolves the template and signs server-side).
-            if (sendErr.message?.includes('keypair type')) {
-                console.log('Local issuance not available (API key mode), retrying server-side...');
-                const serverArgs = { ...sendArgs };
-                delete serverArgs.templateUri;
-                result = await wallet.invoke.send(serverArgs);
-            } else {
-                throw sendErr;
+        if (isApiKey(seed)) {
+            // API key mode: no local signing keys, so wallet.invoke.send() fails
+            // when it tries local credential issuance. Use direct HTTP to the
+            // brain-service tRPC endpoint instead (server-side signing).
+            const networkBase = networkUrl || 'https://api.learncard.com/trpc';
+            console.log('Using direct HTTP send (API key mode)...');
+            const tRpcRes = await fetch(`${networkBase}/boost.send`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${seed}`,
+                },
+                body: JSON.stringify({ json: sendArgs }),
+            });
+            const tRpcData = await tRpcRes.json();
+            if (!tRpcRes.ok || tRpcData.error) {
+                const errMsg = tRpcData.error?.json?.message || tRpcData.error?.message || JSON.stringify(tRpcData.error || tRpcData);
+                throw new Error(`Server send failed: ${errMsg}`);
             }
+            result = tRpcData.result?.data?.json ?? tRpcData;
+        } else {
+            // Seed mode: has local signing keys, use SDK normally
+            result = await wallet.invoke.send(sendArgs);
         }
 
         console.log('Send result:', result);
