@@ -254,11 +254,22 @@ When exporting with an event type filter (e.g., "Delivered"), the system returns
 
 Filtering by "Delivered" returns only Credential B.
 
+### Filtering Options
+
+The dashboard supports filtering activity by:
+
+| Filter      | UI Location | Purpose                                           |
+| ----------- | ----------- | ------------------------------------------------- |
+| Event Type  | Dropdown    | Filter by status (Sent, Delivered, Claimed, etc.) |
+| App Listing | Dropdown    | Filter by specific app (only shows if apps exist) |
+
+**App Listing Filter**: When filtering by app listing, the system uses an `EXISTS` clause to find activities that share an `activityId` with any activity that has a `PERFORMED_BY_LISTING` relationship. This ensures chained events (e.g., CLAIMED after DELIVERED) are included even though only the initial event has the listing relationship.
+
 ### CSV Export Flow
 
 ```
 User clicks "Download CSV" → ExportDialog opens →
-Select filters (event type, date range) → Click "Download" →
+Select filters (app listing, event type, date range) → Click "Download" →
 useActivityExport.exportCsv() runs:
   1. Fetch stats (getActivityStats) for progress count
   2. Fetch activities (getMyActivities with groupByLatestStatus: true)
@@ -285,11 +296,11 @@ useActivityExport.exportCsv() runs:
 
 ### Backend Routes
 
-| Route              | Purpose                                                        |
-| ------------------ | -------------------------------------------------------------- |
-| `getMyActivities`  | Paginated activity records with optional `groupByLatestStatus` |
-| `getActivityStats` | Aggregated counts by status (always uses derived status)       |
-| `getActivityChain` | Full event history for a single `activityId`                   |
+| Route              | Purpose                                                                     |
+| ------------------ | --------------------------------------------------------------------------- |
+| `getMyActivities`  | Paginated activity records with optional `groupByLatestStatus`, `listingId` |
+| `getActivityStats` | Aggregated counts by status with optional `listingId` filter                |
+| `getActivityChain` | Full event history for a single `activityId`                                |
 
 ### Backend Implementation
 
