@@ -42,6 +42,11 @@ export const CheckListItem: React.FC<{
         rawVC: isParsingRawVC,
     } = checklistStore.useTracked.isParsing();
 
+    const {
+        resume: pendingResumeReview,
+        transcript: pendingTranscriptReview,
+    } = checklistStore.useTracked.pendingReview();
+
     const handleCheckListItemClick = () => {
         newModal(
             <CheckListManagerContainer checkListItem={checkListItem} />,
@@ -80,6 +85,30 @@ export const CheckListItem: React.FC<{
         text = 'Processing Raw VC...';
         styles = processingStyles;
         icon = processingIcon;
+    } else if (
+        checkListItem?.type === ChecklistEnum.uploadResume &&
+        pendingResumeReview &&
+        pendingResumeReview.credentials.length > 0
+    ) {
+        text = 'Review Resume';
+        styles = 'bg-amber-500';
+        icon = (
+            <span className="text-white text-[11px] font-bold">
+                {pendingResumeReview.credentials.length}
+            </span>
+        );
+    } else if (
+        checkListItem?.type === ChecklistEnum.uploadTranscripts &&
+        pendingTranscriptReview &&
+        pendingTranscriptReview.credentials.length > 0
+    ) {
+        text = 'Review Transcripts';
+        styles = 'bg-amber-500';
+        icon = (
+            <span className="text-white text-[11px] font-bold">
+                {pendingTranscriptReview.credentials.length}
+            </span>
+        );
     }
 
     return (
