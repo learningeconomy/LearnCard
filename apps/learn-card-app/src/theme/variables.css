@@ -2161,3 +2161,46 @@ ion-textarea {
 .hide-scrollbar::-webkit-scrollbar {
     display: none;
 }
+
+/* ── Streamdown code block ─────────────────────────────────────────────────
+   Streamdown uses shadcn/ui CSS variables that are not defined in this app.
+   Define them here so code-block card background, borders, and sticky action
+   buttons render correctly.
+   ───────────────────────────────────────────────────────────────────────── */
+:root {
+    --sidebar: #eff0f5; /* matches grayscale-100 card background     */
+    --sidebar-border: #e2e3e9; /* matches grayscale-200 border              */
+    --border: #e2e3e9;
+    --muted-foreground: #6f7590; /* matches grayscale-600, for language label */
+}
+
+/* Tighten the outer card wrapper (Streamdown defaults: my-4 p-2 gap-2) */
+[data-streamdown='code-block'] {
+    margin-top: 0.375rem !important;
+    margin-bottom: 0.375rem !important;
+    padding: 0.75rem !important;
+    gap: 0.25rem !important;
+    position: relative !important;
+}
+
+/* Pull the action buttons (download/copy) into the same row as the language label.
+   Streamdown renders them as a separate flex child with sticky/-mt-10 which puts
+   them on a different visual line. Absolute positioning fixes that. */
+[data-streamdown='code-block'] > div:has(> [data-streamdown='code-block-actions']) {
+    position: absolute !important;
+    top: 8px !important;
+    right: 12px !important;
+    margin-top: 0 !important;
+    height: 2rem !important;
+    z-index: 20 !important;
+}
+
+[data-streamdown='code-block-body'] {
+    padding: 0 !important;
+}
+
+[data-streamdown='code-block-body'] pre {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 8px !important;
+}
