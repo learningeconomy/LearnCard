@@ -55,6 +55,8 @@ interface OverviewTabProps {
     stats: DashboardStats;
     templates: CredentialTemplate[];
     appListings?: AppStoreListing[];
+    selectedListingId?: string;
+    onListingFilterChange?: (listingId: string | undefined) => void;
     onNavigate: (tabId: string) => void;
     refreshKey?: number;
 }
@@ -468,11 +470,20 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     stats,
     templates,
     appListings,
+    selectedListingId,
+    onListingFilterChange,
     onNavigate,
     refreshKey,
 }) => {
     const [eventTypeFilter, setEventTypeFilter] = useState<CredentialEventType | 'ALL'>('ALL');
-    const [listingFilter, setListingFilter] = useState<string>('ALL');
+
+    // Use the dashboard-level filter if provided, otherwise use local state
+    const listingFilter = selectedListingId === undefined ? 'ALL' : selectedListingId || 'ALL';
+    const setListingFilter = (value: string) => {
+        if (onListingFilterChange) {
+            onListingFilterChange(value === 'ALL' ? undefined : value);
+        }
+    };
 
     const {
         activity,
@@ -485,7 +496,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     } = useIntegrationActivity(templates, {
         limit: 25,
         integrationId: integration.id,
-        listingId: listingFilter === 'ALL' ? undefined : listingFilter,
+        listingId: selectedListingId,
         eventType: eventTypeFilter === 'ALL' ? undefined : eventTypeFilter,
     });
 
@@ -628,8 +639,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                         </button>
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* App Listing Filter */}
-                        {appListings && appListings.length > 0 && (
+                        {/* App Listing Filter - only show if multiple apps exist */}
+                        {appListings && appListings.length > 1 && (
                             <div className="relative">
                                 <select
                                     value={listingFilter}
