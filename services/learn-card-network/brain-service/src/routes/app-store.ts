@@ -30,6 +30,7 @@ import { updateAppStoreListing } from '@accesslayer/app-store-listing/update';
 import { deleteAppStoreListing } from '@accesslayer/app-store-listing/delete';
 import {
     associateListingWithIntegration,
+    associateListingWithSubmitter,
     installAppForProfile,
     associateBoostWithListing,
 } from '@accesslayer/app-store-listing/relationships/create';
@@ -1031,6 +1032,7 @@ export const appStoreRouter = t.router({
             });
 
             await associateListingWithIntegration(listing.listing_id, input.integrationId);
+            await associateListingWithSubmitter(listing.listing_id, ctx.user.profile.profileId);
 
             return listing.listing_id;
         }),
@@ -1283,10 +1285,19 @@ export const appStoreRouter = t.router({
                 });
             }
 
+            const submittedAt = new Date().toISOString();
+
+            // Update status on the listing node
             const result = await updateAppStoreListing(listing, {
                 app_listing_status: 'PENDING_REVIEW',
-                submitted_at: new Date().toISOString(),
             });
+
+            // Create or update SUBMITTED_LISTING relationship with submitted_at
+            await associateListingWithSubmitter(
+                listing.listing_id,
+                ctx.user.profile.profileId,
+                submittedAt
+            );
 
             // Notify all App Store admins about the new submission
             if (APP_STORE_ADMIN_PROFILE_IDS.length > 0) {
