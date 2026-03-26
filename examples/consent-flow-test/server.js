@@ -67,6 +67,19 @@ app.post('/api/send', async (req, res) => {
     try {
         const wallet = await getWallet(seed, networkUrl);
 
+        // Verify the wallet has a valid profile before attempting to send
+        try {
+            const profile = await wallet.invoke.getProfile();
+            if (!profile) throw new Error('No profile found');
+            console.log('Authenticated as:', profile.displayName || profile.profileId);
+        } catch (profileErr) {
+            walletCache.delete(`${seed}:${networkUrl || 'default'}`);
+            return res.status(401).json({
+                error: 'Authentication failed — could not resolve a profile for this API token or seed. Verify the token is valid and the network service is running.',
+                hint: 'Try clicking "Test LearnCard Init" first to verify your connection.',
+            });
+        }
+
         console.log('Sending credential...');
         console.log('  recipient:', recipient);
         console.log('  contractUri:', contractUri);

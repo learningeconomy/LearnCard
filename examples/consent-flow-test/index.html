@@ -241,7 +241,7 @@
                 customBase: document.getElementById('custom-base').value,
                 seed: document.getElementById('issuer-seed').value,
                 templateUri: document.getElementById('template-uri').value,
-                integrationId: document.getElementById('integration-id').value,
+                integrationId: document.getElementById('integration-id').value.replace(/^['"]+|['"]+$/g, '').trim(),
                 networkUrl: document.getElementById('network-url').value,
             }));
         }
@@ -372,7 +372,7 @@
 `import { initLearnCard } from '@learncard/init';
 
 const learnCard = await initLearnCard({
-    seed: 'YOUR_SEED',
+    apiKey: 'YOUR_API_TOKEN', // from the developer portal API Tokens tab
     network: true,${saved?.networkUrl ? `\n    networkLearnCardForDomain: '${saved.networkUrl}',` : ''}
 });
 
@@ -389,7 +389,7 @@ await learnCard.invoke.send({
             const recipient = document.getElementById('send-recipient').value;
             const contractUri = document.getElementById('send-contract').value;
             const templateUri = document.getElementById('send-template').value;
-            const integrationId = document.getElementById('send-integration').value;
+            const integrationId = document.getElementById('send-integration').value.replace(/^['"]+|['"]+$/g, '').trim();
             const networkUrl = document.getElementById('send-network').value;
             const statusEl = document.getElementById('send-status');
             const btn = document.getElementById('send-btn');
