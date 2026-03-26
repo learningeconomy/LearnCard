@@ -99,7 +99,6 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
             hero_background_color: { type: 'string', required: false },
             min_age: { type: 'number', required: false },
             age_rating: { type: 'string', enum: AgeRating.options, required: false },
-            submitted_at: { type: 'string', required: false },
             contact_email: { type: 'string', required: false },
         } as any,
         relationships: {
