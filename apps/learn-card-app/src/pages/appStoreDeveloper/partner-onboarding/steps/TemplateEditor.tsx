@@ -65,6 +65,8 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
     isNew = false,
     boostUri,
 }) => {
+    const [copiedUri, setCopiedUri] = useState(false);
+
     // Initialize OBv3 template from legacy or existing
     const [obv3Template, setObv3Template] = useState<OBv3CredentialTemplate>(() => {
         if (template.obv3Template) {
@@ -142,16 +144,18 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                                     e.stopPropagation();
                                     try {
                                         await navigator.clipboard.writeText(boostUri);
-                                        const btn = e.currentTarget;
-                                        const original = btn.innerHTML;
-                                        btn.innerHTML = '<svg class="w-3 h-3 text-emerald-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-                                        setTimeout(() => { btn.innerHTML = original; }, 1500);
+                                        setCopiedUri(true);
+                                        setTimeout(() => setCopiedUri(false), 1500);
                                     } catch { /* fallback: no-op */ }
                                 }}
                                 className="flex-shrink-0 p-1 text-gray-400 hover:text-cyan-600 rounded transition-colors"
                                 title="Copy template URI"
                             >
-                                <Copy className="w-3 h-3" />
+                                {copiedUri ? (
+                                    <Check className="w-3 h-3 text-emerald-500" />
+                                ) : (
+                                    <Copy className="w-3 h-3" />
+                                )}
                             </button>
                         </div>
                     )}
