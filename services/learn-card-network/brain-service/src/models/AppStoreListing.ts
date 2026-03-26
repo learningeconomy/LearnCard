@@ -17,6 +17,12 @@ import {
 
 export type AppStoreListingRelationships = {
     publishedBy: ModelRelatedNodesI<typeof Integration, IntegrationInstance>;
+    submittedBy: ModelRelatedNodesI<
+        typeof Profile,
+        ProfileInstance,
+        { submitted_at?: string },
+        { submitted_at?: string }
+    >;
     installedBy: ModelRelatedNodesI<
         typeof Profile,
         ProfileInstance,
@@ -98,6 +104,17 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
         } as any,
         relationships: {
             publishedBy: { model: Integration, direction: 'in', name: 'PUBLISHES_LISTING' },
+            submittedBy: {
+                model: Profile,
+                direction: 'in',
+                name: 'SUBMITTED_LISTING',
+                properties: {
+                    submitted_at: {
+                        property: 'submitted_at',
+                        schema: { type: 'string', required: false },
+                    },
+                },
+            },
             installedBy: {
                 model: Profile,
                 direction: 'in',
