@@ -200,6 +200,8 @@
     </div>
 
     <script>
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
         // On load
         window.addEventListener('DOMContentLoaded', () => {
             const callbackInput = document.getElementById('callback-url');
@@ -296,7 +298,7 @@
             const networkUrl = document.getElementById('network-url').value;
             const statusEl = document.getElementById('init-status');
 
-            if (!seed) { statusEl.innerHTML = '<div class="status-msg error">Enter an API key or seed first</div>'; return; }
+            if (!seed) { statusEl.textContent = 'Enter an API key or seed first'; statusEl.className = 'status-msg error'; return; }
 
             statusEl.innerHTML = '<div class="status-msg loading"><span class="spinner dark"></span>Initializing LearnCard...</div>';
             document.getElementById('test-init-btn').disabled = true;
@@ -309,12 +311,12 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    statusEl.innerHTML = `<div class="status-msg success">Connected! DID: <code style="font-size:11px; word-break:break-all;">${data.did}</code></div>`;
+                    statusEl.innerHTML = `<div class="status-msg success">Connected! DID: <code style="font-size:11px; word-break:break-all;">${esc(data.did)}</code></div>`;
                 } else {
-                    statusEl.innerHTML = `<div class="status-msg error">Error: ${data.error}</div>`;
+                    statusEl.innerHTML = `<div class="status-msg error">Error: ${esc(data.error)}</div>`;
                 }
             } catch (err) {
-                statusEl.innerHTML = `<div class="status-msg error">Failed to connect to server: ${err.message}</div>`;
+                statusEl.innerHTML = `<div class="status-msg error">Failed to connect to server: ${esc(err.message)}</div>`;
             }
             document.getElementById('test-init-btn').disabled = false;
         }
@@ -394,10 +396,10 @@ await learnCard.invoke.send({
             const statusEl = document.getElementById('send-status');
             const btn = document.getElementById('send-btn');
 
-            if (!seed) { statusEl.innerHTML = '<div class="status-msg error">Enter your API key or seed</div>'; return; }
-            if (!recipient) { statusEl.innerHTML = '<div class="status-msg error">No recipient DID (did the callback return one?)</div>'; return; }
-            if (!contractUri) { statusEl.innerHTML = '<div class="status-msg error">Enter a contract URI</div>'; return; }
-            if (!templateUri) { statusEl.innerHTML = '<div class="status-msg error">Enter a template URI</div>'; return; }
+            if (!seed) { statusEl.textContent = 'Enter your API key or seed'; statusEl.className = 'status-msg error'; return; }
+            if (!recipient) { statusEl.textContent = 'No recipient DID (did the callback return one?)'; statusEl.className = 'status-msg error'; return; }
+            if (!contractUri) { statusEl.textContent = 'Enter a contract URI'; statusEl.className = 'status-msg error'; return; }
+            if (!templateUri) { statusEl.textContent = 'Enter a template URI'; statusEl.className = 'status-msg error'; return; }
 
             statusEl.innerHTML = '<div class="status-msg loading"><span class="spinner dark"></span>Initializing wallet &amp; sending credential...</div>';
             btn.disabled = true;
@@ -421,18 +423,18 @@ await learnCard.invoke.send({
                 if (data.success) {
                     statusEl.innerHTML = `<div class="status-msg success">
                         <strong>Credential sent!</strong><br/>
-                        <span style="font-size: 12px;">Issuer: ${data.issuerDid}</span><br/>
-                        <span style="font-size: 12px;">Result: <code>${JSON.stringify(data.result)}</code></span>
+                        <span style="font-size: 12px;">Issuer: ${esc(data.issuerDid)}</span><br/>
+                        <span style="font-size: 12px;">Result: <code>${esc(JSON.stringify(data.result))}</code></span>
                     </div>`;
                 } else {
                     statusEl.innerHTML = `<div class="status-msg error">
-                        <strong>Send failed:</strong> ${data.error}
-                        ${data.details ? `<br/><span style="font-size:11px">${data.details}</span>` : ''}
+                        <strong>Send failed:</strong> ${esc(data.error)}
+                        ${data.details ? `<br/><span style="font-size:11px">${esc(data.details)}</span>` : ''}
                     </div>`;
                 }
             } catch (err) {
                 statusEl.innerHTML = `<div class="status-msg error">
-                    <strong>Request failed:</strong> ${err.message}<br/>
+                    <strong>Request failed:</strong> ${esc(err.message)}<br/>
                     <span style="font-size: 11px;">Is the server running? (node server.js)</span>
                 </div>`;
             }

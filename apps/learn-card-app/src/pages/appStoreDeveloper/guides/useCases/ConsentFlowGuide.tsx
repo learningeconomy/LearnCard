@@ -601,8 +601,7 @@ const SendCredentialsStep: React.FC<{
     integrationId?: string;
     templates: ManagedTemplate[];
     onTemplatesChange: (templates: ManagedTemplate[]) => void;
-    onBuilderOpenChange: (isOpen: boolean) => void;
-}> = ({ onBack, onComplete, contractUri, apiToken, integrationId, templates, onTemplatesChange, onBuilderOpenChange }) => {
+}> = ({ onBack, onComplete, contractUri, apiToken, integrationId, templates, onTemplatesChange }) => {
     const selectedTemplate = templates[0];
     const templateUri = selectedTemplate?.boostUri || 'YOUR_TEMPLATE_URI';
 
@@ -623,7 +622,6 @@ const SendCredentialsStep: React.FC<{
                 showCodeSnippets={false}
                 editable={true}
                 onTemplateChange={onTemplatesChange}
-                onBuilderOpenChange={onBuilderOpenChange}
             />
 
             <StepCard step={2} title="Send Credentials via API" icon={<Send className="w-4 h-4 text-gray-400 ml-auto" />}>
@@ -928,7 +926,6 @@ const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
     const [redirectUrl, setRedirectUrl] = useState(savedConfig?.redirectUrl ?? '');
     const [apiToken, setApiToken] = useState(savedConfig?.apiTokenGrantId ?? '');
     const [templates, setTemplates] = useState<ManagedTemplate[]>([]);
-    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
     // Persist config changes
     const savedConfigRef = useRef(savedConfig);
@@ -1068,7 +1065,6 @@ const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
                     integrationId={selectedIntegration?.id}
                     templates={templates}
                     onTemplatesChange={setTemplates}
-                    onBuilderOpenChange={setIsBuilderOpen}
                 />
             </div>
             <div style={{ display: guideState.currentStep === 4 ? 'block' : 'none' }}>

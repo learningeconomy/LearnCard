@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@learncard/init": "workspace:*",
+    "@learncard/network-brain-client": "workspace:*",
     "express": "^4.18.0"
   }
 }
