@@ -233,7 +233,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                 <a
                                     href={`mailto:${
                                         listing.contact_email || listing.submitter?.email
-                                    }?subject=Regarding your app: ${listing.display_name}`}
+                                    }?subject=${encodeURIComponent(
+                                        `Regarding your app: ${listing.display_name}`
+                                    )}`}
                                     className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline"
                                 >
                                     {listing.contact_email || listing.submitter?.email}
