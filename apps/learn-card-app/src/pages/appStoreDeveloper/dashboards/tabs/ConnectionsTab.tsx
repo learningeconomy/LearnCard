@@ -38,6 +38,17 @@ interface ConsentRecord {
     date: string;
 }
 
+/** Extract a human-readable name from shared personal data fields */
+function getConsentRecordDisplayName(personal: Record<string, string>): string | null {
+    const nameKeys = ['name', 'full_name', 'fullName', 'displayName', 'display_name'];
+    for (const key of nameKeys) {
+        if (personal[key]) return personal[key];
+    }
+    // Fall back to email if no name field
+    if (personal.email) return personal.email;
+    return null;
+}
+
 export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) => {
     const { initWallet } = useWallet();
     const [expandedRecord, setExpandedRecord] = useState<number | null>(null);
@@ -198,7 +209,7 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
 
                                     <div className="flex-1 text-left">
                                         <p className="text-sm font-medium text-gray-800">
-                                            Consent Record #{records.length - idx}
+                                            {getConsentRecordDisplayName(record.personal || {}) || `Consent Record #${records.length - idx}`}
                                         </p>
 
                                         <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
