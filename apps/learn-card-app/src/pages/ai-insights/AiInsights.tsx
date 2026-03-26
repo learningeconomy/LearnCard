@@ -102,9 +102,9 @@ const AiInsights: React.FC = () => {
 
     let contractRequest = null;
     if (pendingRequests?.length > 0) {
-        contractRequest = pendingRequests?.map(request => (
+        contractRequest = pendingRequests?.map((request, index) => (
             <AiInsightsUserRequestsToast
-                key={`${request?.contract?.uri}-${request?.profile?.profileId}`}
+                key={request?.contract?.uri && request?.profile?.profileId ? `${request.contract.uri}-${request.profile.profileId}` : `request-${index}`}
                 contractUri={request?.contract?.uri}
                 options={{
                     className: 'bg-indigo-100 p-4 rounded-[16px] mb-4',
