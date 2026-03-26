@@ -102,20 +102,22 @@ app.post('/api/send', async (req, res) => {
             // brain-service tRPC endpoint instead (server-side signing).
             const networkBase = networkUrl || 'https://api.learncard.com/trpc';
             console.log('Using direct HTTP send (API key mode)...');
-            const tRpcRes = await fetch(`${networkBase}/boost.send`, {
+            const tRpcRes = await fetch(`${networkBase}/boost.send?batch=1`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${seed}`,
                 },
-                body: JSON.stringify({ json: sendArgs }),
+                body: JSON.stringify({ '0': { json: sendArgs } }),
             });
             const tRpcData = await tRpcRes.json();
-            if (!tRpcRes.ok || tRpcData.error) {
-                const errMsg = tRpcData.error?.json?.message || tRpcData.error?.message || JSON.stringify(tRpcData.error || tRpcData);
-                throw new Error(`Server send failed: ${errMsg}`);
+            // tRPC batch response is an array: [{ result: { data: { json: ... } } }]
+            const batchResult = Array.isArray(tRpcData) ? tRpcData[0] : tRpcData;
+            if (!tRpcRes.ok || batchResult.error) {
+                const errDetail = batchResult.error?.json?.message || batchResult.error?.message || JSON.stringify(batchResult.error || batchResult);
+                throw new Error(`Server send failed: ${errDetail}`);
             }
-            result = tRpcData.result?.data?.json ?? tRpcData;
+            result = batchResult.result?.data?.json ?? batchResult;
         } else {
             // Seed mode: has local signing keys, use SDK normally
             result = await wallet.invoke.send(sendArgs);
