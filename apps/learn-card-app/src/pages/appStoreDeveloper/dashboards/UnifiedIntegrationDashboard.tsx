@@ -19,6 +19,7 @@ import {
     Link as LinkIcon,
     Settings,
     FileSpreadsheet,
+    ChevronDown,
 } from 'lucide-react';
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
@@ -195,6 +196,9 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
     const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
     const [hasDeclinedUpgrade, setHasDeclinedUpgrade] = useState(false);
     const [listingToUpgrade, setListingToUpgrade] = useState<AppStoreListing | null>(null);
+
+    // Dashboard-level app listing filter (affects both QuickStats and OverviewTab)
+    const [selectedListingId, setSelectedListingId] = useState<string | undefined>(undefined);
 
     // Hooks for app DID upgrade detection
     const { useListingsForIntegration, useUpgradeAppToAppDid, checkAppNeedsUpgrade } =
@@ -394,9 +398,10 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
     }, [integration.id]);
 
     // Fetch credential activity stats using the unified API
-    // Stats are filtered by integrationId for accurate per-integration metrics
+    // Stats are filtered by integrationId and optionally by listingId for per-app metrics
     const { stats: activityStats, refetch: refetchActivity } = useIntegrationActivity(templates, {
         integrationId: integration.id,
+        listingId: selectedListingId,
     });
 
     const handleRefresh = () => {
@@ -501,6 +506,8 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                         stats={stats}
                         templates={templates}
                         appListings={appListings}
+                        selectedListingId={selectedListingId}
+                        onListingFilterChange={setSelectedListingId}
                         onNavigate={setActiveTab}
                         refreshKey={refreshKey}
                     />
