@@ -95,7 +95,23 @@ app.post('/api/send', async (req, res) => {
         };
         if (integrationId) sendArgs.integrationId = integrationId;
 
-        const result = await wallet.invoke.send(sendArgs);
+        let result;
+        try {
+            result = await wallet.invoke.send(sendArgs);
+        } catch (sendErr) {
+            // API key mode has no local signing keys, so the SDK's local-issuance
+            // path fails with "No plugin supports keypair type undefined".
+            // Retry without templateUri to force the server-side-only path
+            // (brain-service resolves the template and signs server-side).
+            if (sendErr.message?.includes('keypair type')) {
+                console.log('Local issuance not available (API key mode), retrying server-side...');
+                const serverArgs = { ...sendArgs };
+                delete serverArgs.templateUri;
+                result = await wallet.invoke.send(serverArgs);
+            } else {
+                throw sendErr;
+            }
+        }
 
         console.log('Send result:', result);
         let issuerDid = '';
