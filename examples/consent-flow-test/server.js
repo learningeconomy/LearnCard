@@ -1,7 +1,7 @@
 import { createRequire } from 'module';
 import express from 'express';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 
 // Use require() for @learncard/init because its ESM export has CJS interop issues
 const require = createRequire(import.meta.url);
@@ -12,7 +12,7 @@ const app = express();
 const PORT = 8899;
 
 app.use(express.json());
-app.use(express.static(__dirname));
+app.use(express.static(join(__dirname, 'public')));
 
 // Cache initialized wallets to avoid re-init on every request
 const walletCache = new Map();
