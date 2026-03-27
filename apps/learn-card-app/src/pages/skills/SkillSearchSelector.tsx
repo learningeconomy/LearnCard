@@ -10,6 +10,8 @@ import {
     useToast,
     ToastTypeEnum,
     conditionalPluralize,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 
 import X from 'learn-card-base/svgs/X';
@@ -26,7 +28,8 @@ import {
     convertApiSkillNodeToSkillTreeNode,
 } from '../../helpers/skillFramework.helpers';
 import { SkillFrameworkNode } from '../../components/boost/boost';
-import { SkillLevel } from './SkillProficiencyBar';
+import { SkillLevel } from './skillTypes';
+import AddSkillModal from './AddSkillModal';
 
 export type SelectedSkill = {
     id: string;
@@ -42,30 +45,6 @@ export type SkillSearchSelectorProps = {
     className?: string;
 };
 
-export const useSkillSearchSelectorData = () => {
-    const flags = useFlags();
-    const frameworkId = flags?.selfAssignedSkillsFrameworkId;
-    const initialSkillIds = flags?.initialSelfAssignedSkillIds?.skillIds as string[];
-
-    const { data: selfAssignedSkillFramework, isLoading: selfAssignedSkillFrameworkLoading } =
-        useGetSkillFrameworkById(frameworkId);
-
-    const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
-    const { data: sasBoostSkills, isLoading: skillsLoading } = useGetBoostSkills(sasBoostData?.uri);
-
-    const errorLoadingFramework = !selfAssignedSkillFramework && !selfAssignedSkillFrameworkLoading;
-
-    return {
-        frameworkId,
-        initialSkillIds,
-        selfAssignedSkillFramework,
-        selfAssignedSkillFrameworkLoading,
-        sasBoostSkills,
-        skillsLoading,
-        errorLoadingFramework,
-    };
-};
-
 const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     selectedSkills,
     onSelectedSkillsChange,
@@ -75,6 +54,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     className = '',
 }) => {
     const flags = useFlags();
+    const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
     const { data: lcNetworkProfile } = useGetProfile();
 
@@ -188,8 +168,23 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         }
     };
 
+    const openAddSkillModal = (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => {
+        newModal(
+            <AddSkillModal
+                skill={skill}
+                handleAdd={(skill, proficiencyLevel) => {
+                    handleToggleSelect(skill.id!, skill);
+                    // TODO proficiencyLevel
+                    console.log('TODO proficiencyLevel', proficiencyLevel);
+                    closeModal();
+                }}
+            />,
+            undefined,
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    };
+
     const isAdd = mode === 'add';
-    const isReview = mode === 'review';
     const noResults = !!searchInput && suggestedSkills.length === 0 && !searchLoading;
     const errorLoadingFramework = !selfAssignedSkillFramework && !selfAssignedSkillFrameworkLoading;
 
@@ -269,7 +264,8 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
 
                                 return (
                                     <button
-                                        onClick={() => handleToggleSelect(skill.id!, skill)}
+                                        // onClick={() => handleToggleSelect(skill.id!, skill)}
+                                        onClick={() => openAddSkillModal(skill)}
                                         className="p-[10px] flex gap-[10px] items-center background-grayscale-50 rounded-[15px] shadow-bottom-2-4"
                                     >
                                         <CompetencyIcon icon={skill.icon!} />

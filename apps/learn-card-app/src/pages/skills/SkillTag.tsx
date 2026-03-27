@@ -1,6 +1,6 @@
 import { useGetSkill } from 'learn-card-base';
 import React from 'react';
-import { SkillLevel } from './SkillProficiencyBar';
+import { SkillLevel } from './skillTypes';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import X from 'src/components/svgs/X';
 
