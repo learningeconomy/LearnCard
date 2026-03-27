@@ -8,6 +8,10 @@ import {
     ProfileVisibility,
 } from '@learncard/types';
 import { ProfileType } from 'types/profile';
+import { BoostInstance } from '@models';
+import { getBoostRecipients, isProfileBoostAdmin } from '@accesslayer/boost/relationships/read';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { isProfileBoostOwner } from './boost.helpers';
 
 import { areProfilesConnected } from './connection.helpers';
 
@@ -166,4 +170,62 @@ export const stripSensitiveProfileListFields = <T extends Record<string, unknown
 export const isPrivateToUnauthenticated = (target: ProfileType): boolean => {
     const visibility = resolveProfileVisibility(target);
     return visibility === ProfileVisibilityEnum.enum.private;
+};
+
+/**
+ * Determines whether a viewer can see a full recipient list for a boost.
+ *
+ * Access is granted when the viewer is:
+ * - boost owner
+ * - boost admin
+ * - a recipient of the boost
+ */
+export const canViewerSeeFullBoostRecipientList = async (
+    viewerProfileId: string,
+    boost: BoostInstance,
+    domain: string
+): Promise<boolean> => {
+    const viewerProfile = await getProfileByProfileId(viewerProfileId);
+    if (!viewerProfile) return false;
+
+    const [isOwner, isAdmin, viewerAsRecipient] = await Promise.all([
+        isProfileBoostOwner(viewerProfile, boost),
+        isProfileBoostAdmin(viewerProfile, boost),
+        getBoostRecipients(boost, {
+            limit: 1,
+            includeUnacceptedBoosts: true,
+            query: { profileId: viewerProfileId },
+            domain,
+        }),
+    ]);
+
+    return isOwner || isAdmin || viewerAsRecipient.length > 0;
+};
+
+/**
+ * Sanitizes boost recipient records based on the viewer's access tier.
+ *
+ * When `forcePublicTier` is true, all recipient profiles are treated as unauthenticated/public.
+ */
+export const sanitizeBoostRecipientRecords = async <
+    T extends {
+        to: any;
+    }
+>(
+    viewerProfile: ProfileType,
+    records: T[],
+    forcePublicTier = false
+): Promise<T[]> => {
+    return Promise.all(
+        records.map(async record => {
+            const tier = forcePublicTier
+                ? ProfileAccessTierEnum.unauthenticated
+                : await resolveProfileTier(viewerProfile, record.to);
+
+            return {
+                ...record,
+                to: stripSensitiveProfileListFields(sanitizeProfileForTier(record.to, tier)),
+            };
+        })
+    );
 };
