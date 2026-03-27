@@ -49,22 +49,22 @@ const AiInsightsLearningSnapshots: React.FC<{
     const insights: AiInsightsLearningSnapshot[] = [
         {
             label: 'Strongest Area',
-            title: resolvedAiInsightCredential?.insights?.strongestArea.title,
-            description: resolvedAiInsightCredential?.insights?.strongestArea.summary,
+            title: resolvedAiInsightCredential?.insights?.strongestArea?.title,
+            description: resolvedAiInsightCredential?.insights?.strongestArea?.summary,
             type: AiInsightsLearningSnapshotType.StrongestArea,
             icon: <Trophy className="w-[25px] h-[25px] text-emerald-700" />,
         },
         {
             label: 'Weakness',
-            title: resolvedAiInsightCredential?.insights?.weakestArea.title,
-            description: resolvedAiInsightCredential?.insights?.weakestArea.summary,
+            title: resolvedAiInsightCredential?.insights?.weakestArea?.title,
+            description: resolvedAiInsightCredential?.insights?.weakestArea?.summary,
             type: AiInsightsLearningSnapshotType.Weakness,
             icon: <WrenchIcon className="w-[25px] h-[25px] text-orange-600" />,
         },
         {
             label: 'Room for Growth',
-            title: resolvedAiInsightCredential?.insights?.roomForGrowth.title,
-            description: resolvedAiInsightCredential?.insights?.roomForGrowth.summary,
+            title: resolvedAiInsightCredential?.insights?.roomForGrowth?.title,
+            description: resolvedAiInsightCredential?.insights?.roomForGrowth?.summary,
             type: AiInsightsLearningSnapshotType.RoomForGrowth,
             icon: <SproutIcon className="w-[25px] h-[25px] text-blue-500" />,
         },
