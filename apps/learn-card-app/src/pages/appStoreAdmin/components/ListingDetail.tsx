@@ -58,7 +58,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
     const categoryLabel = CATEGORY_OPTIONS.find(c => c.value === listing.category)?.label;
 
     const formatSubmissionDate = (dateStr?: string): string => {
-        if (!dateStr) return 'Not submitted';
+        if (!dateStr) return 'Unknown Date';
         const date = new Date(dateStr);
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
