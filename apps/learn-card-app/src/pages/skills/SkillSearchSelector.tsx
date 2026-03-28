@@ -234,7 +234,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                 )}
                             </h4>
 
-                            {selectedSkills.map((skill, index) => (
+                            {selectedSkills.map(skill => (
                                 <SkillTag
                                     key={skill.id}
                                     skillId={skill.id}
