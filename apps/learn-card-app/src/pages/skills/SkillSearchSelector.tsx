@@ -39,8 +39,6 @@ export type SelectedSkill = {
 export type SkillSearchSelectorProps = {
     selectedSkills: SelectedSkill[];
     onSelectedSkillsChange: (skills: SelectedSkill[]) => void;
-    mode?: 'add' | 'review';
-    shouldCollapseOptions?: boolean;
     showSuggestSkill?: boolean;
     className?: string;
 };
@@ -48,8 +46,6 @@ export type SkillSearchSelectorProps = {
 const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     selectedSkills,
     onSelectedSkillsChange,
-    mode = 'add',
-    shouldCollapseOptions = false,
     showSuggestSkill = true,
     className = '',
 }) => {
@@ -193,7 +189,6 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         );
     };
 
-    const isAdd = mode === 'add';
     const noResults = !!searchInput && suggestedSkills.length === 0 && !searchLoading;
     const errorLoadingFramework = !selfAssignedSkillFramework && !selfAssignedSkillFrameworkLoading;
 
@@ -210,10 +205,8 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                         <IonInput
                             type="text"
                             value={searchInput}
-                            placeholder={
-                                isAdd ? 'Search by skill, goal, or job...' : 'Search skills...'
-                            }
-                            onIonInput={e => setSearchInput(e.detail.value)}
+                            placeholder={'Search by skill, goal, or job...'}
+                            onIonInput={e => setSearchInput(e.detail.value ?? '')}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[14px] !pl-[44px] !text-left !pr-[36px]"
                         />
                         {searchInput && (
