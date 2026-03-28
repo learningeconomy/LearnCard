@@ -176,6 +176,18 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         }
     };
 
+    const handleAddRelatedSkill = (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => {
+        handleToggleSelect(skill.id!, proficiencyLevel, skill);
+    };
+
+    const handleEditRelatedSkill = (skillId: string, proficiencyLevel: SkillLevel) => {
+        handleChangeProficiency(skillId, proficiencyLevel);
+    };
+
+    const handleRemoveRelatedSkill = (skillId: string) => {
+        handleToggleSelect(skillId);
+    };
+
     const openAddSkillModal = (skill: SkillFrameworkNode) => {
         newModal(
             <AddSkillModal
@@ -184,6 +196,10 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                 handleAdd={(skill, proficiencyLevel) => {
                     handleToggleSelect(skill.id!, proficiencyLevel, skill);
                 }}
+                selectedSkills={selectedSkills}
+                handleAddRelatedSkill={handleAddRelatedSkill}
+                handleEditRelatedSkill={handleEditRelatedSkill}
+                handleRemoveRelatedSkill={handleRemoveRelatedSkill}
             />,
             undefined,
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
@@ -246,6 +262,10 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                     handleEditSkill={proficiencyLevel =>
                                         handleChangeProficiency(skill.id, proficiencyLevel)
                                     }
+                                    selectedSkills={selectedSkills}
+                                    handleAddRelatedSkill={handleAddRelatedSkill}
+                                    handleEditRelatedSkill={handleEditRelatedSkill}
+                                    handleRemoveRelatedSkill={handleRemoveRelatedSkill}
                                 />
                             ))}
                         </div>

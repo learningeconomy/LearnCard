@@ -13,6 +13,7 @@ import { IonFooter } from '@ionic/react';
 
 import { SkillLevel } from './skillTypes';
 import { FrameworkNodeRole, SkillFrameworkNode } from '../../components/boost/boost';
+import { SelectedSkill } from './SkillSearchSelector';
 
 enum AddSkillTabEnum {
     Options = 'Options',
@@ -27,6 +28,10 @@ type AddSkillModalProps = {
     handleEditProficiency?: (proficiencyLevel: SkillLevel) => void;
     handleDelete?: () => void;
     initialProficiencyLevel?: SkillLevel;
+    selectedSkills?: SelectedSkill[];
+    handleAddRelatedSkill?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
+    handleEditRelatedSkill?: (skillId: string, proficiencyLevel: SkillLevel) => void;
+    handleRemoveRelatedSkill?: (skillId: string) => void;
 };
 
 const AddSkillModal: React.FC<AddSkillModalProps> = ({
@@ -37,6 +42,10 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
     handleEditProficiency,
     handleDelete,
     initialProficiencyLevel,
+    selectedSkills,
+    handleAddRelatedSkill,
+    handleEditRelatedSkill,
+    handleRemoveRelatedSkill,
 }) => {
     const { closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
@@ -199,6 +208,10 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                                 <RelatedSkills
                                     frameworkId={frameworkId}
                                     skillId={skill?.id ?? ''}
+                                    selectedSkills={selectedSkills}
+                                    handleAddSkill={handleAddRelatedSkill}
+                                    handleEditSkill={handleEditRelatedSkill}
+                                    handleRemoveSkill={handleRemoveRelatedSkill}
                                 />
                             </div>
                         )}

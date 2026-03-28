@@ -13,13 +13,27 @@ import {
 import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import SkillCard from './SkillCard';
+import { SelectedSkill } from './SkillSearchSelector';
+import { SkillLevel } from './skillTypes';
+import { SkillFrameworkNode } from '../../components/boost/boost';
 
 type RelatedSkillsProps = {
     frameworkId: string;
     skillId: string;
+    selectedSkills?: SelectedSkill[];
+    handleAddSkill?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
+    handleEditSkill?: (skillId: string, proficiencyLevel: SkillLevel) => void;
+    handleRemoveSkill?: (skillId: string) => void;
 };
 
-const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) => {
+const RelatedSkills: React.FC<RelatedSkillsProps> = ({
+    frameworkId,
+    skillId,
+    selectedSkills,
+    handleAddSkill,
+    handleEditSkill,
+    handleRemoveSkill,
+}) => {
     const swiperRef = useRef<any>(null);
     const [atBeginning, setAtBeginning] = useState(true);
     const [atEnd, setAtEnd] = useState(false);
@@ -143,6 +157,9 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) =
                         grabCursor={true}
                     >
                         {relatedSkills.map((skill, index) => {
+                            const selectedSkill = selectedSkills?.find(s => s.id === skill.id);
+                            const isSelected = !!selectedSkill;
+
                             return (
                                 <SwiperSlide key={index} style={{ width: 'auto' }}>
                                     <SkillCard
@@ -151,6 +168,12 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) =
                                         skillTextOverride={
                                             puzzlePieceText[skill?.type as SkillType]
                                         }
+                                        isSelected={isSelected}
+                                        proficiencyLevel={selectedSkill?.proficiency}
+                                        selectedSkills={selectedSkills}
+                                        handleAddSkill={handleAddSkill}
+                                        handleEditSkill={handleEditSkill}
+                                        handleRemoveSkill={handleRemoveSkill}
                                     />
                                 </SwiperSlide>
                             );

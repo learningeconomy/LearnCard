@@ -10,6 +10,7 @@ import Pencil from 'src/components/svgs/Pencil';
 
 import { SkillLevel } from './skillTypes';
 import { SkillFrameworkNode } from 'src/components/boost/boost';
+import { SelectedSkill } from './SkillSearchSelector';
 
 type SkillTagProps = {
     frameworkId: string;
@@ -17,6 +18,10 @@ type SkillTagProps = {
     proficiencyLevel: SkillLevel;
     handleRemoveSkill?: (skill: any) => void;
     handleEditSkill?: (proficiencyLevel: SkillLevel) => void;
+    selectedSkills?: SelectedSkill[];
+    handleAddRelatedSkill?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
+    handleEditRelatedSkill?: (skillId: string, proficiencyLevel: SkillLevel) => void;
+    handleRemoveRelatedSkill?: (skillId: string) => void;
 };
 
 const SkillTag: React.FC<SkillTagProps> = ({
@@ -25,6 +30,10 @@ const SkillTag: React.FC<SkillTagProps> = ({
     proficiencyLevel,
     handleRemoveSkill,
     handleEditSkill,
+    selectedSkills,
+    handleAddRelatedSkill,
+    handleEditRelatedSkill,
+    handleRemoveRelatedSkill,
 }) => {
     const { newModal } = useModal();
     const { data: skill } = useGetSkill(frameworkId, skillId);
@@ -40,6 +49,10 @@ const SkillTag: React.FC<SkillTagProps> = ({
                 handleEditProficiency={handleEditSkill}
                 handleDelete={handleRemoveSkill ? () => handleRemoveSkill(skill) : undefined}
                 initialProficiencyLevel={proficiencyLevel}
+                selectedSkills={selectedSkills}
+                handleAddRelatedSkill={handleAddRelatedSkill}
+                handleEditRelatedSkill={handleEditRelatedSkill}
+                handleRemoveRelatedSkill={handleRemoveRelatedSkill}
             />,
             undefined,
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
