@@ -8,10 +8,11 @@ import SelfVerifiedCertIcon from 'learn-card-base/svgs/SelfVerifiedCertIcon';
 import Plus from '../../components/svgs/Plus';
 import Pencil from '../../components/svgs/Pencil';
 import TrashBin from '../../components/svgs/TrashBin';
-import AddSkillModal from './AddSkillModal';
+import AddSkillModal, { PreviousSkillInfo } from './AddSkillModal';
 import { SkillLevel } from './skillTypes';
 import { SkillFrameworkNode } from '../../components/boost/boost';
 import { SelectedSkill } from './SkillSearchSelector';
+import { convertApiSkillNodeToSkillTreeNode } from 'src/helpers/skillFramework.helpers';
 
 type SkillCardProps = {
     skillId: string;
@@ -24,6 +25,8 @@ type SkillCardProps = {
     handleAddSkill?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
     handleEditSkill?: (skillId: string, proficiencyLevel: SkillLevel) => void;
     handleRemoveSkill?: (skillId: string) => void;
+    previousSkills?: PreviousSkillInfo[];
+    currentSkill?: SkillFrameworkNode;
 };
 
 const SkillCard: React.FC<SkillCardProps> = ({
@@ -37,34 +40,50 @@ const SkillCard: React.FC<SkillCardProps> = ({
     handleAddSkill,
     handleEditSkill,
     handleRemoveSkill,
+    previousSkills = [],
+    currentSkill,
 }) => {
-    const { newModal } = useModal();
+    const { replaceModal } = useModal();
     const { data: skillData } = useGetSkill(frameworkId, skillId);
     const showActions = handleAddSkill || handleEditSkill || handleRemoveSkill;
 
+    // Build updated previousSkills by adding currentSkill if provided
+    const updatedPreviousSkills: PreviousSkillInfo[] = currentSkill
+        ? [
+              ...previousSkills,
+              {
+                  skill: currentSkill,
+                  frameworkId,
+                  isEdit: false,
+                  proficiencyLevel: undefined,
+              },
+          ]
+        : previousSkills;
+
     const openAddSkillModal = () => {
         if (!skillData || !handleAddSkill) return;
-        newModal(
+        replaceModal(
             <AddSkillModal
+                key={skillId}
                 frameworkId={frameworkId}
-                skill={skillData}
+                skill={convertApiSkillNodeToSkillTreeNode(skillData)}
                 handleAdd={(sk, level) => handleAddSkill(sk, level)}
                 selectedSkills={selectedSkills}
                 handleAddRelatedSkill={handleAddSkill}
                 handleEditRelatedSkill={handleEditSkill}
                 handleRemoveRelatedSkill={handleRemoveSkill}
-            />,
-            undefined,
-            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                previousSkills={updatedPreviousSkills}
+            />
         );
     };
 
     const openEditSkillModal = () => {
         if (!skillData || !handleEditSkill) return;
-        newModal(
+        replaceModal(
             <AddSkillModal
+                key={skillId}
                 frameworkId={frameworkId}
-                skill={skillData}
+                skill={convertApiSkillNodeToSkillTreeNode(skillData)}
                 isEdit
                 handleEditProficiency={level => handleEditSkill(skillId, level)}
                 handleDelete={handleRemoveSkill ? () => handleRemoveSkill(skillId) : undefined}
@@ -73,9 +92,8 @@ const SkillCard: React.FC<SkillCardProps> = ({
                 handleAddRelatedSkill={handleAddSkill}
                 handleEditRelatedSkill={handleEditSkill}
                 handleRemoveRelatedSkill={handleRemoveSkill}
-            />,
-            undefined,
-            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                previousSkills={updatedPreviousSkills}
+            />
         );
     };
 

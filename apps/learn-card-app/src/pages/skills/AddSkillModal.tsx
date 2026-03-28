@@ -5,6 +5,7 @@ import RelatedSkills from './RelatedSkills';
 import SkillFrameworkInfoBox from './SkillFrameworkInfoBox';
 
 import X from '../../components/svgs/X';
+import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import SkillProficiencyBar from './SkillProficiencyBar';
@@ -14,6 +15,13 @@ import { IonFooter } from '@ionic/react';
 import { SkillLevel } from './skillTypes';
 import { FrameworkNodeRole, SkillFrameworkNode } from '../../components/boost/boost';
 import { SelectedSkill } from './SkillSearchSelector';
+
+export type PreviousSkillInfo = {
+    skill: SkillFrameworkNode;
+    frameworkId: string;
+    isEdit?: boolean;
+    proficiencyLevel?: SkillLevel;
+};
 
 enum AddSkillTabEnum {
     Options = 'Options',
@@ -32,6 +40,7 @@ type AddSkillModalProps = {
     handleAddRelatedSkill?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
     handleEditRelatedSkill?: (skillId: string, proficiencyLevel: SkillLevel) => void;
     handleRemoveRelatedSkill?: (skillId: string) => void;
+    previousSkills?: PreviousSkillInfo[];
 };
 
 const AddSkillModal: React.FC<AddSkillModalProps> = ({
@@ -46,8 +55,9 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
     handleAddRelatedSkill,
     handleEditRelatedSkill,
     handleRemoveRelatedSkill,
+    previousSkills = [],
 }) => {
-    const { closeModal } = useModal();
+    const { closeModal, replaceModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
 
     const [proficiencyLevel, setProficiencyLevel] = useState<SkillLevel>(
@@ -63,6 +73,43 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
         closeModal();
     };
 
+    const handleGoBack = () => {
+        if (previousSkills.length === 0) return;
+        const prev = previousSkills[previousSkills.length - 1];
+        const remainingPrevious = previousSkills.slice(0, -1);
+
+        replaceModal(
+            <AddSkillModal
+                key={prev.skill.id}
+                frameworkId={prev.frameworkId}
+                skill={prev.skill}
+                isEdit={prev.isEdit}
+                handleAdd={handleAdd}
+                handleEditProficiency={
+                    prev.isEdit
+                        ? handleEditRelatedSkill
+                            ? level => handleEditRelatedSkill(prev.skill.id!, level)
+                            : undefined
+                        : undefined
+                }
+                handleDelete={
+                    prev.isEdit && handleRemoveRelatedSkill
+                        ? () => handleRemoveRelatedSkill(prev.skill.id!)
+                        : undefined
+                }
+                initialProficiencyLevel={prev.proficiencyLevel}
+                selectedSkills={selectedSkills}
+                handleAddRelatedSkill={handleAddRelatedSkill}
+                handleEditRelatedSkill={handleEditRelatedSkill}
+                handleRemoveRelatedSkill={handleRemoveRelatedSkill}
+                previousSkills={remainingPrevious}
+            />
+        );
+    };
+
+    const previousSkill =
+        previousSkills.length > 0 ? previousSkills[previousSkills.length - 1] : null;
+
     // @ts-ignore
     const description = skill?.targetDescription || skill?.description || '';
     const isTier = skill?.role === FrameworkNodeRole.tier;
@@ -76,6 +123,24 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
             }}
             className="h-full w-full flex items-center justify-center relative bg-grayscale-200 backdrop-blur-[22.5px] bg-opacity-70"
         >
+            {previousSkill && (
+                <button
+                    className="absolute top-[20px] left-[20px] bg-white rounded-full p-[12px] shadow-bottom-4-4 flex items-center gap-[10px] max-w-[300px]"
+                    onClick={e => {
+                        e.stopPropagation();
+                        handleGoBack();
+                    }}
+                >
+                    <SlimCaretLeft className="h-[20px] w-[20px] text-grayscale-700 flex-shrink-0" />
+                    <div className="flex items-center gap-[5px] overflow-hidden">
+                        <CompetencyIcon icon={previousSkill.skill.icon} size="small" />
+                        <span className="text-[14px] text-grayscale-800 font-bold font-poppins truncate">
+                            {previousSkill.skill.targetName}
+                        </span>
+                    </div>
+                </button>
+            )}
+
             <button
                 className="absolute top-[20px] right-[20px] bg-white rounded-full p-[12px] shadow-bottom-4-4"
                 onClick={e => {
@@ -212,6 +277,8 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                                     handleAddSkill={handleAddRelatedSkill}
                                     handleEditSkill={handleEditRelatedSkill}
                                     handleRemoveSkill={handleRemoveRelatedSkill}
+                                    currentSkillForNav={skill}
+                                    previousSkills={previousSkills}
                                 />
                             </div>
                         )}

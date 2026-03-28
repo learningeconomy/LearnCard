@@ -13,6 +13,7 @@ import {
 import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import SkillCard from './SkillCard';
+import { PreviousSkillInfo } from './AddSkillModal';
 import { SelectedSkill } from './SkillSearchSelector';
 import { SkillLevel } from './skillTypes';
 import { SkillFrameworkNode } from '../../components/boost/boost';
@@ -24,6 +25,8 @@ type RelatedSkillsProps = {
     handleAddSkill?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
     handleEditSkill?: (skillId: string, proficiencyLevel: SkillLevel) => void;
     handleRemoveSkill?: (skillId: string) => void;
+    currentSkillForNav?: SkillFrameworkNode;
+    previousSkills?: PreviousSkillInfo[];
 };
 
 const RelatedSkills: React.FC<RelatedSkillsProps> = ({
@@ -33,6 +36,8 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({
     handleAddSkill,
     handleEditSkill,
     handleRemoveSkill,
+    currentSkillForNav,
+    previousSkills,
 }) => {
     const swiperRef = useRef<any>(null);
     const [atBeginning, setAtBeginning] = useState(true);
@@ -174,6 +179,8 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({
                                         handleAddSkill={handleAddSkill}
                                         handleEditSkill={handleEditSkill}
                                         handleRemoveSkill={handleRemoveSkill}
+                                        currentSkill={currentSkillForNav}
+                                        previousSkills={previousSkills}
                                     />
                                 </SwiperSlide>
                             );
