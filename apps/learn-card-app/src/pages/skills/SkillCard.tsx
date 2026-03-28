@@ -27,6 +27,8 @@ type SkillCardProps = {
     handleRemoveSkill?: (skillId: string) => void;
     previousSkills?: PreviousSkillInfo[];
     currentSkill?: SkillFrameworkNode;
+    parentIsEdit?: boolean;
+    parentProficiencyLevel?: SkillLevel;
 };
 
 const SkillCard: React.FC<SkillCardProps> = ({
@@ -42,6 +44,8 @@ const SkillCard: React.FC<SkillCardProps> = ({
     handleRemoveSkill,
     previousSkills = [],
     currentSkill,
+    parentIsEdit,
+    parentProficiencyLevel,
 }) => {
     const { replaceModal } = useModal();
     const { data: skillData } = useGetSkill(frameworkId, skillId);
@@ -54,8 +58,8 @@ const SkillCard: React.FC<SkillCardProps> = ({
               {
                   skill: currentSkill,
                   frameworkId,
-                  isEdit: false,
-                  proficiencyLevel: undefined,
+                  isEdit: parentIsEdit,
+                  proficiencyLevel: parentProficiencyLevel,
               },
           ]
         : previousSkills;

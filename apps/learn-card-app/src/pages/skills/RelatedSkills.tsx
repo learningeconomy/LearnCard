@@ -27,6 +27,8 @@ type RelatedSkillsProps = {
     handleRemoveSkill?: (skillId: string) => void;
     currentSkillForNav?: SkillFrameworkNode;
     previousSkills?: PreviousSkillInfo[];
+    parentIsEdit?: boolean;
+    parentProficiencyLevel?: SkillLevel;
 };
 
 const RelatedSkills: React.FC<RelatedSkillsProps> = ({
@@ -38,6 +40,8 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({
     handleRemoveSkill,
     currentSkillForNav,
     previousSkills,
+    parentIsEdit,
+    parentProficiencyLevel,
 }) => {
     const swiperRef = useRef<any>(null);
     const [atBeginning, setAtBeginning] = useState(true);
@@ -181,6 +185,8 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({
                                         handleRemoveSkill={handleRemoveSkill}
                                         currentSkill={currentSkillForNav}
                                         previousSkills={previousSkills}
+                                        parentIsEdit={parentIsEdit}
+                                        parentProficiencyLevel={parentProficiencyLevel}
                                     />
                                 </SwiperSlide>
                             );

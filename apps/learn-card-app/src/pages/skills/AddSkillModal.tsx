@@ -277,6 +277,8 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                                 handleRemoveSkill={handleRemoveRelatedSkill}
                                 currentSkillForNav={skill}
                                 previousSkills={previousSkills}
+                                parentIsEdit={isEdit}
+                                parentProficiencyLevel={proficiencyLevel}
                             />
                         </div>
                     )}
