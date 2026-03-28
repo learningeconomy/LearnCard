@@ -269,7 +269,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                         className="p-[10px] flex gap-[10px] items-center background-grayscale-50 rounded-[15px] shadow-bottom-2-4"
                                     >
                                         <CompetencyIcon icon={skill.icon!} />
-                                        <span className="text-grayscale-900 font-poppinstext-[17px] line-clamp-2">
+                                        <span className="text-grayscale-900 font-poppins text-[17px] line-clamp-2 text-left">
                                             {skill?.targetName}
                                         </span>
                                         <Plus
