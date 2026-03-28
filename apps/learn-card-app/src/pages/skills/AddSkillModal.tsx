@@ -136,7 +136,8 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                         <div className="flex items-center gap-[5px] overflow-hidden">
                             <CompetencyIcon icon={previousSkill.skill.icon} size="small" />
                             <span className="text-[14px] text-grayscale-800 font-bold font-poppins truncate">
-                                {previousSkill.skill.targetName}
+                                {/* @ts-ignore */}
+                                {previousSkill.skill.targetName || previousSkill.skill.statement}
                             </span>
                         </div>
                     </button>
