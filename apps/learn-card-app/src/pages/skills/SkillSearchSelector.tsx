@@ -179,6 +179,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     const openAddSkillModal = (skill: SkillFrameworkNode) => {
         newModal(
             <AddSkillModal
+                frameworkId={frameworkId}
                 skill={skill}
                 handleAdd={(skill, proficiencyLevel) => {
                     handleToggleSelect(skill.id!, proficiencyLevel, skill);

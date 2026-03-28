@@ -117,7 +117,7 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) =
 
     return (
         <div className="flex flex-col gap-[5px] w-full">
-            <p className="font-poppins text-[17px]  text-grayscale-900">
+            <p className="font-poppins text-[17px]  text-grayscale-900 font-bold">
                 {conditionalPluralize(relatedSkills.length, 'Related Skill')}
             </p>
 

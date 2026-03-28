@@ -34,6 +34,7 @@ const SkillTag: React.FC<SkillTagProps> = ({
 
         newModal(
             <AddSkillModal
+                frameworkId={frameworkId}
                 skill={skill}
                 isEdit
                 handleEditProficiency={handleEditSkill}
