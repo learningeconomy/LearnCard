@@ -5,8 +5,8 @@ import { ModalTypes, useGetSkill, useModal } from 'learn-card-base';
 import AddSkillModal from './AddSkillModal';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import SkillProficiencyCircle from './SkillProficiencyCircle';
+import TrashBin from 'src/components/svgs/TrashBin';
 import Pencil from 'src/components/svgs/Pencil';
-import X from 'src/components/svgs/X';
 
 import { SkillLevel } from './skillTypes';
 import { SkillFrameworkNode } from 'src/components/boost/boost';
@@ -53,24 +53,26 @@ const SkillTag: React.FC<SkillTagProps> = ({
             <span className="font-poppins text-[13px] font-bold leading-[130%]">
                 {skill?.statement ?? '...'}
             </span>
-            {handleEditSkill && (
-                <button
-                    type="button"
-                    className="text-grayscale-700 p-[3px] rounded-full"
-                    onClick={() => openEditSkillModal(skill)}
-                >
-                    <Pencil className="w-[23px] h-[23px]" />
-                </button>
-            )}
-            {handleRemoveSkill && (
-                <button
-                    type="button"
-                    className="text-grayscale-700 p-[3px] rounded-full"
-                    onClick={() => handleRemoveSkill(skill)}
-                >
-                    <X className="w-[23px] h-[23px]" />
-                </button>
-            )}
+            <div className="flex items-center gap-[2px]">
+                {handleEditSkill && (
+                    <button
+                        type="button"
+                        className="text-grayscale-700 p-[3px] rounded-full"
+                        onClick={() => openEditSkillModal(skill)}
+                    >
+                        <Pencil className="w-[23px] h-[23px]" />
+                    </button>
+                )}
+                {handleRemoveSkill && (
+                    <button
+                        type="button"
+                        className="text-grayscale-700 p-[3px] rounded-full"
+                        onClick={() => handleRemoveSkill(skill)}
+                    >
+                        <TrashBin className="w-[23px] h-[23px]" version="2" strokeWidth="2" />
+                    </button>
+                )}
+            </div>
         </div>
     );
 };
