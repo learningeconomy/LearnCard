@@ -13,27 +13,55 @@ import { FrameworkNodeRole, SkillFrameworkNode } from '../../components/boost/bo
 
 type AddSkillModalProps = {
     skill: SkillFrameworkNode;
-    handleAdd: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
+    handleAdd?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
+    isEdit?: boolean;
+    handleEditProficiency?: (proficiencyLevel: SkillLevel) => void;
+    handleDelete?: () => void;
+    initialProficiencyLevel?: SkillLevel;
 };
 
-const AddSkillModal: React.FC<AddSkillModalProps> = ({ skill, handleAdd }) => {
+const AddSkillModal: React.FC<AddSkillModalProps> = ({
+    skill,
+    handleAdd,
+    isEdit = false,
+    handleEditProficiency,
+    handleDelete,
+    initialProficiencyLevel,
+}) => {
     const { closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
 
-    const [proficiencyLevel, setProficiencyLevel] = useState<SkillLevel>(SkillLevel.Hidden);
+    const [proficiencyLevel, setProficiencyLevel] = useState<SkillLevel>(
+        initialProficiencyLevel || SkillLevel.Hidden
+    );
     const [isExpanded, setIsExpanded] = useState(false);
 
+    const handleCloseWithEditProficiency = () => {
+        if (isEdit && handleEditProficiency) {
+            handleEditProficiency(proficiencyLevel);
+        }
+        closeModal();
+    };
+
+    // @ts-ignore
+    const description = skill?.targetDescription || skill?.description || '';
     const isTier = skill?.role === FrameworkNodeRole.tier;
 
     return (
         <div
             role="button"
-            onClick={closeModal}
+            onClick={e => {
+                e.stopPropagation();
+                handleCloseWithEditProficiency();
+            }}
             className="h-full w-full flex items-center justify-center relative"
         >
             <button
                 className="absolute top-[20px] right-[20px] bg-white rounded-full p-[12px] shadow-bottom-4-4"
-                onClick={closeModal}
+                onClick={e => {
+                    e.stopPropagation();
+                    handleCloseWithEditProficiency();
+                }}
             >
                 <X className="h-[20px] w-[20px] text-grayscale-800" />
             </button>
@@ -103,13 +131,12 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({ skill, handleAdd }) => {
                                     proficiencyLevel={proficiencyLevel}
                                     onChange={setProficiencyLevel}
                                 />
-                                {skill?.targetDescription && (
+                                {description && (
                                     <>
                                         <div className="h-[1px] bg-grayscale-200 w-full" />
                                         <p className="text-grayscale-700 font-poppins text-[16px] tracking-[-0.25px]">
                                             {(() => {
                                                 const descriptionLength = 240;
-                                                const description = skill.targetDescription;
                                                 const shouldTruncate =
                                                     description.length > descriptionLength;
                                                 const displayText =
@@ -158,15 +185,28 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({ skill, handleAdd }) => {
                         >
                             Details
                         </button>
-                        <button
-                            onClick={() => {
-                                handleAdd(skill, proficiencyLevel);
-                                closeModal();
-                            }}
-                            className="px-[15px] py-[7px] bg-indigo-600 rounded-full text-white flex-1 font-poppins text-[17px] font-bold tracking-[0.25px] leading-[24px] h-[41.5px]"
-                        >
-                            Add Skill
-                        </button>
+                        {!isEdit && (
+                            <button
+                                onClick={() => {
+                                    handleAdd?.(skill, proficiencyLevel);
+                                    closeModal();
+                                }}
+                                className="px-[15px] py-[7px] bg-indigo-600 rounded-full text-white flex-1 font-poppins text-[17px] font-bold tracking-[0.25px] leading-[24px] h-[41.5px]"
+                            >
+                                Add Skill
+                            </button>
+                        )}
+                        {isEdit && (
+                            <button
+                                onClick={() => {
+                                    handleDelete?.();
+                                    closeModal();
+                                }}
+                                className="px-[15px] py-[7px] bg-grayscale-900 rounded-full text-white flex-1 font-poppins text-[17px] font-bold tracking-[0.25px] leading-[24px] h-[41.5px]"
+                            >
+                                Delete Skill
+                            </button>
+                        )}
                     </div>
                 </IonFooter>
             </div>

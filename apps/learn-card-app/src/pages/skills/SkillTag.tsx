@@ -1,16 +1,22 @@
-import { useGetSkill } from 'learn-card-base';
 import React from 'react';
-import { SkillLevel } from './skillTypes';
+
+import { ModalTypes, useGetSkill, useModal } from 'learn-card-base';
+
+import AddSkillModal from './AddSkillModal';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import SkillProficiencyCircle from './SkillProficiencyCircle';
+import Pencil from 'src/components/svgs/Pencil';
 import X from 'src/components/svgs/X';
+
+import { SkillLevel } from './skillTypes';
+import { SkillFrameworkNode } from 'src/components/boost/boost';
 
 type SkillTagProps = {
     frameworkId: string;
     skillId: string;
     proficiencyLevel: SkillLevel;
     handleRemoveSkill?: (skill: any) => void;
-    handleEditSkill?: (skill: any) => void;
+    handleEditSkill?: (proficiencyLevel: SkillLevel) => void;
 };
 
 const SkillTag: React.FC<SkillTagProps> = ({
@@ -20,7 +26,24 @@ const SkillTag: React.FC<SkillTagProps> = ({
     handleRemoveSkill,
     handleEditSkill,
 }) => {
+    const { newModal } = useModal();
     const { data: skill } = useGetSkill(frameworkId, skillId);
+
+    const openEditSkillModal = (skill: SkillFrameworkNode) => {
+        if (!skill || !handleEditSkill) return;
+
+        newModal(
+            <AddSkillModal
+                skill={skill}
+                isEdit
+                handleEditProficiency={handleEditSkill}
+                handleDelete={handleRemoveSkill ? () => handleRemoveSkill(skill) : undefined}
+                initialProficiencyLevel={proficiencyLevel}
+            />,
+            undefined,
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    };
 
     return (
         <div className="bg-violet-100 text-grayscale-900 pl-[3px] pr-[10px] py-[3px] rounded-[40px] flex items-center gap-[5px] w-fit">
@@ -30,6 +53,15 @@ const SkillTag: React.FC<SkillTagProps> = ({
             <span className="font-poppins text-[13px] font-bold leading-[130%]">
                 {skill?.statement ?? '...'}
             </span>
+            {handleEditSkill && (
+                <button
+                    type="button"
+                    className="text-grayscale-700 p-[3px] rounded-full"
+                    onClick={() => openEditSkillModal(skill)}
+                >
+                    <Pencil className="w-[23px] h-[23px]" />
+                </button>
+            )}
             {handleRemoveSkill && (
                 <button
                     type="button"

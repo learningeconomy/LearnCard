@@ -54,7 +54,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     className = '',
 }) => {
     const flags = useFlags();
-    const { newModal, closeModal } = useModal();
+    const { newModal } = useModal();
     const { presentToast } = useToast();
     const { data: lcNetworkProfile } = useGetProfile();
 
@@ -132,6 +132,14 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                 setSelectedSkillNodesCache(prev => new Map(prev).set(skillId, skillNode));
             }
         }
+    };
+
+    const handleChangeProficiency = (skillId: string, proficiencyLevel: SkillLevel) => {
+        onSelectedSkillsChange(
+            selectedSkills.map(s =>
+                s.id === skillId ? { ...s, proficiency: proficiencyLevel } : s
+            )
+        );
     };
 
     const handleSubmitSkillSuggestion = async () => {
@@ -241,6 +249,9 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                     frameworkId={frameworkId}
                                     proficiencyLevel={skill.proficiency}
                                     handleRemoveSkill={() => handleToggleSelect(skill.id)}
+                                    handleEditSkill={proficiencyLevel =>
+                                        handleChangeProficiency(skill.id, proficiencyLevel)
+                                    }
                                 />
                             ))}
                         </div>
