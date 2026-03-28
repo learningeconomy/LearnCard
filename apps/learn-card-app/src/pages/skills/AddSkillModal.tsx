@@ -18,7 +18,7 @@ type AddSkillModalProps = {
 
 const AddSkillModal: React.FC<AddSkillModalProps> = ({ skill, handleAdd }) => {
     const { closeModal } = useModal();
-    const { isDesktop, isMobile } = useDeviceTypeByWidth();
+    const { isMobile } = useDeviceTypeByWidth();
 
     const [proficiencyLevel, setProficiencyLevel] = useState<SkillLevel>(SkillLevel.Hidden);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -159,7 +159,10 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({ skill, handleAdd }) => {
                             Details
                         </button>
                         <button
-                            onClick={() => handleAdd(skill, proficiencyLevel)}
+                            onClick={() => {
+                                handleAdd(skill, proficiencyLevel);
+                                closeModal();
+                            }}
                             className="px-[15px] py-[7px] bg-indigo-600 rounded-full text-white flex-1 font-poppins text-[17px] font-bold tracking-[0.25px] leading-[24px] h-[41.5px]"
                         >
                             Add Skill

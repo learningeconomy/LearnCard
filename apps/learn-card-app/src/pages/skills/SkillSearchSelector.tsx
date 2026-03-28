@@ -115,14 +115,18 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
 
     const suggestedSkills = hasSearchQuery ? semanticSkills : defaultSkillsToShow;
 
-    const handleToggleSelect = (skillId: string, skillNode?: SkillFrameworkNode) => {
+    const handleToggleSelect = (
+        skillId: string,
+        proficiencyLevel?: SkillLevel,
+        skillNode?: SkillFrameworkNode
+    ) => {
         const isAlreadySelected = selectedSkills.some(s => s.id === skillId);
         if (isAlreadySelected) {
             onSelectedSkillsChange(selectedSkills.filter(s => s.id !== skillId));
         } else {
             onSelectedSkillsChange([
                 ...selectedSkills,
-                { id: skillId, proficiency: SkillLevel.Hidden },
+                { id: skillId, proficiency: proficiencyLevel ?? SkillLevel.Hidden },
             ]);
             if (skillNode) {
                 setSelectedSkillNodesCache(prev => new Map(prev).set(skillId, skillNode));
@@ -168,15 +172,12 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         }
     };
 
-    const openAddSkillModal = (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => {
+    const openAddSkillModal = (skill: SkillFrameworkNode) => {
         newModal(
             <AddSkillModal
                 skill={skill}
                 handleAdd={(skill, proficiencyLevel) => {
-                    handleToggleSelect(skill.id!, skill);
-                    // TODO proficiencyLevel
-                    console.log('TODO proficiencyLevel', proficiencyLevel);
-                    closeModal();
+                    handleToggleSelect(skill.id!, proficiencyLevel, skill);
                 }}
             />,
             undefined,
@@ -264,7 +265,6 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
 
                                 return (
                                     <button
-                                        // onClick={() => handleToggleSelect(skill.id!, skill)}
                                         onClick={() => openAddSkillModal(skill)}
                                         className="p-[10px] flex gap-[10px] items-center background-grayscale-50 rounded-[15px] shadow-bottom-2-4"
                                     >
