@@ -35,13 +35,22 @@ const PrivacySettingsModal: React.FC = () => {
     const dob = currentLCNUser?.dob;
     const age = dob ? calculateAge(dob) : null;
     const threshold = getMinorAgeThreshold(currentLCNUser?.country);
-    const isMinorByAge = profileType === 'child' || (age !== null && !isNaN(age) && age < threshold);
+    const isMinorByAge =
+        profileType === 'child' || (age !== null && !isNaN(age) && age < threshold);
     const isMinor = isMinorByAge;
 
-    const aiEnabled = isMinor ? false : (preferences?.aiEnabled ?? true);
-    const analyticsEnabled = isMinor ? false : (preferences?.analyticsEnabled ?? true);
-    const bugReportsEnabled = isMinor ? false : (preferences?.bugReportsEnabled ?? true);
-    const profileVisibility = currentLCNUser?.profileVisibility ?? ProfileVisibilityEnum.enum.public;
+    const aiEnabled = isMinor ? false : preferences?.aiEnabled ?? true;
+    const analyticsEnabled = isMinor ? false : preferences?.analyticsEnabled ?? true;
+    const bugReportsEnabled = isMinor ? false : preferences?.bugReportsEnabled ?? true;
+    // Legacy profiles may only have `isPrivate` populated. Mirror the backend
+    // fallback so the selected privacy option matches the profile's effective
+    // visibility until the user saves the new canonical field.
+    let profileVisibility = ProfileVisibilityEnum.enum.public;
+    if (currentLCNUser?.profileVisibility) {
+        profileVisibility = currentLCNUser.profileVisibility;
+    } else if (currentLCNUser?.isPrivate) {
+        profileVisibility = ProfileVisibilityEnum.enum.private;
+    }
     const showEmail = currentLCNUser?.showEmail ?? false;
     const allowConnectionRequests =
         currentLCNUser?.allowConnectionRequests ?? AllowConnectionRequestsEnum.enum.anyone;
@@ -151,7 +160,7 @@ const PrivacySettingsModal: React.FC = () => {
                             Profile Privacy
                         </p>
                         <p className="text-sm text-grayscale-500 mt-0.5">
-                            Control how your LearnCard profile appears to others in the network
+                            Control how your LearnCard profile appears to others in the network.
                         </p>
                     </div>
 
@@ -161,7 +170,7 @@ const PrivacySettingsModal: React.FC = () => {
                                 Profile visibility
                             </p>
                             <p className="text-sm text-grayscale-500">
-                                Choose who can view the details on your profile
+                                Choose who can view the details on your profile.
                             </p>
                             <RadioGroup
                                 name="profile-visibility"
@@ -182,7 +191,7 @@ const PrivacySettingsModal: React.FC = () => {
                                     Show email to connections
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5">
-                                    Let connected users see your email address on your profile
+                                    Let connected users see your email address on your profile.
                                 </p>
                             </div>
                             <IonToggle
@@ -200,7 +209,7 @@ const PrivacySettingsModal: React.FC = () => {
                                 Connection requests
                             </p>
                             <p className="text-sm text-grayscale-500">
-                                Decide who can send you new connection requests
+                                Decide who can send you new connection requests.
                             </p>
                             <RadioGroup
                                 name="allow-connection-requests"
@@ -249,9 +258,7 @@ const PrivacySettingsModal: React.FC = () => {
                         <IonToggle
                             checked={analyticsEnabled}
                             disabled={isMinor}
-                            onIonChange={e =>
-                                !isMinor && handleAnalyticsToggle(e.detail.checked)
-                            }
+                            onIonChange={e => !isMinor && handleAnalyticsToggle(e.detail.checked)}
                             aria-label="Analytics & Insights"
                         />
                     </div>
@@ -271,9 +278,7 @@ const PrivacySettingsModal: React.FC = () => {
                         <IonToggle
                             checked={bugReportsEnabled}
                             disabled={isMinor}
-                            onIonChange={e =>
-                                !isMinor && handleBugReportsToggle(e.detail.checked)
-                            }
+                            onIonChange={e => !isMinor && handleBugReportsToggle(e.detail.checked)}
                             aria-label="Bug Reports"
                         />
                     </div>
