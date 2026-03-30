@@ -7,6 +7,7 @@ import {
     LCNNotificationTypeEnumValidator,
     LCNNotificationValidator,
     LCNProfile,
+    LCNVisibleProfile,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -216,21 +217,23 @@ export const RecoveryMethodInfoValidator = z.object({
 });
 export type RecoveryMethodInfo = z.infer<typeof RecoveryMethodInfoValidator>;
 
-export const GetAuthShareResponseValidator = z.object({
-    authShare: ServerEncryptedShareValidator.nullable(),
-    primaryDid: z.string().nullable(),
-    securityLevel: SecurityLevelValidator,
-    recoveryMethods: z.array(RecoveryMethodInfoValidator),
-    keyProvider: KeyProviderValidator,
-    shareVersion: z.number(),
-    maskedRecoveryEmail: z.string().nullable(),
-}).nullable();
+export const GetAuthShareResponseValidator = z
+    .object({
+        authShare: ServerEncryptedShareValidator.nullable(),
+        primaryDid: z.string().nullable(),
+        securityLevel: SecurityLevelValidator,
+        recoveryMethods: z.array(RecoveryMethodInfoValidator),
+        keyProvider: KeyProviderValidator,
+        shareVersion: z.number(),
+        maskedRecoveryEmail: z.string().nullable(),
+    })
+    .nullable();
 export type GetAuthShareResponse = z.infer<typeof GetAuthShareResponseValidator>;
 
 /** @group LCA API Plugin */
 export type LCAPluginDependentMethods = {
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
-    getProfile: () => Promise<LCNProfile | undefined>;
+    getProfile: () => Promise<LCNVisibleProfile | undefined>;
     generateEd25519KeyFromBytes: (bytes: Uint8Array) => JWKWithPrivateKey;
     keyToDid: (type: 'key', keypair: JWKWithPrivateKey) => string;
     resolveDid: (did: string) => Promise<DidDocument>;
@@ -270,7 +273,10 @@ export type LCAPluginMethods = {
     ) => Promise<PaginatedNotificationsType | false>;
     updateNotificationMeta: (_id: string, meta: NotificationMetaType) => Promise<boolean>;
     markAllNotificationsRead: () => Promise<boolean>;
-    createSigningAuthority: (name: string, ownerDid?: string) => Promise<SigningAuthorityType | false>;
+    createSigningAuthority: (
+        name: string,
+        ownerDid?: string
+    ) => Promise<SigningAuthorityType | false>;
     getSigningAuthorities: () => Promise<SigningAuthorityType[] | false>;
     authorizeSigningAuthority: (
         name: string,

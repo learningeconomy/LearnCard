@@ -528,6 +528,7 @@ export async function getLearnCardNetworkPlugin(
                 const target = await _learnCard.invoke.getProfile(profileId);
 
                 if (!target) throw new Error('Could not find target account');
+                if (!target.did) throw new Error('Could not find target DID');
 
                 const credential = await _learnCard.invoke.createDagJwe(vc, [
                     _learnCard.id.did(),
@@ -584,6 +585,7 @@ export async function getLearnCardNetworkPlugin(
                 const target = await _learnCard.invoke.getProfile(profileId);
 
                 if (!target) throw new Error('Could not find target account');
+                if (!target.did) throw new Error('Could not find target DID');
 
                 const presentation = await _learnCard.invoke.createDagJwe(vp, [
                     _learnCard.id.did(),
@@ -948,6 +950,7 @@ export async function getLearnCardNetworkPlugin(
                 const targetProfile = await _learnCard.invoke.getProfile(profileId);
 
                 if (!targetProfile) throw new Error('Target profile not found');
+                if (!targetProfile.did) throw new Error('Target profile has no DID');
 
                 let boost = data.data;
 
@@ -1103,7 +1106,8 @@ export async function getLearnCardNetworkPlugin(
                             } else {
                                 const targetProfile = await _learnCard.invoke.getProfile(recipient);
 
-                                if (!targetProfile) return client.boost.send.mutate(input);
+                                if (!targetProfile || !targetProfile.did)
+                                    return client.boost.send.mutate(input);
 
                                 targetDid = targetProfile.did;
                             }
