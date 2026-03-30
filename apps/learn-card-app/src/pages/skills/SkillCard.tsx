@@ -9,7 +9,7 @@ import Plus from '../../components/svgs/Plus';
 import Pencil from '../../components/svgs/Pencil';
 import TrashBin from '../../components/svgs/TrashBin';
 import AddSkillModal, { PreviousSkillInfo } from './AddSkillModal';
-import { SkillLevel } from './skillTypes';
+import { SkillLevel, SKILL_LEVEL_META } from './skillTypes';
 import { SkillFrameworkNode } from '../../components/boost/boost';
 import { SelectedSkill } from './SkillSearchSelector';
 import { convertApiSkillNodeToSkillTreeNode } from 'src/helpers/skillFramework.helpers';
@@ -101,20 +101,56 @@ const SkillCard: React.FC<SkillCardProps> = ({
         );
     };
 
+    const showSelfAssigned = isSelfAssigned || isSelected; // isSelected to account for active self-assigning skills state
+
     return (
         <IonCol size="12" className="flex justify-center items-center relative">
-            <div className="flex bg-white flex-col shadow-box-bottom relative p-0 w-[160px] h-[310px] rounded-[20px] overflow-hidden ">
+            <div
+                className={`flex bg-white flex-col shadow-box-bottom relative p-0 w-[160px] h-[310px] rounded-[20px] overflow-hidden border-[1px] border-solid ${
+                    proficiencyLevel
+                        ? `border-solid border-[2px] border-${SKILL_LEVEL_META[proficiencyLevel].cardOuterBorderColor}`
+                        : ''
+                }`}
+            >
                 <div
-                    className={`border-b-[1px] border-solid border-grayscale-200 flex items-center justify-center py-[15px] ${
-                        isSelfAssigned ? 'bg-sky-50' : 'bg-grayscale-100'
+                    className={`border-b-[1px] border-solid flex items-center justify-center py-[15px] ${
+                        proficiencyLevel
+                            ? `border-${SKILL_LEVEL_META[proficiencyLevel].cardInnerBorderColor}`
+                            : 'border-grayscale-50'
+                    } ${
+                        showSelfAssigned && proficiencyLevel
+                            ? `bg-${SKILL_LEVEL_META[proficiencyLevel].cardIconBgColor}`
+                            : 'bg-grayscale-100'
                     }`}
                 >
                     <CompetencyIcon icon={skillData?.icon} size="super-big" />
                 </div>
 
-                {isSelfAssigned && (
-                    <div className="bg-white rounded-full p-[3px] border-[1px] border-solid border-sky-200 absolute top-[3px] right-[3px]">
+                {showSelfAssigned && (
+                    <div
+                        className={`bg-white rounded-full p-[3px] border-[1px] border-solid absolute top-[3px] right-[3px] ${
+                            proficiencyLevel
+                                ? `border-${SKILL_LEVEL_META[proficiencyLevel].cardInnerBorderColor}`
+                                : ''
+                        }`}
+                    >
                         <SelfVerifiedCertIcon className="w-[25px] h-[25px]" />
+                    </div>
+                )}
+
+                {proficiencyLevel !== undefined && proficiencyLevel !== SkillLevel.Hidden && (
+                    <div
+                        className={`absolute top-[108px] left-1/2 -translate-x-1/2 px-[12px] py-[2px] rounded-full bg-white border shadow-sm flex items-center justify-center ${
+                            proficiencyLevel
+                                ? `border-${SKILL_LEVEL_META[proficiencyLevel].cardInnerBorderColor}`
+                                : ''
+                        }`}
+                    >
+                        <span
+                            className={`text-[13px] font-poppins font-[600] text-${SKILL_LEVEL_META[proficiencyLevel].cardTextColor}`}
+                        >
+                            {SKILL_LEVEL_META[proficiencyLevel].name}
+                        </span>
                     </div>
                 )}
 
@@ -192,6 +228,9 @@ const SkillCard: React.FC<SkillCardProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* Make sure tailwind classes get generated */}
+            <span className="hidden border-gray-600 border-orange-600 border-violet-600 border-violet-200 text-sky-500" />
         </IonCol>
     );
 };
