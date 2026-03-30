@@ -75,7 +75,6 @@ import { updateProfile } from '@accesslayer/profile/update';
 import { LCNProfileQueryValidator } from '@learncard/types';
 import { setPrimarySigningAuthority } from '@accesslayer/signing-authority/relationships/update';
 import { verifyAuthToken } from '@helpers/oidc-jwt.helpers';
-import { finalizeInboxCredentialsForProfile } from '@helpers/finalize-inbox.helpers';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
@@ -145,16 +144,12 @@ export const profilesRouter = t.router({
                             );
                             await verifyContactMethod(cm.id);
 
-                            // Inline finalization: sign/issue pending inbox credentials
-                            // Fire-and-forget — client hook handles wallet sync
-                            finalizeInboxCredentialsForProfile(profile, ctx.domain).catch(
-                                e => {
-                                    console.error(
-                                        'Inline finalization failed (non-fatal):',
-                                        e
-                                    );
-                                }
-                            );
+                            // NOTE: Do NOT call finalizeInboxCredentialsForProfile here.
+                            // Finalization marks credentials as ISSUED in Neo4j, but the
+                            // VCs must be uploaded to the user's cloud wallet — which only
+                            // the client-side useFinalizeInboxCredentials hook can do.
+                            // Server-side fire-and-forget would race the hook and leave
+                            // credentials marked ISSUED but never stored in the wallet.
                         }
                     } catch (e) {
                         console.error('Auto-verify email failed (non-fatal):', e);
