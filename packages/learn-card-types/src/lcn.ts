@@ -112,12 +112,10 @@ export const LCNConnectionProfileValidator = LCNAuthedProfileValidator.extend({
 export type LCNConnectionProfile = z.infer<typeof LCNConnectionProfileValidator>;
 
 export const LCNVisibleProfileValidator = z.union([
+    LCNConnectionProfileValidator.strict(),
+    LCNAuthedProfileValidator.strict(),
+    LCNPublicProfileValidator.strict(),
     LCNProfileValidator,
-    LCNProfileValidator.partial().extend({
-        profileId: LCNProfileValidator.shape.profileId,
-        displayName: LCNProfileValidator.shape.displayName,
-        shortBio: LCNProfileValidator.shape.shortBio,
-    }),
 ]);
 export type LCNVisibleProfile = z.infer<typeof LCNVisibleProfileValidator>;
 
