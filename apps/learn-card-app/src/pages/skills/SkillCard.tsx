@@ -29,6 +29,7 @@ type SkillCardProps = {
     currentSkill?: SkillFrameworkNode;
     parentIsEdit?: boolean;
     parentProficiencyLevel?: SkillLevel;
+    tallCard?: boolean;
 };
 
 const SkillCard: React.FC<SkillCardProps> = ({
@@ -46,6 +47,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
     currentSkill,
     parentIsEdit,
     parentProficiencyLevel,
+    tallCard = false,
 }) => {
     const { replaceModal } = useModal();
     const { data: skillData } = useGetSkill(frameworkId, skillId);
@@ -106,11 +108,11 @@ const SkillCard: React.FC<SkillCardProps> = ({
     return (
         <IonCol size="12" className="flex justify-center items-center relative">
             <div
-                className={`flex bg-white flex-col shadow-box-bottom relative p-0 w-[160px] h-[310px] rounded-[20px] overflow-hidden border-[1px] border-solid ${
+                className={`flex bg-white flex-col shadow-box-bottom relative p-0 w-[160px] rounded-[20px] overflow-hidden border-[1px] border-solid ${
                     proficiencyLevel
                         ? `border-solid border-[2px] border-${SKILL_LEVEL_META[proficiencyLevel].cardOuterBorderColor}`
                         : ''
-                }`}
+                } ${tallCard ? 'h-[310px]' : ''}`}
             >
                 <div
                     className={`border-b-[1px] border-solid flex items-center justify-center py-[15px] ${
@@ -154,8 +156,8 @@ const SkillCard: React.FC<SkillCardProps> = ({
                     </div>
                 )}
 
-                <div className="text-grayscale-900 flex px-[15px] flex-1 flex-col relative py-[15px]">
-                    <div className="h-[44px] flex items-center justify-center mb-[10px]">
+                <div className="text-grayscale-900 flex px-[15px] flex-1 flex-col gap-[10px] relative pt-[20px] pb-[10px]">
+                    <div className="h-[44px] flex items-center justify-center">
                         <p
                             className="line-clamp-2 text-grayscale-800 font-poppins text-[14px] font-[600] text-center"
                             title={skillData?.statement}

@@ -77,6 +77,7 @@ const SkillIssuances: React.FC<SkillIssuancesProps> = ({ frameworkId, skillId, c
                                             skillId={skillId}
                                             frameworkId={frameworkId}
                                             isSelfAssigned
+                                            tallCard
                                         />
                                     )}
                                     {!isSelfAssignedSkill && (
