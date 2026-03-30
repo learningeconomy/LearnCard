@@ -28,7 +28,7 @@ const CompetencyIcon: React.FC<CompetencyIconProps> = ({
                 withWhiteBackground ? 'bg-white rounded-full' : ''
             } ${sizeClassName}`}
         >
-            {icon}
+            {icon || '🧩'}
         </span>
     );
 };
