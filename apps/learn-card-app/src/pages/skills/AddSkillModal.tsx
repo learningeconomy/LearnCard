@@ -112,6 +112,40 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
     // @ts-ignore
     const description = skill?.targetDescription || skill?.description || '';
     const isTier = skill?.role === FrameworkNodeRole.tier;
+    const headerContent = (
+        <>
+            {previousSkill ? (
+                <button
+                    className="bg-white rounded-full py-[10px] pl-[10px] pr-[20px] shadow-bottom-4-4 flex items-center gap-[10px] max-w-[300px] h-[44px]"
+                    onClick={e => {
+                        e.stopPropagation();
+                        handleGoBack();
+                    }}
+                >
+                    <SlimCaretLeft className="h-[20px] w-[20px] text-grayscale-700 flex-shrink-0" />
+                    <div className="flex items-center gap-[5px] overflow-hidden">
+                        <CompetencyIcon icon={previousSkill.skill.icon} size="small" />
+                        <span className="text-[14px] text-grayscale-800 font-bold font-poppins truncate">
+                            {/* @ts-ignore */}
+                            {previousSkill.skill.targetName || previousSkill.skill.statement}
+                        </span>
+                    </div>
+                </button>
+            ) : (
+                <div />
+            )}
+
+            <button
+                className="bg-white rounded-full p-[12px] shadow-bottom-4-4"
+                onClick={e => {
+                    e.stopPropagation();
+                    handleCloseWithEditProficiency();
+                }}
+            >
+                <X className="h-[20px] w-[20px] text-grayscale-800" />
+            </button>
+        </>
+    );
 
     return (
         <div
@@ -123,37 +157,8 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
             className="h-full w-full flex flex-col bg-grayscale-200 backdrop-blur-[22.5px] bg-opacity-70"
         >
             {/* Sticky Header */}
-            <div className="sticky top-0 z-10 flex justify-between items-center p-[20px] bg-transparent">
-                {previousSkill ? (
-                    <button
-                        className="bg-white rounded-full p-[12px] shadow-bottom-4-4 flex items-center gap-[10px] max-w-[300px]"
-                        onClick={e => {
-                            e.stopPropagation();
-                            handleGoBack();
-                        }}
-                    >
-                        <SlimCaretLeft className="h-[20px] w-[20px] text-grayscale-700 flex-shrink-0" />
-                        <div className="flex items-center gap-[5px] overflow-hidden">
-                            <CompetencyIcon icon={previousSkill.skill.icon} size="small" />
-                            <span className="text-[14px] text-grayscale-800 font-bold font-poppins truncate">
-                                {/* @ts-ignore */}
-                                {previousSkill.skill.targetName || previousSkill.skill.statement}
-                            </span>
-                        </div>
-                    </button>
-                ) : (
-                    <div />
-                )}
-
-                <button
-                    className="bg-white rounded-full p-[12px] shadow-bottom-4-4"
-                    onClick={e => {
-                        e.stopPropagation();
-                        handleCloseWithEditProficiency();
-                    }}
-                >
-                    <X className="h-[20px] w-[20px] text-grayscale-800" />
-                </button>
+            <div className="sticky top-0 z-10 flex justify-between items-center bg-white bg-opacity-70 backdrop-blur-[5px] p-[20px] border-b border-grayscale-200 md:hidden">
+                {headerContent}
             </div>
 
             {/* Scrollable Content */}
@@ -161,8 +166,46 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                 onClick={e => e.stopPropagation()}
                 className="flex-1 overflow-y-auto scrollbar-hide px-[20px] flex flex-col"
             >
+                <div className="hidden md:sticky md:top-0 md:z-10 md:-mx-[20px] md:flex md:justify-between md:items-start md:px-[20px] md:pt-[20px] md:pointer-events-none">
+                    <div className="pointer-events-auto">
+                        {previousSkill ? (
+                            <button
+                                className="bg-white rounded-full py-[10px] pl-[10px] pr-[20px] shadow-bottom-4-4 flex items-center gap-[10px] max-w-[300px] h-[44px]"
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    handleGoBack();
+                                }}
+                            >
+                                <SlimCaretLeft className="h-[20px] w-[20px] text-grayscale-700 flex-shrink-0" />
+                                <div className="flex items-center gap-[5px] overflow-hidden">
+                                    <CompetencyIcon icon={previousSkill.skill.icon} size="small" />
+                                    <span className="text-[14px] text-grayscale-800 font-bold font-poppins truncate">
+                                        {/* @ts-ignore */}
+                                        {previousSkill.skill.targetName ||
+                                            previousSkill.skill.statement}
+                                    </span>
+                                </div>
+                            </button>
+                        ) : (
+                            <div />
+                        )}
+                    </div>
+
+                    <div className="pointer-events-auto">
+                        <button
+                            className="bg-white rounded-full p-[12px] shadow-bottom-4-4"
+                            onClick={e => {
+                                e.stopPropagation();
+                                handleCloseWithEditProficiency();
+                            }}
+                        >
+                            <X className="h-[20px] w-[20px] text-grayscale-800" />
+                        </button>
+                    </div>
+                </div>
+
                 <div
-                    className={`mx-auto cursor-auto w-full max-w-[450px] pb-[100px] flex-1 flex flex-col justify-center`}
+                    className={`mx-auto cursor-auto w-full max-w-[450px] pb-[100px] flex-1 flex flex-col justify-center md:pt-[84px]`}
                 >
                     {selectedTab === AddSkillTabEnum.Options && (
                         <>
@@ -264,7 +307,7 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                         </>
                     )}
                     {selectedTab === AddSkillTabEnum.Details && (
-                        <div className="flex flex-col gap-[30px] w-full">
+                        <div className="flex flex-col gap-[30px] w-full pt-[30px]">
                             <SkillFrameworkInfoBox
                                 frameworkId={frameworkId}
                                 skillId={skill?.id ?? ''}
