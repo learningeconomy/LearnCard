@@ -112,7 +112,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
                     proficiencyLevel
                         ? `border-solid border-[2px] border-${SKILL_LEVEL_META[proficiencyLevel].cardOuterBorderColor}`
                         : ''
-                } ${tallCard ? 'h-[310px]' : ''}`}
+                } ${tallCard ? 'h-[310px]' : 'min-h-[240px]'}`}
             >
                 <div
                     className={`border-b-[1px] border-solid flex items-center justify-center py-[15px] ${
