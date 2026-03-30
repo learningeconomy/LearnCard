@@ -1,5 +1,5 @@
 import React from 'react';
-import { useGetSkill, useModal, ModalTypes } from 'learn-card-base';
+import { useGetSkill, useModal } from 'learn-card-base';
 
 import { IonCol } from '@ionic/react';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
@@ -49,7 +49,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
     parentProficiencyLevel,
     tallCard = false,
 }) => {
-    const { replaceModal } = useModal();
+    const { replaceModal, closeModal } = useModal();
     const { data: skillData } = useGetSkill(frameworkId, skillId);
     const showActions = handleAddSkill || handleEditSkill || handleRemoveSkill;
 
@@ -199,6 +199,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
                                             onClick={e => {
                                                 e.stopPropagation();
                                                 handleRemoveSkill(skillId);
+                                                closeModal();
                                             }}
                                         >
                                             <TrashBin
