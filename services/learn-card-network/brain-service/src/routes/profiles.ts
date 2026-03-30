@@ -86,6 +86,29 @@ import {
     stripSensitiveProfileListFields,
 } from '@helpers/profile-privacy.helpers';
 
+const UpdateProfileInputValidator = z.object({
+    profileId: z.string().optional(),
+    displayName: z.string().optional(),
+    shortBio: z.string().optional(),
+    bio: z.string().optional(),
+    isPrivate: z.boolean().optional(),
+    profileVisibility: ProfileVisibilityEnum.optional(),
+    showEmail: z.boolean().optional(),
+    allowConnectionRequests: AllowConnectionRequestsEnum.optional(),
+    image: z.string().optional(),
+    heroImage: z.string().optional(),
+    websiteLink: z.string().optional(),
+    type: z.string().optional(),
+    email: z.string().optional(),
+    notificationsWebhook: z.string().optional(),
+    display: LCNProfileValidator.shape.display.optional(),
+    role: z.string().optional(),
+    dob: z.string().optional(),
+    country: z.string().optional(),
+    highlightedCredentials: z.array(z.string()).optional(),
+    approved: z.boolean().optional(),
+});
+
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
         .meta({
@@ -455,7 +478,7 @@ export const profilesRouter = t.router({
             },
             requiredScope: 'profiles:write',
         })
-        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }).partial())
+        .input(UpdateProfileInputValidator)
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;

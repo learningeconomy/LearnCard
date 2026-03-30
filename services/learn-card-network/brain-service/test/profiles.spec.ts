@@ -521,11 +521,11 @@ describe('Profiles', () => {
 
             expect(userAProfile?.profileId).toEqual('usera');
             expect(userAProfile?.displayName).toEqual('A');
-            expect(userAProfile?.email).toEqual('userA@test.com');
+            expect(userAProfile?.email).toBeUndefined();
             expect(userAProfile?.bio).toEqual('I am user A');
             expect(userBProfile?.profileId).toEqual('userb');
             expect(userBProfile?.displayName).toEqual('B');
-            expect(userBProfile?.email).toEqual('userB@test.com');
+            expect(userBProfile?.email).toBeUndefined();
             expect(userBProfile?.bio).toEqual('I am user B');
         });
 
@@ -1581,7 +1581,16 @@ describe('Profiles', () => {
             const nonUpdatedConnections = await userA.clients.fullAuth.profile.connections();
 
             expect(nonUpdatedConnections).toHaveLength(1);
-            expect(nonUpdatedConnections[0]).toEqual(userBBeforeUpdate);
+            expect(nonUpdatedConnections[0]).toMatchObject({
+                profileId: userBBeforeUpdate?.profileId,
+                displayName: userBBeforeUpdate?.displayName,
+                bio: userBBeforeUpdate?.bio,
+                did: userBBeforeUpdate?.did,
+                profileVisibility: userBBeforeUpdate?.profileVisibility,
+                showEmail: userBBeforeUpdate?.showEmail,
+                allowConnectionRequests: userBBeforeUpdate?.allowConnectionRequests,
+            });
+            expect(nonUpdatedConnections[0]?.isPrivate).toBeUndefined();
 
             await userB.clients.fullAuth.profile.updateProfile({
                 displayName: 'something else lol',
@@ -1592,7 +1601,16 @@ describe('Profiles', () => {
 
             expect(userBAfterUpdate).not.toEqual(userBBeforeUpdate);
             expect(updatedConnections).toHaveLength(1);
-            expect(updatedConnections[0]).toEqual(userBAfterUpdate);
+            expect(updatedConnections[0]).toMatchObject({
+                profileId: userBAfterUpdate?.profileId,
+                displayName: userBAfterUpdate?.displayName,
+                bio: userBAfterUpdate?.bio,
+                did: userBAfterUpdate?.did,
+                profileVisibility: userBAfterUpdate?.profileVisibility,
+                showEmail: userBAfterUpdate?.showEmail,
+                allowConnectionRequests: userBAfterUpdate?.allowConnectionRequests,
+            });
+            expect(updatedConnections[0]?.isPrivate).toBeUndefined();
         });
     });
 
