@@ -13,6 +13,7 @@ import {
 
 export interface ExportOptions {
     integrationId: string;
+    listingId?: string;
     boostUris?: string[];
     eventType?: CredentialEventType;
     startDate?: string;
@@ -220,7 +221,11 @@ async function downloadCsvWeb(csvContent: string, filename: string): Promise<voi
     URL.revokeObjectURL(url);
 }
 
-async function downloadCsvNative(csvContent: string, filename: string, presentToast: (message: string, type: ToastTypeEnum) => void): Promise<void> {
+async function downloadCsvNative(
+    csvContent: string,
+    filename: string,
+    presentToast: (message: string, type: ToastTypeEnum) => void
+): Promise<void> {
     const encoder = new TextEncoder();
     const bytes = encoder.encode(csvContent);
     const base64 = btoa(String.fromCharCode(...bytes));
@@ -262,7 +267,7 @@ export function useActivityExport(): {
 
     const exportCsv = useCallback(
         async (options: ExportOptions, integrationName: string): Promise<boolean> => {
-            const { integrationId, boostUris, eventType, startDate, endDate } = options;
+            const { integrationId, listingId, boostUris, eventType, startDate, endDate } = options;
 
             abortControllerRef.current = new AbortController();
             const signal = abortControllerRef.current.signal;
@@ -275,6 +280,7 @@ export function useActivityExport(): {
                 const stats = await wallet.invoke.getActivityStats?.({
                     boostUris: boostUris?.length ? boostUris : undefined,
                     integrationId,
+                    listingId,
                     eventType,
                     startDate,
                     endDate,
@@ -298,6 +304,7 @@ export function useActivityExport(): {
                         limit: pageSize,
                         cursor,
                         integrationId,
+                        listingId,
                         eventType,
                         startDate,
                         endDate,

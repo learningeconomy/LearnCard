@@ -80,6 +80,7 @@ const SubmissionForm: React.FC = () => {
             hero_background_color: listing.hero_background_color,
             min_age: listing.min_age,
             age_rating: listing.age_rating,
+            contact_email: listing.contact_email,
         };
     }, [existingListing]);
 
@@ -120,12 +121,19 @@ const SubmissionForm: React.FC = () => {
             if (!formData.full_description?.trim())
                 newErrors.full_description = 'Description is required';
             if (!formData.icon_url?.trim()) newErrors.icon_url = 'Icon URL is required';
+            // Validate email format if provided (optional field)
+            if (formData.contact_email?.trim()) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(formData.contact_email.trim())) {
+                    newErrors.contact_email = 'Please enter a valid email address';
+                }
+            }
         }
         if (step === 3) {
             let config: Record<string, unknown> = {};
             try {
                 config = formData.launch_config_json ? JSON.parse(formData.launch_config_json) : {};
-            } catch { }
+            } catch {}
             if (
                 ['EMBEDDED_IFRAME', 'SECOND_SCREEN', 'DIRECT_LINK'].includes(
                     formData.launch_type || ''
@@ -203,26 +211,26 @@ const SubmissionForm: React.FC = () => {
     };
 
     const createMockListingForPreview = (): ExtendedAppStoreListing =>
-    ({
-        listing_id: existingListing?.listing_id || existingListing?.slug || 'preview',
-        display_name: formData.display_name || 'Preview App',
-        tagline: formData.tagline || '',
-        full_description: formData.full_description || '',
-        icon_url:
-            formData.icon_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=Preview',
-        launch_type: formData.launch_type || 'EMBEDDED_IFRAME',
-        launch_config_json: formData.launch_config_json || '{}',
-        app_listing_status: 'DRAFT',
-        category: formData.category,
-        promo_video_url: formData.promo_video_url,
-        privacy_policy_url: formData.privacy_policy_url,
-        terms_url: formData.terms_url,
-        ios_app_store_id: formData.ios_app_store_id,
-        android_app_store_id: formData.android_app_store_id,
-        highlights: formData.highlights,
-        screenshots: formData.screenshots,
-        hero_background_color: formData.hero_background_color,
-    } as ExtendedAppStoreListing);
+        ({
+            listing_id: existingListing?.listing_id || existingListing?.slug || 'preview',
+            display_name: formData.display_name || 'Preview App',
+            tagline: formData.tagline || '',
+            full_description: formData.full_description || '',
+            icon_url:
+                formData.icon_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=Preview',
+            launch_type: formData.launch_type || 'EMBEDDED_IFRAME',
+            launch_config_json: formData.launch_config_json || '{}',
+            app_listing_status: 'DRAFT',
+            category: formData.category,
+            promo_video_url: formData.promo_video_url,
+            privacy_policy_url: formData.privacy_policy_url,
+            terms_url: formData.terms_url,
+            ios_app_store_id: formData.ios_app_store_id,
+            android_app_store_id: formData.android_app_store_id,
+            highlights: formData.highlights,
+            screenshots: formData.screenshots,
+            hero_background_color: formData.hero_background_color,
+        } as ExtendedAppStoreListing);
 
     const openPreviewModal = () => {
         const mockListing = createMockListingForPreview();
@@ -277,6 +285,7 @@ const SubmissionForm: React.FC = () => {
                 hero_background_color: formData.hero_background_color,
                 min_age: formData.min_age,
                 age_rating: formData.age_rating,
+                contact_email: formData.contact_email,
             };
             let savedListingId: string;
             if (isEditMode && listingId) {
@@ -337,6 +346,7 @@ const SubmissionForm: React.FC = () => {
                 hero_background_color: formData.hero_background_color,
                 min_age: formData.min_age,
                 age_rating: formData.age_rating,
+                contact_email: formData.contact_email,
             };
             if (isEditMode && listingId) {
                 await updateMutation.mutateAsync({
@@ -380,20 +390,22 @@ const SubmissionForm: React.FC = () => {
                 <IonContent className="ion-padding">
                     <div className="max-w-lg mx-auto text-center py-12">
                         <div
-                            className={`w-16 h-16 mx-auto mb-5 rounded-full flex items-center justify-center ${isPendingReview ? 'bg-amber-100' : 'bg-cyan-100'
-                                }`}
+                            className={`w-16 h-16 mx-auto mb-5 rounded-full flex items-center justify-center ${
+                                isPendingReview ? 'bg-amber-100' : 'bg-cyan-100'
+                            }`}
                         >
                             <FileEdit
-                                className={`w-8 h-8 ${isPendingReview ? 'text-amber-600' : 'text-cyan-600'
-                                    }`}
+                                className={`w-8 h-8 ${
+                                    isPendingReview ? 'text-amber-600' : 'text-cyan-600'
+                                }`}
                             />
                         </div>
                         <h2 className="text-xl font-semibold text-gray-700 mb-2">
                             {isPendingReview
                                 ? 'Changes Saved!'
                                 : isEditMode
-                                    ? 'Draft Updated!'
-                                    : 'Draft Saved!'}
+                                ? 'Draft Updated!'
+                                : 'Draft Saved!'}
                         </h2>
                         <p className="text-gray-500 text-sm mb-6">
                             Your app "{formData.display_name}" has been{' '}
@@ -497,8 +509,9 @@ const SubmissionForm: React.FC = () => {
                         <button
                             onClick={handleBack}
                             disabled={currentStep === 1}
-                            className={`flex items-center gap-2 px-4 py-2 text-gray-600 rounded-xl hover:bg-gray-100 transition-colors ${currentStep === 1 ? 'opacity-0 pointer-events-none' : ''
-                                }`}
+                            className={`flex items-center gap-2 px-4 py-2 text-gray-600 rounded-xl hover:bg-gray-100 transition-colors ${
+                                currentStep === 1 ? 'opacity-0 pointer-events-none' : ''
+                            }`}
                         >
                             <ArrowLeft className="w-4 h-4" />
                             Back
@@ -508,10 +521,11 @@ const SubmissionForm: React.FC = () => {
                                 <button
                                     onClick={handleSaveDraft}
                                     disabled={isSavingDraft || isSubmitting}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors disabled:opacity-50 ${isPendingReview
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors disabled:opacity-50 ${
+                                        isPendingReview
                                             ? 'bg-cyan-500 text-white hover:bg-cyan-600'
                                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                        }`}
+                                    }`}
                                 >
                                     {isSavingDraft ? (
                                         <>
@@ -524,8 +538,8 @@ const SubmissionForm: React.FC = () => {
                                             {isPendingReview
                                                 ? 'Save Changes'
                                                 : isEditMode
-                                                    ? 'Update Draft'
-                                                    : 'Save Draft'}
+                                                ? 'Update Draft'
+                                                : 'Save Draft'}
                                         </>
                                     )}
                                 </button>

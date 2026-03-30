@@ -6,6 +6,12 @@ module.exports = {
         './src/theme/schemas/*/theme.json',
         '../../packages/learn-card-base/src/**/*.{js,jsx,ts,tsx}',
     ],
+    safelist: [
+        'text-[var(--sdm-c,inherit)]',
+        'dark:text-[var(--shiki-dark,var(--sdm-c,inherit))]',
+        'bg-[var(--sdm-tbg)]',
+        'dark:bg-[var(--shiki-dark-bg,var(--sdm-tbg))]',
+    ],
     theme: {
         fontFamily: {
             mouse: ['Poppins', 'sans-serif'],

@@ -41,6 +41,12 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
     const optimizedPercent =
         checklistItems.length > 0 ? Math.round((completedItems / checklistItems.length) * 100) : 0;
 
+    const { resume: pendingResume, transcript: pendingTranscript } =
+        checklistStore.useTracked.pendingReview();
+    const pendingReviewCount =
+        (pendingResume?.credentials?.length ?? 0) + (pendingTranscript?.credentials?.length ?? 0);
+    const hasPendingReview = pendingReviewCount > 0;
+
     const handleCheckListButton = async () => {
         const { prompted } = await gate();
         if (prompted) return;
@@ -94,6 +100,10 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                     <p className={`mt-2 text-[13px] leading-[130%] font-poppins text-center ${featuredCardTextColor ? 'text-white/70' : 'text-grayscale-700'}`}>
                         Processing documents...
                     </p>
+                ) : hasPendingReview ? (
+                    <p className="mt-2 text-[13px] leading-[130%] text-amber-600 font-poppins font-semibold text-center">
+                        {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''} ready for review
+                    </p>
                 ) : (
                     <div className="mt-3">
                         <div className={`w-full h-[10px] rounded-full overflow-hidden ${featuredCardBgColor ? 'bg-white/20' : 'bg-grayscale-200'}`}>
@@ -139,6 +149,10 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                     {isParsing ? (
                         <p className={`text-[14px] font-poppins ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
                             Processing documents...
+                        </p>
+                    ) : hasPendingReview ? (
+                        <p className="text-[14px] text-amber-600 font-poppins font-semibold">
+                            {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''} ready for review
                         </p>
                     ) : (
                         <p className={`text-[14px] font-poppins ${featuredCardTextColor ?? 'text-grayscale-900'}`}>
