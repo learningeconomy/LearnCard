@@ -914,6 +914,11 @@ export interface FieldValidationError {
 export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidationError[] => {
     const errors: FieldValidationError[] = [];
 
+    // Non-OBv3 schemas use rawJson passthrough — template fields are empty placeholders
+    if (template.schemaType && template.schemaType !== 'obv3') {
+        return errors;
+    }
+
     // Credential name is auto-derived from achievement name during serialization
 
     // Issuer name is optional — derived from wallet profile at issuance time
