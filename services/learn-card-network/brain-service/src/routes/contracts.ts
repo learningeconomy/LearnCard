@@ -89,6 +89,10 @@ import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { resolveAndValidateDeniedWriters } from '@helpers/consentflow.helpers';
 import {
+    sanitizeProfileForTier,
+    stripSensitiveProfileListFields,
+} from '@helpers/profile-privacy.helpers';
+import {
     addAutoBoostsToContractDb,
     removeAutoBoostsFromContractDb,
 } from '@accesslayer/consentflowcontract/relationships/manageAutoboosts';
@@ -1915,7 +1919,17 @@ export const contractsRouter = t.router({
 
             const requests = await getRequestedForList(contractByUri.id);
 
-            return requests;
+            return Promise.all(
+                requests.map(async request => {
+                    const updatedProfile = updateDidForProfile(ctx.domain, request.profile);
+                    return {
+                        ...request,
+                        profile: stripSensitiveProfileListFields(
+                            sanitizeProfileForTier(updatedProfile, 'authenticated')
+                        ),
+                    };
+                })
+            );
         }),
 
     getRequestStatusForProfile: profileRoute
@@ -1985,7 +1999,16 @@ export const contractsRouter = t.router({
 
             const requests = await getRequestedForForUser(contract.id, resolvedTargetProfileId);
 
-            return requests?.[0] ?? null;
+            if (!requests?.[0]) return null;
+
+            const updatedProfile = updateDidForProfile(ctx.domain, requests[0].profile);
+
+            return {
+                ...requests[0],
+                profile: stripSensitiveProfileListFields(
+                    sanitizeProfileForTier(updatedProfile, 'authenticated')
+                ),
+            };
         }),
 
     markContractRequestAsSeen: profileRoute
@@ -2178,13 +2201,22 @@ export const contractsRouter = t.router({
             const requests = await getAllRequestsForTargetProfile(resolvedTargetProfileId);
 
             // Construct URIs for contracts
-            return requests.map(request => ({
-                ...request,
-                contract: {
-                    ...request.contract,
-                    uri: constructUri('contract', request.contract.id, ctx.domain),
-                },
-            }));
+            return Promise.all(
+                requests.map(async request => {
+                    const updatedProfile = updateDidForProfile(ctx.domain, request.profile);
+
+                    return {
+                        ...request,
+                        profile: stripSensitiveProfileListFields(
+                            sanitizeProfileForTier(updatedProfile, 'authenticated')
+                        ),
+                        contract: {
+                            ...request.contract,
+                            uri: constructUri('contract', request.contract.id, ctx.domain),
+                        },
+                    };
+                })
+            );
         }),
 
     forwardContractRequestToProfile: profileRoute

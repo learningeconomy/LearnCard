@@ -2,9 +2,13 @@ import crypto from 'crypto';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
+    AllowConnectionRequestsEnum,
+    LCNVisibleProfileValidator,
     LCNProfileValidator,
     LCNProfileConnectionStatusEnum,
+    ProfileVisibilityEnum,
     PaginatedLCNProfilesValidator,
+    PaginatedVisibleLCNProfilesValidator,
     PaginatedLCNProfilesAndManagersValidator,
     PaginationOptionsValidator,
     LCNNotificationTypeEnumValidator,
@@ -74,6 +78,13 @@ import { createProfileManagedByRelationship } from '@accesslayer/profile/relatio
 import { updateProfile } from '@accesslayer/profile/update';
 import { LCNProfileQueryValidator } from '@learncard/types';
 import { setPrimarySigningAuthority } from '@accesslayer/signing-authority/relationships/update';
+import {
+    isPrivateToUnauthenticated,
+    ProfileAccessTierEnum,
+    resolveProfileTier,
+    sanitizeProfileForTier,
+    stripSensitiveProfileListFields,
+} from '@helpers/profile-privacy.helpers';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -235,7 +246,7 @@ export const profilesRouter = t.router({
             },
         })
         .input(z.object({ profileId: z.string() }))
-        .output(LCNProfileValidator.optional())
+        .output(LCNVisibleProfileValidator.optional())
         .query(async ({ ctx, input }) => {
             const { profileId } = input;
 
@@ -254,15 +265,13 @@ export const profilesRouter = t.router({
             }
 
             const profile = updateDidForProfile(ctx.domain, otherProfile);
+            const tier = await resolveProfileTier(selfProfile, profile);
 
-            const isViewingSelf = selfProfile?.profileId === profile.profileId;
-
-            if (!isViewingSelf) {
-                const { dob: _dob, ...sanitizedProfile } = profile;
-                return sanitizedProfile;
+            if (tier === ProfileAccessTierEnum.unauthenticated && isPrivateToUnauthenticated(profile)) {
+                return undefined;
             }
 
-            return profile;
+            return sanitizeProfileForTier(profile, tier);
         }),
 
     getAvailableProfiles: profileRoute
@@ -370,9 +379,10 @@ export const profilesRouter = t.router({
             })
         )
         .output(
-            LCNProfileValidator.extend({
-                connectionStatus: LCNProfileConnectionStatusEnum.optional(),
-            }).array()
+            z
+                .object({ connectionStatus: LCNProfileConnectionStatusEnum.optional() })
+                .and(LCNVisibleProfileValidator)
+                .array()
         )
         .query(async ({ ctx, input }) => {
             const {
@@ -383,8 +393,8 @@ export const profilesRouter = t.router({
                 includeServiceProfiles,
             } = input;
 
-            const _selfProfile = ctx.user && ctx.user.did && (await getProfileByDid(ctx.user.did));
-            const selfProfile = !includeSelf && _selfProfile;
+            const _selfProfile = ctx.user?.did ? await getProfileByDid(ctx.user.did) : null;
+            const selfProfile = includeSelf ? null : (_selfProfile ?? null);
 
             const blacklist =
                 (_selfProfile && (await getBlockedAndBlockedByIds(_selfProfile))) || [];
@@ -400,22 +410,36 @@ export const profilesRouter = t.router({
                     profiles.map(async profile => {
                         const targetProfileFull = await getProfileByProfileId(profile.profileId);
                         if (targetProfileFull) {
+                            const updatedProfile = updateDidForProfile(ctx.domain, profile);
+                            const tier = await resolveProfileTier(selfProfile, updatedProfile);
                             return {
-                                ...profile,
+                                ...stripSensitiveProfileListFields(
+                                    sanitizeProfileForTier(updatedProfile, tier)
+                                ),
                                 connectionStatus: await getConnectionStatus(
                                     selfProfile,
                                     targetProfileFull
                                 ),
                             };
                         }
-                        return profile;
+                        const updatedProfile = updateDidForProfile(ctx.domain, profile);
+                        const tier = await resolveProfileTier(selfProfile, updatedProfile);
+                        return stripSensitiveProfileListFields(
+                            sanitizeProfileForTier(updatedProfile, tier)
+                        );
                     })
                 );
-                return profilesWithConnectionStatus.map(profile =>
-                    updateDidForProfile(ctx.domain, profile)
-                );
+                return profilesWithConnectionStatus;
             } else {
-                return profiles.map(profile => updateDidForProfile(ctx.domain, profile));
+                return Promise.all(
+                    profiles.map(async profile => {
+                        const updatedProfile = updateDidForProfile(ctx.domain, profile);
+                        const tier = await resolveProfileTier(selfProfile, updatedProfile);
+                        return stripSensitiveProfileListFields(
+                            sanitizeProfileForTier(updatedProfile, tier)
+                        );
+                    })
+                );
             }
         }),
 
@@ -442,6 +466,9 @@ export const profilesRouter = t.router({
                 shortBio,
                 bio,
                 isPrivate,
+                profileVisibility,
+                showEmail,
+                allowConnectionRequests,
                 image,
                 heroImage,
                 websiteLink,
@@ -473,7 +500,7 @@ export const profilesRouter = t.router({
                 actualUpdates.profileId = transformProfileId(profileId);
             }
 
-            if (email) {
+            if (typeof email === 'string') {
                 const profileExists = await getProfileByEmail(email);
 
                 if (profileExists) {
@@ -486,20 +513,36 @@ export const profilesRouter = t.router({
                 actualUpdates.email = email;
             }
 
-            if (image) actualUpdates.image = image;
-            if (displayName) actualUpdates.displayName = displayName;
-            if (shortBio) actualUpdates.shortBio = shortBio;
-            if (isPrivate) actualUpdates.isPrivate = isPrivate;
-            if (bio) actualUpdates.bio = bio;
-            if (heroImage) actualUpdates.heroImage = heroImage;
-            if (websiteLink) actualUpdates.websiteLink = websiteLink;
-            if (type) actualUpdates.type = type;
-            if (notificationsWebhook) actualUpdates.notificationsWebhook = notificationsWebhook;
+            if (typeof image === 'string') actualUpdates.image = image;
+            if (typeof displayName === 'string') actualUpdates.displayName = displayName;
+            if (typeof shortBio === 'string') actualUpdates.shortBio = shortBio;
+            if (typeof isPrivate === 'boolean') {
+                actualUpdates.isPrivate = isPrivate;
+                if (typeof profileVisibility === 'undefined') {
+                    actualUpdates.profileVisibility = isPrivate
+                        ? ProfileVisibilityEnum.enum.private
+                        : ProfileVisibilityEnum.enum.public;
+                }
+            }
+            if (typeof profileVisibility === 'string') {
+                actualUpdates.profileVisibility = profileVisibility;
+                actualUpdates.isPrivate =
+                    profileVisibility === ProfileVisibilityEnum.enum.private;
+            }
+            if (typeof showEmail === 'boolean') actualUpdates.showEmail = showEmail;
+            if (typeof allowConnectionRequests === 'string')
+                actualUpdates.allowConnectionRequests = allowConnectionRequests;
+            if (typeof bio === 'string') actualUpdates.bio = bio;
+            if (typeof heroImage === 'string') actualUpdates.heroImage = heroImage;
+            if (typeof websiteLink === 'string') actualUpdates.websiteLink = websiteLink;
+            if (typeof type === 'string') actualUpdates.type = type;
+            if (typeof notificationsWebhook === 'string')
+                actualUpdates.notificationsWebhook = notificationsWebhook;
             if (display) actualUpdates.display = display;
-            if (role) actualUpdates.role = role;
-            if (dob) actualUpdates.dob = dob;
-            if (country) actualUpdates.country = country;
-            if (highlightedCredentials)
+            if (typeof role === 'string') actualUpdates.role = role;
+            if (typeof dob === 'string') actualUpdates.dob = dob;
+            if (typeof country === 'string') actualUpdates.country = country;
+            if (Array.isArray(highlightedCredentials))
                 actualUpdates.highlightedCredentials = highlightedCredentials;
             if (typeof approved === 'boolean') actualUpdates.approved = approved;
 
@@ -558,6 +601,16 @@ export const profilesRouter = t.router({
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            if (
+                (targetProfile.allowConnectionRequests ?? AllowConnectionRequestsEnum.enum.anyone) ===
+                AllowConnectionRequestsEnum.enum.invite_only
+            ) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'This profile only accepts connections via invite link.',
                 });
             }
 
@@ -777,12 +830,18 @@ export const profilesRouter = t.router({
             requiredScope: 'connections:read',
         })
         .input(z.void())
-        .output(LCNProfileValidator.array())
+        .output(LCNVisibleProfileValidator.array())
         .query(async ({ ctx }) => {
             const _connections = await getConnections(ctx.user.profile, { limit: 50 });
 
-            const connections = _connections.map(connection =>
-                updateDidForProfile(ctx.domain, connection)
+            const connections = await Promise.all(
+                _connections.map(async connection => {
+                    const updatedConnection = updateDidForProfile(ctx.domain, connection);
+                    const tier = await resolveProfileTier(ctx.user.profile, updatedConnection);
+                    return stripSensitiveProfileListFields(
+                        sanitizeProfileForTier(updatedConnection, tier)
+                    );
+                })
             );
 
             return connections;
@@ -805,7 +864,7 @@ export const profilesRouter = t.router({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
             }).default({ limit: 25 })
         )
-        .output(PaginatedLCNProfilesValidator)
+        .output(PaginatedVisibleLCNProfilesValidator)
         .query(async ({ ctx, input }) => {
             const { limit, cursor } = input;
 
@@ -813,10 +872,17 @@ export const profilesRouter = t.router({
 
             const hasMore = records.length > limit;
             const newCursor = records.at(hasMore ? -2 : -1)?.profileId;
+            const updatedRecords = updateDidForProfiles(ctx.domain, records).slice(0, limit);
+            const sanitizedRecords = await Promise.all(
+                updatedRecords.map(async record => {
+                    const tier = await resolveProfileTier(ctx.user.profile, record);
+                    return stripSensitiveProfileListFields(sanitizeProfileForTier(record, tier));
+                })
+            );
 
             return {
                 hasMore: records.length > limit,
-                records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
+                records: sanitizedRecords,
                 ...(newCursor && { cursor: newCursor }),
             };
         }),
@@ -836,11 +902,19 @@ export const profilesRouter = t.router({
             requiredScope: 'connections:read',
         })
         .input(z.void())
-        .output(LCNProfileValidator.array())
+        .output(LCNVisibleProfileValidator.array())
         .query(async ({ ctx }) => {
             const connections = await getPendingConnections(ctx.user.profile, { limit: 50 });
 
-            return connections.map(connection => updateDidForProfile(ctx.domain, connection));
+            return Promise.all(
+                connections.map(async connection => {
+                    const updatedConnection = updateDidForProfile(ctx.domain, connection);
+                    const tier = await resolveProfileTier(ctx.user.profile, updatedConnection);
+                    return stripSensitiveProfileListFields(
+                        sanitizeProfileForTier(updatedConnection, tier)
+                    );
+                })
+            );
         }),
 
     paginatedPendingConnections: profileRoute
@@ -860,7 +934,7 @@ export const profilesRouter = t.router({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
             }).default({ limit: 25 })
         )
-        .output(PaginatedLCNProfilesValidator)
+        .output(PaginatedVisibleLCNProfilesValidator)
         .query(async ({ ctx, input }) => {
             const { limit, cursor } = input;
 
@@ -871,10 +945,17 @@ export const profilesRouter = t.router({
 
             const hasMore = records.length > limit;
             const newCursor = records.at(hasMore ? -2 : -1)?.displayName;
+            const updatedRecords = updateDidForProfiles(ctx.domain, records).slice(0, limit);
+            const sanitizedRecords = await Promise.all(
+                updatedRecords.map(async record => {
+                    const tier = await resolveProfileTier(ctx.user.profile, record);
+                    return stripSensitiveProfileListFields(sanitizeProfileForTier(record, tier));
+                })
+            );
 
             return {
                 hasMore: records.length > limit,
-                records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
+                records: sanitizedRecords,
                 ...(newCursor && { cursor: newCursor }),
             };
         }),
@@ -894,11 +975,19 @@ export const profilesRouter = t.router({
             requiredScope: 'connections:read',
         })
         .input(z.void())
-        .output(LCNProfileValidator.array())
+        .output(LCNVisibleProfileValidator.array())
         .query(async ({ ctx }) => {
             const connections = await getConnectionRequests(ctx.user.profile, { limit: 50 });
 
-            return connections.map(connection => updateDidForProfile(ctx.domain, connection));
+            return Promise.all(
+                connections.map(async connection => {
+                    const updatedConnection = updateDidForProfile(ctx.domain, connection);
+                    const tier = await resolveProfileTier(ctx.user.profile, updatedConnection);
+                    return stripSensitiveProfileListFields(
+                        sanitizeProfileForTier(updatedConnection, tier)
+                    );
+                })
+            );
         }),
 
     paginatedConnectionRequests: profileRoute
@@ -918,7 +1007,7 @@ export const profilesRouter = t.router({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
             }).default({ limit: 25 })
         )
-        .output(PaginatedLCNProfilesValidator)
+        .output(PaginatedVisibleLCNProfilesValidator)
         .query(async ({ ctx, input }) => {
             const { limit, cursor } = input;
 
@@ -929,10 +1018,17 @@ export const profilesRouter = t.router({
 
             const hasMore = records.length > limit;
             const newCursor = records.at(hasMore ? -2 : -1)?.displayName;
+            const updatedRecords = updateDidForProfiles(ctx.domain, records).slice(0, limit);
+            const sanitizedRecords = await Promise.all(
+                updatedRecords.map(async record => {
+                    const tier = await resolveProfileTier(ctx.user.profile, record);
+                    return stripSensitiveProfileListFields(sanitizeProfileForTier(record, tier));
+                })
+            );
 
             return {
                 hasMore: records.length > limit,
-                records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
+                records: sanitizedRecords,
                 ...(newCursor && { cursor: newCursor }),
             };
         }),
@@ -1148,11 +1244,19 @@ export const profilesRouter = t.router({
             requiredScope: 'connections:read',
         })
         .input(z.void())
-        .output(LCNProfileValidator.array())
+        .output(LCNVisibleProfileValidator.array())
         .query(async ({ ctx }) => {
             const blocked = await getBlockedProfiles(ctx.user.profile);
 
-            return blocked.map(blockedProfile => updateDidForProfile(ctx.domain, blockedProfile));
+            return Promise.all(
+                blocked.map(async blockedProfile => {
+                    const updatedProfile = updateDidForProfile(ctx.domain, blockedProfile);
+                    const tier = await resolveProfileTier(ctx.user.profile, updatedProfile);
+                    return stripSensitiveProfileListFields(
+                        sanitizeProfileForTier(updatedProfile, tier)
+                    );
+                })
+            );
         }),
 
     registerSigningAuthority: profileRoute
