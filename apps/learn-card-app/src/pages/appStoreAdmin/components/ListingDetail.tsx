@@ -11,6 +11,9 @@ import {
     Monitor,
     Layout,
     Play,
+    User,
+    Calendar,
+    Mail,
 } from 'lucide-react';
 
 import { useModal, ModalTypes } from 'learn-card-base';
@@ -53,6 +56,18 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
 
     const launchTypeInfo = LAUNCH_TYPE_INFO[listing.launch_type];
     const categoryLabel = CATEGORY_OPTIONS.find(c => c.value === listing.category)?.label;
+
+    const formatSubmissionDate = (dateStr?: string): string => {
+        if (!dateStr) return 'Unknown Date';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    };
 
     let parsedConfig: Record<string, unknown> = {};
     try {
@@ -193,6 +208,43 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
+                {/* Submitter Info */}
+                <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                            <User className="w-3.5 h-3.5 text-gray-400" />
+                            <span className="text-sm text-gray-600">
+                                <span className="font-medium">Submitted by:</span>{' '}
+                                {listing.submitter?.displayName ||
+                                    listing.submitter?.profileId ||
+                                    'Unknown'}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                            <span className="text-sm text-gray-600">
+                                <span className="font-medium">Submitted:</span>{' '}
+                                {formatSubmissionDate(listing.submitted_at)}
+                            </span>
+                        </div>
+                        {(listing.contact_email || listing.submitter?.email) && (
+                            <div className="flex items-center gap-2">
+                                <Mail className="w-3.5 h-3.5 text-gray-400" />
+                                <a
+                                    href={`mailto:${
+                                        listing.contact_email || listing.submitter?.email
+                                    }?subject=${encodeURIComponent(
+                                        `Regarding your app: ${listing.display_name}`
+                                    )}`}
+                                    className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline"
+                                >
+                                    {listing.contact_email || listing.submitter?.email}
+                                </a>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 {/* Description */}
                 <div>
                     <h3 className="text-sm font-medium text-gray-600 mb-1">Description</h3>
