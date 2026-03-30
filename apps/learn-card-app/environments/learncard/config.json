@@ -4,7 +4,7 @@
     "domain": "learncard.app",
     "auth": {
         "keyDerivation": "web3auth",
-        "web3auth": {
+        "web3Auth": {
             "clientId": "BBB5ReobO60-olXYx2JB7s5pkJplYnBHz4E99Cdf9aaNokNt3XzvVvRL9UQfziK_PMEuBYcgdMEW_WCHNPdUGPg",
             "network": "testnet",
             "verifierId": "learncardapp-firebase",
