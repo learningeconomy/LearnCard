@@ -77,7 +77,7 @@ const SkillIssuances: React.FC<SkillIssuancesProps> = ({ frameworkId, skillId, c
                                             skillId={skillId}
                                             frameworkId={frameworkId}
                                             isSelfAssigned
-                                            tallCard
+                                            tallCard={credentials.length > 1} // If there are non-self-assigned issuances, show tall card so this matches their height
                                         />
                                     )}
                                     {!isSelfAssignedSkill && (
