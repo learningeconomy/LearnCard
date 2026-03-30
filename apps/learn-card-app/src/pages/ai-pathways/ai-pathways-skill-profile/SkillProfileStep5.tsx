@@ -6,10 +6,12 @@ import {
     useGetBoostSkills,
     useToast,
     ToastTypeEnum,
+    useVerifiableData,
 } from 'learn-card-base';
 import { IonSpinner } from '@ionic/react';
 
 import SkillSearchSelector, { SelectedSkill } from 'src/pages/skills/SkillSearchSelector';
+import { SKILL_PROFILE_PROFILE_KEY, SkillProfileProfileData } from './SkillProfileStep1';
 
 type SkillProfileStep5Props = {
     handleNext: () => void;
@@ -28,6 +30,16 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
     const { mutateAsync: createOrUpdateSkills } = useManageSelfAssignedSkillsBoost();
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
     const { data: sasBoostSkills } = useGetBoostSkills(sasBoostData?.uri);
+
+    const { data: profileData } = useVerifiableData<SkillProfileProfileData>(
+        SKILL_PROFILE_PROFILE_KEY,
+        {
+            name: 'Professional Profile',
+            description: 'Professional title and experience level',
+        }
+    );
+
+    const professionalTitle = profileData?.professionalTitle || '';
 
     useEffect(() => {
         if (sasBoostSkills) {
@@ -86,10 +98,9 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
                 <SkillSearchSelector
                     selectedSkills={selectedSkills}
                     onSelectedSkillsChange={setSelectedSkills}
-                    mode="add"
-                    shouldCollapseOptions={false}
                     showSuggestSkill={true}
                     className="pb-[20px]"
+                    initialSearchQuery={professionalTitle}
                 />
             </div>
 

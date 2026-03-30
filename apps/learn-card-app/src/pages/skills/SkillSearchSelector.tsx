@@ -19,6 +19,7 @@ import Plus from '../../components/svgs/Plus';
 import Search from 'learn-card-base/svgs/Search';
 import VerifiedBadgeIcon from 'learn-card-base/svgs/VerifiedBadgeIcon';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
+import AddSkillModal from './AddSkillModal';
 import SkillTag from './SkillTag';
 import { IonInput, IonSpinner } from '@ionic/react';
 import { GenericErrorView } from 'learn-card-base/components/generic/GenericErrorBoundary';
@@ -29,7 +30,6 @@ import {
 } from '../../helpers/skillFramework.helpers';
 import { SkillFrameworkNode } from '../../components/boost/boost';
 import { SkillLevel } from './skillTypes';
-import AddSkillModal from './AddSkillModal';
 
 export type SelectedSkill = {
     id: string;
@@ -41,6 +41,7 @@ export type SkillSearchSelectorProps = {
     onSelectedSkillsChange: (skills: SelectedSkill[]) => void;
     showSuggestSkill?: boolean;
     className?: string;
+    initialSearchQuery?: string;
 };
 
 const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
@@ -48,6 +49,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     onSelectedSkillsChange,
     showSuggestSkill = true,
     className = '',
+    initialSearchQuery,
 }) => {
     const flags = useFlags();
     const { newModal } = useModal();
@@ -55,10 +57,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     const { data: lcNetworkProfile } = useGetProfile();
 
     const [isSubmittingSkillSuggestion, setIsSubmittingSkillSuggestion] = useState(false);
-    const [searchInput, setSearchInput] = useState('');
-    const [selectedSkillNodesCache, setSelectedSkillNodesCache] = useState<
-        Map<string, SkillFrameworkNode>
-    >(new Map());
+    const [searchInput, setSearchInput] = useState(initialSearchQuery || '');
 
     const initialSkillIds = flags?.initialSelfAssignedSkillIds?.skillIds as string[];
     const frameworkId = flags?.selfAssignedSkillsFrameworkId;
@@ -111,11 +110,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
 
     const suggestedSkills = hasSearchQuery ? semanticSkills : defaultSkillsToShow;
 
-    const handleToggleSelect = (
-        skillId: string,
-        proficiencyLevel?: SkillLevel,
-        skillNode?: SkillFrameworkNode
-    ) => {
+    const handleToggleSelect = (skillId: string, proficiencyLevel?: SkillLevel) => {
         const isAlreadySelected = selectedSkills.some(s => s.id === skillId);
         if (isAlreadySelected) {
             onSelectedSkillsChange(selectedSkills.filter(s => s.id !== skillId));
@@ -124,9 +119,6 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                 ...selectedSkills,
                 { id: skillId, proficiency: proficiencyLevel ?? SkillLevel.Hidden },
             ]);
-            if (skillNode) {
-                setSelectedSkillNodesCache(prev => new Map(prev).set(skillId, skillNode));
-            }
         }
     };
 
@@ -177,7 +169,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     };
 
     const handleAddRelatedSkill = (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => {
-        handleToggleSelect(skill.id!, proficiencyLevel, skill);
+        handleToggleSelect(skill.id!, proficiencyLevel);
     };
 
     const handleEditRelatedSkill = (skillId: string, proficiencyLevel: SkillLevel) => {
