@@ -10,6 +10,7 @@ import {
     useToast,
     ToastTypeEnum,
     useGetSkillFrameworkById,
+    annotateBackendSkillsWithIcons,
 } from 'learn-card-base';
 
 import Plus from 'learn-card-base/svgs/Plus';
@@ -145,6 +146,13 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
             setSyncingFrameworkId(framework.id);
             const wallet = await initWallet();
             await wallet.invoke.syncFrameworkSkills({ id: framework.id });
+
+            try {
+                await annotateBackendSkillsWithIcons(framework.id, wallet);
+            } catch (iconError) {
+                console.error('Failed to generate icons for skills:', iconError);
+            }
+
             await queryClient.invalidateQueries({ queryKey: ['skillFrameworks'] });
             presentToast('Framework synced successfully.', {
                 type: ToastTypeEnum.Success,
@@ -175,7 +183,14 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
             const wallet = await initWallet();
             const framework = await wallet.invoke.createSkillFramework({ frameworkId: ref });
+
             await wallet.invoke.syncFrameworkSkills({ id: framework.id });
+
+            try {
+                await annotateBackendSkillsWithIcons(framework.id, wallet);
+            } catch (iconError) {
+                console.error('Failed to generate icons for skills:', iconError);
+            }
 
             await queryClient.invalidateQueries({ queryKey: ['listMySkillFrameworks'] });
             await queryClient.invalidateQueries({ queryKey: ['skillFrameworks'] });
@@ -186,6 +201,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                 type: ToastTypeEnum.Success,
                 duration: 2500,
             });
+            closeModal();
         } catch (error: unknown) {
             presentToast(error instanceof Error ? error.message : 'Unable to import framework.', {
                 type: ToastTypeEnum.Error,
@@ -211,7 +227,11 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
     return (
         <div className="flex flex-col gap-[10px] px-[20px]">
-            <div className="bg-white rounded-[15px] p-[20px] max-h-[600px] overflow-y-auto">
+            <div
+                className={`bg-white rounded-[15px] p-[20px] ${
+                    !hideCreateFramework ? 'max-h-[400px]' : 'max-h-[600px]'
+                } overflow-y-auto`}
+            >
                 <h2 className="flex items-center justify-center gap-[10px] text-grayscale-900 font-poppins text-[22px] leading-[130%] tracking-[-0.25px] py-[10px]">
                     <SkillsFrameworkIcon
                         className="w-[35px] h-[35px]"
