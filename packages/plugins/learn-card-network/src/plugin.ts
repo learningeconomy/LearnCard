@@ -1371,6 +1371,14 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            getSharedInsightsRequestsForProfile: async (_learnCard, targetProfileId) => {
+                await ensureUser();
+
+                return (client.contracts as any).getSharedInsightsRequestsForProfile.query({
+                    targetProfileId,
+                });
+            },
+
             forwardContractRequestToProfile: async (
                 _learnCard,
                 parentProfileId,

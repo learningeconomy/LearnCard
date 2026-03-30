@@ -102,9 +102,13 @@ const AppRouter: React.FC = () => {
     const { openConsentFlowModal } = useConsentFlow(contract, undefined, contractUri);
 
     const hideSideMenu =
-        ['/consent-flow', '/consent-flow-login', '/claim/from-dashboard/', '/chats', '/cli'].includes(
-            location.pathname
-        ) ||
+        [
+            '/consent-flow',
+            '/consent-flow-login',
+            '/claim/from-dashboard/',
+            '/chats',
+            '/cli',
+        ].includes(location.pathname) ||
         (collapsed && aiRoutes.includes(location.pathname) && !isMobile) ||
         location.pathname.includes('/app-store');
 
@@ -127,7 +131,10 @@ const AppRouter: React.FC = () => {
     useEffect(() => {
         if (isShareInsightsRequest) {
             newModal(
-                <RequestInsightsFromUserModalWrapper profileId={learnerProfileId as string} />,
+                <RequestInsightsFromUserModalWrapper
+                    profileId={learnerProfileId as string}
+                    redirectToLink={`/passport?shareInsights=${isShareInsightsRequest}&learnerProfileId=${learnerProfileId}`}
+                />,
                 { className: '!bg-transparent' },
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );

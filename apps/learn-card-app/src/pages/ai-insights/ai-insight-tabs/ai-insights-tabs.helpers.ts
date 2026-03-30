@@ -3,6 +3,7 @@ import React from 'react';
 export enum AiInsightsTabsEnum {
     MyInsights = 'my-insights',
     LearnerInsights = 'learner-insights',
+    SharedInsights = 'shared-insights',
     ChildInsights = 'child-insights',
 }
 
@@ -17,6 +18,10 @@ export const aiInsightsTabs: {
     {
         label: 'Learner insights',
         value: AiInsightsTabsEnum.LearnerInsights,
+    },
+    {
+        label: 'Shared insights',
+        value: AiInsightsTabsEnum.SharedInsights,
     },
     {
         label: 'Child insights',
