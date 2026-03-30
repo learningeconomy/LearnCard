@@ -1128,6 +1128,42 @@ export const useGetSkillChildren = (frameworkId: string, skillId: string) => {
     });
 };
 
+/**
+ * Infinite Query: Get paginated skill children for a specific skill (or root skills if no skillId)
+ * Supports loading more pages via cursor-based pagination
+ */
+export const useGetSkillChildrenInfinite = (
+    frameworkId: string,
+    skillId?: string,
+    options?: { limit?: number; enabled?: boolean }
+) => {
+    const { initWallet } = useWallet();
+    const { limit = 50, enabled = true } = options ?? {};
+
+    return useInfiniteQuery({
+        queryKey: ['getSkillChildrenInfinite', frameworkId, skillId, limit],
+        queryFn: async ({ pageParam }) => {
+            const wallet = await initWallet();
+            if (skillId) {
+                return wallet.invoke.getSkillChildren(frameworkId, skillId, {
+                    limit,
+                    cursor: pageParam as string | undefined,
+                });
+            } else {
+                // For root level skills, use getSkillFrameworkById with pagination
+                const result = await wallet.invoke.getSkillFrameworkById(frameworkId, {
+                    limit,
+                    cursor: pageParam as string | undefined,
+                });
+                return result?.skills;
+            }
+        },
+        initialPageParam: undefined as string | undefined,
+        getNextPageParam: lastPage => (lastPage?.hasMore ? lastPage.cursor : undefined),
+        enabled: !!frameworkId && enabled,
+    });
+};
+
 export const useGetSkillPath = (
     frameworkId: string,
     skillId: string,
