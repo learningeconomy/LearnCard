@@ -40,7 +40,7 @@ export const SKILL_LEVEL_META = {
         color: 'violet-500',
         description: 'Works independently on routine tasks.',
         cardOuterBorderColor: 'violet-600',
-        cardInnerBorderColor: 'violet-200',
+        cardInnerBorderColor: 'violet-300',
         cardIconBgColor: 'violet-50',
         cardTextColor: 'violet-600',
     },

@@ -233,7 +233,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
             </div>
 
             {/* Make sure tailwind classes get generated */}
-            <span className="hidden border-gray-600 border-orange-600 border-violet-600 border-violet-200 text-sky-500" />
+            <span className="hidden border-gray-600 border-orange-600 border-violet-600 border-violet-200 border-violet-300 text-sky-500" />
         </IonCol>
     );
 };
