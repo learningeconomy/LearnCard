@@ -7,6 +7,7 @@ import SkillFrameworkInfoBox from './SkillFrameworkInfoBox';
 import X from '../../components/svgs/X';
 import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
+import TrashBin from '../../components/svgs/TrashBin';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import SkillProficiencyBar from './SkillProficiencyBar';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
@@ -64,9 +65,14 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
     );
     const [isExpanded, setIsExpanded] = useState(false);
     const [selectedTab, setSelectedTab] = useState<AddSkillTabEnum>(AddSkillTabEnum.Options);
+    const hasProficiencyChanged = proficiencyLevel !== initialProficiencyLevel;
 
     const handleCloseWithEditProficiency = () => {
-        if (isEdit && handleEditProficiency) {
+        closeModal();
+    };
+
+    const handleUpdate = () => {
+        if (isEdit && handleEditProficiency && hasProficiencyChanged) {
             handleEditProficiency(proficiencyLevel);
         }
         closeModal();
@@ -359,15 +365,28 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                         </button>
                     )}
                     {isEdit && (
-                        <button
-                            onClick={() => {
-                                handleDelete?.();
-                                closeModal();
-                            }}
-                            className="px-[15px] py-[7px] bg-grayscale-900 rounded-full text-white flex-1 font-poppins text-[17px] font-bold tracking-[0.25px] leading-[24px] h-[41.5px]"
-                        >
-                            Delete Skill
-                        </button>
+                        <>
+                            <button
+                                onClick={handleUpdate}
+                                disabled={!hasProficiencyChanged}
+                                className="px-[15px] py-[7px] rounded-full text-white flex-1 font-poppins text-[17px] font-bold tracking-[0.25px] leading-[24px] h-[41.5px] bg-indigo-600 disabled:bg-grayscale-300 "
+                            >
+                                Update
+                            </button>
+                            <button
+                                onClick={() => {
+                                    handleDelete?.();
+                                    closeModal();
+                                }}
+                                className="h-[41.5px] w-[41.5px] min-w-[41.5px] rounded-full bg-red-600 text-white flex items-center justify-center"
+                            >
+                                <TrashBin
+                                    className="w-[20px] h-[20px]"
+                                    version="2"
+                                    strokeWidth="2"
+                                />
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
