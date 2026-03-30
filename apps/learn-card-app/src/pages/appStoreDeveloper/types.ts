@@ -5,6 +5,12 @@ export type LaunchType = LCLaunchType;
 export type PromotionLevel = 'FEATURED_CAROUSEL' | 'CURATED_LIST' | 'STANDARD' | 'DEMOTED';
 export type AgeRating = '4+' | '9+' | '12+' | '17+';
 
+export interface AppStoreListingSubmitter {
+    profileId: string;
+    displayName: string;
+    email?: string;
+}
+
 // Extended listing type until types package is rebuilt
 export interface ExtendedAppStoreListing extends AppStoreListing {
     slug?: string;
@@ -13,6 +19,9 @@ export interface ExtendedAppStoreListing extends AppStoreListing {
     hero_background_color?: string;
     min_age?: number;
     age_rating?: AgeRating;
+    submitted_at?: string;
+    submitter?: AppStoreListingSubmitter;
+    contact_email?: string;
 }
 
 export interface AppStoreListingCreate {
@@ -34,6 +43,7 @@ export interface AppStoreListingCreate {
     hero_background_color?: string;
     min_age?: number;
     age_rating?: AgeRating;
+    contact_email?: string;
 }
 
 export const AGE_RATING_OPTIONS: { value: AgeRating; label: string; minAge: number }[] = [

@@ -76,8 +76,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     value={data.display_name || ''}
                     onChange={e => handleChange('display_name', e.target.value)}
                     placeholder="My Amazing App"
-                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${errors.display_name ? 'border-red-300' : 'border-gray-200'
-                        }`}
+                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                        errors.display_name ? 'border-red-300' : 'border-gray-200'
+                    }`}
                     maxLength={50}
                 />
 
@@ -135,8 +136,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     value={data.tagline || ''}
                     onChange={e => handleChange('tagline', e.target.value)}
                     placeholder="A short, catchy description of your app"
-                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${errors.tagline ? 'border-red-300' : 'border-gray-200'
-                        }`}
+                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                        errors.tagline ? 'border-red-300' : 'border-gray-200'
+                    }`}
                     maxLength={100}
                 />
 
@@ -161,8 +163,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     value={data.full_description || ''}
                     onChange={e => handleChange('full_description', e.target.value)}
                     placeholder="Describe what your app does, its key features, and how it helps users..."
-                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[120px] resize-y ${errors.full_description ? 'border-red-300' : 'border-gray-200'
-                        }`}
+                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[120px] resize-y ${
+                        errors.full_description ? 'border-red-300' : 'border-gray-200'
+                    }`}
                     maxLength={2000}
                 />
 
@@ -490,6 +493,32 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         placeholder="Android Package Name (e.g., com.example.app)"
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
+                </div>
+                <div>
+                    <div className="flex items-center gap-2 mb-2 mt-2">
+                        <label className="text-sm font-medium text-gray-600">
+                            Contact Information
+                        </label>
+
+                        <span className="text-xs text-gray-400">(optional)</span>
+                    </div>
+
+                    <p className="text-xs text-gray-400 mb-2">
+                        A reliable contact method in case any issues arise with your application
+                        during the review process.
+                    </p>
+                    <input
+                        type="email"
+                        value={data.contact_email || ''}
+                        onChange={e => handleChange('contact_email', e.target.value.trim())}
+                        placeholder="Email address"
+                        className={`flex-1 w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                            errors.contact_email ? 'border-red-300' : 'border-gray-200'
+                        }`}
+                    />
+                    {errors.contact_email && (
+                        <p className="text-red-500 text-xs mt-1">{errors.contact_email}</p>
+                    )}
                 </div>
             </div>
 

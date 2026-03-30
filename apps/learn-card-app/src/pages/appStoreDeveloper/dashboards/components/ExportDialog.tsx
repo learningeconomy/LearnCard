@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, X, Calendar, Filter, Loader2, AlertCircle } from 'lucide-react';
+import { Download, X, Calendar, Filter, Loader2, AlertCircle, Layout } from 'lucide-react';
+import type { AppStoreListing } from '@learncard/types';
 
 import { useWallet } from 'learn-card-base';
 
@@ -10,6 +11,8 @@ interface ExportDialogProps {
     integrationId: string;
     integrationName: string;
     initialEventType?: CredentialEventType | '';
+    initialListingId?: string;
+    appListings?: AppStoreListing[];
     onClose: () => void;
 }
 
@@ -26,6 +29,8 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     integrationId,
     integrationName,
     initialEventType = '',
+    initialListingId = '',
+    appListings,
     onClose,
 }) => {
     const { initWallet } = useWallet();
@@ -40,6 +45,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [eventType, setEventType] = useState<CredentialEventType | ''>(initialEventType);
+    const [listingId, setListingId] = useState<string>(initialListingId);
 
     useEffect(() => {
         let cancelled = false;
@@ -51,6 +57,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                 const wallet = await initWalletRef.current();
                 const stats = await wallet.invoke.getActivityStats?.({
                     integrationId,
+                    listingId: listingId || undefined,
                     eventType: eventType || undefined,
                     startDate: startDate ? new Date(startDate).toISOString() : undefined,
                     endDate: endDate
@@ -79,11 +86,12 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             cancelled = true;
             clearTimeout(timeoutId);
         };
-    }, [integrationId, eventType, startDate, endDate]);
+    }, [integrationId, listingId, eventType, startDate, endDate]);
 
     const handleExport = async () => {
         const options: ExportOptions = {
             integrationId,
+            listingId: listingId || undefined,
             eventType: eventType || undefined,
             startDate: startDate ? new Date(startDate).toISOString() : undefined,
             endDate: endDate ? new Date(endDate + 'T23:59:59.999Z').toISOString() : undefined,
@@ -187,6 +195,31 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                         </div>
 
                         <div className="space-y-4">
+                            {/* App Listing Filter */}
+                            {appListings && appListings.length > 0 && (
+                                <div>
+                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                                        <Layout className="w-4 h-4" />
+                                        App Listing
+                                    </label>
+                                    <select
+                                        value={listingId}
+                                        onChange={e => setListingId(e.target.value)}
+                                        className="w-full px-3 py-2 border bg-transparent rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                    >
+                                        <option value="">All Apps</option>
+                                        {appListings.map(listing => (
+                                            <option
+                                                key={listing.listing_id}
+                                                value={listing.listing_id}
+                                            >
+                                                {listing.display_name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
                             <div>
                                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                                     <Filter className="w-4 h-4" />

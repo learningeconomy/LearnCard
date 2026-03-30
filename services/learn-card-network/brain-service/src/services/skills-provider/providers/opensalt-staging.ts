@@ -43,21 +43,19 @@ const toStatus = (value?: string): string => {
     return 'active';
 };
 
-// Not reliable enough to use
-//   And doesn't fit what the current UI can handle
-// const toType = (value?: string): string => {
-//     const normalized = value?.toLowerCase();
-//     if (!normalized) return 'skill';
-//     if (
-//         normalized.includes('cluster') ||
-//         normalized.includes('strand') ||
-//         normalized.includes('component') ||
-//         normalized.includes('grade level')
-//     ) {
-//         return 'container';
-//     }
-//     return 'skill';
-// };
+const toType = (value?: string): string => {
+    const normalized = value?.toLowerCase();
+    if (!normalized) return 'skill';
+    if (
+        normalized.includes('cluster') ||
+        normalized.includes('strand') ||
+        normalized.includes('component') ||
+        normalized.includes('grade level')
+    ) {
+        return 'container';
+    }
+    return 'skill';
+};
 
 const toItemStatement = (item: CfItem): string | undefined => {
     const short = item.abbreviatedStatement?.trim();
@@ -103,43 +101,74 @@ const normalizeFrameworkRef = (frameworkRef: string): string | null => {
     return null;
 };
 
-export function createOpenSaltProvider(options?: Options): SkillsProvider {
-    const baseUrl = (options?.baseUrl || 'https://opensalt.net').replace(/\/$/, '');
+export function createOpenSaltStagingProvider(options?: Options): SkillsProvider {
+    const baseUrl = (options?.baseUrl || 'https://staging.opensalt.net').replace(/\/$/, '');
     const apiKey = options?.apiKey;
 
     const buildHeaders = (): HeadersInit => {
-        if (!apiKey) return {};
-        return {
-            Authorization: `Bearer ${apiKey}`,
-            'x-api-key': apiKey,
+        const headers: HeadersInit = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         };
+        if (apiKey && apiKey !== 'notARealKey') {
+            headers.Authorization = `Bearer ${apiKey}`;
+            headers['x-api-key'] = apiKey;
+        }
+        return headers;
     };
 
     const fetchJson = async <T>(url: string): Promise<T | null> => {
-        const response = await fetch(url, { headers: buildHeaders() });
-        if (!response.ok) return null;
-        return (await response.json()) as T;
+        try {
+            const response = await fetch(url, { headers: buildHeaders() });
+            if (!response.ok) {
+                console.warn(
+                    `[opensalt-staging] Fetch failed: ${url} - Status: ${response.status} ${response.statusText}`
+                );
+                return null;
+            }
+            return (await response.json()) as T;
+        } catch (error) {
+            console.error(`[opensalt-staging] Fetch error for ${url}:`, error);
+            return null;
+        }
     };
 
     const getPackageForFramework = async (frameworkRef: string): Promise<CfPackage | null> => {
         const frameworkId = normalizeFrameworkRef(frameworkRef);
-        if (!frameworkId) return null;
-
-        const packageByCasePath = await fetchJson<CfPackage>(
-            `${baseUrl}/ims/case/v1p0/CFPackages/${encodeURIComponent(frameworkId)}`
+        console.log(
+            `[opensalt-staging] Looking up framework: ${frameworkRef} (extracted ID: ${frameworkId})`
         );
-        if (packageByCasePath?.CFDocument) return packageByCasePath;
+        if (!frameworkId) {
+            console.warn(`[opensalt-staging] Could not extract framework ID from: ${frameworkRef}`);
+            return null;
+        }
 
-        const packageByUriPath = await fetchJson<CfPackage>(
-            `${baseUrl}/uri/p${encodeURIComponent(frameworkId)}.json`
+        const caseUrl = `${baseUrl}/ims/case/v1p0/CFPackages/${encodeURIComponent(frameworkId)}`;
+        console.log(`[opensalt-staging] Trying CASE API: ${caseUrl}`);
+        const packageByCasePath = await fetchJson<CfPackage>(caseUrl);
+        if (packageByCasePath?.CFDocument) {
+            console.log('[opensalt-staging] Found framework via CASE API');
+            return packageByCasePath;
+        }
+
+        const uriUrl = `${baseUrl}/uri/p${encodeURIComponent(frameworkId)}.json`;
+        console.log(`[opensalt-staging] Trying URI path: ${uriUrl}`);
+        const packageByUriPath = await fetchJson<CfPackage>(uriUrl);
+        if (packageByUriPath?.CFDocument) {
+            console.log('[opensalt-staging] Found framework via URI path');
+            return packageByUriPath;
+        }
+
+        const docUrl = `${baseUrl}/cfpackage/doc/${encodeURIComponent(frameworkId)}.json`;
+        console.log(`[opensalt-staging] Trying doc path: ${docUrl}`);
+        const packageByDocPath = await fetchJson<CfPackage>(docUrl);
+        if (packageByDocPath?.CFDocument) {
+            console.log('[opensalt-staging] Found framework via doc path');
+            return packageByDocPath;
+        }
+
+        console.error(
+            `[opensalt-staging] Framework not found after trying all endpoints. Framework ID: ${frameworkId}`
         );
-        if (packageByUriPath?.CFDocument) return packageByUriPath;
-
-        const packageByDocPath = await fetchJson<CfPackage>(
-            `${baseUrl}/cfpackage/doc/${encodeURIComponent(frameworkId)}.json`
-        );
-        if (packageByDocPath?.CFDocument) return packageByDocPath;
-
         return null;
     };
 
@@ -148,22 +177,33 @@ export function createOpenSaltProvider(options?: Options): SkillsProvider {
         const document = packageData?.CFDocument;
         if (!document?.identifier || !document?.title) return null;
 
+        const isUrl = frameworkRef.startsWith('http://') || frameworkRef.startsWith('https://');
+        const sourceURI = isUrl ? frameworkRef : document.uri ?? document.CFPackageURI?.uri;
+
         return {
             id: document.identifier,
             name: document.title,
             description: document.description,
-            sourceURI: document.uri ?? document.CFPackageURI?.uri,
+            sourceURI,
             status: toStatus(document.adoptionStatus),
         };
     };
 
     const getSkillsForFramework: SkillsProvider['getSkillsForFramework'] = async frameworkRef => {
+        console.log(`[opensalt-staging] Getting skills for framework: ${frameworkRef}`);
         const packageData = await getPackageForFramework(frameworkRef);
         const frameworkId = packageData?.CFDocument?.identifier;
-        if (!frameworkId) return [];
+        console.log(
+            `[opensalt-staging] Framework ID from package: ${frameworkId}, CFItems count: ${
+                packageData?.CFItems?.length ?? 0
+            }`
+        );
+        if (!frameworkId) {
+            console.warn('[opensalt-staging] No framework ID found in package data');
+            return [];
+        }
 
         const parentByChildId = new Map<string, string>();
-        const childrenByParentId = new Map<string, string[]>();
         for (const association of packageData.CFAssociations || []) {
             if (association.associationType !== 'isChildOf') continue;
             const childId = association.originNodeURI?.identifier;
@@ -171,51 +211,19 @@ export function createOpenSaltProvider(options?: Options): SkillsProvider {
             if (!childId || !parentId) continue;
             if (parentId === frameworkId) continue;
             parentByChildId.set(childId, parentId);
-            const siblings = childrenByParentId.get(parentId);
-            if (siblings) {
-                siblings.push(childId);
-            } else {
-                childrenByParentId.set(parentId, [childId]);
-            }
         }
-
-        // Compute max descendant depth for each node (memoized).
-        // A leaf has depth 0; a node's depth is 1 + max(children depths).
-        // A node is a competency iff its max descendant depth <= 1 (no grandchildren).
-        const maxDepthCache = new Map<string, number>();
-        const getMaxDescendantDepth = (nodeId: string): number => {
-            const cached = maxDepthCache.get(nodeId);
-            if (cached !== undefined) return cached;
-
-            const children = childrenByParentId.get(nodeId);
-            if (!children || children.length === 0) {
-                maxDepthCache.set(nodeId, 0);
-                return 0;
-            }
-
-            let maxChildDepth = 0;
-            for (const childId of children) {
-                const childDepth = getMaxDescendantDepth(childId);
-                if (childDepth > maxChildDepth) maxChildDepth = childDepth;
-            }
-            const depth = 1 + maxChildDepth;
-            maxDepthCache.set(nodeId, depth);
-            return depth;
-        };
 
         const skills: Skill[] = [];
         for (const item of packageData.CFItems || []) {
             const statement = toItemStatement(item);
             if (!item.identifier || !statement) continue;
 
-            const maxDescendantDepth = getMaxDescendantDepth(item.identifier);
-
             skills.push({
                 id: item.identifier,
                 statement,
                 description: toItemDescription(item),
                 code: item.humanCodingScheme ?? item.listEnumeration,
-                type: maxDescendantDepth <= 1 ? 'competency' : 'container', // competency if at most one layer of children
+                type: toType(item.CFItemType),
                 status: 'active',
                 parentId: parentByChildId.get(item.identifier) ?? null,
             });
@@ -270,7 +278,7 @@ export function createOpenSaltProvider(options?: Options): SkillsProvider {
     };
 
     return {
-        id: 'opensalt',
+        id: 'opensalt-staging',
         getFrameworkById,
         getSkillsForFramework,
         getSkillsByIds,

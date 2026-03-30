@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getSkillsProvider, getSkillsProviderForFramework } from '@services/skills-provider';
-import { createOpenSaltProvider } from '@services/skills-provider/providers/opensalt';
+import { createOpenSaltStagingProvider } from '@services/skills-provider/providers/opensalt-staging';
 
 const FRAMEWORK_ID = 'c6085394-d7cb-11e8-824f-0242ac160002';
 const ROOT_SKILL_ID = '11111111-d7cc-11e8-824f-0242ac160002';
@@ -11,7 +11,7 @@ const makePackageResponse = () => ({
     CFDocument: {
         identifier: FRAMEWORK_ID,
         title: 'PCG Compendium for ELA',
-        uri: `https://opensalt.net/uri/${FRAMEWORK_ID}`,
+        uri: `https://staging.opensalt.net/uri/${FRAMEWORK_ID}`,
         adoptionStatus: 'Draft',
         description: 'framework description',
     },
@@ -27,7 +27,7 @@ const makePackageResponse = () => ({
             fullStatement: 'Child Skill',
             humanCodingScheme: 'A.1.1',
             CFItemType: 'Standard',
-            uri: `https://opensalt.net/uri/${CHILD_SKILL_ID}`,
+            uri: `https://staging.opensalt.net/uri/${CHILD_SKILL_ID}`,
         },
     ],
     CFAssociations: [
@@ -44,7 +44,7 @@ const makePackageResponse = () => ({
     ],
 });
 
-describe('OpenSALT skills provider', () => {
+describe('OpenSALT Staging skills provider', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
     });
@@ -55,14 +55,14 @@ describe('OpenSALT skills provider', () => {
             json: async () => makePackageResponse(),
         } as Response);
 
-        const provider = createOpenSaltProvider({ baseUrl: 'https://opensalt.net' });
+        const provider = createOpenSaltStagingProvider({ baseUrl: 'https://staging.opensalt.net' });
 
         const framework = await provider.getFrameworkById(FRAMEWORK_ID);
         expect(framework).toEqual({
             id: FRAMEWORK_ID,
             name: 'PCG Compendium for ELA',
             description: 'framework description',
-            sourceURI: `https://opensalt.net/uri/${FRAMEWORK_ID}`,
+            sourceURI: `https://staging.opensalt.net/uri/${FRAMEWORK_ID}`,
             status: 'active',
         });
 
@@ -72,20 +72,20 @@ describe('OpenSALT skills provider', () => {
         const root = skills.find(skill => skill.id === ROOT_SKILL_ID);
         const child = skills.find(skill => skill.id === CHILD_SKILL_ID);
 
-        expect(root?.type).toBe('competency');
+        expect(root?.type).toBe('container');
         expect(root?.parentId).toBeNull();
-        expect(child?.type).toBe('competency');
+        expect(child?.type).toBe('skill');
         expect(child?.parentId).toBe(ROOT_SKILL_ID);
     });
 
-    it('accepts CASE/OpenSALT URL refs and builds CFItem alignments', async () => {
+    it('accepts CASE/OpenSALT Staging URL refs and builds CFItem alignments', async () => {
         vi.spyOn(globalThis, 'fetch').mockResolvedValue({
             ok: true,
             json: async () => makePackageResponse(),
         } as Response);
 
-        const provider = createOpenSaltProvider({ baseUrl: 'https://opensalt.net' });
-        const frameworkRef = `https://opensalt.net/ims/case/v1p0/CFDocuments/${FRAMEWORK_ID}`;
+        const provider = createOpenSaltStagingProvider({ baseUrl: 'https://staging.opensalt.net' });
+        const frameworkRef = `https://staging.opensalt.net/ims/case/v1p0/CFDocuments/${FRAMEWORK_ID}`;
 
         const framework = await provider.getFrameworkById(frameworkRef);
         expect(framework?.id).toBe(FRAMEWORK_ID);
@@ -104,7 +104,7 @@ describe('OpenSALT skills provider', () => {
             targetDescription: undefined,
             targetFramework: 'PCG Compendium for ELA',
             targetType: 'CFItem',
-            targetUrl: `https://opensalt.net/uri/${CHILD_SKILL_ID}`,
+            targetUrl: `https://staging.opensalt.net/uri/${CHILD_SKILL_ID}`,
         });
     });
 
@@ -115,20 +115,45 @@ describe('OpenSALT skills provider', () => {
             json: async () => makePackageResponse(),
         } as Response);
 
-        const provider = createOpenSaltProvider({ baseUrl: 'https://opensalt.net' });
+        const provider = createOpenSaltStagingProvider({ baseUrl: 'https://staging.opensalt.net' });
         const framework = await provider.getFrameworkById(FRAMEWORK_ID);
 
         expect(framework?.id).toBe(FRAMEWORK_ID);
         expect(fetchMock).toHaveBeenCalledTimes(2);
-        expect(fetchMock.mock.calls[1]?.[0]).toBe(`https://opensalt.net/uri/p${FRAMEWORK_ID}.json`);
+        expect(fetchMock.mock.calls[1]?.[0]).toBe(
+            `https://staging.opensalt.net/uri/p${FRAMEWORK_ID}.json`
+        );
     });
 
-    it('auto-detects opensalt provider from framework link', () => {
+    it('auto-detects opensalt-staging provider from staging framework link', () => {
+        const provider = getSkillsProviderForFramework(
+            `https://staging.opensalt.net/ims/case/v1p0/CFDocuments/${FRAMEWORK_ID}`
+        );
+
+        expect(provider.id).toBe('opensalt-staging');
+    });
+
+    it('auto-detects opensalt-staging provider from cftree/doc/ URL', () => {
+        // Using the example URL from the PR feedback: https://staging.opensalt.net/cftree/doc/2695
+        const provider = getSkillsProviderForFramework(
+            'https://staging.opensalt.net/cftree/doc/2695'
+        );
+
+        expect(provider.id).toBe('opensalt-staging');
+    });
+
+    it('returns opensalt (production) provider for non-staging opensalt URLs', () => {
         const provider = getSkillsProviderForFramework(
             `https://opensalt.net/ims/case/v1p0/CFDocuments/${FRAMEWORK_ID}`
         );
 
         expect(provider.id).toBe('opensalt');
+    });
+
+    it('returns opensalt-staging provider when explicitly configured', () => {
+        const provider = getSkillsProvider({ providerId: 'opensalt-staging' });
+
+        expect(provider.id).toBe('opensalt-staging');
     });
 
     it('keeps dummy provider for non-opensalt refs in tests', () => {

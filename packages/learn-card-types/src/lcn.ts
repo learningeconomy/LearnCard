@@ -1712,6 +1712,14 @@ export type PromotionLevel = z.infer<typeof PromotionLevelValidator>;
 export const AgeRatingValidator = z.enum(['4+', '9+', '12+', '17+']);
 export type AgeRating = z.infer<typeof AgeRatingValidator>;
 
+export const AppStoreListingSubmitterValidator = z.object({
+    profileId: z.string(),
+    displayName: z.string(),
+    email: z.string().optional(),
+});
+
+export type AppStoreListingSubmitter = z.infer<typeof AppStoreListingSubmitterValidator>;
+
 export const AppStoreListingValidator = z.object({
     listing_id: z.string(),
     slug: z.string().optional(),
@@ -1734,6 +1742,9 @@ export const AppStoreListingValidator = z.object({
     hero_background_color: z.string().optional(),
     min_age: z.number().int().min(0).max(18).optional(),
     age_rating: AgeRatingValidator.optional(),
+    submitted_at: z.string().optional(),
+    submitter: AppStoreListingSubmitterValidator.optional(),
+    contact_email: z.string().email().optional(),
 });
 
 export type AppStoreListing = z.infer<typeof AppStoreListingValidator>;
