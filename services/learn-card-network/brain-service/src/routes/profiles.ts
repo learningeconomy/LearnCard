@@ -523,7 +523,7 @@ export const profilesRouter = t.router({
                 actualUpdates.profileId = transformProfileId(profileId);
             }
 
-            if (typeof email === 'string') {
+            if (typeof email === 'string' && email.length > 0) {
                 const profileExists = await getProfileByEmail(email);
 
                 if (profileExists) {
@@ -670,6 +670,16 @@ export const profilesRouter = t.router({
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            if (
+                (targetProfile.allowConnectionRequests ?? AllowConnectionRequestsEnum.enum.anyone) ===
+                AllowConnectionRequestsEnum.enum.invite_only
+            ) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'This profile only accepts connections via invite link.',
                 });
             }
 

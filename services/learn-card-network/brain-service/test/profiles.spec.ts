@@ -852,6 +852,16 @@ describe('Profiles', () => {
                 })
             ).resolves.toBeTruthy();
         });
+
+        it('should reject expired-invite connection requests when allowConnectionRequests is invite_only', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({
+                allowConnectionRequests: AllowConnectionRequestsEnum.enum.invite_only,
+            });
+
+            await expect(
+                userB.clients.fullAuth.profile.connectWithExpiredInvite({ profileId: 'usera' })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        });
     });
 
     describe('searchProfiles', () => {
@@ -1252,6 +1262,18 @@ describe('Profiles', () => {
             const profile = await userA.clients.fullAuth.profile.getProfile();
 
             expect(profile?.country).toEqual('CA');
+        });
+
+        it('should ignore empty email updates instead of overwriting the existing email', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({ email: 'userA@test.com' });
+
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({ email: '' })
+            ).resolves.not.toThrow();
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.email).toEqual('userA@test.com');
         });
 
         it('should allow updating approved', async () => {
