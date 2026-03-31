@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.95.2
+
+### Patch Changes
+
+-   [#1099](https://github.com/learningeconomy/LearnCard/pull/1099) [`57b933ebcbbde962daf27b36bfa028e97a7bbdd6`](https://github.com/learningeconomy/LearnCard/commit/57b933ebcbbde962daf27b36bfa028e97a7bbdd6) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1656] User Validation/Review Layer for Resume/Transcript Upload in Build My Learn Card
+
+-   [#1129](https://github.com/learningeconomy/LearnCard/pull/1129) [`9fe638fc4071ae67c59377776a48e246a9f035f3`](https://github.com/learningeconomy/LearnCard/commit/9fe638fc4071ae67c59377776a48e246a9f035f3) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1658] Change verbiage from Not Submitted to Unknown Date
+
+-   [#1136](https://github.com/learningeconomy/LearnCard/pull/1136) [`e95d62936f3743a72cae5fabbbe8fe9f6e2f6701`](https://github.com/learningeconomy/LearnCard/commit/e95d62936f3743a72cae5fabbbe8fe9f6e2f6701) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-1542] Fix pre codeblock causing width expansion beyond mobile width viewport
+
+-   [#1125](https://github.com/learningeconomy/LearnCard/pull/1125) [`359a64bc190505255cf49b9317a7853b8fc71226`](https://github.com/learningeconomy/LearnCard/commit/359a64bc190505255cf49b9317a7853b8fc71226) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for OpenSALT Staging
+
+-   [#1133](https://github.com/learningeconomy/LearnCard/pull/1133) [`52070b3a478fa6846fb0f32b89f19d79ae071d4d`](https://github.com/learningeconomy/LearnCard/commit/52070b3a478fa6846fb0f32b89f19d79ae071d4d) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Skip structural validation for non-OBv3 credential templates
+
+-   [#1120](https://github.com/learningeconomy/LearnCard/pull/1120) [`00976e097128d18c25c8016a75be9580cd3a7050`](https://github.com/learningeconomy/LearnCard/commit/00976e097128d18c25c8016a75be9580cd3a7050) Thanks [@smurflo2](https://github.com/smurflo2)! - OpenSALT import enhancements - proper classification of tier/competency, icons, pagination, and more!
+
+-   [#1126](https://github.com/learningeconomy/LearnCard/pull/1126) [`bba1f735e107d9cc86880e9f869413bc7072bff8`](https://github.com/learningeconomy/LearnCard/commit/bba1f735e107d9cc86880e9f869413bc7072bff8) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1654] - Fix Shared / Requested Insights
+
+-   [#1110](https://github.com/learningeconomy/LearnCard/pull/1110) [`410b04fe9822873a2a17521bebd79c0078c21bea`](https://github.com/learningeconomy/LearnCard/commit/410b04fe9822873a2a17521bebd79c0078c21bea) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [Bug-Fest] - Replace markdown -> streamdown for smoother streaming
+
+-   [#1127](https://github.com/learningeconomy/LearnCard/pull/1127) [`2f7eddec383512fc03b0d77647f26f29ea7b2737`](https://github.com/learningeconomy/LearnCard/commit/2f7eddec383512fc03b0d77647f26f29ea7b2737) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1668] Give organization accounts access to developer tools
+
+-   [#1121](https://github.com/learningeconomy/LearnCard/pull/1121) [`fce9d2fd32898cfc64c59b88ca644dea3b53d1a5`](https://github.com/learningeconomy/LearnCard/commit/fce9d2fd32898cfc64c59b88ca644dea3b53d1a5) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1658] Add Application Submission Information in Admin Dashboard
+
+-   [#1123](https://github.com/learningeconomy/LearnCard/pull/1123) [`a702862957303a3e25c21bdc7f0998b3ee3e64a3`](https://github.com/learningeconomy/LearnCard/commit/a702862957303a3e25c21bdc7f0998b3ee3e64a3) Thanks [@rhen92](https://github.com/rhen92)! - feat: [LC-1680] Filter Dashboard Anayltics for integration by app id
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.12
+    -   @learncard/lca-api-plugin@1.2.2
+    -   @learncard/ler-rs-plugin@0.1.3
+    -   @learncard/open-badge-v2-plugin@1.1.13
+    -   @learncard/react@2.9.19
+    -   @learncard/sss-key-manager@0.1.2
+
 ## 1.95.1
 
 ### Patch Changes
