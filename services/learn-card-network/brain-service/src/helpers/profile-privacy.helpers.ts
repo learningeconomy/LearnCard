@@ -159,6 +159,7 @@ export const sanitizeProfileForViewer = async (
 export const stripSensitiveProfileListFields = <T extends Record<string, unknown>>(profile: T): T => {
     const clone = { ...profile };
     delete clone.email;
+    delete clone.country;
     delete clone.dob;
     delete clone.notificationsWebhook;
     return clone;

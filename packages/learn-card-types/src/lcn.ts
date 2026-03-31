@@ -99,7 +99,6 @@ export type LCNPublicProfile = z.infer<typeof LCNPublicProfileValidator>;
 export const LCNAuthedProfileValidator = LCNPublicProfileValidator.extend({
     bio: LCNProfileValidator.shape.bio,
     websiteLink: LCNProfileValidator.shape.websiteLink,
-    country: LCNProfileValidator.shape.country,
     role: LCNProfileValidator.shape.role,
     highlightedCredentials: LCNProfileValidator.shape.highlightedCredentials,
     did: LCNProfileValidator.shape.did,

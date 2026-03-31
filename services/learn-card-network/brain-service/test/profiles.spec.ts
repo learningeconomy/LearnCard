@@ -533,14 +533,14 @@ describe('Profiles', () => {
             expect(userBProfile?.bio).toEqual('I am user B');
         });
 
-        it('should include country when viewing other profiles', async () => {
+        it('should not include country when viewing other profiles', async () => {
             await userA.clients.fullAuth.profile.updateProfile({ country: 'US' });
 
             const userBView = await userB.clients.fullAuth.profile.getOtherProfile({
                 profileId: 'usera',
             });
 
-            expect(userBView?.country).toEqual('US');
+            expect(userBView?.country).toBeUndefined();
         });
 
         it('should allow getting another profile by did:web', async () => {
@@ -613,7 +613,7 @@ describe('Profiles', () => {
             expect(profile?.shortBio).toEqual('Short A');
             expect(profile?.bio).toEqual('I am user A');
             expect(profile?.did).toEqual('did:web:localhost%3A3000:users:usera');
-            expect(profile?.country).toEqual('US');
+            expect(profile?.country).toBeUndefined();
             expect(profile?.role).toEqual('teacher');
             expect(profile?.profileVisibility).toBeUndefined();
             expect(profile?.showEmail).toBeUndefined();
