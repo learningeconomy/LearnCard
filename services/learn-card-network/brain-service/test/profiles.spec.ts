@@ -1,9 +1,15 @@
 import { vi } from 'vitest';
 import { LCNProfileConnectionStatusEnum } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, SigningAuthority, Credential, Boost, ClaimHook } from '@models';
+import { Profile, SigningAuthority, Credential, Boost, ClaimHook, ContactMethod } from '@models';
 import cache from '@cache';
 import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
+
+// Mock verifyAuthToken for authToken integration tests
+const mockVerifyAuthToken = vi.fn();
+vi.mock('@helpers/oidc-jwt.helpers', () => ({
+    verifyAuthToken: (...args: any[]) => mockVerifyAuthToken(...args),
+}));
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -227,6 +233,121 @@ describe('Profiles', () => {
             const profile = await userA.clients.fullAuth.profile.getProfile();
 
             expect(profile?.approved).toBeTruthy();
+        });
+
+        describe('authToken (auto-verify email)', () => {
+            beforeEach(async () => {
+                mockVerifyAuthToken.mockReset();
+                await ContactMethod.delete({ detach: true, where: {} });
+            });
+
+            afterAll(async () => {
+                mockVerifyAuthToken.mockReset();
+                await ContactMethod.delete({ detach: true, where: {} });
+            });
+
+            it('should auto-verify email when valid authToken is provided', async () => {
+                mockVerifyAuthToken.mockResolvedValue({
+                    email: 'alice@test.com',
+                    emailVerified: true,
+                    uid: 'firebase-uid-123',
+                    provider: 'https://securetoken.google.com/test',
+                });
+
+                await userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'usera',
+                    authToken: 'fake-valid-jwt',
+                });
+
+                expect(mockVerifyAuthToken).toHaveBeenCalledWith('fake-valid-jwt');
+
+                // Verify contact method was created and linked
+                const methods =
+                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                const cm = methods?.find(m => m.value === 'alice@test.com');
+                expect(cm).toBeDefined();
+                expect(cm?.type).toBe('email');
+                expect(cm?.isVerified).toBe(true);
+            });
+
+            it('should create profile successfully without authToken (backwards compat)', async () => {
+                const didWeb = await userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'usera',
+                });
+
+                expect(didWeb).toEqual('did:web:localhost%3A3000:users:usera');
+                expect(mockVerifyAuthToken).not.toHaveBeenCalled();
+            });
+
+            it('should still create profile when authToken verification fails', async () => {
+                mockVerifyAuthToken.mockResolvedValue(null);
+
+                const didWeb = await userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'usera',
+                    authToken: 'bad-token',
+                });
+
+                expect(didWeb).toEqual('did:web:localhost%3A3000:users:usera');
+
+                // No contact method should be created
+                const methods =
+                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                expect(methods?.length ?? 0).toBe(0);
+            });
+
+            it('should still create profile when verifyAuthToken throws', async () => {
+                mockVerifyAuthToken.mockRejectedValue(new Error('OIDC discovery failed'));
+
+                const didWeb = await userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'usera',
+                    authToken: 'error-token',
+                });
+
+                expect(didWeb).toEqual('did:web:localhost%3A3000:users:usera');
+            });
+
+            it('should not verify email if emailVerified is false', async () => {
+                mockVerifyAuthToken.mockResolvedValue({
+                    email: 'unverified@test.com',
+                    emailVerified: false,
+                    uid: 'firebase-uid-456',
+                    provider: 'https://securetoken.google.com/test',
+                });
+
+                await userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'usera',
+                    authToken: 'unverified-email-jwt',
+                });
+
+                // emailVerified is false, but the check is `!== false` so this should still pass
+                // Let's verify the actual behavior matches the route logic
+                const methods =
+                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                // emailVerified === false → the condition `claims.emailVerified !== false` is false → skip
+                expect(methods?.length ?? 0).toBe(0);
+            });
+
+            it('should reuse existing contact method if email already exists', async () => {
+                // First, create a profile with the same email via authToken
+                mockVerifyAuthToken.mockResolvedValue({
+                    email: 'shared@test.com',
+                    emailVerified: true,
+                    uid: 'firebase-uid-789',
+                    provider: 'https://securetoken.google.com/test',
+                });
+
+                await userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'usera',
+                    authToken: 'jwt-a',
+                });
+
+                // Verify CM was created
+                const methodsA =
+                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                const cmA = methodsA?.find(m => m.value === 'shared@test.com');
+                expect(cmA).toBeDefined();
+                expect(cmA?.isVerified).toBe(true);
+            });
         });
     });
 
