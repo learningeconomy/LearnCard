@@ -5,6 +5,7 @@ import {
     useModal,
     ModalTypes,
     useGetSkillFrameworkById,
+    useGetSkillChildrenInfinite,
     useWallet,
     useToast,
     ToastTypeEnum,
@@ -220,9 +221,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
             parentId: string | null = null
         ): SkillFrameworkNode[] => {
             const filteredNodes = nodes.filter((node: SkillFrameworkNode) => {
-                const isDeleted = deletedNodes.some(
-                    deletedNode => deletedNode.id === node.id
-                );
+                const isDeleted = deletedNodes.some(deletedNode => deletedNode.id === node.id);
                 return !isDeleted;
             });
 
@@ -258,6 +257,22 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
     const { data, isLoading } = useGetSkillFrameworkById(
         !isFullSkillFramework ? frameworkInfo.id : ''
     );
+
+    // Use infinite query for paginated root-level skills
+    const {
+        data: rootSkillsData,
+        fetchNextPage: fetchMoreRootSkills,
+        hasNextPage: hasMoreRootSkills,
+        isFetchingNextPage: isFetchingMoreRootSkills,
+    } = useGetSkillChildrenInfinite(
+        frameworkInfo.id,
+        undefined, // no parent skillId = root level
+        { enabled: !isFullSkillFramework }
+    );
+
+    // Flatten all pages of root skills into a single array
+    const allRootSkills =
+        rootSkillsData?.pages?.flatMap(page => page?.records ?? []) ?? data?.skills?.records ?? [];
 
     // TODO handle pagination
     const { data: searchResultsApiData, isLoading: searchLoading } = useSearchFrameworkSkills(
@@ -362,9 +377,6 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
             setIsFullScreenSearch(false);
         }
     }, [search]);
-
-    const frameworkSkills = data?.skills; // paginated
-    const apiSkills = frameworkSkills?.records;
 
     const openManageJsonModal = () => {
         newModal(
@@ -983,7 +995,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
     const columns: React.ReactNode[] = [
         <FrameworkColumn
             key="root"
-            nodes={fullSkillTree ?? convertApiSkillNodesToSkillFrameworkNodes(apiSkills || [])}
+            nodes={fullSkillTree ?? convertApiSkillNodesToSkillFrameworkNodes(allRootSkills || [])}
             setSelectedNode={node => {
                 // If we already have a selected path, replace the first item
                 // Otherwise, start a new path
@@ -1026,6 +1038,9 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
             handleSaveSkills={handleSaveSkills}
             disableSave={disableSave}
             isViewOnly={isViewOnly}
+            hasMoreNodes={hasMoreRootSkills}
+            onLoadMore={fetchMoreRootSkills}
+            isLoadingMore={isFetchingMoreRootSkills}
         />,
         ...selectedPath.map((node, index) => {
             // The actual column index is index + 1 because the root column is at index 0

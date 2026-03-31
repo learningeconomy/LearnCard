@@ -516,6 +516,34 @@ export const ConsentFlowContractDetailsValidator = z.object({
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
 
+export const ConsentFlowContractRequestStatusValidator = z
+    .enum(['pending', 'accepted', 'denied'])
+    .nullable();
+export type ConsentFlowContractRequestStatus = z.infer<
+    typeof ConsentFlowContractRequestStatusValidator
+>;
+
+export const ConsentFlowContractRequestReadStatusValidator = z.enum(['unseen', 'seen']).nullable();
+export type ConsentFlowContractRequestReadStatus = z.infer<
+    typeof ConsentFlowContractRequestReadStatusValidator
+>;
+
+export const ConsentFlowContractRequestForProfileValidator = z.object({
+    profile: LCNProfileValidator,
+    status: ConsentFlowContractRequestStatusValidator,
+    readStatus: ConsentFlowContractRequestReadStatusValidator.optional(),
+});
+export type ConsentFlowContractRequestForProfile = z.infer<
+    typeof ConsentFlowContractRequestForProfileValidator
+>;
+
+export const ConsentFlowContractRequestForProfileListValidator = z.array(
+    ConsentFlowContractRequestForProfileValidator
+);
+export type ConsentFlowContractRequestForProfileList = z.infer<
+    typeof ConsentFlowContractRequestForProfileListValidator
+>;
+
 export const PaginatedConsentFlowContractsValidator = PaginationResponseValidator.extend({
     records: ConsentFlowContractDetailsValidator.omit({ owner: true }).array(),
 });
@@ -1685,6 +1713,14 @@ export type PromotionLevel = z.infer<typeof PromotionLevelValidator>;
 export const AgeRatingValidator = z.enum(['4+', '9+', '12+', '17+']);
 export type AgeRating = z.infer<typeof AgeRatingValidator>;
 
+export const AppStoreListingSubmitterValidator = z.object({
+    profileId: z.string(),
+    displayName: z.string(),
+    email: z.string().optional(),
+});
+
+export type AppStoreListingSubmitter = z.infer<typeof AppStoreListingSubmitterValidator>;
+
 export const AppStoreListingValidator = z.object({
     listing_id: z.string(),
     slug: z.string().optional(),
@@ -1707,6 +1743,9 @@ export const AppStoreListingValidator = z.object({
     hero_background_color: z.string().optional(),
     min_age: z.number().int().min(0).max(18).optional(),
     age_rating: AgeRatingValidator.optional(),
+    submitted_at: z.string().optional(),
+    submitter: AppStoreListingSubmitterValidator.optional(),
+    contact_email: z.string().email().optional(),
 });
 
 export type AppStoreListing = z.infer<typeof AppStoreListingValidator>;

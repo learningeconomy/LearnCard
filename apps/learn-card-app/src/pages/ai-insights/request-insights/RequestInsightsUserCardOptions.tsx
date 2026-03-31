@@ -21,6 +21,19 @@ export const RequestInsightsUserCardOptions: React.FC<{
 }> = ({ profile, readStatus, status, handleRequestInsights }) => {
     const { closeModal } = useModal();
 
+    const visibleOptions = requestInsightsOptions.filter(option => {
+        if (option.type === RequestInsightsOptionsEnum.removeConnection) return false;
+        if (
+            status === RequestInsightStatusEnum.accepted &&
+            (option.type === RequestInsightsOptionsEnum.cancelRequest ||
+                option.type === RequestInsightsOptionsEnum.requestReminder)
+        )
+            return false;
+        return true;
+    });
+
+    if (visibleOptions.length === 0) return null;
+
     return (
         <div className="flex flex-col gap-2 px-2">
             <AiInsightsUserCard
