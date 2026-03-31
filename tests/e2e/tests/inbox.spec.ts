@@ -908,7 +908,7 @@ describe('Inbox', () => {
             const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
             const deliveryData = await testResponse.json();
             console.log(deliveryData);
-            const otpChallenge = deliveryData.templateModel.verificationToken;
+            const otpChallenge = deliveryData.templateModel.verificationCode;
 
             const res = await fetch(`http://localhost:4000/api/contact-methods/session`, {
                 method: 'POST',
