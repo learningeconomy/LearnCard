@@ -958,6 +958,7 @@ const handleGetTemplateRecipientsEvent = async (
         cursor,
         includeUnacceptedBoosts: true,
         domain: ctx.domain,
+        from: profile.profileId,
     });
 
     const hasMore = recipients.length > limit;

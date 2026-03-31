@@ -427,7 +427,7 @@ describe('App Store Credential Issuance E2E Tests', () => {
         });
 
         it('should return empty list when no credentials have been issued', async () => {
-            const result = await appUser.invoke.sendAppEvent(listingId, {
+            const result = await appOwner.invoke.sendAppEvent(listingId, {
                 type: 'get-template-recipients',
                 templateAlias: 'recipients-badge',
             });
@@ -442,7 +442,7 @@ describe('App Store Credential Issuance E2E Tests', () => {
                 templateAlias: 'recipients-badge',
             });
 
-            const result = await appUser.invoke.sendAppEvent(listingId, {
+            const result = await appOwner.invoke.sendAppEvent(listingId, {
                 type: 'get-template-recipients',
                 templateAlias: 'recipients-badge',
             });
@@ -461,7 +461,7 @@ describe('App Store Credential Issuance E2E Tests', () => {
                 templateAlias: 'recipients-badge',
             });
 
-            const result = await appUser.invoke.sendAppEvent(listingId, {
+            const result = await appOwner.invoke.sendAppEvent(listingId, {
                 type: 'get-template-recipients',
                 templateAlias: 'recipients-badge',
                 limit: 1,
@@ -477,7 +477,7 @@ describe('App Store Credential Issuance E2E Tests', () => {
                 templateAlias: 'recipients-badge',
             });
 
-            const result = await appUser.invoke.sendAppEvent(listingId, {
+            const result = await appOwner.invoke.sendAppEvent(listingId, {
                 type: 'get-template-recipients',
                 boostUri,
             });
@@ -492,13 +492,51 @@ describe('App Store Credential Issuance E2E Tests', () => {
                 templateAlias: 'recipients-badge',
             });
 
-            const result = await appUser.invoke.sendAppEvent(listingId, {
+            const result = await appOwner.invoke.sendAppEvent(listingId, {
                 type: 'get-template-recipients',
                 templateAlias: 'recipients-badge',
             });
 
             expect(result.records).toHaveLength(1);
             expect(result.records[0].recipientProfileId).toBe(appUserProfileId);
+        });
+
+        it('should scope recipients to the non-owner sender (Partner Connect flow)', async () => {
+            // Simulate the Partner Connect initiateTemplateIssue flow:
+            // A non-owner user with canIssue permission sends a boost directly,
+            // then queries get-template-recipients to see only their own sends.
+
+            const recipient = await getLearnCardForUser('c');
+            const recipientProfile = await recipient.invoke.getProfile();
+            const recipientProfileId = recipientProfile?.profileId || '';
+
+            // Grant appUser canIssue permission on the boost
+            await appOwner.invoke.updateBoostPermissions(
+                boostUri,
+                { canIssue: true },
+                appUserProfileId
+            );
+
+            // appUser sends the boost directly (as if through initiateTemplateIssue → app issue modal)
+            await appUser.invoke.sendBoost(recipientProfileId, boostUri);
+
+            // appUser queries get-template-recipients — should see only their send
+            const appUserResult = await appUser.invoke.sendAppEvent(listingId, {
+                type: 'get-template-recipients',
+                templateAlias: 'recipients-badge',
+            });
+
+            expect(appUserResult.records).toHaveLength(1);
+            expect(appUserResult.records[0].recipientProfileId).toBe(recipientProfileId);
+            expect(appUserResult.records[0].status).toBe('pending');
+
+            // appOwner queries get-template-recipients — should NOT see appUser's send
+            const appOwnerResult = await appOwner.invoke.sendAppEvent(listingId, {
+                type: 'get-template-recipients',
+                templateAlias: 'recipients-badge',
+            });
+
+            expect(appOwnerResult.records).toHaveLength(0);
         });
     });
 
