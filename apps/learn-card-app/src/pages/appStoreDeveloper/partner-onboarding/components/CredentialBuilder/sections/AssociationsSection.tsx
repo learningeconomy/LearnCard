@@ -47,7 +47,7 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
 
     const addAssociation = () => {
         const newAssoc: AssociationTemplate = {
-            id: `assoc_${Date.now()}`,
+            id: crypto.randomUUID(),
             associationType: staticField('isChildOf'),
             sourceAchievementId: achievements[0]?.id || '',
             targetAchievementId: achievements[1]?.id || achievements[0]?.id || '',

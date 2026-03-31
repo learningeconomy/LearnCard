@@ -36,7 +36,7 @@ const createBlankAchievement = (): AchievementTemplate => ({
 });
 
 const createNewEntry = (): AchievementEntryTemplate => ({
-    id: `ach_${Date.now()}`,
+    id: crypto.randomUUID(),
     achievement: createBlankAchievement(),
     result: [],
 });
