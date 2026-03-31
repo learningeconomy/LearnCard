@@ -15,7 +15,10 @@ export const vcV2WithEvidence: CredentialFixture = {
     validator: UnsignedVCValidator,
 
     credential: {
-        '@context': ['https://www.w3.org/ns/credentials/v2'],
+        '@context': [
+            'https://www.w3.org/ns/credentials/v2',
+            'https://www.w3.org/ns/credentials/examples/v2',
+        ],
         id: 'urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         type: ['VerifiableCredential'],
         issuer: {

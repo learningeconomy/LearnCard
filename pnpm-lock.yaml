@@ -1259,6 +1259,12 @@ importers:
         specifier: 4.1.13
         version: 4.1.13
     devDependencies:
+      '@learncard/didkit-plugin':
+        specifier: workspace:*
+        version: link:../plugins/didkit
+      '@learncard/init':
+        specifier: workspace:*
+        version: link:../learn-card-init
       '@types/node':
         specifier: ^17.0.38
         version: 17.0.45

@@ -20,7 +20,7 @@ export const clrMultiAchievement: CredentialFixture = {
         '@context': [
             'https://www.w3.org/ns/credentials/v2',
             'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-            'https://purl.imsglobal.org/spec/clr/v2p0/context-2.0.1.json',
+            'https://purl.imsglobal.org/spec/clr/v2p0/context.json',
         ],
         id: 'urn:uuid:a7b8c9d0-0007-4000-8000-000000000001',
         type: ['VerifiableCredential', 'ClrCredential'],

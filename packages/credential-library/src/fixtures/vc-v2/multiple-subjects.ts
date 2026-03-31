@@ -17,7 +17,10 @@ export const vcV2MultipleSubjects: CredentialFixture = {
     tags: ['edge-case'],
 
     credential: {
-        '@context': ['https://www.w3.org/ns/credentials/v2'],
+        '@context': [
+            'https://www.w3.org/ns/credentials/v2',
+            'https://www.w3.org/ns/credentials/examples/v2',
+        ],
         id: 'urn:uuid:b2c3d4e5-f6a7-8901-bcde-f12345678901',
         type: ['VerifiableCredential'],
         issuer: 'did:example:issuer123',

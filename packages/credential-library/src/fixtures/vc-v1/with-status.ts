@@ -18,6 +18,7 @@ export const vcV1WithStatus: CredentialFixture = {
     credential: {
         '@context': [
             'https://www.w3.org/2018/credentials/v1',
+            'https://www.w3.org/2018/credentials/examples/v1',
             'https://w3id.org/vc/status-list/2021/v1',
         ],
         id: 'http://example.org/credentials/status-example',
