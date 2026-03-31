@@ -69,6 +69,12 @@ export const LaunchPadColorsSchema = z
             connected: z.string(),
             unconnected: z.string(),
         }),
+
+        /** Hex color for the "What would you like to do?" quick action button background. Undefined = #DCEAFE. */
+        quickActionBgColor: z.string().optional(),
+
+        /** Hex color for the "What would you like to do?" quick action button text. Undefined = #273B72. */
+        quickActionTextColor: z.string().optional(),
     })
     .describe('LaunchPad Colors');
 export type LaunchPadColors = z.infer<typeof LaunchPadColorsSchema>;

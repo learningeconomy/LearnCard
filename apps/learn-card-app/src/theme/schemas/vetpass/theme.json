@@ -167,7 +167,8 @@
             "buttons": {
                 "unconnected": "bg-baltic-blue-500 text-white",
                 "connected": "bg-grayscale-100 text-baltic-blue-500"
-            }
+            },
+            "quickActionBgColor": "#FBFBFC"
         },
         "sideMenu": {
             "linkActiveColor": "text-grayscale-900",
@@ -284,17 +285,8 @@
             "loginButtonBgColor": "#11354E",
             "loginButtonTextColor": "#FFFFFF",
             "actionModalButtonColors": [
-                "#184463",
-                "#1B5478",
-                "#1E6490",
-                "#2174A8",
-                "#0089EE",
-                "#396888"
+                "#F1F5F9"
             ],
-            "actionModalTextColor": "#FFFFFF",
-            "actionModalCardBgColor": "#11354E",
-            "actionModalCardTextColor": "#FFFFFF",
-            "actionModalButtonBorderColor": "#396888",
             "featuredCardBgColor": "#F1F5F9",
             "passportTextColor": "text-navy-700",
             "passportCardBgColor": "#F8FAFC",

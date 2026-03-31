@@ -2,6 +2,7 @@ import React from 'react';
 import moment from 'moment';
 
 import { getFirstName, useCurrentUser, useModal, ModalTypes } from 'learn-card-base';
+import { useTheme } from '../../../theme/hooks/useTheme';
 import { getGreetingAndEmoji } from './launchPadHeader.helpers';
 import LaunchPadActionModal from './LaunchPadActionModal';
 import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNGatedAction';
@@ -15,6 +16,10 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
     });
 
     const { gate } = useLCNGatedAction();
+
+    const { colors } = useTheme();
+    const quickActionBgColor = colors?.launchPad?.quickActionBgColor ?? '#DCEAFE';
+    const quickActionTextColor = colors?.launchPad?.quickActionTextColor ?? '#273B72';
 
     const { emoji, greeting } = getGreetingAndEmoji(currentHour);
 
@@ -44,9 +49,10 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
                     <button
                         type="button"
                         onClick={() => void handleOpenActionModal()}
-                        className="w-full max-w-[600px] flex items-center justify-between px-4 py-3 rounded-2xl bg-[#DCEAFE] shadow-sm"
+                        className="w-full max-w-[600px] flex items-center justify-between px-4 py-3 rounded-2xl shadow-sm"
+                        style={{ backgroundColor: quickActionBgColor }}
                     >
-                        <span className="text-[#273B72] font-poppins font-semibold text-[20px]">
+                        <span className="font-poppins font-semibold text-[20px]" style={{ color: quickActionTextColor }}>
                             What would you like to do?
                         </span>
                         <svg
@@ -55,7 +61,7 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
                             viewBox="0 0 24 24"
                             fill="none"
                             xmlns="http://www.w3.org/2000/svg"
-                            className="text-[#273B72]"
+                            style={{ color: quickActionTextColor }}
                         >
                             <path
                                 d="M6 9l6 6 6-6"

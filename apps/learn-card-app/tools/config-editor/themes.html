@@ -668,16 +668,16 @@ const generateThemeFromPalette = ({ roles, style }) => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const CATEGORY_COLOR_FIELDS = [
-    { key: 'primaryColor', label: 'Primary', hint: 'Wallet card fill — the main bg color of the category tile on the home grid/list' },
-    { key: 'secondaryColor', label: 'Secondary', hint: 'Count badge pill inside the wallet card (grid view)' },
-    { key: 'indicatorColor', label: 'Indicator', hint: '"New" notification dot color and "X New" text on category pages' },
-    { key: 'borderColor', label: 'Border', hint: 'Ring around the notification dot on wallet cards' },
-    { key: 'statusBarColor', label: 'Status Bar', hint: 'Mobile device status bar tint when viewing this category' },
-    { key: 'headerBrandingTextColor', label: 'Header Brand Text', hint: 'Back arrow & branding logo color in the category page header' },
-    { key: 'headerTextColor', label: 'Header Text', hint: 'Category icon & "New Boost" button text in the subheader' },
-    { key: 'backgroundPrimaryColor', label: 'Background Primary', hint: 'Curved header background on the category detail page' },
-    { key: 'backgroundSecondaryColor', label: 'Background Secondary', hint: 'Content area background below the header curve' },
-    { key: 'tabActiveColor', label: 'Tab Active', hint: 'Earned/Managed tab highlight, search input bg, and view toggle bg' },
+    { key: 'primaryColor', label: 'Primary', hint: 'Wallet card fill — the main bg color of the category tile on the home grid/list', type: 'tailwind' },
+    { key: 'secondaryColor', label: 'Secondary', hint: 'Count badge pill inside the wallet card (grid view)', type: 'tailwind' },
+    { key: 'indicatorColor', label: 'Indicator', hint: '"New" notification dot color and "X New" text on category pages', type: 'tailwind' },
+    { key: 'borderColor', label: 'Border', hint: 'Ring around the notification dot on wallet cards', type: 'tailwind' },
+    { key: 'statusBarColor', label: 'Status Bar', hint: 'Mobile device status bar tint when viewing this category', type: 'tailwind' },
+    { key: 'headerBrandingTextColor', label: 'Header Brand Text', hint: 'Back arrow & branding logo color in the category page header', type: 'tailwind' },
+    { key: 'headerTextColor', label: 'Header Text', hint: 'Category icon & "New Boost" button text in the subheader', type: 'tailwind' },
+    { key: 'backgroundPrimaryColor', label: 'Background Primary', hint: 'Curved header background on the category detail page', type: 'tailwind' },
+    { key: 'backgroundSecondaryColor', label: 'Background Secondary', hint: 'Content area background below the header curve', type: 'tailwind' },
+    { key: 'tabActiveColor', label: 'Tab Active', hint: 'Earned/Managed tab highlight, search input bg, and view toggle bg', type: 'tailwind' },
 ];
 
 const CATEGORY_KEYS = [
@@ -1189,9 +1189,13 @@ const SelectField = ({ label, value, options, onChange, hint }) => (
     </div>
 );
 
-const HexColorField = ({ label, value, inheritedValue, onChange, onClear, hint }) => {
+const HexColorField = ({ label, value, inheritedValue, onChange, onClear, hint, fallback }) => {
     const displayValue = value ?? inheritedValue ?? '';
     const isInherited = value === undefined && inheritedValue !== undefined;
+    const isFallback = !value && !inheritedValue && !!fallback;
+    const swatchValue = displayValue || fallback || '';
+    const hasColor = swatchValue && /^#[0-9a-fA-F]{3,8}$/.test(swatchValue);
+    const pickerHex = hasColor ? swatchValue : '#ffffff';
 
     return (
         <div className="field-group">
@@ -1199,24 +1203,40 @@ const HexColorField = ({ label, value, inheritedValue, onChange, onClear, hint }
                 <div className="field-label" style={{ marginBottom: 0 }}>
                     {label}
                     {isInherited && <span className="badge badge-inherited" style={{ marginLeft: 6 }}>inherited</span>}
+                    {value !== undefined && inheritedValue !== undefined && <span className="badge badge-override" style={{ marginLeft: 6 }}>override</span>}
                 </div>
                 {hint && <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1.3, maxWidth: 180 }}>{hint}</div>}
             </div>
-            <input
-                type="color"
-                value={displayValue || '#000000'}
-                onChange={e => onChange(e.target.value)}
-                style={{ width: 32, height: 32, border: '2px solid #e2e8f0', borderRadius: 6, padding: 0, cursor: 'pointer' }}
-            />
+            {hasColor ? (
+                <input
+                    type="color"
+                    value={pickerHex}
+                    onChange={e => onChange(e.target.value)}
+                    style={{ width: 32, height: 32, border: '2px solid #e2e8f0', borderRadius: 6, padding: 0, cursor: 'pointer', opacity: (isInherited || isFallback) ? 0.45 : 1 }}
+                />
+            ) : (
+                <div
+                    onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'color';
+                        input.value = pickerHex;
+                        input.addEventListener('input', e => onChange(e.target.value));
+                        input.click();
+                    }}
+                    style={{ width: 32, height: 32, border: '2px solid #e2e8f0', borderRadius: 6, cursor: 'pointer',
+                        background: 'repeating-conic-gradient(#e2e8f0 0% 25%, white 0% 50%) 50%/12px 12px' }}
+                    title="Click to pick color"
+                />
+            )}
             <input
                 type="text"
                 className={`field-input ${isInherited ? 'inherited' : ''}`}
                 value={displayValue}
-                placeholder={inheritedValue || '#000000'}
+                placeholder={inheritedValue || fallback || 'e.g. #FFFFFF'}
                 onChange={e => onChange(e.target.value)}
             />
             {value !== undefined && onClear && (
-                <button className="reset-btn" onClick={onClear} title="Reset">
+                <button className="reset-btn" onClick={onClear} title="Reset to inherited">
                     <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm10.49-.117a7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H.985a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0015.059-4.035.75.75 0 00-1.45-.388z" clipRule="evenodd"/></svg>
                 </button>
             )}
@@ -1271,10 +1291,12 @@ const CategoryColorEditor = ({ fields, path, config, parentConfig, setConfig }) 
                 const localValue = deepGet(config, fullPath);
                 const inheritedValue = parentValues?.[f.key];
 
+                const FieldComponent = FIELD_TYPE_COMPONENTS[f.type] || ColorField;
+
                 return (
-                    <ColorField
+                    <FieldComponent
                         key={f.key}
-                        label={f.label}
+                        label={<>{f.label}<FieldTypeBadge type={f.type || 'tailwind'} /></>}
                         hint={f.hint}
                         value={localValue}
                         inheritedValue={inheritedValue}
@@ -1369,13 +1391,32 @@ const CategoriesSection = ({ config, parentConfig, setConfig }) => {
 // SECTION: UI Colors (launchPad, sideMenu, navbar, introSlides, defaults)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const ObjectColorEditor = ({ title, icon, path, fields, config, parentConfig, setConfig, useHex }) => {
-    const FieldComponent = useHex ? HexColorField : ColorField;
+const FIELD_TYPE_COMPONENTS = { tailwind: ColorField, hex: HexColorField, class: TextField };
+const FIELD_TYPE_BADGES = {
+    tailwind: { text: 'tw', bg: '#dbeafe', color: '#1d4ed8', title: 'Tailwind color token (e.g. blue-500)' },
+    hex:      { text: 'hex', bg: '#fef3c7', color: '#92400e', title: 'Hex color value (e.g. #3B82F6)' },
+    class:    { text: 'class', bg: '#f3e8ff', color: '#7c3aed', title: 'Tailwind utility classes (e.g. bg-blue-500 text-white)' },
+};
 
+const FieldTypeBadge = ({ type }) => {
+    const badge = FIELD_TYPE_BADGES[type];
+    if (!badge) return null;
+    return (
+        <span title={badge.title} style={{
+            fontSize: 9, fontWeight: 600, lineHeight: 1, padding: '2px 4px',
+            borderRadius: 4, background: badge.bg, color: badge.color,
+            marginLeft: 4, whiteSpace: 'nowrap', letterSpacing: 0.3,
+        }}>{badge.text}</span>
+    );
+};
+
+const ObjectColorEditor = ({ title, icon, path, fields, config, parentConfig, setConfig, useHex, after }) => {
     return (
         <div className="section-card">
             <div className="section-title">{icon}{title}</div>
             {fields.map(f => {
+                const fieldType = f.type || (useHex ? 'hex' : 'tailwind');
+                const FieldComponent = FIELD_TYPE_COMPONENTS[fieldType] || ColorField;
                 const fullPath = `${path}.${f.key}`;
                 const localValue = deepGet(config, fullPath);
                 const inheritedValue = parentConfig ? deepGet(parentConfig, fullPath) : undefined;
@@ -1383,15 +1424,136 @@ const ObjectColorEditor = ({ title, icon, path, fields, config, parentConfig, se
                 return (
                     <FieldComponent
                         key={f.key}
-                        label={f.label}
+                        label={<>{f.label}<FieldTypeBadge type={fieldType} /></>}
                         hint={f.hint}
                         value={localValue}
                         inheritedValue={inheritedValue}
+                        fallback={f.fallback}
                         onChange={(v) => setConfig(deepSet(config, fullPath, v))}
                         onClear={localValue !== undefined ? () => setConfig(deepDelete(config, fullPath)) : undefined}
                     />
                 );
             })}
+            {after}
+        </div>
+    );
+};
+
+// ── Array Color Editor: for editing ordered arrays of colors ──
+const ArrayColorEditor = ({ label, hint, path, config, parentConfig, setConfig }) => {
+    const [pickerIdx, setPickerIdx] = useState(null);
+    const [pickerPos, setPickerPos] = useState(null);
+    const swatchRefs = useRef({});
+
+    const localValue = deepGet(config, path);
+    const inheritedValue = parentConfig ? deepGet(parentConfig, path) : undefined;
+    const colors = localValue ?? inheritedValue ?? [];
+    const isInherited = localValue === undefined && inheritedValue !== undefined;
+    const hasLocal = localValue !== undefined;
+
+    const update = (newArr) => setConfig(deepSet(config, path, newArr));
+    const clear = () => setConfig(deepDelete(config, path));
+
+    const setColor = (idx, val) => {
+        const arr = [...(localValue ?? inheritedValue ?? [])];
+        arr[idx] = val;
+        update(arr);
+    };
+
+    const addColor = () => update([...(localValue ?? inheritedValue ?? []), '#888888']);
+
+    const removeColor = (idx) => {
+        const arr = [...(localValue ?? inheritedValue ?? [])];
+        arr.splice(idx, 1);
+        update(arr);
+    };
+
+    const moveColor = (idx, dir) => {
+        const arr = [...(localValue ?? inheritedValue ?? [])];
+        const target = idx + dir;
+        if (target < 0 || target >= arr.length) return;
+        [arr[idx], arr[target]] = [arr[target], arr[idx]];
+        update(arr);
+    };
+
+    const openPicker = (idx) => {
+        const el = swatchRefs.current[idx];
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        setPickerIdx(idx);
+        setPickerPos({ x: rect.right + 8, y: rect.top });
+    };
+
+    return (
+        <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <div className="field-label" style={{ marginBottom: 0 }}>
+                    {label}
+                    {isInherited && <span className="badge badge-inherited" style={{ marginLeft: 6 }}>inherited</span>}
+                    {hasLocal && inheritedValue !== undefined && <span className="badge badge-override" style={{ marginLeft: 6 }}>override</span>}
+                </div>
+                {hasLocal && inheritedValue !== undefined && (
+                    <button className="reset-btn" onClick={clear} title="Reset to inherited" style={{ marginLeft: 'auto' }}>
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm10.49-.117a7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H.985a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0015.059-4.035.75.75 0 00-1.45-.388z" clipRule="evenodd"/></svg>
+                    </button>
+                )}
+            </div>
+            {hint && <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1.3, marginBottom: 8 }}>{hint}</div>}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {colors.map((color, idx) => {
+                    const hex = resolveColorHex(color);
+                    return (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontSize: 10, color: '#94a3b8', width: 16, textAlign: 'right', flexShrink: 0 }}>{idx + 1}</span>
+                            <div
+                                ref={el => swatchRefs.current[idx] = el}
+                                className="swatch"
+                                style={{ background: hex || color, width: 28, height: 28, flexShrink: 0, cursor: 'pointer' }}
+                                onClick={() => openPicker(idx)}
+                                title={color}
+                            />
+                            <input
+                                type="text"
+                                className={`field-input ${isInherited && !hasLocal ? 'inherited' : ''}`}
+                                value={color}
+                                style={{ flex: 1, fontSize: 12 }}
+                                onChange={e => setColor(idx, e.target.value)}
+                            />
+                            <button onClick={() => moveColor(idx, -1)} disabled={idx === 0}
+                                style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', opacity: idx === 0 ? 0.25 : 0.6, padding: 2 }}
+                                title="Move up">
+                                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M14.77 12.79a.75.75 0 01-1.06-.02L10 8.832 6.29 12.77a.75.75 0 11-1.08-1.04l4.25-4.5a.75.75 0 011.08 0l4.25 4.5a.75.75 0 01-.02 1.06z" clipRule="evenodd"/></svg>
+                            </button>
+                            <button onClick={() => moveColor(idx, 1)} disabled={idx === colors.length - 1}
+                                style={{ background: 'none', border: 'none', cursor: idx === colors.length - 1 ? 'default' : 'pointer', opacity: idx === colors.length - 1 ? 0.25 : 0.6, padding: 2 }}
+                                title="Move down">
+                                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd"/></svg>
+                            </button>
+                            <button onClick={() => removeColor(idx)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5, padding: 2, color: '#ef4444' }}
+                                title="Remove">
+                                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd"/></svg>
+                            </button>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <button onClick={addColor}
+                style={{ marginTop: 8, fontSize: 11, color: '#6366f1', background: 'none', border: '1px dashed #c7d2fe', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"/></svg>
+                Add Color
+            </button>
+
+            {pickerIdx !== null && pickerPos && (
+                <ColorPicker
+                    value={colors[pickerIdx] || ''}
+                    position={pickerPos}
+                    onClose={() => { setPickerIdx(null); setPickerPos(null); }}
+                    onSelect={(v) => setColor(pickerIdx, v)}
+                />
+            )}
         </div>
     );
 };
@@ -1402,37 +1564,53 @@ const BrandColorsSection = ({ config, parentConfig, setConfig }) => (
         <ObjectColorEditor title="Primary & Accent" path="colors.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#3b82f6' }}><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.061 1.06a.75.75 0 001.06 1.06l1.06-1.06zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.06 1.06a.75.75 0 001.06 1.06l1.06-1.06zM18 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 015 10zM14.596 13.535a.75.75 0 011.06 1.061l-1.06 1.06a.75.75 0 11-1.061-1.06l1.06-1.06zM5.404 6.464a.75.75 0 011.06-1.06l1.06 1.06a.75.75 0 11-1.06 1.061l-1.06-1.06z"/></svg>}
             fields={[
-                { key: 'primaryColor', label: 'Primary Color', hint: 'App-wide accent color used for buttons, links, and highlights' },
-                { key: 'primaryColorShade', label: 'Primary Shade', hint: 'Lighter shade of primary — used for hover states and backgrounds' },
-            ]} />
+                { key: 'primaryColor', label: 'Primary Color', hint: 'App-wide accent color used for buttons, links, and highlights', type: 'tailwind' },
+                { key: 'primaryColorShade', label: 'Primary Shade', hint: 'Lighter shade of primary — used for hover states and backgrounds', type: 'tailwind' },
+            ]}
+            after={
+                <ArrayColorEditor
+                    label="Loader / Splash Colors"
+                    hint="Hex colors for loading screens and splash gradients (also used as login background fallback)"
+                    path="colors.defaults.loaders"
+                    config={config} parentConfig={parentConfig} setConfig={setConfig}
+                />
+            } />
 
         <ObjectColorEditor title="Login Screen" path="colors.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#6366f1' }}><path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25v2a.75.75 0 01-1.5 0v-2a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75v-2a.75.75 0 011.5 0v2A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z" clipRule="evenodd"/><path fillRule="evenodd" d="M19 10a.75.75 0 00-.75-.75H8.704l1.048-.943a.75.75 0 10-1.004-1.114l-2.5 2.25a.75.75 0 000 1.114l2.5 2.25a.75.75 0 101.004-1.114l-1.048-.943h9.546A.75.75 0 0019 10z" clipRule="evenodd"/></svg>}
             fields={[
-                { key: 'loginBgColor', label: 'Login Background', hint: 'Hex color for the login page background (optional — falls back to loaders[0])' },
-                { key: 'loginButtonBgColor', label: 'Login Button Background', hint: 'Hex color for the login page submit button background (optional — falls back to grayscale-900)' },
-                { key: 'loginButtonTextColor', label: 'Login Button Text', hint: 'Hex color for the login page submit button text (optional — falls back to white)' },
+                { key: 'loginBgColor', label: 'Login Background', hint: 'Hex color for the login page background (optional — falls back to loaders[0])', type: 'hex' },
+                { key: 'loginButtonBgColor', label: 'Login Button Background', hint: 'Hex color for the login page submit button background (optional — falls back to grayscale-900)', type: 'hex', fallback: '#18224E' },
+                { key: 'loginButtonTextColor', label: 'Login Button Text', hint: 'Hex color for the login page submit button text (optional — falls back to white)', type: 'hex', fallback: '#FFFFFF' },
             ]} />
 
         <ObjectColorEditor title="Passport Page" path="colors.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#0ea5e9' }}><path fillRule="evenodd" d="M.99 5.24A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25l.01 9.5A2.25 2.25 0 0116.76 17H3.26A2.25 2.25 0 011 14.75l-.01-9.51z" clipRule="evenodd"/></svg>}
             fields={[
-                { key: 'passportBgColor', label: 'Passport Background', hint: 'Hex color for the Passport page background (optional — falls back to white)' },
-                { key: 'passportTextColor', label: 'Passport Text', hint: 'Tailwind text class for Passport heading text, e.g. "text-white" (optional — falls back to text-grayscale-900)' },
-                { key: 'passportCardBgColor', label: 'Passport Card Background', hint: 'Hex color for category card backgrounds on the Passport page (optional — falls back to category primaryColor class)' },
-                { key: 'passportCardTextColor', label: 'Passport Card Text', hint: 'Tailwind text class for category card labels, e.g. "text-white" (optional — falls back to text-grayscale-900)' },
-                { key: 'featuredCardBgColor', label: 'Featured Card Background', hint: 'Hex color for Build My LC / Resume Builder card backgrounds (optional — falls back to white)' },
-                { key: 'featuredCardTextColor', label: 'Featured Card Text', hint: 'Tailwind text class for featured card text, e.g. "text-white" (optional — falls back to text-grayscale-900)' },
+                { key: 'passportBgColor', label: 'Passport Background', hint: 'Hex color for the Passport page background (optional — falls back to white)', type: 'hex', fallback: '#FFFFFF' },
+                { key: 'passportTextColor', label: 'Passport Text', hint: 'Tailwind text class for Passport heading text, e.g. "text-white" (optional — falls back to text-grayscale-900)', type: 'class' },
+                { key: 'passportCardBgColor', label: 'Passport Card Background', hint: 'Hex color for category card backgrounds on the Passport page (optional — falls back to category primaryColor class)', type: 'hex', fallback: '#FFFFFF' },
+                { key: 'passportCardTextColor', label: 'Passport Card Text', hint: 'Tailwind text class for category card labels, e.g. "text-white" (optional — falls back to text-grayscale-900)', type: 'class' },
+                { key: 'featuredCardBgColor', label: 'Featured Card Background', hint: 'Hex color for Build My LC / Resume Builder card backgrounds (optional — falls back to white)', type: 'hex', fallback: '#FFFFFF' },
+                { key: 'featuredCardTextColor', label: 'Featured Card Text', hint: 'Tailwind text class for featured card text, e.g. "text-white" (optional — falls back to text-grayscale-900)', type: 'class' },
             ]} />
 
         <ObjectColorEditor title="Action Modal" path="colors.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#f59e0b' }}><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd"/></svg>}
             fields={[
-                { key: 'actionModalCardBgColor', label: 'Action Modal Card Bg', hint: 'Hex color for the "What would you like to do?" modal card background (optional — falls back to white)' },
-                { key: 'actionModalCardTextColor', label: 'Action Modal Card Text', hint: 'Hex color for the action modal card heading text (optional — falls back to grayscale-900)' },
-                { key: 'actionModalTextColor', label: 'Action Modal Button Text', hint: 'Hex color for action modal button text (optional — falls back to grayscale-900)' },
-                { key: 'actionModalButtonBorderColor', label: 'Action Modal Button Border', hint: 'Hex color for action modal button borders (optional — falls back to white)' },
-            ]} />
+                { key: 'actionModalCardBgColor', label: 'Action Modal Card Bg', hint: 'Hex color for the "What would you like to do?" modal card background (optional — falls back to white)', type: 'hex', fallback: '#FFFFFF' },
+                { key: 'actionModalCardTextColor', label: 'Action Modal Card Text', hint: 'Hex color for the action modal card heading text (optional — falls back to grayscale-900)', type: 'hex', fallback: '#18224E' },
+                { key: 'actionModalTextColor', label: 'Action Modal Button Text', hint: 'Hex color for action modal button text (optional — falls back to grayscale-900)', type: 'hex', fallback: '#18224E' },
+                { key: 'actionModalButtonBorderColor', label: 'Action Modal Button Border', hint: 'Hex color for action modal button borders (optional — falls back to white)', type: 'hex', fallback: '#FFFFFF' },
+            ]}
+            after={
+                <ArrayColorEditor
+                    label="Button Colors"
+                    hint="Ordered list of background colors for each action modal button (top → bottom)"
+                    path="colors.defaults.actionModalButtonColors"
+                    config={config} parentConfig={parentConfig} setConfig={setConfig}
+                />
+            } />
     </>
 );
 
@@ -1442,48 +1620,50 @@ const UIComponentsSection = ({ config, parentConfig, setConfig }) => (
         <ObjectColorEditor title="Navbar" path="colors.navbar" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#10b981' }}><path fillRule="evenodd" d="M.99 5.24A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25l.01 9.5A2.25 2.25 0 0116.76 17H3.26A2.25 2.25 0 011 14.75l-.01-9.51z" clipRule="evenodd"/></svg>}
             fields={[
-                { key: 'activeColor', label: 'Active', hint: 'Icon & text color for the selected tab in the bottom nav bar' },
-                { key: 'inactiveColor', label: 'Inactive', hint: 'Icon & text color for unselected tabs in the bottom nav bar' },
-                { key: 'syncingColor', label: 'Syncing', hint: 'Passport tab icon/spinner color while wallet is syncing' },
-                { key: 'completedColor', label: 'Completed', hint: 'Passport tab icon color after sync completes' },
+                { key: 'activeColor', label: 'Active', hint: 'Icon & text color for the selected tab in the bottom nav bar', type: 'tailwind' },
+                { key: 'inactiveColor', label: 'Inactive', hint: 'Icon & text color for unselected tabs in the bottom nav bar', type: 'tailwind' },
+                { key: 'syncingColor', label: 'Syncing', hint: 'Passport tab icon/spinner color while wallet is syncing', type: 'tailwind' },
+                { key: 'completedColor', label: 'Completed', hint: 'Passport tab icon color after sync completes', type: 'tailwind' },
             ]} />
 
         <ObjectColorEditor title="Side Menu" path="colors.sideMenu" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#06b6d4' }}><path fillRule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z" clipRule="evenodd"/></svg>}
             fields={[
-                { key: 'linkActiveColor', label: 'Link Active', hint: 'Text & icon color for the currently selected side menu link' },
-                { key: 'linkInactiveColor', label: 'Link Inactive', hint: 'Text & icon color for unselected side menu links' },
-                { key: 'linkActiveBackgroundColor', label: 'Link Active BG', hint: 'Background highlight on the selected side menu link row' },
-                { key: 'linkInactiveBackgroundColor', label: 'Link Inactive BG', hint: 'Background of unselected side menu link rows' },
-                { key: 'primaryButtonColor', label: 'Primary Button', hint: '"New AI Session" button in the side menu (bg + text classes)' },
-                { key: 'secondaryButtonColor', label: 'Secondary Button', hint: 'Secondary action button in the side menu (bg + text + border)' },
-                { key: 'indicatorColor', label: 'Indicator', hint: 'Notification dot color next to side menu items with updates' },
-                { key: 'syncingColor', label: 'Syncing', hint: 'Text/spinner color for the "Passport" link while wallet is syncing' },
-                { key: 'completedColor', label: 'Completed', hint: 'Text color for the "Passport" link after sync completes' },
+                { key: 'linkActiveColor', label: 'Link Active', hint: 'Text & icon color for the currently selected side menu link', type: 'class' },
+                { key: 'linkInactiveColor', label: 'Link Inactive', hint: 'Text & icon color for unselected side menu links', type: 'class' },
+                { key: 'linkActiveBackgroundColor', label: 'Link Active BG', hint: 'Background highlight on the selected side menu link row', type: 'class' },
+                { key: 'linkInactiveBackgroundColor', label: 'Link Inactive BG', hint: 'Background of unselected side menu link rows', type: 'class' },
+                { key: 'primaryButtonColor', label: 'Primary Button', hint: '"New AI Session" button in the side menu (bg + text classes)', type: 'class' },
+                { key: 'secondaryButtonColor', label: 'Secondary Button', hint: 'Secondary action button in the side menu (bg + text + border)', type: 'class' },
+                { key: 'indicatorColor', label: 'Indicator', hint: 'Notification dot color next to side menu items with updates', type: 'tailwind' },
+                { key: 'syncingColor', label: 'Syncing', hint: 'Text/spinner color for the "Passport" link while wallet is syncing', type: 'tailwind' },
+                { key: 'completedColor', label: 'Completed', hint: 'Text color for the "Passport" link after sync completes', type: 'tailwind' },
             ]} />
 
         <ObjectColorEditor title="LaunchPad" path="colors.launchPad" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#f59e0b' }}><path d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z"/></svg>}
             fields={[
-                { key: 'contacts.color', label: 'Contacts Color', hint: 'Text color for the "Contacts" link on the LaunchPad home header' },
-                { key: 'aiSessions.color', label: 'AI Sessions Color', hint: 'Text color for the "AI Sessions" link on the LaunchPad header' },
-                { key: 'alerts.color', label: 'Alerts Color', hint: 'Text color for the "Alerts" link on the LaunchPad header' },
-                { key: 'alerts.indicatorTextColor', label: 'Alerts Indicator Text', hint: 'Text color for the unread alerts count badge' },
-                { key: 'alerts.indicatorBgColor', label: 'Alerts Indicator BG', hint: 'Background color for the unread alerts count badge' },
-                { key: 'buttons.unconnected', label: 'Button (Unconnected)', hint: 'Style for "Connect" buttons on unconnected LaunchPad apps' },
-                { key: 'buttons.connected', label: 'Button (Connected)', hint: 'Style for "View" buttons on already-connected LaunchPad apps' },
+                { key: 'contacts.color', label: 'Contacts Color', hint: 'Text color for the "Contacts" link on the LaunchPad home header', type: 'tailwind' },
+                { key: 'aiSessions.color', label: 'AI Sessions Color', hint: 'Text color for the "AI Sessions" link on the LaunchPad header', type: 'tailwind' },
+                { key: 'alerts.color', label: 'Alerts Color', hint: 'Text color for the "Alerts" link on the LaunchPad header', type: 'tailwind' },
+                { key: 'alerts.indicatorTextColor', label: 'Alerts Indicator Text', hint: 'Text color for the unread alerts count badge', type: 'tailwind' },
+                { key: 'alerts.indicatorBgColor', label: 'Alerts Indicator BG', hint: 'Background color for the unread alerts count badge', type: 'tailwind' },
+                { key: 'buttons.unconnected', label: 'Button (Unconnected)', hint: 'Style for "Connect" buttons on unconnected LaunchPad apps', type: 'class' },
+                { key: 'buttons.connected', label: 'Button (Connected)', hint: 'Style for "View" buttons on already-connected LaunchPad apps', type: 'class' },
+                { key: 'quickActionBgColor', label: 'Quick Action BG', hint: 'Hex background for the "What would you like to do?" button (optional — falls back to #DCEAFE)', type: 'hex', fallback: '#DCEAFE' },
+                { key: 'quickActionTextColor', label: 'Quick Action Text', hint: 'Hex text color for the "What would you like to do?" button (optional — falls back to #273B72)', type: 'hex', fallback: '#273B72' },
             ]} />
 
         <ObjectColorEditor title="Intro Slides" path="colors.introSlides" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#8b5cf6' }}><path d="M2 10a8 8 0 1116 0 8 8 0 01-16 0z"/></svg>}
             fields={[
-                { key: 'firstSlideBackground', label: 'Slide 1 Background', hint: 'Background color of the first onboarding intro slide' },
-                { key: 'secondSlideBackground', label: 'Slide 2 Background', hint: 'Background color of the second onboarding intro slide' },
-                { key: 'thirdSlideBackground', label: 'Slide 3 Background', hint: 'Background color of the third onboarding intro slide' },
-                { key: 'textColors.primary', label: 'Text Primary', hint: 'Headline text color on intro slides' },
-                { key: 'textColors.secondary', label: 'Text Secondary', hint: 'Body/subtitle text color on intro slides' },
-                { key: 'pagination.primary', label: 'Pagination Primary', hint: 'Active pagination dot on intro slides' },
-                { key: 'pagination.secondary', label: 'Pagination Secondary', hint: 'Inactive pagination dots on intro slides' },
+                { key: 'firstSlideBackground', label: 'Slide 1 Background', hint: 'Background color of the first onboarding intro slide', type: 'tailwind' },
+                { key: 'secondSlideBackground', label: 'Slide 2 Background', hint: 'Background color of the second onboarding intro slide', type: 'tailwind' },
+                { key: 'thirdSlideBackground', label: 'Slide 3 Background', hint: 'Background color of the third onboarding intro slide', type: 'tailwind' },
+                { key: 'textColors.primary', label: 'Text Primary', hint: 'Headline text color on intro slides', type: 'tailwind' },
+                { key: 'textColors.secondary', label: 'Text Secondary', hint: 'Body/subtitle text color on intro slides', type: 'tailwind' },
+                { key: 'pagination.primary', label: 'Pagination Primary', hint: 'Active pagination dot on intro slides', type: 'tailwind' },
+                { key: 'pagination.secondary', label: 'Pagination Secondary', hint: 'Inactive pagination dots on intro slides', type: 'tailwind' },
             ]} />
     </>
 );
@@ -1493,9 +1673,9 @@ const UIComponentsSection = ({ config, parentConfig, setConfig }) => (
 // ═══════════════════════════════════════════════════════════════════════════
 
 const SPILLED_CUP_FIELDS = [
-    { key: 'spilledCup.backsplash', label: 'Backsplash', hint: 'Background splash color behind the empty-state cup illustration' },
-    { key: 'spilledCup.spill', label: 'Spill', hint: 'Liquid spill color in the empty-state cup illustration' },
-    { key: 'spilledCup.cupOutline', label: 'Cup Outline', hint: 'Outline/stroke color of the cup in the empty-state illustration' },
+    { key: 'spilledCup.backsplash', label: 'Backsplash', hint: 'Background splash color behind the empty-state cup illustration', type: 'hex' },
+    { key: 'spilledCup.spill', label: 'Spill', hint: 'Liquid spill color in the empty-state cup illustration', type: 'hex' },
+    { key: 'spilledCup.cupOutline', label: 'Cup Outline', hint: 'Outline/stroke color of the cup in the empty-state illustration', type: 'hex' },
 ];
 
 const PlaceholdersSection = ({ config, parentConfig, setConfig }) => {
@@ -1560,7 +1740,7 @@ const PlaceholdersSection = ({ config, parentConfig, setConfig }) => {
                                         return (
                                             <HexColorField
                                                 key={f.key}
-                                                label={f.label}
+                                                label={<>{f.label}<FieldTypeBadge type="hex" /></>}
                                                 value={localValue}
                                                 inheritedValue={inheritedValue}
                                                 onChange={(v) => setConfig(deepSet(config, fullPath, v))}
@@ -1590,10 +1770,10 @@ const ICON_PALETTE_KEYS = [
 ];
 
 const ICON_PALETTE_FIELDS = [
-    { key: 'primary', label: 'Primary', hint: 'Main fill color (shape background)' },
-    { key: 'primaryLight', label: 'Primary Light', hint: 'Lighter variant (WithLightShape backgrounds)' },
-    { key: 'accent', label: 'Accent', hint: 'Secondary decorative fill color' },
-    { key: 'stroke', label: 'Stroke', hint: 'Outline / stroke color' },
+    { key: 'primary', label: 'Primary', hint: 'Main fill color (shape background)', type: 'hex' },
+    { key: 'primaryLight', label: 'Primary Light', hint: 'Lighter variant (WithLightShape backgrounds)', type: 'hex' },
+    { key: 'accent', label: 'Accent', hint: 'Secondary decorative fill color', type: 'hex' },
+    { key: 'stroke', label: 'Stroke', hint: 'Outline / stroke color', type: 'hex' },
 ];
 
 // Fetch and cache icon defaults from the server
@@ -1731,7 +1911,7 @@ const IconPalettesSection = ({ config, parentConfig, setConfig }) => {
                                         return (
                                             <HexColorField
                                                 key={f.key}
-                                                label={f.label}
+                                                label={<>{f.label}<FieldTypeBadge type="hex" /></>}
                                                 hint={f.hint}
                                                 value={localValue}
                                                 inheritedValue={inheritedValue}
@@ -1763,22 +1943,22 @@ const StylesSection = ({ config, parentConfig, setConfig }) => (
         <ObjectColorEditor title="Wallet Styles" path="styles.wallet" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#8b5cf6' }}><path d="M1 4.25a3.733 3.733 0 012.25-.75h13.5c.844 0 1.623.279 2.25.75A2.25 2.25 0 0016.75 2H3.25A2.25 2.25 0 001 4.25zM1 7.25a3.733 3.733 0 012.25-.75h13.5c.844 0 1.623.279 2.25.75A2.25 2.25 0 0016.75 5H3.25A2.25 2.25 0 001 7.25zM7 8a1 1 0 000 2h6a1 1 0 100-2H7z"/></svg>}
             fields={[
-                { key: 'cardStyles', label: 'Card Styles', hint: 'Tailwind utility classes for wallet card sizing (e.g. h-[240px])' },
-                { key: 'iconStyles', label: 'Icon Styles', hint: 'Size classes for the category icon inside wallet cards (e.g. w-[100px] h-[100px])' },
+                { key: 'cardStyles', label: 'Card Styles', hint: 'Tailwind utility classes for wallet card sizing (e.g. h-[240px])', type: 'class' },
+                { key: 'iconStyles', label: 'Icon Styles', hint: 'Size classes for the category icon inside wallet cards (e.g. w-[100px] h-[100px])', type: 'class' },
             ]} />
 
         <ObjectColorEditor title="LaunchPad Styles" path="styles.launchPad" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#f59e0b' }}><path d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z"/></svg>}
             fields={[
-                { key: 'textStyles', label: 'Text Styles', hint: 'Text size for LaunchPad header link labels (e.g. text-[16px])' },
-                { key: 'iconStyles', label: 'Icon Styles', hint: 'Size of Contacts/AI/Alerts icons on the LaunchPad header (e.g. w-[75px] h-auto)' },
-                { key: 'indicatorStyles', label: 'Indicator Styles', hint: 'Extra styles for LaunchPad indicator elements (e.g. shadow-soft-bottom)' },
+                { key: 'textStyles', label: 'Text Styles', hint: 'Text size for LaunchPad header link labels (e.g. text-[16px])', type: 'class' },
+                { key: 'iconStyles', label: 'Icon Styles', hint: 'Size of Contacts/AI/Alerts icons on the LaunchPad header (e.g. w-[75px] h-auto)', type: 'class' },
+                { key: 'indicatorStyles', label: 'Indicator Styles', hint: 'Extra styles for LaunchPad indicator elements (e.g. shadow-soft-bottom)', type: 'class' },
             ]} />
 
         <ObjectColorEditor title="Default Styles" path="styles.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
             icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#64748b' }}><path fillRule="evenodd" d="M4.5 2A2.5 2.5 0 002 4.5v3.879a2.5 2.5 0 00.732 1.767l7.5 7.5a2.5 2.5 0 003.536 0l3.878-3.878a2.5 2.5 0 000-3.536l-7.5-7.5A2.5 2.5 0 008.38 2H4.5zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/></svg>}
             fields={[
-                { key: 'tabs.borderRadius', label: 'Tab Border Radius', hint: 'Corner rounding for Earned/Managed tabs (e.g. rounded-[5px])' },
+                { key: 'tabs.borderRadius', label: 'Tab Border Radius', hint: 'Corner rounding for Earned/Managed tabs (e.g. rounded-[5px])', type: 'class' },
             ]} />
     </>
 );
