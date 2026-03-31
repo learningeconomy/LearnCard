@@ -16,86 +16,104 @@ const TOKEN_COLORS: Record<TokenType, string> = {
     punctuation: 'text-gray-500',
 };
 
+const isUrlLike = (s: string): boolean =>
+    s.includes('http://') || s.includes('https://') || s.includes('did:') || s.includes('urn:uuid:');
+
 const syntaxHighlight = (json: string): React.ReactNode[] => {
     const nodes: React.ReactNode[] = [];
-    let i = 0;
+    let key = 0;
+    let pos = 0;
+    const len = json.length;
 
-    const regex =
-        /("[^"\\]*(?:\\.[^"\\]*)*")\s*:|("[^"\\]*(?:\\.[^"\\]*)*")|(true|false)|(null)|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|([{}[\]:,])/g;
+    const pushWhitespace = () => {
+        const start = pos;
 
-    let match: RegExpExecArray | null;
-    let lastIndex = 0;
-
-    while ((match = regex.exec(json)) !== null) {
-        if (match.index > lastIndex) {
-            nodes.push(json.slice(lastIndex, match.index));
+        while (pos < len && (json[pos] === ' ' || json[pos] === '\n' || json[pos] === '\r' || json[pos] === '\t')) {
+            pos++;
         }
 
-        if (match[1] !== undefined) {
-            // Key
-            nodes.push(
-                <span key={i++} className={TOKEN_COLORS.key}>
-                    {match[1]}
-                </span>
-            );
+        if (pos > start) {
+            nodes.push(json.slice(start, pos));
+        }
+    };
 
-            const colonIdx = json.indexOf(':', match.index + match[1].length);
+    const readString = (): string => {
+        let result = '"';
 
-            if (colonIdx !== -1 && colonIdx < match.index + match[0].length) {
-                nodes.push(
-                    <span key={i++} className={TOKEN_COLORS.punctuation}>
-                        :
-                    </span>
-                );
+        pos++; // skip opening quote
+
+        while (pos < len) {
+            const ch = json[pos];
+
+            if (ch === '\\') {
+                result += json[pos] + (json[pos + 1] ?? '');
+                pos += 2;
+            } else if (ch === '"') {
+                result += '"';
+                pos++;
+                return result;
+            } else {
+                result += ch;
+                pos++;
             }
-        } else if (match[2] !== undefined) {
-            // String value
-            const isUrl =
-                match[2].includes('http://') ||
-                match[2].includes('https://') ||
-                match[2].includes('did:') ||
-                match[2].includes('urn:uuid:');
-
-            nodes.push(
-                <span key={i++} className={isUrl ? 'text-cyan-400' : TOKEN_COLORS.string}>
-                    {match[2]}
-                </span>
-            );
-        } else if (match[3] !== undefined) {
-            // Boolean
-            nodes.push(
-                <span key={i++} className={TOKEN_COLORS.boolean}>
-                    {match[3]}
-                </span>
-            );
-        } else if (match[4] !== undefined) {
-            // Null
-            nodes.push(
-                <span key={i++} className={TOKEN_COLORS.null}>
-                    null
-                </span>
-            );
-        } else if (match[5] !== undefined) {
-            // Number
-            nodes.push(
-                <span key={i++} className={TOKEN_COLORS.number}>
-                    {match[5]}
-                </span>
-            );
-        } else if (match[6] !== undefined) {
-            // Punctuation
-            nodes.push(
-                <span key={i++} className={TOKEN_COLORS.punctuation}>
-                    {match[6]}
-                </span>
-            );
         }
 
-        lastIndex = match.index + match[0].length;
-    }
+        return result;
+    };
 
-    if (lastIndex < json.length) {
-        nodes.push(json.slice(lastIndex));
+    const readWord = (): string => {
+        const start = pos;
+
+        while (pos < len && /[a-zA-Z0-9.+\-eE]/.test(json[pos])) {
+            pos++;
+        }
+
+        return json.slice(start, pos);
+    };
+
+    while (pos < len) {
+        pushWhitespace();
+
+        if (pos >= len) break;
+
+        const ch = json[pos];
+
+        if (ch === '"') {
+            const str = readString();
+
+            pushWhitespace();
+
+            if (pos < len && json[pos] === ':') {
+                // Key
+                nodes.push(<span key={key++} className={TOKEN_COLORS.key}>{str}</span>);
+                nodes.push(<span key={key++} className={TOKEN_COLORS.punctuation}>:</span>);
+                pos++; // skip colon
+            } else {
+                // String value
+                const colorClass = isUrlLike(str) ? 'text-cyan-400' : TOKEN_COLORS.string;
+
+                nodes.push(<span key={key++} className={colorClass}>{str}</span>);
+            }
+        } else if (ch === '{' || ch === '}' || ch === '[' || ch === ']' || ch === ',' || ch === ':') {
+            nodes.push(<span key={key++} className={TOKEN_COLORS.punctuation}>{ch}</span>);
+            pos++;
+        } else if (ch === 't' || ch === 'f') {
+            const word = readWord();
+
+            nodes.push(<span key={key++} className={TOKEN_COLORS.boolean}>{word}</span>);
+        } else if (ch === 'n') {
+            const word = readWord();
+
+            nodes.push(<span key={key++} className={TOKEN_COLORS.null}>{word}</span>);
+        } else if (ch === '-' || (ch >= '0' && ch <= '9')) {
+            const word = readWord();
+
+            nodes.push(<span key={key++} className={TOKEN_COLORS.number}>{word}</span>);
+        } else {
+            // Unexpected character — emit as-is
+            nodes.push(ch);
+            pos++;
+        }
     }
 
     return nodes;

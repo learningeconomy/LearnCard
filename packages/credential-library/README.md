@@ -241,6 +241,15 @@ Two test suites run automatically:
 - **`registry.test.ts`** — Validates every fixture against its Zod validator, checks metadata consistency, and tests the query/filter API
 - **`issuance.test.ts`** — Creates a real LearnCard wallet instance and calls `issueCredential()` on every valid fixture, verifying that each produces a signed VC with a proof
 
+### Bundle Size & Production Use
+
+This package is designed for **testing, development, and CI** — not for inclusion in production application bundles. The fixture data is intentionally large and comprehensive.
+
+- The package declares `"sideEffects": false` so bundlers can tree-shake unused fixtures
+- The credential-viewer (`examples/credential-viewer/`) is `private: true` and not published
+- If you only need a few fixtures in a test file, import them directly: `import { obv3MinimalBadge } from '@learncard/credential-library'`
+- Avoid importing the full library in production application code paths
+
 ### JSON-LD Context Notes
 
 All valid fixtures use `@context` URLs that are either statically cached in DidKit or fetchable via `allowRemoteContexts`. If you add a fixture with custom terms, make sure they are defined in one of the included contexts. Common choices:
