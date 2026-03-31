@@ -67,13 +67,14 @@ export const initializeFirebaseFromTenant = (tenantFirebase?: TenantFirebaseConf
     console.debug('learncard 🔥firebase init🔥');
 };
 
-// Auto-initialize with defaults if no one calls initializeFirebaseFromTenant before import.
-// This preserves backward compatibility — existing code that just imports { auth } will still work.
-if (getApps().length === 0) {
-    initializeFirebaseFromTenant();
-}
-
 const auth = () => {
+    // Lazy fallback: if bootstrapTenantConfig hasn't called initializeFirebaseFromTenant
+    // yet (e.g. legacy code that imports { auth } directly), initialize with defaults.
+    // This preserves backward compatibility while letting the tenant config have first shot.
+    if (!_firebaseInitialized && getApps().length === 0) {
+        initializeFirebaseFromTenant();
+    }
+
     let _auth;
 
     if (Capacitor.isNativePlatform()) {

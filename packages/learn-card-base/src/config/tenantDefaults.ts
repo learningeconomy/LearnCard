@@ -87,6 +87,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         analytics: true,
         themeSwitching: true,
         introSlides: true,
+        launchPadQuickActions: true,
     },
 
     observability: {

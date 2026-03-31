@@ -126,7 +126,7 @@ export const bootstrapTenantConfig = async (): Promise<TenantConfig> => {
 
     // 2. Bridge auth config so getAuthConfig() returns tenant-aware values
     setAuthConfigFromTenant(config);
-    emitConfigDebugEvent('bootstrap:auth_config_set', `Auth config bridged (provider: ${config.auth.authProvider})`, { data: { authProvider: config.auth.authProvider, keyDerivation: config.auth.keyDerivation } });
+    emitConfigDebugEvent('bootstrap:auth_config_set', `Auth config bridged (provider: ${config.auth.provider})`, { data: { provider: config.auth.provider, keyDerivation: config.auth.keyDerivation } });
 
     // 3. Populate network store with tenant API endpoints
     initNetworkStoreFromTenant(config.apis);
