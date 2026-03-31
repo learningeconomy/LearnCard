@@ -11,6 +11,15 @@ module.exports = {
         'dark:text-[var(--shiki-dark,var(--sdm-c,inherit))]',
         'bg-[var(--sdm-tbg)]',
         'dark:bg-[var(--shiki-dark-bg,var(--sdm-tbg))]',
+        // VetPass theme: dynamic classes built via `bg-${secondaryColor}`, `text-${indicatorColor}`, etc.
+        'bg-navy-700',
+        'text-baltic-blue-400',
+        'bg-baltic-blue-50',
+        'bg-navy-50',
+        'bg-army-green-50',
+        'bg-sand-50',
+        'bg-vp-red-50',
+        'bg-baltic-blue-500',
     ],
     theme: {
         fontFamily: {

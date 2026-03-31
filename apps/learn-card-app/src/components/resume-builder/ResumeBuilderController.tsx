@@ -42,7 +42,7 @@ export const ResumeBuilderController: React.FC<{
                 style={featuredCardBgColor ? { backgroundColor: featuredCardBgColor } : { backgroundColor: 'white' }}
             >
                 <div className="flex justify-center mb-2">
-                    <div className="rounded-[14px] p-[8px] bg-white">
+                    <div className={`rounded-[14px] p-[8px] ${featuredCardBgColor ? 'bg-transparent' : 'bg-white'}`}>
                         <img
                             src={ResumeBuilderIcon}
                             alt="Resume Builder"
@@ -69,7 +69,7 @@ export const ResumeBuilderController: React.FC<{
             style={featuredCardBgColor ? { backgroundColor: featuredCardBgColor } : { backgroundColor: 'white' }}
         >
             <div className="flex items-center gap-[10px]">
-                <div className={`rounded-[10px] p-[5px] bg-white max-h-[40px] max-w-[40px]`}>
+                <div className={`rounded-[10px] p-[5px] ${featuredCardBgColor ? 'bg-transparent' : 'bg-white'} max-h-[40px] max-w-[40px]`}>
                     <img
                         src={ResumeBuilderIcon}
                         alt="Resume Builder"

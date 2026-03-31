@@ -59,12 +59,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
 
     if (!flags?.enableOnboardingChecklist) return null;
 
-    const progressColors = {
-        25: 'bg-amber-500',
-        50: 'bg-violet-500',
-        75: 'bg-sky-500',
-        100: 'bg-emerald-600',
-    };
+    const progressBarFill = primaryColor ? `bg-${primaryColor}` : 'bg-emerald-600';
 
     if (mode === 'inline') {
         return (
@@ -77,7 +72,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 <div className="flex justify-center mb-3">
                     <div
                         className={`rounded-[14px] p-[8px] ${
-                            isParsing ? `bg-${primaryColor}` : 'bg-white'
+                            isParsing ? `bg-${primaryColor}` : featuredCardBgColor ? 'bg-transparent' : 'bg-white'
                         }`}
                     >
                         {isParsing ? (
@@ -106,15 +101,13 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                     </p>
                 ) : (
                     <div className="mt-3">
-                        <div className={`w-full h-[10px] rounded-full overflow-hidden ${featuredCardBgColor ? 'bg-white/20' : 'bg-grayscale-200'}`}>
+                        <div className={`w-full h-[10px] rounded-full overflow-hidden ${featuredCardTextColor ? 'bg-white/20' : 'bg-grayscale-200'}`}>
                             <div
-                                className={`h-full rounded-full ${
-                                    progressColors[optimizedPercent as keyof typeof progressColors]
-                                }`}
-                                style={{ width: `${optimizedPercent}%` }}
+                                className={`h-full rounded-full ${progressBarFill}`}
+                                style={{ width: `${Math.max(optimizedPercent, 2)}%` }}
                             />
                         </div>
-                        <p className={`mt-2 text-xs leading-[130%] font-poppins ${featuredCardTextColor ? 'text-white/70' : 'text-grayscale-700'}`}>
+                        <p className={`mt-2 text-xs leading-[130%] font-poppins text-center ${featuredCardTextColor ? 'text-white/70' : 'text-grayscale-600'}`}>
                             {optimizedPercent}% optimized
                         </p>
                     </div>
@@ -133,7 +126,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
             <div className="flex items-center gap-[10px]">
                 <div
                     className={`rounded-[10px] p-[5px] ${
-                        isParsing ? `bg-${primaryColor}` : 'bg-white '
+                        isParsing ? `bg-${primaryColor}` : featuredCardBgColor ? 'bg-transparent' : 'bg-white'
                     }`}
                 >
                     {isParsing ? (

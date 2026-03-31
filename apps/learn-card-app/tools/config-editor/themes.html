@@ -1396,18 +1396,56 @@ const ObjectColorEditor = ({ title, icon, path, fields, config, parentConfig, se
     );
 };
 
-const UIColorsSection = ({ config, parentConfig, setConfig }) => (
+// ── Brand Colors: foundational colors that define the theme's identity ──
+const BrandColorsSection = ({ config, parentConfig, setConfig }) => (
     <>
-        <ObjectColorEditor title="LaunchPad" path="colors.launchPad" config={config} parentConfig={parentConfig} setConfig={setConfig}
-            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#f59e0b' }}><path d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z"/></svg>}
+        <ObjectColorEditor title="Primary & Accent" path="colors.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#3b82f6' }}><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.061 1.06a.75.75 0 001.06 1.06l1.06-1.06zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.06 1.06a.75.75 0 001.06 1.06l1.06-1.06zM18 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 015 10zM14.596 13.535a.75.75 0 011.06 1.061l-1.06 1.06a.75.75 0 11-1.061-1.06l1.06-1.06zM5.404 6.464a.75.75 0 011.06-1.06l1.06 1.06a.75.75 0 11-1.06 1.061l-1.06-1.06z"/></svg>}
             fields={[
-                { key: 'contacts.color', label: 'Contacts Color', hint: 'Text color for the "Contacts" link on the LaunchPad home header' },
-                { key: 'aiSessions.color', label: 'AI Sessions Color', hint: 'Text color for the "AI Sessions" link on the LaunchPad header' },
-                { key: 'alerts.color', label: 'Alerts Color', hint: 'Text color for the "Alerts" link on the LaunchPad header' },
-                { key: 'alerts.indicatorTextColor', label: 'Alerts Indicator Text', hint: 'Text color for the unread alerts count badge' },
-                { key: 'alerts.indicatorBgColor', label: 'Alerts Indicator BG', hint: 'Background color for the unread alerts count badge' },
-                { key: 'buttons.unconnected', label: 'Button (Unconnected)', hint: 'Style for "Connect" buttons on unconnected LaunchPad apps' },
-                { key: 'buttons.connected', label: 'Button (Connected)', hint: 'Style for "View" buttons on already-connected LaunchPad apps' },
+                { key: 'primaryColor', label: 'Primary Color', hint: 'App-wide accent color used for buttons, links, and highlights' },
+                { key: 'primaryColorShade', label: 'Primary Shade', hint: 'Lighter shade of primary — used for hover states and backgrounds' },
+            ]} />
+
+        <ObjectColorEditor title="Login Screen" path="colors.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#6366f1' }}><path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25v2a.75.75 0 01-1.5 0v-2a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75v-2a.75.75 0 011.5 0v2A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z" clipRule="evenodd"/><path fillRule="evenodd" d="M19 10a.75.75 0 00-.75-.75H8.704l1.048-.943a.75.75 0 10-1.004-1.114l-2.5 2.25a.75.75 0 000 1.114l2.5 2.25a.75.75 0 101.004-1.114l-1.048-.943h9.546A.75.75 0 0019 10z" clipRule="evenodd"/></svg>}
+            fields={[
+                { key: 'loginBgColor', label: 'Login Background', hint: 'Hex color for the login page background (optional — falls back to loaders[0])' },
+                { key: 'loginButtonBgColor', label: 'Login Button Background', hint: 'Hex color for the login page submit button background (optional — falls back to grayscale-900)' },
+                { key: 'loginButtonTextColor', label: 'Login Button Text', hint: 'Hex color for the login page submit button text (optional — falls back to white)' },
+            ]} />
+
+        <ObjectColorEditor title="Passport Page" path="colors.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#0ea5e9' }}><path fillRule="evenodd" d="M.99 5.24A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25l.01 9.5A2.25 2.25 0 0116.76 17H3.26A2.25 2.25 0 011 14.75l-.01-9.51z" clipRule="evenodd"/></svg>}
+            fields={[
+                { key: 'passportBgColor', label: 'Passport Background', hint: 'Hex color for the Passport page background (optional — falls back to white)' },
+                { key: 'passportTextColor', label: 'Passport Text', hint: 'Tailwind text class for Passport heading text, e.g. "text-white" (optional — falls back to text-grayscale-900)' },
+                { key: 'passportCardBgColor', label: 'Passport Card Background', hint: 'Hex color for category card backgrounds on the Passport page (optional — falls back to category primaryColor class)' },
+                { key: 'passportCardTextColor', label: 'Passport Card Text', hint: 'Tailwind text class for category card labels, e.g. "text-white" (optional — falls back to text-grayscale-900)' },
+                { key: 'featuredCardBgColor', label: 'Featured Card Background', hint: 'Hex color for Build My LC / Resume Builder card backgrounds (optional — falls back to white)' },
+                { key: 'featuredCardTextColor', label: 'Featured Card Text', hint: 'Tailwind text class for featured card text, e.g. "text-white" (optional — falls back to text-grayscale-900)' },
+            ]} />
+
+        <ObjectColorEditor title="Action Modal" path="colors.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#f59e0b' }}><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd"/></svg>}
+            fields={[
+                { key: 'actionModalCardBgColor', label: 'Action Modal Card Bg', hint: 'Hex color for the "What would you like to do?" modal card background (optional — falls back to white)' },
+                { key: 'actionModalCardTextColor', label: 'Action Modal Card Text', hint: 'Hex color for the action modal card heading text (optional — falls back to grayscale-900)' },
+                { key: 'actionModalTextColor', label: 'Action Modal Button Text', hint: 'Hex color for action modal button text (optional — falls back to grayscale-900)' },
+                { key: 'actionModalButtonBorderColor', label: 'Action Modal Button Border', hint: 'Hex color for action modal button borders (optional — falls back to white)' },
+            ]} />
+    </>
+);
+
+// ── UI Components: navigation, menus, and screen-specific colors ──
+const UIComponentsSection = ({ config, parentConfig, setConfig }) => (
+    <>
+        <ObjectColorEditor title="Navbar" path="colors.navbar" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#10b981' }}><path fillRule="evenodd" d="M.99 5.24A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25l.01 9.5A2.25 2.25 0 0116.76 17H3.26A2.25 2.25 0 011 14.75l-.01-9.51z" clipRule="evenodd"/></svg>}
+            fields={[
+                { key: 'activeColor', label: 'Active', hint: 'Icon & text color for the selected tab in the bottom nav bar' },
+                { key: 'inactiveColor', label: 'Inactive', hint: 'Icon & text color for unselected tabs in the bottom nav bar' },
+                { key: 'syncingColor', label: 'Syncing', hint: 'Passport tab icon/spinner color while wallet is syncing' },
+                { key: 'completedColor', label: 'Completed', hint: 'Passport tab icon color after sync completes' },
             ]} />
 
         <ObjectColorEditor title="Side Menu" path="colors.sideMenu" config={config} parentConfig={parentConfig} setConfig={setConfig}
@@ -1424,13 +1462,16 @@ const UIColorsSection = ({ config, parentConfig, setConfig }) => (
                 { key: 'completedColor', label: 'Completed', hint: 'Text color for the "Passport" link after sync completes' },
             ]} />
 
-        <ObjectColorEditor title="Navbar" path="colors.navbar" config={config} parentConfig={parentConfig} setConfig={setConfig}
-            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#10b981' }}><path fillRule="evenodd" d="M.99 5.24A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25l.01 9.5A2.25 2.25 0 0116.76 17H3.26A2.25 2.25 0 011 14.75l-.01-9.51z" clipRule="evenodd"/></svg>}
+        <ObjectColorEditor title="LaunchPad" path="colors.launchPad" config={config} parentConfig={parentConfig} setConfig={setConfig}
+            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#f59e0b' }}><path d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z"/></svg>}
             fields={[
-                { key: 'activeColor', label: 'Active', hint: 'Icon & text color for the selected tab in the bottom nav bar' },
-                { key: 'inactiveColor', label: 'Inactive', hint: 'Icon & text color for unselected tabs in the bottom nav bar' },
-                { key: 'syncingColor', label: 'Syncing', hint: 'Passport tab icon/spinner color while wallet is syncing' },
-                { key: 'completedColor', label: 'Completed', hint: 'Passport tab icon color after sync completes' },
+                { key: 'contacts.color', label: 'Contacts Color', hint: 'Text color for the "Contacts" link on the LaunchPad home header' },
+                { key: 'aiSessions.color', label: 'AI Sessions Color', hint: 'Text color for the "AI Sessions" link on the LaunchPad header' },
+                { key: 'alerts.color', label: 'Alerts Color', hint: 'Text color for the "Alerts" link on the LaunchPad header' },
+                { key: 'alerts.indicatorTextColor', label: 'Alerts Indicator Text', hint: 'Text color for the unread alerts count badge' },
+                { key: 'alerts.indicatorBgColor', label: 'Alerts Indicator BG', hint: 'Background color for the unread alerts count badge' },
+                { key: 'buttons.unconnected', label: 'Button (Unconnected)', hint: 'Style for "Connect" buttons on unconnected LaunchPad apps' },
+                { key: 'buttons.connected', label: 'Button (Connected)', hint: 'Style for "View" buttons on already-connected LaunchPad apps' },
             ]} />
 
         <ObjectColorEditor title="Intro Slides" path="colors.introSlides" config={config} parentConfig={parentConfig} setConfig={setConfig}
@@ -1443,26 +1484,6 @@ const UIColorsSection = ({ config, parentConfig, setConfig }) => (
                 { key: 'textColors.secondary', label: 'Text Secondary', hint: 'Body/subtitle text color on intro slides' },
                 { key: 'pagination.primary', label: 'Pagination Primary', hint: 'Active pagination dot on intro slides' },
                 { key: 'pagination.secondary', label: 'Pagination Secondary', hint: 'Inactive pagination dots on intro slides' },
-            ]} />
-
-        <ObjectColorEditor title="Default Colors" path="colors.defaults" config={config} parentConfig={parentConfig} setConfig={setConfig}
-            icon={<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#3b82f6' }}><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.061 1.06a.75.75 0 001.06 1.06l1.06-1.06zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.06 1.06a.75.75 0 001.06 1.06l1.06-1.06zM18 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 015 10zM14.596 13.535a.75.75 0 011.06 1.061l-1.06 1.06a.75.75 0 11-1.061-1.06l1.06-1.06zM5.404 6.464a.75.75 0 011.06-1.06l1.06 1.06a.75.75 0 11-1.06 1.061l-1.06-1.06z"/></svg>}
-            fields={[
-                { key: 'primaryColor', label: 'Primary Color', hint: 'App-wide accent color used for buttons, links, and highlights' },
-                { key: 'primaryColorShade', label: 'Primary Shade', hint: 'Lighter shade of primary — used for hover states and backgrounds' },
-                { key: 'loginBgColor', label: 'Login Background', hint: 'Hex color for the login page background (optional — falls back to loaders[0])' },
-                { key: 'loginButtonBgColor', label: 'Login Button Background', hint: 'Hex color for the login page submit button background (optional — falls back to grayscale-900)' },
-                { key: 'loginButtonTextColor', label: 'Login Button Text', hint: 'Hex color for the login page submit button text (optional — falls back to white)' },
-                { key: 'passportBgColor', label: 'Passport Background', hint: 'Hex color for the Passport page background (optional — falls back to white)' },
-                { key: 'passportTextColor', label: 'Passport Text', hint: 'Tailwind text class for Passport heading text, e.g. "text-white" (optional — falls back to text-grayscale-900)' },
-                { key: 'passportCardBgColor', label: 'Passport Card Background', hint: 'Hex color for category card backgrounds on the Passport page (optional — falls back to category primaryColor class)' },
-                { key: 'passportCardTextColor', label: 'Passport Card Text', hint: 'Tailwind text class for category card labels, e.g. "text-white" (optional — falls back to text-grayscale-900)' },
-                { key: 'featuredCardBgColor', label: 'Featured Card Background', hint: 'Hex color for Build My LC / Resume Builder card backgrounds (optional — falls back to white)' },
-                { key: 'featuredCardTextColor', label: 'Featured Card Text', hint: 'Tailwind text class for featured card text, e.g. "text-white" (optional — falls back to text-grayscale-900)' },
-                { key: 'actionModalCardBgColor', label: 'Action Modal Card Bg', hint: 'Hex color for the "What would you like to do?" modal card background (optional — falls back to white)' },
-                { key: 'actionModalCardTextColor', label: 'Action Modal Card Text', hint: 'Hex color for the action modal card heading text (optional — falls back to grayscale-900)' },
-                { key: 'actionModalTextColor', label: 'Action Modal Button Text', hint: 'Hex color for action modal button text (optional — falls back to grayscale-900)' },
-                { key: 'actionModalButtonBorderColor', label: 'Action Modal Button Border', hint: 'Hex color for action modal button borders (optional — falls back to white)' },
             ]} />
     </>
 );
@@ -2539,10 +2560,10 @@ const Sidebar = ({ themes, selectedId, onSelect, onCreateClick }) => (
 const TABS = [
     { id: 'preview', label: 'Preview' },
     { id: 'general', label: 'General' },
+    { id: 'brand', label: 'Brand Colors' },
     { id: 'categories', label: 'Categories' },
-    { id: 'ui', label: 'UI Colors' },
-    { id: 'iconPalettes', label: 'Icon Palettes' },
-    { id: 'placeholders', label: 'Placeholders' },
+    { id: 'ui', label: 'UI Components' },
+    { id: 'visuals', label: 'Visuals' },
     { id: 'styles', label: 'Styles' },
     { id: 'json', label: 'JSON' },
 ];
@@ -2660,11 +2681,33 @@ const PreviewTab = ({ config, parentConfig }) => {
     );
 };
 
+// Read theme ID and tab from URL hash: #themeId or #themeId/tabId
+const parseHash = () => {
+    const hash = window.location.hash.replace(/^#/, '');
+    const [themeId, tabId] = hash.split('/');
+    return { themeId: themeId || null, tabId: tabId || null };
+};
+
+const updateHash = (themeId, tabId) => {
+    const hash = themeId ? (tabId ? `${themeId}/${tabId}` : themeId) : '';
+    if (window.location.hash.replace(/^#/, '') !== hash) {
+        window.history.replaceState(null, '', hash ? `#${hash}` : window.location.pathname);
+    }
+};
+
 const ThemeEditor = ({ themeId, themes, onDeleted, onSaved }) => {
     const [config, setConfig] = useState(null);
     const [originalJson, setOriginalJson] = useState('');
     const [parentConfig, setParentConfig] = useState(null);
-    const [activeTab, setActiveTab] = useState('general');
+    const initialTab = parseHash().tabId;
+    const [activeTab, setActiveTabRaw] = useState(
+        initialTab && TABS.some(t => t.id === initialTab) ? initialTab : 'general'
+    );
+
+    const setActiveTab = (tabId) => {
+        setActiveTabRaw(tabId);
+        updateHash(themeId, tabId);
+    };
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -2811,17 +2854,20 @@ const ThemeEditor = ({ themeId, themes, onDeleted, onSaved }) => {
                     {activeTab === 'general' && (
                         <GeneralSection config={config} parentConfig={parentConfig} themes={themes} onChange={handleFieldChange} />
                     )}
+                    {activeTab === 'brand' && (
+                        <BrandColorsSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
+                    )}
                     {activeTab === 'categories' && (
                         <CategoriesSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
                     )}
                     {activeTab === 'ui' && (
-                        <UIColorsSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
+                        <UIComponentsSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
                     )}
-                    {activeTab === 'iconPalettes' && (
-                        <IconPalettesSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
-                    )}
-                    {activeTab === 'placeholders' && (
-                        <PlaceholdersSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
+                    {activeTab === 'visuals' && (
+                        <>
+                            <IconPalettesSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
+                            <PlaceholdersSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
+                        </>
                     )}
                     {activeTab === 'styles' && (
                         <StylesSection config={config} parentConfig={parentConfig} setConfig={setConfig} />
@@ -2841,17 +2887,39 @@ const ThemeEditor = ({ themeId, themes, onDeleted, onSaved }) => {
 
 const App = () => {
     const [themes, setThemes] = useState([]);
-    const [selectedId, setSelectedId] = useState(null);
+    const initial = parseHash();
+    const [selectedId, setSelectedId] = useState(initial.themeId);
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    // Sync hash → state on back/forward navigation
+    useEffect(() => {
+        const onHashChange = () => {
+            const { themeId } = parseHash();
+            if (themeId) setSelectedId(themeId);
+        };
+        window.addEventListener('hashchange', onHashChange);
+        return () => window.removeEventListener('hashchange', onHashChange);
+    }, []);
+
+    // Sync state → hash when selected theme changes
+    useEffect(() => {
+        if (selectedId) {
+            const { tabId } = parseHash();
+            updateHash(selectedId, tabId);
+        }
+    }, [selectedId]);
 
     const loadThemes = async () => {
         try {
             const data = await api.listThemes();
             setThemes(data);
 
-            if (!selectedId && data.length > 0) {
-                setSelectedId(data[0].id);
+            // Only default to first theme if no hash-based selection and nothing selected
+            if (!selectedId) {
+                const { themeId: hashId } = parseHash();
+                const match = hashId && data.find(t => t.id === hashId);
+                setSelectedId(match ? match.id : data.length > 0 ? data[0].id : null);
             }
         } catch (e) {
             console.error('Failed to load themes:', e);

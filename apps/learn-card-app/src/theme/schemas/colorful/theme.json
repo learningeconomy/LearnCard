@@ -2,11 +2,9 @@
     "id": "colorful",
     "displayName": "Colorful",
     "iconSet": "colorful",
-
     "defaults": {
         "viewMode": "grid"
     },
-
     "colors": {
         "categories": {
             "aiTopic": {
@@ -148,10 +146,13 @@
                 "tabActiveColor": "bg-blue-300"
             }
         },
-
         "launchPad": {
-            "contacts": { "color": "teal-700" },
-            "aiSessions": { "color": "indigo-500" },
+            "contacts": {
+                "color": "teal-700"
+            },
+            "aiSessions": {
+                "color": "indigo-500"
+            },
             "alerts": {
                 "color": "pink-600",
                 "indicatorTextColor": "text-pink-600",
@@ -162,7 +163,6 @@
                 "connected": "bg-grayscale-100 text-indigo-500"
             }
         },
-
         "sideMenu": {
             "linkActiveColor": "text-grayscale-900",
             "linkInactiveColor": "text-grayscale-700",
@@ -175,14 +175,12 @@
             "completedColor": "!text-emerald-700",
             "logoColor": "text-grayscale-900"
         },
-
         "navbar": {
             "activeColor": "text-grayscale-900",
             "inactiveColor": "text-grayscale-600",
             "syncingColor": "!text-indigo-500",
             "completedColor": "!text-emerald-700"
         },
-
         "introSlides": {
             "firstSlideBackground": "indigo-500",
             "secondSlideBackground": "cyan-401",
@@ -196,50 +194,93 @@
                 "secondary": "#E2E3E9"
             }
         },
-
         "placeholders": {
             "socialBadge": {
-                "spilledCup": { "backsplash": "#93C5FD", "spill": "#0891B2", "cupOutline": "#1D4ED8" }
+                "spilledCup": {
+                    "backsplash": "#93C5FD",
+                    "spill": "#0891B2",
+                    "cupOutline": "#1D4ED8"
+                }
             },
             "learningHistory": {
-                "spilledCup": { "backsplash": "#34D399", "spill": "#A3E635", "cupOutline": "#047857" }
+                "spilledCup": {
+                    "backsplash": "#34D399",
+                    "spill": "#A3E635",
+                    "cupOutline": "#047857"
+                }
             },
             "achievement": {
-                "spilledCup": { "backsplash": "#F9A8D4", "spill": "#CA8A04", "cupOutline": "#BE185D" }
+                "spilledCup": {
+                    "backsplash": "#F9A8D4",
+                    "spill": "#CA8A04",
+                    "cupOutline": "#BE185D"
+                }
             },
             "accomplishment": {
-                "spilledCup": { "backsplash": "#FDE047", "spill": "#34D399", "cupOutline": "#A16207" }
+                "spilledCup": {
+                    "backsplash": "#FDE047",
+                    "spill": "#34D399",
+                    "cupOutline": "#A16207"
+                }
             },
             "workHistory": {
-                "spilledCup": { "backsplash": "#22D3EE", "spill": "#EAB308", "cupOutline": "#0E7490" }
+                "spilledCup": {
+                    "backsplash": "#22D3EE",
+                    "spill": "#EAB308",
+                    "cupOutline": "#0E7490"
+                }
             },
             "accommodation": {
-                "spilledCup": { "backsplash": "#C4B5FD", "spill": "#EC4899", "cupOutline": "#5B21B6" }
+                "spilledCup": {
+                    "backsplash": "#C4B5FD",
+                    "spill": "#EC4899",
+                    "cupOutline": "#5B21B6"
+                }
             },
             "id": {
-                "spilledCup": { "backsplash": "#93C5FD", "spill": "#EC4899", "cupOutline": "#1E40AF" }
+                "spilledCup": {
+                    "backsplash": "#93C5FD",
+                    "spill": "#EC4899",
+                    "cupOutline": "#1E40AF"
+                }
             },
             "family": {
-                "spilledCup": { "backsplash": "#FBBF24", "spill": "#22D3EE", "cupOutline": "#92400E" }
+                "spilledCup": {
+                    "backsplash": "#FBBF24",
+                    "spill": "#22D3EE",
+                    "cupOutline": "#92400E"
+                }
             },
             "skill": {
-                "spilledCup": { "backsplash": "#C4B5FD", "spill": "#EC4899", "cupOutline": "#5B21B6" }
+                "spilledCup": {
+                    "backsplash": "#C4B5FD",
+                    "spill": "#EC4899",
+                    "cupOutline": "#5B21B6"
+                }
             },
             "defaults": {
-                "spilledCup": { "backsplash": "#FBCFE8", "spill": "#E879F9", "cupOutline": "#A21CAF" }
+                "spilledCup": {
+                    "backsplash": "#FBCFE8",
+                    "spill": "#E879F9",
+                    "cupOutline": "#A21CAF"
+                }
             }
         },
-
         "defaults": {
             "primaryColor": "indigo-500",
             "primaryColorShade": "indigo-200",
-            "loaders": ["#8B5CF6", "#06B6D4", "#059669", "#3B82F6"],
+            "loaders": [
+                "#8B5CF6",
+                "#06B6D4",
+                "#059669",
+                "#3B82F6"
+            ],
             "loginBgColor": "#00ba88",
             "loginButtonBgColor": "#047857",
-            "loginButtonTextColor": "#FFFFFF"
+            "loginButtonTextColor": "#FFFFFF",
+            "featuredCardBgColor": "bg-slate-100"
         }
     },
-
     "styles": {
         "wallet": {
             "cardStyles": "h-[240px]",
