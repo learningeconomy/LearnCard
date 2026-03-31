@@ -42,7 +42,7 @@
 		"CapacitorUpdater": {
 			"appId": "org.scoutpass.app",
 			"autoUpdate": true,
-			"defaultChannel": "1.0.3"
+			"defaultChannel": "1.0.4"
 		}
 	}
 }
