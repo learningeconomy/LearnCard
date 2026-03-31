@@ -533,6 +533,14 @@ export type LearnCardNetworkPluginMethods = {
         }[]
     >;
 
+    getSharedInsightsRequestsForProfile: (targetProfileId: string) => Promise<
+        {
+            profile: LCNProfile;
+            status: 'pending' | 'accepted' | 'denied' | null;
+            readStatus?: 'unseen' | 'seen' | null;
+        }[]
+    >;
+
     forwardContractRequestToProfile: (
         parentProfileId: string,
         targetProfileId: string,

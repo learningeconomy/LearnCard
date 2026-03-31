@@ -45,6 +45,7 @@ export const isOpenSaltRef = (value?: string | null): boolean => {
 
     return (
         normalized.includes('opensalt.') ||
+        normalized.includes('staging.opensalt.') ||
         normalized.includes('/ims/case/v1p0/cfdocuments/') ||
         normalized.includes('/cftree/doc/') ||
         normalized.includes('/cfpackage/doc/') ||
