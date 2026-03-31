@@ -572,6 +572,34 @@ export const ConsentFlowContractDetailsValidator = z.object({
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
 
+export const ConsentFlowContractRequestStatusValidator = z
+    .enum(['pending', 'accepted', 'denied'])
+    .nullable();
+export type ConsentFlowContractRequestStatus = z.infer<
+    typeof ConsentFlowContractRequestStatusValidator
+>;
+
+export const ConsentFlowContractRequestReadStatusValidator = z.enum(['unseen', 'seen']).nullable();
+export type ConsentFlowContractRequestReadStatus = z.infer<
+    typeof ConsentFlowContractRequestReadStatusValidator
+>;
+
+export const ConsentFlowContractRequestForProfileValidator = z.object({
+    profile: LCNProfileValidator,
+    status: ConsentFlowContractRequestStatusValidator,
+    readStatus: ConsentFlowContractRequestReadStatusValidator.optional(),
+});
+export type ConsentFlowContractRequestForProfile = z.infer<
+    typeof ConsentFlowContractRequestForProfileValidator
+>;
+
+export const ConsentFlowContractRequestForProfileListValidator = z.array(
+    ConsentFlowContractRequestForProfileValidator
+);
+export type ConsentFlowContractRequestForProfileList = z.infer<
+    typeof ConsentFlowContractRequestForProfileListValidator
+>;
+
 export const PaginatedConsentFlowContractsValidator = PaginationResponseValidator.extend({
     records: ConsentFlowContractDetailsValidator.omit({ owner: true }).array(),
 });

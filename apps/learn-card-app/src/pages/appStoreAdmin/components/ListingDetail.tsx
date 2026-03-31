@@ -58,7 +58,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
     const categoryLabel = CATEGORY_OPTIONS.find(c => c.value === listing.category)?.label;
 
     const formatSubmissionDate = (dateStr?: string): string => {
-        if (!dateStr) return 'Not submitted';
+        if (!dateStr) return 'Unknown Date';
         const date = new Date(dateStr);
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
@@ -109,7 +109,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
     };
 
     return (
-        <div className="h-full flex flex-col">
+        <div className="h-full flex flex-col overflow-x-hidden">
             {/* Header */}
             <div className="p-5 border-b border-gray-200 bg-white">
                 {/* Mobile back button */}

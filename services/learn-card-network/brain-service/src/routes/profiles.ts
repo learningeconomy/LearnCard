@@ -85,6 +85,12 @@ import {
     sanitizeProfileForTier,
     stripSensitiveProfileListFields,
 } from '@helpers/profile-privacy.helpers';
+import { verifyAuthToken } from '@helpers/oidc-jwt.helpers';
+import { createContactMethod } from '@accesslayer/contact-method/create';
+import { getContactMethodByValue } from '@accesslayer/contact-method/read';
+import { verifyContactMethod } from '@accesslayer/contact-method/update';
+import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
+import { deleteAllProfileContactMethodRelationshipsExceptForProfileId } from '@accesslayer/contact-method/relationships/delete';
 
 const UpdateProfileInputValidator = z.object({
     profileId: z.string().optional(),
@@ -126,12 +132,14 @@ export const profilesRouter = t.router({
             LCNProfileValidator.omit({
                 did: true,
                 isServiceProfile: true,
-            })
+            }).extend({ authToken: z.string().optional() })
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
+            const { authToken, ...profileInput } = input;
+
             const profileExists = await checkIfProfileExists({
-                ...input,
+                ...profileInput,
                 isServiceProfile: false,
                 did: ctx.user.did,
             });
@@ -143,9 +151,47 @@ export const profilesRouter = t.router({
                 });
             }
 
-            const profile = await createProfile({ ...input, did: ctx.user.did });
+            const profile = await createProfile({ ...profileInput, did: ctx.user.did });
 
-            if (profile) return getDidWeb(ctx.domain, profile.profileId);
+            if (profile) {
+                // Auto-verify email if authToken provided
+                if (authToken) {
+                    try {
+                        const claims = await verifyAuthToken(authToken);
+                        if (claims?.email && claims.emailVerified !== false) {
+                            let cm = await getContactMethodByValue('email', claims.email);
+                            if (!cm) {
+                                cm = await createContactMethod({
+                                    type: 'email',
+                                    value: claims.email,
+                                    isVerified: false,
+                                    isPrimary: false,
+                                });
+                            }
+                            await createProfileContactMethodRelationship(
+                                profile.profileId,
+                                cm.id
+                            );
+                            await deleteAllProfileContactMethodRelationshipsExceptForProfileId(
+                                profile.profileId,
+                                cm.id
+                            );
+                            await verifyContactMethod(cm.id);
+
+                            // NOTE: Do NOT call finalizeInboxCredentialsForProfile here.
+                            // Finalization marks credentials as ISSUED in Neo4j, but the
+                            // VCs must be uploaded to the user's cloud wallet — which only
+                            // the client-side useFinalizeInboxCredentials hook can do.
+                            // Server-side fire-and-forget would race the hook and leave
+                            // credentials marked ISSUED but never stored in the wallet.
+                        }
+                    } catch (e) {
+                        console.error('Auto-verify email failed (non-fatal):', e);
+                    }
+                }
+
+                return getDidWeb(ctx.domain, profile.profileId);
+            }
 
             throw new TRPCError({
                 code: 'INTERNAL_SERVER_ERROR',
