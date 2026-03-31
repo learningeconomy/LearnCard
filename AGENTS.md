@@ -191,6 +191,83 @@ The AI Pathways "My Skills Profile" feature uses `useVerifiableData` to store us
 
 Step 5 uses the existing self-assigned skills boost system (`useManageSelfAssignedSkillsBoost`).
 
+## Credential Library (`@learncard/credential-library`)
+
+A queryable library of Verifiable Credential fixtures for testing, development, and regression prevention. Located in `packages/credential-library/`.
+
+### Architecture
+
+```
+packages/credential-library/src/
+├── types.ts          — CredentialFixture, CredentialSpec, CredentialProfile, FixtureFilter
+├── registry.ts       — In-memory fixture store with query/filter API
+├── prepare.ts        — prepareFixture() — deep-clone + patch DIDs, UUIDs, timestamps
+├── index.ts          — Public exports (types, registry, prepare, fixtures)
+├── fixtures/
+│   ├── index.ts      — Barrel that imports and registers ALL fixtures
+│   ├── vc-v1/        — W3C VCDM v1 fixtures
+│   ├── vc-v2/        — W3C VCDM v2 fixtures
+│   ├── obv3/         — Open Badges v3 fixtures
+│   ├── clr/          — CLR v2 fixtures (some with nested VCs)
+│   ├── boost/        — LearnCard Boost fixtures
+│   └── invalid/      — Intentionally malformed fixtures for negative testing
+└── __tests__/
+    ├── registry.test.ts  — Zod validation + query API tests
+    └── issuance.test.ts  — Real wallet issuance for every valid fixture
+```
+
+### Key APIs
+
+```typescript
+import {
+    getAllFixtures, getFixture, findFixture, getFixtures,
+    getValidFixtures, getInvalidFixtures, getStats,
+    prepareFixture, prepareFixtureById,
+} from '@learncard/credential-library';
+
+// Query
+const badges = getFixtures({ spec: 'obv3', profile: 'badge' });
+
+// Prepare + issue
+const unsigned = prepareFixtureById('obv3/full-badge', { issuerDid: wallet.id.did() });
+const signed = await wallet.invoke.issueCredential(unsigned);
+```
+
+### Adding a Fixture
+
+1. Create `src/fixtures/<folder>/<name>.ts` exporting a `CredentialFixture`
+2. Import + add to `ALL_FIXTURES` array in `src/fixtures/index.ts`
+3. Run `pnpm test` — both the Zod validation and issuance tests auto-discover it
+
+Alternatively, the `examples/credential-viewer` app has a **New Fixture** UI that writes the file and updates the index automatically via a Vite dev server plugin.
+
+### JSON-LD Context Gotchas
+
+- DidKit statically caches certain contexts (see `packages/plugins/didkit-plugin-node/native/src/lib.rs` `context_loader`)
+- CLR: use `context.json` (cached) not `context-2.0.1.json` (requires `allowRemoteContexts`)
+- VC v2 custom terms: use `https://www.w3.org/ns/credentials/examples/v2` (not `schema.org/` — causes protected term redefinition)
+- VC v1 custom terms: use `https://www.w3.org/2018/credentials/examples/v1`
+
+### CLR v2 Types (`@learncard/types`)
+
+Added in `packages/learn-card-types/src/clr.ts`:
+
+- `AssociationValidator` / `AssociationType`
+- `ClrSubjectValidator` / `ClrSubject`
+- `UnsignedClrCredentialValidator` / `UnsignedClrCredential`
+- `ClrCredentialValidator` / `ClrCredential`
+
+### Credential Viewer (`examples/credential-viewer/`)
+
+Interactive React + Tailwind UI for browsing, issuing, and sending fixtures. Features:
+
+- Browse/filter/search all fixtures
+- Connect a LearnCard wallet (seed-based, configurable environment)
+- Bulk issue and send credentials
+- Create new fixtures with auto-inferred metadata
+
+Run with `pnpm dev` from the `examples/credential-viewer/` directory.
+
 ## Frontend Query Hooks
 
 Located in `packages/learn-card-base/src/react-query/queries/`.
