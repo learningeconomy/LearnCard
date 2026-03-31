@@ -693,7 +693,7 @@ const handleSendCredentialEvent = async (
         metadata: { listingId, templateAlias },
     });
 
-    // Send to user's wallet
+    // Send to user's wallet (credential stays pending until user claims via the app UI)
     const credentialUri = await sendBoost({
         from: integrationOwner,
         to: target,
