@@ -13,7 +13,7 @@ import {
     PaginatedBoostRecipientsValidator,
     PaginatedBoostsValidator,
     PaginationOptionsValidator,
-    PaginatedLCNProfilesValidator,
+    PaginatedVisibleLCNProfilesValidator,
     PaginatedSkillFrameworksValidator,
     BoostPermissions,
     BoostQueryValidator,
@@ -166,6 +166,13 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { removeConnectionsForBoost } from '@helpers/connection.helpers';
 import { issueToInbox } from '@helpers/inbox.helpers';
 import { SendOptions } from '@learncard/types';
+import {
+    canViewerSeeFullBoostRecipientList,
+    sanitizeBoostRecipientRecords,
+    resolveProfileTier,
+    sanitizeProfileForTier,
+    stripSensitiveProfileListFields,
+} from '@helpers/profile-privacy.helpers';
 
 /**
  * Builds inbox configuration from SendOptions for the issueToInbox helper.
@@ -1434,13 +1441,20 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            //TODO: Should we restrict who can see the recipients of a boost? Maybe to Boost owner / people who have the boost?
-            return getBoostRecipientsSkipLimit(boost, {
+            const canViewFullList = await canViewerSeeFullBoostRecipientList(
+                ctx.user.profile.profileId,
+                boost,
+                domain
+            );
+
+            const records = await getBoostRecipientsSkipLimit(boost, {
                 limit,
                 skip,
                 includeUnacceptedBoosts,
                 domain,
             });
+
+            return sanitizeBoostRecipientRecords(ctx.user.profile, records, !canViewFullList);
         }),
 
     getPaginatedBoostRecipients: profileRoute
@@ -1472,6 +1486,11 @@ export const boostsRouter = t.router({
             const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            const canViewFullList = await canViewerSeeFullBoostRecipientList(
+                ctx.user.profile.profileId,
+                boost,
+                domain
+            );
 
             const records = await getBoostRecipients(boost, {
                 limit: limit + 1,
@@ -1483,10 +1502,16 @@ export const boostsRouter = t.router({
 
             const hasMore = records.length > limit;
             const newCursor = records.at(hasMore ? -2 : -1)?.sent;
+            const paginatedRecords = records.slice(0, limit);
+            const sanitizedRecords = await sanitizeBoostRecipientRecords(
+                ctx.user.profile,
+                paginatedRecords,
+                !canViewFullList
+            );
 
             return {
                 hasMore,
-                records: records.slice(0, limit),
+                records: sanitizedRecords,
                 ...(newCursor && { cursor: newCursor }),
             };
         }),
@@ -1544,6 +1569,11 @@ export const boostsRouter = t.router({
             const boost = await getBoostByUri(uri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            const canViewFullList = await canViewerSeeFullBoostRecipientList(
+                ctx.user.profile.profileId,
+                boost,
+                domain
+            );
 
             const records = await getConnectedBoostRecipients(ctx.user.profile, boost, {
                 limit: limit + 1,
@@ -1555,10 +1585,16 @@ export const boostsRouter = t.router({
 
             const hasMore = records.length > limit;
             const newCursor = records.at(hasMore ? -2 : -1)?.sent;
+            const paginatedRecords = records.slice(0, limit);
+            const sanitizedRecords = await sanitizeBoostRecipientRecords(
+                ctx.user.profile,
+                paginatedRecords,
+                !canViewFullList
+            );
 
             return {
                 hasMore,
-                records: records.slice(0, limit),
+                records: sanitizedRecords,
                 ...(newCursor && { cursor: newCursor }),
             };
         }),
@@ -1827,6 +1863,11 @@ export const boostsRouter = t.router({
             const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            const canViewFullList = await canViewerSeeFullBoostRecipientList(
+                ctx.user.profile.profileId,
+                boost,
+                domain
+            );
 
             const records = await getBoostRecipientsWithChildren(boost, {
                 limit: limit + 1,
@@ -1848,10 +1889,16 @@ export const boostsRouter = t.router({
                     newCursor = lastRecord.to.profileId;
                 }
             }
+            const paginatedRecords = records.slice(0, limit);
+            const sanitizedRecords = await sanitizeBoostRecipientRecords(
+                ctx.user.profile,
+                paginatedRecords,
+                !canViewFullList
+            );
 
             return {
                 hasMore,
-                records: records.slice(0, limit),
+                records: sanitizedRecords,
                 ...(newCursor && { cursor: newCursor }),
             };
         }),
@@ -2317,7 +2364,7 @@ export const boostsRouter = t.router({
                 uri: z.string(),
             })
         )
-        .output(PaginatedLCNProfilesValidator)
+        .output(PaginatedVisibleLCNProfilesValidator)
         .query(async ({ input, ctx }) => {
             const { uri, limit, cursor, includeSelf } = input;
 
@@ -2338,11 +2385,17 @@ export const boostsRouter = t.router({
 
             const hasMore = results.length > limit;
             const nextCursor = hasMore ? results.at(-2)?.profileId : undefined;
+            const sanitizedRecords = await Promise.all(
+                results.slice(0, limit).map(async profile => {
+                    const tier = await resolveProfileTier(ctx.user.profile, profile);
+                    return stripSensitiveProfileListFields(sanitizeProfileForTier(profile, tier));
+                })
+            );
 
             return {
                 hasMore,
                 ...(nextCursor && { cursor: nextCursor }),
-                records: results.slice(0, limit),
+                records: sanitizedRecords,
             };
         }),
 
