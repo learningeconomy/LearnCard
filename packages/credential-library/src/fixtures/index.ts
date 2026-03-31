@@ -32,6 +32,8 @@ import { invalidMissingContext } from './invalid/missing-context';
 import { invalidEmptyType } from './invalid/empty-type';
 import { invalidMissingIssuer } from './invalid/missing-issuer';
 
+import { clrNdStudentTranscript } from './clr/nd-student-transcript';
+
 // ---------------------------------------------------------------------------
 // All fixtures — collected for auto-registration
 // ---------------------------------------------------------------------------
@@ -66,6 +68,7 @@ export const ALL_FIXTURES: CredentialFixture[] = [
     invalidMissingContext,
     invalidEmptyType,
     invalidMissingIssuer,
+    clrNdStudentTranscript,
 ];
 
 // Register all fixtures on import
@@ -91,4 +94,5 @@ export {
     invalidMissingContext,
     invalidEmptyType,
     invalidMissingIssuer,
+    clrNdStudentTranscript,
 };

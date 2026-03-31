@@ -14,6 +14,7 @@ import { ConnectBar } from './components/ConnectBar';
 import { BulkActionBar } from './components/BulkActionBar';
 import { IssuePanel } from './components/IssuePanel';
 import { SendPanel } from './components/SendPanel';
+import { NewFixturePanel } from './components/NewFixturePanel';
 import { SPEC_LABELS } from './lib/colors';
 import { getCategoryForCredential } from './lib/category';
 
@@ -35,6 +36,7 @@ const AppInner: React.FC = () => {
     const [showBulkIssue, setShowBulkIssue] = useState(false);
     const [showBulkSend, setShowBulkSend] = useState(false);
     const [showFilters, setShowFilters] = useState(true);
+    const [showNewFixture, setShowNewFixture] = useState(false);
 
     const filtered = useMemo(() => {
         return allFixtures.filter(f => {
@@ -209,6 +211,16 @@ const AppInner: React.FC = () => {
                                     : 'Select All Valid'}
                             </button>
                         )}
+
+                        <button
+                            onClick={() => setShowNewFixture(true)}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-lg transition-colors cursor-pointer ml-auto"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            New Fixture
+                        </button>
                     </div>
                 </div>
             </div>
@@ -303,6 +315,12 @@ const AppInner: React.FC = () => {
                 <SendPanel
                     fixtures={checkedFixtures}
                     onClose={() => setShowBulkSend(false)}
+                />
+            )}
+
+            {showNewFixture && (
+                <NewFixturePanel
+                    onClose={() => setShowNewFixture(false)}
                 />
             )}
         </div>
