@@ -191,6 +191,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                 }
             }
             closeAllModals();
+            onCloseCallback?.();
         });
     };
 
