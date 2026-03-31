@@ -44,7 +44,29 @@ pnpm env:pull -- --list
 
 # Combine flags
 pnpm env:pull -- --env=staging --only=lca-api
+
+# Backup the current .env files before regenerating them
+pnpm env:backup
+
+# Compare the current .env files against their .env.backup copies
+pnpm env:compare-backup
 ```
+
+### Backup and Compare Workflow
+
+Use the backup command when you want a quick snapshot of the current generated
+environment files before pulling from Infisical again.
+
+```bash
+# Copy each current .env to a matching .env.backup file
+pnpm env:backup
+
+# Show which keys differ between .env and .env.backup
+pnpm env:compare-backup
+```
+
+The compare command reports keys that were added, removed, or changed for each
+service. It does not print full secret values.
 
 ## Service Targets
 
