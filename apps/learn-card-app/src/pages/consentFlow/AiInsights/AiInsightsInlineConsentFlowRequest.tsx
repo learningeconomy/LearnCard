@@ -45,7 +45,10 @@ export const AiInsightsInlineConsentFlowRequest: React.FC<{
 
     const handleDeny = async () => {
         if (requestStatus?.status === 'accepted') return;
-        await cancelRequest(contractDetails?.uri, currentLCNUser?.profileId);
+        await cancelRequest({
+            contractUri: contractDetails?.uri,
+            targetProfileId: currentLCNUser?.profileId,
+        });
         await refetch();
         await refetchContractRequests();
     };
