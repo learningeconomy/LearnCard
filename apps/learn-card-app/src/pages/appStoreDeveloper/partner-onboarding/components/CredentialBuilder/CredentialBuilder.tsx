@@ -23,6 +23,7 @@ import {
     Loader2,
     RefreshCw,
     Undo2,
+    BookOpen,
 } from 'lucide-react';
 
 import { BoostCategoryOptionsEnum, BoostPageViewMode, useWallet } from 'learn-card-base';
@@ -31,12 +32,14 @@ import { BoostEarnedCard } from '../../../../../components/boost/boost-earned-ca
 
 import { OBv3CredentialTemplate, SectionId } from './types';
 import { templateToJson, validateTemplate, extractDynamicVariables } from './utils';
-import { TEMPLATE_PRESETS, getBlankTemplate } from './presets';
+import { TEMPLATE_PRESETS, CLR2_PRESETS, ALL_PRESETS, getBlankTemplate } from './presets';
 import { JsonPreview } from './JsonPreview';
 import {
     CredentialInfoSection,
     IssuerSection,
     AchievementSection,
+    AchievementsListSection,
+    AssociationsSection,
     RecipientSection,
     EvidenceSection,
     DatesSection,
@@ -54,6 +57,7 @@ const PRESET_ICONS: Record<string, React.FC<{ className?: string }>> = {
     Users,
     Zap,
     Layers,
+    BookOpen,
 };
 
 type TabId = 'builder' | 'preview' | 'json';
@@ -415,9 +419,10 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
         new Set(['achievement'])
     );
 
-    // Auto-sync credential-level fields from achievement fields
-    // This simplifies the UX by hiding the redundant CredentialInfoSection
+    // Auto-sync credential-level fields from achievement fields (OBv3 only)
+    // CLR has multiple achievements so there's no single source to sync from
     useEffect(() => {
+        if (template.schemaType === 'clr2') return;
         const achievement = template.credentialSubject?.achievement;
         if (!achievement) return;
 
@@ -470,7 +475,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
 
     // Apply a preset template
     const applyPreset = useCallback((presetId: string) => {
-        const preset = TEMPLATE_PRESETS.find(p => p.id === presetId);
+        const preset = ALL_PRESETS.find(p => p.id === presetId);
 
         if (preset) {
             // Deep clone the template to avoid mutation
@@ -680,7 +685,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         >
                             <Sparkles className="w-4 h-4" />
                             {selectedPresetId
-                                ? TEMPLATE_PRESETS.find(p => p.id === selectedPresetId)?.name || 'Templates'
+                                ? ALL_PRESETS.find(p => p.id === selectedPresetId)?.name || 'Templates'
                                 : 'Templates'}
                             <ChevronDown className={`w-4 h-4 transition-transform ${showPresetSelector ? 'rotate-180' : ''}`} />
                         </button>
@@ -698,6 +703,9 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                     </div>
 
                                     <div className="max-h-80 overflow-y-auto p-2">
+                                        <p className="text-xs font-medium text-gray-400 px-2 py-1 uppercase tracking-wider">
+                                            Open Badges v3
+                                        </p>
                                         {TEMPLATE_PRESETS.map(preset => {
                                             const IconComponent = PRESET_ICONS[preset.icon] || FileText;
                                             const isActive = selectedPresetId === preset.id;
@@ -734,6 +742,46 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                                 </button>
                                             );
                                         })}
+
+                                        <p className="text-xs font-medium text-gray-400 px-2 py-1 mt-2 uppercase tracking-wider">
+                                            CLR 2.0 (Multi-Achievement)
+                                        </p>
+                                        {CLR2_PRESETS.map(preset => {
+                                            const IconComponent = PRESET_ICONS[preset.icon] || FileText;
+                                            const isActive = selectedPresetId === preset.id;
+
+                                            return (
+                                                <button
+                                                    key={preset.id}
+                                                    type="button"
+                                                    onClick={() => applyPreset(preset.id)}
+                                                    className={`w-full flex items-start gap-3 p-2 rounded-lg transition-colors text-left ${
+                                                        isActive
+                                                            ? 'bg-indigo-50 ring-1 ring-indigo-200'
+                                                            : 'hover:bg-gray-50'
+                                                    }`}
+                                                >
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                                        isActive ? 'bg-indigo-200' : 'bg-indigo-100'
+                                                    }`}>
+                                                        <IconComponent className="w-4 h-4 text-indigo-600" />
+                                                    </div>
+
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`text-sm font-medium ${isActive ? 'text-indigo-800' : 'text-gray-800'}`}>
+                                                            {preset.name}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 truncate">
+                                                            {preset.description}
+                                                        </p>
+                                                    </div>
+
+                                                    {isActive && (
+                                                        <CheckCircle2 className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </>
@@ -742,15 +790,24 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                 </div>
             </div>
 
-            {/* Custom Schema Warning */}
-            {template.schemaType && template.schemaType !== 'obv3' && (
+            {/* Schema Info Banner */}
+            {template.schemaType === 'clr2' && (
+                <div className="px-4 py-3 bg-indigo-50 border-b border-indigo-200">
+                    <p className="text-sm text-indigo-800">
+                        <strong>CLR 2.0 Credential</strong>
+                    </p>
+                    <p className="text-xs text-indigo-600 mt-1">
+                        Comprehensive Learner Record — a multi-achievement transcript credential.
+                    </p>
+                </div>
+            )}
+            {template.schemaType === 'custom' && (
                 <div className="px-4 py-3 bg-violet-50 border-b border-violet-200">
                     <p className="text-sm text-violet-800">
                         <strong>Custom Credential Schema</strong>
                     </p>
                     <p className="text-xs text-violet-600 mt-1">
-                        This credential uses a {template.schemaType === 'clr2' ? 'CLR 2.0' : 'custom'} schema. 
-                        The Builder UI is not available for this credential type. Use the <strong>JSON</strong> tab to edit directly.
+                        This credential uses a custom schema. Use the <strong>JSON</strong> tab to edit directly.
                     </p>
                 </div>
             )}
@@ -832,7 +889,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
 
             {/* Content */}
             <div className="flex-1 overflow-hidden">
-                {activeTab === 'builder' && template.schemaType !== 'obv3' && template.schemaType ? (
+                {activeTab === 'builder' && template.schemaType === 'custom' ? (
                     <div className="h-full flex items-center justify-center p-8">
                         <div className="text-center max-w-md">
                             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-violet-100 flex items-center justify-center">
@@ -842,8 +899,8 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                 JSON-Only Mode
                             </h3>
                             <p className="text-sm text-gray-600 mb-4">
-                                This credential uses a {template.schemaType === 'clr2' ? 'CLR 2.0' : 'custom'} schema 
-                                that doesn't map to the OBv3 builder fields. Switch to the JSON tab to edit this credential directly.
+                                This credential uses a custom schema that doesn't map to builder fields.
+                                Switch to the JSON tab to edit directly.
                             </p>
                             <button
                                 type="button"
@@ -853,6 +910,58 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                 Open JSON Editor
                             </button>
                         </div>
+                    </div>
+                ) : activeTab === 'builder' && template.schemaType === 'clr2' ? (
+                    <div className="h-full overflow-y-auto p-4 space-y-3">
+                        <IssuerSection
+                            template={template}
+                            onChange={onChange}
+                            isExpanded={expandedSections.has('issuer')}
+                            onToggle={() => toggleSection('issuer')}
+                            disableDynamicFields={disableDynamicFields}
+                        />
+
+                        <CredentialInfoSection
+                            template={template}
+                            onChange={onChange}
+                            isExpanded={expandedSections.has('credential')}
+                            onToggle={() => toggleSection('credential')}
+                            disableDynamicFields={disableDynamicFields}
+                        />
+
+                        <AchievementsListSection
+                            template={template}
+                            onChange={onChange}
+                            isExpanded={expandedSections.has('achievements-list')}
+                            onToggle={() => toggleSection('achievements-list')}
+                            disableDynamicFields={disableDynamicFields}
+                            validationErrors={validationErrors}
+                        />
+
+                        <AssociationsSection
+                            template={template}
+                            onChange={onChange}
+                            isExpanded={expandedSections.has('associations')}
+                            onToggle={() => toggleSection('associations')}
+                            validationErrors={validationErrors}
+                        />
+
+                        <EvidenceSection
+                            template={template}
+                            onChange={onChange}
+                            isExpanded={expandedSections.has('evidence')}
+                            onToggle={() => toggleSection('evidence')}
+                            disableDynamicFields={disableDynamicFields}
+                            validationErrors={validationErrors}
+                        />
+
+                        <DatesSection
+                            template={template}
+                            onChange={onChange}
+                            isExpanded={expandedSections.has('dates')}
+                            onToggle={() => toggleSection('dates')}
+                            disableDynamicFields={disableDynamicFields}
+                        />
                     </div>
                 ) : activeTab === 'builder' ? (
                     <div className="h-full overflow-y-auto p-4 space-y-3">

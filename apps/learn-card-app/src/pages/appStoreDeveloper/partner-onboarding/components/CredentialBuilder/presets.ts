@@ -4,11 +4,15 @@
 
 import {
     OBv3CredentialTemplate,
+    AchievementEntryTemplate,
+    AssociationTemplate,
     staticField,
     dynamicField,
     systemField,
     DEFAULT_CONTEXTS,
     DEFAULT_TYPES,
+    CLR2_CONTEXTS,
+    CLR2_TYPES,
 } from './types';
 
 export interface TemplatePreset {
@@ -230,8 +234,228 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
     },
 ];
 
+// Helper to create a CLR 2.0 base template
+const createClrBaseTemplate = (
+    name: string,
+    achievements: AchievementEntryTemplate[],
+    associations: AssociationTemplate[] = [],
+    overrides: Partial<OBv3CredentialTemplate> = {}
+): OBv3CredentialTemplate => ({
+    schemaType: 'clr2',
+    contexts: CLR2_CONTEXTS,
+    types: CLR2_TYPES,
+    name: staticField(name),
+    issuer: {
+        id: systemField('issuer_did'),
+        name: staticField(''),
+    },
+    credentialSubject: {
+        id: systemField('recipient_did'),
+        achievement: achievements[0]?.achievement || { name: staticField(''), description: staticField('') },
+    },
+    clrSubject: {
+        achievements,
+        associations,
+    },
+    validFrom: systemField('issue_date'),
+    customFields: [],
+    ...overrides,
+});
+
+// CLR 2.0 Presets
+export const CLR2_PRESETS: TemplatePreset[] = [
+    {
+        id: 'academic-transcript',
+        name: 'Academic Transcript',
+        description: 'Multi-course transcript with GPA',
+        icon: 'BookOpen',
+        template: createClrBaseTemplate(
+            'Academic Transcript',
+            [
+                {
+                    id: 'ach_1',
+                    achievement: {
+                        name: dynamicField('course_1_name', 'Introduction to Computer Science'),
+                        description: dynamicField('course_1_description', 'Foundational CS concepts'),
+                        achievementType: staticField('Course'),
+                        humanCode: dynamicField('course_1_code', 'CS101'),
+                        creditsAvailable: staticField('3'),
+                        fieldOfStudy: staticField('Computer Science'),
+                        criteria: { narrative: staticField('Complete all coursework and final exam') },
+                    },
+                    result: [{
+                        id: 'result_1',
+                        value: dynamicField('course_1_grade', ''),
+                        status: staticField('Completed'),
+                    }],
+                    creditsEarned: dynamicField('course_1_credits', ''),
+                },
+                {
+                    id: 'ach_2',
+                    achievement: {
+                        name: dynamicField('course_2_name', 'Data Structures'),
+                        description: dynamicField('course_2_description', 'Advanced data structures and algorithms'),
+                        achievementType: staticField('Course'),
+                        humanCode: dynamicField('course_2_code', 'CS201'),
+                        creditsAvailable: staticField('3'),
+                        fieldOfStudy: staticField('Computer Science'),
+                        criteria: { narrative: staticField('Complete all coursework and final exam') },
+                    },
+                    result: [{
+                        id: 'result_2',
+                        value: dynamicField('course_2_grade', ''),
+                        status: staticField('Completed'),
+                    }],
+                    creditsEarned: dynamicField('course_2_credits', ''),
+                },
+                {
+                    id: 'ach_3',
+                    achievement: {
+                        name: dynamicField('course_3_name', 'Software Engineering'),
+                        description: dynamicField('course_3_description', 'Software development methodologies'),
+                        achievementType: staticField('Course'),
+                        humanCode: dynamicField('course_3_code', 'CS301'),
+                        creditsAvailable: staticField('3'),
+                        fieldOfStudy: staticField('Computer Science'),
+                        criteria: { narrative: staticField('Complete all coursework and capstone project') },
+                    },
+                    result: [{
+                        id: 'result_3',
+                        value: dynamicField('course_3_grade', ''),
+                        status: staticField('Completed'),
+                    }],
+                    creditsEarned: dynamicField('course_3_credits', ''),
+                },
+            ],
+        ),
+    },
+    {
+        id: 'program-completion',
+        name: 'Program Completion',
+        description: 'Program with child courses and associations',
+        icon: 'GraduationCap',
+        template: createClrBaseTemplate(
+            'Program Completion Record',
+            [
+                {
+                    id: 'ach_program',
+                    achievement: {
+                        name: dynamicField('program_name', 'Bachelor of Science in Computer Science'),
+                        description: dynamicField('program_description', 'Undergraduate degree program'),
+                        achievementType: staticField('BachelorDegree'),
+                        fieldOfStudy: staticField('Computer Science'),
+                        criteria: { narrative: staticField('Complete all required courses and maintain minimum GPA') },
+                    },
+                },
+                {
+                    id: 'ach_course_1',
+                    achievement: {
+                        name: dynamicField('course_1_name', 'Introduction to Programming'),
+                        description: staticField('Foundational programming course'),
+                        achievementType: staticField('Course'),
+                        humanCode: dynamicField('course_1_code', 'CS101'),
+                        creditsAvailable: staticField('3'),
+                        criteria: { narrative: staticField('Complete coursework') },
+                    },
+                    result: [{
+                        id: 'result_c1',
+                        value: dynamicField('course_1_grade', ''),
+                        status: staticField('Completed'),
+                    }],
+                },
+                {
+                    id: 'ach_course_2',
+                    achievement: {
+                        name: dynamicField('course_2_name', 'Algorithms'),
+                        description: staticField('Algorithm design and analysis'),
+                        achievementType: staticField('Course'),
+                        humanCode: dynamicField('course_2_code', 'CS201'),
+                        creditsAvailable: staticField('3'),
+                        criteria: { narrative: staticField('Complete coursework') },
+                    },
+                    result: [{
+                        id: 'result_c2',
+                        value: dynamicField('course_2_grade', ''),
+                        status: staticField('Completed'),
+                    }],
+                },
+            ],
+            [
+                {
+                    id: 'assoc_1',
+                    associationType: staticField('isChildOf'),
+                    sourceAchievementId: 'ach_course_1',
+                    targetAchievementId: 'ach_program',
+                },
+                {
+                    id: 'assoc_2',
+                    associationType: staticField('isChildOf'),
+                    sourceAchievementId: 'ach_course_2',
+                    targetAchievementId: 'ach_program',
+                },
+            ],
+        ),
+    },
+    {
+        id: 'competency-record',
+        name: 'Competency Record',
+        description: 'Multiple competency achievements',
+        icon: 'Layers',
+        template: createClrBaseTemplate(
+            'Competency Record',
+            [
+                {
+                    id: 'ach_comp_1',
+                    achievement: {
+                        name: dynamicField('competency_1_name', 'Problem Solving'),
+                        description: dynamicField('competency_1_description', 'Ability to analyze and solve complex problems'),
+                        achievementType: staticField('Competency'),
+                        criteria: { narrative: staticField('Demonstrated through assessments and practical exercises') },
+                    },
+                    result: [{
+                        id: 'result_comp_1',
+                        value: dynamicField('competency_1_level', ''),
+                        status: staticField('Achieved'),
+                    }],
+                },
+                {
+                    id: 'ach_comp_2',
+                    achievement: {
+                        name: dynamicField('competency_2_name', 'Communication'),
+                        description: dynamicField('competency_2_description', 'Effective written and verbal communication'),
+                        achievementType: staticField('Competency'),
+                        criteria: { narrative: staticField('Demonstrated through presentations and written work') },
+                    },
+                    result: [{
+                        id: 'result_comp_2',
+                        value: dynamicField('competency_2_level', ''),
+                        status: staticField('Achieved'),
+                    }],
+                },
+                {
+                    id: 'ach_comp_3',
+                    achievement: {
+                        name: dynamicField('competency_3_name', 'Teamwork'),
+                        description: dynamicField('competency_3_description', 'Collaborative work in diverse teams'),
+                        achievementType: staticField('Competency'),
+                        criteria: { narrative: staticField('Demonstrated through group projects and peer evaluations') },
+                    },
+                    result: [{
+                        id: 'result_comp_3',
+                        value: dynamicField('competency_3_level', ''),
+                        status: staticField('Achieved'),
+                    }],
+                },
+            ],
+        ),
+    },
+];
+
+// Combined presets (OBv3 + CLR 2.0)
+export const ALL_PRESETS: TemplatePreset[] = [...TEMPLATE_PRESETS, ...CLR2_PRESETS];
+
 export const getPresetById = (id: string): TemplatePreset | undefined => {
-    return TEMPLATE_PRESETS.find(p => p.id === id);
+    return ALL_PRESETS.find(p => p.id === id);
 };
 
 export const getBlankTemplate = (): OBv3CredentialTemplate => {

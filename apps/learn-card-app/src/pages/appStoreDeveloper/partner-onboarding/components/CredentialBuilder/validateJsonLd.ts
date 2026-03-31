@@ -94,6 +94,15 @@ function parseJsonLdError(message: string): string[] {
         );
     }
 
+    // Pattern: CLR-specific invalid properties
+    if (/ClrSubject|ClrCredential|association|Association/i.test(message) && /not valid|expansion failed/i.test(message)) {
+        const clrPropMatch = message.match(/"([^"]+)"/);
+        errors.push(
+            `CLR 2.0 property "${clrPropMatch ? clrPropMatch[1] : 'unknown'}" is not valid. ` +
+            'Check that the property name matches the CLR 2.0 specification.'
+        );
+    }
+
     // Pattern: invalid @id / IRI
     if (/@id.*invalid|invalid.*IRI|compaction.*IRI/i.test(message)) {
         errors.push(
@@ -107,7 +116,7 @@ function parseJsonLdError(message: string): string[] {
         const urlMatch = message.match(/(https?:\/\/[^\s"]+)/);
         errors.push(
             `Unknown JSON-LD context URL${urlMatch ? `: ${urlMatch[1]}` : ''}. ` +
-            'Only standard OBv3 and VC v2 contexts are supported.'
+            'Only standard OBv3, CLR 2.0, and VC v2 contexts are supported.'
         );
     }
 
