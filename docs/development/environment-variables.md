@@ -21,8 +21,14 @@ infisical init
 #    → Select the "LearnCard" project when prompted
 #    → This creates .infisical.json (safe to commit)
 
-# 4. Pull all .env files
+# 4. Optionally back up your current .env files
+pnpm env:backup
+
+# 5. Pull all .env files
 pnpm env:pull
+
+# 6. Optionally compare the new .env files against the backup
+pnpm env:compare-backup
 ```
 
 ## Usage
