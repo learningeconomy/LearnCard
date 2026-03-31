@@ -29,6 +29,9 @@ pnpm env:pull
 
 # 6. Optionally compare the new .env files against the backup
 pnpm env:compare-backup
+
+# 7. Optionally compare your local .env files against Infisical
+pnpm env:compare-infisical
 ```
 
 ## Usage
@@ -56,6 +59,9 @@ pnpm env:backup
 
 # Compare the current .env files against their .env.backup copies
 pnpm env:compare-backup
+
+# Compare the current .env files against Infisical exports
+pnpm env:compare-infisical
 ```
 
 ### Backup and Compare Workflow
@@ -71,8 +77,12 @@ pnpm env:backup
 pnpm env:compare-backup
 ```
 
-The compare command reports keys that were added, removed, or changed for each
-service. It does not print full secret values.
+The compare-backup command reports keys that were added, removed, or changed
+between the current `.env` and `.env.backup` for each service.
+
+The compare-infisical command reports keys that are missing from Infisical,
+only present in Infisical, or have changed values compared to the current
+local `.env` file. It does not print full secret values.
 
 ## Service Targets
 
