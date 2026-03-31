@@ -125,7 +125,7 @@ export type LearnCardNetworkPluginDependentMethods = {
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginMethods = {
-    createProfile: (profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>) => Promise<string>;
+    createProfile: (profile: Omit<LCNProfile, 'did' | 'isServiceProfile'> & { authToken?: string }) => Promise<string>;
     createServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
@@ -532,6 +532,14 @@ export type LearnCardNetworkPluginMethods = {
     getAllContractRequestsForProfile: (targetProfileId: string) => Promise<
         {
             contract: ConsentFlowContract & { uri: string };
+            profile: LCNProfile;
+            status: 'pending' | 'accepted' | 'denied' | null;
+            readStatus?: 'unseen' | 'seen' | null;
+        }[]
+    >;
+
+    getSharedInsightsRequestsForProfile: (targetProfileId: string) => Promise<
+        {
             profile: LCNProfile;
             status: 'pending' | 'accepted' | 'denied' | null;
             readStatus?: 'unseen' | 'seen' | null;
