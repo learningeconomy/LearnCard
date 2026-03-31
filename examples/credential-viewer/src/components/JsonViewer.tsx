@@ -21,7 +21,7 @@ const syntaxHighlight = (json: string): React.ReactNode[] => {
     let i = 0;
 
     const regex =
-        /("(?:\\.|[^"\\])*")\s*:|("(?:\\.|[^"\\])*")|(true|false)|(null)|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|([{}[\]:,])/g;
+        /("[^"\\]*(?:\\.[^"\\]*)*")\s*:|("[^"\\]*(?:\\.[^"\\]*)*")|(true|false)|(null)|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|([{}[\]:,])/g;
 
     let match: RegExpExecArray | null;
     let lastIndex = 0;
