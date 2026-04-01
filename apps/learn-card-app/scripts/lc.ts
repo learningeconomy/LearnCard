@@ -18,6 +18,7 @@
  *   pnpm lc native dev vetpass ios   # live-reload on device
  *   pnpm lc native sync vetpass      # prepare + build + cap sync
  *   pnpm lc native open ios          # open Xcode/Android Studio
+ *   pnpm lc native build vetpass ios beta  # sync + fastlane build
  */
 
 import { createInterface } from 'readline';
@@ -32,6 +33,7 @@ const __dirname = dirname(__filename);
 const APP_ROOT = resolve(__dirname, '..');
 const ENVIRONMENTS_DIR = resolve(APP_ROOT, 'environments');
 const THEME_SCHEMAS_DIR = resolve(APP_ROOT, 'src/theme/schemas');
+const FASTLANE_ROOT = resolve(APP_ROOT, '../../tools/fastlane');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -89,6 +91,17 @@ const getTenantDisplayName = (tenantId: string): string => {
         return config.branding?.name ?? tenantId;
     } catch {
         return tenantId;
+    }
+};
+
+const getTenantBundleId = (tenantId: string): string => {
+    try {
+        const configPath = join(ENVIRONMENTS_DIR, tenantId, 'config.json');
+        const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+
+        return config.native?.bundleId ?? `com.${tenantId}.app`;
+    } catch {
+        return `com.${tenantId}.app`;
     }
 };
 
@@ -810,6 +823,153 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     child.on('exit', code => process.exit(code ?? 0));
 };
 
+// ---------------------------------------------------------------------------
+// Fastlane build integration
+// ---------------------------------------------------------------------------
+
+type FastlaneLane = 'release' | 'beta' | 'upload_to_appetize';
+
+const pickFastlaneLane = async (platform: Platform): Promise<FastlaneLane> => {
+    console.log('');
+    console.log(bold('Build type:'));
+    console.log('');
+
+    if (platform === 'ios') {
+        console.log(`  ${cyan('1')}  ${bold('beta')}       ${dim('— build + upload to TestFlight')}`);
+        console.log(`  ${cyan('2')}  ${bold('release')}    ${dim('— build + submit to App Store review')}`);
+        console.log(`  ${cyan('3')}  ${bold('appetize')}   ${dim('— simulator build + upload to Appetize.io')}`);
+        console.log('');
+
+        const choice = await ask(`Pick a build type [1-3] ${dim('(default: 1 / beta)')}: `);
+
+        switch (choice) {
+            case '2': return 'release';
+            case '3': return 'upload_to_appetize';
+            default: return 'beta';
+        }
+    } else {
+        console.log(`  ${cyan('1')}  ${bold('release')}    ${dim('— build AAB + upload to Play Store')}`);
+        console.log(`  ${cyan('2')}  ${bold('appetize')}   ${dim('— build APK + upload to Appetize.io')}`);
+        console.log('');
+
+        const choice = await ask(`Pick a build type [1-2] ${dim('(default: 1 / release)')}: `);
+
+        switch (choice) {
+            case '2': return 'upload_to_appetize';
+            default: return 'release';
+        }
+    }
+};
+
+const parseLaneArg = (s?: string): FastlaneLane | undefined => {
+    if (!s) return undefined;
+
+    const map: Record<string, FastlaneLane> = {
+        beta: 'beta',
+        release: 'release',
+        appetize: 'upload_to_appetize',
+        upload_to_appetize: 'upload_to_appetize',
+    };
+
+    return map[s.toLowerCase()];
+};
+
+const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: FastlaneLane) => {
+    if (!existsSync(FASTLANE_ROOT)) {
+        console.error(`\n❌ Fastlane directory not found at ${FASTLANE_ROOT}`);
+        console.error(dim('   Expected: tools/fastlane/ in the monorepo root'));
+        rl.close();
+        process.exit(1);
+    }
+
+    if (!tenantId) {
+        tenantId = await pickTenant();
+    }
+
+    if (!platform) {
+        platform = await pickPlatform();
+    }
+
+    if (!lane) {
+        lane = await pickFastlaneLane(platform);
+    }
+
+    const displayName = getTenantDisplayName(tenantId);
+    const bundleId = getTenantBundleId(tenantId);
+
+    console.log('');
+    console.log(bold(`🚀 Fastlane build: ${displayName} → ${platform} ${lane}`));
+    console.log(`   Bundle ID: ${cyan(bundleId)}`);
+
+    // Step 1: Prepare tenant config (production stage for store builds)
+    const stage = lane === 'upload_to_appetize' ? 'alpha' : 'production';
+
+    execBlocking(
+        `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage ${stage}`,
+        `Preparing tenant config (${stage})`,
+    );
+
+    // Step 2: Cap sync
+    execBlocking('npx cap sync', 'Running Capacitor sync');
+
+    // Step 3: Derive env vars from tenant config (override .env values)
+    const xcodeProject = resolve(APP_ROOT, 'ios/App/App.xcodeproj');
+    const xcodeWorkspace = resolve(APP_ROOT, 'ios/App/App.xcworkspace');
+    const gradleFilePath = resolve(APP_ROOT, 'android/app/build.gradle');
+    const gradleProjectDir = resolve(APP_ROOT, 'android');
+
+    const derivedEnv: Record<string, string> = {
+        APP_ID: bundleId,
+        XCODE_PROJECT: xcodeProject,
+        XCODE_WORKSPACE: xcodeWorkspace,
+        GRADLE_FILE_PATH: gradleFilePath,
+        GRADLE_PROJECT_DIRECTORY: gradleProjectDir,
+    };
+
+    // Check for fastlane .env (secrets)
+    const fastlaneEnvPath = resolve(FASTLANE_ROOT, 'fastlane/.env');
+    const hasEnvFile = existsSync(fastlaneEnvPath);
+
+    console.log('');
+    console.log(bold('   Derived from tenant config:'));
+    console.log(dim(`     APP_ID=${bundleId}`));
+    console.log(dim(`     XCODE_PROJECT=${xcodeProject}`));
+    console.log(dim(`     GRADLE_PROJECT_DIRECTORY=${gradleProjectDir}`));
+
+    if (!hasEnvFile) {
+        console.log('');
+        console.log(yellow('   ⚠️  No .env file found at tools/fastlane/fastlane/.env'));
+        console.log(dim('      Fastlane needs secrets (API keys, signing credentials).'));
+        console.log(dim('      Create one with the required values, or set env vars manually.'));
+    }
+
+    console.log('');
+
+    const laneLabel = lane === 'upload_to_appetize' ? 'appetize' : lane;
+    const shortcut = `pnpm lc native build ${tenantId} ${platform} ${laneLabel}`;
+
+    console.log(green(`▶ Running: fastlane ${platform} ${lane}`));
+    console.log(dim(`  $ cd tools/fastlane && bundle exec fastlane ${platform} ${lane}`));
+    console.log('');
+    console.log(dim(`  💡 Next time, run: ${cyan(shortcut)}`));
+    console.log('');
+
+    rl.close();
+
+    // Spawn fastlane — derived env vars override .env, secrets from .env load normally
+    const child = spawn(
+        'bundle',
+        ['exec', 'fastlane', platform, lane],
+        {
+            cwd: FASTLANE_ROOT,
+            stdio: 'inherit',
+            env: { ...process.env, ...derivedEnv },
+        },
+    );
+
+    child.on('exit', code => process.exit(code ?? 0));
+};
+
 const nativeMenu = async () => {
     console.log('');
     console.log(bold('📱 Native / Capacitor'));
@@ -818,11 +978,12 @@ const nativeMenu = async () => {
     console.log(`  ${cyan('2')}  ${bold('Sync')}              ${dim('— prepare config + cap sync (no build)')}`);
     console.log(`  ${cyan('3')}  ${bold('Open IDE')}           ${dim('— open Xcode or Android Studio')}`);
     console.log(`  ${cyan('4')}  ${bold('Run')}               ${dim('— build + sync + run on device/simulator')}`);
+    console.log(`  ${cyan('5')}  ${bold('Build & Ship')}       ${dim('— sync + fastlane (beta, release, appetize)')}`);
     console.log('');
-    console.log(dim('  Or run directly: pnpm lc native dev|sync|open|run [tenant] [ios|android]'));
+    console.log(dim('  Or run directly: pnpm lc native dev|sync|open|run|build [tenant] [ios|android] [beta|release|appetize]'));
     console.log('');
 
-    const choice = await ask('Pick an option [1-4]: ');
+    const choice = await ask('Pick an option [1-5]: ');
 
     switch (choice) {
         case '1':
@@ -841,8 +1002,12 @@ const nativeMenu = async () => {
             await nativeRun();
             break;
 
+        case '5':
+            await nativeBuild();
+            break;
+
         default:
-            console.log(yellow('Unknown option. Try 1-4.'));
+            console.log(yellow('Unknown option. Try 1-5.'));
             rl.close();
             break;
     }
@@ -892,6 +1057,29 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
             const tenant = arg1 && !asPlatform(arg1) ? arg1 : undefined;
 
             await nativeRun(tenant, platform);
+            return true;
+        }
+
+        case 'build': {
+            // pnpm lc native build [tenant] [ios|android] [beta|release|appetize]
+            const arg3 = args[3];
+
+            // Parse flexible arg order: tenant, platform, and lane can appear in any position
+            const allArgs = [arg1, arg2, arg3];
+
+            const platform = allArgs.reduce<Platform | undefined>(
+                (found, a) => found ?? asPlatform(a), undefined,
+            );
+
+            const lane = allArgs.reduce<FastlaneLane | undefined>(
+                (found, a) => found ?? parseLaneArg(a), undefined,
+            );
+
+            const tenant = allArgs.find(
+                a => a && !asPlatform(a) && !parseLaneArg(a),
+            );
+
+            await nativeBuild(tenant, platform, lane);
             return true;
         }
 
