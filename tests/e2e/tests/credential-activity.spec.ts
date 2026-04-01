@@ -1023,11 +1023,13 @@ describe('Credential Activity Tracking', () => {
                         boostUris: [boostUri],
                     });
 
-                    expect(afterClaimStats.delivered).toBe(initialStats.delivered + 1);
+                    // After claiming, the latest event in the chain is CLAIMED (not DELIVERED),
+                    // so delivered count returns to its initial value
+                    expect(afterClaimStats.delivered).toBe(initialStats.delivered);
                     expect(afterClaimStats.claimed).toBe(initialStats.claimed + 1);
 
-                    // Verify claim rate increased
-                    if (afterClaimStats.delivered > 0) {
+                    // Verify claim rate is valid
+                    if (afterClaimStats.claimed > 0) {
                         expect(afterClaimStats.claimRate).toBeGreaterThanOrEqual(0);
                         expect(afterClaimStats.claimRate).toBeLessThanOrEqual(100);
                     }

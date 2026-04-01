@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 2.10.12
+
+### Patch Changes
+
+-   [#1126](https://github.com/learningeconomy/LearnCard/pull/1126) [`bba1f735e107d9cc86880e9f869413bc7072bff8`](https://github.com/learningeconomy/LearnCard/commit/bba1f735e107d9cc86880e9f869413bc7072bff8) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1654] - Fix Shared / Requested Insights
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.24
+    -   @learncard/core@9.4.12
+    -   @learncard/helpers@1.2.12
+
 ## 2.10.11
 
 ### Patch Changes
