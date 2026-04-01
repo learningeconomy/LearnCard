@@ -109,11 +109,16 @@ export const searchProfiles = async (
         .where(
             `
 (profile.profileId CONTAINS $input OR profile.displayName =~ $inputRegex) AND 
+(
+    profile.profileVisibility IS NULL OR
+    profile.profileVisibility = "public"
+) AND
 (profile.isPrivate IS NULL OR profile.isPrivate = false)
-${includeServiceProfiles
-                ? ''
-                : ' AND (profile.isServiceProfile IS NULL OR profile.isServiceProfile = false)'
-            }
+${
+    includeServiceProfiles
+        ? ''
+        : ' AND (profile.isServiceProfile IS NULL OR profile.isServiceProfile = false)'
+}
 ${blacklist.length > 0 ? ' AND NOT profile.profileId IN $blacklist' : ''}
 `
         )

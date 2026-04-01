@@ -89,25 +89,23 @@ export const countListingsForIntegration = async (integrationId: string): Promis
     return Number(result.records[0]?.get('count') ?? 0);
 };
 
-export const getListedApps = async (
-    {
-        limit,
-        cursor,
-        category,
-        promotionLevel,
-        status,
-        includeAllStatuses = false,
-        excludeDemoted = true,
-    }: {
-        limit: number;
-        cursor?: string;
-        category?: string;
-        promotionLevel?: string;
-        status?: string; // When provided, filter by this specific status
-        includeAllStatuses?: boolean; // When true, returns all statuses (for admin)
-        excludeDemoted?: boolean; // When true, excludes DEMOTED apps from results (default true)
-    }
-): Promise<AppStoreListingType[]> => {
+export const getListedApps = async ({
+    limit,
+    cursor,
+    category,
+    promotionLevel,
+    status,
+    includeAllStatuses = false,
+    excludeDemoted = true,
+}: {
+    limit: number;
+    cursor?: string;
+    category?: string;
+    promotionLevel?: string;
+    status?: string; // When provided, filter by this specific status
+    includeAllStatuses?: boolean; // When true, returns all statuses (for admin)
+    excludeDemoted?: boolean; // When true, excludes DEMOTED apps from results (default true)
+}): Promise<AppStoreListingType[]> => {
     const whereClauses: string[] = [];
     const params: Record<string, any> = { limit: int(limit) };
 
@@ -134,7 +132,9 @@ export const getListedApps = async (
         params.promotionLevel = promotionLevel;
     } else if (excludeDemoted) {
         // Exclude DEMOTED apps by default when no specific promotionLevel is requested
-        whereClauses.push("(listing.promotion_level IS NULL OR listing.promotion_level <> 'DEMOTED')");
+        whereClauses.push(
+            "(listing.promotion_level IS NULL OR listing.promotion_level <> 'DEMOTED')"
+        );
     }
 
     const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -228,4 +228,92 @@ export const checkIfProfileInstalledApp = async (
     );
 
     return result.records[0]?.get('installed') ?? false;
+};
+
+export type ListingWithSubmitter = AppStoreListingType & {
+    submitter?: {
+        profileId: string;
+        displayName: string;
+        email?: string;
+    };
+};
+
+export const getListedAppsWithSubmitter = async ({
+    limit,
+    cursor,
+    status,
+    includeAllStatuses = false,
+    excludeDemoted = true,
+}: {
+    limit: number;
+    cursor?: string;
+    status?: string;
+    includeAllStatuses?: boolean;
+    excludeDemoted?: boolean;
+}): Promise<ListingWithSubmitter[]> => {
+    const whereClauses: string[] = [];
+    const params: Record<string, any> = { limit: int(limit) };
+
+    if (status) {
+        whereClauses.push('listing.app_listing_status = $status');
+        params.status = status;
+    } else if (!includeAllStatuses) {
+        whereClauses.push("listing.app_listing_status = 'LISTED'");
+    }
+
+    if (cursor) {
+        whereClauses.push('listing.listing_id < $cursor');
+        params.cursor = cursor;
+    }
+
+    if (excludeDemoted) {
+        whereClauses.push(
+            "(listing.promotion_level IS NULL OR listing.promotion_level <> 'DEMOTED')"
+        );
+    }
+
+    const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (listing:AppStoreListing)
+         ${whereClause}
+         OPTIONAL MATCH (listing)<-[submitted:SUBMITTED_LISTING]-(p:Profile)
+         OPTIONAL MATCH (p)-[:HAS_CONTACT_METHOD]->(cm:ContactMethod {type: 'email', isPrimary: true})
+         RETURN listing, 
+                p.profileId AS submitterProfileId, 
+                p.displayName AS submitterDisplayName, 
+                COALESCE(p.email, cm.value) AS submitterEmail,
+                submitted.submitted_at AS submittedAt
+         ORDER BY listing.promotion_level ASC, listing.listing_id DESC
+         LIMIT $limit`,
+        params
+    );
+
+    return result.records.map(record => {
+        const listing = record.get('listing')?.properties;
+        const submitterProfileId = record.get('submitterProfileId');
+        const submitterDisplayName = record.get('submitterDisplayName');
+        const submitterEmail = record.get('submitterEmail');
+        const submittedAt = record.get('submittedAt');
+
+        const inflatedListing = inflateObject<AppStoreListingType>(listing as any);
+
+        // Include submitted_at from relationship or node fallback
+        if (submittedAt) {
+            inflatedListing.submitted_at = submittedAt;
+        }
+
+        if (submitterProfileId) {
+            return {
+                ...inflatedListing,
+                submitter: {
+                    profileId: submitterProfileId,
+                    displayName: submitterDisplayName || submitterProfileId,
+                    email: submitterEmail || undefined,
+                },
+            };
+        }
+
+        return inflatedListing;
+    });
 };

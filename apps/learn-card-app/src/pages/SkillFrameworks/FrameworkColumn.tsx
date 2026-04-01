@@ -1,5 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { ModalTypes, useDeviceTypeByWidth, useGetSkillChildren, useModal } from 'learn-card-base';
+import {
+    ModalTypes,
+    useDeviceTypeByWidth,
+    useGetSkillChildrenInfinite,
+    useModal,
+} from 'learn-card-base';
+import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 
 import X from '../../components/svgs/X';
 import Plus from '../../components/svgs/Plus';
@@ -83,6 +89,9 @@ type FrameworkColumnProps = {
     handleSaveSkills?: () => void;
     disableSave?: boolean;
     isViewOnly?: boolean;
+    hasMoreNodes?: boolean;
+    onLoadMore?: () => void;
+    isLoadingMore?: boolean;
 };
 
 const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
@@ -124,15 +133,46 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
     handleSaveSkills,
     disableSave,
     isViewOnly,
+    hasMoreNodes,
+    onLoadMore,
+    isLoadingMore,
 }) => {
-    const { newModal, closeModal } = useModal();
+    const { newModal } = useModal();
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
     const inputRef = useRef<HTMLIonInputElement>(null);
+    const infiniteScrollRef = useRef<HTMLDivElement>(null);
 
     const isSingleColumnView = maxColumns === 1;
 
-    const { data } = useGetSkillChildren(frameworkInfo?.id, columnNode?.id);
-    const apiNodes = data?.records;
+    // For non-root columns, use infinite query internally for pagination
+    const {
+        data: childrenData,
+        fetchNextPage: fetchMoreChildren,
+        hasNextPage: hasMoreChildren,
+        isFetchingNextPage: isFetchingMoreChildren,
+    } = useGetSkillChildrenInfinite(frameworkInfo?.id ?? '', columnNode?.id, {
+        enabled: !!columnNode?.id && !isFullSkillFramework,
+    });
+
+    // Flatten paginated children data
+    const apiNodes = childrenData?.pages?.flatMap(page => page?.records ?? []);
+
+    // Determine pagination state: use props for root column, internal state for child columns
+    const effectiveHasMore = columnNode?.id ? hasMoreChildren : hasMoreNodes;
+    const effectiveOnLoadMore = columnNode?.id ? fetchMoreChildren : onLoadMore;
+    const effectiveIsLoadingMore = columnNode?.id ? isFetchingMoreChildren : isLoadingMore;
+
+    // Infinite scroll for loading more nodes
+    const onScreen = useOnScreen(infiniteScrollRef as any, '-100px', [
+        _nodes?.length,
+        apiNodes?.length,
+    ]);
+
+    useEffect(() => {
+        if (onScreen && effectiveHasMore && effectiveOnLoadMore) {
+            effectiveOnLoadMore();
+        }
+    }, [onScreen, effectiveHasMore, effectiveOnLoadMore]);
 
     let nodes =
         apiNodes && !isFullSkillFramework
@@ -319,7 +359,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                     ) : (
                         <div className="rounded-full bg-grayscale-900 w-[60px] h-[60px] flex items-center justify-center p-[12px] shrink-0">
                             <span className="text-[28px] h-[36px] w-[36px] leading-[36px] font-fluentEmoji cursor-none pointer-events-none select-none">
-                                {columnNode?.icon}
+                                {columnNode?.icon || (columnNode?.role === 'tier' ? '🗃️' : '🧩')}
                             </span>
                         </div>
                     )}
@@ -343,7 +383,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
 
                     {columnNode && (
                         <InfoIcon
-                            className="ml-auto w-[24px] h-[24px] text-grayscale-600"
+                            className="ml-auto w-[24px] h-[24px] text-grayscale-600 shrink-0"
                             version="thinner"
                         />
                     )}
@@ -522,6 +562,18 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                                     />
                                 );
                             })}
+
+                            {/* Infinite scroll sentinel */}
+                            <div role="presentation" ref={infiniteScrollRef} />
+                            {effectiveIsLoadingMore && (
+                                <div className="w-full flex items-center justify-center py-4">
+                                    <IonSpinner
+                                        name="crescent"
+                                        color="dark"
+                                        className="h-[30px] w-[30px]"
+                                    />
+                                </div>
+                            )}
 
                             {isEdit && isMobile && (
                                 <button

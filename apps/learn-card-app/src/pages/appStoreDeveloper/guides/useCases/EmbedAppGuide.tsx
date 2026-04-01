@@ -6949,13 +6949,40 @@ initializeApp();`);
                 </button>
 
                 <button
-                    onClick={() => {
+                    onClick={async () => {
                         if (!embedUrl.trim()) {
                             setUrlRequiredError(true);
                             setShowConfigEditor(true);
                             return;
                         }
                         setUrlRequiredError(false);
+
+                        // Save the config before completing to persist embedUrl
+                        if (selectedListing) {
+                            try {
+                                const newConfig: LaunchConfig = {
+                                    url: embedUrl,
+                                    permissions: selectedPermissions,
+                                    contractUri: contractUri || undefined,
+                                };
+
+                                await updateMutation.mutateAsync({
+                                    listingId: selectedListing.listing_id,
+                                    integrationId,
+                                    updates: {
+                                        launch_config_json: JSON.stringify(newConfig, null, 2),
+                                    },
+                                });
+                            } catch (error) {
+                                console.error('Failed to save config before continuing:', error);
+                                presentToast('Failed to save configuration. Please try again.', {
+                                    type: ToastTypeEnum.Error,
+                                    hasDismissButton: true,
+                                });
+                                return;
+                            }
+                        }
+
                         onComplete();
                     }}
                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-medium hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg shadow-emerald-200"

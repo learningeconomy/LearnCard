@@ -119,6 +119,28 @@ export const useAllContractRequestsForProfile = (targetProfileId: string, enable
     });
 };
 
+export const useSharedInsightsRequestsForProfile = (targetProfileId: string, enabled = true) => {
+    const { initWallet } = useWallet();
+
+    return useQuery<
+        | {
+              profile: LCNProfile;
+              status: 'pending' | 'accepted' | 'denied' | null;
+              readStatus?: 'unseen' | 'seen' | null;
+              contractUri?: string;
+          }[]
+        | undefined
+    >({
+        queryKey: ['useSharedInsightsRequestsForProfile', targetProfileId],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            const result = await wallet.invoke.getSharedInsightsRequestsForProfile(targetProfileId);
+            return result ?? [];
+        },
+        enabled: enabled && Boolean(targetProfileId),
+    });
+};
+
 export const useConsentFlowDataForDid = (
     did: string | undefined,
     options?: {

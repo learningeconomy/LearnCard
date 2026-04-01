@@ -11,9 +11,13 @@
  *   7. Push notification route
  */
 
-import { describe, test, expect, beforeAll } from 'vitest';
+import { describe, test, expect, beforeAll, afterAll } from 'vitest';
+import Redis from 'ioredis';
 
 const LCA_API_URL = 'http://localhost:5200';
+
+// Redis on host port 6381 (mapped from container port 6379)
+const redis = new Redis({ host: 'localhost', port: 6381, lazyConnect: true });
 
 const post = async (path: string, body: Record<string, unknown>) => {
     return fetch(`${LCA_API_URL}/api${path}`, {
@@ -49,6 +53,21 @@ const createMockAuthToken = (userId: string, email: string) => {
 // ---------------------------------------------------------------------------
 
 describe('QR Login Relay', () => {
+    beforeAll(async () => {
+        await redis.connect();
+
+        // Clear rate limit keys so previous runs / parallel suites don't cause 429s
+        const keys = await redis.keys('qr-login:rate:*');
+
+        if (keys.length > 0) {
+            await redis.del(...keys);
+        }
+    });
+
+    afterAll(async () => {
+        await redis.quit();
+    });
+
     describe('Session Creation', () => {
         test('should create a new session with a valid public key', async () => {
             const res = await post('/qr-login/session', {
