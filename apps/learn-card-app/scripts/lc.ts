@@ -677,6 +677,18 @@ const unpatchCapConfigSource = (): void => {
     console.log(`   ${green('✓')} Restored capacitor.config.ts from backup`);
 };
 
+/**
+ * Set Vite env vars that differ between production and non-production native builds.
+ * In dev mode (`pnpm lc dev`), `import.meta.env.DEV` is true so the debug widget
+ * shows automatically. But `vite build` always produces a production bundle where
+ * `DEV` is false, so we must explicitly enable the widget via env var for non-prod stages.
+ */
+const setNativeBuildEnv = (stageId: string): void => {
+    const isProduction = stageId === 'production';
+
+    process.env.VITE_ENABLE_AUTH_DEBUG_WIDGET = isProduction ? 'false' : 'true';
+};
+
 const execBlocking = (cmd: string, label: string): void => {
     console.log('');
     console.log(green(`▶ ${label}`));
@@ -713,6 +725,7 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
     );
 
     // 2. Build web app with correct tenant data
+    setNativeBuildEnv(stageId);
     execBlocking('npx vite build', 'Building web app');
 
     // 3. Copy fresh build/ into native projects
@@ -756,6 +769,7 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
         );
 
         // 2. Build web app with correct tenant data
+        setNativeBuildEnv(stageId);
         execBlocking('npx vite build', 'Building web app');
 
         // 3. Copy fresh build/ into native projects
@@ -800,6 +814,7 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
     );
 
     // 2. Build web app with correct tenant data
+    setNativeBuildEnv('local');
     execBlocking('npx vite build', 'Building web app');
 
     // 3. Copy fresh build/ into native projects
@@ -980,6 +995,7 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
     );
 
     // Step 2: Build web app with correct tenant data
+    setNativeBuildEnv(stage);
     execBlocking('npx vite build', 'Building web app');
 
     // Step 3: Cap sync (copies fresh build/ into native projects)
