@@ -1177,6 +1177,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 }
                                 isSaving={savingTemplateId === template.id}
                                 isNew={!!template.isNew}
+                                boostUri={template.boostUri}
                             />
                         )}
                     </div>
