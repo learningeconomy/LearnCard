@@ -592,6 +592,9 @@ importers:
       neo4j-driver:
         specifier: 5.18.0
         version: 5.18.0
+      node-gyp:
+        specifier: ^12.2.0
+        version: 12.2.0
       node-stdlib-browser:
         specifier: 1.2.1
         version: 1.2.1
@@ -22276,9 +22279,9 @@ packages:
     resolution: {integrity: sha512-2d0q2a8eCi2IRg/IGubCNRJoYbA1+YPXAzQVRFmB45gdGZafyivnZ5YSEfo3JikbjGxOdntGFvBQGqaSMXlAFQ==}
     engines: {node: ^20.17.0 || >=22.9.0}
 
-  minipass-flush@1.0.5:
-    resolution: {integrity: sha512-JmQSYYpPUqX5Jyn1mXaRwOda1uQ8HP5KAT/oDSLCzt1BYRhQU0/hDtsB1ufZfEEzMZ9aAVmsBw8+FWsIXlClWw==}
-    engines: {node: '>= 8'}
+  minipass-flush@1.0.6:
+    resolution: {integrity: sha512-7Uf5gMJZ2kTkFisE3toGxT991s+cg+vMh42nbZGM2bNxfYVpkpqRudf1QrcOy72a3PwcL4JYqL+4NY7t0Hdd0A==}
+    engines: {node: '>=16 || 14 >=14.17'}
 
   minipass-pipeline@1.2.4:
     resolution: {integrity: sha512-xuIq7cIOt09RPRJ19gdi4b+RiNvDFYe5JH+ggNvBqGqpQXcru3PcRmOZuHBKWK1Txf9+cQ+HMVN4d6z46LZP7A==}
@@ -22302,6 +22305,10 @@ packages:
 
   minipass@7.1.2:
     resolution: {integrity: sha512-qOOzS1cBTWYF4BH8fVePDBOO9iptMnGUEZwNc/cMWnTV2nVLZ7VoNWEPHkYczZA0pdoA7dl6e7FL659nX9S2aw==}
+    engines: {node: '>=16 || 14 >=14.17'}
+
+  minipass@7.1.3:
+    resolution: {integrity: sha512-tEBHqDnIoM/1rXME1zgka9g6Q2lcoCkxHLuc7ODJ5BxbP5d4c2Z5cGgtXAku59200Cx7diuHTOYfSBD8n6mm8A==}
     engines: {node: '>=16 || 14 >=14.17'}
 
   minizlib@2.1.2:
@@ -46453,7 +46460,7 @@ snapshots:
       lru-cache: 11.2.2
       minipass: 7.1.2
       minipass-collect: 2.0.1
-      minipass-flush: 1.0.5
+      minipass-flush: 1.0.6
       minipass-pipeline: 1.2.4
       p-map: 7.0.4
       ssri: 13.0.1
@@ -55444,7 +55451,7 @@ snapshots:
       http-cache-semantics: 4.2.0
       minipass: 7.1.2
       minipass-fetch: 5.0.2
-      minipass-flush: 1.0.5
+      minipass-flush: 1.0.6
       minipass-pipeline: 1.2.4
       negotiator: 1.0.0
       proc-log: 6.1.0
@@ -56882,9 +56889,9 @@ snapshots:
     optionalDependencies:
       iconv-lite: 0.7.2
 
-  minipass-flush@1.0.5:
+  minipass-flush@1.0.6:
     dependencies:
-      minipass: 3.3.6
+      minipass: 7.1.3
 
   minipass-pipeline@1.2.4:
     dependencies:
@@ -56903,6 +56910,8 @@ snapshots:
   minipass@5.0.0: {}
 
   minipass@7.1.2: {}
+
+  minipass@7.1.3: {}
 
   minizlib@2.1.2:
     dependencies:
