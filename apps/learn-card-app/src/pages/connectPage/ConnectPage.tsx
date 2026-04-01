@@ -24,6 +24,17 @@ const ConnectPage: React.FC = () => {
     );
     const [loading, setLoading] = useState<boolean>(false);
 
+    const handleFetchedProfile = (profile?: AddressBookContact | null) => {
+        // Private or missing profiles can come back as an empty object-like payload.
+        // Treat anything without a profileId as "not found" so we render the empty state.
+        if (profile?.profileId) {
+            setLcNetworkProfile(profile);
+            return;
+        }
+
+        setLcNetworkProfile(null);
+    };
+
     const getLCNeworkProfile = async () => {
         setLoading(true);
 
@@ -46,11 +57,9 @@ const ConnectPage: React.FC = () => {
         if (profileId) {
             try {
                 const profile = await wallet?.invoke?.getProfile(profileId);
-                if (profile) {
-                    setLcNetworkProfile(profile);
-                    console.log('handle::profile', profile);
-                    setLoading(false);
-                }
+                handleFetchedProfile(profile);
+                console.log('handle::profile', profile);
+                setLoading(false);
                 return;
             } catch (err) {
                 console.log('getLCNeworkProfile::err', err);
@@ -71,11 +80,9 @@ const ConnectPage: React.FC = () => {
             if (profileId) {
                 try {
                     const profile = await wallet?.invoke?.getProfile(profileId);
-                    if (profile) {
-                        setLcNetworkProfile(profile);
-                        console.log('userDid::profile', profile);
-                        setLoading(false);
-                    }
+                    handleFetchedProfile(profile);
+                    console.log('userDid::profile', profile);
+                    setLoading(false);
                     return;
                 } catch (err) {
                     console.log('getLCNeworkProfile::err', err);
@@ -84,6 +91,8 @@ const ConnectPage: React.FC = () => {
                 }
             }
         }
+
+        setLoading(false);
     };
 
     useEffect(() => {
@@ -101,7 +110,7 @@ const ConnectPage: React.FC = () => {
                     </section>
                 )}
                 {!loading && !lcNetworkProfile && (
-                    <section className="flex flex-col pt-[10px] px-[20px] text-center justify-center">
+                    <section className="flex flex-col h-full pt-[10px] px-[20px] text-center justify-center items-center">
                         <h1 className="text-center text-xl font-bold text-grayscale-800">Eeek!</h1>
                         <strong className="text-center font-medium text-grayscale-600">
                             Unable to find user

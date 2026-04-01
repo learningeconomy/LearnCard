@@ -1,6 +1,8 @@
 import type { LCNClient } from '@learncard/network-brain-client';
 import {
     LCNProfile,
+    LCNVisibleProfile,
+    LCNProfileConnectionStatusEnum,
     LCNProfileManager,
     UnsignedVC,
     VC,
@@ -17,6 +19,7 @@ import {
     PaginatedBoostRecipientsType,
     PaginatedBoostRecipientsWithChildrenType,
     PaginatedLCNProfiles,
+    PaginatedVisibleLCNProfiles,
     ConsentFlowContract,
     ConsentFlowContractQuery,
     ConsentFlowTerms,
@@ -123,7 +126,7 @@ export type LearnCardNetworkPluginDependentMethods = {
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginMethods = {
-    createProfile: (profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>) => Promise<string>;
+    createProfile: (profile: Omit<LCNProfile, 'did' | 'isServiceProfile'> & { authToken?: string }) => Promise<string>;
     createServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
@@ -152,7 +155,7 @@ export type LearnCardNetworkPluginMethods = {
         manager: Partial<Omit<LCNProfileManager, 'id' | 'created'>>
     ) => Promise<boolean>;
     deleteProfile: () => Promise<boolean>;
-    getProfile: (profileId?: string) => Promise<LCNProfile | undefined>;
+    getProfile: (profileId?: string) => Promise<LCNVisibleProfile | undefined>;
     getProfileManagerProfile: (id?: string) => Promise<LCNProfileManager | undefined>;
     searchProfiles: (
         profileId?: string,
@@ -162,7 +165,7 @@ export type LearnCardNetworkPluginMethods = {
             includeConnectionStatus?: boolean;
             includeServiceProfiles?: boolean;
         }
-    ) => Promise<LCNProfile[]>;
+    ) => Promise<(LCNVisibleProfile & { connectionStatus?: LCNProfileConnectionStatusEnum })[]>;
     connectWith: (profileId: string) => Promise<boolean>;
     connectWithExpiredInvite: (profileId: string) => Promise<boolean>;
     connectWithInvite: (profileId: string, challenge: string) => Promise<boolean>;
@@ -170,18 +173,20 @@ export type LearnCardNetworkPluginMethods = {
     disconnectWith: (profileId: string) => Promise<boolean>;
     acceptConnectionRequest: (id: string) => Promise<boolean>;
     /** @deprecated Use getPaginatedConnections */
-    getConnections: () => Promise<LCNProfile[]>;
-    getPaginatedConnections: (options?: PaginationOptionsType) => Promise<PaginatedLCNProfiles>;
+    getConnections: () => Promise<LCNVisibleProfile[]>;
+    getPaginatedConnections: (
+        options?: PaginationOptionsType
+    ) => Promise<PaginatedVisibleLCNProfiles>;
     /** @deprecated Use getPaginatedPendingConnections */
-    getPendingConnections: () => Promise<LCNProfile[]>;
+    getPendingConnections: () => Promise<LCNVisibleProfile[]>;
     getPaginatedPendingConnections: (
         options?: PaginationOptionsType
-    ) => Promise<PaginatedLCNProfiles>;
+    ) => Promise<PaginatedVisibleLCNProfiles>;
     /** @deprecated Use getPaginatedConnectionRequests */
-    getConnectionRequests: () => Promise<LCNProfile[]>;
+    getConnectionRequests: () => Promise<LCNVisibleProfile[]>;
     getPaginatedConnectionRequests: (
         options?: PaginationOptionsType
-    ) => Promise<PaginatedLCNProfiles>;
+    ) => Promise<PaginatedVisibleLCNProfiles>;
     generateInvite: (
         challenge?: string,
         expiration?: number,
@@ -201,7 +206,7 @@ export type LearnCardNetworkPluginMethods = {
 
     blockProfile: (profileId: string) => Promise<boolean>;
     unblockProfile: (profileId: string) => Promise<boolean>;
-    getBlockedProfiles: () => Promise<LCNProfile[]>;
+    getBlockedProfiles: () => Promise<LCNVisibleProfile[]>;
 
     sendCredential: (
         profileId: string,
@@ -374,7 +379,7 @@ export type LearnCardNetworkPluginMethods = {
     getBoostAdmins: (
         uri: string,
         options?: Partial<PaginationOptionsType> & { includeSelf?: boolean }
-    ) => Promise<PaginatedLCNProfiles>;
+    ) => Promise<PaginatedVisibleLCNProfiles>;
     getBoostPermissions: (uri: string, profileId?: string) => Promise<BoostPermissions>;
     updateBoostPermissions: (
         uri: string,
@@ -528,6 +533,14 @@ export type LearnCardNetworkPluginMethods = {
     getAllContractRequestsForProfile: (targetProfileId: string) => Promise<
         {
             contract: ConsentFlowContract & { uri: string };
+            profile: LCNProfile;
+            status: 'pending' | 'accepted' | 'denied' | null;
+            readStatus?: 'unseen' | 'seen' | null;
+        }[]
+    >;
+
+    getSharedInsightsRequestsForProfile: (targetProfileId: string) => Promise<
+        {
             profile: LCNProfile;
             status: 'pending' | 'accepted' | 'denied' | null;
             readStatus?: 'unseen' | 'seen' | null;

@@ -4,7 +4,8 @@ import InfoIcon from 'learn-card-base/svgs/InfoIcon';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import CircleCheckmark from 'learn-card-base/svgs/CircleCheckmark';
-import SkillProficiencyBar, { SkillLevel } from './SkillProficiencyBar';
+import SkillProficiencyBar from './SkillProficiencyBar';
+import { SkillLevel } from './skillTypes';
 import ViewAlignmentInfo from '../SkillFrameworks/ViewAlignmentInfo';
 
 import { ModalTypes, useModal } from 'learn-card-base';
