@@ -109,7 +109,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
     };
 
     return (
-        <div className="h-full flex flex-col">
+        <div className="h-full flex flex-col overflow-x-hidden">
             {/* Header */}
             <div className="p-5 border-b border-gray-200 bg-white">
                 {/* Mobile back button */}

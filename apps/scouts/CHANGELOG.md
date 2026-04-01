@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.90.2
+
+### Patch Changes
+
+-   [#1120](https://github.com/learningeconomy/LearnCard/pull/1120) [`00976e097128d18c25c8016a75be9580cd3a7050`](https://github.com/learningeconomy/LearnCard/commit/00976e097128d18c25c8016a75be9580cd3a7050) Thanks [@smurflo2](https://github.com/smurflo2)! - OpenSALT import enhancements - proper classification of tier/competency, icons, pagination, and more!
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.12
+    -   @learncard/lca-api-plugin@1.2.2
+    -   @learncard/react@2.9.19
+    -   @learncard/sss-key-manager@0.1.2
+
 ## 1.90.1
 
 ### Patch Changes

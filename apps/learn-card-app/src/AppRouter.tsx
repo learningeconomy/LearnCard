@@ -131,7 +131,10 @@ const AppRouter: React.FC = () => {
     useEffect(() => {
         if (isShareInsightsRequest) {
             newModal(
-                <RequestInsightsFromUserModalWrapper profileId={learnerProfileId as string} />,
+                <RequestInsightsFromUserModalWrapper
+                    profileId={learnerProfileId as string}
+                    redirectToLink={`/passport?shareInsights=${isShareInsightsRequest}&learnerProfileId=${learnerProfileId}`}
+                />,
                 { className: '!bg-transparent' },
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );

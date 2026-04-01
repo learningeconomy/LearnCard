@@ -4,10 +4,8 @@ import {
     ApiSkillNode,
     convertApiSkillNodeToSkillTreeNode,
 } from '../../helpers/skillFramework.helpers';
-import SkillProficiencyBar, {
-    SkillLevel,
-    SkillProficiencyBarModeEnum,
-} from './SkillProficiencyBar';
+import SkillProficiencyBar from './SkillProficiencyBar';
+import { SkillLevel, SkillProficiencyBarModeEnum } from './skillTypes';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 
 type MainSkillInfoBoxProps = {

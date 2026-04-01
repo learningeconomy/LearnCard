@@ -129,6 +129,8 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
                 showContracts: true,
                 showConnections: true,
                 showApiTokens: true,
+                showTemplates: true,
+                showBranding: false,
             };
 
         case 'course-catalog':
