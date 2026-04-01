@@ -86,15 +86,15 @@ local `.env` file. It does not print full secret values.
 
 ## Service Targets
 
-| Key       | Service                | Infisical Path(s)                         | Local .env File                                           |
-| --------- | ---------------------- | ----------------------------------------- | --------------------------------------------------------- |
-| `brain`   | Brain Service          | `/` + `/LearnCard/brain-service`          | `services/learn-card-network/brain-service/.env`          |
-| `cloud`   | LearnCloud Service     | `/` + `/LearnCard/cloud-service`          | `services/learn-card-network/learn-cloud-service/.env`    |
-| `app`     | LearnCard App          | `/` + `/learn-card-app`                   | `apps/learn-card-app/.env`                                |
-| `lca-api` | LCA API                | `/` + `/LearnCard/lca-api`                | `services/learn-card-network/lca-api/.env`                |
-| `signing` | Simple Signing Service | `/` + `/LearnCard/simple-signing-service` | `services/learn-card-network/simple-signing-service/.env` |
+| Key       | Service                | Infisical Path(s)                    | Local .env File                                           |
+| --------- | ---------------------- | ------------------------------------ | --------------------------------------------------------- |
+| `brain`   | Brain Service          | `/LearnCard/brain-service`           | `services/learn-card-network/brain-service/.env`          |
+| `cloud`   | LearnCloud Service     | `/LearnCard/cloud-service`           | `services/learn-card-network/learn-cloud-service/.env`    |
+| `app`     | LearnCard App          | `/learn-card-app`                    | `apps/learn-card-app/.env`                                |
+| `lca-api` | LCA API                | `/LearnCard/lca-api`                 | `services/learn-card-network/lca-api/.env`                |
+| `signing` | Simple Signing Service | `/LearnCard/simple-signing-service`  | `services/learn-card-network/simple-signing-service/.env` |
 
-Each target pulls secrets from one or more Infisical folder paths. Root-level (`/`) vars are merged first, then service-specific vars override on key conflicts.
+Each target pulls secrets from its specific Infisical folder path. To enable root-level (`/`) variable merging, add pipe-separated paths (e.g., `/|/LearnCard/brain-service`) to the INFISICAL_PATHS array in `scripts/pull-env.sh`.
 
 ## How It Works
 
