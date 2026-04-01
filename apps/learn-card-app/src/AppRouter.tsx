@@ -185,14 +185,13 @@ const AppRouter: React.FC = () => {
             });
             endorsementsRequestStore.set.credentialInfo(undefined);
 
-            // Only set credentialInfo for logged-out users (they'll need it after login)
-            if (!isLoggedIn) {
-                endorsementsRequestStore.set.credentialInfo({
-                    uri: boostUri as string,
-                    seed: seed as string,
-                    pin: pin as string,
-                });
-            }
+            // Set credentialInfo so ViewSharedBoost can access the params
+            // (needed for both logged-in and logged-out users, especially on native deep links)
+            endorsementsRequestStore.set.credentialInfo({
+                uri: boostUri as string,
+                seed: seed as string,
+                pin: pin as string,
+            });
             newModal(
                 <ViewSharedBoost showEndorsementRequest />,
                 {},
@@ -270,6 +269,7 @@ const AppRouter: React.FC = () => {
                 redirectStore.set.email(params.get('email') as string);
                 history.replace('/login?verifyCode=true');
             } else if (!isEndorsementLink) {
+                // Only run auth verification for non-endorsement links
                 if (authLink) {
                     // refetch the saved email on event "appUrlOpen" trigger
                     const saved_email_native = window.localStorage.getItem('emailForSignIn') ?? '';
