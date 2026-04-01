@@ -1,7 +1,7 @@
 import React from 'react';
 
 type CompetencyIconProps = {
-    icon: string;
+    icon: string | undefined;
     size?: 'normal' | 'big' | 'super-big' | 'small';
     withWhiteBackground?: boolean;
 };
@@ -28,7 +28,7 @@ const CompetencyIcon: React.FC<CompetencyIconProps> = ({
                 withWhiteBackground ? 'bg-white rounded-full' : ''
             } ${sizeClassName}`}
         >
-            {icon}
+            {icon || '🧩'}
         </span>
     );
 };

@@ -10,7 +10,11 @@
         "preinstall": "npx only-allow pnpm",
         "build": "nx run-many -t build --all --exclude=docs,reference,chapi-example,snap-chapi-example,snap-example-dapp",
         "test:e2e": "nx run e2e:test:e2e",
-        "run-network-tests": "nx run network-brain-service:build && cd services/learn-card-network/brain-service && pnpm test"
+        "run-network-tests": "nx run network-brain-service:build && cd services/learn-card-network/brain-service && pnpm test",
+        "env:pull": "bash scripts/pull-env.sh",
+        "env:backup": "bash scripts/backup-env.sh",
+        "env:compare-backup": "bash scripts/compare-env-backup.sh",
+        "env:compare-infisical": "bash scripts/compare-env-infisical.sh"
     },
     "devDependencies": {
         "@changesets/changelog-github": "^0.4.8",
@@ -32,6 +36,7 @@
         "jest": "^29.5.0",
         "jest-environment-jsdom": "^29.5.0",
         "jest-silent-reporter": "^0.5.0",
+        "node-gyp": "^12.2.0",
         "nx": "16.1.4",
         "prettier": "^2.8.4",
         "prettier-plugin-astro": "^0.5.5",

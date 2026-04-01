@@ -55,7 +55,7 @@ export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
                 <div
                     className={`py-4 ${
                         message.role === 'assistant' ? assistantBubbleStyles : userBubbleStyles
-                    } rounded-3xl mb-4 text-grayscale-900 flex-shrink min-w-0 prose prose-h1:mb-2 prose-p:mt-0 prose-li:my-0 prose-li:leading-6 prose-pre:bg-transparent prose-pre:p-0 prose-code:shadow prose-code:rounded prose-code:py-2!`}
+                    } rounded-3xl mb-4 text-grayscale-900 flex-shrink min-w-0 prose prose-h1:mb-2 prose-p:mt-0 prose-li:my-0 prose-li:leading-6 prose-pre:p-0 prose-code:shadow prose-code:rounded prose-code:py-2!`}
                 >
                     {text}
                 </div>

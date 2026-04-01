@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -286,6 +288,28 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 setIsLoading(true);
                 setIsCreateLoading(true);
                 const wallet = await initWallet();
+
+                // Get Firebase ID token for server-side email auto-verification
+                let authToken: string | undefined;
+                try {
+                    if (Capacitor.isNativePlatform()) {
+                        const res = await FirebaseAuthentication.getIdToken({
+                            forceRefresh: false,
+                        });
+                        authToken = res?.token;
+                    } else {
+                        const user = auth()?.currentUser;
+                        authToken = user
+                            ? await user.getIdToken(false)
+                            : undefined;
+                    }
+                } catch (e) {
+                    console.warn(
+                        'Could not get Firebase ID token (non-fatal):',
+                        e
+                    );
+                }
+
                 const didWeb = await wallet.invoke.createProfile({
                     profileId: profileId as string,
                     displayName: name ?? '',
@@ -296,6 +320,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     role: role ?? '',
                     dob: dob ?? '',
                     country: country ?? '',
+                    authToken,
                 });
 
                 if (didWeb) {

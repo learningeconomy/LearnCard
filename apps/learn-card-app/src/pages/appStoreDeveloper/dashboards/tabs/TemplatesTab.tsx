@@ -66,6 +66,10 @@ export const TemplatesTab: React.FC<TemplatesTabProps> = ({
                 hideNavigation
                 onTemplateChange={onRefresh}
             />
+
+            <p className="text-xs text-gray-400 mt-4 text-center">
+                See the <strong className="text-gray-500">Code</strong> tab for send examples using your template URIs.
+            </p>
         </div>
     );
 };

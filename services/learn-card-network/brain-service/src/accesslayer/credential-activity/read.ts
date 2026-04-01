@@ -22,6 +22,7 @@ export type GetActivitiesOptions = {
     boostUri?: string;
     eventType?: CredentialActivityEventType;
     integrationId?: string;
+    listingId?: string;
     startDate?: string;
     endDate?: string;
     groupByLatestStatus?: boolean; // When true, returns unique credentials filtered by their current status
@@ -37,6 +38,7 @@ export const getActivitiesForProfile = async (
         boostUri,
         eventType,
         integrationId,
+        listingId,
         startDate,
         endDate,
         groupByLatestStatus,
@@ -48,6 +50,9 @@ export const getActivitiesForProfile = async (
         ? 'MATCH (a)-[:FOR_BOOST]->(b:Boost {id: $boostId})'
         : 'OPTIONAL MATCH (a)-[:FOR_BOOST]->(b:Boost)';
 
+    // Note: listingId filtering is handled in WHERE clause via EXISTS to include chained events
+    // Do NOT use a direct MATCH here as it would exclude chained events without the relationship
+
     let query: string;
 
     if (groupByLatestStatus) {
@@ -55,6 +60,13 @@ export const getActivitiesForProfile = async (
         const whereConditions: string[] = ['a.actorProfileId = $profileId'];
         if (integrationId) {
             whereConditions.push('a.integrationId = $integrationId');
+        }
+        if (listingId) {
+            // Match activities that share an activityId with any activity that has the PERFORMED_BY_LISTING relationship
+            // This ensures chained events (e.g., CLAIMED after DELIVERED) are included
+            whereConditions.push(
+                'EXISTS { MATCH (l:AppStoreListing {listing_id: $listingId})-[:PERFORMED_BY_LISTING]->(linked:CredentialActivity) WHERE linked.activityId = a.activityId }'
+            );
         }
         const whereClause =
             whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
@@ -103,6 +115,13 @@ export const getActivitiesForProfile = async (
         if (integrationId) {
             whereConditions.push('a.integrationId = $integrationId');
         }
+        if (listingId) {
+            // Match activities that share an activityId with any activity that has the PERFORMED_BY_LISTING relationship
+            // This ensures chained events (e.g., CLAIMED after DELIVERED) are included
+            whereConditions.push(
+                'EXISTS { MATCH (l:AppStoreListing {listing_id: $listingId})-[:PERFORMED_BY_LISTING]->(linked:CredentialActivity) WHERE linked.activityId = a.activityId }'
+            );
+        }
         if (startDate) {
             whereConditions.push('a.timestamp >= $startDate');
         }
@@ -131,6 +150,7 @@ export const getActivitiesForProfile = async (
         boostId,
         eventType,
         integrationId,
+        listingId,
         startDate,
         endDate,
     });
@@ -175,12 +195,13 @@ export const getActivityStatsForProfile = async (
     options: {
         boostUris?: string[];
         integrationId?: string;
+        listingId?: string;
         eventType?: CredentialActivityEventType;
         startDate?: string;
         endDate?: string;
     } = {}
 ): Promise<CredentialActivityStats> => {
-    const { boostUris, integrationId, eventType, startDate, endDate } = options;
+    const { boostUris, integrationId, listingId, eventType, startDate, endDate } = options;
 
     const boostIds = boostUris?.map(uri => safeGetIdFromUri(uri)).filter(Boolean) as string[];
 
@@ -189,6 +210,14 @@ export const getActivityStatsForProfile = async (
 
     if (integrationId) {
         whereConditions.push('a.integrationId = $integrationId');
+    }
+
+    if (listingId) {
+        // Match activities that share an activityId with any activity that has the PERFORMED_BY_LISTING relationship
+        // This ensures chained events (e.g., CLAIMED after DELIVERED) are included in stats
+        whereConditions.push(
+            'EXISTS { MATCH (l:AppStoreListing {listing_id: $listingId})-[:PERFORMED_BY_LISTING]->(linked:CredentialActivity) WHERE linked.activityId = a.activityId }'
+        );
     }
 
     // Date filters apply to the activity chain, not individual events
@@ -239,6 +268,7 @@ export const getActivityStatsForProfile = async (
         profileId,
         boostIds,
         integrationId,
+        listingId,
         eventType,
         startDate,
         endDate,
