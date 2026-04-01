@@ -1,7 +1,7 @@
 import React from 'react';
 
 type CompetencyIconProps = {
-    icon: string;
+    icon: string | undefined;
     size?: 'normal' | 'big' | 'super-big' | 'small';
     withWhiteBackground?: boolean;
 };
