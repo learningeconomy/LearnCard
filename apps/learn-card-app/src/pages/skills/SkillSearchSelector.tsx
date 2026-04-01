@@ -186,7 +186,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                 frameworkId={frameworkId}
                 skill={skill}
                 handleAdd={(skill, proficiencyLevel) => {
-                    handleToggleSelect(skill.id!, proficiencyLevel, skill);
+                    handleToggleSelect(skill.id!, proficiencyLevel);
                 }}
                 selectedSkills={selectedSkills}
                 handleAddRelatedSkill={handleAddRelatedSkill}

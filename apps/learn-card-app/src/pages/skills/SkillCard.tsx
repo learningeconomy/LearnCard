@@ -110,18 +110,18 @@ const SkillCard: React.FC<SkillCardProps> = ({
             <div
                 className={`flex bg-white flex-col shadow-box-bottom relative p-0 w-[160px] rounded-[20px] overflow-hidden border-[1px] border-solid ${
                     proficiencyLevel
-                        ? `border-solid border-[2px] border-${SKILL_LEVEL_META[proficiencyLevel].cardOuterBorderColor}`
+                        ? `border-solid border-[2px] ${SKILL_LEVEL_META[proficiencyLevel].cardOuterBorderClass}`
                         : ''
                 } ${tallCard ? 'h-[310px]' : 'min-h-[240px]'}`}
             >
                 <div
                     className={`border-b-[1px] border-solid flex items-center justify-center py-[15px] ${
                         proficiencyLevel
-                            ? `border-${SKILL_LEVEL_META[proficiencyLevel].cardInnerBorderColor}`
+                            ? SKILL_LEVEL_META[proficiencyLevel].cardInnerBorderClass
                             : 'border-grayscale-50'
                     } ${
                         showSelfAssigned && proficiencyLevel
-                            ? `bg-${SKILL_LEVEL_META[proficiencyLevel].cardIconBgColor}`
+                            ? SKILL_LEVEL_META[proficiencyLevel].cardIconBgClass
                             : 'bg-grayscale-100'
                     }`}
                 >
@@ -132,7 +132,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
                     <div
                         className={`bg-white rounded-full p-[3px] border-[1px] border-solid absolute top-[3px] right-[3px] ${
                             proficiencyLevel
-                                ? `border-${SKILL_LEVEL_META[proficiencyLevel].cardInnerBorderColor}`
+                                ? SKILL_LEVEL_META[proficiencyLevel].cardInnerBorderClass
                                 : ''
                         }`}
                     >
@@ -144,12 +144,12 @@ const SkillCard: React.FC<SkillCardProps> = ({
                     <div
                         className={`absolute top-[108px] left-1/2 -translate-x-1/2 px-[12px] py-[2px] rounded-full bg-white border shadow-sm flex items-center justify-center ${
                             proficiencyLevel
-                                ? `border-${SKILL_LEVEL_META[proficiencyLevel].cardInnerBorderColor}`
+                                ? SKILL_LEVEL_META[proficiencyLevel].cardInnerBorderClass
                                 : ''
                         }`}
                     >
                         <span
-                            className={`text-[13px] font-poppins font-[600] text-${SKILL_LEVEL_META[proficiencyLevel].cardTextColor}`}
+                            className={`text-[13px] font-poppins font-[600] ${SKILL_LEVEL_META[proficiencyLevel].cardTextClass}`}
                         >
                             {SKILL_LEVEL_META[proficiencyLevel].name}
                         </span>
@@ -232,8 +232,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
                 </div>
             </div>
 
-            {/* Make sure tailwind classes get generated */}
-            <span className="hidden border-gray-600 border-orange-600 border-violet-600 border-violet-200 border-violet-300 text-sky-500" />
+            {/* Tailwind classes are now explicitly referenced in SKILL_LEVEL_META */}
         </IonCol>
     );
 };

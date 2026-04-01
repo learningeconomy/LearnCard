@@ -115,7 +115,7 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
     const previousSkill =
         previousSkills.length > 0 ? previousSkills[previousSkills.length - 1] : null;
 
-    // @ts-ignore
+    // @ts-ignore - skill node may have either targetDescription or description property depending on framework node type
     const description = skill?.targetDescription || skill?.description || '';
     const isTier = skill?.role === FrameworkNodeRole.tier;
     const headerContent = (
@@ -132,7 +132,7 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                     <div className="flex items-center gap-[5px] overflow-hidden">
                         <CompetencyIcon icon={previousSkill.skill.icon} size="small" />
                         <span className="text-[14px] text-grayscale-800 font-bold font-poppins truncate">
-                            {/* @ts-ignore */}
+                            {/* @ts-ignore - skill node may have either targetName or statement property depending on framework node type */}
                             {previousSkill.skill.targetName || previousSkill.skill.statement}
                         </span>
                     </div>
@@ -186,7 +186,7 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                                 <div className="flex items-center gap-[5px] overflow-hidden">
                                     <CompetencyIcon icon={previousSkill.skill.icon} size="small" />
                                     <span className="text-[14px] text-grayscale-800 font-bold font-poppins truncate">
-                                        {/* @ts-ignore */}
+                                        {/* @ts-ignore - skill node may have either targetName or statement property depending on framework node type */}
                                         {previousSkill.skill.targetName ||
                                             previousSkill.skill.statement}
                                     </span>

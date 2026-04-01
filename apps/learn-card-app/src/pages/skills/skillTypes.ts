@@ -16,6 +16,11 @@ export const SKILL_LEVEL_META = {
         cardInnerBorderColor: 'grayscale-200',
         cardIconBgColor: 'grayscale-50',
         cardTextColor: 'grayscale-700',
+        // Explicit class names for Tailwind JIT compilation
+        cardOuterBorderClass: 'border-gray-600',
+        cardInnerBorderClass: 'border-grayscale-200',
+        cardIconBgClass: 'bg-grayscale-50',
+        cardTextClass: 'text-grayscale-700',
     },
     [SkillLevel.Novice]: {
         name: 'Novice',
@@ -25,6 +30,11 @@ export const SKILL_LEVEL_META = {
         cardInnerBorderColor: 'grayscale-200',
         cardIconBgColor: 'grayscale-50',
         cardTextColor: 'grayscale-700',
+        // Explicit class names for Tailwind JIT compilation
+        cardOuterBorderClass: 'border-gray-600',
+        cardInnerBorderClass: 'border-grayscale-200',
+        cardIconBgClass: 'bg-grayscale-50',
+        cardTextClass: 'text-grayscale-700',
     },
     [SkillLevel.Beginner]: {
         name: 'Beginner',
@@ -34,6 +44,11 @@ export const SKILL_LEVEL_META = {
         cardInnerBorderColor: 'orange-200',
         cardIconBgColor: 'orange-50',
         cardTextColor: 'orange-500',
+        // Explicit class names for Tailwind JIT compilation
+        cardOuterBorderClass: 'border-orange-600',
+        cardInnerBorderClass: 'border-orange-200',
+        cardIconBgClass: 'bg-orange-50',
+        cardTextClass: 'text-orange-500',
     },
     [SkillLevel.Proficient]: {
         name: 'Proficient',
@@ -43,6 +58,11 @@ export const SKILL_LEVEL_META = {
         cardInnerBorderColor: 'violet-300',
         cardIconBgColor: 'violet-50',
         cardTextColor: 'violet-600',
+        // Explicit class names for Tailwind JIT compilation
+        cardOuterBorderClass: 'border-violet-600',
+        cardInnerBorderClass: 'border-violet-300',
+        cardIconBgClass: 'bg-violet-50',
+        cardTextClass: 'text-violet-600',
     },
     [SkillLevel.Advanced]: {
         name: 'Advanced',
@@ -52,6 +72,11 @@ export const SKILL_LEVEL_META = {
         cardInnerBorderColor: 'sky-200',
         cardIconBgColor: 'sky-50',
         cardTextColor: 'sky-500',
+        // Explicit class names for Tailwind JIT compilation
+        cardOuterBorderClass: 'border-sky-600',
+        cardInnerBorderClass: 'border-sky-200',
+        cardIconBgClass: 'bg-sky-50',
+        cardTextClass: 'text-sky-500',
     },
     [SkillLevel.Expert]: {
         name: 'Expert',
@@ -61,6 +86,11 @@ export const SKILL_LEVEL_META = {
         cardInnerBorderColor: 'emerald-200',
         cardIconBgColor: 'emerald-50',
         cardTextColor: 'emerald-600',
+        // Explicit class names for Tailwind JIT compilation
+        cardOuterBorderClass: 'border-emerald-700',
+        cardInnerBorderClass: 'border-emerald-200',
+        cardIconBgClass: 'bg-emerald-50',
+        cardTextClass: 'text-emerald-600',
     },
 };
 
