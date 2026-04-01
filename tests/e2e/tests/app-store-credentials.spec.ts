@@ -153,10 +153,7 @@ describe('App Store Credential Issuance E2E Tests', () => {
             expect(result.credentialUri).toBeDefined();
             expect(result.boostUri).toBe(boostUri);
 
-<<<<<<< HEAD
-=======
             // Verify credential is pending in wallet (user must claim via app UI)
->>>>>>> 4baedfa4755593e43d64d0e773367d830dd8a161
             const incoming = await appUser.invoke.getIncomingCredentials();
             const found = incoming.find((c: { uri: string }) => c.uri === result.credentialUri);
             expect(found).toBeDefined();
