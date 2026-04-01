@@ -30,6 +30,7 @@ export const createAppStoreListing = async (
         hero_background_color: input.hero_background_color,
         min_age: input.min_age,
         age_rating: input.age_rating,
+        contact_email: input.contact_email,
     });
 
     const result = await new QueryBuilder(new BindParam({ params }))

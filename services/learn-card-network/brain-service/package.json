@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "3.13.1",
+    "version": "3.13.2",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -76,6 +76,7 @@
         "fastify-plugin": "^5.1.0",
         "ioredis": "^5.2.2",
         "ioredis-mock": "^8.2.2",
+        "jose": "^5.9.6",
         "jwt-decode": "^3.1.2",
         "libsodium-wrappers": "^0.7.11",
         "lodash": "^4.17.21",

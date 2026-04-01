@@ -44,6 +44,8 @@ const lc = await initLearnCard({ seed: '...' });
 const lc = await initLearnCard({ seed: '...', network: true });
 ```
 
+For repo-wide environment setup and Infisical-managed `.env` generation, see [environment-variables.md](./environment-variables.md). It covers the pull, backup, and compare scripts used across the monorepo.
+
 ## Adding a New Network Route
 
 Types flow: `@learncard/types` → brain-service tRPC router → brain-client → network plugin → `learnCard.invoke.*`

@@ -99,7 +99,7 @@ const AdminDashboard: React.FC = () => {
                     />
 
                     {/* Detail Panel */}
-                    <div className={`flex-1 bg-gray-50 ${!selectedListing ? 'hidden md:block' : ''}`}>
+                    <div className={`flex-1 min-w-0 overflow-hidden bg-gray-50 ${!selectedListing ? 'hidden md:block' : ''}`}>
                         {selectedListing ? (
                             <ListingDetail
                                 listing={selectedListing}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Key, Copy, Check, Trash2, Plus, Loader2, AlertTriangle } from 'lucide-react';
+import { Key, Copy, Check, Trash2, Plus, Loader2, AlertTriangle, Code } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { useWallet } from 'learn-card-base';
@@ -169,6 +169,34 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                 <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-800">
                     <strong>Security:</strong> Never expose your API token in client-side code or commit it to version control.
+                </p>
+            </div>
+
+            {/* Usage Guide */}
+            <div className="p-4 border border-gray-200 rounded-xl space-y-3">
+                <div className="flex items-center gap-2">
+                    <Code className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">How to use your API token</span>
+                </div>
+
+                <div className="space-y-2">
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">SDK (Node.js)</p>
+                        <code className="text-xs text-gray-700 font-mono">
+                            const learnCard = await initLearnCard({'{'} apiKey: 'YOUR_TOKEN', network: true {'}'});
+                        </code>
+                    </div>
+
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">HTTP Header</p>
+                        <code className="text-xs text-gray-700 font-mono">
+                            Authorization: Bearer YOUR_TOKEN
+                        </code>
+                    </div>
+                </div>
+
+                <p className="text-xs text-gray-400">
+                    See the <strong className="text-gray-500">Code</strong> tab for full integration examples.
                 </p>
             </div>
 

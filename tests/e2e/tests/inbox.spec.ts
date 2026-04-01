@@ -909,7 +909,7 @@ describe('Inbox', () => {
             const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             console.log(deliveryData);
-            const otpChallenge = deliveryData.templateModel.verificationToken;
+            const otpChallenge = deliveryData.templateModel.verificationCode;
 
             const res = await fetch(`${URLS.brainApi}/contact-methods/session`, {
                 method: 'POST',

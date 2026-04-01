@@ -207,3 +207,36 @@ export const countCredentialsSentByListingToProfile = async (
     // Neo4j returns Integer objects, ensure we return a JS number
     return count?.toNumber?.() ?? Number(count) ?? 0;
 };
+
+export type SubmitterInfo = {
+    profileId: string;
+    displayName: string;
+    email?: string;
+    submittedAt?: string;
+};
+
+export const getSubmitterForListing = async (listingId: string): Promise<SubmitterInfo | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (p:Profile)-[rel:SUBMITTED_LISTING]->(listing:AppStoreListing {listing_id: $listingId})
+         OPTIONAL MATCH (p)-[:HAS_CONTACT_METHOD]->(cm:ContactMethod {type: 'email', isPrimary: true})
+         RETURN p.profileId AS profileId,
+                p.displayName AS displayName,
+                COALESCE(p.email, cm.value) AS email,
+                rel.submitted_at AS submittedAt
+         LIMIT 1`,
+        { listingId }
+    );
+
+    const record = result.records[0];
+    if (!record) return null;
+
+    const profileId = record.get('profileId');
+    if (!profileId) return null;
+
+    return {
+        profileId,
+        displayName: record.get('displayName') || profileId,
+        email: record.get('email') || undefined,
+        submittedAt: record.get('submittedAt') || undefined,
+    };
+};
