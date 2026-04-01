@@ -102,6 +102,12 @@ android/app/src/main/res/drawable-port-xxxhdpi/splash.9.png
 # Android — build.gradle patched with tenant bundle ID
 android/app/build.gradle
 
+# Android — AndroidManifest.xml patched with tenant deep links + custom schemes
+android/app/src/main/AndroidManifest.xml
+
+# Android — strings.xml patched with tenant display name + bundle ID
+android/app/src/main/res/values/strings.xml
+
 # Android — capacitor config
 android/app/src/main/assets/capacitor.config.json
 

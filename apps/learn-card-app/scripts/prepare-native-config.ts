@@ -121,6 +121,12 @@ if (tenantArg === '--reset') {
         // Android — build.gradle (patched with tenant bundle ID)
         'android/app/build.gradle',
 
+        // Android — AndroidManifest.xml (patched with tenant deep links + custom schemes)
+        'android/app/src/main/AndroidManifest.xml',
+
+        // Android — strings.xml (patched with tenant display name + bundle ID)
+        'android/app/src/main/res/values/strings.xml',
+
         // Android — capacitor config
         'android/app/src/main/assets/capacitor.config.json',
 
@@ -591,6 +597,126 @@ if (nativeConfig) {
             console.log(`   ✓ Patched build.gradle (applicationId → ${bundleId})`);
         } catch (err) {
             console.warn('   ⚠️  Failed to patch build.gradle:', err);
+        }
+    }
+
+    // Patch Android AndroidManifest.xml with tenant deep link domains and custom schemes
+    const manifestPath = resolve(APP_ROOT, 'android/app/src/main/AndroidManifest.xml');
+    const manifestTemplatePath = manifestPath + '.template';
+
+    if (existsSync(manifestTemplatePath)) {
+        cpSync(manifestTemplatePath, manifestPath);
+    }
+
+    if (existsSync(manifestPath)) {
+        try {
+            let manifest = readFileSync(manifestPath, 'utf-8');
+            const domains = nativeConfig.deepLinkDomains ?? [];
+            const customSchemes = nativeConfig.customSchemes ?? [];
+
+            // Build HTTPS deep link intent filters from tenant domains
+            const httpsIntentFilters = domains.map(domain => {
+                const wildcardDomain = domain.startsWith('*.') ? domain : domain;
+
+                return [
+                    '            <intent-filter android:autoVerify="true">',
+                    '                <action android:name="android.intent.action.VIEW" />',
+                    '                <category android:name="android.intent.category.DEFAULT" />',
+                    '                <category android:name="android.intent.category.BROWSABLE" />',
+                    '',
+                    '                <data android:scheme="https" />',
+                    `                <data android:host="${domain}" />`,
+                    '            </intent-filter>',
+                ].join('\n');
+            });
+
+            // Also add wildcard subdomains for each domain (e.g. *.vetpass.app)
+            const wildcardFilters = domains
+                .filter(d => !d.startsWith('*.'))
+                .map(domain => [
+                    '            <intent-filter android:autoVerify="true">',
+                    '                <action android:name="android.intent.action.VIEW" />',
+                    '                <category android:name="android.intent.category.DEFAULT" />',
+                    '                <category android:name="android.intent.category.BROWSABLE" />',
+                    '',
+                    '                <data android:scheme="https" />',
+                    `                <data android:host="*.${domain}" />`,
+                    '            </intent-filter>',
+                ].join('\n'));
+
+            // Build custom scheme intent filters from tenant config
+            const schemeIntentFilters = customSchemes.map(scheme => [
+                '            <intent-filter>',
+                '                <action android:name="android.intent.action.VIEW" />',
+                '                <category android:name="android.intent.category.DEFAULT" />',
+                '                <category android:name="android.intent.category.BROWSABLE" />',
+                '',
+                `                <data android:scheme="${scheme}" />`,
+                '            </intent-filter>',
+            ].join('\n'));
+
+            const allIntentFilters = [
+                ...httpsIntentFilters,
+                ...wildcardFilters,
+                ...schemeIntentFilters,
+            ].join('\n\n');
+
+            // Replace everything between the LAUNCHER intent-filter and </activity>
+            // (i.e. replace the deep link + custom scheme intent filters block)
+            manifest = manifest.replace(
+                /(<!-- HTTPS deep linking intent-filters -->)[\s\S]*?(        <\/activity>)/,
+                `<!-- HTTPS deep linking intent-filters -->\n${allIntentFilters}\n\n        </activity>`,
+            );
+
+            writeFileSync(manifestPath, manifest, 'utf-8');
+
+            const domainSummary = domains.join(', ');
+            const schemeSummary = customSchemes.length > 0 ? ` + schemes: ${customSchemes.join(', ')}` : '';
+
+            console.log(`   ✓ Patched AndroidManifest.xml (deep links → ${domainSummary}${schemeSummary})`);
+        } catch (err) {
+            console.warn('   ⚠️  Failed to patch AndroidManifest.xml:', err);
+        }
+    }
+
+    // Patch Android strings.xml with tenant display name and bundle ID
+    const stringsPath = resolve(APP_ROOT, 'android/app/src/main/res/values/strings.xml');
+    const stringsTemplatePath = stringsPath + '.template';
+
+    if (existsSync(stringsTemplatePath)) {
+        cpSync(stringsTemplatePath, stringsPath);
+    }
+
+    if (existsSync(stringsPath)) {
+        try {
+            let strings = readFileSync(stringsPath, 'utf-8');
+            const bundleId = nativeConfig.bundleId;
+            const displayName = nativeConfig.displayName;
+
+            strings = strings.replace(
+                /<string name="app_name">[^<]+<\/string>/,
+                `<string name="app_name">${displayName}</string>`,
+            );
+
+            strings = strings.replace(
+                /<string name="title_activity_main">[^<]+<\/string>/,
+                `<string name="title_activity_main">${displayName}</string>`,
+            );
+
+            strings = strings.replace(
+                /<string name="package_name">[^<]+<\/string>/,
+                `<string name="package_name">${bundleId}</string>`,
+            );
+
+            strings = strings.replace(
+                /<string name="custom_url_scheme">[^<]+<\/string>/,
+                `<string name="custom_url_scheme">${bundleId}</string>`,
+            );
+
+            writeFileSync(stringsPath, strings, 'utf-8');
+            console.log(`   ✓ Patched strings.xml (app_name → ${displayName}, package_name → ${bundleId})`);
+        } catch (err) {
+            console.warn('   ⚠️  Failed to patch strings.xml:', err);
         }
     }
 }
