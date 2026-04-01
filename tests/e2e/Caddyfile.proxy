@@ -1,0 +1,47 @@
+# E2E test proxy — routes all HTTP services through a single port.
+# DB services (redis, mongo, neo4j, postgres) still use direct host ports
+# because the test runner connects to them via raw TCP protocols.
+#
+# URL routing:
+#   /brain/*    → brain:4000
+#   /cloud/*    → cloud:4100
+#   /signing/*  → signing:4200
+#   /lca-api/*  → lca-api:5200
+#   /*          → health check catch-all
+
+:8080 {
+    # Brain service
+    handle_path /brain/* {
+        rewrite /did.json /.well-known/did.json
+        reverse_proxy brain:4000
+    }
+
+    # Cloud service
+    handle_path /cloud/* {
+        rewrite /did.json /.well-known/did.json
+        reverse_proxy cloud:4100
+    }
+
+    # Signing service
+    handle_path /signing/* {
+        rewrite /did.json /.well-known/did.json
+        reverse_proxy signing:4200
+    }
+
+    # LCA API service
+    handle_path /lca-api/* {
+        rewrite /did.json /.well-known/did.json
+        reverse_proxy lca-api:5200
+    }
+
+    # Health check
+    handle /health {
+        respond "OK" 200
+    }
+
+    encode gzip zstd
+
+    log {
+        output stdout
+    }
+}

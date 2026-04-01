@@ -47,7 +47,7 @@ export async function setup() {
 
     start = performance.now();
 
-    console.log('Waiting for health check...');
+    console.log(`Waiting for health check... (${URLS.brainHealthCheck})`);
 
     do {
         await new Promise(resolve => setTimeout(resolve, 2000));

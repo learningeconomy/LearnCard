@@ -4,14 +4,20 @@
     "type": "module",
     "scripts": {
         "test": "echo \"Skipping E2E tests in CI. Run test:e2e if you'd like to actually run this!\"",
-        "test:e2e": "vitest",
-        "test:e2e:no-docker": "E2E_MANAGE_DOCKER=false vitest",
-        "test:run": "vitest run",
-        "test:e2e:interop": "TEST_TAGS=@interop vitest",
-        "test:run:interop": "TEST_TAGS=@interop vitest run",
-        "test:e2e:no-interop": "TEST_TAGS_NOT=@interop vitest",
-        "test:run:no-interop": "TEST_TAGS_NOT=@interop vitest run",
-        "logs": "../../scripts/dc.sh -f compose.yaml logs -f"
+        "test:docker-up": "PORT_OFFSET=100 ../../scripts/dc.sh -f compose.yaml up --build",
+        "test:e2e": "PORT_OFFSET=${PORT_OFFSET:-100} vitest",
+        "test:e2e:no-docker": "PORT_OFFSET=${PORT_OFFSET:-100} E2E_MANAGE_DOCKER=false vitest",
+        "test:run": "PORT_OFFSET=${PORT_OFFSET:-100} vitest run",
+        "test:e2e:interop": "PORT_OFFSET=${PORT_OFFSET:-100} TEST_TAGS=@interop vitest",
+        "test:run:interop": "PORT_OFFSET=${PORT_OFFSET:-100} TEST_TAGS=@interop vitest run",
+        "test:e2e:no-interop": "PORT_OFFSET=${PORT_OFFSET:-100} TEST_TAGS_NOT=@interop vitest",
+        "test:run:no-interop": "PORT_OFFSET=${PORT_OFFSET:-100} TEST_TAGS_NOT=@interop vitest run",
+        "logs": "PORT_OFFSET=${PORT_OFFSET:-100} ../../scripts/dc.sh -f compose.yaml logs -f",
+        "test:proxy:docker-up": "../../scripts/dc.sh -f compose-proxy.yaml up --build",
+        "test:proxy:e2e": "vitest",
+        "test:proxy:run": "vitest run",
+        "test:proxy:down": "../../scripts/dc.sh -f compose-proxy.yaml down",
+        "logs:proxy": "../../scripts/dc.sh -f compose-proxy.yaml logs -f"
     },
     "dependencies": {
         "@learncard/core": "workspace:*",

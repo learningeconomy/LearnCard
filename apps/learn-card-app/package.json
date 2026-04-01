@@ -129,6 +129,8 @@
     "scripts": {
         "dev": "../../scripts/dc.sh -f compose-local.yaml up --build",
         "dev:services": "../../scripts/dc.sh -f compose-local.yaml up --build --scale app=0",
+        "dev:proxy": "../../scripts/dc.sh -f compose-local-proxy.yaml up --build",
+        "dev:proxy:services": "../../scripts/dc.sh -f compose-local-proxy.yaml up --build --scale app=0",
         "dev-no-build": "../../scripts/dc.sh -f compose-local.yaml up",
         "dev-build-brain": "../../scripts/dc.sh -f compose-local.yaml up --build brain",
         "start": "vite --host",

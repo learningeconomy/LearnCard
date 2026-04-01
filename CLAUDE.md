@@ -50,14 +50,31 @@ For detailed architecture, read the relevant AGENTS.md when working in that area
 | Developer portal (guides, dashboards) | `PATTERNS.md` (Dashboard Patterns section) | Guide/dashboard tab system, guide state access, per-guideType routing |
 | ConsentFlow test harness | `examples/consent-flow-test/README.md` | Standalone test app for consent redirect + credential sending |
 
-## Docker Port Namespacing
+## Docker Local Development
 
-Use `scripts/dc.sh` instead of raw `docker compose` to avoid port collisions between stacks (e.g. local dev + e2e).
+Use `scripts/dc.sh` instead of raw `docker compose` — it handles project namespacing, port computation, and conflict detection.
 
-- `PORT_OFFSET=0` (default) — no change, original ports
-- `PORT_OFFSET=100` — shifts all host ports by 100 (brain→4100, cloud→4200, etc.)
-- `LC_PROJECT` — override the compose project name (default: derived from git branch)
-- E2E tests read `PORT_OFFSET` via `tests/e2e/tests/helpers/ports.ts` — all test code should import `URLS`/`PORTS` from there, never hardcode `localhost:PORT`
+### Two modes: Direct (default) vs Proxy
+
+**Direct mode** — each service gets its own host port:
+- `pnpm run dev` / `pnpm run dev:services` — standard ports (brain=4000, cloud=4100, etc.)
+- E2E tests default to `PORT_OFFSET=100` — auto-avoids collisions with dev
+- Override: `PORT_OFFSET=0 pnpm run test:e2e` if running e2e in isolation
+
+**Proxy mode** — all services behind a single Caddy port (mirrors preview architecture):
+- `pnpm run dev:proxy` — everything at `localhost:8080` (`/brain/*`, `/cloud/*`, `/api/*`, `/*`)
+- `pnpm run test:proxy:docker-up` + `pnpm run test:proxy:e2e` — e2e at `localhost:8081`
+- No port collisions possible; URL paths match preview environments
+- Set `PROXY_PORT` to override the default port
+
+### Key files
+- `scripts/dc.sh` — wrapper script (port computation, conflict detection, project naming)
+- `apps/learn-card-app/compose-local.yaml` — direct mode dev compose
+- `apps/learn-card-app/compose-local-proxy.yaml` — proxy mode dev compose
+- `tests/e2e/compose.yaml` — direct mode e2e compose
+- `tests/e2e/compose-proxy.yaml` — proxy mode e2e compose
+- `tests/e2e/tests/helpers/ports.ts` — centralized port/URL constants (supports both modes)
+- `LC_PROJECT` — override the compose project name (default: derived from git branch + stack suffix)
 
 ## Quick Reference
 

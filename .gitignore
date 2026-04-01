@@ -29,6 +29,7 @@ node_modules
 *.sw?
 
 .nx-cache/
+.proxy-port
 .aider*
 
 # Personal AI tooling (not shared — teammates may use different setups)

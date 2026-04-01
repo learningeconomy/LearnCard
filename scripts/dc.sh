@@ -28,18 +28,26 @@ OFFSET="${PORT_OFFSET:-0}"
 # Prevents project-name collisions when running dev + e2e simultaneously.
 
 STACK=""
+COMPOSE_FILE_ARG=""
 prev_was_f=0
 for arg in "$@"; do
     if [[ "$prev_was_f" == "1" ]]; then
+        COMPOSE_FILE_ARG="$arg"
         case "$arg" in
-            *e2e*)       STACK="e2e" ;;
-            *local*)     STACK="dev" ;;
-            *preview*)   STACK="preview" ;;
+            *e2e*proxy*)     STACK="e2e-proxy" ;;
+            *e2e*)           STACK="e2e" ;;
+            *local*proxy*)   STACK="dev-proxy" ;;
+            *local*)         STACK="dev" ;;
+            *preview*)       STACK="preview" ;;
+            *proxy*)         STACK="proxy" ;;
         esac
         break
     fi
     [[ "$arg" == "-f" || "$arg" == "--file" ]] && prev_was_f=1 || prev_was_f=0
 done
+
+COMPOSE_DIR=""
+[[ -n "$COMPOSE_FILE_ARG" ]] && COMPOSE_DIR=$(dirname "$COMPOSE_FILE_ARG")
 
 # --- Project name -----------------------------------------------------------
 
@@ -78,9 +86,56 @@ export LRS_HOST_PORT=$((8080 + OFFSET))
 # Also export PORT_OFFSET itself so compose env blocks can reference it
 export PORT_OFFSET="$OFFSET"
 
+# --- Port-in-use helper (reused by auto-detect and conflict check) ----------
+
+port_in_use() {
+    local port=$1
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -iTCP:"$port" -sTCP:LISTEN -t >/dev/null 2>&1 && return 0
+    elif command -v ss >/dev/null 2>&1; then
+        ss -tlnH "sport = :$port" 2>/dev/null | grep -q . && return 0
+    fi
+    return 1
+}
+
+# --- Auto-detect proxy port (for proxy compose files) -----------------------
+# When running a *-proxy compose without an explicit PROXY_PORT, scan for a
+# free port starting at 8080. Writes the chosen port to .proxy-port so other
+# tools (e.g. the test runner via ports.ts) can discover it.
+
+if [[ "$STACK" == *proxy* ]] && [[ -z "${PROXY_PORT:-}" ]]; then
+    PROXY_PORT=8080
+    while port_in_use "$PROXY_PORT"; do
+        PROXY_PORT=$((PROXY_PORT + 1))
+        if [[ "$PROXY_PORT" -gt 8099 ]]; then
+            echo "ERROR: No free proxy port found in range 8080-8099" >&2
+            exit 1
+        fi
+    done
+fi
+
+if [[ -n "${PROXY_PORT:-}" ]]; then
+    export PROXY_PORT
+    # Write to .proxy-port so the test runner can discover the chosen port
+    [[ -n "$COMPOSE_DIR" ]] && echo "$PROXY_PORT" > "$COMPOSE_DIR/.proxy-port"
+fi
+
 # --- Info --------------------------------------------------------------------
 
-if [[ "$OFFSET" -ne 0 ]]; then
+if [[ -n "${PROXY_PORT:-}" ]]; then
+    echo "┌─────────────────────────────────────────────┐"
+    echo "│  dc.sh — PROXY MODE (port $PROXY_PORT)"
+    echo "│  Project: $PROJECT"
+    echo "│"
+    echo "│  All HTTP services: localhost:$PROXY_PORT"
+    echo "│    /brain/*   → brain:4000"
+    echo "│    /cloud/*   → cloud:4100"
+    echo "│    /signing/* → signing:4200"
+    echo "│    /api/*     → api:5100"
+    echo "│    /lca-api/* → lca-api:5200"
+    echo "│    /*         → app:3000"
+    echo "└─────────────────────────────────────────────┘"
+elif [[ "$OFFSET" -ne 0 ]]; then
     echo "┌─────────────────────────────────────────────┐"
     echo "│  dc.sh — PORT_OFFSET=$OFFSET"
     echo "│  Project: $PROJECT"
@@ -98,26 +153,23 @@ if [[ "$OFFSET" -ne 0 ]]; then
     echo "└─────────────────────────────────────────────┘"
 fi
 
+# --- Detect 'up' and 'down' commands ----------------------------------------
+
+IS_UP=0; IS_DOWN=0
+for arg in "$@"; do
+    [[ "$arg" == "up" ]]   && IS_UP=1   && break
+    [[ "$arg" == "down" ]] && IS_DOWN=1 && break
+done
+
+# --- Clean up .proxy-port on 'down' -----------------------------------------
+
+if [[ "$IS_DOWN" -eq 1 && -n "$COMPOSE_DIR" && -f "$COMPOSE_DIR/.proxy-port" ]]; then
+    rm -f "$COMPOSE_DIR/.proxy-port"
+fi
+
 # --- Port conflict check (only on 'up') -------------------------------------
 
-IS_UP=0
-for arg in "$@"; do [[ "$arg" == "up" ]] && IS_UP=1 && break; done
-
 if [[ "$IS_UP" -eq 1 ]]; then
-    check_port() {
-        local port=$1 name=$2
-        local in_use=0
-        if command -v lsof >/dev/null 2>&1; then
-            lsof -iTCP:"$port" -sTCP:LISTEN -t >/dev/null 2>&1 && in_use=1
-        elif command -v ss >/dev/null 2>&1; then
-            ss -tlnH "sport = :$port" 2>/dev/null | grep -q . && in_use=1
-        fi
-        if [[ "$in_use" -eq 1 ]]; then
-            echo "⚠  Port $port ($name) is already in use" >&2
-            CONFLICTS=1
-        fi
-    }
-
     CONFLICTS=0
     for pair in \
         "$BRAIN_HOST_PORT:brain" \
@@ -130,7 +182,11 @@ if [[ "$IS_UP" -eq 1 ]]; then
         "$REDIS1_HOST_PORT:redis1" \
         "$REDIS2_HOST_PORT:redis2" \
         "$REDIS3_HOST_PORT:redis3"; do
-        check_port "${pair%%:*}" "${pair#*:}"
+        port="${pair%%:*}"; name="${pair#*:}"
+        if port_in_use "$port"; then
+            echo "⚠  Port $port ($name) is already in use" >&2
+            CONFLICTS=1
+        fi
     done
 
     if [[ "$CONFLICTS" -eq 1 ]]; then
