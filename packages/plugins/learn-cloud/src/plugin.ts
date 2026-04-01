@@ -336,9 +336,8 @@ export const getLearnCloudPlugin = async (
                     const fullUrl = (
                         uriUrl.startsWith('http')
                             ? uriUrl
-                            : `http${
-                                  uriUrl.includes('http') || uriUrl.includes('localhost') ? '' : 's'
-                              }://${uriUrl}`
+                            : `http${uriUrl.includes('http') || uriUrl.includes('localhost') ? '' : 's'
+                            }://${uriUrl}`
                     ).replaceAll('%3A', ':');
 
                     learnCard.debug?.('LearnCloud read.get different LearnCloud!', {
@@ -410,25 +409,10 @@ export const getLearnCloudPlugin = async (
 
                 let deleted = false;
 
-                if ('deleteCredential' in _learnCard.invoke) {
-                    try {
-                        deleted = Boolean(await (_learnCard.invoke as any).deleteCredential(uri));
-                    } catch (error) {
-                        _learnCard.debug?.('LearnCloud store.delete invoke.deleteCredential failed', error);
-
-                        const errorText = String((error as any)?.message ?? error);
-                        if (/UNAUTHORIZED|FORBIDDEN|do not own/i.test(errorText)) {
-                            throw error;
-                        }
-                    }
-                }
-
-                if (!deleted) {
-                    try {
-                        deleted = Boolean(await client.storage.delete.mutate({ uri }));
-                    } catch (error) {
-                        _learnCard.debug?.('LearnCloud store.delete storage.delete failed', error);
-                    }
+                try {
+                    deleted = Boolean(await client.storage.delete.mutate({ uri }));
+                } catch (error) {
+                    _learnCard.debug?.('LearnCloud store.delete storage.delete failed', error);
                 }
 
                 if (!deleted) return false;
@@ -436,7 +420,9 @@ export const getLearnCloudPlugin = async (
                 try {
                     const records = await _learnCard.index.LearnCloud.get({ uri });
                     for (const record of records) {
-                        await _learnCard.index.LearnCloud.remove(record.id, { cache: 'skip-cache' });
+                        await _learnCard.index.LearnCloud.remove(record.id, {
+                            cache: 'skip-cache',
+                        });
                     }
                 } catch (error) {
                     _learnCard.debug?.('LearnCloud store.delete index cleanup failed', error);
