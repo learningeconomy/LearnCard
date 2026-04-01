@@ -706,11 +706,19 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
     console.log('');
     console.log(bold(`📱 Native sync: ${displayName} (${tenantId}, ${stageId})`));
 
+    // 1. Populate public/ with tenant config + assets (so vite build picks them up)
     execBlocking(
-        'npx cap sync',
-        'Running Capacitor sync',
+        `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        'Preparing tenant config (public/)',
     );
 
+    // 2. Build web app with correct tenant data
+    execBlocking('npx vite build', 'Building web app');
+
+    // 3. Copy fresh build/ into native projects
+    execBlocking('npx cap sync', 'Running Capacitor sync');
+
+    // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
         `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Patching native projects with tenant config',
@@ -729,7 +737,7 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
         platform = await pickPlatform();
     }
 
-    // If a tenant is specified, run cap sync + tenant config patching before opening
+    // If a tenant is specified, build + sync + patch before opening
     if (tenantId) {
         if (!stageId) {
             stageId = await pickStage(tenantId);
@@ -741,8 +749,19 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
         console.log('');
         console.log(bold(`📱 Native open: ${displayName} (${tenantId}) → ${platform}`));
 
+        // 1. Populate public/ with tenant config + assets
+        execBlocking(
+            `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+            'Preparing tenant config (public/)',
+        );
+
+        // 2. Build web app with correct tenant data
+        execBlocking('npx vite build', 'Building web app');
+
+        // 3. Copy fresh build/ into native projects
         execBlocking('npx cap sync', 'Running Capacitor sync');
 
+        // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
         execBlocking(
             `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
             'Patching native projects with tenant config',
@@ -774,8 +793,19 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
     console.log('');
     console.log(bold(`📱 Native run: ${displayName} → ${platform}`));
 
+    // 1. Populate public/ with tenant config + assets
+    execBlocking(
+        `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        'Preparing tenant config (public/)',
+    );
+
+    // 2. Build web app with correct tenant data
+    execBlocking('npx vite build', 'Building web app');
+
+    // 3. Copy fresh build/ into native projects
     execBlocking('npx cap sync', 'Running Capacitor sync');
 
+    // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
         `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Patching native projects with tenant config',
@@ -941,18 +971,27 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
     console.log(bold(`🚀 Fastlane build: ${displayName} → ${platform} ${lane}`));
     console.log(`   Bundle ID: ${cyan(bundleId)}`);
 
-    // Step 1: Cap sync (regenerates native project files from root capacitor.config.ts)
-    execBlocking('npx cap sync', 'Running Capacitor sync');
-
-    // Step 2: Patch native projects with tenant config (overwrites cap sync defaults)
     const stage = lane === 'upload_to_appetize' ? 'alpha' : 'production';
 
+    // Step 1: Populate public/ with tenant config + assets
+    execBlocking(
+        `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage ${stage}`,
+        `Preparing tenant config (${stage})`,
+    );
+
+    // Step 2: Build web app with correct tenant data
+    execBlocking('npx vite build', 'Building web app');
+
+    // Step 3: Cap sync (copies fresh build/ into native projects)
+    execBlocking('npx cap sync', 'Running Capacitor sync');
+
+    // Step 4: Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
         `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage ${stage}`,
         `Patching native projects with tenant config (${stage})`,
     );
 
-    // Step 3: Derive env vars from tenant config (override .env values)
+    // Step 5: Derive env vars from tenant config (override .env values)
     const xcodeProject = resolve(APP_ROOT, 'ios/App/App.xcodeproj');
     const xcodeWorkspace = resolve(APP_ROOT, 'ios/App/App.xcworkspace');
     const gradleFilePath = resolve(APP_ROOT, 'android/app/build.gradle');

@@ -2,14 +2,15 @@
  * Default Capacitor config — used as the source for `npx cap sync`.
  *
  * **Workflow order for tenant builds (enforced by `pnpm lc native`):**
- *   1. `npx cap sync`              — regenerates native project JSON from this file
- *   2. `npx tsx scripts/prepare-native-config.ts <tenant>`
- *                                   — patches the generated JSON with tenant values
- *                                     (appId, appName, CapacitorUpdater channel, etc.)
+ *   1. `prepare-native-config.ts <tenant>` — populates public/ with tenant config + assets
+ *   2. `vite build`                        — compiles web app with correct tenant data
+ *   3. `npx cap sync`                      — copies fresh build/ into native projects
+ *   4. `prepare-native-config.ts <tenant>` — re-patches native files that cap sync
+ *                                             overwrites (capacitor.config.json, etc.)
  *
- * ⚠️  The order matters: cap sync MUST run first, then prepare-native-config
- *     patches on top. Running them in the wrong order causes cap sync to
- *     clobber the tenant-specific values with these LearnCard defaults.
+ * ⚠️  All four steps are needed. Step 2 ensures the JS bundle includes the
+ *     correct tenant config. Step 4 re-patches capacitor.config.json because
+ *     cap sync regenerates it from these LearnCard defaults.
  *
  * The values below are LearnCard defaults. For tenant-specific overrides, see:
  *   environments/<tenant>/assets/config/capacitor.config.json
