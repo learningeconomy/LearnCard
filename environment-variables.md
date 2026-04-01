@@ -41,18 +41,18 @@ pnpm env:compare-infisical
 pnpm env:pull
 
 # Pull a specific environment
-pnpm env:pull -- --env=staging
-pnpm env:pull -- --env=prod
+pnpm env:pull --env=staging
+pnpm env:pull --env=prod
 
 # Pull only one service
-pnpm env:pull -- --only=brain
-pnpm env:pull -- --only=app
+pnpm env:pull --only=brain
+pnpm env:pull --only=app
 
 # List available service targets
-pnpm env:pull -- --list
+pnpm env:pull --list
 
 # Combine flags
-pnpm env:pull -- --env=staging --only=lca-api
+pnpm env:pull --env=staging --only=lca-api
 
 # Backup the current .env files before regenerating them
 pnpm env:backup
