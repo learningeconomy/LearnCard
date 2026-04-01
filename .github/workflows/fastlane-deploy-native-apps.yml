@@ -162,6 +162,19 @@ jobs:
         working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
         run: npx cap sync ios
 
+      # Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
+      - name: Re-patch tenant config (post-sync)
+        working-directory: apps/learn-card-app
+        run: |
+          TENANT="${{ vars.TENANT || 'learncard' }}"
+          STAGE="${{ vars.STAGE || '' }}"
+          STAGE_FLAG=""
+          if [[ -n "$STAGE" ]]; then
+            STAGE_FLAG="--stage $STAGE"
+          fi
+          echo "Re-patching tenant config after cap sync: $TENANT $STAGE_FLAG"
+          npx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
+
       - name: Select Xcode 16.x
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -290,6 +303,19 @@ jobs:
       - name: Sync Capacitor Files to Android
         working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
         run: npx cap sync android
+
+      # Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
+      - name: Re-patch tenant config (post-sync)
+        working-directory: apps/learn-card-app
+        run: |
+          TENANT="${{ vars.TENANT || 'learncard' }}"
+          STAGE="${{ vars.STAGE || '' }}"
+          STAGE_FLAG=""
+          if [[ -n "$STAGE" ]]; then
+            STAGE_FLAG="--stage $STAGE"
+          fi
+          echo "Re-patching tenant config after cap sync: $TENANT $STAGE_FLAG"
+          npx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
 
       - name: Setup JDK
         uses: actions/setup-java@v3
