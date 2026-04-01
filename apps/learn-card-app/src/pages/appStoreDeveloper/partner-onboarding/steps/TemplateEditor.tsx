@@ -9,6 +9,7 @@ import {
     Check,
     ChevronDown,
     ChevronUp,
+    Copy,
     Loader2,
     Plus,
     Trash2,
@@ -44,6 +45,8 @@ interface TemplateEditorProps {
     isSaving?: boolean;
     /** Whether this is a new unsaved template */
     isNew?: boolean;
+    /** Boost URI for this template (for copy-to-clipboard) */
+    boostUri?: string;
 }
 
 export const TemplateEditor: React.FC<TemplateEditorProps> = ({
@@ -60,7 +63,10 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
     onCancel,
     isSaving = false,
     isNew = false,
+    boostUri,
 }) => {
+    const [copiedUri, setCopiedUri] = useState(false);
+
     // Initialize OBv3 template from legacy or existing
     const [obv3Template, setObv3Template] = useState<OBv3CredentialTemplate>(() => {
         if (template.obv3Template) {
@@ -110,7 +116,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                     <Award className="w-5 h-5 text-white" />
                 </div>
 
-                <div className="flex-1 text-left">
+                <div className="flex-1 text-left min-w-0">
                     <h4 className="font-medium text-gray-800">
                         {obv3Template.name.value || 'Untitled Template'}
                     </h4>
@@ -123,6 +129,36 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                             </span>
                         )}
                     </div>
+
+                    {boostUri && (
+                        <div
+                            className="flex items-center gap-1.5 mt-1 cursor-default"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <code className="text-xs text-gray-400 font-mono truncate">
+                                {boostUri}
+                            </code>
+                            <button
+                                type="button"
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                        await navigator.clipboard.writeText(boostUri);
+                                        setCopiedUri(true);
+                                        setTimeout(() => setCopiedUri(false), 1500);
+                                    } catch { /* fallback: no-op */ }
+                                }}
+                                className="flex-shrink-0 p-1 text-gray-400 hover:text-cyan-600 rounded transition-colors"
+                                title="Copy template URI"
+                            >
+                                {copiedUri ? (
+                                    <Check className="w-3 h-3 text-emerald-500" />
+                                ) : (
+                                    <Copy className="w-3 h-3" />
+                                )}
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <button
