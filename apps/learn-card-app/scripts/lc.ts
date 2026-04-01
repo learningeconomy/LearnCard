@@ -15,10 +15,11 @@
  *   pnpm lc start        # shortcut: Vite only (no Docker)
  *   pnpm lc validate     # shortcut: run all validators
  *   pnpm lc native       # interactive native/Capacitor menu
- *   pnpm lc native dev vetpass ios   # live-reload on device
- *   pnpm lc native sync vetpass      # prepare + build + cap sync
- *   pnpm lc native open ios          # open Xcode/Android Studio
- *   pnpm lc native build vetpass ios beta  # sync + fastlane build
+ *   pnpm lc native dev vetpass ios           # live-reload on device
+ *   pnpm lc native sync vetpass alpha        # cap sync + tenant config patching
+ *   pnpm lc native open android vetpass alpha # sync tenant + open IDE
+ *   pnpm lc native open ios                  # just open Xcode (no sync)
+ *   pnpm lc native build vetpass ios beta    # sync + fastlane build
  */
 
 import { createInterface } from 'readline';
@@ -81,6 +82,22 @@ const discoverThemes = (): string[] => {
 
         return statSync(full).isDirectory() && existsSync(join(full, 'theme.json'));
     });
+};
+
+/** Check if a string matches a known stage name across all tenants (or 'local'). */
+const asStage = (value?: string): string | undefined => {
+    if (!value) return undefined;
+    if (value === 'local' || value === 'production') return value;
+
+    const allStages = new Set<string>();
+
+    for (const t of discoverTenants()) {
+        for (const s of discoverStages(t)) {
+            allStages.add(s);
+        }
+    }
+
+    return allStages.has(value) ? value : undefined;
 };
 
 const getTenantDisplayName = (tenantId: string): string => {
@@ -680,14 +697,14 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
     }
 
     if (!stageId) {
-        stageId = 'local';
+        stageId = await pickStage(tenantId);
     }
 
     const stageFlag = stageId === 'production' ? '' : ` --stage ${stageId}`;
     const displayName = getTenantDisplayName(tenantId);
 
     console.log('');
-    console.log(bold(`📱 Native sync: ${displayName} (${tenantId})`));
+    console.log(bold(`📱 Native sync: ${displayName} (${tenantId}, ${stageId})`));
 
     execBlocking(
         'npx cap sync',
@@ -707,16 +724,39 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
     rl.close();
 };
 
-const nativeOpen = async (platform?: Platform) => {
+const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: string) => {
     if (!platform) {
         platform = await pickPlatform();
+    }
+
+    // If a tenant is specified, run cap sync + tenant config patching before opening
+    if (tenantId) {
+        if (!stageId) {
+            stageId = await pickStage(tenantId);
+        }
+
+        const stageFlag = stageId === 'production' ? '' : ` --stage ${stageId}`;
+        const displayName = getTenantDisplayName(tenantId);
+
+        console.log('');
+        console.log(bold(`📱 Native open: ${displayName} (${tenantId}) → ${platform}`));
+
+        execBlocking('npx cap sync', 'Running Capacitor sync');
+
+        execBlocking(
+            `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+            'Patching native projects with tenant config',
+        );
     }
 
     rl.close();
 
     const label = platform === 'ios' ? 'Opening Xcode' : 'Opening Android Studio';
+    const hint = tenantId
+        ? `pnpm lc native open ${platform} ${tenantId}${stageId && stageId !== 'local' ? ` ${stageId}` : ''}`
+        : `pnpm lc native open ${platform}`;
 
-    runCommand(`npx cap open ${platform}`, label, `pnpm lc native open ${platform}`);
+    runCommand(`npx cap open ${platform}`, label, hint);
 };
 
 const nativeRun = async (tenantId?: string, platform?: Platform) => {
@@ -975,12 +1015,12 @@ const nativeMenu = async () => {
     console.log(bold('📱 Native / Capacitor'));
     console.log('');
     console.log(`  ${cyan('1')}  ${bold('Live-reload dev')}   ${dim('— Vite --host + cap sync + open IDE (auto LAN IP)')}`);
-    console.log(`  ${cyan('2')}  ${bold('Sync')}              ${dim('— prepare config + cap sync (no build)')}`);
-    console.log(`  ${cyan('3')}  ${bold('Open IDE')}           ${dim('— open Xcode or Android Studio')}`);
+    console.log(`  ${cyan('2')}  ${bold('Sync')}              ${dim('— cap sync + tenant config patching')}`);
+    console.log(`  ${cyan('3')}  ${bold('Open IDE')}           ${dim('— (optional: sync tenant) + open Xcode / Android Studio')}`);
     console.log(`  ${cyan('4')}  ${bold('Run')}               ${dim('— build + sync + run on device/simulator')}`);
     console.log(`  ${cyan('5')}  ${bold('Build & Ship')}       ${dim('— sync + fastlane (beta, release, appetize)')}`);
     console.log('');
-    console.log(dim('  Or run directly: pnpm lc native dev|sync|open|run|build [tenant] [ios|android] [beta|release|appetize]'));
+    console.log(dim('  Or run directly: pnpm lc native dev|sync|open|run|build [tenant] [stage] [ios|android] [beta|release|appetize]'));
     console.log('');
 
     const choice = await ask('Pick an option [1-5]: ');
@@ -1040,14 +1080,39 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
         }
 
         case 'sync': {
-            // pnpm lc native sync [tenant]
-            await nativeSync(arg1);
+            // pnpm lc native sync [tenant] [stage]
+            const allArgs = [arg1, arg2];
+
+            const stage = allArgs.reduce<string | undefined>(
+                (found, a) => found ?? asStage(a), undefined,
+            );
+
+            const tenant = allArgs.find(
+                a => a && !asPlatform(a) && !asStage(a),
+            );
+
+            await nativeSync(tenant, stage);
             return true;
         }
 
         case 'open': {
-            // pnpm lc native open [ios|android]
-            await nativeOpen(asPlatform(arg1));
+            // pnpm lc native open [ios|android] [tenant] [stage]
+            const arg3 = args[3];
+            const allArgs = [arg1, arg2, arg3];
+
+            const platform = allArgs.reduce<Platform | undefined>(
+                (found, a) => found ?? asPlatform(a), undefined,
+            );
+
+            const stage = allArgs.reduce<string | undefined>(
+                (found, a) => found ?? asStage(a), undefined,
+            );
+
+            const tenant = allArgs.find(
+                a => a && !asPlatform(a) && !asStage(a),
+            );
+
+            await nativeOpen(platform, tenant, stage);
             return true;
         }
 
