@@ -7,6 +7,11 @@
  *
  * When running with the default offset nothing changes — URLs resolve to the
  * same ports the project has always used.
+ *
+ * NOTE: Base ports are also defined in:
+ *   - scripts/dc.sh                (bash, for Docker host ports)
+ *   - compose files via ${VAR:-N}  (YAML fallbacks)
+ * If you add or change a base port here, update those files too.
  */
 
 const OFFSET = Number(process.env.PORT_OFFSET ?? 0);

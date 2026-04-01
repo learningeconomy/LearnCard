@@ -24,6 +24,23 @@ set -euo pipefail
 
 OFFSET="${PORT_OFFSET:-0}"
 
+# --- Stack suffix (derived from compose file) --------------------------------
+# Prevents project-name collisions when running dev + e2e simultaneously.
+
+STACK=""
+prev_was_f=0
+for arg in "$@"; do
+    if [[ "$prev_was_f" == "1" ]]; then
+        case "$arg" in
+            *e2e*)       STACK="e2e" ;;
+            *local*)     STACK="dev" ;;
+            *preview*)   STACK="preview" ;;
+        esac
+        break
+    fi
+    [[ "$arg" == "-f" || "$arg" == "--file" ]] && prev_was_f=1 || prev_was_f=0
+done
+
 # --- Project name -----------------------------------------------------------
 
 if [[ -n "${LC_PROJECT:-}" ]]; then
@@ -32,9 +49,14 @@ else
     BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "default")
     # Sanitize: lowercase, replace non-alphanumeric with dash, trim dashes
     PROJECT=$(echo "lc-$BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+    [[ -n "$STACK" ]] && PROJECT="${PROJECT}-${STACK}"
 fi
 
 # --- Port computation -------------------------------------------------------
+# NOTE: Base ports are also defined in:
+#   - tests/e2e/tests/helpers/ports.ts   (TypeScript, for test code)
+#   - compose files via ${VAR:-default}  (YAML fallbacks)
+# If you add or change a base port here, update those files too.
 
 export APP_HOST_PORT=$((3000 + OFFSET))
 export DELETE_SERVICE_HOST_PORT=$((3100 + OFFSET))
@@ -76,33 +98,44 @@ if [[ "$OFFSET" -ne 0 ]]; then
     echo "└─────────────────────────────────────────────┘"
 fi
 
-# --- Port conflict check -----------------------------------------------------
+# --- Port conflict check (only on 'up') -------------------------------------
 
-check_port() {
-    local port=$1 name=$2
-    if lsof -iTCP:"$port" -sTCP:LISTEN -t >/dev/null 2>&1; then
-        echo "⚠  Port $port ($name) is already in use" >&2
-        CONFLICTS=1
+IS_UP=0
+for arg in "$@"; do [[ "$arg" == "up" ]] && IS_UP=1 && break; done
+
+if [[ "$IS_UP" -eq 1 ]]; then
+    check_port() {
+        local port=$1 name=$2
+        local in_use=0
+        if command -v lsof >/dev/null 2>&1; then
+            lsof -iTCP:"$port" -sTCP:LISTEN -t >/dev/null 2>&1 && in_use=1
+        elif command -v ss >/dev/null 2>&1; then
+            ss -tlnH "sport = :$port" 2>/dev/null | grep -q . && in_use=1
+        fi
+        if [[ "$in_use" -eq 1 ]]; then
+            echo "⚠  Port $port ($name) is already in use" >&2
+            CONFLICTS=1
+        fi
+    }
+
+    CONFLICTS=0
+    for pair in \
+        "$BRAIN_HOST_PORT:brain" \
+        "$CLOUD_HOST_PORT:cloud" \
+        "$SIGNING_HOST_PORT:signing" \
+        "$LCA_API_HOST_PORT:lca-api" \
+        "$NEO4J_BOLT_HOST_PORT:neo4j-bolt" \
+        "$MONGO_HOST_PORT:mongo" \
+        "$POSTGRES_HOST_PORT:postgres" \
+        "$REDIS1_HOST_PORT:redis1" \
+        "$REDIS2_HOST_PORT:redis2" \
+        "$REDIS3_HOST_PORT:redis3"; do
+        check_port "${pair%%:*}" "${pair#*:}"
+    done
+
+    if [[ "$CONFLICTS" -eq 1 ]]; then
+        echo "Hint: set PORT_OFFSET to avoid collisions (e.g. PORT_OFFSET=100)" >&2
     fi
-}
-
-CONFLICTS=0
-for pair in \
-    "$BRAIN_HOST_PORT:brain" \
-    "$CLOUD_HOST_PORT:cloud" \
-    "$SIGNING_HOST_PORT:signing" \
-    "$LCA_API_HOST_PORT:lca-api" \
-    "$NEO4J_BOLT_HOST_PORT:neo4j-bolt" \
-    "$MONGO_HOST_PORT:mongo" \
-    "$POSTGRES_HOST_PORT:postgres" \
-    "$REDIS1_HOST_PORT:redis1" \
-    "$REDIS2_HOST_PORT:redis2" \
-    "$REDIS3_HOST_PORT:redis3"; do
-    check_port "${pair%%:*}" "${pair#*:}"
-done
-
-if [[ "$CONFLICTS" -eq 1 ]]; then
-    echo "Hint: set PORT_OFFSET to avoid collisions (e.g. PORT_OFFSET=100)" >&2
 fi
 
 # --- Exec --------------------------------------------------------------------
