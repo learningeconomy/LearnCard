@@ -690,13 +690,13 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
     console.log(bold(`📱 Native sync: ${displayName} (${tenantId})`));
 
     execBlocking(
-        `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
-        'Preparing tenant config',
+        'npx cap sync',
+        'Running Capacitor sync',
     );
 
     execBlocking(
-        'npx cap sync',
-        'Running Capacitor sync',
+        `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        'Patching native projects with tenant config',
     );
 
     console.log('');
@@ -734,12 +734,12 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
     console.log('');
     console.log(bold(`📱 Native run: ${displayName} → ${platform}`));
 
+    execBlocking('npx cap sync', 'Running Capacitor sync');
+
     execBlocking(
         `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
-        'Preparing tenant config',
+        'Patching native projects with tenant config',
     );
-
-    execBlocking('npx cap sync', 'Running Capacitor sync');
 
     const runFlag = platform === 'android' ? ' --target' : '';
 
@@ -780,26 +780,26 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     console.log(`   Server URL:  ${cyan(serverUrl)}`);
     console.log('');
 
-    // Step 1: Prepare tenant config
-    execBlocking(
-        `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage local`,
-        'Step 1/4 — Preparing tenant config',
-    );
-
-    // Step 2: Patch capacitor.config.ts source with server.url
+    // Step 1: Patch capacitor.config.ts source with server.url for live-reload
     console.log('');
-    console.log(green('▶ Step 2/4 — Patching capacitor.config.ts with live-reload URL'));
+    console.log(green('▶ Step 1/5 — Patching capacitor.config.ts with live-reload URL'));
     patchCapConfigSource(serverUrl);
 
-    // Step 3: Cap sync (reads from the patched TS source → generates platform JSONs with server.url)
-    execBlocking('npx cap sync', 'Step 3/4 — Capacitor sync (with live-reload URL)');
+    // Step 2: Cap sync (reads from the patched TS source → generates platform JSONs with server.url)
+    execBlocking('npx cap sync', 'Step 2/5 — Capacitor sync (with live-reload URL)');
 
-    // Step 4: Restore the original capacitor.config.ts so git stays clean
+    // Step 3: Restore the original capacitor.config.ts so git stays clean
     console.log('');
-    console.log(green('▶ Step 4/4 — Restoring capacitor.config.ts (git stays clean)'));
+    console.log(green('▶ Step 3/5 — Restoring capacitor.config.ts (git stays clean)'));
     unpatchCapConfigSource();
 
-    // Now launch Vite + open the IDE
+    // Step 4: Patch native projects with tenant config (after cap sync, so patches aren't clobbered)
+    execBlocking(
+        `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage local`,
+        'Step 4/5 — Patching native projects with tenant config',
+    );
+
+    // Step 5: Launch Vite + open the IDE
     console.log('');
     console.log(green('🚀 Starting Vite dev server + opening native IDE'));
     console.log('');
@@ -901,16 +901,16 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
     console.log(bold(`🚀 Fastlane build: ${displayName} → ${platform} ${lane}`));
     console.log(`   Bundle ID: ${cyan(bundleId)}`);
 
-    // Step 1: Prepare tenant config (production stage for store builds)
+    // Step 1: Cap sync (regenerates native project files from root capacitor.config.ts)
+    execBlocking('npx cap sync', 'Running Capacitor sync');
+
+    // Step 2: Patch native projects with tenant config (overwrites cap sync defaults)
     const stage = lane === 'upload_to_appetize' ? 'alpha' : 'production';
 
     execBlocking(
         `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage ${stage}`,
-        `Preparing tenant config (${stage})`,
+        `Patching native projects with tenant config (${stage})`,
     );
-
-    // Step 2: Cap sync
-    execBlocking('npx cap sync', 'Running Capacitor sync');
 
     // Step 3: Derive env vars from tenant config (override .env values)
     const xcodeProject = resolve(APP_ROOT, 'ios/App/App.xcodeproj');
