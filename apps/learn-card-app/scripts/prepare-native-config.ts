@@ -882,3 +882,66 @@ if (existsSync(indexHtmlPath)) {
         console.warn('   ⚠️  Failed to patch index.html:', err);
     }
 }
+
+// ---------------------------------------------------------------------------
+// 12. Sync runtime files into native asset directories
+//
+//     `cap sync` copies from webDir (build/) into the native projects, but
+//     that copy happens BEFORE this script runs. So the native projects end
+//     up with stale versions of tenant-config.json, branding images, icons,
+//     and manifests. This step overwrites those stale copies with the freshly
+//     generated files from public/.
+// ---------------------------------------------------------------------------
+
+const NATIVE_PUBLIC_DIRS = [
+    resolve(APP_ROOT, 'ios/App/App/public'),
+    resolve(APP_ROOT, 'android/app/src/main/assets/public'),
+];
+
+const SYNC_ITEMS = [
+    'tenant-config.json',
+    'branding',
+    'manifest.json',
+    'manifest.webmanifest',
+    'assets/icon',
+];
+
+const activeNativeDirs = NATIVE_PUBLIC_DIRS.filter(d => existsSync(d));
+
+if (activeNativeDirs.length > 0) {
+    console.log('\n📲 Syncing runtime files into native asset directories...');
+
+    let syncCount = 0;
+
+    for (const item of SYNC_ITEMS) {
+        const src = resolve(publicDir, item);
+
+        if (!existsSync(src)) continue;
+
+        for (const nativeDir of activeNativeDirs) {
+            const dest = resolve(nativeDir, item);
+
+            try {
+                const isDir = statSync(src).isDirectory();
+
+                if (isDir) {
+                    mkdirSync(dest, { recursive: true });
+                    cpSync(src, dest, { recursive: true });
+                } else {
+                    mkdirSync(dirname(dest), { recursive: true });
+                    cpSync(src, dest);
+                }
+
+                syncCount++;
+            } catch (err) {
+                console.warn(`   ⚠️  Failed to sync ${item} → ${nativeDir}:`, err);
+            }
+        }
+    }
+
+    const platforms = activeNativeDirs
+        .map(d => (d.includes('android') ? 'Android' : 'iOS'))
+        .join(' + ');
+
+    console.log(`   ✓ Synced ${syncCount} item(s) into ${platforms} native assets`);
+}
