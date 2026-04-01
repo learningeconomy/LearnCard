@@ -4,6 +4,11 @@
 manifest:
   version: 1.0
 
+config:
+  ignore_files:
+    - 'pnpm-lock.yaml'
+    - '**/CHANGELOG.md'
+    - '**/*.snap'
 
 automations:
   # Use LinearB's AI service to review the changes
@@ -53,6 +58,22 @@ automations:
           comment: |
             This PR is missing a Jira ticket reference in the title or description.
             Please add a Jira ticket reference to the title or description of this PR.
+  # Automatically approve changes that only affect formatting, documentation, tests, or images.
+  # https://docs.gitstream.cm/automations/approve-safe-changes/
+  approve_safe_changes:
+    if:
+      - {{ is.safe_change }}
+    run:
+      - action: add-label@v1
+        args:
+          label: 'Safe Change'
+          color: {{ colors.green }}
+      - action: approve@v1
+      - action: add-comment@v1
+        args:
+          comment: |
+            This PR is considered a safe change and has been automatically approved.
+
   # Post a comment that lists the best experts for the files that were modified.
   explain_code_experts:
     on:
@@ -73,7 +94,10 @@ automations:
 # +----------------------------------------------------------------------------+
 
 calc:
-  etr: {{ branch | estimatedReviewTime }}
+  etr: {{ (branch | estimatedReviewTime) / 2 | round(0) | int }}
+
+is:
+  safe_change: {{ (source.diff.files | isFormattingChange) or (files | allDocs) or (files | allTests) or (files | allImages) }}
 
 has:
   jira_ticket_in_title: {{ pr.title | includes(regex=r/\b[A-Za-z]+-\d+\b/) }}
@@ -81,5 +105,6 @@ has:
 
 colors:
   red: 'b60205'
+  orange: 'd93f0b'
   yellow: 'fbca04'
   green: '0e8a16'
