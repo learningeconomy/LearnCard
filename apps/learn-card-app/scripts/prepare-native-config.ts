@@ -115,6 +115,11 @@ if (tenantArg === '--reset') {
         'ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-2.png',
         'ios/App/App/capacitor.config.json',
         'ios/App/App/tenant-deep-link-domains.json',
+        'ios/App/App.xcodeproj/project.pbxproj',
+        'ios/App/Podfile.lock',
+
+        // Android — build.gradle (patched with tenant bundle ID)
+        'android/app/build.gradle',
 
         // Android — capacitor config
         'android/app/src/main/assets/capacitor.config.json',
@@ -521,6 +526,73 @@ if (nativeConfig) {
     console.log(`   Bundle ID: ${nativeConfig.bundleId}`);
     console.log(`   Display Name: ${nativeConfig.displayName}`);
     console.log(`   Deep Link Domains: ${nativeConfig.deepLinkDomains.join(', ')}`);
+
+    // Patch iOS Xcode project with tenant bundle ID
+    const pbxprojPath = resolve(APP_ROOT, 'ios/App/App.xcodeproj/project.pbxproj');
+    const pbxprojTemplatePath = pbxprojPath + '.template';
+
+    // Always start from the template so tenant switches produce a clean result
+    if (existsSync(pbxprojTemplatePath)) {
+        cpSync(pbxprojTemplatePath, pbxprojPath);
+    }
+
+    if (existsSync(pbxprojPath)) {
+        try {
+            let pbx = readFileSync(pbxprojPath, 'utf-8');
+            const bundleId = nativeConfig.bundleId;
+
+            pbx = pbx.replace(
+                /PRODUCT_BUNDLE_IDENTIFIER = [^;]+;/g,
+                `PRODUCT_BUNDLE_IDENTIFIER = ${bundleId};`,
+            );
+
+            pbx = pbx.replace(
+                /PROVISIONING_PROFILE_SPECIFIER = "match AppStore [^"]+"/g,
+                `PROVISIONING_PROFILE_SPECIFIER = "match AppStore ${bundleId}"`,
+            );
+
+            pbx = pbx.replace(
+                /"PROVISIONING_PROFILE_SPECIFIER\[sdk=iphoneos\*\]" = "match AppStore [^"]+"/g,
+                `"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "match AppStore ${bundleId}"`,
+            );
+
+            writeFileSync(pbxprojPath, pbx, 'utf-8');
+            console.log(`   ✓ Patched project.pbxproj (PRODUCT_BUNDLE_IDENTIFIER → ${bundleId})`);
+        } catch (err) {
+            console.warn('   ⚠️  Failed to patch project.pbxproj:', err);
+        }
+    }
+
+    // Patch Android build.gradle with tenant bundle ID
+    const buildGradlePath = resolve(APP_ROOT, 'android/app/build.gradle');
+    const buildGradleTemplatePath = buildGradlePath + '.template';
+
+    // Always start from the template so tenant switches produce a clean result
+    if (existsSync(buildGradleTemplatePath)) {
+        cpSync(buildGradleTemplatePath, buildGradlePath);
+    }
+
+    if (existsSync(buildGradlePath)) {
+        try {
+            let gradle = readFileSync(buildGradlePath, 'utf-8');
+            const bundleId = nativeConfig.bundleId;
+
+            gradle = gradle.replace(
+                /namespace = '[^']+'/,
+                `namespace = '${bundleId}'`,
+            );
+
+            gradle = gradle.replace(
+                /applicationId "[^"]+"/,
+                `applicationId "${bundleId}"`,
+            );
+
+            writeFileSync(buildGradlePath, gradle, 'utf-8');
+            console.log(`   ✓ Patched build.gradle (applicationId → ${bundleId})`);
+        } catch (err) {
+            console.warn('   ⚠️  Failed to patch build.gradle:', err);
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------

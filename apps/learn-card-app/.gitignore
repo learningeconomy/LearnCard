@@ -46,6 +46,8 @@ demoState.json
 # iOS — generated from .template files by prepare-native-config.ts
 ios/App/App/App.entitlements
 ios/App/App/AppRelease.entitlements
+ios/App/App.xcodeproj/project.pbxproj
+ios/App/Podfile.lock
 ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon.png
 ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png
 ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-1.png
@@ -96,6 +98,9 @@ android/app/src/main/res/drawable-port-mdpi/splash.9.png
 android/app/src/main/res/drawable-port-xhdpi/splash.9.png
 android/app/src/main/res/drawable-port-xxhdpi/splash.9.png
 android/app/src/main/res/drawable-port-xxxhdpi/splash.9.png
+
+# Android — build.gradle patched with tenant bundle ID
+android/app/build.gradle
 
 # Android — capacitor config
 android/app/src/main/assets/capacitor.config.json
