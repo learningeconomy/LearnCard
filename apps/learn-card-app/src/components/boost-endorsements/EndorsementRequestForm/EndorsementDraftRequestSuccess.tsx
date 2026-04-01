@@ -31,7 +31,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
     categoryType?: CredentialCategoryEnum;
     autoSend?: boolean;
     endorsementState?: BoostEndorsement;
-}> = ({ closeModal, credential, categoryType, autoSend = true, endorsementState }) => {
+}> = ({ closeModal, credential, categoryType, autoSend = false, endorsementState }) => {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
@@ -52,8 +52,6 @@ export const EndorsementDraftRequestSuccess: React.FC<{
     const endorsementStatus = status;
 
     const _issueeName = issueeProfile?.displayName || issueeName;
-
-    console.log('credential', credential);
 
     const handleEndorsementPreview = () => {
         newModal(
@@ -152,7 +150,17 @@ export const EndorsementDraftRequestSuccess: React.FC<{
     }, [endorsementState]);
 
     useEffect(() => {
-        if (credential?.id && autoSend) {
+        // Only auto-send if there's actual draft content to send
+        // Prevents auto-submitting blank endorsements from stale/empty state
+        // Check isLoading and hasAutoSent to prevent duplicate sends
+        if (isLoading) {
+            return;
+        }
+
+        const hasValidDraft =
+            draftEndorsementRequest?.relationship?.type && draftEndorsementRequest?.description;
+
+        if (credential?.id && autoSend && hasValidDraft && currentLCNUser) {
             setEndorsement({
                 ...draftEndorsementRequest,
                 user: {
@@ -162,7 +170,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
             });
             handleEndorsementSubmit();
         }
-    }, [credential?.id, currentLCNUser, autoSend]);
+    }, [credential?.id, currentLCNUser, autoSend, isLoading]);
 
     let endorsementStatusEl = (
         <>
