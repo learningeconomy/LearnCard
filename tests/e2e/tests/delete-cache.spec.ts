@@ -74,7 +74,7 @@ describe('Delete Functionality and Cache Invalidation', () => {
             expect(sentCredsBefore).toHaveLength(1);
 
             // Owner deletes the credential
-            const deleted = await a.store.LearnCloud.delete(uri);
+            const deleted = await a.store['LearnCard Network'].delete(uri);
             expect(deleted).toBe(true);
 
             // Verify credential is removed from both sender and recipient views
@@ -153,7 +153,7 @@ describe('Delete Functionality and Cache Invalidation', () => {
             const simplePlugin = await a.addPlugin({
                 name: 'SimpleTestPlugin',
                 store: {
-                    upload: async (vc) => {
+                    upload: async vc => {
                         return 'test:simple:123';
                     },
                     // Note: no delete method

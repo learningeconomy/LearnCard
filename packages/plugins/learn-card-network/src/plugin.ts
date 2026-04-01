@@ -64,10 +64,7 @@ const renderTemplateJson = (jsonString: string, templateData: Record<string, unk
 
 const hasDid = (profile: LCNProfile | LCNVisibleProfile | undefined): profile is LCNProfile => {
     return (
-        !!profile &&
-        'did' in profile &&
-        typeof profile.did === 'string' &&
-        profile.did.length > 0
+        !!profile && 'did' in profile && typeof profile.did === 'string' && profile.did.length > 0
     );
 };
 
@@ -115,19 +112,19 @@ export async function getLearnCardNetworkPlugin(
     const client = apiToken
         ? await getApiTokenClient(url, apiToken, guardianApprovalGetter)
         : await getClient(
-              url,
-              async challenge => {
-                  const jwt = await learnCard.invoke.getDidAuthVp({
-                      proofFormat: 'jwt',
-                      challenge,
-                  });
+            url,
+            async challenge => {
+                const jwt = await learnCard.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge,
+                });
 
-                  if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+                if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-                  return jwt;
-              },
-              guardianApprovalGetter
-          );
+                return jwt;
+            },
+            guardianApprovalGetter
+        );
 
     let userData: LCNProfile | undefined;
 
@@ -267,6 +264,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.storage.store.mutate({ item: jwe });
             },
+            delete: async (_learnCard, uri) => {
+                await ensureUser();
+
+                return client.credential.deleteCredential.mutate({ uri });
+            },
         },
         methods: {
             createProfile: async (_learnCard, profile) => {
@@ -375,7 +377,7 @@ export async function getLearnCardNetworkPlugin(
             getProfile: async (_learnCard, profileId) => {
                 try {
                     await ensureUser();
-                } catch {}
+                } catch { }
 
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
@@ -996,10 +998,9 @@ export async function getLearnCardNetworkPlugin(
                         boost = JSON.parse(rendered);
                     } catch (error) {
                         throw new Error(
-                            `Template substitution failed: ${
-                                error instanceof Error ? error.message : 'Unknown error'
+                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'
                             }. ` +
-                                `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
                         );
                     }
                 }
@@ -1117,8 +1118,7 @@ export async function getLearnCardNetworkPlugin(
                             } else {
                                 const targetProfile = await _learnCard.invoke.getProfile(recipient);
 
-                                if (!hasDid(targetProfile))
-                                    return client.boost.send.mutate(input);
+                                if (!hasDid(targetProfile)) return client.boost.send.mutate(input);
 
                                 targetDid = targetProfile.did;
                             }
@@ -1136,8 +1136,7 @@ export async function getLearnCardNetworkPlugin(
                                     boost = JSON.parse(rendered);
                                 } catch (error) {
                                     throw new Error(
-                                        `Failed to apply template data: ${
-                                            error instanceof Error ? error.message : 'Unknown error'
+                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'
                                         }`
                                     );
                                 }
