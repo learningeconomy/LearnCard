@@ -139,9 +139,10 @@ The "LearnCard" Infisical project has this folder layout:
 /                           ← shared root vars (NEO4J_*, METABASE_*, POSTMARK_*, etc.)
 ├── LearnCard/
 │   ├── brain-service/      ← SEED, SKILL_EMBEDDING_*, SMART_RESUME_*
-│   └── cloud-service/      ← JWT_SIGNING_KEY, LEARN_CLOUD_*, RSA_PRIVATE_KEY, XAPI_*
-├── learn-card-app/         ← VITE_*, CORS_PROXY_API_KEY, WEB3AUTH_*
+│   ├── cloud-service/      ← JWT_SIGNING_KEY, LEARN_CLOUD_*, RSA_PRIVATE_KEY, XAPI_*
 │   ├── lca-api/            ← GOOGLE_APPLICATION_CREDENTIAL, OPENAI_API_KEY, SEED
+│   └── simple-signing-service/
+├── learn-card-app/         ← VITE_*, CORS_PROXY_API_KEY, WEB3AUTH_*
 │   └── fastlane/           ← (CI/CD keys, not pulled by default)
 ```
 
