@@ -102,9 +102,13 @@ const AppRouter: React.FC = () => {
     const { openConsentFlowModal } = useConsentFlow(contract, undefined, contractUri);
 
     const hideSideMenu =
-        ['/consent-flow', '/consent-flow-login', '/claim/from-dashboard/', '/chats', '/cli'].includes(
-            location.pathname
-        ) ||
+        [
+            '/consent-flow',
+            '/consent-flow-login',
+            '/claim/from-dashboard/',
+            '/chats',
+            '/cli',
+        ].includes(location.pathname) ||
         (collapsed && aiRoutes.includes(location.pathname) && !isMobile) ||
         location.pathname.includes('/app-store');
 
@@ -169,6 +173,16 @@ const AppRouter: React.FC = () => {
 
     useEffect(() => {
         if (boostUri && endorsementRequest) {
+            // Clear any stale draft data from previous sessions to prevent auto-submit
+            endorsementsRequestStore.set.endorsementRequest({
+                description: '',
+                qualification: '',
+                mediaAttachments: [],
+                relationship: null,
+            });
+            endorsementsRequestStore.set.credentialInfo(undefined);
+
+            // Only set credentialInfo for logged-out users (they'll need it after login)
             if (!isLoggedIn) {
                 endorsementsRequestStore.set.credentialInfo({
                     uri: boostUri as string,
@@ -177,19 +191,29 @@ const AppRouter: React.FC = () => {
                 });
             }
             newModal(
-                <ViewSharedBoost boostUri={boostUri as string} showEndorsementRequest />,
+                <ViewSharedBoost showEndorsementRequest />,
                 {},
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         }
-    }, []);
+    }, [boostUri, endorsementRequest]);
 
     useEffect(() => {
-        if (
-            isLoggedIn &&
-            draftEndorsementRequest?.relationship?.type &&
-            draftEndorsementRequest?.relationship?.type
-        ) {
+        // Skip entirely if this is a fresh endorsement link click - the first useEffect handles it
+        if (endorsementRequest) {
+            return;
+        }
+
+        // Only show draft success if:
+        // 1. User just logged in (after filling out the form while logged out)
+        // 2. Has a pending draft with credential info
+        const currentDraft = endorsementsRequestStore.get.endorsementRequest();
+        const currentCredentialInfo = endorsementsRequestStore.get.credentialInfo();
+
+        const hasActiveDraft =
+            currentDraft?.relationship?.type && currentDraft?.description && currentCredentialInfo;
+
+        if (isLoggedIn && hasActiveDraft) {
             newModal(
                 <ViewSharedBoost showDraftSuccess showEndorsementRequest={false} />,
                 {},
@@ -235,10 +259,14 @@ const AppRouter: React.FC = () => {
 
             const isNative = Capacitor?.isNativePlatform();
 
+            // Check if this is an endorsement link - let AppUrlListener handle navigation
+            const isEndorsementLink =
+                params.get('endorsementRequest') === 'true' || params.get('uri');
+
             if (params.get('verifyCode') === 'true' && isNative) {
                 redirectStore.set.email(params.get('email') as string);
                 history.replace('/login?verifyCode=true');
-            } else {
+            } else if (!isEndorsementLink) {
                 if (authLink) {
                     // refetch the saved email on event "appUrlOpen" trigger
                     const saved_email_native = window.localStorage.getItem('emailForSignIn') ?? '';
