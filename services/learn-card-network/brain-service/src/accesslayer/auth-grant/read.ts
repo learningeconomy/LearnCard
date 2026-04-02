@@ -4,6 +4,7 @@ import { AuthGrantQuery, AuthGrantType, AuthGrantStatusValidator } from '@learnc
 import { ProfileType } from 'types/profile';
 import { inflateObject } from '@helpers/objects.helpers';
 import { getProfileIdFromDid } from '@helpers/did.helpers';
+import { getProfileByDid } from '@accesslayer/profile/read';
 import {
     convertObjectRegExpToNeo4j,
     buildWhereForQueryBuilder,
@@ -99,8 +100,14 @@ export const isAuthGrantChallengeValidForDID = async (
     challenge: string,
     did: string
 ): Promise<{ isChallengeValid: boolean; scope: string }> => {
-    // TODO: Ideally, this transformation isn't required and we could use DID directly.
-    const profileId = getProfileIdFromDid(did);
+    // Try extracting profileId from did:web first, fall back to DB lookup for did:key etc.
+    let profileId = getProfileIdFromDid(did);
+
+    if (!profileId) {
+        const profile = await getProfileByDid(did);
+        profileId = profile?.profileId;
+    }
+
     if (!profileId) return { isChallengeValid: false, scope: AUTH_GRANT_NO_ACCESS_SCOPE };
 
     const currentTime = new Date().toISOString();

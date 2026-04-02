@@ -144,7 +144,7 @@ services:
             IS_OFFLINE: true
             PORT: 4000
             SEED: a
-            DOMAIN_NAME: localhost%3A${PROXY_PORT:-8080}:brain
+            DOMAIN_NAME: localhost%3A${PROXY_PORT:-8080}
             SKIP_DIDKIT_NAPI: '1'
             CHOKIDAR_USEPOLLING: 'true'
             CHOKIDAR_INTERVAL: '1000'
@@ -231,7 +231,7 @@ services:
             CHOKIDAR_INTERVAL: '1000'
             PORT: 5100
             SEED: c
-            AUTHORIZED_DIDS: did:web:localhost%3A${PROXY_PORT:-8080}:brain
+            AUTHORIZED_DIDS: did:web:localhost%3A${PROXY_PORT:-8080}
             SKIP_DIDKIT_NAPI: '1'
             MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
             MONGO_DB_NAME: ${MONGO_DB_NAME:-lca-api}

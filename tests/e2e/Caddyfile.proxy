@@ -34,6 +34,17 @@
         reverse_proxy lca-api:5200
     }
 
+    # DID web resolution — brain's own DID
+    handle_path /.well-known/did.json {
+        rewrite * /.well-known/did.json
+        reverse_proxy brain:4000
+    }
+
+    # DID web resolution — user DIDs (did:web:host:users:profileId → /users/{profileId}/did.json)
+    handle /users/* {
+        reverse_proxy brain:4000
+    }
+
     # Health check
     handle /health {
         respond "OK" 200

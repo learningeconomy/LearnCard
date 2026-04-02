@@ -9,21 +9,9 @@ const redis1 = new Redis({ port: PORTS.redis1 });
 const redis2 = new Redis({ port: PORTS.redis2 });
 const mongoClient = new MongoClient(URLS.mongo);
 const neo4jDriver = neo4j.driver(URLS.neo4jBolt);
-const pgClient = new Client({
-    host: 'localhost',
-    port: PORTS.postgres,
-    user: 'lrsql_user',
-    password: 'lrsql_password',
-    database: 'lrsql_db',
-});
 
 export async function clearDatabases() {
     try {
-        // Connect to Postgres
-        try {
-            await pgClient.connect();
-        } catch (error) { }
-
         // Run all clear operations concurrently
         await Promise.all([
             // Clear Redises 
@@ -69,30 +57,44 @@ export async function clearDatabases() {
                 }
             })(),
 
-            // Clear Postgres
+            // Clear Postgres (fresh connection each time to avoid stale TCP sockets)
             (async () => {
-                // Get all tables in public schema
-                const result = await pgClient.query(`
-                    SELECT tablename FROM pg_tables 
-                    WHERE schemaname = 'public'
-                `);
+                const pgClient = new Client({
+                    host: 'localhost',
+                    port: PORTS.postgres,
+                    user: 'lrsql_user',
+                    password: 'lrsql_password',
+                    database: 'lrsql_db',
+                });
 
-                // Truncate all tables in a single transaction
-                await pgClient.query('BEGIN');
                 try {
-                    for (const row of result.rows) {
-                        if (
-                            !['lrs_credential', 'credential_to_scope', 'admin_account'].includes(
-                                row.tablename
-                            )
-                        ) {
-                            await pgClient.query(`TRUNCATE TABLE "${row.tablename}" CASCADE`);
+                    await pgClient.connect();
+
+                    // Get all tables in public schema
+                    const result = await pgClient.query(`
+                        SELECT tablename FROM pg_tables 
+                        WHERE schemaname = 'public'
+                    `);
+
+                    // Truncate all tables in a single transaction
+                    await pgClient.query('BEGIN');
+                    try {
+                        for (const row of result.rows) {
+                            if (
+                                !['lrs_credential', 'credential_to_scope', 'admin_account'].includes(
+                                    row.tablename
+                                )
+                            ) {
+                                await pgClient.query(`TRUNCATE TABLE "${row.tablename}" CASCADE`);
+                            }
                         }
+                        await pgClient.query('COMMIT');
+                    } catch (error) {
+                        await pgClient.query('ROLLBACK');
+                        throw error;
                     }
-                    await pgClient.query('COMMIT');
-                } catch (error) {
-                    await pgClient.query('ROLLBACK');
-                    throw error;
+                } finally {
+                    await pgClient.end();
                 }
             })(),
         ]);
