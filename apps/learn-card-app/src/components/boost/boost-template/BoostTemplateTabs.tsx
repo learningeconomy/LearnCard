@@ -2,6 +2,8 @@ import React from 'react';
 
 import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
 
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+
 export enum BoostTemplateTabsEnum {
     learnCardTemplates = 'learnCardTemplates',
     myTemplates = 'myTemplates',
@@ -11,6 +13,8 @@ const BoostTemplateTabs: React.FC<{
     activeTab: BoostTemplateTabsEnum;
     handleTabSwitch: (tab: BoostTemplateTabsEnum) => void;
 }> = ({ activeTab, handleTabSwitch }) => {
+    const brandingConfig = useBrandingConfig();
+
     return (
         <IonRow className="flex w-full items-center justify-center bg-grayscale-200 mt-4 rounded-full">
             <IonSegment
@@ -30,7 +34,7 @@ const BoostTemplateTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-semibold text-[14px] text-grayscale-900 font-poppins">
-                        LearnCard
+                        {brandingConfig?.name}
                     </IonLabel>
                 </IonSegmentButton>
                 <IonSegmentButton
