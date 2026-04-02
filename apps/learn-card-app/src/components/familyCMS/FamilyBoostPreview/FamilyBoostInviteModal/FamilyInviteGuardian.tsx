@@ -203,6 +203,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
     const [presentClaimQRCode, dismissClaimQRCode] = useIonModal(BoostShareableQRCode, {
         state: shareableCodeState,
         handleCloseModal: () => dismissClaimQRCode(),
+        showCloseButton: true,
         boostClaimLink: boostClaimLink,
         text: 'Scan Code to Join Family',
     });
