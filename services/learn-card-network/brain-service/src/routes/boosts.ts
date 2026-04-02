@@ -999,7 +999,7 @@ export const boostsRouter = t.router({
                         );
                     }
 
-                    let skipNotification = profile.profileId === targetProfile.profileId;
+                    const skipNotification = false;
 
                     // Log credential activity FIRST to get activityId for chaining
                     const activityId = await traceDb('logCredentialSent', () =>
