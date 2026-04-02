@@ -21,6 +21,7 @@ import {
     contractCategoryNameToCategoryMetadata,
     useWallet,
 } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import ConsentFlowPrivacyAndData from '../../pages/consentFlow/ConsentFlowPrivacyAndData';
 import XApiDataFeedModal from './XApiDataFeedModal';
@@ -33,6 +34,7 @@ type ManageDataSharingModalProps = {
 const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose }) => {
     const { closeModal, newModal } = useModal();
     const { data: consentedContracts, isLoading, refetch } = useConsentedContracts();
+    const brandingConfig = useBrandingConfig();
 
     const handleClose = () => {
         onClose?.();
@@ -66,7 +68,8 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
             </div>
 
             <p className="text-sm text-grayscale-600 mb-4">
-                Apps and services you've given permission to access your LearnCard data.
+                Apps and services you've given permission to access your {brandingConfig?.name}{' '}
+                data.
             </p>
 
             {contracts.length === 0 ? (
