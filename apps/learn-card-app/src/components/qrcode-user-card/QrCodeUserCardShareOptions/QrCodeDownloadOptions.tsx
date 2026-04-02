@@ -4,6 +4,7 @@ import { Media } from '@capacitor-community/media';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 
 import { useModal, useWallet, useIsCurrentUserLCNUser } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
 
@@ -19,6 +20,7 @@ const QrCodeUserCardShareOptions: React.FC<{
 }> = ({ contractUri, profileId, overrideShareLink }) => {
     const { initWallet } = useWallet();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+    const brandingConfig = useBrandingConfig();
 
     const [walletDid, setWalletDid] = useState<string>('');
     const [isSavingPng, setIsSavingPng] = useState<boolean>(false);
@@ -217,7 +219,7 @@ const QrCodeUserCardShareOptions: React.FC<{
             <div className="w-full max-w-[400px]">
                 <h2 className="text-[24px] font-semibold text-grayscale-900">Download QR Code</h2>
                 <p className="text-grayscale-700 text-[17px] my-2">
-                    Share or print your LearnCard QR code.
+                    Share or print your {brandingConfig?.name} QR code.
                 </p>
 
                 {userQrCodeDownloadOptions.map(option => {
