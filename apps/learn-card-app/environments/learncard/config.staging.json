@@ -5,7 +5,7 @@
         "brainService": "https://staging.network.learncard.com/trpc",
         "brainServiceApi": "https://staging.network.learncard.com/api",
         "cloudService": "https://staging.cloud.learncard.com/trpc",
-        "lcaApi": "https://staging.api.learncard.com/trpc",
+        "lcaApi": "https://staging.api.learncard.app/trpc",
         "xapi": "https://staging.network.learncard.com/xapi"
     },
     "features": {
@@ -19,7 +19,7 @@
     "auth": {
         "keyDerivation": "sss",
         "sss": {
-            "serverUrl": "https://staging.api.learncard.com/api"
+            "serverUrl": "https://staging.api.learncard.app/api"
         }
     }
 }

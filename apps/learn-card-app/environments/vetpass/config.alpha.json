@@ -4,7 +4,7 @@
         "brainService": "https://network.learncard.com/trpc",
         "brainServiceApi": "https://network.learncard.com/api",
         "cloudService": "https://cloud.learncard.com/trpc",
-        "lcaApi": "https://api.learncard.com/trpc",
+        "lcaApi": "https://api.learncard.app/trpc",
         "xapi": "https://network.learncard.com/xapi"
     }
 }
