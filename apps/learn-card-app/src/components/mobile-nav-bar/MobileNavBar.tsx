@@ -35,6 +35,8 @@ import useTheme from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons';
 import { ColorSetEnum } from '../../theme/colors';
 
+import navBarBackground from '../../assets/images/mobile-nav-bar-vector.svg';
+
 export enum MobileNavBarLinks {
     wallet = 'wallet',
     plus = '/boost',
@@ -101,6 +103,10 @@ const MobileNavBar: React.FC = () => {
                         style={{
                             contain: 'none',
                             overflow: 'visible',
+                            backgroundImage: `url(${navBarBackground})`,
+                            backgroundSize: '100% 100%',
+                            backgroundPosition: 'center top',
+                            backgroundRepeat: 'no-repeat',
                         }}
                     >
                         {/*
@@ -171,7 +177,7 @@ const MobileNavBar: React.FC = () => {
                                                 backgroundPosition: 'center',
                                                 backgroundSize: 'contain',
                                             }}
-                                            className="relative rounded-full h-[90px] w-[90px] flex items-center justify-center flex-col border-solid border-[3px] border-grayscale-100"
+                                            className="relative rounded-full h-[75px] w-[75px] flex items-center justify-center flex-col "
                                         />
                                     </IonTabButton>
                                 );
