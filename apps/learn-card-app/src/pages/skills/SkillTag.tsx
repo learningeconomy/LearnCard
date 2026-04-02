@@ -60,7 +60,7 @@ const SkillTag: React.FC<SkillTagProps> = ({
     };
 
     return (
-        <div className="bg-violet-100 text-grayscale-900 pl-[3px] pr-[10px] py-[3px] rounded-[40px] flex items-center gap-[5px] w-fit">
+        <div className="bg-violet-100 text-grayscale-900 pl-[3px] pr-[10px] py-[3px] rounded-[40px] flex items-center gap-[5px] w-fit shrink-0">
             <SkillProficiencyCircle proficiencyLevel={proficiencyLevel}>
                 <CompetencyIcon icon={skill?.icon} size="small" withWhiteBackground />
             </SkillProficiencyCircle>
