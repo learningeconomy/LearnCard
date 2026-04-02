@@ -42,6 +42,7 @@ import CountrySelectorModal from '../onboarding/onboardingNetworkForm/components
 import countries from '../../constants/countries.json';
 
 import { useFilestack, UploadRes } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
@@ -105,6 +106,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     const { presentToast } = useToast();
     const sectionPortal = document.getElementById('section-cancel-portal');
     const safeArea = useSafeArea();
+    const brandingConfig = useBrandingConfig();
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
 
     const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
@@ -629,7 +631,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             <IonCol className="w-full flex items-center justify-between px-4 rounded-2xl">
                                 <div className="w-[80%] flex flex-col justify-center items-start text-left">
                                     <p className="text-grayscale-500 font-medium text-sm">
-                                        LearnCard Number (DID)
+                                        {brandingConfig.name} Number (DID)
                                     </p>
                                     <p className="w-full text-grayscale-900 line-clamp-1 tracking-widest">
                                         {walletDid}

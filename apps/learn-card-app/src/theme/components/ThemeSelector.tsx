@@ -19,6 +19,13 @@ export enum themeSelectorViewMode {
     Full = 'full',
 }
 
+// TODOS:
+// do a native builds ios + android
+// check all existing flows
+
+// checkout google doc, fix easiest items first
+// # https://docs.google.com/document/d/1oBkAlfT-ipRzmndRLev2G_d54g12hwuncFEqS2_H8uA/edit?pli=1&tab=t.0#task=ApQbAo4m6trRc6nu
+
 export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     viewMode = themeSelectorViewMode.Full,
 }) => {
