@@ -88,6 +88,18 @@ export const getNativeBundleId = (): string => {
 };
 
 /**
+ * Get the LCN (LearnCard Network) API URL for the current tenant.
+ * Falls back to the default network API endpoint.
+ */
+export const getLCNApiUrl = (): string => {
+    const config = getResolvedTenantConfig();
+    
+    // Use the brainServiceApi from tenant config (this is what becomes networkApiUrl in the store)
+    // or fallback to default
+    return config.apis?.brainServiceApi ?? 'https://network.learncard.com/api';
+};
+
+/**
  * Resolve the TenantConfig and initialize all subsystems.
  *
  * Call this once before ReactDOM.createRoot().render().
