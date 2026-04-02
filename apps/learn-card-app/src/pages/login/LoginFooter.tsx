@@ -8,10 +8,8 @@ import {
     openToS,
     openPP,
     openLCwebsite,
-    TOS_LINK,
-    PP_LINK,
-    LEARNCARD_WEBSITE,
 } from '../../helpers/externalLinkHelpers';
+import { useTenantLinks } from 'learn-card-base/config/TenantConfigProvider';
 import { Capacitor } from '@capacitor/core';
 import { ModalTypes, useModal } from 'learn-card-base';
 
@@ -19,6 +17,8 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
     hideSelfCustodialLogin = false,
 }) => {
     const history = useHistory();
+    const links = useTenantLinks();
+
     const { newModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.FullScreen,
@@ -38,7 +38,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                     className="w-full flex items-center justify-center p-0 mt-2 gap-[15px]"
                 >
                     <a
-                        href={TOS_LINK}
+                        href={links.termsOfServiceUrl}
                         onClick={e => {
                             if (Capacitor?.isNativePlatform()) {
                                 e.preventDefault();
@@ -50,7 +50,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                         Terms
                     </a>
                     <a
-                        href={PP_LINK}
+                        href={links.privacyPolicyUrl}
                         onClick={e => {
                             if (Capacitor?.isNativePlatform()) {
                                 e.preventDefault();
@@ -62,7 +62,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                         Privacy
                     </a>
                     <a
-                        href={LEARNCARD_WEBSITE}
+                        href={links.websiteUrl}
                         onClick={e => {
                             if (Capacitor?.isNativePlatform()) {
                                 e.preventDefault();

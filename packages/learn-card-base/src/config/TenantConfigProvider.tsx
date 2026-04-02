@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 
 import type {
     TenantConfig,
@@ -9,11 +9,15 @@ import type {
     TenantObservabilityConfig,
     TenantLinksConfig,
     TenantNativeConfig,
+    ResolvedTenantLinks,
 } from './tenantConfig';
+import { getResolvedTenantLinks } from './tenantConfig';
 import { getTenantBrandingEnum, getBrandingAssets } from './brandingHelpers';
 import { isProductionEnvironment } from './isProduction';
 export type { BrandingAssets } from './brandingHelpers';
 export { getBrandingAssets } from './brandingHelpers';
+export type { ResolvedTenantLinks } from './tenantConfig';
+export { getResolvedTenantLinks } from './tenantConfig';
 
 // -----------------------------------------------------------------
 // Context
@@ -70,8 +74,21 @@ export const useFeatureConfig = (): TenantFeatureConfig => useTenantConfig().fea
 /** Observability (Sentry, analytics) configuration */
 export const useObservabilityConfig = (): TenantObservabilityConfig => useTenantConfig().observability;
 
-/** External links (App Store, Play Store) */
+/** Raw links config (prefer useTenantLinks for resolved defaults) */
 export const useLinksConfig = (): TenantLinksConfig => useTenantConfig().links;
+
+/**
+ * Resolved external links with dynamic branded defaults.
+ *
+ * If a tenant doesn't specify termsOfServiceUrl / privacyPolicyUrl / etc.,
+ * this returns auto-generated branded URLs (e.g. `learncard.com/legal/{tenantId}/terms`).
+ * If a tenant provides explicit URLs in their config, those are used as-is.
+ */
+export const useTenantLinks = (): ResolvedTenantLinks => {
+    const config = useTenantConfig();
+
+    return useMemo(() => getResolvedTenantLinks(config), [config]);
+};
 
 /** Native build-time config (may be undefined on web) */
 export const useNativeConfig = (): TenantNativeConfig | undefined => useTenantConfig().native;

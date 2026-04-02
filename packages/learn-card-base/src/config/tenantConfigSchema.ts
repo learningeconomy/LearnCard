@@ -155,6 +155,15 @@ export const tenantLinksConfigSchema = z.object({
     appStoreUrl: urlOrPlaceholder().optional(),
     playStoreUrl: urlOrPlaceholder().optional(),
     externalAuthRedirectBase: urlOrPlaceholder().optional(),
+
+    // Legal / informational links.
+    // When omitted, the app auto-generates a dynamic branded URL:
+    //   e.g. https://learncard.com/legal/<tenantId>/terms
+    // Set explicitly to override with a fully custom page.
+    termsOfServiceUrl: urlOrPlaceholder().optional(),
+    privacyPolicyUrl: urlOrPlaceholder().optional(),
+    contactUrl: urlOrPlaceholder().optional(),
+    websiteUrl: urlOrPlaceholder().optional(),
 }).passthrough();
 
 export const tenantNativeConfigSchema = z.object({

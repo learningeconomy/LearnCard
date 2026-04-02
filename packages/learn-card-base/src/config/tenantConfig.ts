@@ -59,3 +59,43 @@ export const getTenantBaseUrl = (config: TenantConfig): string => {
 
     return `http://${config.devDomain ?? 'localhost:3000'}`;
 };
+
+// -----------------------------------------------------------------
+// Resolved tenant links
+// -----------------------------------------------------------------
+
+export interface ResolvedTenantLinks {
+    termsOfServiceUrl: string;
+    privacyPolicyUrl: string;
+    contactUrl: string;
+    websiteUrl: string;
+    appStoreUrl?: string;
+    playStoreUrl?: string;
+    externalAuthRedirectBase?: string;
+}
+
+/**
+ * Resolve the tenant's external links, filling in dynamic branded defaults
+ * for any link not explicitly set in the tenant config.
+ *
+ * - If a URL is provided in `config.links`, it is used as-is.
+ * - If omitted, the app's own `/legal/terms` and `/legal/privacy` routes are
+ *   used. These routes render the standard legal content with the tenant's
+ *   branding (name, logo) automatically.
+ *
+ * This lets whitelabel tenants get branded legal pages for free, while
+ * tenants with their own legal pages can simply override in their config.
+ */
+export const getResolvedTenantLinks = (config: TenantConfig): ResolvedTenantLinks => {
+    const { links } = config;
+
+    return {
+        termsOfServiceUrl: links.termsOfServiceUrl ?? '/legal/terms',
+        privacyPolicyUrl: links.privacyPolicyUrl ?? '/legal/privacy',
+        contactUrl: links.contactUrl ?? 'mailto:privacy@learningeconomy.io',
+        websiteUrl: links.websiteUrl ?? 'https://www.learncard.com/',
+        appStoreUrl: links.appStoreUrl,
+        playStoreUrl: links.playStoreUrl,
+        externalAuthRedirectBase: links.externalAuthRedirectBase,
+    };
+};
