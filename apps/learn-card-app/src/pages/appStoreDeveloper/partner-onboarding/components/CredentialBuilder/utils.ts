@@ -440,30 +440,15 @@ export const clrTemplateToJson = (template: OBv3CredentialTemplate): Record<stri
         credentialSubject.id = fieldToJson(template.credentialSubject.id);
     }
 
-    // Serialize achievements from clrSubject
+    // Serialize achievements from clrSubject.
+    // The CLR 2.0 context types ClrSubject.achievement items as obi:Achievement, which
+    // has a @protected scoped context. Only Achievement-defined properties are valid here;
+    // AchievementSubject properties (result, creditsEarned, activityStartDate,
+    // activityEndDate) cannot appear on these objects or JSON-LD expansion fails.
     if (template.clrSubject?.achievements && template.clrSubject.achievements.length > 0) {
-        credentialSubject.achievement = template.clrSubject.achievements.map(entry => {
-            const achJson = serializeAchievement(entry.achievement);
-
-            // Per-entry subject fields (result, credits, dates) are placed at the
-            // achievement level as CLR 2.0 AchievementSubject-like properties
-            const wrapper: Record<string, unknown> = { ...achJson };
-
-            if (entry.result && entry.result.length > 0) {
-                wrapper.result = serializeResults(entry.result);
-            }
-            if (entry.creditsEarned?.value || entry.creditsEarned?.isDynamic) {
-                wrapper.creditsEarned = fieldToJson(entry.creditsEarned);
-            }
-            if (entry.activityStartDate?.value || entry.activityStartDate?.isDynamic) {
-                wrapper.activityStartDate = fieldToJson(entry.activityStartDate);
-            }
-            if (entry.activityEndDate?.value || entry.activityEndDate?.isDynamic) {
-                wrapper.activityEndDate = fieldToJson(entry.activityEndDate);
-            }
-
-            return wrapper;
-        });
+        credentialSubject.achievement = template.clrSubject.achievements.map(entry =>
+            serializeAchievement(entry.achievement)
+        );
     }
 
     // Serialize associations
