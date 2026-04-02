@@ -192,41 +192,47 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                 className="border border-gray-200 rounded-lg overflow-hidden"
                             >
                                 {/* Entry Header */}
-                                <button
-                                    type="button"
-                                    onClick={() => toggleEntry(entry.id)}
-                                    className="w-full flex items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                                >
-                                    <Trophy className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                                <div className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleEntry(entry.id)}
+                                        className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                                    >
+                                        <Trophy className="w-4 h-4 text-indigo-500 flex-shrink-0" />
 
-                                    <span className="flex-1 text-left text-sm font-medium text-gray-800 truncate">
-                                        {summary}
-                                    </span>
-
-                                    {typeBadge && (
-                                        <span className="text-xs text-indigo-600 px-2 py-0.5 bg-indigo-100 rounded flex-shrink-0">
-                                            {typeBadge}
+                                        <span className="flex-1 text-sm font-medium text-gray-800 truncate">
+                                            {summary}
                                         </span>
-                                    )}
+
+                                        {typeBadge && (
+                                            <span className="text-xs text-indigo-600 px-2 py-0.5 bg-indigo-100 rounded flex-shrink-0">
+                                                {typeBadge}
+                                            </span>
+                                        )}
+                                    </button>
 
                                     <button
                                         type="button"
-                                        onClick={e => {
-                                            e.stopPropagation();
-                                            removeAchievement(entry.id);
-                                        }}
+                                        onClick={() => removeAchievement(entry.id)}
                                         className="p-1 text-gray-400 hover:text-red-500 rounded flex-shrink-0"
                                         title="Remove achievement"
                                     >
                                         <X className="w-3.5 h-3.5" />
                                     </button>
 
-                                    {entryExpanded ? (
-                                        <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                    ) : (
-                                        <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                    )}
-                                </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleEntry(entry.id)}
+                                        className="p-1 text-gray-400 hover:text-gray-600 rounded flex-shrink-0"
+                                        title={entryExpanded ? 'Collapse' : 'Edit'}
+                                    >
+                                        {entryExpanded ? (
+                                            <ChevronDown className="w-4 h-4" />
+                                        ) : (
+                                            <ChevronRight className="w-4 h-4" />
+                                        )}
+                                    </button>
+                                </div>
 
                                 {/* Entry Body (expanded) */}
                                 {entryExpanded && (

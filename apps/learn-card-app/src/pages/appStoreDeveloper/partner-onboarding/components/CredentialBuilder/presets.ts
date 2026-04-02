@@ -265,6 +265,13 @@ const createClrBaseTemplate = (
 // CLR 2.0 Presets
 export const CLR2_PRESETS: TemplatePreset[] = [
     {
+        id: 'clr-blank',
+        name: 'Blank CLR',
+        description: 'Start from scratch with an empty CLR 2.0 record',
+        icon: 'FileText',
+        template: createClrBaseTemplate('', [], []),
+    },
+    {
         id: 'academic-transcript',
         name: 'Academic Transcript',
         description: 'Multi-course transcript with GPA',
