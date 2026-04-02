@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { isStaleChunkError } from '../../helpers/lazyWithRetry';
+import { isStaleChunkError, guardedChunkReload } from '../../helpers/lazyWithRetry';
 
 type ErrorBoundaryProps = {
     children: React.ReactNode;
@@ -47,7 +47,7 @@ export class ChunkBoundary extends React.Component<
 
     componentDidCatch(err: any) {
         if (isStaleChunkError(err)) {
-            window.location.reload();
+            guardedChunkReload();
         }
     }
 

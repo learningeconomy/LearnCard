@@ -60,6 +60,24 @@ function pendingForever<T>(): Promise<T> {
     return new Promise<T>(() => {});
 }
 
+/**
+ * Reload the page if the sessionStorage guard allows it.
+ * Returns `true` if a reload was triggered, `false` if reloads are exhausted.
+ *
+ * Intended for use in error boundaries (ChunkBoundary, GenericErrorBoundary)
+ * so every layer shares the same reload budget.
+ */
+export function guardedChunkReload(): boolean {
+    if (shouldReload()) {
+        recordReload();
+        window.location.reload();
+
+        return true;
+    }
+
+    return false;
+}
+
 export function lazyWithRetry<T extends { default: React.ComponentType<any> }>(
     factory: () => Promise<T>
 ) {

@@ -7,11 +7,15 @@ The app uses `lazyWithRetry` for all code-split pages. When a deployment (or Cap
 ```
 Dynamic import fails ("Importing a module script failed")
   → lazyWithRetry: retry the import once
-    → Still fails: reload page (up to 2× in 30 seconds), show loading screen
-      → Reloads exhausted: ChunkBoundary catches error, tries one more reload
-        → GenericErrorBoundary: final safety net reload
-          → All exhausted: "Something went wrong" error UI
+    → Still fails: guardedChunkReload (up to 2× in 30 seconds), show loading screen
+      → Reloads exhausted: error propagates to ChunkBoundary
+        → ChunkBoundary: guardedChunkReload (shared budget — may already be exhausted)
+          → GenericErrorBoundary: guardedChunkReload (shared budget — final safety net)
+            → All exhausted: "Something went wrong" error UI
 ```
+
+All three layers share the same sessionStorage-based reload budget via `guardedChunkReload()`,
+which prevents infinite reload loops.
 
 ## Unit tests
 

@@ -15,7 +15,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { isStaleChunkError, lazyWithRetry } from '../lazyWithRetry';
+import { isStaleChunkError, guardedChunkReload, lazyWithRetry } from '../lazyWithRetry';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -212,5 +212,55 @@ describe('lazyWithRetry', () => {
         await expect(capturedLoader!()).rejects.toThrow('Server 500');
         expect(factory).toHaveBeenCalledTimes(2);
         expect(reloadMock).not.toHaveBeenCalled();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// guardedChunkReload — used by ChunkBoundary & GenericErrorBoundary
+// ---------------------------------------------------------------------------
+
+describe('guardedChunkReload', () => {
+    it('reloads and returns true when reload budget is available', () => {
+        const result = guardedChunkReload();
+
+        expect(result).toBe(true);
+        expect(reloadMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns false and does NOT reload when budget is exhausted', () => {
+        sessionStorage.setItem(RELOAD_KEY, JSON.stringify({ count: 2, ts: Date.now() }));
+
+        const result = guardedChunkReload();
+
+        expect(result).toBe(false);
+        expect(reloadMock).not.toHaveBeenCalled();
+    });
+
+    it('shares the reload budget with lazyWithRetry', async () => {
+        const chunkErr = new TypeError('Importing a module script failed.');
+        const factory = vi.fn().mockRejectedValue(chunkErr);
+
+        // lazyWithRetry uses 1 reload from the budget
+        lazyWithRetry(factory);
+        capturedLoader!();
+        await new Promise(r => setTimeout(r, 50));
+
+        expect(reloadMock).toHaveBeenCalledTimes(1);
+
+        const stored = JSON.parse(sessionStorage.getItem(RELOAD_KEY)!);
+
+        expect(stored.count).toBe(1);
+
+        // guardedChunkReload uses 1 more — still within budget (max 2)
+        const result1 = guardedChunkReload();
+
+        expect(result1).toBe(true);
+        expect(reloadMock).toHaveBeenCalledTimes(2);
+
+        // Now budget is exhausted — should not reload
+        const result2 = guardedChunkReload();
+
+        expect(result2).toBe(false);
+        expect(reloadMock).toHaveBeenCalledTimes(2);
     });
 });
