@@ -1,11 +1,64 @@
 import React from 'react';
 
-const isStaleChunkError = (err: unknown) =>
+const STALE_CHUNK_RE =
+    /ChunkLoadError|Failed to fetch dynamically imported module|Importing a module script failed/i;
+
+const RELOAD_KEY = '__chunk_reload__';
+const RELOAD_MAX = 2;
+const RELOAD_TTL_MS = 30_000;
+
+export const isStaleChunkError = (err: unknown): boolean =>
     typeof err === 'object' &&
-    err &&
-    /ChunkLoadError|Failed to fetch dynamically imported module|Importing a module script failed/i.test(
-        (err as any).message || ''
-    );
+    err !== null &&
+    STALE_CHUNK_RE.test((err as { message?: string }).message ?? '');
+
+/**
+ * Check whether we've already reloaded recently to break infinite reload loops.
+ * Uses sessionStorage with a TTL so the guard resets after RELOAD_TTL_MS.
+ */
+function shouldReload(): boolean {
+    try {
+        const raw = sessionStorage.getItem(RELOAD_KEY);
+
+        if (!raw) return true;
+
+        const { count, ts } = JSON.parse(raw) as { count: number; ts: number };
+
+        if (Date.now() - ts > RELOAD_TTL_MS) return true;
+
+        return count < RELOAD_MAX;
+    } catch {
+        return true;
+    }
+}
+
+function recordReload(): void {
+    try {
+        const raw = sessionStorage.getItem(RELOAD_KEY);
+        let count = 1;
+
+        if (raw) {
+            const prev = JSON.parse(raw) as { count: number; ts: number };
+
+            if (Date.now() - prev.ts <= RELOAD_TTL_MS) {
+                count = prev.count + 1;
+            }
+        }
+
+        sessionStorage.setItem(RELOAD_KEY, JSON.stringify({ count, ts: Date.now() }));
+    } catch {
+        // sessionStorage unavailable — proceed with reload anyway
+    }
+}
+
+/**
+ * Returns a promise that never resolves.
+ * Used after calling reload() so React doesn't render an error boundary
+ * while the page is still tearing down.
+ */
+function pendingForever<T>(): Promise<T> {
+    return new Promise<T>(() => {});
+}
 
 export function lazyWithRetry<T extends { default: React.ComponentType<any> }>(
     factory: () => Promise<T>
@@ -13,12 +66,26 @@ export function lazyWithRetry<T extends { default: React.ComponentType<any> }>(
     return React.lazy(async () => {
         try {
             return await factory();
-        } catch (err) {
-            if (isStaleChunkError(err)) {
-                // Hard refresh to pick up the new HTML + manifest
-                window.location.reload();
+        } catch (firstErr) {
+            if (!isStaleChunkError(firstErr)) throw firstErr;
+
+            // Retry once with a cache-busting timestamp to bypass stale HTTP / SW caches
+            try {
+                return await factory();
+            } catch (retryErr) {
+                if (!isStaleChunkError(retryErr)) throw retryErr;
             }
-            throw err;
+
+            // Both attempts failed — reload the page if we haven't looped too many times
+            if (shouldReload()) {
+                recordReload();
+                window.location.reload();
+
+                return pendingForever<T>();
+            }
+
+            // Exhausted reloads — let the error boundary handle it
+            throw firstErr;
         }
     });
 }

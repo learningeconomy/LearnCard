@@ -1,6 +1,6 @@
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { CredentialCategoryEnum, isLocalhost } from 'learn-card-base';
+import { CredentialCategoryEnum, isLocalhost, isStaleChunkError } from 'learn-card-base';
 
 import SpilledCup from 'learn-card-base/svgs/SpilledCup';
 
@@ -151,9 +151,14 @@ const GenericErrorBoundary: React.FC<GenericErrorBoundaryProps> = ({
                 />
             )}
             onReset={onReset}
-            onError={(error: Error, info: { componentStack: string }) => {
-                // You can also log the error to an error reporting service here
+            onError={(error: Error, info) => {
                 console.error('ErrorBoundary caught an error:', error, info);
+
+                // If this is a stale-chunk error that got past ChunkBoundary
+                // (e.g. reload exhausted), try one final reload from here.
+                if (isStaleChunkError(error)) {
+                    window.location.reload();
+                }
             }}
         >
             {children}
