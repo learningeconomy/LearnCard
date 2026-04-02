@@ -446,9 +446,15 @@ export const clrTemplateToJson = (template: OBv3CredentialTemplate): Record<stri
     // AchievementSubject properties (result, creditsEarned, activityStartDate,
     // activityEndDate) cannot appear on these objects or JSON-LD expansion fails.
     if (template.clrSubject?.achievements && template.clrSubject.achievements.length > 0) {
-        credentialSubject.achievement = template.clrSubject.achievements.map(entry =>
-            serializeAchievement(entry.achievement)
-        );
+        credentialSubject.achievement = template.clrSubject.achievements.map(entry => {
+            const achJson = serializeAchievement(entry.achievement);
+            // Inject the entry ID into the achievement JSON so associations survive round-trips.
+            // If the user set an explicit achievement id, prefer that; otherwise use the entry id.
+            if (!achJson.id) {
+                achJson.id = entry.id;
+            }
+            return achJson;
+        });
     }
 
     // Serialize associations
@@ -607,8 +613,11 @@ export const jsonToClrTemplate = (json: Record<string, unknown>, contexts: strin
     const achievementArr = Array.isArray(subjectObj.achievement) ? subjectObj.achievement as Record<string, unknown>[] : [];
     const achievements: AchievementEntryTemplate[] = achievementArr.map((achObj, i) => {
         const resultArr = Array.isArray(achObj.result) ? achObj.result as Record<string, unknown>[] : [];
+        // Use the achievement's own id (injected on serialization) for stable association references;
+        // fall back to a sequential id for entries that pre-date this behaviour.
+        const entryId = typeof achObj.id === 'string' && achObj.id ? achObj.id : `ach_${i}`;
         return {
-            id: `ach_${i}`,
+            id: entryId,
             achievement: parseAchievement(achObj),
             result: resultArr.length > 0 ? parseResults(resultArr) : undefined,
             creditsEarned: achObj.creditsEarned ? jsonToField(achObj.creditsEarned) : undefined,

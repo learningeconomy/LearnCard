@@ -275,10 +275,10 @@ export const CLR2_PRESETS: TemplatePreset[] = [
                 {
                     id: 'ach_1',
                     achievement: {
-                        name: dynamicField('course_1_name', 'Introduction to Computer Science'),
-                        description: dynamicField('course_1_description', 'Foundational CS concepts'),
+                        name: staticField('Introduction to Computer Science'),
+                        description: staticField('Foundational CS concepts'),
                         achievementType: staticField('Course'),
-                        humanCode: dynamicField('course_1_code', 'CS101'),
+                        humanCode: staticField('CS101'),
                         creditsAvailable: staticField('3'),
                         fieldOfStudy: staticField('Computer Science'),
                         criteria: { narrative: staticField('Complete all coursework and final exam') },
@@ -293,10 +293,10 @@ export const CLR2_PRESETS: TemplatePreset[] = [
                 {
                     id: 'ach_2',
                     achievement: {
-                        name: dynamicField('course_2_name', 'Data Structures'),
-                        description: dynamicField('course_2_description', 'Advanced data structures and algorithms'),
+                        name: staticField('Data Structures'),
+                        description: staticField('Advanced data structures and algorithms'),
                         achievementType: staticField('Course'),
-                        humanCode: dynamicField('course_2_code', 'CS201'),
+                        humanCode: staticField('CS201'),
                         creditsAvailable: staticField('3'),
                         fieldOfStudy: staticField('Computer Science'),
                         criteria: { narrative: staticField('Complete all coursework and final exam') },
@@ -311,10 +311,10 @@ export const CLR2_PRESETS: TemplatePreset[] = [
                 {
                     id: 'ach_3',
                     achievement: {
-                        name: dynamicField('course_3_name', 'Software Engineering'),
-                        description: dynamicField('course_3_description', 'Software development methodologies'),
+                        name: staticField('Software Engineering'),
+                        description: staticField('Software development methodologies'),
                         achievementType: staticField('Course'),
-                        humanCode: dynamicField('course_3_code', 'CS301'),
+                        humanCode: staticField('CS301'),
                         creditsAvailable: staticField('3'),
                         fieldOfStudy: staticField('Computer Science'),
                         criteria: { narrative: staticField('Complete all coursework and capstone project') },
@@ -340,8 +340,8 @@ export const CLR2_PRESETS: TemplatePreset[] = [
                 {
                     id: 'ach_program',
                     achievement: {
-                        name: dynamicField('program_name', 'Bachelor of Science in Computer Science'),
-                        description: dynamicField('program_description', 'Undergraduate degree program'),
+                        name: staticField('Bachelor of Science in Computer Science'),
+                        description: staticField('Undergraduate degree program'),
                         achievementType: staticField('BachelorDegree'),
                         fieldOfStudy: staticField('Computer Science'),
                         criteria: { narrative: staticField('Complete all required courses and maintain minimum GPA') },
@@ -350,10 +350,10 @@ export const CLR2_PRESETS: TemplatePreset[] = [
                 {
                     id: 'ach_course_1',
                     achievement: {
-                        name: dynamicField('course_1_name', 'Introduction to Programming'),
+                        name: staticField('Introduction to Programming'),
                         description: staticField('Foundational programming course'),
                         achievementType: staticField('Course'),
-                        humanCode: dynamicField('course_1_code', 'CS101'),
+                        humanCode: staticField('CS101'),
                         creditsAvailable: staticField('3'),
                         criteria: { narrative: staticField('Complete coursework') },
                     },
@@ -366,10 +366,10 @@ export const CLR2_PRESETS: TemplatePreset[] = [
                 {
                     id: 'ach_course_2',
                     achievement: {
-                        name: dynamicField('course_2_name', 'Algorithms'),
+                        name: staticField('Algorithms'),
                         description: staticField('Algorithm design and analysis'),
                         achievementType: staticField('Course'),
-                        humanCode: dynamicField('course_2_code', 'CS201'),
+                        humanCode: staticField('CS201'),
                         creditsAvailable: staticField('3'),
                         criteria: { narrative: staticField('Complete coursework') },
                     },
@@ -407,8 +407,8 @@ export const CLR2_PRESETS: TemplatePreset[] = [
                 {
                     id: 'ach_comp_1',
                     achievement: {
-                        name: dynamicField('competency_1_name', 'Problem Solving'),
-                        description: dynamicField('competency_1_description', 'Ability to analyze and solve complex problems'),
+                        name: staticField('Problem Solving'),
+                        description: staticField('Ability to analyze and solve complex problems'),
                         achievementType: staticField('Competency'),
                         criteria: { narrative: staticField('Demonstrated through assessments and practical exercises') },
                     },
@@ -421,8 +421,8 @@ export const CLR2_PRESETS: TemplatePreset[] = [
                 {
                     id: 'ach_comp_2',
                     achievement: {
-                        name: dynamicField('competency_2_name', 'Communication'),
-                        description: dynamicField('competency_2_description', 'Effective written and verbal communication'),
+                        name: staticField('Communication'),
+                        description: staticField('Effective written and verbal communication'),
                         achievementType: staticField('Competency'),
                         criteria: { narrative: staticField('Demonstrated through presentations and written work') },
                     },
@@ -435,8 +435,8 @@ export const CLR2_PRESETS: TemplatePreset[] = [
                 {
                     id: 'ach_comp_3',
                     achievement: {
-                        name: dynamicField('competency_3_name', 'Teamwork'),
-                        description: dynamicField('competency_3_description', 'Collaborative work in diverse teams'),
+                        name: staticField('Teamwork'),
+                        description: staticField('Collaborative work in diverse teams'),
                         achievementType: staticField('Competency'),
                         criteria: { narrative: staticField('Demonstrated through group projects and peer evaluations') },
                     },

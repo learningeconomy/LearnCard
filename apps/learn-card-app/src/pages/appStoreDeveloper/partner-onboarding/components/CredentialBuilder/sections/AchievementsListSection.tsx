@@ -140,7 +140,12 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
     };
 
     const getEntrySummary = (entry: AchievementEntryTemplate): string => {
-        return entry.achievement.name.value || 'Untitled Achievement';
+        const name = entry.achievement.name;
+        if (name.value) return name.value;
+        if (name.isDynamic && name.variableName) {
+            return `[${name.variableName.replace(/_/g, ' ')}]`;
+        }
+        return 'Untitled Achievement';
     };
 
     const getEntryTypeBadge = (entry: AchievementEntryTemplate): string | undefined => {
