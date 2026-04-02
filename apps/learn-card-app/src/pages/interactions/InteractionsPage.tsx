@@ -22,7 +22,33 @@ import {
     alertCircleOutline,
     informationCircleOutline,
 } from 'ionicons/icons';
-import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+import { getAppBaseUrl, getLCNApiUrl } from '../../config/bootstrapTenantConfig';
+
+/**
+ * Parse the interaction URL to extract workflowId and interactionId.
+ * URL format: /interactions/{workflowId}/{interactionId}
+ * Example: /interactions/claim/eyJib29zdFVyaSI6...?iuv=1
+ */
+const parseInteractionUrl = (url: string): { workflowId: string; interactionId: string } | null => {
+    // Match '/interactions/{workflowId}/{interactionId}' where interactionId is base64url
+    const match = url.match(/\/interactions\/([a-zA-Z0-9-]+)\/([a-zA-Z0-9\-_=]+)(?:\?.*)?$/);
+
+    if (match && match[1] && match[2]) {
+        return {
+            workflowId: match[1],
+            interactionId: match[2],
+        };
+    }
+    return null;
+};
+
+/**
+ * Check if running on localhost (dev environment without edge function)
+ */
+const isLocalhost = (): boolean => {
+    const baseUrl = getAppBaseUrl();
+    return baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
+};
 
 const InteractionsPage: React.FC = () => {
     const location = useLocation();
@@ -48,6 +74,30 @@ const InteractionsPage: React.FC = () => {
             return;
         }
 
+        // Parse the URL to extract workflowId and interactionId
+        const parsed = parseInteractionUrl(fullUrl);
+        if (!parsed) {
+            setError('Invalid interaction URL format.');
+            setLoading(false);
+            return;
+        }
+
+        const { workflowId, interactionId } = parsed;
+        const lcnApiUrl = getLCNApiUrl();
+        const vcapiUrl = `${lcnApiUrl}/workflows/${workflowId}/exchanges/${interactionId}`;
+
+        // On localhost, there's no edge function to handle content negotiation
+        // so we redirect directly to the request page
+        if (isLocalhost()) {
+            history.replace(`/request?vc_request_url=${encodeURIComponent(vcapiUrl)}`);
+            return;
+        }
+
+        // On Netlify (production), the edge function handles this:
+        // - JSON requests get protocol info
+        // - HTML requests get redirected
+        // But since we're in the SPA, the edge function already redirected us here
+        // or we need to fetch the JSON if we came via a different path
         try {
             const response = await fetch(fullUrl, {
                 headers: {
@@ -66,7 +116,6 @@ const InteractionsPage: React.FC = () => {
                 history.replace(
                     `/request?vc_request_url=${encodeURIComponent(data.protocols.vcapi)}`
                 );
-                // setLoading(false) might not be strictly necessary here due to immediate redirection
             } else {
                 throw new Error('Invalid interaction data received from the server.');
             }
