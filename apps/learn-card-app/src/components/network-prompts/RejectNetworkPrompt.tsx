@@ -3,6 +3,7 @@ import React from 'react';
 import { IonRow, IonCol, useIonModal } from '@ionic/react';
 import { JoinNetworkModalWrapper } from './hooks/useJoinLCNetworkModal';
 
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
 import ModalLayout from '../../layout/ModalLayout';
 
@@ -11,6 +12,7 @@ import useTheme from '../../theme/hooks/useTheme';
 export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = ({
     handleCloseModal,
 }) => {
+    const brandingConfig = useBrandingConfig();
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
@@ -22,7 +24,9 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
         <ModalLayout handleOnClick={handleCloseModal}>
             <IonRow className="flex flex-col pb-4 pt-2 w-full">
                 <IonCol className="w-full flex items-center justify-center">
-                    <h6 className="tracking-[12px] text-base font-bold text-black">LEARNCARD</h6>
+                    <h6 className="tracking-[12px] text-base font-bold text-black">
+                        {brandingConfig?.name || 'LEARNCARD'}
+                    </h6>
                 </IonCol>
                 <IonCol className="w-full flex items-center justify-center mt-8">
                     <h6 className="text-center text-black font-poppins text-xl">No Problem!</h6>
