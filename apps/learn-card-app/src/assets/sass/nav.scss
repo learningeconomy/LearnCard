@@ -11,6 +11,15 @@
 }
 
 ion-tab-bar {
+    --background: transparent;
+    --border: none;
+    border: none;
+    box-shadow: none;
+
+    &::before {
+        display: none;
+    }
+
     @media (min-width: 992px) {
         display: none;
     }
@@ -91,17 +100,26 @@ ion-tab-bar {
 
 .mobile-nav-boost-button {
     position: absolute;
-    // top: -25px;
+    top: -10px;
     background: transparent;
     transform: translateX(-65%);
     z-index: 50;
-    height: 100px;
-    width: 100px;
+    height: 75px;
+    width: 75px;
 
+    @media (max-width: 320px) {
+        left: 53.5%;
+    }
     @media (min-width: 500px) {
-        left: 50%;
+        left: 52% !important;
     }
     @media (max-width: 500px) {
-        left: 54%;
+        left: 53%;
+    }
+    @media (min-width: 500px) and (max-width: 768px) {
+        left: 51.5%;
+    }
+    @media (min-width: 768px) and (max-width: 991px) {
+        transform: translateX(-70%);
     }
 }
