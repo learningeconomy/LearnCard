@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from 'react';
-import { List, Plus, X, ChevronDown, ChevronRight, Trophy } from 'lucide-react';
+import { List, Plus, X, ChevronDown, ChevronRight, Trophy, Save } from 'lucide-react';
 
 import {
     OBv3CredentialTemplate,
@@ -50,13 +50,17 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
     validationErrors = [],
 }) => {
     const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
+    const [saveAttempted, setSaveAttempted] = useState<Set<string>>(new Set());
 
     const achievements = template.clrSubject?.achievements || [];
 
-    // Check if any validation errors relate to this section
-    const hasErrors = validationErrors.some(
-        e => e.field.startsWith('achievements.') || e.field.startsWith('achievements-list')
-    );
+    // Only show the top-level error banner for entries that have been save-attempted
+    const hasErrors = achievements.some((entry, index) => {
+        if (!saveAttempted.has(entry.id)) return false;
+        return validationErrors.some(
+            e => e.field.startsWith(`achievements.${index}.`) || e.field === 'achievements-list'
+        );
+    });
 
     const updateAchievements = (newAchievements: AchievementEntryTemplate[]) => {
         onChange({
@@ -94,6 +98,25 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
             next.delete(id);
             return next;
         });
+        setSaveAttempted(prev => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+        });
+    };
+
+    const handleSaveEntry = (id: string, index: number) => {
+        setSaveAttempted(prev => new Set(prev).add(id));
+        const entryHasErrors = validationErrors.some(e =>
+            e.field.startsWith(`achievements.${index}.`)
+        );
+        if (!entryHasErrors) {
+            setExpandedEntries(prev => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            });
+        }
     };
 
     const updateEntry = (index: number, updatedEntry: AchievementEntryTemplate) => {
@@ -211,7 +234,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                     updateEntryAchievement(index, ach)
                                                 }
                                                 disableDynamicFields={disableDynamicFields}
-                                                validationErrors={validationErrors}
+                                                validationErrors={saveAttempted.has(entry.id) ? validationErrors : []}
                                                 validationPrefix={`achievements.${index}`}
                                             />
                                         </div>
@@ -238,10 +261,10 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                     placeholder="e.g., 3"
                                                     helpText="Number of credits earned for this achievement"
                                                     showDynamicToggle={!disableDynamicFields}
-                                                    error={getFieldError(
+                                                    error={saveAttempted.has(entry.id) ? getFieldError(
                                                         validationErrors,
                                                         `achievements.${index}.creditsEarned`
-                                                    )}
+                                                    ) : undefined}
                                                 />
 
                                                 <div className="grid grid-cols-2 gap-3 xs:flex xs:flex-col">
@@ -261,10 +284,10 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                         placeholder="e.g., 2024-01-15"
                                                         helpText="When the activity began"
                                                         showDynamicToggle={!disableDynamicFields}
-                                                        error={getFieldError(
+                                                        error={saveAttempted.has(entry.id) ? getFieldError(
                                                             validationErrors,
                                                             `achievements.${index}.activityStartDate`
-                                                        )}
+                                                        ) : undefined}
                                                     />
 
                                                     <FieldEditor
@@ -283,10 +306,10 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                         placeholder="e.g., 2024-05-30"
                                                         helpText="When the activity ended"
                                                         showDynamicToggle={!disableDynamicFields}
-                                                        error={getFieldError(
+                                                        error={saveAttempted.has(entry.id) ? getFieldError(
                                                             validationErrors,
                                                             `achievements.${index}.activityEndDate`
-                                                        )}
+                                                        ) : undefined}
                                                     />
                                                 </div>
                                             </div>
@@ -305,6 +328,18 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                     ? 'No results added'
                                                     : `${entry.result!.length} result${entry.result!.length > 1 ? 's' : ''}`}
                                             </p>
+                                        </div>
+
+                                        {/* Save button */}
+                                        <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleSaveEntry(entry.id, index)}
+                                                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                                            >
+                                                <Save className="w-3.5 h-3.5" />
+                                                Save Achievement
+                                            </button>
                                         </div>
                                     </div>
                                 )}
