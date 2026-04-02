@@ -392,6 +392,7 @@ export const issueToInbox = async (
                     claimUrl: emailClaimUrl,
                     ...injectedTemplateFields,
                 },
+                branding: ctx.tenant?.emailBranding,
                 messageStream: 'universal-inbox'
             });
         }

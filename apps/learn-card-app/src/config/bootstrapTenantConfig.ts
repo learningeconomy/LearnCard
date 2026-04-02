@@ -34,6 +34,18 @@ export const getResolvedTenantConfig = (): TenantConfig => {
 };
 
 /**
+ * Get headers that identify the current tenant to backend services.
+ * Merges with any existing headers object so callers can spread or pass directly.
+ */
+export const getTenantHeaders = (): Record<string, string> => {
+    const tenantId = _resolvedConfig?.tenantId;
+
+    if (!tenantId) return {};
+
+    return { 'X-Tenant-Id': tenantId };
+};
+
+/**
  * Get the base URL for the current tenant (e.g. `https://learncard.app` or `http://localhost:3000`).
  * Synchronous helper for use outside React components.
  */
@@ -140,8 +152,8 @@ export const bootstrapTenantConfig = async (): Promise<TenantConfig> => {
     setAuthConfigFromTenant(config);
     emitConfigDebugEvent('bootstrap:auth_config_set', `Auth config bridged (provider: ${config.auth.provider})`, { data: { provider: config.auth.provider, keyDerivation: config.auth.keyDerivation } });
 
-    // 3. Populate network store with tenant API endpoints
-    initNetworkStoreFromTenant(config.apis);
+    // 3. Populate network store with tenant API endpoints + tenant ID
+    initNetworkStoreFromTenant(config.apis, config.tenantId);
     emitConfigDebugEvent('bootstrap:network_store_init', 'Network store populated with tenant API endpoints');
 
     // 4. Initialize Sentry from tenant observability config

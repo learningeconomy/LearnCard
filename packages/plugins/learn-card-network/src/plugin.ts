@@ -81,25 +81,30 @@ export type GuardianApprovalGetter = () => string | undefined | Promise<string |
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, 'id', LearnCardNetworkPluginDependentMethods>,
     url: string,
-    apiTokenOrOptions?: { guardianApprovalGetter?: GuardianApprovalGetter }
+    apiTokenOrOptions?: { guardianApprovalGetter?: GuardianApprovalGetter; extraHeaders?: Record<string, string> }
 ): Promise<LearnCardNetworkPlugin>;
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
     url: string,
     apiToken: string,
-    options?: { guardianApprovalGetter?: GuardianApprovalGetter }
+    options?: { guardianApprovalGetter?: GuardianApprovalGetter; extraHeaders?: Record<string, string> }
 ): Promise<LearnCardNetworkPlugin>;
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
     url: string,
-    apiTokenOrOptions?: string | { guardianApprovalGetter?: GuardianApprovalGetter },
-    options?: { guardianApprovalGetter?: GuardianApprovalGetter }
+    apiTokenOrOptions?: string | { guardianApprovalGetter?: GuardianApprovalGetter; extraHeaders?: Record<string, string> },
+    options?: { guardianApprovalGetter?: GuardianApprovalGetter; extraHeaders?: Record<string, string> }
 ): Promise<LearnCardNetworkPlugin> {
     const apiToken = typeof apiTokenOrOptions === 'string' ? apiTokenOrOptions : undefined;
     const guardianApprovalGetter =
         (typeof apiTokenOrOptions === 'object'
             ? apiTokenOrOptions?.guardianApprovalGetter
             : undefined) ?? options?.guardianApprovalGetter;
+
+    const extraHeaders =
+        (typeof apiTokenOrOptions === 'object'
+            ? apiTokenOrOptions?.extraHeaders
+            : undefined) ?? options?.extraHeaders;
     // Initialize DID safely: in API-key mode there may be no local ID plane provider
     let did = '';
     try {
@@ -113,7 +118,7 @@ export async function getLearnCardNetworkPlugin(
 
     learnCard?.debug?.('Adding LearnCardNetwork Plugin');
     const client = apiToken
-        ? await getApiTokenClient(url, apiToken, guardianApprovalGetter)
+        ? await getApiTokenClient(url, apiToken, guardianApprovalGetter, extraHeaders)
         : await getClient(
               url,
               async challenge => {
@@ -126,7 +131,8 @@ export async function getLearnCardNetworkPlugin(
 
                   return jwt;
               },
-              guardianApprovalGetter
+              guardianApprovalGetter,
+              extraHeaders
           );
 
     let userData: LCNProfile | undefined;

@@ -1,0 +1,37 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "packages/email-templates/src",
+    "projectType": "library",
+    "tags": [],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"]
+    },
+    "targets": {
+        "dev": {
+            "executor": "nx:run-script",
+            "options": {
+                "script": "dev"
+            }
+        },
+        "preview": {
+            "executor": "nx:run-script",
+            "options": {
+                "script": "preview"
+            }
+        },
+        "typecheck": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "typecheck"
+            }
+        },
+        "test": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "test"
+            }
+        }
+    }
+}

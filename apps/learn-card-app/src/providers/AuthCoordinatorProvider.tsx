@@ -83,6 +83,7 @@ import {
     getFirebaseRedirectDomain,
     getFirebaseDynamicLinkDomain,
     getNativeBundleId,
+    getTenantHeaders,
 } from '../config/bootstrapTenantConfig';
 
 import {
@@ -1088,7 +1089,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
                         const res = await fetch(`${serverUrl}/send-login-verification-code`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'application/json', ...getTenantHeaders() },
                             body: JSON.stringify({ email }),
                         });
 
@@ -1312,6 +1313,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                     return {
                         'Content-Type': 'application/json',
                         ...(vpJwt ? { Authorization: `Bearer ${vpJwt}` } : {}),
+                        ...getTenantHeaders(),
                     };
                 };
 

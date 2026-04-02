@@ -1,14 +1,25 @@
+import { renderSms } from '@learncard/email-templates';
+import type { SmsTemplateId } from '@learncard/email-templates';
+
 import { Notification } from "../delivery.service";
+
+/** Map brain-service templateIds to the SMS template IDs in @learncard/email-templates. */
+const SMS_TEMPLATE_MAP: Record<string, SmsTemplateId> = {
+    'universal-inbox-claim': 'inbox-claim',
+    'contact-method-verification': 'contact-method-verification',
+};
 
 export const getSmsBody = (notification: Notification): string | undefined => {
     const { templateId, templateModel } = notification;
+    const smsTemplateId = SMS_TEMPLATE_MAP[templateId];
+
+    if (!smsTemplateId) return undefined;
+
     const { credential, issuer, claimUrl, verificationToken, recipient } = templateModel ?? {};
 
-    switch(templateId) {
-        case 'universal-inbox-claim':
-            return `${recipient?.name ? `Hello, ${recipient?.name}! ` : ''}You have a new ${credential?.type ?? 'credential'}, "${credential?.name ?? 'Unnamed Credential'}${issuer?.name ? `," from ${issuer?.name}.` : '".'} Claim it here: ${claimUrl}`;
-        case 'contact-method-verification':
-            return `Your LearnCard verification code is: ${verificationToken}`;
-    }
-    return undefined;
+    const smsData = smsTemplateId === 'inbox-claim'
+        ? { claimUrl, recipient, issuer, credential }
+        : { verificationToken };
+
+    return renderSms(smsTemplateId, notification.branding ?? {}, smsData as any);
 }

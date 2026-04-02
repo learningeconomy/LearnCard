@@ -44,6 +44,7 @@
         "@fastify/cors": "^11.2.0",
         "@fastify/static": "^9.0.0",
         "@learncard/core": "workspace:*",
+        "@learncard/email-templates": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/didkit-plugin-node": "workspace:*",

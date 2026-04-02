@@ -248,7 +248,7 @@ export const firebaseRouter = t.router({
         })
         .input(z.object({ email: z.string().email() }))
         .output(z.object({ success: z.boolean(), error: z.string().optional() }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
             const { email } = input;
 
             try {
@@ -287,6 +287,7 @@ export const firebaseRouter = t.router({
                             verificationEmail: email,
                             recipient: { name: email },
                         },
+                        branding: ctx.tenant.emailBranding,
                         from: getFrom({ mailbox: 'login' }),
                     });
                 } catch (error) {

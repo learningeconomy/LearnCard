@@ -346,7 +346,7 @@ export const keysRouter = t.router({
             })
         )
         .output(z.object({ success: z.boolean() }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
             const { contactMethod } = await verifyAndGetContactMethod(input);
 
             const userKey = await findUserKeyByContactMethod(contactMethod);
@@ -384,6 +384,7 @@ export const keysRouter = t.router({
                                 verificationCode: code,
                                 verificationEmail: input.email,
                             },
+                            branding: ctx.tenant.emailBranding,
                             from: getFrom({ mailbox: 'recovery' }),
                         }
                         : {
@@ -508,7 +509,7 @@ export const keysRouter = t.router({
             })
         )
         .output(z.object({ success: z.boolean() }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
             // Verify the caller is authenticated
             const { contactMethod } = await verifyAndGetContactMethod(input);
 
@@ -549,6 +550,7 @@ export const keysRouter = t.router({
                                 brandName,
                                 recoveryKey: input.emailShare,
                             },
+                            branding: ctx.tenant.emailBranding,
                             from: getFrom({ mailbox: 'recovery' }),
                         }
                         : {
