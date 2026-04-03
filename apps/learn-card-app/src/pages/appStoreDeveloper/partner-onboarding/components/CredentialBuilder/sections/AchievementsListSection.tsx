@@ -123,6 +123,8 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
         const newAchievements = [...achievements];
         newAchievements[index] = updatedEntry;
         updateAchievements(newAchievements);
+        // Mark as save-attempted on any edit so validation shows for existing/preset entries
+        setSaveAttempted(prev => new Set(prev).add(updatedEntry.id));
     };
 
     const updateEntryAchievement = (index: number, achievement: AchievementTemplate) => {
@@ -189,7 +191,14 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                         return (
                             <div
                                 key={entry.id}
-                                className="border border-gray-200 rounded-lg overflow-hidden"
+                                className={`border rounded-lg overflow-hidden ${
+                                    saveAttempted.has(entry.id) &&
+                                    validationErrors.some(e =>
+                                        e.field.startsWith(`achievements.${index}.`)
+                                    )
+                                        ? 'border-red-400'
+                                        : 'border-gray-200'
+                                }`}
                             >
                                 {/* Entry Header */}
                                 <div className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
