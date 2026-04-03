@@ -569,6 +569,26 @@ if (nativeConfig) {
         }
     }
 
+    // Patch iOS Info.plist with tenant display name
+    const infoPlistPath = resolve(APP_ROOT, 'ios/App/App/Info.plist');
+
+    if (existsSync(infoPlistPath)) {
+        try {
+            let plist = readFileSync(infoPlistPath, 'utf-8');
+            const displayName = nativeConfig.displayName;
+
+            plist = plist.replace(
+                /(<key>CFBundleDisplayName<\/key>\s*<string>)[^<]+(<\/string>)/,
+                `$1${displayName}$2`,
+            );
+
+            writeFileSync(infoPlistPath, plist, 'utf-8');
+            console.log(`   ✓ Patched Info.plist (CFBundleDisplayName → ${displayName})`);
+        } catch (err) {
+            console.warn('   ⚠️  Failed to patch Info.plist:', err);
+        }
+    }
+
     // Patch Android build.gradle with tenant bundle ID
     const buildGradlePath = resolve(APP_ROOT, 'android/app/build.gradle');
     const buildGradleTemplatePath = buildGradlePath + '.template';
