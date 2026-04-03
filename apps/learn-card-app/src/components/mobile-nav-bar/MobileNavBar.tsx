@@ -34,20 +34,29 @@ import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGate
 import useTheme from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons';
 import { ColorSetEnum } from '../../theme/colors';
+import { NavBarIcons } from 'learn-card-base';
 
 import navBarBackground from '../../assets/images/mobile-nav-bar-vector.svg';
+
+const { notification: NavBarBellIcon } = NavBarIcons;
 
 export enum MobileNavBarLinks {
     wallet = 'wallet',
     plus = '/boost',
     launchpad = 'launchpad',
+    notification = 'notification',
 }
 
 const MobileNavBar: React.FC = () => {
     const { getIconSet, getColorSet, theme } = useTheme();
     const icons = getIconSet(IconSetEnum.navbar);
     const colors = getColorSet(ColorSetEnum.navbar);
-    const { wallet: WalletIcon, plus: PlusIcon, launchPad: LaunchPadIcon } = icons;
+    const {
+        wallet: WalletIcon,
+        plus: PlusIcon,
+        launchPad: LaunchPadIcon,
+        notification: NotificationIcon = NavBarBellIcon,
+    } = icons as any;
 
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
@@ -80,6 +89,7 @@ const MobileNavBar: React.FC = () => {
     const isWalletTabActive =
         activePathname === '/wallet' || activePathname === '/passport' || activePathname === '/';
     const isLaunchPadTabActive = activePathname === '/launchpad';
+    const isNotificationTabActive = activePathname === '/notifications';
 
     const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
     const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
@@ -114,11 +124,6 @@ const MobileNavBar: React.FC = () => {
                             set href to # to prevent id undefined errors & rerouting
                         */}
                         <IonTabButton tab="/" href="#" className="mobile-nav-hamburger-button">
-                            {unreadCount && (
-                                <div className="notification-count-mobile alert-indicator-dot">
-                                    {unreadCount}
-                                </div>
-                            )}
                             <IonMenuToggle menu="appSideMenu">
                                 <BurgerIcon className="text-grayscale-900 h-[35px] w-[35px] m-[10px]" />
                             </IonMenuToggle>
@@ -204,6 +209,27 @@ const MobileNavBar: React.FC = () => {
                                         >
                                             {link.label}
                                         </IonLabel>
+                                    </IonTabButton>
+                                );
+                            }
+
+                            if (link.id === MobileNavBarLinks.notification) {
+                                return (
+                                    <IonTabButton
+                                        key={link.id}
+                                        tab={link.id}
+                                        href={link.path}
+                                        className="mobile-nav-notification-button"
+                                    >
+                                        <div className="relative">
+                                            <NotificationIcon
+                                                version={isNotificationTabActive ? '2' : '1'}
+                                                className="h-[40px] w-[40px] mt-[0px] mb-0"
+                                            />
+                                            {unreadCount > 0 && (
+                                                <div className="absolute top-0 right-0 h-[7px] w-[7px] bg-blue-500 rounded-[10px]" />
+                                            )}
+                                        </div>
                                     </IonTabButton>
                                 );
                             }
