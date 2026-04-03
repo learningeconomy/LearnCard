@@ -4,7 +4,93 @@ const QRCodeScanner: React.FC<{
     className?: string;
     strokeWidth?: number;
     shadeColor?: string;
-}> = ({ className, strokeWidth, shadeColor = '#E2E3E9' }) => {
+    version?: string;
+}> = ({ className, strokeWidth, shadeColor = '#E2E3E9', version = '1' }) => {
+    if (version === '2') {
+        return (
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="26"
+                height="26"
+                viewBox="0 0 26 26"
+                fill="none"
+                className={className}
+            >
+                <path
+                    d="M1 17.6748V21.9979C1 23.4312 2.1536 24.5848 3.58686 24.5848H7.90996"
+                    stroke="#18224E"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+                <path
+                    d="M7.90996 1H3.58686C2.1536 1 1 2.1536 1 3.58686V7.90996"
+                    stroke="#18224E"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+                <path
+                    d="M24.5848 7.90996V3.58686C24.5848 2.1536 23.4312 1 21.9979 1H17.6748"
+                    stroke="#18224E"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+                <path
+                    d="M17.6864 24.5848H22.0095C23.4428 24.5848 24.5964 23.4312 24.5964 21.9979V17.6748"
+                    stroke="#18224E"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+                <path
+                    d="M10.4618 5.21826H5.80077C5.47899 5.21826 5.21814 5.47911 5.21814 5.80089V10.4619C5.21814 10.7837 5.47899 11.0445 5.80077 11.0445H10.4618C10.7836 11.0445 11.0444 10.7837 11.0444 10.4619V5.80089C11.0444 5.47911 10.7836 5.21826 10.4618 5.21826Z"
+                    fill="#D0F3FC"
+                    stroke="#18224E"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+                <path
+                    d="M10.4618 14.54H5.80077C5.47899 14.54 5.21814 14.8009 5.21814 15.1227V19.7837C5.21814 20.1055 5.47899 20.3663 5.80077 20.3663H10.4618C10.7836 20.3663 11.0444 20.1055 11.0444 19.7837V15.1227C11.0444 14.8009 10.7836 14.54 10.4618 14.54Z"
+                    stroke="#18224E"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+                <path
+                    d="M14.5402 16.3911V15.1785C14.5402 14.8274 14.7081 14.54 14.9133 14.54H16.8707"
+                    stroke="#18224E"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+                <path
+                    d="M20.3664 14.54V19.7837C20.3664 20.1041 20.2228 20.3663 20.0472 20.3663H19.2012"
+                    stroke="#18224E"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+                <path
+                    d="M19.7838 5.21826H15.1228C14.801 5.21826 14.5402 5.47911 14.5402 5.80089V10.4619C14.5402 10.7837 14.801 11.0445 15.1228 11.0445H19.7838C20.1056 11.0445 20.3664 10.7837 20.3664 10.4619V5.80089C20.3664 5.47911 20.1056 5.21826 19.7838 5.21826Z"
+                    stroke="#18224E"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+                <path
+                    d="M15.1228 20.3664C15.4446 20.3664 15.7054 20.1056 15.7054 19.7838C15.7054 19.462 15.4446 19.2012 15.1228 19.2012C14.801 19.2012 14.5402 19.462 14.5402 19.7838C14.5402 20.1056 14.801 20.3664 15.1228 20.3664Z"
+                    fill="#18224E"
+                    stroke="#18224E"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+            </svg>
+        );
+    }
     return (
         <svg
             width="28"
