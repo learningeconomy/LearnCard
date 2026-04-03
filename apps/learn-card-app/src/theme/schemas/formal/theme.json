@@ -56,9 +56,9 @@
         },
 
         "introSlides": {
-            "firstSlideBackground": "blue-500",
-            "secondSlideBackground": "grayscale-200",
-            "thirdSlideBackground": "grayscale-200",
+            "firstSlideBackground": "bg-blue-500",
+            "secondSlideBackground": "bg-grayscale-200",
+            "thirdSlideBackground": "bg-grayscale-200",
             "textColors": {
                 "primary": "grayscale-900",
                 "secondary": "white"

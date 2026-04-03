@@ -78,6 +78,11 @@ const IntroSlides: React.FC = () => {
 
     const isNativePlatform = Capacitor?.isNativePlatform();
 
+    //! hot fix - colors are not being applied correctly
+    const firstSlideBackgroundClass = `${firstSlideBackground}`;
+    const secondSlideBackgroundClass = `${secondSlideBackground}`;
+    const thirdSlideBackgroundClass = `${thirdSlideBackground}`;
+
     return (
         <>
             <style>{paginationStyles}</style>
@@ -95,28 +100,28 @@ const IntroSlides: React.FC = () => {
                             onSwiper={swiper => setSlidesRef(swiper)}
                             onSlideChange={handleSlideChange}
                         >
-                            <SwiperSlide className={`bg-${firstSlideBackground}`}>
+                            <SwiperSlide className={firstSlideBackgroundClass}>
                                 <LearnCardSlide1
                                     handlePrevSlide={handlePrevSlide}
                                     handleNextSlide={handleNextSlide}
                                     showDesktopNav={!isNativePlatform}
                                 />
                             </SwiperSlide>
-                            <SwiperSlide className={`bg-${secondSlideBackground}`}>
+                            <SwiperSlide className={secondSlideBackgroundClass}>
                                 <LearnCardSlide2
                                     handlePrevSlide={handlePrevSlide}
                                     handleNextSlide={handleNextSlide}
                                     showDesktopNav={!isNativePlatform}
                                 />
                             </SwiperSlide>
-                            <SwiperSlide className={`bg-${thirdSlideBackground}`}>
+                            <SwiperSlide className={thirdSlideBackgroundClass}>
                                 <LearnCardSlide3
                                     handlePrevSlide={handlePrevSlide}
                                     handleNextSlide={handleNextSlide}
                                     showDesktopNav={!isNativePlatform}
                                 />
                             </SwiperSlide>
-                            <SwiperSlide className={`bg-${firstSlideBackground}`}>
+                            <SwiperSlide className={firstSlideBackgroundClass}>
                                 <LearnCardSlide4
                                     handlePrevSlide={handlePrevSlide}
                                     handleNextSlide={handleNextSlide}
