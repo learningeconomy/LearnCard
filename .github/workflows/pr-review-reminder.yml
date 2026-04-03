@@ -29,6 +29,19 @@ jobs:
 
           now=$(date +%s)
 
+          # --- GitHub username -> Slack member ID mapping ---
+          # To get a Slack member ID: click their profile -> ⋮ -> "Copy member ID"
+          # Format: "github_login": "<@UXXXXXXXX>" for real @mentions
+          # Unmapped users fall back to their GitHub username.
+          SLACK_USER_MAP='{
+            "goblincore": "U08CURKM4SC",
+            "TaylorBeeston": "U08C8GXQ6VA",
+            "smurflo2": "U08C60NCE9G",
+            "rhen92": "U08CJM5PQMP",
+            "custard7": "U088A359E76",
+            "gerardopar": "U08CUR5K8MN"
+          }'
+
           # --- Categorize each PR ---
 
           needs_review_items='[]'
@@ -74,7 +87,11 @@ jobs:
             fi
 
             is_sprint=$(echo "$pr" | jq '[.labels[]?.name] | any(ascii_downcase == "sprint")')
-            pending_reviewers=$(echo "$pr" | jq -r '[.reviewRequests[]?.login // .reviewRequests[]?.name] | join(", ")')
+            pending_reviewers=$(echo "$pr" | jq -r --argjson map "$SLACK_USER_MAP" '
+              [.reviewRequests[]? | (.login // .name) as $gh |
+                if $map[$gh] then $map[$gh] else "`" + $gh + "`" end
+              ] | join(", ")
+            ')
 
             has_approval=$(echo "$pr" | jq '[.reviews[]? | select(.state == "APPROVED")] | length > 0')
             has_changes_requested=$(echo "$pr" | jq '
