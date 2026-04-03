@@ -19,6 +19,7 @@ import {
     ChevronDown,
     Sparkles,
     Zap,
+    User,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
@@ -40,6 +41,7 @@ interface TestingTabProps {
 }
 
 type TestStatus = 'idle' | 'sending' | 'success' | 'error';
+type RecipientMode = 'email' | 'userId';
 
 type ExtendedTemplate = CredentialTemplate & {
     obv3Template?: OBv3CredentialTemplate;
@@ -87,7 +89,9 @@ export const TestingTab: React.FC<TestingTabProps> = ({
     // Load full template details on-demand (not loaded by dashboard for performance)
     const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(integration.id, basicTemplates);
 
+    const [recipientMode, setRecipientMode] = useState<RecipientMode>('email');
     const [testEmail, setTestEmail] = useState('');
+    const [testUserId, setTestUserId] = useState('');
     const [testStatus, setTestStatus] = useState<TestStatus>('idle');
     const [testResult, setTestResult] = useState<{
         credentialId?: string;
@@ -141,10 +145,13 @@ export const TestingTab: React.FC<TestingTabProps> = ({
     }, [selectedTemplate]);
 
     const handleSendTest = async () => {
-        if (!testEmail.trim() || !selectedTemplate?.boostUri) {
-            presentToast('Please enter an email and select a template with a saved boost', { 
-                type: ToastTypeEnum.Error 
-            });
+        const recipient = recipientMode === 'email' ? testEmail.trim() : testUserId.trim();
+
+        if (!recipient || !selectedTemplate?.boostUri) {
+            presentToast(
+                `Please enter a${recipientMode === 'email' ? 'n email' : ' user ID'} and select a template with a saved boost`,
+                { type: ToastTypeEnum.Error }
+            );
             return;
         }
 
@@ -160,17 +167,17 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                 templateData[varName] = getSampleValue(varName);
             });
 
-            // Use unified send() - auto-detects email recipient and handles templating
+            // Use unified send() - auto-detects email/profileId recipient and handles templating
             const result = await wallet.invoke.send?.({
                 type: 'boost',
-                recipient: testEmail,
+                recipient,
                 templateUri: selectedTemplate.boostUri,
                 templateData,
                 integrationId: integration.id,
                 options: {
                     branding: {
                         issuerName: branding?.displayName || integration.name,
-                        issuerLogoUrl: branding?.image,
+                        ...(branding?.image ? { issuerLogoUrl: branding.image } : {}),
                         recipientName: templateData.recipient_name || 'Test Recipient',
                     },
                 },
@@ -195,6 +202,8 @@ export const TestingTab: React.FC<TestingTabProps> = ({
         setTestStatus('idle');
         setTestResult(null);
     };
+
+    const recipientValue = recipientMode === 'email' ? testEmail : testUserId;
 
     // Check if we can test
     const canTest = issuableTemplates.length > 0 && issuableTemplates.some(t => t.boostUri);
@@ -232,7 +241,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                 <div className="text-sm text-violet-800">
                     <p className="font-medium mb-1">Sandbox Testing</p>
                     <p>
-                        Send a test credential to your own email to verify everything is configured correctly.
+                        Send a test credential to your own email or user ID to verify everything is configured correctly.
                         Sample data will be used for dynamic fields.
                     </p>
                 </div>
@@ -349,33 +358,78 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                 </div>
             )}
 
-            {/* Email Input */}
+            {/* Recipient Input */}
             <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700">
-                    Test Recipient Email
+                    Test Recipient
                 </label>
 
-                <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                        type="email"
-                        value={testEmail}
-                        onChange={(e) => setTestEmail(e.target.value)}
-                        placeholder="your-email@example.com"
-                        className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                    />
+                {/* Mode toggle */}
+                <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                    <button
+                        onClick={() => setRecipientMode('email')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-colors ${
+                            recipientMode === 'email'
+                                ? 'bg-cyan-500 text-white'
+                                : 'bg-white text-gray-600 hover:bg-gray-50'
+                        }`}
+                    >
+                        <Mail className="w-4 h-4" />
+                        Email
+                    </button>
+                    <button
+                        onClick={() => setRecipientMode('userId')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-colors ${
+                            recipientMode === 'userId'
+                                ? 'bg-cyan-500 text-white'
+                                : 'bg-white text-gray-600 hover:bg-gray-50'
+                        }`}
+                    >
+                        <User className="w-4 h-4" />
+                        User ID
+                    </button>
                 </div>
 
-                <p className="text-xs text-gray-500">
-                    We'll send a test credential to this email so you can verify the claim flow works.
-                </p>
+                {recipientMode === 'email' ? (
+                    <>
+                        <div className="relative">
+                            <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                type="email"
+                                value={testEmail}
+                                onChange={(e) => setTestEmail(e.target.value)}
+                                placeholder="your-email@example.com"
+                                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                            />
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            We'll send a test credential to this email so you can verify the claim flow works.
+                        </p>
+                    </>
+                ) : (
+                    <>
+                        <div className="relative">
+                            <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                type="text"
+                                value={testUserId}
+                                onChange={(e) => setTestUserId(e.target.value)}
+                                placeholder="profileId or did:..."
+                                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                            />
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            The credential will be sent directly to this user's wallet — no email required.
+                        </p>
+                    </>
+                )}
             </div>
 
             {/* Send Button / Result */}
             {testStatus === 'idle' && (
                 <button
                     onClick={handleSendTest}
-                    disabled={!canTest || !testEmail.trim() || !selectedTemplate?.boostUri}
+                    disabled={!canTest || !recipientValue.trim() || !selectedTemplate?.boostUri}
                     className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-cyan-500 to-violet-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                     <Send className="w-5 h-5" />
@@ -397,7 +451,10 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                         <div className="flex-1">
                             <p className="font-medium text-emerald-800">Test credential sent!</p>
                             <p className="text-sm text-emerald-700 mt-1">
-                                Check your email at <strong>{testEmail}</strong> for the claim link.
+                                {recipientMode === 'email'
+                                    ? <>Check your email at <strong>{testEmail}</strong> for the claim link.</>
+                                    : <>The credential has been sent directly to <strong>{testUserId}</strong>'s wallet.</>
+                                }
                             </p>
                             {testResult.credentialId && (
                                 <p className="text-xs text-emerald-600 mt-2 font-mono">
@@ -451,7 +508,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                 <ul className="text-sm text-gray-600 space-y-2">
                     <li className="flex items-start gap-2">
                         <span className="text-gray-400">•</span>
-                        <span>Use your own email to see exactly what recipients will receive</span>
+                        <span>Use your own email or user ID to quickly verify the full flow</span>
                     </li>
                     <li className="flex items-start gap-2">
                         <span className="text-gray-400">•</span>
