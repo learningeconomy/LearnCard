@@ -1288,6 +1288,20 @@ const handleShortcuts = async (): Promise<boolean> => {
             return true;
         }
 
+        case 'resolve': {
+            // pnpm lc resolve [tenant] [stage]
+            const resolveTenant = arg ?? 'learncard';
+            const resolveStage = arg2;
+
+            const resolveStageFlag = resolveStage ? ` --stage ${resolveStage}` : '';
+
+            runCommand(
+                `npx tsx scripts/resolve-tenant-config.ts ${resolveTenant}${resolveStageFlag}`,
+                `Resolving final config for ${resolveTenant}${resolveStage ? ` (${resolveStage})` : ''}`,
+            );
+            return true;
+        }
+
         case 'create':
             runCommand('npx tsx scripts/create-tenant.ts', 'Create a new tenant');
             return true;
@@ -1354,7 +1368,7 @@ const main = async () => {
     console.log(`  ${cyan('7')}  ${bold('Native / Capacitor')}     ${dim('— sync, open IDE, live-reload on device')}`);
     console.log(`  ${cyan('8')}  ${bold('Create a new theme')}     ${dim('— interactive theme scaffolding')}`);
     console.log('');
-    console.log(dim('  Or run directly: pnpm lc dev | start | validate | create | create-theme | switch | editor | generate | native | tenants'));
+    console.log(dim('  Or run directly: pnpm lc dev | start | validate | create | create-theme | switch | editor | generate | native | tenants | resolve'));
     console.log('');
 
     const choice = await ask('Pick an option [1-8]: ');

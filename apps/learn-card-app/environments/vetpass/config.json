@@ -1,4 +1,6 @@
 {
+    "_defaults": "Fallback defaults live in packages/learn-card-base/src/config/tenantDefaults.ts — run `pnpm lc resolve vetpass` to see the final merged config.",
+
     "tenantId": "vetpass",
     "domain": "vetpass.app",
     "devDomain": "localhost:3000",
