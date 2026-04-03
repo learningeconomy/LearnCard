@@ -126,6 +126,38 @@
       },
       "oauth_client": [
         {
+          "client_id": "776298253175-cc8kuh30aakgoruht579at84gcq97d7g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vetpass.app",
+            "certificate_hash": "d722d25dad71b4f5d6876f5ad6c0c723d13d63bf"
+          }
+        },
+        {
+          "client_id": "776298253175-dcqfpqn20ht0q5as7g72jfg9blelhiog.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vetpass.app",
+            "certificate_hash": "1e5bd16d967452d961253630d49815211a0542f5"
+          }
+        },
+        {
+          "client_id": "776298253175-e6100pcvdlulhh7nb8ps5s9p4srb1jtb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vetpass.app",
+            "certificate_hash": "3c3447a8fed51a2e709ece92a11e2d78fb1d08d6"
+          }
+        },
+        {
+          "client_id": "776298253175-l1frpbvp79134bovnmc0r1k1sslb4e5e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vetpass.app",
+            "certificate_hash": "df2220de3c62e4879ec3c7fdd3a0bbf6fba0bd3f"
+          }
+        },
+        {
           "client_id": "776298253175-kkf562eofl541vu0oedfdvrk40bpkbh7.apps.googleusercontent.com",
           "client_type": 3
         }

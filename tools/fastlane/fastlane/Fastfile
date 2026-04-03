@@ -418,6 +418,32 @@ platform :android do
     )
   end
 
+  desc "Build AAB for first-time manual upload to Google Play (no Play Store lookup or upload)"
+  lane :initial_upload do
+    current_build_number = ((Time.now - Time.new(1991, 1, 1)) / 60).to_i
+    current_version_name = "1.0.0"
+
+    UI.message("Building initial release — version: #{current_version_name}, build: #{current_build_number}")
+
+    gradle(
+      task: 'bundle',
+      build_type: 'Release',
+      project_dir: ENV['GRADLE_PROJECT_DIRECTORY'],
+      properties: {
+        "android.injected.signing.store.file" => ENV['ANDROID_KEYSTORE_FILE'],
+        "android.injected.signing.store.password" => ENV['ANDROID_KEYSTORE_PASSWORD'],
+        "android.injected.signing.key.alias" => ENV['ANDROID_KEYSTORE_KEY_ALIAS'],
+        "android.injected.signing.key.password" => ENV['ANDROID_KEYSTORE_KEY_PASSWORD'],
+        "android.injected.version.code" => current_build_number,
+        "android.injected.version.name" => current_version_name,
+        "versionCode" => current_build_number,
+        "versionName" => current_version_name,
+      }
+    )
+
+    UI.message("✅ AAB built! Upload manually to Google Play Console.")
+  end
+
   lane :upload_to_appetize do
     setup_ci if ENV['CI']
 
