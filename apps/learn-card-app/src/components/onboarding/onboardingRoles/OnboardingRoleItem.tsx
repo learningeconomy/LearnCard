@@ -9,6 +9,15 @@ import TeacherIcon from '../../../assets/images/quicknavroles/teacherappleicon.p
 import AdminIcon from '../../../assets/images/quicknavroles/adminshieldicon.png';
 import DeveloperIcon from '../../../assets/images/quicknavroles/developeralienicon.png';
 
+export const roleIcons: Record<LearnCardRolesEnum, string> = {
+    [LearnCardRolesEnum.learner]: LearnerIcon,
+    [LearnCardRolesEnum.guardian]: GuardianIcon,
+    [LearnCardRolesEnum.teacher]: TeacherIcon,
+    [LearnCardRolesEnum.admin]: AdminIcon,
+    [LearnCardRolesEnum.counselor]: TeacherIcon,
+    [LearnCardRolesEnum.developer]: DeveloperIcon,
+};
+
 type OnboardingRoleItemProps = {
     role: LearnCardRolesEnum | null;
     setRole: (role: LearnCardRolesEnum) => void;
@@ -26,15 +35,6 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
 }) => {
     const isSelected = role === roleItem?.type;
     const activeStyles = isSelected ? 'bg-[#CCFBF1] border-[#CCFBF1]' : 'border-grayscale-200';
-
-    const roleIcons: Record<LearnCardRolesEnum, string> = {
-        [LearnCardRolesEnum.learner]: LearnerIcon,
-        [LearnCardRolesEnum.guardian]: GuardianIcon,
-        [LearnCardRolesEnum.teacher]: TeacherIcon,
-        [LearnCardRolesEnum.admin]: AdminIcon,
-        [LearnCardRolesEnum.counselor]: TeacherIcon,
-        [LearnCardRolesEnum.developer]: DeveloperIcon,
-    };
 
     const iconSrc = roleItem ? roleIcons[roleItem.type] : undefined;
     const hasIcon = Boolean(iconSrc);
