@@ -1,3 +1,20 @@
 {
-    "domain": "staging.vetpass.app"
+    "domain": "staging.vetpass.app",
+    "apis": {
+        "brainService": "https://staging.network.learncard.com/trpc",
+        "brainServiceApi": "https://staging.network.learncard.com/api",
+        "cloudService": "https://staging.cloud.learncard.com/trpc",
+        "lcaApi": "https://staging.api.learncard.app/trpc",
+        "xapi": "https://staging.network.learncard.com/xapi"
+    },
+    "observability": {
+        "sentryEnv": "staging-vetpass",
+        "launchDarklyClientId": "69d016bd5bb5390aaec9af07"
+    },
+    "native": {
+        "deepLinkDomains": [
+            "staging.vetpass.app",
+            "staging.learncard.app"
+        ]
+    }
 }
