@@ -13,6 +13,7 @@ import {
     useToast,
     ToastTypeEnum,
     useVerifiableData,
+    ModalTypes,
 } from 'learn-card-base';
 
 import { Plus, X } from 'lucide-react';
@@ -31,11 +32,12 @@ import {
 } from './ai-pathways-skill-profile/SkillProfileStep1';
 import { IonSpinner } from '@ionic/react';
 import type { SelectedSkill } from '../skills/skillTypes';
+import SelfAssignSkillsModal from '../skills/SelfAssignSkillsModal';
 
 type ExplorePathwaysModalProps = { initialSearchQuery?: string };
 
 const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSearchQuery = '' }) => {
-    const { closeModal } = useModal();
+    const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
 
     const [search, setSearch] = useState(initialSearchQuery);
@@ -118,6 +120,13 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
         await persistSkills(selectedSkills.filter(skill => skill.id !== skillId));
     };
 
+    const openSelfAssignSkillsModal = () => {
+        newModal(<SelfAssignSkillsModal />, undefined, {
+            desktop: ModalTypes.Right,
+            mobile: ModalTypes.Right,
+        });
+    };
+
     const handleSwiperUpdate = (swiper: any, setAtBeginning: any, setAtEnd: any) => {
         setAtBeginning(swiper.isBeginning);
         setAtEnd(swiper.isEnd);
@@ -190,7 +199,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                             View All
                                         </button>
                                     )}
-                                    <button disabled={skillsSaving}>
+                                    <button onClick={openSelfAssignSkillsModal} disabled={skillsSaving}>
                                         <Pencil className="text-grayscale-700 h-[30px] w-[30px] disabled:opacity-60" />
                                     </button>
                                 </div>
