@@ -103,14 +103,14 @@ ion-tab-bar {
     height: 75px;
     width: 75px;
 
-    @media (max-width: 320px) {
-        left: 53.5%;
-    }
     @media (min-width: 500px) {
         left: 52%;
     }
     @media (max-width: 500px) {
         left: 53%;
+    }
+    @media (max-width: 320px) {
+        left: 53.5%;
     }
     @media (min-width: 500px) and (max-width: 768px) {
         left: 51.5%;
