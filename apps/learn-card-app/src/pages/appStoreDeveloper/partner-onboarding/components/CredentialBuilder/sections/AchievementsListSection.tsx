@@ -265,15 +265,18 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
 
                         const isDragging = draggedId === entry.id;
                         const isDragOver = dragOverId === entry.id;
+                        // Drag is only active when the entry is collapsed — expanded forms are
+                        // too large and too easy to accidentally trigger a drag on.
+                        const isDraggable = !entryExpanded;
 
                         return (
                             <div
                                 key={entry.id}
-                                draggable
-                                onDragStart={e => handleDragStart(e, entry.id)}
-                                onDragOver={e => handleDragOver(e, entry.id)}
-                                onDrop={e => handleDrop(e, entry.id)}
-                                onDragEnd={handleDragEnd}
+                                draggable={isDraggable}
+                                onDragStart={isDraggable ? e => handleDragStart(e, entry.id) : undefined}
+                                onDragOver={isDraggable ? e => handleDragOver(e, entry.id) : undefined}
+                                onDrop={isDraggable ? e => handleDrop(e, entry.id) : undefined}
+                                onDragEnd={isDraggable ? handleDragEnd : undefined}
                                 className={`border rounded-lg overflow-hidden transition-all ${
                                     isDragging
                                         ? 'opacity-40 border-dashed border-indigo-300'
@@ -286,12 +289,15 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                             >
                                 {/* Entry Header */}
                                 <div className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
-                                    <span
-                                        className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 flex-shrink-0"
-                                        title="Drag to reorder"
-                                    >
-                                        <GripVertical className="w-4 h-4" />
-                                    </span>
+                                    {/* Grip handle: only shown when collapsed */}
+                                    {isDraggable && (
+                                        <span
+                                            className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 flex-shrink-0"
+                                            title="Drag to reorder"
+                                        >
+                                            <GripVertical className="w-4 h-4" />
+                                        </span>
+                                    )}
                                     <button
                                         type="button"
                                         onClick={() => toggleEntry(entry.id)}
