@@ -46,8 +46,10 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
     const goalsSwiperRef = useRef<any>(null);
     const [skillsAtBeginning, setSkillsAtBeginning] = useState(true);
     const [skillsAtEnd, setSkillsAtEnd] = useState(false);
+    const [skillsExpanded, setSkillsExpanded] = useState(false);
     const [goalsAtBeginning, setGoalsAtBeginning] = useState(true);
     const [goalsAtEnd, setGoalsAtEnd] = useState(false);
+    const [goalsExpanded, setGoalsExpanded] = useState(false);
 
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
     const { data: sasBoostSkills, isLoading: sasBoostSkillsLoading } = useGetBoostSkills(
@@ -146,6 +148,9 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
         }
     }, [goals.length]);
 
+    const showSkillsViewToggle = skillsExpanded || !skillsAtBeginning || !skillsAtEnd;
+    const showGoalsViewToggle = goalsExpanded || !goalsAtBeginning || !goalsAtEnd;
+
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden text-grayscale-900">
             <div className="px-[15px] py-[20px] bg-white safe-area-top-margin flex flex-col gap-[15px] z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
@@ -194,58 +199,125 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                 {conditionalPluralize(selectedSkills.length, 'Skill')}
 
                                 <div className="flex items-center gap-[15px] ml-auto">
-                                    {selectedSkills.length > 3 && (
-                                        <button className="text-grayscale-600 text-[14px] font-bold">
-                                            View All
+                                    {showSkillsViewToggle && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSkillsExpanded(prev => !prev)}
+                                            className="text-grayscale-600 text-[14px] font-bold"
+                                        >
+                                            {skillsExpanded ? 'View Less' : 'View All'}
                                         </button>
                                     )}
-                                    <button onClick={openSelfAssignSkillsModal} disabled={skillsSaving}>
+                                    <button
+                                        onClick={openSelfAssignSkillsModal}
+                                        disabled={skillsSaving}
+                                    >
                                         <Pencil className="text-grayscale-700 h-[30px] w-[30px] disabled:opacity-60" />
                                     </button>
                                 </div>
                             </h4>
 
-                            <div className="relative w-full overflow-hidden">
-                                <Swiper
-                                    onSwiper={swiper => {
-                                        skillsSwiperRef.current = swiper;
-                                        handleSwiperUpdate(
-                                            swiper,
-                                            setSkillsAtBeginning,
-                                            setSkillsAtEnd
-                                        );
-                                    }}
-                                    onResize={swiper =>
-                                        handleSwiperUpdate(
-                                            swiper,
-                                            setSkillsAtBeginning,
-                                            setSkillsAtEnd
-                                        )
-                                    }
-                                    onSlideChange={swiper =>
-                                        handleSwiperUpdate(
-                                            swiper,
-                                            setSkillsAtBeginning,
-                                            setSkillsAtEnd
-                                        )
-                                    }
-                                    onReachBeginning={() => setSkillsAtBeginning(true)}
-                                    onFromEdge={() => {
-                                        if (skillsSwiperRef.current) {
-                                            setSkillsAtBeginning(
-                                                skillsSwiperRef.current.isBeginning
-                                            );
-                                            setSkillsAtEnd(skillsSwiperRef.current.isEnd);
-                                        }
-                                    }}
-                                    onReachEnd={() => setSkillsAtEnd(true)}
-                                    spaceBetween={12}
-                                    slidesPerView={'auto'}
-                                    grabCursor={true}
-                                >
-                                    {selectedSkills.map(skill => (
-                                        <SwiperSlide key={skill.id} style={{ width: 'auto' }}>
+                            <div className="relative w-full overflow-hidden transition-all duration-300 ease-in-out">
+                                {!skillsExpanded ? (
+                                    <>
+                                        <Swiper
+                                            onSwiper={swiper => {
+                                                skillsSwiperRef.current = swiper;
+                                                handleSwiperUpdate(
+                                                    swiper,
+                                                    setSkillsAtBeginning,
+                                                    setSkillsAtEnd
+                                                );
+                                            }}
+                                            onResize={swiper =>
+                                                handleSwiperUpdate(
+                                                    swiper,
+                                                    setSkillsAtBeginning,
+                                                    setSkillsAtEnd
+                                                )
+                                            }
+                                            onSlideChange={swiper =>
+                                                handleSwiperUpdate(
+                                                    swiper,
+                                                    setSkillsAtBeginning,
+                                                    setSkillsAtEnd
+                                                )
+                                            }
+                                            onReachBeginning={() => setSkillsAtBeginning(true)}
+                                            onFromEdge={() => {
+                                                if (skillsSwiperRef.current) {
+                                                    setSkillsAtBeginning(
+                                                        skillsSwiperRef.current.isBeginning
+                                                    );
+                                                    setSkillsAtEnd(skillsSwiperRef.current.isEnd);
+                                                }
+                                            }}
+                                            onReachEnd={() => setSkillsAtEnd(true)}
+                                            spaceBetween={12}
+                                            slidesPerView={'auto'}
+                                            grabCursor={true}
+                                        >
+                                            {selectedSkills.map(skill => (
+                                                <SwiperSlide
+                                                    key={skill.id}
+                                                    style={{ width: 'auto' }}
+                                                >
+                                                    <SkillTag
+                                                        skillId={skill.id}
+                                                        frameworkId={
+                                                            sasBoostSkills?.[0]?.frameworkId ?? ''
+                                                        }
+                                                        proficiencyLevel={skill.proficiency}
+                                                        handleRemoveSkill={() =>
+                                                            handleRemoveSkill(skill.id)
+                                                        }
+                                                        handleEditSkill={proficiencyLevel =>
+                                                            handleEditSkill(
+                                                                skill.id,
+                                                                proficiencyLevel
+                                                            )
+                                                        }
+                                                        disabled={skillsSaving}
+                                                        selectedSkills={selectedSkills}
+                                                        handleAddRelatedSkill={() => undefined}
+                                                        handleEditRelatedSkill={() => undefined}
+                                                        handleRemoveRelatedSkill={() => undefined}
+                                                    />
+                                                </SwiperSlide>
+                                            ))}
+                                        </Swiper>
+
+                                        {!skillsAtBeginning && (
+                                            <button
+                                                onClick={() => {
+                                                    skillsSwiperRef.current?.slidePrev();
+                                                }}
+                                                className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                                style={{ opacity: 0.8 }}
+                                                disabled={skillsSaving}
+                                            >
+                                                <SlimCaretLeft className="w-5 h-auto" />
+                                            </button>
+                                        )}
+
+                                        {!skillsAtEnd && (
+                                            <button
+                                                onClick={() => {
+                                                    skillsSwiperRef.current?.slideNext();
+                                                }}
+                                                className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                                style={{ opacity: 0.8 }}
+                                                disabled={skillsSaving}
+                                            >
+                                                <SlimCaretRight className="w-5 h-auto" />
+                                            </button>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col gap-[10px]">
+                                        {selectedSkills.map(skill => (
                                             <SkillTag
+                                                key={skill.id}
                                                 skillId={skill.id}
                                                 frameworkId={sasBoostSkills?.[0]?.frameworkId ?? ''}
                                                 proficiencyLevel={skill.proficiency}
@@ -261,34 +333,8 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                                 handleEditRelatedSkill={() => undefined}
                                                 handleRemoveRelatedSkill={() => undefined}
                                             />
-                                        </SwiperSlide>
-                                    ))}
-                                </Swiper>
-
-                                {!skillsAtBeginning && (
-                                    <button
-                                        onClick={() => {
-                                            skillsSwiperRef.current?.slidePrev();
-                                        }}
-                                        className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
-                                        style={{ opacity: 0.8 }}
-                                        disabled={skillsSaving}
-                                    >
-                                        <SlimCaretLeft className="w-5 h-auto" />
-                                    </button>
-                                )}
-
-                                {!skillsAtEnd && (
-                                    <button
-                                        onClick={() => {
-                                            skillsSwiperRef.current?.slideNext();
-                                        }}
-                                        className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
-                                        style={{ opacity: 0.8 }}
-                                        disabled={skillsSaving}
-                                    >
-                                        <SlimCaretRight className="w-5 h-auto" />
-                                    </button>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -321,9 +367,13 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                 {conditionalPluralize(goals.length, 'Goal')}
 
                                 <div className="flex items-center gap-[15px] ml-auto">
-                                    {goals.length > 3 && (
-                                        <button className="text-grayscale-600 text-[14px] font-bold">
-                                            View All
+                                    {showGoalsViewToggle && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setGoalsExpanded(prev => !prev)}
+                                            className="text-grayscale-600 text-[14px] font-bold"
+                                        >
+                                            {goalsExpanded ? 'View Less' : 'View All'}
                                         </button>
                                     )}
                                     <button>
@@ -332,45 +382,94 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                 </div>
                             </h4>
 
-                            <div className="relative w-full overflow-hidden">
-                                <Swiper
-                                    onSwiper={swiper => {
-                                        goalsSwiperRef.current = swiper;
-                                        handleSwiperUpdate(
-                                            swiper,
-                                            setGoalsAtBeginning,
-                                            setGoalsAtEnd
-                                        );
-                                    }}
-                                    onResize={swiper =>
-                                        handleSwiperUpdate(
-                                            swiper,
-                                            setGoalsAtBeginning,
-                                            setGoalsAtEnd
-                                        )
-                                    }
-                                    onSlideChange={swiper =>
-                                        handleSwiperUpdate(
-                                            swiper,
-                                            setGoalsAtBeginning,
-                                            setGoalsAtEnd
-                                        )
-                                    }
-                                    onReachBeginning={() => setGoalsAtBeginning(true)}
-                                    onFromEdge={() => {
-                                        if (goalsSwiperRef.current) {
-                                            setGoalsAtBeginning(goalsSwiperRef.current.isBeginning);
-                                            setGoalsAtEnd(goalsSwiperRef.current.isEnd);
-                                        }
-                                    }}
-                                    onReachEnd={() => setGoalsAtEnd(true)}
-                                    spaceBetween={12}
-                                    slidesPerView={'auto'}
-                                    grabCursor={true}
-                                >
-                                    {goals.map((goal, index) => (
-                                        <SwiperSlide key={index} style={{ width: 'auto' }}>
-                                            <span className="flex items-center gap-[8px] border-solid border-[2px] border-sky-600 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]">
+                            <div className="relative w-full overflow-hidden transition-all duration-300 ease-in-out">
+                                {!goalsExpanded ? (
+                                    <>
+                                        <Swiper
+                                            onSwiper={swiper => {
+                                                goalsSwiperRef.current = swiper;
+                                                handleSwiperUpdate(
+                                                    swiper,
+                                                    setGoalsAtBeginning,
+                                                    setGoalsAtEnd
+                                                );
+                                            }}
+                                            onResize={swiper =>
+                                                handleSwiperUpdate(
+                                                    swiper,
+                                                    setGoalsAtBeginning,
+                                                    setGoalsAtEnd
+                                                )
+                                            }
+                                            onSlideChange={swiper =>
+                                                handleSwiperUpdate(
+                                                    swiper,
+                                                    setGoalsAtBeginning,
+                                                    setGoalsAtEnd
+                                                )
+                                            }
+                                            onReachBeginning={() => setGoalsAtBeginning(true)}
+                                            onFromEdge={() => {
+                                                if (goalsSwiperRef.current) {
+                                                    setGoalsAtBeginning(
+                                                        goalsSwiperRef.current.isBeginning
+                                                    );
+                                                    setGoalsAtEnd(goalsSwiperRef.current.isEnd);
+                                                }
+                                            }}
+                                            onReachEnd={() => setGoalsAtEnd(true)}
+                                            spaceBetween={12}
+                                            slidesPerView={'auto'}
+                                            grabCursor={true}
+                                        >
+                                            {goals.map((goal, index) => (
+                                                <SwiperSlide key={index} style={{ width: 'auto' }}>
+                                                    <span className="flex items-center gap-[8px] border-solid border-[2px] border-sky-600 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]">
+                                                        {goal}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                console.log('remove goal', index)
+                                                            }
+                                                        >
+                                                            <X className="w-[15px] h-[15px]" />
+                                                        </button>
+                                                    </span>
+                                                </SwiperSlide>
+                                            ))}
+                                        </Swiper>
+
+                                        {!goalsAtBeginning && (
+                                            <button
+                                                onClick={() => {
+                                                    goalsSwiperRef.current?.slidePrev();
+                                                }}
+                                                className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                                style={{ opacity: 0.8 }}
+                                            >
+                                                <SlimCaretLeft className="w-5 h-auto" />
+                                            </button>
+                                        )}
+
+                                        {!goalsAtEnd && (
+                                            <button
+                                                onClick={() => {
+                                                    goalsSwiperRef.current?.slideNext();
+                                                }}
+                                                className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                                style={{ opacity: 0.8 }}
+                                            >
+                                                <SlimCaretRight className="w-5 h-auto" />
+                                            </button>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col gap-[10px]">
+                                        {goals.map((goal, index) => (
+                                            <span
+                                                key={index}
+                                                className="flex items-center gap-[8px] border-solid border-[2px] border-sky-600 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px] w-fit"
+                                            >
                                                 {goal}
                                                 <button
                                                     type="button"
@@ -381,32 +480,8 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                                     <X className="w-[15px] h-[15px]" />
                                                 </button>
                                             </span>
-                                        </SwiperSlide>
-                                    ))}
-                                </Swiper>
-
-                                {!goalsAtBeginning && (
-                                    <button
-                                        onClick={() => {
-                                            goalsSwiperRef.current?.slidePrev();
-                                        }}
-                                        className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
-                                        style={{ opacity: 0.8 }}
-                                    >
-                                        <SlimCaretLeft className="w-5 h-auto" />
-                                    </button>
-                                )}
-
-                                {!goalsAtEnd && (
-                                    <button
-                                        onClick={() => {
-                                            goalsSwiperRef.current?.slideNext();
-                                        }}
-                                        className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
-                                        style={{ opacity: 0.8 }}
-                                    >
-                                        <SlimCaretRight className="w-5 h-auto" />
-                                    </button>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                         </>

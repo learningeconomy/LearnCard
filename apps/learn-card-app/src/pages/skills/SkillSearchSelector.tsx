@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
 import {
     useGetSkillFrameworkById,
     useSearchFrameworkSkills,
@@ -19,6 +21,8 @@ import Plus from '../../components/svgs/Plus';
 import Search from 'learn-card-base/svgs/Search';
 import VerifiedBadgeIcon from 'learn-card-base/svgs/VerifiedBadgeIcon';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
+import SlimCaretLeft from 'src/components/svgs/SlimCaretLeft';
+import SlimCaretRight from 'src/components/svgs/SlimCaretRight';
 import AddSkillModal from './AddSkillModal';
 import SkillTag from './SkillTag';
 import { IonInput, IonSpinner } from '@ionic/react';
@@ -32,7 +36,7 @@ import { SkillFrameworkNode } from '../../components/boost/boost';
 import { SkillLevel } from './skillTypes';
 import type { SelectedSkill } from './skillTypes';
 
-export type SkillSearchSelectorProps = {
+type SkillSearchSelectorProps = {
     selectedSkills: SelectedSkill[];
     onSelectedSkillsChange: (skills: SelectedSkill[]) => void;
     showSuggestSkill?: boolean;
@@ -70,6 +74,10 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
 
     const [isSubmittingSkillSuggestion, setIsSubmittingSkillSuggestion] = useState(false);
     const [internalSearchInput, setInternalSearchInput] = useState(initialSearchQuery || '');
+    const selectedSkillsSwiperRef = useRef<any>(null);
+    const [selectedSkillsAtBeginning, setSelectedSkillsAtBeginning] = useState(true);
+    const [selectedSkillsAtEnd, setSelectedSkillsAtEnd] = useState(false);
+    const [selectedSkillsExpanded, setSelectedSkillsExpanded] = useState(false);
 
     const initialSkillIds = flags?.initialSelfAssignedSkillIds?.skillIds as string[];
     const frameworkId = flags?.selfAssignedSkillsFrameworkId;
@@ -187,6 +195,25 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         handleToggleSelect(skillId);
     };
 
+    const handleSwiperUpdate = (swiper: any, setAtBeginning: any, setAtEnd: any) => {
+        setAtBeginning(swiper.isBeginning);
+        setAtEnd(swiper.isEnd);
+    };
+
+    useEffect(() => {
+        if (selectedSkillsSwiperRef.current) {
+            selectedSkillsSwiperRef.current.update();
+            handleSwiperUpdate(
+                selectedSkillsSwiperRef.current,
+                setSelectedSkillsAtBeginning,
+                setSelectedSkillsAtEnd
+            );
+        }
+    }, [selectedSkills.length]);
+
+    const showSelectedSkillsViewToggle =
+        selectedSkillsExpanded || !selectedSkillsAtBeginning || !selectedSkillsAtEnd;
+
     const handleSubmitSkillSuggestion = async () => {
         if (isSubmittingSkillSuggestion) return;
 
@@ -294,32 +321,152 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                 <VerifiedBadgeIcon />
                                 {conditionalPluralize(selectedSkills.length, 'Self Assigned Skill')}
 
-                                {selectedSkills.length > 4 && (
-                                    <button className="ml-auto text-grayscale-600 text-[14px] font-bold">
-                                        View All
-                                    </button>
-                                )}
+                                <div className="ml-auto flex items-center gap-[10px]">
+                                    {showSelectedSkillsViewToggle && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedSkillsExpanded(prev => !prev)}
+                                            className="text-grayscale-600 text-[14px] font-bold"
+                                        >
+                                            {selectedSkillsExpanded ? 'View Less' : 'View All'}
+                                        </button>
+                                    )}
+                                </div>
                             </h4>
 
-                            {selectedSkills.map(skill => (
-                                <SkillTag
-                                    key={skill.id}
-                                    skillId={skill.id}
-                                    frameworkId={frameworkId}
-                                    proficiencyLevel={skill.proficiency}
-                                    handleRemoveSkill={() =>
-                                        handleRemoveSkillFromSelection(skill.id)
-                                    }
-                                    handleEditSkill={proficiencyLevel =>
-                                        handleEditSkillInSelection(skill.id, proficiencyLevel)
-                                    }
-                                    disabled={isSavingSkills}
-                                    selectedSkills={selectedSkills}
-                                    handleAddRelatedSkill={handleAddRelatedSkill}
-                                    handleEditRelatedSkill={handleEditRelatedSkill}
-                                    handleRemoveRelatedSkill={handleRemoveRelatedSkill}
-                                />
-                            ))}
+                            <div className="relative w-full overflow-hidden transition-all duration-300 ease-in-out">
+                                {!selectedSkillsExpanded ? (
+                                    <>
+                                        <Swiper
+                                            onSwiper={swiper => {
+                                                selectedSkillsSwiperRef.current = swiper;
+                                                handleSwiperUpdate(
+                                                    swiper,
+                                                    setSelectedSkillsAtBeginning,
+                                                    setSelectedSkillsAtEnd
+                                                );
+                                            }}
+                                            onResize={swiper =>
+                                                handleSwiperUpdate(
+                                                    swiper,
+                                                    setSelectedSkillsAtBeginning,
+                                                    setSelectedSkillsAtEnd
+                                                )
+                                            }
+                                            onSlideChange={swiper =>
+                                                handleSwiperUpdate(
+                                                    swiper,
+                                                    setSelectedSkillsAtBeginning,
+                                                    setSelectedSkillsAtEnd
+                                                )
+                                            }
+                                            onReachBeginning={() =>
+                                                setSelectedSkillsAtBeginning(true)
+                                            }
+                                            onFromEdge={() => {
+                                                if (selectedSkillsSwiperRef.current) {
+                                                    setSelectedSkillsAtBeginning(
+                                                        selectedSkillsSwiperRef.current.isBeginning
+                                                    );
+                                                    setSelectedSkillsAtEnd(
+                                                        selectedSkillsSwiperRef.current.isEnd
+                                                    );
+                                                }
+                                            }}
+                                            onReachEnd={() => setSelectedSkillsAtEnd(true)}
+                                            spaceBetween={12}
+                                            slidesPerView={'auto'}
+                                            grabCursor={true}
+                                        >
+                                            {selectedSkills.map(skill => (
+                                                <SwiperSlide
+                                                    key={skill.id}
+                                                    style={{ width: 'auto' }}
+                                                >
+                                                    <SkillTag
+                                                        skillId={skill.id}
+                                                        frameworkId={frameworkId}
+                                                        proficiencyLevel={skill.proficiency}
+                                                        handleRemoveSkill={() =>
+                                                            handleRemoveSkillFromSelection(skill.id)
+                                                        }
+                                                        handleEditSkill={proficiencyLevel =>
+                                                            handleEditSkillInSelection(
+                                                                skill.id,
+                                                                proficiencyLevel
+                                                            )
+                                                        }
+                                                        disabled={isSavingSkills}
+                                                        selectedSkills={selectedSkills}
+                                                        handleAddRelatedSkill={
+                                                            handleAddRelatedSkill
+                                                        }
+                                                        handleEditRelatedSkill={
+                                                            handleEditRelatedSkill
+                                                        }
+                                                        handleRemoveRelatedSkill={
+                                                            handleRemoveRelatedSkill
+                                                        }
+                                                    />
+                                                </SwiperSlide>
+                                            ))}
+                                        </Swiper>
+
+                                        {!selectedSkillsAtBeginning && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    selectedSkillsSwiperRef.current?.slidePrev();
+                                                }}
+                                                className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                                style={{ opacity: 0.8 }}
+                                                disabled={isSavingSkills}
+                                            >
+                                                <SlimCaretLeft className="w-5 h-auto" />
+                                            </button>
+                                        )}
+
+                                        {!selectedSkillsAtEnd && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    selectedSkillsSwiperRef.current?.slideNext();
+                                                }}
+                                                className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                                style={{ opacity: 0.8 }}
+                                                disabled={isSavingSkills}
+                                            >
+                                                <SlimCaretRight className="w-5 h-auto" />
+                                            </button>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="flex flex-row flex-wrap gap-[10px]">
+                                        {selectedSkills.map(skill => (
+                                            <SkillTag
+                                                key={skill.id}
+                                                skillId={skill.id}
+                                                frameworkId={frameworkId}
+                                                proficiencyLevel={skill.proficiency}
+                                                handleRemoveSkill={() =>
+                                                    handleRemoveSkillFromSelection(skill.id)
+                                                }
+                                                handleEditSkill={proficiencyLevel =>
+                                                    handleEditSkillInSelection(
+                                                        skill.id,
+                                                        proficiencyLevel
+                                                    )
+                                                }
+                                                disabled={isSavingSkills}
+                                                selectedSkills={selectedSkills}
+                                                handleAddRelatedSkill={handleAddRelatedSkill}
+                                                handleEditRelatedSkill={handleEditRelatedSkill}
+                                                handleRemoveRelatedSkill={handleRemoveRelatedSkill}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 
