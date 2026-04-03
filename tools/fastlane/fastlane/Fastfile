@@ -365,6 +365,14 @@ platform :android do
   lane :release do
     setup_ci if ENV['CI']
 
+    # Prefer a file path (JSON_KEY_FILE) over inline JSON (JSON_KEY_DATA)
+    # because dotenv expands \n → real newlines, which breaks JSON parsing locally.
+    json_key_params = if ENV['JSON_KEY_FILE']
+      { json_key: ENV['JSON_KEY_FILE'] }
+    else
+      { json_key_data: ENV['JSON_KEY_DATA'] }
+    end
+
     # previous_build_number = google_play_track_version_codes(
     #   package_name: ENV['APP_ID'],
     #   track: ENV['GOOGLE_PLAY_RELEASE_TRACK'],
@@ -374,7 +382,7 @@ platform :android do
     previous_version_name = google_play_track_release_names(
       package_name: ENV['APP_ID'],
       track: ENV['GOOGLE_PLAY_RELEASE_TRACK'],
-      json_key_data: ENV['JSON_KEY_DATA'],
+      **json_key_params,
     )[0]
 
     if !previous_version_name
@@ -409,7 +417,7 @@ platform :android do
     upload_to_play_store(
       version_name: current_version_name,
       version_code: current_build_number,
-      json_key_data: ENV['JSON_KEY_DATA'],
+      **json_key_params,
       track: ENV['GOOGLE_PLAY_RELEASE_TRACK'],
       skip_upload_apk: true,
       skip_upload_screenshots: true,

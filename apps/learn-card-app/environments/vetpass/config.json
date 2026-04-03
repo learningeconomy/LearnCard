@@ -27,6 +27,13 @@
         "brandingKey": "vetpass",
         "headerText": "VETPASS",
         "homeRoute": "/wallet",
+        "textLogoUrl": "/branding/text-logo.png",
+        "textLogoDarkUrl": "/branding/text-logo-dark.png",
+        "brandMarkUrl": "/branding/brand-mark.png",
+        "brandMarkLightUrl": "/branding/brand-mark-light.png",
+        "appIconUrl": "/branding/app-icon.png",
+        "fullLogoUrl": "/branding/full-logo.png",
+        "fullLogoDarkUrl": "/branding/full-logo-dark.png",
         "categoryLabels": {
             "learningHistory": "Training",
             "workHistory": "Service",
