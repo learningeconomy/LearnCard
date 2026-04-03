@@ -13,9 +13,11 @@
  *   pnpm lc help                # cheat sheet of common commands
  *
  * ⚡ Golden paths:
- *   pnpm lc dev vetpass alpha   # web dev server for a tenant + stage
- *   pnpm lc sync vetpass alpha  # cap sync + tenant config patching
- *   pnpm lc open vetpass ios    # sync tenant + open Xcode / Android Studio
+ *   pnpm lc dev vetpass alpha       # web dev server (prompts for run mode)
+ *   pnpm lc dev vetpass alpha app   # app only — skip the mode menu
+ *   pnpm lc dev vetpass alpha full  # full stack — skip the mode menu
+ *   pnpm lc sync vetpass alpha      # cap sync + tenant config patching
+ *   pnpm lc open vetpass ios        # sync tenant + open Xcode / Android Studio
  *
  * Other shortcuts:
  *   pnpm lc start               # Vite only (no Docker)
@@ -184,7 +186,21 @@ const pickStage = async (tenantId: string): Promise<string> => {
     return allStages[idx] ?? 'local';
 };
 
-const startDev = async (tenantId?: string, stageId?: string) => {
+type DevMode = 'full' | 'app' | 'services';
+
+const asDevMode = (s?: string): DevMode | undefined => {
+    if (!s) return undefined;
+
+    const map: Record<string, DevMode> = {
+        full: 'full',
+        app: 'app',
+        services: 'services',
+    };
+
+    return map[s.toLowerCase()];
+};
+
+const startDev = async (tenantId?: string, stageId?: string, devMode?: DevMode) => {
     const tenants = discoverTenants();
 
     if (!tenantId) {
@@ -231,40 +247,46 @@ const startDev = async (tenantId?: string, stageId?: string) => {
     const stageFlag = stageId === 'production' ? '' : ` --stage ${stageId}`;
     const stageLabel = stageId === 'production' ? '' : ` (${stageId})`;
 
-    console.log('');
-    console.log(bold('How do you want to run?'));
-    console.log('');
-    console.log(`  ${cyan('1')}  ${bold('Full stack')} — Docker services + Vite dev server ${dim('(pnpm dev)')}`);
-    console.log(`  ${cyan('2')}  ${bold('App only')} — Just the Vite dev server ${dim('(assumes services are running)')}`);
-    console.log(`  ${cyan('3')}  ${bold('Services only')} — Docker services, no app ${dim('(pnpm dev:services)')}`);
-    console.log('');
+    if (!devMode) {
+        console.log('');
+        console.log(bold('How do you want to run?'));
+        console.log('');
+        console.log(`  ${cyan('1')}  ${bold('Full stack')} — Docker services + Vite dev server ${dim('(pnpm dev)')}`);
+        console.log(`  ${cyan('2')}  ${bold('App only')} — Just the Vite dev server ${dim('(assumes services are running)')}`);
+        console.log(`  ${cyan('3')}  ${bold('Services only')} — Docker services, no app ${dim('(pnpm dev:services)')}`);
+        console.log('');
 
-    const mode = await ask(`Pick a mode [1-3] ${dim('(default: 1)')}: `);
+        const modeChoice = await ask(`Pick a mode [1-3] ${dim('(default: 1)')}: `);
+
+        devMode = modeChoice === '2' ? 'app' : modeChoice === '3' ? 'services' : 'full';
+    }
 
     const stageArg = stageId === 'local' ? '' : ` ${stageId}`;
+    const modeArg = devMode === 'full' ? '' : ` ${devMode}`;
 
-    switch (mode) {
-        case '2':
+    switch (devMode) {
+        case 'app':
             runCommand(
                 `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag} && vite --host`,
                 `Starting ${displayName}${stageLabel} — app only`,
-                `pnpm lc start ${tenantId}${stageArg}`,
+                `pnpm lc dev ${tenantId}${stageArg} app`,
             );
             break;
 
-        case '3':
+        case 'services':
             runCommand(
                 'docker compose -f compose-local.yaml up --build --scale app=0',
                 'Starting Docker services (no app)',
+                `pnpm lc dev ${tenantId}${stageArg} services`,
             );
             break;
 
-        case '1':
+        case 'full':
         default:
             runCommand(
                 `TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up --build`,
                 `Starting ${displayName}${stageLabel} — full stack`,
-                `pnpm lc dev ${tenantId}${stageArg}`,
+                `pnpm lc dev ${tenantId}${stageArg}${modeArg ? '' : ' full'}`,
             );
             break;
     }
@@ -1243,9 +1265,25 @@ const handleShortcuts = async (): Promise<boolean> => {
             return true;
         }
 
-        case 'dev':
-            await startDev(arg, arg2);
+        case 'dev': {
+            // pnpm lc dev [tenant] [stage] [full|app|services]
+            const devAllArgs = [arg, arg2, args[3]];
+
+            const devModeArg = devAllArgs.reduce<DevMode | undefined>(
+                (found, a) => found ?? asDevMode(a), undefined,
+            );
+
+            const devStageArg = devAllArgs.reduce<string | undefined>(
+                (found, a) => found ?? (asDevMode(a) ? undefined : asStage(a)), undefined,
+            );
+
+            const devTenantArg = devAllArgs.find(
+                a => a && !asDevMode(a) && !asStage(a),
+            );
+
+            await startDev(devTenantArg, devStageArg, devModeArg);
             return true;
+        }
 
         case 'sync': {
             // pnpm lc sync [tenant] [stage]  — top-level alias for native sync
@@ -1404,15 +1442,16 @@ const printHelp = () => {
     console.log('');
     console.log(bold('  ⚡ Golden paths'));
     console.log('');
-    console.log(`  ${cyan('pnpm lc dev <tenant> [stage]')}       ${dim('Web dev server + Docker services')}`);
-    console.log(`  ${cyan('pnpm lc sync <tenant> [stage]')}      ${dim('Cap sync + tenant config patching')}`);
-    console.log(`  ${cyan('pnpm lc open <tenant> [platform]')}   ${dim('Sync tenant + open Xcode / Android Studio')}`);
+    console.log(`  ${cyan('pnpm lc dev <tenant> [stage] [mode]')}  ${dim('Web dev server (mode: full|app|services)')}`);
+    console.log(`  ${cyan('pnpm lc sync <tenant> [stage]')}        ${dim('Cap sync + tenant config patching')}`);
+    console.log(`  ${cyan('pnpm lc open <tenant> [platform]')}     ${dim('Sync tenant + open Xcode / Android Studio')}`);
     console.log('');
     console.log(dim('  Examples:'));
-    console.log(dim('    pnpm lc dev vetpass alpha'));
+    console.log(dim('    pnpm lc dev vetpass alpha           # prompts for run mode'));
+    console.log(dim('    pnpm lc dev vetpass alpha app       # app only, no prompt'));
+    console.log(dim('    pnpm lc dev vetpass alpha full      # full stack, no prompt'));
     console.log(dim('    pnpm lc sync vetpass alpha'));
     console.log(dim('    pnpm lc open vetpass ios'));
-    console.log(dim('    pnpm lc dev learncard              # defaults to local stage'));
     console.log('');
     console.log(bold('  📋 Config & inspection'));
     console.log('');
@@ -1451,7 +1490,7 @@ const main = async () => {
     console.log(dim(`   ${tenants.length} tenant(s): ${tenants.join(', ')}  •  ${themes.length} theme(s): ${themes.join(', ')}`));
     console.log('');
     console.log(bold('  ⚡ Quick Start'));
-    console.log(`  ${cyan('1')}  ${bold('Web dev server')}          ${dim('— pnpm lc dev <tenant> [stage]')}`);
+    console.log(`  ${cyan('1')}  ${bold('Web dev server')}          ${dim('— pnpm lc dev <tenant> [stage] [full|app|services]')}`);
     console.log(`  ${cyan('2')}  ${bold('Native sync')}             ${dim('— pnpm lc sync <tenant> [stage]')}`);
     console.log(`  ${cyan('3')}  ${bold('Open native IDE')}         ${dim('— pnpm lc open <tenant> [ios|android]')}`);
     console.log('');
