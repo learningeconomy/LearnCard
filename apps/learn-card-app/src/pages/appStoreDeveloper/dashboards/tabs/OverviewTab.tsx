@@ -708,7 +708,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                             <Zap className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                             <p>No activity yet</p>
                             <p className="text-sm mt-1">
-                                Credentials will appear here as they're issued
+                                Consent and credential activity will appear here as users connect
                             </p>
                         </div>
                     ) : (

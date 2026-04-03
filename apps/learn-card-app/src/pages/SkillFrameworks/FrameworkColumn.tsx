@@ -388,20 +388,24 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                         />
                     )}
 
-                    {isTopLevel && !isApproveFlow && !isEdit && !isSelectSkillsFlow && (
-                        <button
-                            onClick={() =>
-                                newModal(
-                                    <FrameworkOptionsModal frameworkInfo={frameworkInfo} />,
-                                    undefined,
-                                    { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
-                                )
-                            }
-                            className="ml-auto"
-                        >
-                            <ThreeDots className="w-[24px] h-[24px] text-grayscale-500" />
-                        </button>
-                    )}
+                    {isTopLevel &&
+                        !isApproveFlow &&
+                        !isEdit &&
+                        !isSelectSkillsFlow &&
+                        !isViewOnly && (
+                            <button
+                                onClick={() =>
+                                    newModal(
+                                        <FrameworkOptionsModal frameworkInfo={frameworkInfo} />,
+                                        undefined,
+                                        { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                                    )
+                                }
+                                className="ml-auto"
+                            >
+                                <ThreeDots className="w-[24px] h-[24px] text-grayscale-500" />
+                            </button>
+                        )}
                 </div>
 
                 {isSingleColumnView && selectedPath.length > 0 && (

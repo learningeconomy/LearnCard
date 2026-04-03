@@ -238,6 +238,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 endorsementVC={credential}
                 handleSaveEndorsement={handleBoostCredential}
                 isClaimed={isClaimed}
+                isLoading={isClaimLoading}
             />
         );
     }
