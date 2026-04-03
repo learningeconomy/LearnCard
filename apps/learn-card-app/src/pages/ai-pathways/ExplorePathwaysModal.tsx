@@ -12,7 +12,7 @@ import {
     useVerifiableData,
 } from 'learn-card-base';
 
-import { X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import Search from 'learn-card-base/svgs/Search';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import { ExperiencesIconSolid } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
@@ -25,6 +25,7 @@ import {
     SKILL_PROFILE_GOALS_KEY,
     SkillProfileGoalsData,
 } from './ai-pathways-skill-profile/SkillProfileStep1';
+import { IonSpinner } from '@ionic/react';
 
 type ExplorePathwaysModalProps = { initialSearchQuery?: string };
 
@@ -40,7 +41,9 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
     const [goalsAtEnd, setGoalsAtEnd] = useState(false);
 
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
-    const { data: sasBoostSkills } = useGetBoostSkills(sasBoostData?.uri);
+    const { data: sasBoostSkills, isLoading: sasBoostSkillsLoading } = useGetBoostSkills(
+        sasBoostData?.uri
+    );
 
     const {
         data: goalsData,
@@ -108,176 +111,230 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
             )} */}
 
             <section className="h-full pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative">
-                {sasBoostSkills?.length > 0 && (
-                    <div className="flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid pb-[15px]">
-                        <h4 className="flex gap-[15px] items-center text-grayscale-900 font-poppins text-[17px] font-bold">
-                            {conditionalPluralize(sasBoostSkills.length, 'Skill')}
+                <div className="flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid pb-[15px]">
+                    {sasBoostSkills?.length === 0 && !sasBoostSkillsLoading && (
+                        <button className="flex items-center justify-center gap-[5px] py-[15px] text-grayscale-700 text-[17px] font-bold border-[1px] border-solid border-grayscale-200 rounded-[10px] bg-white">
+                            Add Skills
+                            <Plus className="h-[30px] w-[30px]" />
+                        </button>
+                    )}
+                    {sasBoostSkillsLoading && (
+                        <div className="flex items-center justify-center py-[15px]">
+                            <IonSpinner color="dark" name="crescent" />
+                        </div>
+                    )}
+                    {sasBoostSkills?.length > 0 && (
+                        <>
+                            <h4 className="flex gap-[15px] items-center text-grayscale-900 font-poppins text-[17px] font-bold">
+                                {conditionalPluralize(sasBoostSkills.length, 'Skill')}
 
-                            <div className="flex items-center gap-[15px] ml-auto">
-                                {sasBoostSkills.length > 3 && (
-                                    <button className="text-grayscale-600 text-[14px] font-bold">
-                                        View All
+                                <div className="flex items-center gap-[15px] ml-auto">
+                                    {sasBoostSkills.length > 3 && (
+                                        <button className="text-grayscale-600 text-[14px] font-bold">
+                                            View All
+                                        </button>
+                                    )}
+                                    <button>
+                                        <Pencil className="text-grayscale-700 h-[30px] w-[30px]" />
+                                    </button>
+                                </div>
+                            </h4>
+
+                            <div className="relative w-full overflow-hidden">
+                                <Swiper
+                                    onSwiper={swiper => {
+                                        skillsSwiperRef.current = swiper;
+                                        handleSwiperUpdate(
+                                            swiper,
+                                            setSkillsAtBeginning,
+                                            setSkillsAtEnd
+                                        );
+                                    }}
+                                    onResize={swiper =>
+                                        handleSwiperUpdate(
+                                            swiper,
+                                            setSkillsAtBeginning,
+                                            setSkillsAtEnd
+                                        )
+                                    }
+                                    onSlideChange={swiper =>
+                                        handleSwiperUpdate(
+                                            swiper,
+                                            setSkillsAtBeginning,
+                                            setSkillsAtEnd
+                                        )
+                                    }
+                                    onReachBeginning={() => setSkillsAtBeginning(true)}
+                                    onFromEdge={() => {
+                                        if (skillsSwiperRef.current) {
+                                            setSkillsAtBeginning(
+                                                skillsSwiperRef.current.isBeginning
+                                            );
+                                            setSkillsAtEnd(skillsSwiperRef.current.isEnd);
+                                        }
+                                    }}
+                                    onReachEnd={() => setSkillsAtEnd(true)}
+                                    spaceBetween={12}
+                                    slidesPerView={'auto'}
+                                    grabCursor={true}
+                                >
+                                    {sasBoostSkills.map(skill => (
+                                        <SwiperSlide key={skill.id} style={{ width: 'auto' }}>
+                                            <SkillTag
+                                                skillId={skill.id}
+                                                frameworkId={skill.frameworkId}
+                                                proficiencyLevel={skill.proficiencyLevel}
+                                                // handleRemoveSkill={() => handleToggleSelect(skill.id)}
+                                                // handleEditSkill={proficiencyLevel =>
+                                                //     handleChangeProficiency(skill.id, proficiencyLevel)
+                                                // }
+                                                selectedSkills={sasBoostSkills}
+                                                // handleAddRelatedSkill={handleAddRelatedSkill}
+                                                // handleEditRelatedSkill={handleEditRelatedSkill}
+                                                // handleRemoveRelatedSkill={handleRemoveRelatedSkill}
+                                            />
+                                        </SwiperSlide>
+                                    ))}
+                                </Swiper>
+
+                                {!skillsAtBeginning && (
+                                    <button
+                                        onClick={() => {
+                                            skillsSwiperRef.current?.slidePrev();
+                                        }}
+                                        className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                        style={{ opacity: 0.8 }}
+                                    >
+                                        <SlimCaretLeft className="w-5 h-auto" />
                                     </button>
                                 )}
-                                <button>
-                                    <Pencil className="text-grayscale-700 h-[30px] w-[30px]" />
-                                </button>
+
+                                {!skillsAtEnd && (
+                                    <button
+                                        onClick={() => {
+                                            skillsSwiperRef.current?.slideNext();
+                                        }}
+                                        className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                        style={{ opacity: 0.8 }}
+                                    >
+                                        <SlimCaretRight className="w-5 h-auto" />
+                                    </button>
+                                )}
                             </div>
-                        </h4>
-
-                        <div className="relative w-full overflow-hidden">
-                            <Swiper
-                                onSwiper={swiper => {
-                                    skillsSwiperRef.current = swiper;
-                                    handleSwiperUpdate(
-                                        swiper,
-                                        setSkillsAtBeginning,
-                                        setSkillsAtEnd
-                                    );
-                                }}
-                                onResize={swiper =>
-                                    handleSwiperUpdate(swiper, setSkillsAtBeginning, setSkillsAtEnd)
-                                }
-                                onSlideChange={swiper =>
-                                    handleSwiperUpdate(swiper, setSkillsAtBeginning, setSkillsAtEnd)
-                                }
-                                onReachBeginning={() => setSkillsAtBeginning(true)}
-                                onFromEdge={() => {
-                                    if (skillsSwiperRef.current) {
-                                        setSkillsAtBeginning(skillsSwiperRef.current.isBeginning);
-                                        setSkillsAtEnd(skillsSwiperRef.current.isEnd);
-                                    }
-                                }}
-                                onReachEnd={() => setSkillsAtEnd(true)}
-                                spaceBetween={12}
-                                slidesPerView={'auto'}
-                                grabCursor={true}
-                            >
-                                {sasBoostSkills.map(skill => (
-                                    <SwiperSlide key={skill.id} style={{ width: 'auto' }}>
-                                        <SkillTag
-                                            skillId={skill.id}
-                                            frameworkId={skill.frameworkId}
-                                            proficiencyLevel={skill.proficiencyLevel}
-                                            // handleRemoveSkill={() => handleToggleSelect(skill.id)}
-                                            // handleEditSkill={proficiencyLevel =>
-                                            //     handleChangeProficiency(skill.id, proficiencyLevel)
-                                            // }
-                                            selectedSkills={sasBoostSkills}
-                                            // handleAddRelatedSkill={handleAddRelatedSkill}
-                                            // handleEditRelatedSkill={handleEditRelatedSkill}
-                                            // handleRemoveRelatedSkill={handleRemoveRelatedSkill}
-                                        />
-                                    </SwiperSlide>
-                                ))}
-                            </Swiper>
-
-                            {!skillsAtBeginning && (
-                                <button
-                                    onClick={() => {
-                                        skillsSwiperRef.current?.slidePrev();
-                                    }}
-                                    className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
-                                    style={{ opacity: 0.8 }}
-                                >
-                                    <SlimCaretLeft className="w-5 h-auto" />
-                                </button>
-                            )}
-
-                            {!skillsAtEnd && (
-                                <button
-                                    onClick={() => {
-                                        skillsSwiperRef.current?.slideNext();
-                                    }}
-                                    className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
-                                    style={{ opacity: 0.8 }}
-                                >
-                                    <SlimCaretRight className="w-5 h-auto" />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                )}
+                        </>
+                    )}
+                </div>
 
                 <div className="flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid pb-[15px] pt-[15px]">
-                    <h4 className="flex gap-[15px] items-center text-grayscale-900 font-poppins text-[17px] font-bold">
-                        {conditionalPluralize(goals.length, 'Goal')}
+                    {goals.length === 0 && !goalsLoading && (
+                        <button className="flex items-center justify-center gap-[5px] py-[15px] text-grayscale-700 text-[17px] font-bold border-[1px] border-solid border-grayscale-200 rounded-[10px] bg-white">
+                            Add Goals
+                            <Plus className="h-[30px] w-[30px]" />
+                        </button>
+                    )}
 
-                        <div className="flex items-center gap-[15px] ml-auto">
-                            {goals.length > 3 && (
-                                <button className="text-grayscale-600 text-[14px] font-bold">
-                                    View All
-                                </button>
-                            )}
-                            <button>
-                                <Pencil className="text-grayscale-700 h-[30px] w-[30px]" />
-                            </button>
+                    {goalsLoading && (
+                        <div className="flex items-center justify-center py-[15px]">
+                            <IonSpinner color="dark" name="crescent" />
                         </div>
-                    </h4>
+                    )}
 
-                    <div className="relative w-full overflow-hidden">
-                        <Swiper
-                            onSwiper={swiper => {
-                                goalsSwiperRef.current = swiper;
-                                handleSwiperUpdate(swiper, setGoalsAtBeginning, setGoalsAtEnd);
-                            }}
-                            onResize={swiper =>
-                                handleSwiperUpdate(swiper, setGoalsAtBeginning, setGoalsAtEnd)
-                            }
-                            onSlideChange={swiper =>
-                                handleSwiperUpdate(swiper, setGoalsAtBeginning, setGoalsAtEnd)
-                            }
-                            onReachBeginning={() => setGoalsAtBeginning(true)}
-                            onFromEdge={() => {
-                                if (goalsSwiperRef.current) {
-                                    setGoalsAtBeginning(goalsSwiperRef.current.isBeginning);
-                                    setGoalsAtEnd(goalsSwiperRef.current.isEnd);
-                                }
-                            }}
-                            onReachEnd={() => setGoalsAtEnd(true)}
-                            spaceBetween={12}
-                            slidesPerView={'auto'}
-                            grabCursor={true}
-                        >
-                            {goals.map((goal, index) => (
-                                <SwiperSlide key={index} style={{ width: 'auto' }}>
-                                    <span className="flex items-center gap-[8px] border-solid border-[2px] border-sky-600 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]">
-                                        {goal}
-                                        <button
-                                            type="button"
-                                            onClick={() => console.log('remove goal', index)}
-                                        >
-                                            <X className="w-[15px] h-[15px]" />
+                    {goals.length > 0 && (
+                        <>
+                            <h4 className="flex gap-[15px] items-center text-grayscale-900 font-poppins text-[17px] font-bold">
+                                {conditionalPluralize(goals.length, 'Goal')}
+
+                                <div className="flex items-center gap-[15px] ml-auto">
+                                    {goals.length > 3 && (
+                                        <button className="text-grayscale-600 text-[14px] font-bold">
+                                            View All
                                         </button>
-                                    </span>
-                                </SwiperSlide>
-                            ))}
-                        </Swiper>
+                                    )}
+                                    <button>
+                                        <Pencil className="text-grayscale-700 h-[30px] w-[30px]" />
+                                    </button>
+                                </div>
+                            </h4>
 
-                        {!goalsAtBeginning && (
-                            <button
-                                onClick={() => {
-                                    goalsSwiperRef.current?.slidePrev();
-                                }}
-                                className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
-                                style={{ opacity: 0.8 }}
-                            >
-                                <SlimCaretLeft className="w-5 h-auto" />
-                            </button>
-                        )}
+                            <div className="relative w-full overflow-hidden">
+                                <Swiper
+                                    onSwiper={swiper => {
+                                        goalsSwiperRef.current = swiper;
+                                        handleSwiperUpdate(
+                                            swiper,
+                                            setGoalsAtBeginning,
+                                            setGoalsAtEnd
+                                        );
+                                    }}
+                                    onResize={swiper =>
+                                        handleSwiperUpdate(
+                                            swiper,
+                                            setGoalsAtBeginning,
+                                            setGoalsAtEnd
+                                        )
+                                    }
+                                    onSlideChange={swiper =>
+                                        handleSwiperUpdate(
+                                            swiper,
+                                            setGoalsAtBeginning,
+                                            setGoalsAtEnd
+                                        )
+                                    }
+                                    onReachBeginning={() => setGoalsAtBeginning(true)}
+                                    onFromEdge={() => {
+                                        if (goalsSwiperRef.current) {
+                                            setGoalsAtBeginning(goalsSwiperRef.current.isBeginning);
+                                            setGoalsAtEnd(goalsSwiperRef.current.isEnd);
+                                        }
+                                    }}
+                                    onReachEnd={() => setGoalsAtEnd(true)}
+                                    spaceBetween={12}
+                                    slidesPerView={'auto'}
+                                    grabCursor={true}
+                                >
+                                    {goals.map((goal, index) => (
+                                        <SwiperSlide key={index} style={{ width: 'auto' }}>
+                                            <span className="flex items-center gap-[8px] border-solid border-[2px] border-sky-600 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]">
+                                                {goal}
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        console.log('remove goal', index)
+                                                    }
+                                                >
+                                                    <X className="w-[15px] h-[15px]" />
+                                                </button>
+                                            </span>
+                                        </SwiperSlide>
+                                    ))}
+                                </Swiper>
 
-                        {!goalsAtEnd && (
-                            <button
-                                onClick={() => {
-                                    goalsSwiperRef.current?.slideNext();
-                                }}
-                                className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
-                                style={{ opacity: 0.8 }}
-                            >
-                                <SlimCaretRight className="w-5 h-auto" />
-                            </button>
-                        )}
-                    </div>
+                                {!goalsAtBeginning && (
+                                    <button
+                                        onClick={() => {
+                                            goalsSwiperRef.current?.slidePrev();
+                                        }}
+                                        className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                        style={{ opacity: 0.8 }}
+                                    >
+                                        <SlimCaretLeft className="w-5 h-auto" />
+                                    </button>
+                                )}
+
+                                {!goalsAtEnd && (
+                                    <button
+                                        onClick={() => {
+                                            goalsSwiperRef.current?.slideNext();
+                                        }}
+                                        className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                        style={{ opacity: 0.8 }}
+                                    >
+                                        <SlimCaretRight className="w-5 h-auto" />
+                                    </button>
+                                )}
+                            </div>
+                        </>
+                    )}
                 </div>
             </section>
 
