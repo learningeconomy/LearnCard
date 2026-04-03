@@ -8,6 +8,7 @@ import { useTheme } from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors/index';
 
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
 import SlimCaretRight from '../svgs/SlimCaretRight';
@@ -257,6 +258,7 @@ const LearnCardSlide3: React.FC<LearnCardSlideProps> = ({
     showDesktopNav,
 }) => {
     const { getColorSet } = useTheme();
+    const brandingConfig = useBrandingConfig();
     const { textColors } = getColorSet(ColorSetEnum.introSlides);
 
     return (
@@ -265,13 +267,13 @@ const LearnCardSlide3: React.FC<LearnCardSlideProps> = ({
                 <h1
                     className={`text-3xl font-normal font-poppins mt-[10px] text-${textColors.primary}`}
                 >
-                    You Own Your LearnCard
+                    You Own Your {brandingConfig?.name}
                 </h1>
                 <p
                     className={`text-small font-montserrat mt-[15px] px-[20px] text-${textColors.primary}`}
                 >
-                    LearnCard is your lifelong learning and work portfolio. You own your data and
-                    decide how to share it.
+                    {brandingConfig?.name} is your lifelong learning and work portfolio. You own
+                    your data and decide how to share it.
                 </p>
             </section>
             <section className="absolute bottom-[50px]">

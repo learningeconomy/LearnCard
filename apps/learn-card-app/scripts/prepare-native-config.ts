@@ -41,7 +41,7 @@
  * so schema violations are caught before deploy, not at runtime.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, readdirSync, statSync, rmSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, readdirSync, statSync, rmSync, unlinkSync } from 'fs';
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -571,6 +571,11 @@ if (nativeConfig) {
 
     // Patch iOS Info.plist with tenant display name
     const infoPlistPath = resolve(APP_ROOT, 'ios/App/App/Info.plist');
+    const infoPlistTemplatePath = infoPlistPath + '.template';
+
+    if (existsSync(infoPlistTemplatePath)) {
+        cpSync(infoPlistTemplatePath, infoPlistPath);
+    }
 
     if (existsSync(infoPlistPath)) {
         try {
@@ -705,6 +710,7 @@ if (nativeConfig) {
 
     if (existsSync(stringsTemplatePath)) {
         cpSync(stringsTemplatePath, stringsPath);
+        unlinkSync(stringsTemplatePath);
     }
 
     if (existsSync(stringsPath)) {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { IonRow } from '@ionic/react';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
@@ -9,6 +10,7 @@ export const CapGoUpdateModal: React.FC<{
     updateVersion: string;
     bundle: any;
 }> = ({ closeModal, updateVersion, bundle }) => {
+    const brandingConfig = useBrandingConfig();
     const { appIcon } = useTenantBrandingAssets();
     const [currentVersion, setCurrentVersion] = useState<string>('');
 
@@ -40,7 +42,9 @@ export const CapGoUpdateModal: React.FC<{
                     alt="App icon"
                     className="h-[50px] w-[50px] overflow-hidden rounded-[12px] mt-4"
                 />
-                <h6 className="tracking-[12px] text-base font-bold text-black mt-4">LEARNCARD</h6>
+                <h6 className="tracking-[12px] text-base font-bold text-black mt-4">
+                    {brandingConfig?.name}
+                </h6>
                 <p className="text-[17px] text-grayscale-900 mt-2 font-medium">
                     Current Version: v{currentVersion}
                 </p>

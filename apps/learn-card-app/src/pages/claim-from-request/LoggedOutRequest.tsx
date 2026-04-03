@@ -9,6 +9,7 @@ import LCAColorBlockPlus from 'learn-card-base/svgs/LCAColorBlockPlus';
 import { IonRow } from '@ionic/react';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import GenericErrorBoundary from 'learn-card-base/components/generic/GenericErrorBoundary';
 import LoginFooter from '../login/LoginFooter';
 import InteractWithWallet from './InteractWithWallet';
@@ -35,6 +36,7 @@ export default LoggedOutRequest;
 export const SomeoneSentYouACredentialRequest: React.FC<{
     vc_request_url?: string | (string | null)[] | null;
 }> = ({ vc_request_url }) => {
+    const brandingConfig = useBrandingConfig();
     const { newModal, closeModal } = useModal();
     const handleInteractionModal = () => {
         newModal(
@@ -58,7 +60,7 @@ export const SomeoneSentYouACredentialRequest: React.FC<{
                         Someone sent you a credential
                     </h1>
                     <p className="text-[17px] font-semibold text-center px-[20px] my-[10px]">
-                        Sign into LearnCard to view and claim,
+                        Sign into {brandingConfig?.name} to view and claim,
                         <br />
                         <span onClick={handleInteractionModal}>
                             or{' '}

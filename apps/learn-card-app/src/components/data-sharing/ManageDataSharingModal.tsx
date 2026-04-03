@@ -301,7 +301,7 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
 
                         <p className="text-sm text-grayscale-600 mt-2">
                             <span className="font-medium">{name}</span> will no longer be able to
-                            access your LearnCard data.
+                            access your {brandingConfig?.name} data.
                         </p>
                     </div>
 

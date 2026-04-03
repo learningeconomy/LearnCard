@@ -111,6 +111,9 @@ android/app/src/main/res/values/strings.xml
 # Android — capacitor config
 android/app/src/main/assets/capacitor.config.json
 
+# iOS — Info.plist patched with tenant display name
+ios/App/App/Info.plist
+
 # Firebase config files (tenant-specific)
 android/app/google-services.json
 ios/App/App/GoogleService-Info.plist
