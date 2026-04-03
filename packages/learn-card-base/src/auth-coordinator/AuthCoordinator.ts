@@ -45,9 +45,13 @@ export class AuthCoordinator {
         this.config.onStateChange?.(newState);
     }
 
-    /** Helper: get token + providerType from the auth provider */
+    /** Helper: get token + providerType from the auth provider.
+     *  Always force-refreshes the token so downstream consumers (e.g. Web3Auth)
+     *  receive a recently-issued JWT. Web3Auth's server rejects signed params
+     *  whose timestamp is more than 6 minutes old, so a stale cached token
+     *  (common after Android backgrounds/kills the app) would fail. */
     private async getAuthCredentials(): Promise<{ token: string; providerType: string }> {
-        const token = await this.config.authProvider.getIdToken();
+        const token = await this.config.authProvider.getIdToken(true);
         const providerType = this.config.authProvider.getProviderType();
         return { token, providerType };
     }
