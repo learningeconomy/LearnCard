@@ -9,17 +9,21 @@
  * can type `pnpm lc` and be productive immediately.
  *
  * Usage:
- *   pnpm lc              # interactive menu
- *   pnpm lc dev          # shortcut: start with Docker (same as pnpm dev)
- *   pnpm lc dev vetpass  # shortcut: start vetpass tenant with Docker
- *   pnpm lc start        # shortcut: Vite only (no Docker)
- *   pnpm lc validate     # shortcut: run all validators
- *   pnpm lc native       # interactive native/Capacitor menu
- *   pnpm lc native dev vetpass ios           # live-reload on device
- *   pnpm lc native sync vetpass alpha        # cap sync + tenant config patching
- *   pnpm lc native open android vetpass alpha # sync tenant + open IDE
- *   pnpm lc native open ios                  # just open Xcode (no sync)
- *   pnpm lc native build vetpass ios beta    # sync + fastlane build
+ *   pnpm lc                    # interactive menu
+ *   pnpm lc help                # cheat sheet of common commands
+ *
+ * ⚡ Golden paths:
+ *   pnpm lc dev vetpass alpha       # web dev server (prompts for run mode)
+ *   pnpm lc dev vetpass alpha app   # app only — skip the mode menu
+ *   pnpm lc dev vetpass alpha full  # full stack — skip the mode menu
+ *   pnpm lc sync vetpass alpha      # cap sync + tenant config patching
+ *   pnpm lc open vetpass ios        # sync tenant + open Xcode / Android Studio
+ *
+ * Other shortcuts:
+ *   pnpm lc start               # Vite only (no Docker)
+ *   pnpm lc validate            # run all validators
+ *   pnpm lc resolve vetpass     # print final merged config
+ *   pnpm lc native build vetpass ios beta  # sync + fastlane build
  */
 
 import { createInterface } from 'readline';
@@ -182,7 +186,21 @@ const pickStage = async (tenantId: string): Promise<string> => {
     return allStages[idx] ?? 'local';
 };
 
-const startDev = async (tenantId?: string, stageId?: string) => {
+type DevMode = 'full' | 'app' | 'services';
+
+const asDevMode = (s?: string): DevMode | undefined => {
+    if (!s) return undefined;
+
+    const map: Record<string, DevMode> = {
+        full: 'full',
+        app: 'app',
+        services: 'services',
+    };
+
+    return map[s.toLowerCase()];
+};
+
+const startDev = async (tenantId?: string, stageId?: string, devMode?: DevMode) => {
     const tenants = discoverTenants();
 
     if (!tenantId) {
@@ -229,40 +247,46 @@ const startDev = async (tenantId?: string, stageId?: string) => {
     const stageFlag = stageId === 'production' ? '' : ` --stage ${stageId}`;
     const stageLabel = stageId === 'production' ? '' : ` (${stageId})`;
 
-    console.log('');
-    console.log(bold('How do you want to run?'));
-    console.log('');
-    console.log(`  ${cyan('1')}  ${bold('Full stack')} — Docker services + Vite dev server ${dim('(pnpm dev)')}`);
-    console.log(`  ${cyan('2')}  ${bold('App only')} — Just the Vite dev server ${dim('(assumes services are running)')}`);
-    console.log(`  ${cyan('3')}  ${bold('Services only')} — Docker services, no app ${dim('(pnpm dev:services)')}`);
-    console.log('');
+    if (!devMode) {
+        console.log('');
+        console.log(bold('How do you want to run?'));
+        console.log('');
+        console.log(`  ${cyan('1')}  ${bold('Full stack')} — Docker services + Vite dev server ${dim('(pnpm dev)')}`);
+        console.log(`  ${cyan('2')}  ${bold('App only')} — Just the Vite dev server ${dim('(assumes services are running)')}`);
+        console.log(`  ${cyan('3')}  ${bold('Services only')} — Docker services, no app ${dim('(pnpm dev:services)')}`);
+        console.log('');
 
-    const mode = await ask(`Pick a mode [1-3] ${dim('(default: 1)')}: `);
+        const modeChoice = await ask(`Pick a mode [1-3] ${dim('(default: 1)')}: `);
+
+        devMode = modeChoice === '2' ? 'app' : modeChoice === '3' ? 'services' : 'full';
+    }
 
     const stageArg = stageId === 'local' ? '' : ` ${stageId}`;
+    const modeArg = devMode === 'full' ? '' : ` ${devMode}`;
 
-    switch (mode) {
-        case '2':
+    switch (devMode) {
+        case 'app':
             runCommand(
                 `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag} && vite --host`,
                 `Starting ${displayName}${stageLabel} — app only`,
-                `pnpm lc start ${tenantId}${stageArg}`,
+                `pnpm lc dev ${tenantId}${stageArg} app`,
             );
             break;
 
-        case '3':
+        case 'services':
             runCommand(
                 'docker compose -f compose-local.yaml up --build --scale app=0',
                 'Starting Docker services (no app)',
+                `pnpm lc dev ${tenantId}${stageArg} services`,
             );
             break;
 
-        case '1':
+        case 'full':
         default:
             runCommand(
                 `TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up --build`,
                 `Starting ${displayName}${stageLabel} — full stack`,
-                `pnpm lc dev ${tenantId}${stageArg}`,
+                `pnpm lc dev ${tenantId}${stageArg}${modeArg ? '' : ' full'}`,
             );
             break;
     }
@@ -1221,6 +1245,10 @@ const handleShortcuts = async (): Promise<boolean> => {
     if (!command) return false;
 
     switch (command) {
+        case 'help':
+            printHelp();
+            return true;
+
         case 'editor':
             runCommand('npx tsx scripts/config-editor.ts', 'Config editor');
             return true;
@@ -1237,9 +1265,67 @@ const handleShortcuts = async (): Promise<boolean> => {
             return true;
         }
 
-        case 'dev':
-            await startDev(arg, arg2);
+        case 'dev': {
+            // pnpm lc dev [tenant] [stage] [full|app|services]
+            const devAllArgs = [arg, arg2, args[3]];
+
+            const devModeArg = devAllArgs.reduce<DevMode | undefined>(
+                (found, a) => found ?? asDevMode(a), undefined,
+            );
+
+            const devStageArg = devAllArgs.reduce<string | undefined>(
+                (found, a) => found ?? (asDevMode(a) ? undefined : asStage(a)), undefined,
+            );
+
+            const devTenantArg = devAllArgs.find(
+                a => a && !asDevMode(a) && !asStage(a),
+            );
+
+            await startDev(devTenantArg, devStageArg, devModeArg);
             return true;
+        }
+
+        case 'sync': {
+            // pnpm lc sync [tenant] [stage]  — top-level alias for native sync
+            const syncAllArgs = [arg, arg2];
+
+            const syncStage = syncAllArgs.reduce<string | undefined>(
+                (found, a) => found ?? asStage(a), undefined,
+            );
+
+            const syncTenant = syncAllArgs.find(
+                a => a && !asStage(a),
+            );
+
+            await nativeSync(syncTenant, syncStage);
+            return true;
+        }
+
+        case 'open': {
+            // pnpm lc open [tenant] [ios|android] [stage]
+            const openArg3 = args[3];
+            const openAllArgs = [arg, arg2, openArg3];
+
+            const asPlatformLocal = (s?: string): Platform | undefined => {
+                if (s === 'ios' || s === 'android') return s;
+                return undefined;
+            };
+
+            const openPlatform = openAllArgs.reduce<Platform | undefined>(
+                (found, a) => found ?? asPlatformLocal(a), undefined,
+            );
+
+            const openStage = openAllArgs.reduce<string | undefined>(
+                (found, a) => found ?? asStage(a), undefined,
+            );
+
+            const openTenant = openAllArgs.find(
+                a => a && !asPlatformLocal(a) && !asStage(a),
+            );
+
+            await nativeOpen(openPlatform, openTenant, openStage);
+            return true;
+        }
 
         case 'start': {
             const tenant = arg ?? 'learncard';
@@ -1288,6 +1374,20 @@ const handleShortcuts = async (): Promise<boolean> => {
             return true;
         }
 
+        case 'resolve': {
+            // pnpm lc resolve [tenant] [stage]
+            const resolveTenant = arg ?? 'learncard';
+            const resolveStage = arg2;
+
+            const resolveStageFlag = resolveStage ? ` --stage ${resolveStage}` : '';
+
+            runCommand(
+                `npx tsx scripts/resolve-tenant-config.ts ${resolveTenant}${resolveStageFlag}`,
+                `Resolving final config for ${resolveTenant}${resolveStage ? ` (${resolveStage})` : ''}`,
+            );
+            return true;
+        }
+
         case 'create':
             runCommand('npx tsx scripts/create-tenant.ts', 'Create a new tenant');
             return true;
@@ -1331,6 +1431,51 @@ const handleShortcuts = async (): Promise<boolean> => {
 };
 
 // ---------------------------------------------------------------------------
+// Help / cheat sheet
+// ---------------------------------------------------------------------------
+
+const printHelp = () => {
+    const tenants = discoverTenants();
+
+    console.log('');
+    console.log(bold('🃏 LearnCard CLI — Quick Reference'));
+    console.log('');
+    console.log(bold('  ⚡ Golden paths'));
+    console.log('');
+    console.log(`  ${cyan('pnpm lc dev <tenant> [stage] [mode]')}  ${dim('Web dev server (mode: full|app|services)')}`);
+    console.log(`  ${cyan('pnpm lc sync <tenant> [stage]')}        ${dim('Cap sync + tenant config patching')}`);
+    console.log(`  ${cyan('pnpm lc open <tenant> [platform]')}     ${dim('Sync tenant + open Xcode / Android Studio')}`);
+    console.log('');
+    console.log(dim('  Examples:'));
+    console.log(dim('    pnpm lc dev vetpass alpha           # prompts for run mode'));
+    console.log(dim('    pnpm lc dev vetpass alpha app       # app only, no prompt'));
+    console.log(dim('    pnpm lc dev vetpass alpha full      # full stack, no prompt'));
+    console.log(dim('    pnpm lc sync vetpass alpha'));
+    console.log(dim('    pnpm lc open vetpass ios'));
+    console.log('');
+    console.log(bold('  📋 Config & inspection'));
+    console.log('');
+    console.log(`  ${cyan('pnpm lc resolve <tenant> [stage]')}   ${dim('Print final merged config')}`);
+    console.log(`  ${cyan('pnpm lc tenants')}                    ${dim('List all tenants, stages, and themes')}`);
+    console.log(`  ${cyan('pnpm lc validate')}                   ${dim('Run all config + theme validators')}`);
+    console.log('');
+    console.log(bold('  🔧 Other commands'));
+    console.log('');
+    console.log(`  ${cyan('pnpm lc start <tenant> [stage]')}     ${dim('Vite only (no Docker)')}`);
+    console.log(`  ${cyan('pnpm lc switch <tenant> [stage]')}    ${dim('Prepare config without starting')}`);
+    console.log(`  ${cyan('pnpm lc create')}                     ${dim('Scaffold a new tenant')}`);
+    console.log(`  ${cyan('pnpm lc create-theme')}               ${dim('Scaffold a new theme')}`);
+    console.log(`  ${cyan('pnpm lc generate <tenant> <logo>')}   ${dim('Generate icons/splash from a logo')}`);
+    console.log(`  ${cyan('pnpm lc editor')}                     ${dim('Visual config editor on :4400')}`);
+    console.log(`  ${cyan('pnpm lc native')}                     ${dim('Full native menu (dev, run, build)')}`);
+    console.log('');
+    console.log(dim(`  Available tenants: ${tenants.join(', ')}`));
+    console.log('');
+
+    rl.close();
+};
+
+// ---------------------------------------------------------------------------
 // Interactive menu
 // ---------------------------------------------------------------------------
 
@@ -1342,22 +1487,26 @@ const main = async () => {
 
     console.log('');
     console.log(bold('🃏 LearnCard Developer Tools'));
-    console.log(dim(`   ${tenants.length} tenant(s): ${tenants.join(', ')}`));
-    console.log(dim(`   ${themes.length} theme(s): ${themes.join(', ')}`));
+    console.log(dim(`   ${tenants.length} tenant(s): ${tenants.join(', ')}  •  ${themes.length} theme(s): ${themes.join(', ')}`));
     console.log('');
-    console.log(`  ${cyan('1')}  ${bold('Start dev server')}        ${dim('— pick a tenant + launch mode')}`);
-    console.log(`  ${cyan('2')}  ${bold('Switch tenant config')}    ${dim('— prepare config without starting')}`);
-    console.log(`  ${cyan('3')}  ${bold('Validate everything')}     ${dim('— run all config + theme validators')}`);
-    console.log(`  ${cyan('4')}  ${bold('Create a new tenant')}     ${dim('— interactive scaffolding')}`);
-    console.log(`  ${cyan('5')}  ${bold('Open config editor')}      ${dim('— visual config editor on :4400')}`);
-    console.log(`  ${cyan('6')}  ${bold('Generate tenant assets')}  ${dim('— create icons/splash from a logo')}`);
-    console.log(`  ${cyan('7')}  ${bold('Native / Capacitor')}     ${dim('— sync, open IDE, live-reload on device')}`);
-    console.log(`  ${cyan('8')}  ${bold('Create a new theme')}     ${dim('— interactive theme scaffolding')}`);
+    console.log(bold('  ⚡ Quick Start'));
+    console.log(`  ${cyan('1')}  ${bold('Web dev server')}          ${dim('— pnpm lc dev <tenant> [stage] [full|app|services]')}`);
+    console.log(`  ${cyan('2')}  ${bold('Native sync')}             ${dim('— pnpm lc sync <tenant> [stage]')}`);
+    console.log(`  ${cyan('3')}  ${bold('Open native IDE')}         ${dim('— pnpm lc open <tenant> [ios|android]')}`);
     console.log('');
-    console.log(dim('  Or run directly: pnpm lc dev | start | validate | create | create-theme | switch | editor | generate | native | tenants'));
+    console.log(bold('  🔧 More Tools'));
+    console.log(`  ${cyan('4')}  ${bold('Switch tenant config')}    ${dim('— prepare config without starting')}`);
+    console.log(`  ${cyan('5')}  ${bold('Validate everything')}     ${dim('— run all config + theme validators')}`);
+    console.log(`  ${cyan('6')}  ${bold('Native / Capacitor')}      ${dim('— full native menu (dev, run, build)')}`);
+    console.log(`  ${cyan('7')}  ${bold('Create a new tenant')}     ${dim('— interactive scaffolding')}`);
+    console.log(`  ${cyan('8')}  ${bold('Create a new theme')}      ${dim('— interactive theme scaffolding')}`);
+    console.log(`  ${cyan('9')}  ${bold('Generate tenant assets')}  ${dim('— create icons/splash from a logo')}`);
+    console.log(`  ${cyan('0')}  ${bold('Open config editor')}      ${dim('— visual config editor on :4400')}`);
+    console.log('');
+    console.log(dim('  Tip: run pnpm lc help for a full cheat sheet of shortcuts'));
     console.log('');
 
-    const choice = await ask('Pick an option [1-8]: ');
+    const choice = await ask('Pick an option [0-9]: ');
 
     switch (choice) {
         case '1':
@@ -1365,35 +1514,43 @@ const main = async () => {
             break;
 
         case '2':
-            await pickTenantAndPrepare();
+            await nativeSync();
             break;
 
         case '3':
-            runValidators();
+            await nativeOpen();
             break;
 
         case '4':
-            runCommand('npx tsx scripts/create-tenant.ts', 'Create a new tenant', 'pnpm lc create');
+            await pickTenantAndPrepare();
             break;
 
         case '5':
-            runCommand('npx tsx scripts/config-editor.ts', 'Config editor', 'pnpm lc editor');
+            runValidators();
             break;
 
         case '6':
-            await generateAssets();
+            await nativeMenu();
             break;
 
         case '7':
-            await nativeMenu();
+            runCommand('npx tsx scripts/create-tenant.ts', 'Create a new tenant', 'pnpm lc create');
             break;
 
         case '8':
             runCommand('npx tsx scripts/create-theme.ts', 'Create a new theme', 'pnpm lc create-theme');
             break;
 
+        case '9':
+            await generateAssets();
+            break;
+
+        case '0':
+            runCommand('npx tsx scripts/config-editor.ts', 'Config editor', 'pnpm lc editor');
+            break;
+
         default:
-            console.log(yellow('Unknown option. Try 1-8.'));
+            console.log(yellow('Unknown option. Try 0-9.'));
             rl.close();
             break;
     }
