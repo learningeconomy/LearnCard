@@ -9,8 +9,8 @@ import TrashBin from 'src/components/svgs/TrashBin';
 import Pencil from 'src/components/svgs/Pencil';
 
 import { SkillLevel } from './skillTypes';
+import type { SelectedSkill } from './skillTypes';
 import { SkillFrameworkNode } from 'src/components/boost/boost';
-import { SelectedSkill } from './SkillSearchSelector';
 
 type SkillTagProps = {
     frameworkId: string;
@@ -18,6 +18,7 @@ type SkillTagProps = {
     proficiencyLevel: SkillLevel;
     handleRemoveSkill?: (skill: any) => void;
     handleEditSkill?: (proficiencyLevel: SkillLevel) => void;
+    disabled?: boolean;
     selectedSkills?: SelectedSkill[];
     handleAddRelatedSkill?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
     handleEditRelatedSkill?: (skillId: string, proficiencyLevel: SkillLevel) => void;
@@ -30,6 +31,7 @@ const SkillTag: React.FC<SkillTagProps> = ({
     proficiencyLevel,
     handleRemoveSkill,
     handleEditSkill,
+    disabled,
     selectedSkills,
     handleAddRelatedSkill,
     handleEditRelatedSkill,
@@ -71,7 +73,8 @@ const SkillTag: React.FC<SkillTagProps> = ({
                 {handleEditSkill && (
                     <button
                         type="button"
-                        className="text-grayscale-700 p-[3px] rounded-full"
+                        className="text-grayscale-700 p-[3px] rounded-full disabled:opacity-60 disabled:cursor-not-allowed"
+                        disabled={disabled}
                         onClick={() => openEditSkillModal(skill)}
                     >
                         <Pencil className="w-[23px] h-[23px]" />
@@ -80,7 +83,8 @@ const SkillTag: React.FC<SkillTagProps> = ({
                 {handleRemoveSkill && (
                     <button
                         type="button"
-                        className="text-grayscale-700 p-[3px] rounded-full"
+                        className="text-grayscale-700 p-[3px] rounded-full disabled:opacity-60 disabled:cursor-not-allowed"
+                        disabled={disabled}
                         onClick={() => handleRemoveSkill(skill)}
                     >
                         <TrashBin className="w-[23px] h-[23px]" version="2" strokeWidth="2" />

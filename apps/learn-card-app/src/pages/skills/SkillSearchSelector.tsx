@@ -30,16 +30,20 @@ import {
 } from '../../helpers/skillFramework.helpers';
 import { SkillFrameworkNode } from '../../components/boost/boost';
 import { SkillLevel } from './skillTypes';
-
-export type SelectedSkill = {
-    id: string;
-    proficiency: SkillLevel;
-};
+import type { SelectedSkill } from './skillTypes';
 
 export type SkillSearchSelectorProps = {
     selectedSkills: SelectedSkill[];
     onSelectedSkillsChange: (skills: SelectedSkill[]) => void;
     showSuggestSkill?: boolean;
+    showSearchInput?: boolean;
+    showSelectedSkills?: boolean;
+    searchQuery?: string;
+    onSearchQueryChange?: (searchQuery: string) => void;
+    isSavingSkills?: boolean;
+    onAddSkill?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
+    onEditSkill?: (skillId: string, proficiencyLevel: SkillLevel) => void;
+    onRemoveSkill?: (skillId: string) => void;
     className?: string;
     initialSearchQuery?: string;
 };
@@ -48,6 +52,14 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     selectedSkills,
     onSelectedSkillsChange,
     showSuggestSkill = true,
+    showSearchInput = true,
+    showSelectedSkills = true,
+    searchQuery,
+    onSearchQueryChange,
+    isSavingSkills = false,
+    onAddSkill,
+    onEditSkill,
+    onRemoveSkill,
     className = '',
     initialSearchQuery,
 }) => {
@@ -57,7 +69,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     const { data: lcNetworkProfile } = useGetProfile();
 
     const [isSubmittingSkillSuggestion, setIsSubmittingSkillSuggestion] = useState(false);
-    const [searchInput, setSearchInput] = useState(initialSearchQuery || '');
+    const [internalSearchInput, setInternalSearchInput] = useState(initialSearchQuery || '');
 
     const initialSkillIds = flags?.initialSelfAssignedSkillIds?.skillIds as string[];
     const frameworkId = flags?.selfAssignedSkillsFrameworkId;
@@ -70,6 +82,18 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         { id: { $in: initialSkillIds ?? [] } },
         { enabled: !!initialSkillIds?.length }
     );
+
+    const isControlledSearch = searchQuery !== undefined;
+    const searchInput = isControlledSearch ? searchQuery : internalSearchInput;
+
+    const setSearchInput = (nextSearchQuery: string) => {
+        if (isControlledSearch) {
+            onSearchQueryChange?.(nextSearchQuery);
+            return;
+        }
+
+        setInternalSearchInput(nextSearchQuery);
+    };
 
     const { data: semanticResultsApiData, isLoading: semanticLoading } = useSemanticSearchSkills(
         searchInput,
@@ -109,6 +133,12 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         ) ?? [];
 
     const suggestedSkills = hasSearchQuery ? semanticSkills : defaultSkillsToShow;
+    const suggestedSkillsToShow = suggestedSkills.filter(
+        skill => !selectedSkills.find(selected => selected.id === skill.id)
+    );
+    const addSkillsTitle = hasSearchQuery
+        ? `${suggestedSkillsToShow.length} More skills for ${searchInput?.trim() ?? ''}`
+        : 'Add Skills';
 
     const handleToggleSelect = (skillId: string, proficiencyLevel?: SkillLevel) => {
         const isAlreadySelected = selectedSkills.some(s => s.id === skillId);
@@ -128,6 +158,33 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                 s.id === skillId ? { ...s, proficiency: proficiencyLevel } : s
             )
         );
+    };
+
+    const handleAddSkillToSelection = (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => {
+        if (onAddSkill) {
+            onAddSkill(skill, proficiencyLevel);
+            return;
+        }
+
+        handleToggleSelect(skill.id!, proficiencyLevel);
+    };
+
+    const handleEditSkillInSelection = (skillId: string, proficiencyLevel: SkillLevel) => {
+        if (onEditSkill) {
+            onEditSkill(skillId, proficiencyLevel);
+            return;
+        }
+
+        handleChangeProficiency(skillId, proficiencyLevel);
+    };
+
+    const handleRemoveSkillFromSelection = (skillId: string) => {
+        if (onRemoveSkill) {
+            onRemoveSkill(skillId);
+            return;
+        }
+
+        handleToggleSelect(skillId);
     };
 
     const handleSubmitSkillSuggestion = async () => {
@@ -169,15 +226,15 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     };
 
     const handleAddRelatedSkill = (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => {
-        handleToggleSelect(skill.id!, proficiencyLevel);
+        handleAddSkillToSelection(skill, proficiencyLevel);
     };
 
     const handleEditRelatedSkill = (skillId: string, proficiencyLevel: SkillLevel) => {
-        handleChangeProficiency(skillId, proficiencyLevel);
+        handleEditSkillInSelection(skillId, proficiencyLevel);
     };
 
     const handleRemoveRelatedSkill = (skillId: string) => {
-        handleToggleSelect(skillId);
+        handleRemoveSkillFromSelection(skillId);
     };
 
     const openAddSkillModal = (skill: SkillFrameworkNode) => {
@@ -186,7 +243,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                 frameworkId={frameworkId}
                 skill={skill}
                 handleAdd={(skill, proficiencyLevel) => {
-                    handleToggleSelect(skill.id!, proficiencyLevel);
+                    handleAddSkillToSelection(skill, proficiencyLevel);
                 }}
                 selectedSkills={selectedSkills}
                 handleAddRelatedSkill={handleAddRelatedSkill}
@@ -198,7 +255,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         );
     };
 
-    const noResults = !!searchInput && suggestedSkills.length === 0 && !searchLoading;
+    const noResults = !!searchInput && suggestedSkillsToShow.length === 0 && !searchLoading;
     const errorLoadingFramework = !selfAssignedSkillFramework && !selfAssignedSkillFrameworkLoading;
 
     return (
@@ -207,31 +264,31 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
 
             {!errorLoadingFramework && (
                 <>
-                    <div className="relative">
-                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
-                            <Search className="text-grayscale-900 w-[24px] h-[24px]" />
+                    {showSearchInput && (
+                        <div className="relative">
+                            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
+                                <Search className="text-grayscale-900 w-[24px] h-[24px]" />
+                            </div>
+                            <IonInput
+                                type="text"
+                                value={searchInput}
+                                placeholder={'Search by skill, goal, or job...'}
+                                onIonInput={e => setSearchInput(e.detail.value ?? '')}
+                                className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[14px] !pl-[44px] !text-left !pr-[36px]"
+                            />
+                            {searchInput && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchInput('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-600 hover:text-grayscale-800 transition-colors z-10"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            )}
                         </div>
-                        <IonInput
-                            type="text"
-                            value={searchInput}
-                            placeholder={'Search by skill, goal, or job...'}
-                            onIonInput={e => setSearchInput(e.detail.value ?? '')}
-                            className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[14px] !pl-[44px] !text-left !pr-[36px]"
-                        />
-                        {searchInput && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setSearchInput('');
-                                }}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-600 hover:text-grayscale-800 transition-colors z-10"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        )}
-                    </div>
+                    )}
 
-                    {selectedSkills.length > 0 && (
+                    {showSelectedSkills && selectedSkills.length > 0 && (
                         <div className="py-[10px] border-t-[1px] border-solid border-grayscale-200 flex flex-col gap-[10px]">
                             <h4 className="flex gap-[5px] items-center text-grayscale-900 font-poppins text-[14px] font-bold">
                                 <VerifiedBadgeIcon />
@@ -250,10 +307,13 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                     skillId={skill.id}
                                     frameworkId={frameworkId}
                                     proficiencyLevel={skill.proficiency}
-                                    handleRemoveSkill={() => handleToggleSelect(skill.id)}
-                                    handleEditSkill={proficiencyLevel =>
-                                        handleChangeProficiency(skill.id, proficiencyLevel)
+                                    handleRemoveSkill={() =>
+                                        handleRemoveSkillFromSelection(skill.id)
                                     }
+                                    handleEditSkill={proficiencyLevel =>
+                                        handleEditSkillInSelection(skill.id, proficiencyLevel)
+                                    }
+                                    disabled={isSavingSkills}
                                     selectedSkills={selectedSkills}
                                     handleAddRelatedSkill={handleAddRelatedSkill}
                                     handleEditRelatedSkill={handleEditRelatedSkill}
@@ -263,27 +323,31 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                         </div>
                     )}
 
-                    <div className="py-[10px] border-t-[1px] border-solid border-grayscale-200 flex flex-col gap-[10px]">
-                        <h4 className="text-grayscale-900 font-poppins text-[14px] font-bold">
-                            Add Skills
-                        </h4>
+                    {showSuggestSkill && (
+                        <div className="relative py-[10px] border-t-[1px] border-solid border-grayscale-200 flex flex-col gap-[10px]">
+                            {isSavingSkills && (
+                                <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 rounded-[10px]">
+                                    <IonSpinner color="dark" name="crescent" />
+                                </div>
+                            )}
 
-                        {searchLoading && (
-                            <div className="flex-1 flex justify-center pt-[30px]">
-                                <IonSpinner color="dark" name="crescent" />
-                            </div>
-                        )}
+                            <h4 className="text-grayscale-900 font-poppins text-[14px] font-bold">
+                                {addSkillsTitle}
+                            </h4>
 
-                        {!searchLoading &&
-                            suggestedSkills.map(skill => {
-                                if (selectedSkills.find(selected => selected.id === skill.id)) {
-                                    return undefined;
-                                }
+                            {searchLoading && (
+                                <div className="flex-1 flex justify-center pt-[30px]">
+                                    <IonSpinner color="dark" name="crescent" />
+                                </div>
+                            )}
 
-                                return (
+                            {!searchLoading &&
+                                suggestedSkillsToShow.map(skill => (
                                     <button
+                                        key={skill.id}
                                         onClick={() => openAddSkillModal(skill)}
-                                        className="p-[10px] flex gap-[10px] items-center background-grayscale-50 rounded-[15px] shadow-bottom-2-4"
+                                        disabled={isSavingSkills}
+                                        className="p-[10px] flex gap-[10px] items-center background-grayscale-50 rounded-[15px] shadow-bottom-2-4 disabled:opacity-60 disabled:cursor-not-allowed"
                                     >
                                         <CompetencyIcon icon={skill.icon!} />
                                         <span className="text-grayscale-900 font-poppins text-[17px] line-clamp-2 text-left">
@@ -294,75 +358,36 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                             strokeWidth="2"
                                         />
                                     </button>
-                                );
-                            })}
-                    </div>
+                                ))}
 
-                    {noResults && (
-                        <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
-                            No results or suggestions
-                        </p>
-                    )}
-
-                    {/* {searchLoading ? (
-                        <div className="flex-1 flex justify-center pt-[30px]">
-                            <IonSpinner color="dark" name="crescent" />
-                        </div>
-                    ) : (
-                        <>
-                            {suggestedSkills.map(skill => {
-                                const selected = selectedSkills.find(s => s.id === skill.id);
-
-                                return (
-                                    <SelfAssignedSkillRow
-                                        key={skill.id}
-                                        skill={skill}
-                                        framework={selfAssignedSkillFramework}
-                                        handleToggleSelect={() =>
-                                            handleToggleSelect(skill.id!, skill)
-                                        }
-                                        isNodeSelected={!!selected}
-                                        shouldCollapseOptions={shouldCollapseOptions}
-                                        proficiencyLevel={
-                                            selected?.proficiency ?? SkillLevel.Hidden
-                                        }
-                                        onChangeProficiency={level =>
-                                            onSelectedSkillsChange(
-                                                selectedSkills.map(s =>
-                                                    s.id === skill.id
-                                                        ? { ...s, proficiency: level }
-                                                        : s
-                                                )
-                                            )
-                                        }
-                                    />
-                                );
-                            })}
-                        </>
-                    )} */}
-
-                    {showSuggestSkill && searchInput && !searchLoading && (
-                        <div className="flex flex-col gap-[20px] w-full pt-[20px] border-t-[1px] border-grayscale-200 border-solid">
-                            <div className="flex flex-col items-start gap-[10px] pb-[10px]">
-                                <p className="text-grayscale-900 text-[17px] font-[600] font-poppins">
-                                    Didn't find what you're looking for?
+                            {noResults && (
+                                <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
+                                    No results or suggestions
                                 </p>
-                                <p className="font-poppins text-[17px] text-grayscale-700">
-                                    We are always adding new skills and your suggestions help!
-                                </p>
-                            </div>
+                            )}
 
-                            <p className="text-grayscale-900 font-poppins text-[17px] font-[600] italic text-center">
-                                {searchInput}
-                            </p>
+                            {searchInput && !searchLoading && (
+                                <div className="flex flex-col gap-[10px] pb-[10px] pt-[10px] border-t border-grayscale-200 border-solid">
+                                    <p className="text-grayscale-900 text-[17px] font-[600] font-poppins">
+                                        Didn&apos;t find what you&apos;re looking for?
+                                    </p>
+                                    <p className="font-poppins text-[17px] text-grayscale-700">
+                                        We are always adding new skills and your suggestions help!
+                                    </p>
 
-                            <button
-                                className="px-[20px] py-[7px] rounded-[30px] bg-indigo-500 text-white text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] disabled:bg-grayscale-200"
-                                onClick={handleSubmitSkillSuggestion}
-                                disabled={isSubmittingSkillSuggestion}
-                            >
-                                Suggest Skill
-                            </button>
+                                    <p className="text-grayscale-900 font-poppins text-[17px] font-[600] italic text-center">
+                                        {searchInput}
+                                    </p>
+
+                                    <button
+                                        className="px-[20px] py-[7px] rounded-[30px] bg-indigo-500 text-white text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] disabled:bg-grayscale-200"
+                                        onClick={handleSubmitSkillSuggestion}
+                                        disabled={isSubmittingSkillSuggestion}
+                                    >
+                                        Suggest Skill
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </>

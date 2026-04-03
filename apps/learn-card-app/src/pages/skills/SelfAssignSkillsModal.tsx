@@ -16,7 +16,8 @@ import SkillsCloseConfirmationModal from './SkillsCloseConfirmationModal';
 import { IonFooter, IonSpinner } from '@ionic/react';
 import { GenericErrorView } from 'learn-card-base/components/generic/GenericErrorBoundary';
 
-import SkillSearchSelector, { SelectedSkill } from './SkillSearchSelector';
+import SkillSearchSelector from './SkillSearchSelector';
+import { SelectedSkill } from './skillTypes';
 
 type SelfAssignSkillsModalProps = {};
 

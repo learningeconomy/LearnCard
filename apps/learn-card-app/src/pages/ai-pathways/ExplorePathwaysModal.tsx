@@ -8,7 +8,10 @@ import {
     conditionalPluralize,
     useGetBoostSkills,
     useGetSelfAssignedSkillsBoost,
+    useManageSelfAssignedSkillsBoost,
     useModal,
+    useToast,
+    ToastTypeEnum,
     useVerifiableData,
 } from 'learn-card-base';
 
@@ -21,18 +24,22 @@ import SlimCaretLeft from 'src/components/svgs/SlimCaretLeft';
 import SlimCaretRight from 'src/components/svgs/SlimCaretRight';
 import Pencil from 'src/components/svgs/Pencil';
 import SkillTag from '../skills/SkillTag';
+import SkillSearchSelector from '../skills/SkillSearchSelector';
 import {
     SKILL_PROFILE_GOALS_KEY,
     SkillProfileGoalsData,
 } from './ai-pathways-skill-profile/SkillProfileStep1';
 import { IonSpinner } from '@ionic/react';
+import type { SelectedSkill } from '../skills/skillTypes';
 
 type ExplorePathwaysModalProps = { initialSearchQuery?: string };
 
 const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSearchQuery = '' }) => {
     const { closeModal } = useModal();
+    const { presentToast } = useToast();
 
     const [search, setSearch] = useState(initialSearchQuery);
+    const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
     const skillsSwiperRef = useRef<any>(null);
     const goalsSwiperRef = useRef<any>(null);
     const [skillsAtBeginning, setSkillsAtBeginning] = useState(true);
@@ -44,6 +51,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
     const { data: sasBoostSkills, isLoading: sasBoostSkillsLoading } = useGetBoostSkills(
         sasBoostData?.uri
     );
+    const { mutateAsync: saveSkills, isPending: skillsSaving } = useManageSelfAssignedSkillsBoost();
 
     const {
         data: goalsData,
@@ -57,6 +65,59 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
 
     const goals = goalsData?.goals ?? [];
 
+    useEffect(() => {
+        if (sasBoostSkills) {
+            setSelectedSkills(
+                sasBoostSkills.map((s: { id: string; proficiencyLevel: number }) => ({
+                    id: s.id,
+                    proficiency: s.proficiencyLevel,
+                }))
+            );
+        }
+    }, [sasBoostSkills]);
+
+    const persistSkills = async (nextSkills: SelectedSkill[]) => {
+        const previousSkills = selectedSkills;
+        setSelectedSkills(nextSkills);
+
+        try {
+            await saveSkills({
+                skills: nextSkills.map(skill => ({
+                    frameworkId: sasBoostSkills?.[0]?.frameworkId ?? '',
+                    id: skill.id,
+                    proficiencyLevel: skill.proficiency,
+                })),
+            });
+        } catch (error: any) {
+            console.error('Error creating or updating skills:', error);
+            setSelectedSkills(previousSkills);
+            presentToast(`Error saving skills!${error?.message ? ` ${error?.message}` : ''}`, {
+                type: ToastTypeEnum.Error,
+            });
+        }
+    };
+
+    const handleAddSkill = async (skill: { id?: string }, proficiencyLevel: number) => {
+        if (!skill.id) return;
+
+        await persistSkills([
+            ...selectedSkills.filter(selected => selected.id !== skill.id),
+            { id: skill.id, proficiency: proficiencyLevel },
+        ]);
+    };
+
+    const handleEditSkill = async (skillId: string, proficiencyLevel: number) => {
+        await persistSkills(
+            selectedSkills.map(skill =>
+                skill.id === skillId ? { ...skill, proficiency: proficiencyLevel } : skill
+            )
+        );
+    };
+
+    const handleRemoveSkill = async (skillId: string) => {
+        await persistSkills(selectedSkills.filter(skill => skill.id !== skillId));
+    };
+
     const handleSwiperUpdate = (swiper: any, setAtBeginning: any, setAtEnd: any) => {
         setAtBeginning(swiper.isBeginning);
         setAtEnd(swiper.isEnd);
@@ -67,7 +128,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
             skillsSwiperRef.current.update();
             handleSwiperUpdate(skillsSwiperRef.current, setSkillsAtBeginning, setSkillsAtEnd);
         }
-    }, [sasBoostSkills?.length]);
+    }, [selectedSkills.length]);
 
     useEffect(() => {
         if (goalsSwiperRef.current) {
@@ -112,30 +173,25 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
 
             <section className="h-full pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative">
                 <div className="flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid pb-[15px]">
-                    {sasBoostSkills?.length === 0 && !sasBoostSkillsLoading && (
-                        <button className="flex items-center justify-center gap-[5px] py-[15px] text-grayscale-700 text-[17px] font-bold border-[1px] border-solid border-grayscale-200 rounded-[10px] bg-white">
-                            Add Skills
-                            <Plus className="h-[30px] w-[30px]" />
-                        </button>
-                    )}
-                    {sasBoostSkillsLoading && (
-                        <div className="flex items-center justify-center py-[15px]">
-                            <IonSpinner color="dark" name="crescent" />
-                        </div>
-                    )}
-                    {sasBoostSkills?.length > 0 && (
-                        <>
+                    {selectedSkills.length > 0 && (
+                        <div className="flex flex-col gap-[10px] relative">
+                            {skillsSaving && (
+                                <div className="absolute inset-0 z-20 bg-white/70 rounded-[15px] flex items-center justify-center">
+                                    <IonSpinner color="dark" name="crescent" />
+                                </div>
+                            )}
+
                             <h4 className="flex gap-[15px] items-center text-grayscale-900 font-poppins text-[17px] font-bold">
-                                {conditionalPluralize(sasBoostSkills.length, 'Skill')}
+                                {conditionalPluralize(selectedSkills.length, 'Skill')}
 
                                 <div className="flex items-center gap-[15px] ml-auto">
-                                    {sasBoostSkills.length > 3 && (
+                                    {selectedSkills.length > 3 && (
                                         <button className="text-grayscale-600 text-[14px] font-bold">
                                             View All
                                         </button>
                                     )}
-                                    <button>
-                                        <Pencil className="text-grayscale-700 h-[30px] w-[30px]" />
+                                    <button disabled={skillsSaving}>
+                                        <Pencil className="text-grayscale-700 h-[30px] w-[30px] disabled:opacity-60" />
                                     </button>
                                 </div>
                             </h4>
@@ -178,20 +234,23 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                     slidesPerView={'auto'}
                                     grabCursor={true}
                                 >
-                                    {sasBoostSkills.map(skill => (
+                                    {selectedSkills.map(skill => (
                                         <SwiperSlide key={skill.id} style={{ width: 'auto' }}>
                                             <SkillTag
                                                 skillId={skill.id}
-                                                frameworkId={skill.frameworkId}
-                                                proficiencyLevel={skill.proficiencyLevel}
-                                                // handleRemoveSkill={() => handleToggleSelect(skill.id)}
-                                                // handleEditSkill={proficiencyLevel =>
-                                                //     handleChangeProficiency(skill.id, proficiencyLevel)
-                                                // }
-                                                selectedSkills={sasBoostSkills}
-                                                // handleAddRelatedSkill={handleAddRelatedSkill}
-                                                // handleEditRelatedSkill={handleEditRelatedSkill}
-                                                // handleRemoveRelatedSkill={handleRemoveRelatedSkill}
+                                                frameworkId={sasBoostSkills?.[0]?.frameworkId ?? ''}
+                                                proficiencyLevel={skill.proficiency}
+                                                handleRemoveSkill={() =>
+                                                    handleRemoveSkill(skill.id)
+                                                }
+                                                handleEditSkill={proficiencyLevel =>
+                                                    handleEditSkill(skill.id, proficiencyLevel)
+                                                }
+                                                disabled={skillsSaving}
+                                                selectedSkills={selectedSkills}
+                                                handleAddRelatedSkill={() => undefined}
+                                                handleEditRelatedSkill={() => undefined}
+                                                handleRemoveRelatedSkill={() => undefined}
                                             />
                                         </SwiperSlide>
                                     ))}
@@ -204,6 +263,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                         }}
                                         className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
                                         style={{ opacity: 0.8 }}
+                                        disabled={skillsSaving}
                                     >
                                         <SlimCaretLeft className="w-5 h-auto" />
                                     </button>
@@ -216,16 +276,23 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                         }}
                                         className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
                                         style={{ opacity: 0.8 }}
+                                        disabled={skillsSaving}
                                     >
                                         <SlimCaretRight className="w-5 h-auto" />
                                     </button>
                                 )}
                             </div>
-                        </>
+                        </div>
+                    )}
+
+                    {sasBoostSkillsLoading && selectedSkills.length === 0 && (
+                        <div className="flex items-center justify-center py-[15px]">
+                            <IonSpinner color="dark" name="crescent" />
+                        </div>
                     )}
                 </div>
 
-                <div className="flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid pb-[15px] pt-[15px]">
+                <div className="flex flex-col gap-[10px] pb-[15px] pt-[15px]">
                     {goals.length === 0 && !goalsLoading && (
                         <button className="flex items-center justify-center gap-[5px] py-[15px] text-grayscale-700 text-[17px] font-bold border-[1px] border-solid border-grayscale-200 rounded-[10px] bg-white">
                             Add Goals
@@ -336,6 +403,22 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                         </>
                     )}
                 </div>
+
+                <SkillSearchSelector
+                    selectedSkills={selectedSkills}
+                    onSelectedSkillsChange={async (nextSkills: SelectedSkill[]) => {
+                        await persistSkills(nextSkills);
+                    }}
+                    showSuggestSkill={true}
+                    showSearchInput={false}
+                    showSelectedSkills={false}
+                    searchQuery={search}
+                    onSearchQueryChange={setSearch}
+                    isSavingSkills={skillsSaving}
+                    onAddSkill={handleAddSkill}
+                    onEditSkill={handleEditSkill}
+                    onRemoveSkill={handleRemoveSkill}
+                />
             </section>
 
             <footer className="w-full flex justify-center bg-opacity-70 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white">
