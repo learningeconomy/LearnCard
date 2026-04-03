@@ -64,7 +64,7 @@
             "api.vetpass.app",
             "cloud.vetpass.app"
         ],
-        "launchDarklyClientId": "TODO_LD_CLIENT_ID",
+        "launchDarklyClientId": "69d0174514adc00adb3868b1",
         "userflowToken": "TODO_USERFLOW_TOKEN"
     },
     "links": {
