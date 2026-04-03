@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from 'react';
-import { List, Plus, X, ChevronDown, ChevronRight, Trophy, Save } from 'lucide-react';
+import { List, Plus, X, ChevronDown, ChevronRight, Trophy, Save, BarChart2 } from 'lucide-react';
 
 import {
     OBv3CredentialTemplate,
@@ -39,6 +39,12 @@ const createNewEntry = (): AchievementEntryTemplate => ({
     id: crypto.randomUUID(),
     achievement: createBlankAchievement(),
     result: [],
+});
+
+const createNewResult = (): ResultTemplate => ({
+    id: crypto.randomUUID(),
+    value: staticField(''),
+    status: staticField(''),
 });
 
 export const AchievementsListSection: React.FC<AchievementsListSectionProps> = ({
@@ -141,6 +147,35 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
         updateEntry(index, { ...entry, [field]: value });
     };
 
+    const addResult = (index: number) => {
+        const entry = achievements[index];
+        const newResult = createNewResult();
+        updateEntry(index, { ...entry, result: [...(entry.result || []), newResult] });
+    };
+
+    const removeResult = (entryIndex: number, resultId: string) => {
+        const entry = achievements[entryIndex];
+        updateEntry(entryIndex, {
+            ...entry,
+            result: (entry.result || []).filter(r => r.id !== resultId),
+        });
+    };
+
+    const updateResultField = (
+        entryIndex: number,
+        resultId: string,
+        field: 'value' | 'status',
+        value: TemplateFieldValue
+    ) => {
+        const entry = achievements[entryIndex];
+        updateEntry(entryIndex, {
+            ...entry,
+            result: (entry.result || []).map(r =>
+                r.id === resultId ? { ...r, [field]: value } : r
+            ),
+        });
+    };
+
     const getEntrySummary = (entry: AchievementEntryTemplate): string => {
         const name = entry.achievement.name;
         if (name.value) return name.value;
@@ -187,17 +222,17 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                         const entryExpanded = expandedEntries.has(entry.id);
                         const summary = getEntrySummary(entry);
                         const typeBadge = getEntryTypeBadge(entry);
+                        const entryHasErrors =
+                            saveAttempted.has(entry.id) &&
+                            validationErrors.some(e =>
+                                e.field.startsWith(`achievements.${index}.`)
+                            );
 
                         return (
                             <div
                                 key={entry.id}
                                 className={`border rounded-lg overflow-hidden ${
-                                    saveAttempted.has(entry.id) &&
-                                    validationErrors.some(e =>
-                                        e.field.startsWith(`achievements.${index}.`)
-                                    )
-                                        ? 'border-red-400'
-                                        : 'border-gray-200'
+                                    entryHasErrors ? 'border-red-400' : 'border-gray-200'
                                 }`}
                             >
                                 {/* Entry Header */}
@@ -335,27 +370,90 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                             </div>
                                         </div>
 
-                                        {/* Results subsection (placeholder) */}
+                                        {/* Results subsection */}
                                         <div className="mt-4 pt-4 border-t border-gray-100">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h4 className="text-sm font-medium text-gray-700">
-                                                    Results
-                                                </h4>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <BarChart2 className="w-3.5 h-3.5 text-indigo-500" />
+                                                    <h4 className="text-sm font-medium text-gray-700">
+                                                        Results
+                                                    </h4>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => addResult(index)}
+                                                    className="flex items-center gap-1 px-2 py-1 text-xs bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 transition-colors"
+                                                >
+                                                    <Plus className="w-3 h-3" />
+                                                    Add Result
+                                                </button>
                                             </div>
-
-                                            <p className="text-xs text-gray-400 italic pl-3">
-                                                {(entry.result || []).length === 0
-                                                    ? 'No results added'
-                                                    : `${entry.result!.length} result${entry.result!.length > 1 ? 's' : ''}`}
+                                            <p className="text-xs text-gray-400 mb-3">
+                                                Achieved outcomes for this entry — e.g., a letter grade (A), score (95%), or proficiency level.
                                             </p>
+
+                                            {(entry.result || []).length === 0 ? (
+                                                <p className="text-xs text-gray-400 italic pl-3">
+                                                    No results added
+                                                </p>
+                                            ) : (
+                                                <div className="space-y-3 pl-3 border-l-2 border-indigo-200">
+                                                    {(entry.result || []).map((result, resultIndex) => (
+                                                        <div
+                                                            key={result.id}
+                                                            className="flex items-start gap-2"
+                                                        >
+                                                            <div className="flex-1 grid grid-cols-2 gap-2">
+                                                                <FieldEditor
+                                                                    label={`Result ${resultIndex + 1} Value`}
+                                                                    field={result.value || staticField('')}
+                                                                    onChange={f =>
+                                                                        updateResultField(index, result.id, 'value', f)
+                                                                    }
+                                                                    placeholder="e.g., A, 95%, 3.8 GPA"
+                                                                    helpText="The achieved value"
+                                                                    showDynamicToggle={!disableDynamicFields}
+                                                                />
+                                                                <FieldEditor
+                                                                    label="Status"
+                                                                    field={result.status || staticField('')}
+                                                                    onChange={f =>
+                                                                        updateResultField(index, result.id, 'status', f)
+                                                                    }
+                                                                    placeholder="e.g., Completed"
+                                                                    helpText="Completion status"
+                                                                    showDynamicToggle={!disableDynamicFields}
+                                                                />
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeResult(index, result.id)}
+                                                                className="mt-6 p-1 text-gray-400 hover:text-red-500 rounded flex-shrink-0"
+                                                                title="Remove result"
+                                                            >
+                                                                <X className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Save button */}
-                                        <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                                        <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col items-end gap-1.5">
+                                            {entryHasErrors && (
+                                                <p className="text-xs text-red-500">
+                                                    Fix the errors above before saving.
+                                                </p>
+                                            )}
                                             <button
                                                 type="button"
                                                 onClick={() => handleSaveEntry(entry.id, index)}
-                                                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                                                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                                    entryHasErrors
+                                                        ? 'bg-indigo-300 text-white cursor-not-allowed'
+                                                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                                }`}
                                             >
                                                 <Save className="w-3.5 h-3.5" />
                                                 Save Achievement
