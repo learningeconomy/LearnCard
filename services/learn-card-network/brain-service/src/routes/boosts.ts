@@ -732,12 +732,31 @@ export const boostsRouter = t.router({
 
                         boostUri = getBoostUri(boost.id, domain);
                         boostCreated = true;
+                    } else if (input.signedCredential) {
+                        // Auto-create boost from the signed credential
+                        const name =
+                            (input.signedCredential as Record<string, unknown>).name as
+                                | string
+                                | undefined;
+
+                        boost = await traceDb('createBoost:fromSignedCredential', () =>
+                            createBoost(
+                                input.signedCredential!,
+                                profile,
+                                { ...(name ? { name } : {}) },
+                                domain
+                            )
+                        );
+
+                        boostUri = getBoostUri(boost.id, domain);
+                        boostCreated = true;
                     }
 
                     if (!boost) {
                         throw new TRPCError({
                             code: 'BAD_REQUEST',
-                            message: 'A templateUri or template creation payload is required.',
+                            message:
+                                'A templateUri, template, or signedCredential must be provided.',
                         });
                     }
 

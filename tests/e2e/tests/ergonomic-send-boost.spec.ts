@@ -198,6 +198,120 @@ describe('Send E2E Tests', () => {
         });
     });
 
+    describe('SignedCredential-Only Send (no template)', () => {
+        it('should send with only signedCredential to a profileId', async () => {
+            const signedCredential = await a.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: a.id.did('key'),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: b.id.did('key'),
+                },
+            });
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: USERS.b.profileId,
+                signedCredential,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBeDefined();
+        });
+
+        it('should auto-create a fetchable boost from signedCredential', async () => {
+            const signedCredential = await a.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: a.id.did('key'),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: b.id.did('key'),
+                },
+            });
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: USERS.b.profileId,
+                signedCredential,
+            });
+
+            const boost = await a.invoke.getBoost(result.uri);
+            expect(boost).toBeDefined();
+        });
+
+        it('should send with only signedCredential to a DID', async () => {
+            const bProfile = await b.invoke.getProfile();
+
+            const signedCredential = await a.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: a.id.did('key'),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: bProfile!.did,
+                },
+            });
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: bProfile!.did,
+                signedCredential,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBeDefined();
+            expect(result.inbox).toBeUndefined();
+        });
+
+        it('should allow recipient to accept credential sent with only signedCredential', async () => {
+            const signedCredential = await a.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: a.id.did('key'),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: b.id.did('key'),
+                },
+            });
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: USERS.b.profileId,
+                signedCredential,
+            });
+
+            const incoming = await b.invoke.getIncomingCredentials();
+            const received = incoming.find((c: { uri: string }) => c.uri === result.credentialUri);
+            expect(received).toBeDefined();
+
+            await b.invoke.acceptCredential(result.credentialUri);
+
+            const aProfile = await a.invoke.getProfile();
+
+            const receivedCreds = await b.invoke.getReceivedCredentials({
+                from: aProfile!.profileId,
+            });
+
+            expect(receivedCreds).toHaveLength(1);
+        });
+
+        it('should route signedCredential-only to inbox for email recipient', async () => {
+            const signedCredential = await a.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: a.id.did('key'),
+            });
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: 'signed-only-e2e@example.com',
+                signedCredential,
+            });
+
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
+            expect(result.inbox?.status).toBe('PENDING');
+            expect(result.uri).toBeDefined();
+        });
+    });
+
     describe('Error Handling', () => {
         it('should reject if boost does not exist', async () => {
             await expect(
