@@ -87,7 +87,7 @@ export function lazyWithRetry<T extends { default: React.ComponentType<any> }>(
         } catch (firstErr) {
             if (!isStaleChunkError(firstErr)) throw firstErr;
 
-            // Retry once with a cache-busting timestamp to bypass stale HTTP / SW caches
+            // Retry once in case of transient network issues or CDN propagation delays during deployment
             try {
                 return await factory();
             } catch (retryErr) {
