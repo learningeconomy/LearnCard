@@ -246,7 +246,46 @@ const diffTemplates = (oldTemplate: OBv3CredentialTemplate | null, newTemplate: 
             }
         }
     }
-    
+
+    // CLR 2.0 achievement and association tracking
+    if (newTemplate.schemaType === 'clr2') {
+        const oldAchievements = oldTemplate.clrSubject?.achievements || [];
+        const newAchievements = newTemplate.clrSubject?.achievements || [];
+
+        // Track count changes
+        if (oldAchievements.length !== newAchievements.length) {
+            changes.push({
+                path: 'clrSubject.achievements.count',
+                label: 'Number of Achievements',
+                oldValue: String(oldAchievements.length),
+                newValue: String(newAchievements.length),
+            });
+        }
+
+        // Track per-entry name changes for entries present in both (by position)
+        const minLen = Math.min(oldAchievements.length, newAchievements.length);
+        for (let i = 0; i < minLen; i++) {
+            checkField(
+                `clrSubject.achievements.${i}.name`,
+                `Achievement ${i + 1} Name`,
+                oldAchievements[i].achievement.name,
+                newAchievements[i].achievement.name
+            );
+        }
+
+        // Track association count changes
+        const oldAssocCount = oldTemplate.clrSubject?.associations?.length || 0;
+        const newAssocCount = newTemplate.clrSubject?.associations?.length || 0;
+        if (oldAssocCount !== newAssocCount) {
+            changes.push({
+                path: 'clrSubject.associations.count',
+                label: 'Number of Associations',
+                oldValue: String(oldAssocCount),
+                newValue: String(newAssocCount),
+            });
+        }
+    }
+
     return changes;
 };
 

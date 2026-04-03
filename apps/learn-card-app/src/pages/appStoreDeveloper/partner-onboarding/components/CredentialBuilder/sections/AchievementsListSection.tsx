@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from 'react';
-import { List, Plus, X, ChevronDown, ChevronRight, Trophy, Save, BarChart2 } from 'lucide-react';
+import { List, Plus, X, ChevronDown, ChevronRight, Trophy, Save, BarChart2, GripVertical } from 'lucide-react';
 
 import {
     OBv3CredentialTemplate,
@@ -57,6 +57,8 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
 }) => {
     const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
     const [saveAttempted, setSaveAttempted] = useState<Set<string>>(new Set());
+    const [draggedId, setDraggedId] = useState<string | null>(null);
+    const [dragOverId, setDragOverId] = useState<string | null>(null);
 
     const achievements = template.clrSubject?.achievements || [];
 
@@ -147,6 +149,39 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
         updateEntry(index, { ...entry, [field]: value });
     };
 
+    const handleDragStart = (e: React.DragEvent, id: string) => {
+        setDraggedId(id);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e: React.DragEvent, id: string) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (id !== draggedId) setDragOverId(id);
+    };
+
+    const handleDrop = (e: React.DragEvent, targetId: string) => {
+        e.preventDefault();
+        if (!draggedId || draggedId === targetId) {
+            setDraggedId(null);
+            setDragOverId(null);
+            return;
+        }
+        const fromIndex = achievements.findIndex(a => a.id === draggedId);
+        const toIndex = achievements.findIndex(a => a.id === targetId);
+        const reordered = [...achievements];
+        const [moved] = reordered.splice(fromIndex, 1);
+        reordered.splice(toIndex, 0, moved);
+        updateAchievements(reordered);
+        setDraggedId(null);
+        setDragOverId(null);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedId(null);
+        setDragOverId(null);
+    };
+
     const addResult = (index: number) => {
         const entry = achievements[index];
         const newResult = createNewResult();
@@ -228,15 +263,35 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                 e.field.startsWith(`achievements.${index}.`)
                             );
 
+                        const isDragging = draggedId === entry.id;
+                        const isDragOver = dragOverId === entry.id;
+
                         return (
                             <div
                                 key={entry.id}
-                                className={`border rounded-lg overflow-hidden ${
-                                    entryHasErrors ? 'border-red-400' : 'border-gray-200'
+                                draggable
+                                onDragStart={e => handleDragStart(e, entry.id)}
+                                onDragOver={e => handleDragOver(e, entry.id)}
+                                onDrop={e => handleDrop(e, entry.id)}
+                                onDragEnd={handleDragEnd}
+                                className={`border rounded-lg overflow-hidden transition-all ${
+                                    isDragging
+                                        ? 'opacity-40 border-dashed border-indigo-300'
+                                        : isDragOver
+                                        ? 'border-indigo-500 ring-2 ring-indigo-200'
+                                        : entryHasErrors
+                                        ? 'border-red-400'
+                                        : 'border-gray-200'
                                 }`}
                             >
                                 {/* Entry Header */}
                                 <div className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                    <span
+                                        className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 flex-shrink-0"
+                                        title="Drag to reorder"
+                                    >
+                                        <GripVertical className="w-4 h-4" />
+                                    </span>
                                     <button
                                         type="button"
                                         onClick={() => toggleEntry(entry.id)}

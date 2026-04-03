@@ -223,6 +223,10 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         isClrCredential && Array.isArray(cred?.credentialSubject?.achievement)
             ? cred.credentialSubject.achievement
             : [];
+    const clrAssociations: any[] =
+        isClrCredential && Array.isArray(cred?.credentialSubject?.association)
+            ? cred.credentialSubject.association
+            : [];
 
     const customLinkedCredentialsComponent =
         linkedCredentialCount > 0 ? (
@@ -235,7 +239,10 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 defaultImg={defaultImg}
             />
         ) : clrAchievements.length > 0 ? (
-            <ClrAchievementsSummaryBox achievements={clrAchievements} />
+            <ClrAchievementsSummaryBox
+                achievements={clrAchievements}
+                associations={clrAssociations}
+            />
         ) : undefined;
 
     const presentModal = () => {
