@@ -11,6 +11,17 @@ import { FlatProfileType } from 'types/profile';
 import { SigningAuthorityInstance } from './SigningAuthority';
 import { LearnCardRolesEnum } from 'types/profile';
 
+export enum ProfileVisibilityEnum {
+    public = 'public',
+    connections_only = 'connections_only',
+    private = 'private',
+}
+
+export enum AllowConnectionRequestsEnum {
+    anyone = 'anyone',
+    invite_only = 'invite_only',
+}
+
 type CredentialRelationshipProps = {
     to: string;
     date: string;
@@ -67,7 +78,18 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
             shortBio: { type: 'string', required: false },
             bio: { type: 'string', required: false },
             did: { type: 'string', required: true, uniqueItems: true },
-            isPrivate: { type: 'boolean', required: false },
+            isPrivate: { type: 'boolean', required: false }, // ! deprecated, use profileVisibility instead
+            profileVisibility: {
+                type: 'string',
+                required: false,
+                enum: Object.values(ProfileVisibilityEnum),
+            },
+            showEmail: { type: 'boolean', required: false },
+            allowConnectionRequests: {
+                type: 'string',
+                required: false,
+                enum: Object.values(AllowConnectionRequestsEnum),
+            },
             email: { type: 'string', required: false, uniqueItems: true },
             image: { type: 'string', required: false },
             heroImage: { type: 'string', required: false },

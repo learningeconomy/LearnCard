@@ -9,11 +9,18 @@ import {
     useGetProfile,
     useToast,
     ToastTypeEnum,
+    conditionalPluralize,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 
 import X from 'learn-card-base/svgs/X';
+import Plus from '../../components/svgs/Plus';
 import Search from 'learn-card-base/svgs/Search';
-import SelfAssignedSkillRow from './SelfAssignedSkillRow';
+import VerifiedBadgeIcon from 'learn-card-base/svgs/VerifiedBadgeIcon';
+import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
+import AddSkillModal from './AddSkillModal';
+import SkillTag from './SkillTag';
 import { IonInput, IonSpinner } from '@ionic/react';
 import { GenericErrorView } from 'learn-card-base/components/generic/GenericErrorBoundary';
 
@@ -22,7 +29,7 @@ import {
     convertApiSkillNodeToSkillTreeNode,
 } from '../../helpers/skillFramework.helpers';
 import { SkillFrameworkNode } from '../../components/boost/boost';
-import { SkillLevel } from './SkillProficiencyBar';
+import { SkillLevel } from './skillTypes';
 
 export type SelectedSkill = {
     id: string;
@@ -32,53 +39,25 @@ export type SelectedSkill = {
 export type SkillSearchSelectorProps = {
     selectedSkills: SelectedSkill[];
     onSelectedSkillsChange: (skills: SelectedSkill[]) => void;
-    mode?: 'add' | 'review';
-    shouldCollapseOptions?: boolean;
     showSuggestSkill?: boolean;
     className?: string;
-};
-
-export const useSkillSearchSelectorData = () => {
-    const flags = useFlags();
-    const frameworkId = flags?.selfAssignedSkillsFrameworkId;
-    const initialSkillIds = flags?.initialSelfAssignedSkillIds?.skillIds as string[];
-
-    const { data: selfAssignedSkillFramework, isLoading: selfAssignedSkillFrameworkLoading } =
-        useGetSkillFrameworkById(frameworkId);
-
-    const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
-    const { data: sasBoostSkills, isLoading: skillsLoading } = useGetBoostSkills(sasBoostData?.uri);
-
-    const errorLoadingFramework = !selfAssignedSkillFramework && !selfAssignedSkillFrameworkLoading;
-
-    return {
-        frameworkId,
-        initialSkillIds,
-        selfAssignedSkillFramework,
-        selfAssignedSkillFrameworkLoading,
-        sasBoostSkills,
-        skillsLoading,
-        errorLoadingFramework,
-    };
+    initialSearchQuery?: string;
 };
 
 const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     selectedSkills,
     onSelectedSkillsChange,
-    mode = 'add',
-    shouldCollapseOptions = false,
     showSuggestSkill = true,
     className = '',
+    initialSearchQuery,
 }) => {
     const flags = useFlags();
+    const { newModal } = useModal();
     const { presentToast } = useToast();
     const { data: lcNetworkProfile } = useGetProfile();
 
     const [isSubmittingSkillSuggestion, setIsSubmittingSkillSuggestion] = useState(false);
-    const [searchInput, setSearchInput] = useState('');
-    const [selectedSkillNodesCache, setSelectedSkillNodesCache] = useState<
-        Map<string, SkillFrameworkNode>
-    >(new Map());
+    const [searchInput, setSearchInput] = useState(initialSearchQuery || '');
 
     const initialSkillIds = flags?.initialSelfAssignedSkillIds?.skillIds as string[];
     const frameworkId = flags?.selfAssignedSkillsFrameworkId;
@@ -131,19 +110,24 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
 
     const suggestedSkills = hasSearchQuery ? semanticSkills : defaultSkillsToShow;
 
-    const handleToggleSelect = (skillId: string, skillNode?: SkillFrameworkNode) => {
+    const handleToggleSelect = (skillId: string, proficiencyLevel?: SkillLevel) => {
         const isAlreadySelected = selectedSkills.some(s => s.id === skillId);
         if (isAlreadySelected) {
             onSelectedSkillsChange(selectedSkills.filter(s => s.id !== skillId));
         } else {
             onSelectedSkillsChange([
                 ...selectedSkills,
-                { id: skillId, proficiency: SkillLevel.Hidden },
+                { id: skillId, proficiency: proficiencyLevel ?? SkillLevel.Hidden },
             ]);
-            if (skillNode) {
-                setSelectedSkillNodesCache(prev => new Map(prev).set(skillId, skillNode));
-            }
         }
+    };
+
+    const handleChangeProficiency = (skillId: string, proficiencyLevel: SkillLevel) => {
+        onSelectedSkillsChange(
+            selectedSkills.map(s =>
+                s.id === skillId ? { ...s, proficiency: proficiencyLevel } : s
+            )
+        );
     };
 
     const handleSubmitSkillSuggestion = async () => {
@@ -184,8 +168,36 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         }
     };
 
-    const isAdd = mode === 'add';
-    const isReview = mode === 'review';
+    const handleAddRelatedSkill = (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => {
+        handleToggleSelect(skill.id!, proficiencyLevel);
+    };
+
+    const handleEditRelatedSkill = (skillId: string, proficiencyLevel: SkillLevel) => {
+        handleChangeProficiency(skillId, proficiencyLevel);
+    };
+
+    const handleRemoveRelatedSkill = (skillId: string) => {
+        handleToggleSelect(skillId);
+    };
+
+    const openAddSkillModal = (skill: SkillFrameworkNode) => {
+        newModal(
+            <AddSkillModal
+                frameworkId={frameworkId}
+                skill={skill}
+                handleAdd={(skill, proficiencyLevel) => {
+                    handleToggleSelect(skill.id!, proficiencyLevel);
+                }}
+                selectedSkills={selectedSkills}
+                handleAddRelatedSkill={handleAddRelatedSkill}
+                handleEditRelatedSkill={handleEditRelatedSkill}
+                handleRemoveRelatedSkill={handleRemoveRelatedSkill}
+            />,
+            undefined,
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    };
+
     const noResults = !!searchInput && suggestedSkills.length === 0 && !searchLoading;
     const errorLoadingFramework = !selfAssignedSkillFramework && !selfAssignedSkillFrameworkLoading;
 
@@ -202,10 +214,8 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                         <IonInput
                             type="text"
                             value={searchInput}
-                            placeholder={
-                                isAdd ? 'Search by skill or occupation...' : 'Search skills...'
-                            }
-                            onIonInput={e => setSearchInput(e.detail.value)}
+                            placeholder={'Search by skill, goal, or job...'}
+                            onIonInput={e => setSearchInput(e.detail.value ?? '')}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[14px] !pl-[44px] !text-left !pr-[36px]"
                         />
                         {searchInput && (
@@ -221,66 +231,83 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                         )}
                     </div>
 
-                    {!noResults && (
-                        <>
-                            {isAdd
-                                ? hasSearchQuery && (
-                                      <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
-                                          Suggested Skills
-                                      </p>
-                                  )
-                                : null}
-                        </>
+                    {selectedSkills.length > 0 && (
+                        <div className="py-[10px] border-t-[1px] border-solid border-grayscale-200 flex flex-col gap-[10px]">
+                            <h4 className="flex gap-[5px] items-center text-grayscale-900 font-poppins text-[14px] font-bold">
+                                <VerifiedBadgeIcon />
+                                {conditionalPluralize(selectedSkills.length, 'Self Assigned Skill')}
+
+                                {selectedSkills.length > 4 && (
+                                    <button className="ml-auto text-grayscale-600 text-[14px] font-bold">
+                                        View All
+                                    </button>
+                                )}
+                            </h4>
+
+                            {selectedSkills.map(skill => (
+                                <SkillTag
+                                    key={skill.id}
+                                    skillId={skill.id}
+                                    frameworkId={frameworkId}
+                                    proficiencyLevel={skill.proficiency}
+                                    handleRemoveSkill={() => handleToggleSelect(skill.id)}
+                                    handleEditSkill={proficiencyLevel =>
+                                        handleChangeProficiency(skill.id, proficiencyLevel)
+                                    }
+                                    selectedSkills={selectedSkills}
+                                    handleAddRelatedSkill={handleAddRelatedSkill}
+                                    handleEditRelatedSkill={handleEditRelatedSkill}
+                                    handleRemoveRelatedSkill={handleRemoveRelatedSkill}
+                                />
+                            ))}
+                        </div>
                     )}
+
+                    <div className="py-[10px] border-t-[1px] border-solid border-grayscale-200 flex flex-col gap-[10px]">
+                        <h4 className="text-grayscale-900 font-poppins text-[14px] font-bold">
+                            Add Skills
+                        </h4>
+
+                        {searchLoading && (
+                            <div className="flex-1 flex justify-center pt-[30px]">
+                                <IonSpinner color="dark" name="crescent" />
+                            </div>
+                        )}
+
+                        {!searchLoading &&
+                            suggestedSkills.map(skill => {
+                                if (selectedSkills.find(selected => selected.id === skill.id)) {
+                                    return undefined;
+                                }
+
+                                return (
+                                    <button
+                                        onClick={() => openAddSkillModal(skill)}
+                                        className="p-[10px] flex gap-[10px] items-center background-grayscale-50 rounded-[15px] shadow-bottom-2-4"
+                                    >
+                                        <CompetencyIcon icon={skill.icon!} />
+                                        <span className="text-grayscale-900 font-poppins text-[17px] line-clamp-2 text-left">
+                                            {skill?.targetName}
+                                        </span>
+                                        <Plus
+                                            className="h-[25px] w-[25px] text-grayscale-700 ml-auto"
+                                            strokeWidth="2"
+                                        />
+                                    </button>
+                                );
+                            })}
+                    </div>
+
                     {noResults && (
                         <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
                             No results or suggestions
                         </p>
                     )}
 
-                    {searchLoading ? (
+                    {/* {searchLoading ? (
                         <div className="flex-1 flex justify-center pt-[30px]">
                             <IonSpinner color="dark" name="crescent" />
                         </div>
-                    ) : isReview ? (
-                        <>
-                            {selectedSkills.map(selected => {
-                                const savedSkill = sasBoostSkills?.find(
-                                    (s: { id: string }) => s.id === selected.id
-                                );
-                                const cachedSkill = selectedSkillNodesCache.get(selected.id);
-                                const suggestedSkill = suggestedSkills.find(
-                                    (s: SkillFrameworkNode) => s.id === selected.id
-                                );
-
-                                const skill = savedSkill
-                                    ? convertApiSkillNodeToSkillTreeNode(savedSkill as any)
-                                    : cachedSkill ?? suggestedSkill;
-
-                                if (!skill) return null;
-
-                                return (
-                                    <SelfAssignedSkillRow
-                                        key={selected.id}
-                                        skill={skill}
-                                        framework={selfAssignedSkillFramework}
-                                        handleToggleSelect={() => handleToggleSelect(selected.id)}
-                                        isNodeSelected={true}
-                                        shouldCollapseOptions={shouldCollapseOptions}
-                                        proficiencyLevel={selected.proficiency}
-                                        onChangeProficiency={level =>
-                                            onSelectedSkillsChange(
-                                                selectedSkills.map(s =>
-                                                    s.id === selected.id
-                                                        ? { ...s, proficiency: level }
-                                                        : s
-                                                )
-                                            )
-                                        }
-                                    />
-                                );
-                            })}
-                        </>
                     ) : (
                         <>
                             {suggestedSkills.map(skill => {
@@ -312,7 +339,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                 );
                             })}
                         </>
-                    )}
+                    )} */}
 
                     {showSuggestSkill && searchInput && !searchLoading && (
                         <div className="flex flex-col gap-[20px] w-full pt-[20px] border-t-[1px] border-grayscale-200 border-solid">

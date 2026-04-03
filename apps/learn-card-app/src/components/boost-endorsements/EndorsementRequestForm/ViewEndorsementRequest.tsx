@@ -23,7 +23,8 @@ const ViewEndorsementRequest: React.FC<{
     endorsementVC?: VC;
     handleSaveEndorsement?: (visibility?: boolean) => void;
     isClaimed?: boolean;
-}> = ({ sharedLink, notification, endorsementVC, handleSaveEndorsement, isClaimed }) => {
+    isLoading?: boolean;
+}> = ({ sharedLink, notification, endorsementVC, handleSaveEndorsement, isClaimed, isLoading }) => {
     const location = useLocation();
     const [vc, setVC] = useState<VP>();
     const [errMsg, setErrMsg] = useState<string | undefined | null>();
@@ -141,6 +142,7 @@ const ViewEndorsementRequest: React.FC<{
             <EndorsementReviewFooter
                 handleSaveEndorsement={() => handleSaveEndorsement?.(visibility)}
                 isDisabled={isClaimed}
+                isLoading={isLoading}
             />
         </section>
     );

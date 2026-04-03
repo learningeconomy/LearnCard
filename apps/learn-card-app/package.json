@@ -183,6 +183,7 @@
         "autoprefixer": "^10.4.20",
         "jeep-sqlite": "2.5.8",
         "neo4j-driver": "5.18.0",
+        "node-gyp": "^12.2.0",
         "node-stdlib-browser": "1.2.1",
         "open-cli": "^8.0.0",
         "postcss": "^8.5.2",
