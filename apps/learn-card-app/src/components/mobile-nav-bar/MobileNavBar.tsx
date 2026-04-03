@@ -32,7 +32,7 @@ import { useGetUnreadUserNotifications } from 'learn-card-base';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 
 import useTheme from '../../theme/hooks/useTheme';
-import { IconSetEnum } from '../../theme/icons';
+import { IconSetEnum, NavbarIcons } from '../../theme/icons';
 import { ColorSetEnum } from '../../theme/colors';
 import { NavBarIcons } from 'learn-card-base';
 
@@ -56,7 +56,7 @@ const MobileNavBar: React.FC = () => {
         plus: PlusIcon,
         launchPad: LaunchPadIcon,
         notification: NotificationIcon = NavBarBellIcon,
-    } = icons as any;
+    } = icons as NavbarIcons;
 
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
