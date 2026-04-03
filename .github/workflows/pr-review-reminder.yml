@@ -1,0 +1,171 @@
+name: PR Review Reminder
+
+on:
+  schedule:
+    # Tue and Thu at noon EDT (16:00 UTC). During EST this fires at 11am.
+    - cron: '0 16 * * 2,4'
+  workflow_dispatch: # Allow manual triggers
+
+jobs:
+  pr-review-digest:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Gather open PRs needing review
+        id: gather
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # Fetch all open PRs with review and label info
+          prs_json=$(gh pr list \
+            --repo "$GH_REPO" \
+            --state open \
+            --json number,title,author,url,createdAt,isDraft,labels,reviewRequests,reviews,headRefName \
+            --limit 100)
+
+          now=$(date +%s)
+
+          needs_review=""
+          changes_requested=""
+          stale=""
+          drafts=""
+
+          needs_review_count=0
+          changes_requested_count=0
+          stale_count=0
+          draft_count=0
+
+          pr_count=$(echo "$prs_json" | jq 'length')
+
+          for i in $(seq 0 $(( pr_count - 1 ))); do
+            pr=$(echo "$prs_json" | jq ".[$i]")
+
+            number=$(echo "$pr" | jq -r '.number')
+            title=$(echo "$pr" | jq -r '.title')
+            author=$(echo "$pr" | jq -r '.author.login')
+            url=$(echo "$pr" | jq -r '.url')
+            created=$(echo "$pr" | jq -r '.createdAt')
+            is_draft=$(echo "$pr" | jq -r '.isDraft')
+            branch=$(echo "$pr" | jq -r '.headRefName')
+
+            # Calculate age in days
+            created_ts=$(date -d "$created" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$created" +%s 2>/dev/null || echo "$now")
+            age_days=$(( (now - created_ts) / 86400 ))
+
+            # Build age label
+            if [ "$age_days" -eq 0 ]; then
+              age_label="today"
+            elif [ "$age_days" -eq 1 ]; then
+              age_label="1 day"
+            else
+              age_label="${age_days} days"
+            fi
+
+            # Skip do-not-merge, missing-jira, and bot authors
+            should_skip=$(echo "$pr" | jq '
+              ([.labels[]?.name] | any(. == "do-not-merge" or . == "missing-jira")) or
+              (.author.login | test("\\[bot\\]$|^dependabot$|^renovate$|^github-actions$|^claude$"; "i"))
+            ')
+            if [ "$should_skip" = "true" ]; then
+              continue
+            fi
+
+            # Check for SPRINT label
+            is_sprint=$(echo "$pr" | jq '[.labels[]?.name] | any(ascii_downcase == "sprint")')
+
+            if [ "$is_sprint" = "true" ]; then
+              line="• 🏃 <${url}|#${number}> *${title}* — _${author}_ (${age_label}) ⚡ *Sprint Commitment*"
+            else
+              line="• <${url}|#${number}> *${title}* — _${author}_ (${age_label})"
+            fi
+
+            # Drafts
+            if [ "$is_draft" = "true" ]; then
+              drafts="${drafts}\n${line}"
+              draft_count=$((draft_count + 1))
+              continue
+            fi
+
+            # Check review status: look at the latest review per reviewer
+            has_approval=$(echo "$pr" | jq '[.reviews[]? | select(.state == "APPROVED")] | length > 0')
+            has_changes_requested=$(echo "$pr" | jq '
+              [.reviews[]? | select(.state == "CHANGES_REQUESTED")] as $cr |
+              if ($cr | length) == 0 then false
+              else
+                # Check if there is a newer approval from the same author
+                ($cr | map(.author.login) | unique) as $cr_authors |
+                [.reviews[]? | select(.state == "APPROVED" and (.author.login as $a | $cr_authors | index($a) != null))] |
+                length < ($cr_authors | length)
+              end
+            ')
+            pending_reviewers=$(echo "$pr" | jq -r '[.reviewRequests[]?.login // .reviewRequests[]?.name] | join(", ")')
+
+            if [ "$has_changes_requested" = "true" ]; then
+              changes_requested="${changes_requested}\n${line}"
+              changes_requested_count=$((changes_requested_count + 1))
+            elif [ "$has_approval" != "true" ]; then
+              # No approval yet — needs review
+              if [ -n "$pending_reviewers" ]; then
+                line="${line}\n   👀 Waiting on: ${pending_reviewers}"
+              fi
+
+              if [ "$age_days" -ge 7 ]; then
+                stale="${stale}\n${line}"
+                stale_count=$((stale_count + 1))
+              else
+                needs_review="${needs_review}\n${line}"
+                needs_review_count=$((needs_review_count + 1))
+              fi
+            fi
+            # Approved PRs that aren't merged yet are fine — they don't need prodding
+          done
+
+          # Build the Slack message
+          total=$((needs_review_count + changes_requested_count + stale_count))
+
+          if [ "$total" -eq 0 ]; then
+            message="✅ *No PRs need review right now.* All caught up!"
+          else
+            message="📋 *PR Review Digest* — ${total} PR(s) need attention\n"
+
+            if [ "$stale_count" -gt 0 ]; then
+              message="${message}\n🔴 *Stale (7+ days without approval):*\n${stale}\n"
+            fi
+
+            if [ "$changes_requested_count" -gt 0 ]; then
+              message="${message}\n🟡 *Changes Requested (waiting on author):*\n${changes_requested}\n"
+            fi
+
+            if [ "$needs_review_count" -gt 0 ]; then
+              message="${message}\n🔵 *Needs Review:*\n${needs_review}\n"
+            fi
+
+            if [ "$draft_count" -gt 0 ]; then
+              message="${message}\n⚪ _${draft_count} draft PR(s) not shown_"
+            fi
+          fi
+
+          # Write to output (escape for GH Actions)
+          {
+            echo "message<<SLACKEOF"
+            echo -e "$message"
+            echo "SLACKEOF"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "total=$total" >> "$GITHUB_OUTPUT"
+
+      - name: Send Slack notification
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_USERNAME: PR Review Bot
+          SLACK_TITLE: 'PR Review Reminder'
+          SLACK_MESSAGE: ${{ steps.gather.outputs.message }}
+          SLACK_COLOR: ${{ steps.gather.outputs.total == '0' && 'good' || 'warning' }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_PR_REVIEW_URL }}
+          SLACK_ICON_EMOJI: ':mag:'
+          MSG_MINIMAL: 'true'
