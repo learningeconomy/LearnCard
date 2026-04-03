@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
 
 import {
     TextInput,
@@ -14,6 +17,8 @@ import Search from 'learn-card-base/svgs/Search';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import { ExperiencesIconSolid } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
 import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
+import SlimCaretLeft from 'src/components/svgs/SlimCaretLeft';
+import SlimCaretRight from 'src/components/svgs/SlimCaretRight';
 import Pencil from 'src/components/svgs/Pencil';
 import SkillTag from '../skills/SkillTag';
 import {
@@ -27,6 +32,12 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
     const { closeModal } = useModal();
 
     const [search, setSearch] = useState(initialSearchQuery);
+    const skillsSwiperRef = useRef<any>(null);
+    const goalsSwiperRef = useRef<any>(null);
+    const [skillsAtBeginning, setSkillsAtBeginning] = useState(true);
+    const [skillsAtEnd, setSkillsAtEnd] = useState(false);
+    const [goalsAtBeginning, setGoalsAtBeginning] = useState(true);
+    const [goalsAtEnd, setGoalsAtEnd] = useState(false);
 
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
     const { data: sasBoostSkills } = useGetBoostSkills(sasBoostData?.uri);
@@ -42,6 +53,25 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
     });
 
     const goals = goalsData?.goals ?? [];
+
+    const handleSwiperUpdate = (swiper: any, setAtBeginning: any, setAtEnd: any) => {
+        setAtBeginning(swiper.isBeginning);
+        setAtEnd(swiper.isEnd);
+    };
+
+    useEffect(() => {
+        if (skillsSwiperRef.current) {
+            skillsSwiperRef.current.update();
+            handleSwiperUpdate(skillsSwiperRef.current, setSkillsAtBeginning, setSkillsAtEnd);
+        }
+    }, [sasBoostSkills?.length]);
+
+    useEffect(() => {
+        if (goalsSwiperRef.current) {
+            goalsSwiperRef.current.update();
+            handleSwiperUpdate(goalsSwiperRef.current, setGoalsAtBeginning, setGoalsAtEnd);
+        }
+    }, [goals.length]);
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden text-grayscale-900">
@@ -95,24 +125,76 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                             </div>
                         </h4>
 
-                        {/* TODO Swiper probably */}
-                        <div className="flex gap-[10px] overflow-x-auto">
-                            {sasBoostSkills.map(skill => (
-                                <SkillTag
-                                    key={skill.id}
-                                    skillId={skill.id}
-                                    frameworkId={skill.frameworkId}
-                                    proficiencyLevel={skill.proficiencyLevel}
-                                    // handleRemoveSkill={() => handleToggleSelect(skill.id)}
-                                    // handleEditSkill={proficiencyLevel =>
-                                    //     handleChangeProficiency(skill.id, proficiencyLevel)
-                                    // }
-                                    selectedSkills={sasBoostSkills}
-                                    // handleAddRelatedSkill={handleAddRelatedSkill}
-                                    // handleEditRelatedSkill={handleEditRelatedSkill}
-                                    // handleRemoveRelatedSkill={handleRemoveRelatedSkill}
-                                />
-                            ))}
+                        <div className="relative w-full overflow-hidden">
+                            <Swiper
+                                onSwiper={swiper => {
+                                    skillsSwiperRef.current = swiper;
+                                    handleSwiperUpdate(
+                                        swiper,
+                                        setSkillsAtBeginning,
+                                        setSkillsAtEnd
+                                    );
+                                }}
+                                onResize={swiper =>
+                                    handleSwiperUpdate(swiper, setSkillsAtBeginning, setSkillsAtEnd)
+                                }
+                                onSlideChange={swiper =>
+                                    handleSwiperUpdate(swiper, setSkillsAtBeginning, setSkillsAtEnd)
+                                }
+                                onReachBeginning={() => setSkillsAtBeginning(true)}
+                                onFromEdge={() => {
+                                    if (skillsSwiperRef.current) {
+                                        setSkillsAtBeginning(skillsSwiperRef.current.isBeginning);
+                                        setSkillsAtEnd(skillsSwiperRef.current.isEnd);
+                                    }
+                                }}
+                                onReachEnd={() => setSkillsAtEnd(true)}
+                                spaceBetween={12}
+                                slidesPerView={'auto'}
+                                grabCursor={true}
+                            >
+                                {sasBoostSkills.map(skill => (
+                                    <SwiperSlide key={skill.id} style={{ width: 'auto' }}>
+                                        <SkillTag
+                                            skillId={skill.id}
+                                            frameworkId={skill.frameworkId}
+                                            proficiencyLevel={skill.proficiencyLevel}
+                                            // handleRemoveSkill={() => handleToggleSelect(skill.id)}
+                                            // handleEditSkill={proficiencyLevel =>
+                                            //     handleChangeProficiency(skill.id, proficiencyLevel)
+                                            // }
+                                            selectedSkills={sasBoostSkills}
+                                            // handleAddRelatedSkill={handleAddRelatedSkill}
+                                            // handleEditRelatedSkill={handleEditRelatedSkill}
+                                            // handleRemoveRelatedSkill={handleRemoveRelatedSkill}
+                                        />
+                                    </SwiperSlide>
+                                ))}
+                            </Swiper>
+
+                            {!skillsAtBeginning && (
+                                <button
+                                    onClick={() => {
+                                        skillsSwiperRef.current?.slidePrev();
+                                    }}
+                                    className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                    style={{ opacity: 0.8 }}
+                                >
+                                    <SlimCaretLeft className="w-5 h-auto" />
+                                </button>
+                            )}
+
+                            {!skillsAtEnd && (
+                                <button
+                                    onClick={() => {
+                                        skillsSwiperRef.current?.slideNext();
+                                    }}
+                                    className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                    style={{ opacity: 0.8 }}
+                                >
+                                    <SlimCaretRight className="w-5 h-auto" />
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}
@@ -133,22 +215,68 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                         </div>
                     </h4>
 
-                    {/* TODO Swiper probably */}
-                    <div className="flex gap-[10px] overflow-x-auto">
-                        {goals.map((goal, index) => (
-                            <span
-                                key={index}
-                                className="flex items-center gap-[8px] border-solid border-[2px] border-sky-600 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]"
+                    <div className="relative w-full overflow-hidden">
+                        <Swiper
+                            onSwiper={swiper => {
+                                goalsSwiperRef.current = swiper;
+                                handleSwiperUpdate(swiper, setGoalsAtBeginning, setGoalsAtEnd);
+                            }}
+                            onResize={swiper =>
+                                handleSwiperUpdate(swiper, setGoalsAtBeginning, setGoalsAtEnd)
+                            }
+                            onSlideChange={swiper =>
+                                handleSwiperUpdate(swiper, setGoalsAtBeginning, setGoalsAtEnd)
+                            }
+                            onReachBeginning={() => setGoalsAtBeginning(true)}
+                            onFromEdge={() => {
+                                if (goalsSwiperRef.current) {
+                                    setGoalsAtBeginning(goalsSwiperRef.current.isBeginning);
+                                    setGoalsAtEnd(goalsSwiperRef.current.isEnd);
+                                }
+                            }}
+                            onReachEnd={() => setGoalsAtEnd(true)}
+                            spaceBetween={12}
+                            slidesPerView={'auto'}
+                            grabCursor={true}
+                        >
+                            {goals.map((goal, index) => (
+                                <SwiperSlide key={index} style={{ width: 'auto' }}>
+                                    <span className="flex items-center gap-[8px] border-solid border-[2px] border-sky-600 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]">
+                                        {goal}
+                                        <button
+                                            type="button"
+                                            onClick={() => console.log('remove goal', index)}
+                                        >
+                                            <X className="w-[15px] h-[15px]" />
+                                        </button>
+                                    </span>
+                                </SwiperSlide>
+                            ))}
+                        </Swiper>
+
+                        {!goalsAtBeginning && (
+                            <button
+                                onClick={() => {
+                                    goalsSwiperRef.current?.slidePrev();
+                                }}
+                                className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                style={{ opacity: 0.8 }}
                             >
-                                {goal}
-                                <button
-                                    type="button"
-                                    onClick={() => console.log('remove goal', index)}
-                                >
-                                    <X className="w-[15px] h-[15px]" />
-                                </button>
-                            </span>
-                        ))}
+                                <SlimCaretLeft className="w-5 h-auto" />
+                            </button>
+                        )}
+
+                        {!goalsAtEnd && (
+                            <button
+                                onClick={() => {
+                                    goalsSwiperRef.current?.slideNext();
+                                }}
+                                className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                style={{ opacity: 0.8 }}
+                            >
+                                <SlimCaretRight className="w-5 h-auto" />
+                            </button>
+                        )}
                     </div>
                 </div>
             </section>
