@@ -25,36 +25,29 @@
 	<true/>
 	<key>CFBundleURLTypes</key>
 	<array>
-		<!-- Existing Google OAuth schemes -->
+		<!-- Google Sign-In: REVERSED_CLIENT_ID from GoogleService-Info.plist -->
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.847997887601-uqspqi01hvfm4mf94qjuf8cdoqhpl2kd</string>
+				<string>__REVERSED_CLIENT_ID__</string>
 			</array>
 		</dict>
+		<!-- Firebase Auth: derived from GOOGLE_APP_ID -->
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>app-1-776298253175-ios-407ee413349344f5a2ef72</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.776298253175-74or0s6rg2k2mmdks6d45ro0i4te1bvf</string>
+				<string>__FIREBASE_APP_URL_SCHEME__</string>
 			</array>
 		</dict>
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.learncard.app.dccrequest</string>
+			<string>__BUNDLE_ID__.dccrequest</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>dccrequest</string>
@@ -64,7 +57,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.learncard.app.msprequest</string>
+			<string>__BUNDLE_ID__.msprequest</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>msprequest</string>
@@ -74,7 +67,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.learncard.app.asuprequest</string>
+			<string>__BUNDLE_ID__.asuprequest</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>asuprequest</string>
