@@ -8,6 +8,13 @@
         "xapi": "https://network.learncard.com/xapi"
     },
     "observability": {
+        "sentryEnv": "alpha-vetpass",
         "launchDarklyClientId": "69d016bd5bb5390aaec9af07"
+    },
+    "native": {
+        "deepLinkDomains": [
+            "alpha.vetpass.app",
+            "vetpass.app"
+        ]
     }
 }
