@@ -13,12 +13,13 @@ import {
 } from '@models';
 import { flattenObject } from '@helpers/objects.helpers';
 import { ProfileType } from 'types/profile';
+import { CredentialIssuer, getIssuerOwnerProfile, isAppStoreListingIssuer } from 'types/issuer';
 import { clearDidWebCacheForChildProfileManagers } from '@accesslayer/boost/relationships/update';
 import { getBoostIdForCredentialInstance } from '@accesslayer/credential/relationships/read';
 import { DbTermsType } from 'types/consentflowcontract';
 
 export const createSentCredentialRelationship = async (
-    from: ProfileType,
+    issuer: CredentialIssuer,
     to: ProfileType,
     credential: CredentialInstance,
     metadata?: Record<string, unknown>,
@@ -33,22 +34,55 @@ export const createSentCredentialRelationship = async (
         ...(integrationId ? { integrationId } : {}),
     });
 
-    await new QueryBuilder(new BindParam({ params: properties }))
-        .match({
-            related: [
-                { model: Profile, where: { profileId: from.profileId }, identifier: 'profile' },
-            ],
-        })
-        .match({
-            related: [
-                { model: Credential, where: { id: credential.id }, identifier: 'credential' },
-            ],
-        })
-        .create(
-            `(profile)-[r:${Profile.getRelationshipByAlias('credentialSent').name}]->(credential)`
-        )
-        .set('r = $params')
-        .run();
+    if (isAppStoreListingIssuer(issuer)) {
+        await new QueryBuilder(new BindParam({ params: properties }))
+            .match({
+                related: [
+                    {
+                        model: AppStoreListing,
+                        where: { listing_id: issuer.listing.listing_id },
+                        identifier: 'listing',
+                    },
+                ],
+            })
+            .match({
+                related: [
+                    { model: Credential, where: { id: credential.id }, identifier: 'credential' },
+                ],
+            })
+            .create(
+                `(listing)-[r:${
+                    AppStoreListing.getRelationshipByAlias('credentialSent').name
+                }]->(credential)`
+            )
+            .set('r = $params')
+            .run();
+    } else {
+        const ownerProfile = getIssuerOwnerProfile(issuer);
+
+        await new QueryBuilder(new BindParam({ params: properties }))
+            .match({
+                related: [
+                    {
+                        model: Profile,
+                        where: { profileId: ownerProfile.profileId },
+                        identifier: 'profile',
+                    },
+                ],
+            })
+            .match({
+                related: [
+                    { model: Credential, where: { id: credential.id }, identifier: 'credential' },
+                ],
+            })
+            .create(
+                `(profile)-[r:${
+                    Profile.getRelationshipByAlias('credentialSent').name
+                }]->(credential)`
+            )
+            .set('r = $params')
+            .run();
+    }
 };
 
 export const createListingSentCredentialRelationship = async (
@@ -83,7 +117,9 @@ export const createListingSentCredentialRelationship = async (
             ],
         })
         .create(
-            `(listing)-[r:${AppStoreListing.getRelationshipByAlias('credentialSent').name}]->(credential)`
+            `(listing)-[r:${
+                AppStoreListing.getRelationshipByAlias('credentialSent').name
+            }]->(credential)`
         )
         .set('r = $params')
         .run();
@@ -91,12 +127,13 @@ export const createListingSentCredentialRelationship = async (
 
 export const createReceivedCredentialRelationship = async (
     to: ProfileType,
-    from: ProfileType,
+    from: ProfileType | { listing_id: string },
     credential: CredentialInstance,
     metadata?: Record<string, unknown>
 ): Promise<void> => {
+    const fromId = 'profileId' in from ? from.profileId : from.listing_id;
     const properties = flattenObject({
-        from: from.profileId,
+        from: fromId,
         date: new Date().toISOString(),
         ...(metadata ? { metadata } : {}),
     });

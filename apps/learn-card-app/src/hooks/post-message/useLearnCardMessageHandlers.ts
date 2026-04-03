@@ -879,7 +879,9 @@ export function useLearnCardMessageHandlers({
 
                         if (!learnCard.invoke.sendAppEvent) {
                             sdkActivityStore.set.endActivity();
-                            throw new Error('sendAppEvent not available - rebuild types');
+                            throw new Error(
+                                'sendAppEvent not available - if you are a dev, you may need to rebuild'
+                            );
                         }
 
                         const result = await learnCard.invoke.sendAppEvent(listingId, event);
@@ -896,6 +898,80 @@ export function useLearnCardMessageHandlers({
                                 result.credentialUri as string,
                                 result.boostUri as string | undefined
                             );
+                        }
+
+                        if (event.type === 'send-ai-session-credential') {
+                            const { topicCredentialUri, sessionCredentialUri, isNewTopic } = result;
+
+                            console.log(
+                                '[AI Topics] Received send-ai-session-credential result:',
+                                {
+                                    topicCredentialUri,
+                                    sessionCredentialUri,
+                                }
+                            );
+
+                            if (topicCredentialUri && isNewTopic) {
+                                try {
+                                    const topicCredential = await learnCard.read.get(
+                                        topicCredentialUri as string
+                                    );
+                                    console.log('[AI Topics] Retrieved topic credential:', {
+                                        uri: topicCredentialUri,
+                                        name: topicCredential?.name,
+                                    });
+                                    if (topicCredential) {
+                                        await storeAndAddVCToWallet(
+                                            topicCredential,
+                                            { title: topicCredential.name || 'AI Topic' },
+                                            'LearnCloud',
+                                            true
+                                        );
+                                        console.log(
+                                            '[AI Topics] Stored topic credential in LearnCloud'
+                                        );
+                                    }
+                                } catch (e) {
+                                    console.error(
+                                        '[AI Topics] Failed to store topic credential:',
+                                        e
+                                    );
+                                }
+                            } else {
+                                console.warn(
+                                    '[AI Topics] No topicCredentialUri in result - topic will not appear in /ai/topics'
+                                );
+                            }
+
+                            if (sessionCredentialUri) {
+                                try {
+                                    const sessionCredential = await learnCard.read.get(
+                                        sessionCredentialUri as string
+                                    );
+                                    console.log('[AI Topics] Retrieved session credential:', {
+                                        uri: sessionCredentialUri,
+                                        name: sessionCredential?.name,
+                                    });
+                                    if (sessionCredential) {
+                                        await storeAndAddVCToWallet(
+                                            sessionCredential,
+                                            { title: sessionCredential.name || 'AI Session' },
+                                            'LearnCloud',
+                                            true
+                                        );
+                                        console.log(
+                                            '[AI Topics] Stored session credential in LearnCloud'
+                                        );
+                                    }
+                                } catch (e) {
+                                    console.error(
+                                        '[AI Topics] Failed to store session credential:',
+                                        e
+                                    );
+                                }
+                            } else {
+                                console.warn('[AI Topics] No sessionCredentialUri in result');
+                            }
                         }
 
                         sdkActivityStore.set.endActivity();

@@ -201,6 +201,41 @@ import '../styles/global.css';
                             Get Learner Context
                         </button>
 
+                        <!-- AI Session Test Section -->
+                        <div
+                            class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200"
+                        >
+                            <h3 class="text-lg font-bold text-gray-800 mb-2">🤖 AI Session Test</h3>
+                            <p class="text-sm text-gray-600 mb-4">
+                                Create a test AI Session credential. Uses ConsentFlow contract if
+                                write permission granted, otherwise falls back to manual send.
+                            </p>
+                            <button
+                                id="create-ai-session-btn"
+                                class="btn-secondary w-full text-white font-bold py-4 rounded-xl text-base shadow-lg"
+                            >
+                                Create Test AI Session
+                            </button>
+                            <div id="ai-session-result" class="hidden mt-4 space-y-3">
+                                <div class="glass-panel rounded-xl p-4">
+                                    <span class="text-sm font-medium">Topic URI:</span>
+                                    <code
+                                        id="topic-uri-display"
+                                        class="text-purple-600 text-xs break-all block mt-1"></code>
+                                </div>
+                                <div class="glass-panel rounded-xl p-4">
+                                    <span class="text-sm font-medium">Session Credential:</span>
+                                    <code
+                                        id="session-credential-display"
+                                        class="text-purple-600 text-xs break-all block mt-1"></code>
+                                </div>
+                                <div class="glass-panel rounded-xl p-4">
+                                    <span class="text-sm font-medium">New Topic?</span>
+                                    <span id="is-new-topic-display" class="text-gray-800"></span>
+                                </div>
+                            </div>
+                        </div>
+
                         <div id="results" class="hidden space-y-6">
                             <h3 class="text-xl font-bold text-gray-800">Results</h3>
 
@@ -231,6 +266,8 @@ import '../styles/global.css';
             <script>
                 import { createPartnerConnect } from '@learncard/partner-connect';
                 const learnCard = createPartnerConnect();
+
+                let sessionCount = 0;
 
                 async function handleConnect() {
                     try {
@@ -308,11 +345,123 @@ import '../styles/global.css';
                     }
                 }
 
+                async function handleCreateAiSession() {
+                    const btn = document.getElementById(
+                        'create-ai-session-btn'
+                    ) as HTMLButtonElement;
+                    btn.disabled = true;
+                    btn.textContent = 'Creating...';
+
+                    try {
+                        sessionCount++;
+                        const sessionTitle = `Test Learning Summary #${sessionCount}`;
+
+                        const result = await learnCard.sendAiSessionCredential({
+                            sessionTitle,
+                            summaryData: {
+                                title: `Learning Session ${sessionCount}`,
+                                summary: `This is a test AI tutoring session demonstrating the partner connect SDK. Session #${sessionCount} covered various learning topics and skills.`,
+                                learned: [
+                                    'Understanding AI session credentials',
+                                    'Partner Connect SDK integration',
+                                    'ConsentFlow data sharing patterns',
+                                    'Boost credential hierarchy (Topic -> Session)',
+                                ],
+                                skills: [
+                                    {
+                                        title: 'Integration Development',
+                                        description:
+                                            'Building apps that integrate with LearnCard using the Partner Connect SDK',
+                                    },
+                                    {
+                                        title: 'Credential Management',
+                                        description:
+                                            'Creating and managing AI session credentials with proper data structures',
+                                    },
+                                ],
+                                nextSteps: [
+                                    {
+                                        title: 'Explore Advanced Features',
+                                        description:
+                                            'Learn about contract-based credential issuance and auto-boosts',
+                                        keywords: {
+                                            occupations: [
+                                                'Software Developer',
+                                                'Integration Engineer',
+                                            ],
+                                            careers: ['EdTech', 'Web Development'],
+                                            jobs: ['Full Stack Developer', 'Solutions Architect'],
+                                            skills: [
+                                                'TypeScript',
+                                                'SDK Integration',
+                                                'Credentials',
+                                            ],
+                                            fieldOfStudy: 'Computer Science',
+                                        },
+                                    },
+                                    {
+                                        title: 'Build Production App',
+                                        description:
+                                            'Create a real-world app using the patterns demonstrated here',
+                                        keywords: {
+                                            occupations: ['Product Manager', 'Technical Lead'],
+                                            careers: ['Product Development', 'Technology'],
+                                            jobs: ['Product Owner', 'Engineering Manager'],
+                                            skills: [
+                                                'Product Design',
+                                                'User Experience',
+                                                'Agile Development',
+                                            ],
+                                            fieldOfStudy: 'Product Management',
+                                        },
+                                    },
+                                ],
+                                reflections: [
+                                    {
+                                        title: 'Learning Experience',
+                                        description:
+                                            'The AI session structure provides a comprehensive way to track learning progress and outcomes',
+                                    },
+                                    {
+                                        title: 'Integration Patterns',
+                                        description:
+                                            'Using the Partner Connect SDK simplifies cross-origin communication with the LearnCard host',
+                                    },
+                                ],
+                            },
+                            metadata: {
+                                testSession: true,
+                                createdAt: new Date().toISOString(),
+                                sessionNumber: sessionCount,
+                            },
+                        });
+
+                        document.getElementById('topic-uri-display').textContent =
+                            result.topicUri || 'N/A';
+                        document.getElementById('session-credential-display').textContent =
+                            result.sessionCredentialUri || 'N/A';
+                        document.getElementById('is-new-topic-display').textContent =
+                            result.isNewTopic ? 'Yes (first session)' : 'No (existing topic)';
+                        document.getElementById('ai-session-result').classList.remove('hidden');
+                        document.getElementById('auth-status').textContent =
+                            'AI Session created! Check your AI Sessions page in LearnCard.';
+                    } catch (error: any) {
+                        document.getElementById('auth-status').textContent =
+                            'AI Session failed: ' + error.message;
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = 'Create Test AI Session';
+                    }
+                }
+
                 document.getElementById('connect-btn').addEventListener('click', handleConnect);
                 document
                     .getElementById('request-consent-btn')
                     .addEventListener('click', handleRequestConsent);
                 document.getElementById('request-btn').addEventListener('click', handleRequest);
+                document
+                    .getElementById('create-ai-session-btn')
+                    .addEventListener('click', handleCreateAiSession);
             </script>
         </div>
     </body>

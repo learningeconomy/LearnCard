@@ -665,7 +665,7 @@ export const contractsRouter = t.router({
 
             // Use the sendBoost helper to issue the credential with contract relationship
             return sendBoost({
-                from: profile,
+                from: { type: 'profile', profile },
                 to: otherProfile,
                 boost,
                 credential,
@@ -847,7 +847,7 @@ export const contractsRouter = t.router({
             let credential: VC | JWE;
             try {
                 credential = await issueCredentialWithSigningAuthority(
-                    profile,
+                    { type: 'profile', profile },
                     unsignedVc,
                     sa,
                     ctx.domain
@@ -862,7 +862,7 @@ export const contractsRouter = t.router({
 
             // Send the boost
             return sendBoost({
-                from: profile,
+                from: { type: 'profile', profile },
                 to: otherProfile,
                 boost,
                 credential,

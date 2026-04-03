@@ -38,6 +38,8 @@ import type {
     TemplateRecipientsResponse,
     RequestLearnerContextOptions,
     LearnerContextResponse,
+    SendAiSessionCredentialInput,
+    SendAiSessionCredentialResponse,
     AppEvent,
     AppEventResponse,
     LearnCardError,
@@ -606,6 +608,44 @@ export class PartnerConnect {
      */
     public sendAppEvent<T = AppEventResponse>(event: AppEvent): Promise<T> {
         return this.sendMessage<T>('APP_EVENT', event);
+    }
+
+    /**
+     * Create and send an AI Session credential to the user.
+     *
+     * This method manages the AI Topic → AI Session hierarchy:
+     * - Ensures an AI Topic exists for this app (creates one if needed)
+     * - Creates a new AI Session as a child of the topic
+     * - The topic appears in the user's AI Sessions page with the app's name
+     * - All sessions from this app are organized under that topic
+     *
+     * @param input - Session details including title and optional metadata
+     * @returns Promise resolving to topic and session URIs
+     *
+     * @example
+     * ```typescript
+     * // Create a new AI session
+     * const session = await learnCard.sendAiSessionCredential({
+     *   sessionTitle: 'Introduction to Machine Learning'
+     * });
+     * console.log('Topic URI:', session.topicUri);
+     * console.log('Session created:', session.sessionCredentialUri);
+     *
+     * // Create another session under the same topic
+     * const session2 = await learnCard.sendAiSessionCredential({
+     *   sessionTitle: 'Advanced ML Concepts',
+     *   metadata: { difficulty: 'advanced' }
+     * });
+     * // session2.topicUri === session.topicUri (same topic)
+     * ```
+     */
+    public sendAiSessionCredential(
+        input: SendAiSessionCredentialInput
+    ): Promise<SendAiSessionCredentialResponse> {
+        return this.sendAppEvent<SendAiSessionCredentialResponse>({
+            type: 'send-ai-session-credential',
+            ...input,
+        });
     }
 
     /**

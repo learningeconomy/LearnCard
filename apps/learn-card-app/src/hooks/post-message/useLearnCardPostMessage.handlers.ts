@@ -128,14 +128,14 @@ export const createRequestConsentHandler = (dependencies: {
             const integration = await getIntegrationForListing(listingId);
             const guideState = integration?.guideState as
                 | {
-                    config?: {
-                        embedAppConfig?: {
-                            featureConfig?: {
-                                'request-data-consent'?: { contractUri?: string };
-                            };
-                        };
-                    };
-                }
+                      config?: {
+                          embedAppConfig?: {
+                              featureConfig?: {
+                                  'request-data-consent'?: { contractUri?: string };
+                              };
+                          };
+                      };
+                  }
                 | undefined;
 
             contractUri =

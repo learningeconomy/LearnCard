@@ -29,6 +29,12 @@ export type AppStoreListingRelationships = {
         { templateAlias: string; createdAt: string },
         { templateAlias: string; createdAt: string }
     >;
+    createdBoost: ModelRelatedNodesI<
+        typeof Boost,
+        BoostInstance,
+        { date: string },
+        { date: string }
+    >;
     credentialSent: ModelRelatedNodesI<
         typeof Credential,
         CredentialInstance,
@@ -122,6 +128,17 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
                     },
                     createdAt: {
                         property: 'createdAt',
+                        schema: { type: 'string', required: true },
+                    },
+                },
+            },
+            createdBoost: {
+                model: Boost,
+                direction: 'out',
+                name: 'CREATED_BY',
+                properties: {
+                    date: {
+                        property: 'date',
                         schema: { type: 'string', required: true },
                     },
                 },

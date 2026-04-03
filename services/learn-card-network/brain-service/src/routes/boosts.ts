@@ -98,7 +98,9 @@ import {
     BoostStatus,
     BoostType,
     BoostWithClaimPermissionsValidator,
+    getBoostOwnerProfile,
 } from 'types/boost';
+import { ProfileType } from 'types/profile';
 import { SkillFrameworkValidator } from 'types/skill-framework';
 import { SkillValidator } from 'types/skill';
 import { deleteBoost } from '@accesslayer/boost/delete';
@@ -111,7 +113,10 @@ import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
-import { getContactMethodByValue, getProfileByContactMethod } from '@accesslayer/contact-method/read';
+import {
+    getContactMethodByValue,
+    getProfileByContactMethod,
+} from '@accesslayer/contact-method/read';
 import {
     getSigningAuthorityForUserByName,
     getPrimarySigningAuthorityForUser,
@@ -641,7 +646,7 @@ export const boostsRouter = t.router({
             });
 
             const credentialUri = await sendBoost({
-                from: profile,
+                from: { type: 'profile', profile },
                 to: targetProfile,
                 boost,
                 credential,
@@ -756,16 +761,25 @@ export const boostsRouter = t.router({
                         let inboxRecipientName: string | undefined;
                         let inboxRecipientDid: string | undefined;
                         if (inboxRecipient.type === 'email' || inboxRecipient.type === 'phone') {
-                            const contactMethod = await traceDb('getContactMethodByValue:inbox', () =>
-                                getContactMethodByValue(inboxRecipient.type as 'email' | 'phone', inboxRecipient.value)
+                            const contactMethod = await traceDb(
+                                'getContactMethodByValue:inbox',
+                                () =>
+                                    getContactMethodByValue(
+                                        inboxRecipient.type as 'email' | 'phone',
+                                        inboxRecipient.value
+                                    )
                             );
                             if (contactMethod) {
-                                const recipientProfile = await traceDb('getProfileByContactMethod:inbox', () =>
-                                    getProfileByContactMethod(contactMethod.id)
+                                const recipientProfile = await traceDb(
+                                    'getProfileByContactMethod:inbox',
+                                    () => getProfileByContactMethod(contactMethod.id)
                                 );
                                 inboxRecipientName = recipientProfile?.displayName;
                                 if (recipientProfile?.profileId) {
-                                    inboxRecipientDid = getDidWeb(domain, recipientProfile.profileId);
+                                    inboxRecipientDid = getDidWeb(
+                                        domain,
+                                        recipientProfile.profileId
+                                    );
                                 }
                             }
                         }
@@ -978,7 +992,7 @@ export const boostsRouter = t.router({
 
                         signedVc = await traceInternal('issueCredentialWithSigningAuthority', () =>
                             issueCredentialWithSigningAuthority(
-                                profile,
+                                { type: 'profile', profile },
                                 unsignedVc,
                                 signingAuthority,
                                 domain,
@@ -1005,7 +1019,7 @@ export const boostsRouter = t.router({
 
                     try {
                         const credentialUri = await sendBoost({
-                            from: profile,
+                            from: { type: 'profile', profile },
                             to: targetProfile,
                             boost,
                             credential: signedVc,
@@ -2876,8 +2890,21 @@ export const boostsRouter = t.router({
                 ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
                 : boostOwner;
 
+            const saOwnerProfile: ProfileType =
+                'profileId' in saOwner ? saOwner : getBoostOwnerProfile(saOwner);
+            const saOwnerIssuer =
+                'profileId' in saOwner
+                    ? { type: 'profile' as const, profile: saOwner }
+                    : saOwner.type === 'profile'
+                    ? { type: 'profile' as const, profile: saOwner.profile }
+                    : {
+                          type: 'appStoreListing' as const,
+                          listing: saOwner.listing,
+                          ownerProfile: saOwner.ownerProfile,
+                      };
+
             const signingAuthority = await getSigningAuthorityForUserByName(
-                saOwner,
+                saOwnerProfile,
                 claimLinkSA.endpoint,
                 claimLinkSA.name
             );
@@ -2891,7 +2918,7 @@ export const boostsRouter = t.router({
 
             // Log DELIVERED activity first to get activityId for chaining (outside try for catch access)
             const activityId = await logCredentialSent({
-                actorProfileId: saOwner.profileId,
+                actorProfileId: saOwnerProfile.profileId,
                 recipientType: 'profile',
                 recipientIdentifier: profile.profileId,
                 recipientProfileId: profile.profileId,
@@ -2903,7 +2930,7 @@ export const boostsRouter = t.router({
                 const sentBoostUri = await issueClaimLinkBoost(
                     boost,
                     ctx.domain,
-                    saOwner,
+                    saOwnerIssuer,
                     profile,
                     signingAuthority
                 );
@@ -2911,7 +2938,7 @@ export const boostsRouter = t.router({
                 // Log CLAIMED immediately since autoAcceptCredential: true in issueClaimLinkBoost
                 await logCredentialClaimed({
                     activityId,
-                    actorProfileId: saOwner.profileId,
+                    actorProfileId: saOwnerProfile.profileId,
                     recipientType: 'profile',
                     recipientIdentifier: profile.profileId,
                     recipientProfileId: profile.profileId,
@@ -2934,7 +2961,7 @@ export const boostsRouter = t.router({
                 try {
                     await logCredentialFailed({
                         activityId,
-                        actorProfileId: saOwner.profileId,
+                        actorProfileId: saOwnerProfile.profileId,
                         recipientType: 'profile',
                         recipientIdentifier: profile.profileId,
                         recipientProfileId: profile.profileId,
@@ -3194,7 +3221,7 @@ export const boostsRouter = t.router({
             let credential: VC | JWE;
             try {
                 credential = await issueCredentialWithSigningAuthority(
-                    profile,
+                    { type: 'profile', profile },
                     unsignedVc,
                     sa,
                     ctx.domain
@@ -3211,7 +3238,7 @@ export const boostsRouter = t.router({
             if (options?.skipNotification) skipNotification = options?.skipNotification;
 
             return sendBoost({
-                from: profile,
+                from: { type: 'profile', profile },
                 to: targetProfile,
                 boost,
                 credential,

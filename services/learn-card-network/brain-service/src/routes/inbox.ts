@@ -20,7 +20,11 @@ import {
 } from '@learncard/types';
 import { claimIntoInbox, issueToInbox } from '@helpers/inbox.helpers';
 import { prepareCredentialFromBoost, getBoostUri } from '@helpers/boost.helpers';
-import { hasMustacheVariables, renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
+import {
+    hasMustacheVariables,
+    renderBoostTemplate,
+    parseRenderedTemplate,
+} from '@helpers/template.helpers';
 import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
 import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
 import {
@@ -62,7 +66,11 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { getAppDidWeb } from '@helpers/did.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
-import { logCredentialSent, logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
+import {
+    logCredentialSent,
+    logCredentialClaimed,
+    logCredentialFailed,
+} from '@helpers/activity.helpers';
 
 export const inboxRouter = t.router({
     // Request guardian approval via email
@@ -524,7 +532,9 @@ export const inboxRouter = t.router({
             }
 
             if (!signingAuthorityRel) {
-                signingAuthorityRel = await getPrimarySigningAuthorityForIntegration(integration.id);
+                signingAuthorityRel = await getPrimarySigningAuthorityForIntegration(
+                    integration.id
+                );
             }
 
             if (!signingAuthorityRel) {
@@ -555,7 +565,9 @@ export const inboxRouter = t.router({
                 if (!matchingBoosts.length) {
                     throw new TRPCError({
                         code: 'NOT_FOUND',
-                        message: `No template found with name "${(credential as any).name}" for this integration`,
+                        message: `No template found with name "${
+                            (credential as any).name
+                        }" for this integration`,
                     });
                 }
 
@@ -723,13 +735,14 @@ export const inboxRouter = t.router({
                             unsignedCredential.issuer = signingAuthorityForUser.relationship.did;
 
                             // For app-based SAs (listings), use the app did:web as ownerDid
-                            const listingSlug = (inboxCredential.signingAuthority as any)?.listingSlug as string | undefined;
+                            const listingSlug = (inboxCredential.signingAuthority as any)
+                                ?.listingSlug as string | undefined;
                             const ownerDidOverride = listingSlug
                                 ? getAppDidWeb(ctx.domain, listingSlug)
                                 : undefined;
 
                             finalCredential = (await issueCredentialWithSigningAuthority(
-                                issuerProfile,
+                                { type: 'profile', profile: issuerProfile },
                                 unsignedCredential,
                                 signingAuthorityForUser,
                                 ctx.domain,

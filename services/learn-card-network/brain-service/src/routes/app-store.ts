@@ -7,6 +7,7 @@ import type { ProfileType } from 'types/profile';
 
 import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
+import type { CredentialIssuer } from '../types/issuer';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
@@ -71,7 +72,10 @@ import type {
     AppStoreListingUpdateType,
 } from 'types/app-store-listing';
 import { getBoostByUri } from '@accesslayer/boost/read';
-import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
+import { createBoostForListing } from '@accesslayer/boost/create';
+import { setBoostAsParent } from '@accesslayer/boost/relationships/create';
+
+import { sendBoost, isDraftBoost, getBoostUri } from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
 import { getAppDidWeb, getDidWeb, getProfileIdFromDid } from '@helpers/did.helpers';
@@ -629,6 +633,13 @@ const handleSendCredentialEvent = async (
         });
     }
 
+    // Create CredentialIssuer from the listing
+    const issuer: CredentialIssuer = {
+        type: 'appStoreListing',
+        listing,
+        ownerProfile: integrationOwner,
+    };
+
     // Issue via signing authority
     let credential: VC | JWE;
 
@@ -645,7 +656,7 @@ const handleSendCredentialEvent = async (
             templateAlias,
         });
         credential = await issueCredentialWithSigningAuthority(
-            integrationOwner,
+            issuer,
             unsignedVc,
             sa,
             ctx.domain,
@@ -682,7 +693,7 @@ const handleSendCredentialEvent = async (
 
     // Send to user's wallet
     const credentialUri = await sendBoost({
-        from: integrationOwner,
+        from: issuer,
         to: target,
         boost,
         credential,
@@ -690,7 +701,6 @@ const handleSendCredentialEvent = async (
         skipNotification: false,
         activityId,
         integrationId: integration.id,
-        listingId,
     });
 
     return {
@@ -1047,6 +1057,359 @@ const handleRequestLearnerContextEvent = async (
         detailLevel,
         maxCredentials: credentialUris.length,
         did: `did:web:${ctx.domain}:${profile.profileId}`,
+    };
+};
+
+const handleSendAiSessionCredentialEvent = async (
+    ctx: { domain: string },
+    profile: ProfileType,
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const aiTopicBoostCategories = ['AI Topic', 'ai-topic'];
+    const aiSummaryBoostCategory = 'ai-summary';
+
+    const {
+        sessionTitle,
+        summaryData,
+        metadata: _metadata,
+    } = event as {
+        sessionTitle: string;
+        summaryData: {
+            title: string;
+            summary: string;
+            learned: string[];
+            skills: { title: string; description: string }[];
+            nextSteps: { title: string; description: string; keywords: unknown }[];
+            reflections: { title: string; description: string }[];
+        };
+        metadata?: Record<string, unknown>;
+    };
+
+    if (!sessionTitle) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'sessionTitle is required' });
+    }
+
+    if (!summaryData) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'summaryData is required' });
+    }
+
+    const listing = await readAppStoreListingById(listingId);
+    if (!listing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+    }
+
+    const integration = await getIntegrationForListing(listingId);
+    if (!integration) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+    }
+
+    const integrationOwner = await getOwnerProfileForIntegration(integration.id);
+    if (!integrationOwner) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
+    }
+
+    const issuer: CredentialIssuer = {
+        type: 'appStoreListing',
+        listing,
+        ownerProfile: integrationOwner,
+    };
+
+    const listingSa = await getPrimarySigningAuthorityForListing(listing);
+    const integrationSa = listingSa
+        ? undefined
+        : await getPrimarySigningAuthorityForIntegration(integration.id);
+    const ownerSa =
+        listingSa || integrationSa
+            ? undefined
+            : await getPrimarySigningAuthorityForUser(integrationOwner);
+    const sa = listingSa ?? integrationSa ?? ownerSa;
+
+    if (!sa) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'No signing authority configured for this app',
+        });
+    }
+
+    const appBoosts = await getBoostsForListing(listingId, ctx.domain);
+
+    let topicBoost: BoostInstance | null = null;
+    let topicUri: string | null = null;
+    let topicCredentialUri: string | null = null;
+    let isNewTopic = false;
+
+    for (const appBoost of appBoosts) {
+        const boost = await getBoostByUri(appBoost.boostUri);
+        if (boost?.category && aiTopicBoostCategories.includes(boost.category)) {
+            topicBoost = boost;
+            topicUri = appBoost.boostUri;
+            break;
+        }
+    }
+
+    const appDid = listing.slug
+        ? getAppDidWeb(ctx.domain, listing.slug)
+        : getDidWeb(ctx.domain, listing.listing_id);
+
+    if (topicBoost && topicUri) {
+        const sentCredentials = await getCredentialsSentByListingToProfile(
+            listingId,
+            profile.profileId,
+            { limit: 100 }
+        );
+
+        const topicCredential = sentCredentials.find(
+            cred => cred.boostCategory && aiTopicBoostCategories.includes(cred.boostCategory)
+        );
+
+        if (topicCredential) {
+            topicCredentialUri = getCredentialUri(topicCredential.credentialId, ctx.domain);
+        }
+    }
+
+    if (!topicBoost) {
+        isNewTopic = true;
+
+        const topicCredential: UnsignedVC = {
+            '@context': [
+                'https://www.w3.org/ns/credentials/v2',
+                {
+                    type: '@type',
+                    xsd: 'https://www.w3.org/2001/XMLSchema#',
+                    lcn: 'https://docs.learncard.com/definitions#',
+                    TopicCredential: {
+                        '@id': 'lcn:topicCredential',
+                        '@context': {
+                            boostId: {
+                                '@id': 'lcn:boostId',
+                                '@type': 'xsd:string',
+                            },
+                            topicInfo: {
+                                '@id': 'lcn:topicInfo',
+                                '@context': {
+                                    title: {
+                                        '@id': 'lcn:title',
+                                        '@type': 'xsd:string',
+                                    },
+                                    threadId: {
+                                        '@id': 'lcn:threadId',
+                                        '@type': 'xsd:string',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            ],
+            type: ['VerifiableCredential', 'TopicCredential', 'BoostCredential'],
+            issuer: { id: appDid },
+            credentialSubject: {
+                id: getDidWeb(ctx.domain, profile.profileId),
+                name: listing.display_name,
+                description: `AI tutoring sessions from ${listing.display_name}`,
+            },
+            topicInfo: {
+                title: listing.display_name,
+                threadId: listingId,
+            },
+            validFrom: new Date().toISOString(),
+        };
+
+        topicBoost = await createBoostForListing(
+            topicCredential,
+            listing,
+            { category: 'ai-topic', status: 'LIVE' },
+            ctx.domain
+        );
+
+        topicUri = getBoostUri(topicBoost.id, ctx.domain);
+
+        topicCredential.boostId = topicUri;
+
+        const topicVc = await issueCredentialWithSigningAuthority(
+            issuer,
+            topicCredential,
+            sa,
+            ctx.domain,
+            true,
+            appDid
+        );
+
+        topicCredentialUri = await sendBoost({
+            from: issuer,
+            to: profile,
+            boost: topicBoost,
+            credential: topicVc,
+            domain: ctx.domain,
+            skipNotification: true,
+            autoAcceptCredential: true,
+        });
+    }
+
+    const sessionCredential: UnsignedVC = {
+        '@context': [
+            'https://www.w3.org/ns/credentials/v2',
+            {
+                type: '@type',
+                xsd: 'https://www.w3.org/2001/XMLSchema#',
+                lcn: 'https://docs.learncard.com/definitions#',
+                SummaryCredential: {
+                    '@id': 'lcn:summaryCredential',
+                    '@context': {
+                        boostId: {
+                            '@id': 'lcn:boostId',
+                            '@type': 'xsd:string',
+                        },
+                        summaryInfo: {
+                            '@id': 'lcn:summaryInfo',
+                            '@context': {
+                                title: {
+                                    '@id': 'lcn:title',
+                                    '@type': 'xsd:string',
+                                },
+                                summary: {
+                                    '@id': 'lcn:summary',
+                                    '@type': 'xsd:string',
+                                },
+                                learned: {
+                                    '@id': 'lcn:learned',
+                                    '@container': '@set',
+                                    '@type': 'xsd:string',
+                                },
+                                skills: {
+                                    '@id': 'lcn:skillsSummary',
+                                    '@container': '@set',
+                                    '@context': {
+                                        title: {
+                                            '@id': 'lcn:skillsSummaryTitle',
+                                            '@type': 'xsd:string',
+                                        },
+                                        description: {
+                                            '@id': 'lcn:skillsSummaryDescription',
+                                            '@type': 'xsd:string',
+                                        },
+                                    },
+                                },
+                                reflections: {
+                                    '@id': 'lcn:reflections',
+                                    '@container': '@set',
+                                    '@context': {
+                                        title: {
+                                            '@id': 'lcn:reflectionTitle',
+                                            '@type': 'xsd:string',
+                                        },
+                                        description: {
+                                            '@id': 'lcn:reflectionDescription',
+                                            '@type': 'xsd:string',
+                                        },
+                                    },
+                                },
+                                nextSteps: {
+                                    '@id': 'lcn:nextSteps',
+                                    '@container': '@set',
+                                    '@context': {
+                                        title: {
+                                            '@id': 'lcn:nextStepsTitle',
+                                            '@type': 'xsd:string',
+                                        },
+                                        description: {
+                                            '@id': 'lcn:nextStepsDescription',
+                                            '@type': 'xsd:string',
+                                        },
+                                        keywords: {
+                                            '@id': 'lcn:nextStepsKeywords',
+                                            '@context': {
+                                                occupations: {
+                                                    '@id': 'lcn:nextStepsOccupationKeywords',
+                                                    '@type': 'xsd:string',
+                                                    '@container': '@set',
+                                                },
+                                                careers: {
+                                                    '@id': 'lcn:nextStepsCareerKeywords',
+                                                    '@type': 'xsd:string',
+                                                    '@container': '@set',
+                                                },
+                                                jobs: {
+                                                    '@id': 'lcn:nextStepsJobKeywords',
+                                                    '@type': 'xsd:string',
+                                                    '@container': '@set',
+                                                },
+                                                skills: {
+                                                    '@id': 'lcn:nextStepsSkillKeywords',
+                                                    '@type': 'xsd:string',
+                                                    '@container': '@set',
+                                                },
+                                                fieldOfStudy: {
+                                                    '@id': 'lcn:nextStepsFieldOfStudy',
+                                                    '@type': 'xsd:string',
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        ],
+        type: ['VerifiableCredential', 'SummaryCredential', 'BoostCredential'],
+        issuer: { id: appDid },
+        credentialSubject: { id: getDidWeb(ctx.domain, profile.profileId) },
+        summaryInfo: summaryData,
+    };
+
+    const sessionBoost = await createBoostForListing(
+        sessionCredential,
+        listing,
+        { category: aiSummaryBoostCategory, status: 'LIVE', name: 'Conversation Summary' },
+        ctx.domain
+    );
+
+    await setBoostAsParent(topicBoost, sessionBoost);
+
+    const sessionBoostUri = getBoostUri(sessionBoost.id, ctx.domain);
+
+    sessionCredential.boostId = sessionBoostUri;
+
+    const issuedSessionVc = await issueCredentialWithSigningAuthority(
+        issuer,
+        sessionCredential,
+        sa,
+        ctx.domain,
+        true,
+        appDid
+    );
+
+    const activityId = await logCredentialSent({
+        recipientType: 'profile',
+        recipientIdentifier: profile.profileId,
+        recipientProfileId: profile.profileId,
+        boostUri: sessionBoostUri,
+        integrationId: integration.id,
+        listingId,
+        source: 'appEvent',
+        metadata: { listingId, sessionTitle, topicUri, isNewTopic },
+    });
+
+    const sessionCredentialUri = await sendBoost({
+        from: issuer,
+        to: profile,
+        boost: sessionBoost,
+        credential: issuedSessionVc,
+        domain: ctx.domain,
+        skipNotification: true,
+        activityId,
+        autoAcceptCredential: true,
+    });
+
+    return {
+        topicUri,
+        topicCredentialUri,
+        sessionCredentialUri,
+        sessionBoostUri,
+        isNewTopic,
     };
 };
 
@@ -1976,6 +2339,10 @@ export const appStoreRouter = t.router({
 
             if (eventType === 'request-learner-context') {
                 return handleRequestLearnerContextEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'send-ai-session-credential') {
+                return handleSendAiSessionCredentialEvent(ctx, profile, resolvedListingId, event);
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });
