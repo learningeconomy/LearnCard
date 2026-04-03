@@ -41,7 +41,7 @@
  * so schema violations are caught before deploy, not at runtime.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, readdirSync, statSync, rmSync, unlinkSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, readdirSync, statSync, rmSync } from 'fs';
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -705,12 +705,12 @@ if (nativeConfig) {
     }
 
     // Patch Android strings.xml with tenant display name and bundle ID
+    // Template lives outside res/values/ so Gradle's resource merger doesn't choke on the .template extension
     const stringsPath = resolve(APP_ROOT, 'android/app/src/main/res/values/strings.xml');
-    const stringsTemplatePath = stringsPath + '.template';
+    const stringsTemplatePath = resolve(APP_ROOT, 'android/app/strings.xml.template');
 
     if (existsSync(stringsTemplatePath)) {
         cpSync(stringsTemplatePath, stringsPath);
-        unlinkSync(stringsTemplatePath);
     }
 
     if (existsSync(stringsPath)) {
