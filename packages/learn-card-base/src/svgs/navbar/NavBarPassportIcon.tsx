@@ -128,8 +128,8 @@ export const NavBarPassportIcon: React.FC<{
                     fill="#18224E"
                 />
                 <path
-                    fill-rule="evenodd"
-                    clip-rule="evenodd"
+                    fillRule="evenodd"
+                    clipRule="evenodd"
                     d="M7.81299 30.9634V8.23584C7.81299 9.13241 8.50455 9.85924 9.35762 9.85924H27.8932C30.4525 9.85924 32.5271 12.0397 32.5271 14.7295V30.9634C32.5271 33.6532 30.4525 35.8336 27.8932 35.8336H12.4469C9.88766 35.8336 7.81299 33.6532 7.81299 30.9634Z"
                     fill="white"
                 />

@@ -26,31 +26,31 @@ export const NavBarLaunchPadIcon: React.FC<{ className?: string; version?: strin
                 <path
                     d="M22.375 34.25H17.625"
                     stroke="#18224E"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                 />
                 <path
                     d="M19.2535 3.93358C16.4343 6.19192 7.00499 15.2162 15.2501 29.5H24.7501C32.8237 15.2263 23.5323 6.20469 20.7427 3.93838C20.5324 3.76744 20.2699 3.67373 19.9989 3.67286C19.728 3.67198 19.4649 3.764 19.2535 3.93358Z"
                     fill="white"
                     stroke="#18224E"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                 />
                 <path
                     d="M11.9645 17.5298L7.311 23.114C7.19477 23.2535 7.11206 23.4178 7.06925 23.5942C7.02644 23.7707 7.02466 23.9546 7.06404 24.1319L8.89917 32.3899C8.94291 32.5868 9.03607 32.7692 9.16985 32.9201C9.30363 33.071 9.47364 33.1853 9.66383 33.2523C9.85403 33.3193 10.0582 33.3368 10.257 33.3031C10.4558 33.2694 10.6427 33.1856 10.8002 33.0596L15.25 29.4998"
                     stroke="#18224E"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                 />
                 <path
                     d="M27.9461 17.4229L32.689 23.1143C32.8052 23.2538 32.8879 23.4181 32.9307 23.5945C32.9735 23.771 32.9753 23.9549 32.9359 24.1322L31.1008 32.3902C31.0571 32.587 30.9639 32.7695 30.8301 32.9204C30.6963 33.0713 30.5263 33.1856 30.3361 33.2526C30.1459 33.3196 29.9418 33.3371 29.743 33.3034C29.5442 33.2696 29.3572 33.1858 29.1998 33.0599L24.75 29.5001"
                     stroke="#18224E"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                 />
                 <path
                     d="M20 17.0312C20.9838 17.0312 21.7812 16.2338 21.7812 15.25C21.7812 14.2662 20.9838 13.4688 20 13.4688C19.0162 13.4688 18.2188 14.2662 18.2188 15.25C18.2188 16.2338 19.0162 17.0312 20 17.0312Z"
