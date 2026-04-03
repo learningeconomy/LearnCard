@@ -193,7 +193,38 @@ const fetchFreshConfig = async (endpoint?: string, onEvent?: OnConfigEvent, merg
 
         const raw: unknown = await response.json();
 
-        // Try full config parse first (e.g. a config service returning complete configs)
+        // When a mergeBase exists (baked config from native builds or CI),
+        // always treat the fetch response as an overlay — deep-merge it onto
+        // the baked config rather than replacing it. Edge functions and config
+        // services return tenant-specific overrides, not complete configs.
+        // Without this, Zod schema defaults fill in missing fields, making the
+        // response look "full" and causing the baked config to be discarded.
+        if (mergeBase) {
+            const partial = parsePartialTenantConfig(raw, `fetch ${url} (overlay)`);
+
+            if (partial && typeof partial === 'object') {
+                onEvent?.('config:fetch_partial_merge', `Fetched config overlay, merging onto baked config (${mergeBase.tenantId}) (${durationMs}ms)`, { url, durationMs, overrideKeys: Object.keys(partial as Record<string, unknown>), mergeBase: `baked (${mergeBase.tenantId})` });
+
+                const merged = deepMerge(
+                    mergeBase as unknown as Record<string, unknown>,
+                    partial as Record<string, unknown>,
+                );
+
+                const result = parseTenantConfig(merged, `fetch ${url} (merged onto baked)`);
+
+                if (result) {
+                    onEvent?.('config:fetch_success', `Merged config resolved: ${result.tenantId} (${durationMs}ms)`, { url, tenantId: result.tenantId, durationMs, parseMode: 'overlay_on_baked' });
+                }
+
+                return result;
+            }
+
+            onEvent?.('config:fetch_error', `Fetch succeeded but partial parse failed — using baked config as-is`, { url, durationMs });
+
+            return null;
+        }
+
+        // No baked config — try full config parse (e.g. a config service returning complete configs)
         const full = parseTenantConfig(raw, `fetch ${url}`);
 
         if (full) {
@@ -202,23 +233,14 @@ const fetchFreshConfig = async (endpoint?: string, onEvent?: OnConfigEvent, merg
             return full;
         }
 
-        // Fall back to partial parse — edge functions may return only overrides.
-        // Deep-merge onto the best available base to produce a complete config.
-        //
-        // When a baked config exists (native builds, CI-injected tenant-config.json),
-        // partials are merged onto it so tenant-specific values are preserved.
-        // Otherwise, falls back to DEFAULT_LEARNCARD_TENANT_CONFIG.
+        // Fall back to partial parse — deep-merge onto DEFAULT_LEARNCARD_TENANT_CONFIG.
         const partial = parsePartialTenantConfig(raw, `fetch ${url} (partial)`);
 
         if (partial && typeof partial === 'object') {
-            const mergeSource = mergeBase ? `baked config (${mergeBase.tenantId})` : 'defaults';
-
-            onEvent?.('config:fetch_partial_merge', `Partial config fetched, merging onto ${mergeSource} (${durationMs}ms)`, { url, durationMs, overrideKeys: Object.keys(partial as Record<string, unknown>), mergeBase: mergeSource });
-
-            const base = mergeBase ?? DEFAULT_LEARNCARD_TENANT_CONFIG;
+            onEvent?.('config:fetch_partial_merge', `Partial config fetched, merging onto defaults (${durationMs}ms)`, { url, durationMs, overrideKeys: Object.keys(partial as Record<string, unknown>), mergeBase: 'defaults' });
 
             const merged = deepMerge(
-                base as unknown as Record<string, unknown>,
+                DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
                 partial as Record<string, unknown>,
             );
 

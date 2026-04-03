@@ -15,7 +15,7 @@
 
     "auth": {
         "provider": "firebase",
-        "keyDerivation": "sss",
+        "keyDerivation": "web3auth",
         "firebase": {
             "apiKey": "AIzaSyDQJcEDxhxdxRAVdIDBzcE1x6D-KOj6N4o",
             "authDomain": "learncard.firebaseapp.com",
