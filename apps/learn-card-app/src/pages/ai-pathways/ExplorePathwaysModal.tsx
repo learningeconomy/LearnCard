@@ -33,6 +33,7 @@ import {
 import { IonSpinner } from '@ionic/react';
 import type { SelectedSkill } from '../skills/skillTypes';
 import SelfAssignSkillsModal from '../skills/SelfAssignSkillsModal';
+import EditGoalsModal from './EditGoalsModal';
 
 type ExplorePathwaysModalProps = { initialSearchQuery?: string };
 
@@ -124,6 +125,13 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
 
     const openSelfAssignSkillsModal = () => {
         newModal(<SelfAssignSkillsModal />, undefined, {
+            desktop: ModalTypes.Right,
+            mobile: ModalTypes.Right,
+        });
+    };
+
+    const openEditGoalsModal = () => {
+        newModal(<EditGoalsModal />, undefined, {
             desktop: ModalTypes.Right,
             mobile: ModalTypes.Right,
         });
@@ -349,7 +357,10 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
 
                 <div className="flex flex-col gap-[10px] pb-[15px] pt-[15px]">
                     {goals.length === 0 && !goalsLoading && (
-                        <button className="flex items-center justify-center gap-[5px] py-[15px] text-grayscale-700 text-[17px] font-bold border-[1px] border-solid border-grayscale-200 rounded-[10px] bg-white">
+                        <button
+                            onClick={openEditGoalsModal}
+                            className="flex items-center justify-center gap-[5px] py-[15px] text-grayscale-700 text-[17px] font-bold border-[1px] border-solid border-grayscale-200 rounded-[10px] bg-white"
+                        >
                             Add Goals
                             <Plus className="h-[30px] w-[30px]" />
                         </button>
@@ -376,7 +387,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                             {goalsExpanded ? 'View Less' : 'View All'}
                                         </button>
                                     )}
-                                    <button>
+                                    <button onClick={openEditGoalsModal}>
                                         <Pencil className="text-grayscale-700 h-[30px] w-[30px]" />
                                     </button>
                                 </div>
