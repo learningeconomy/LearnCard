@@ -29,6 +29,7 @@ import { getLoginRedirectUrl } from '../../config/bootstrapTenantConfig';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowError from './ConsentFlowError';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 
@@ -42,6 +43,7 @@ enum Step {
 
 const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }) => {
     const currentUser = useCurrentUser();
+    const brandingConfig = useBrandingConfig();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -316,7 +318,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                             onClick={redirectToLogin}
                             className="bg-emerald-700 text-grayscale-50 text-[16px] font-semibold font-poppins normal w-full py-[12px] px-[10px] rounded-[40px] shadow-bottom"
                         >
-                            Sign up for LearnCard
+                            Sign up for {brandingConfig?.name}
                         </button>
                         <div className="text-grayscale-900 text-[14px]">
                             Have an account?{' '}
@@ -333,7 +335,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
 
                 <div className="pt-[20px] border-solid border-t-[1px] border-grayscale-200 w-full flex flex-col items-center gap-[10px]">
                     <span className="text-grayscale-900 text-[14px] font-montserrat normal font-[700] tracking-[7px] uppercase">
-                        LearnCard
+                        {brandingConfig?.name}
                     </span>
                     <span className="text-grayscale-700 text-[14px]">
                         Universal Learning & Work Portfolio

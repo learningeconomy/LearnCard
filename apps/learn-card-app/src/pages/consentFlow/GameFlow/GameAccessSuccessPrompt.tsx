@@ -3,6 +3,7 @@ import queryString from 'query-string';
 
 import { useHistory, useLocation } from 'react-router-dom';
 import { useModal, useWallet } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import GamePromptHeader from './GamePromptHeader';
 
@@ -20,6 +21,7 @@ export const GameAccessSuccessPrompt: React.FC<GameAccessSuccessPromptProps> = (
     contractDetails,
 }) => {
     const { closeModal, closeAllModals } = useModal();
+    const brandingConfig = useBrandingConfig();
     const history = useHistory();
     const location = useLocation();
 
@@ -85,7 +87,7 @@ export const GameAccessSuccessPrompt: React.FC<GameAccessSuccessPromptProps> = (
                 <div className="w-full text-center text-grayscale-900 text-[17px] font-notoSans px-[30px]">
                     You've added <span className="font-[600] tracking-[0.25px]">{gameTitle}</span>{' '}
                     to <span className="font-[600]">{user?.displayName ?? user?.name}'s</span>{' '}
-                    LearnCard
+                    {brandingConfig?.name}
                 </div>
             </div>
 
@@ -102,7 +104,7 @@ export const GameAccessSuccessPrompt: React.FC<GameAccessSuccessPromptProps> = (
             >
                 {isFromGame && 'Continue Playing'}
                 {!isFromGame && returnTo && 'Continue to Game'}
-                {!isFromGame && !returnTo && 'Return to LearnCard'}
+                {!isFromGame && !returnTo && `Return to ${brandingConfig?.name}`}
             </button>
         </div>
     );

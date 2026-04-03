@@ -10,6 +10,7 @@ import PhoneForm from '../../../pages/login/forms/PhoneForm';
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 type GameLoginProps = {
     handleBackToGame: () => void;
@@ -17,6 +18,7 @@ type GameLoginProps = {
 
 export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
     const { appIcon } = useTenantBrandingAssets();
+    const brandingConfig = useBrandingConfig();
     const [activeLoginType, setActiveLoginType] = useState<LoginTypesEnum>(LoginTypesEnum.email);
     const { appleLogin, googleLogin } = useFirebase();
 
@@ -105,7 +107,7 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                 />
 
                 <h6 className="tracking-[12px] text-xl font-[800] text-grayscale-900 font-notoSans">
-                    LEARNCARD
+                    {brandingConfig?.name}
                 </h6>
 
                 <p className="text-grayscale-500 font-montserrat text-[14px] font-[500] mr-auto">

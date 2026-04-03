@@ -24,6 +24,7 @@ import X from 'learn-card-base/svgs/X';
 
 import LocationIcon from '../../svgs/LocationIcon';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { useFilestack, UploadRes } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -104,6 +105,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     skipRoleSlides,
     pendingInstall,
 }) => {
+    const brandingConfig = useBrandingConfig();
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
     const { track } = useAnalytics();
@@ -484,7 +486,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                             </div>
                         </div>
                         <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                            Add Your Child to LearnCard!
+                            Add Your Child to {brandingConfig?.name}!
                         </h2>
                         <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
                             Log in or sign up to create your profile inside a family account.

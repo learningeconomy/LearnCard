@@ -41,7 +41,7 @@ const USConsentNoticeModalContent: React.FC<USConsentNoticeModalContentProps> = 
                         onClick={handleInviteParent}
                         className="text-underline cursor-pointer text-emerald-700 font-semibold"
                     >
-                        Invite My Parent to LearnCard
+                        Invite My Parent
                     </button> */}
                 </div>
             </div>

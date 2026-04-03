@@ -19,7 +19,7 @@ export const AiPathwaysEmptyPlaceholder: React.FC = () => {
         ? 'No AI Pathways yet.'
         : `Join ${brandingConfig?.name}\nto unlock AI Pathways`;
     const text = isLoggedIn
-        ? `Build your LearnCard to unlock personalized pathways to discover career routes and learning experiences aligned with your skills.`
+        ? `Build your ${brandingConfig?.name} to unlock personalized pathways to discover career routes and learning experiences aligned with your skills.`
         : 'AI Pathways connect your skills to relevant courses, careers, salaries, and learning content.';
 
     return (
