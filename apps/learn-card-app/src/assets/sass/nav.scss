@@ -25,21 +25,17 @@ ion-tab-bar {
     }
 }
 
-.mobile-nav-left-button {
-    margin-right: 40px;
+.mobile-nav-notification-button {
+    position: absolute;
+    right: 20px;
+    top: 37%;
+    transform: translateY(-50%);
+    z-index: 9999;
+    background: none;
 
-    @media (max-width: 579px) {
-        margin-right: 20px;
+    @media (max-width: 500px) {
+        right: 0px;
     }
-
-    @media (max-width: 479px) {
-        margin-right: 0px;
-        margin-left: 10px;
-    }
-}
-
-.mobile-nav-right-button {
-    margin-left: 40px;
 }
 
 .mobile-nav-hamburger-button {
