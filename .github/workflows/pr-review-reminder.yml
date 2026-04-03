@@ -2,8 +2,8 @@ name: PR Review Reminder
 
 on:
   schedule:
-    # Tue and Thu at noon EDT (16:00 UTC). During EST this fires at 11am.
-    - cron: '0 16 * * 2,4'
+    # Mon-Fri at noon EDT (16:00 UTC). During EST this fires at 11am.
+    - cron: '0 16 * * 1-5'
   workflow_dispatch: # Allow manual triggers
 
 jobs:
