@@ -137,6 +137,21 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
         });
     };
 
+    const persistGoals = async (nextGoals: string[]) => {
+        try {
+            await saveGoals({ goals: nextGoals });
+        } catch (error: any) {
+            console.error('Error creating or updating goals:', error);
+            presentToast(`Error saving goals!${error?.message ? ` ${error?.message}` : ''}`, {
+                type: ToastTypeEnum.Error,
+            });
+        }
+    };
+
+    const handleRemoveGoal = async (goalIndex: number) => {
+        await persistGoals(goals.filter((_, index) => index !== goalIndex));
+    };
+
     const handleSwiperUpdate = (swiper: any, setAtBeginning: any, setAtEnd: any) => {
         setAtBeginning(swiper.isBeginning);
         setAtEnd(swiper.isEnd);
@@ -355,7 +370,13 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                     )}
                 </div>
 
-                <div className="flex flex-col gap-[10px] pb-[15px] pt-[15px]">
+                <div className="relative flex flex-col gap-[10px] pb-[15px] pt-[15px]">
+                    {goalsSaving && (
+                        <div className="absolute inset-0 z-20 bg-white/70 rounded-[15px] flex items-center justify-center">
+                            <IonSpinner color="dark" name="crescent" />
+                        </div>
+                    )}
+
                     {goals.length === 0 && !goalsLoading && (
                         <button
                             onClick={openEditGoalsModal}
@@ -439,9 +460,8 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                                         {goal}
                                                         <button
                                                             type="button"
-                                                            onClick={() =>
-                                                                console.log('remove goal', index)
-                                                            }
+                                                            onClick={() => handleRemoveGoal(index)}
+                                                            disabled={goalsSaving}
                                                         >
                                                             <X className="w-[15px] h-[15px]" />
                                                         </button>
@@ -484,9 +504,8 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                                 {goal}
                                                 <button
                                                     type="button"
-                                                    onClick={() =>
-                                                        console.log('remove goal', index)
-                                                    }
+                                                    onClick={() => handleRemoveGoal(index)}
+                                                    disabled={goalsSaving}
                                                 >
                                                     <X className="w-[15px] h-[15px]" />
                                                 </button>
