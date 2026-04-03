@@ -29,14 +29,11 @@ jobs:
 
           now=$(date +%s)
 
-          needs_review=""
-          changes_requested=""
-          stale=""
-          drafts=""
+          # --- Categorize each PR ---
 
-          needs_review_count=0
-          changes_requested_count=0
-          stale_count=0
+          needs_review_items='[]'
+          changes_requested_items='[]'
+          stale_items='[]'
           draft_count=0
 
           pr_count=$(echo "$prs_json" | jq 'length')
@@ -50,19 +47,16 @@ jobs:
             url=$(echo "$pr" | jq -r '.url')
             created=$(echo "$pr" | jq -r '.createdAt')
             is_draft=$(echo "$pr" | jq -r '.isDraft')
-            branch=$(echo "$pr" | jq -r '.headRefName')
 
-            # Calculate age in days
-            created_ts=$(date -d "$created" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$created" +%s 2>/dev/null || echo "$now")
+            created_ts=$(date -d "$created" +%s 2>/dev/null || echo "$now")
             age_days=$(( (now - created_ts) / 86400 ))
 
-            # Build age label
             if [ "$age_days" -eq 0 ]; then
               age_label="today"
             elif [ "$age_days" -eq 1 ]; then
-              age_label="1 day"
+              age_label="1 day ago"
             else
-              age_label="${age_days} days"
+              age_label="${age_days} days ago"
             fi
 
             # Skip do-not-merge, missing-jira, and bot authors
@@ -74,98 +68,148 @@ jobs:
               continue
             fi
 
-            # Check for SPRINT label
-            is_sprint=$(echo "$pr" | jq '[.labels[]?.name] | any(ascii_downcase == "sprint")')
-
-            if [ "$is_sprint" = "true" ]; then
-              line="• 🏃 <${url}|#${number}> *${title}* — _${author}_ (${age_label}) ⚡ *Sprint Commitment*"
-            else
-              line="• <${url}|#${number}> *${title}* — _${author}_ (${age_label})"
-            fi
-
-            # Drafts
             if [ "$is_draft" = "true" ]; then
-              drafts="${drafts}\n${line}"
               draft_count=$((draft_count + 1))
               continue
             fi
 
-            # Check review status: look at the latest review per reviewer
+            is_sprint=$(echo "$pr" | jq '[.labels[]?.name] | any(ascii_downcase == "sprint")')
+            pending_reviewers=$(echo "$pr" | jq -r '[.reviewRequests[]?.login // .reviewRequests[]?.name] | join(", ")')
+
             has_approval=$(echo "$pr" | jq '[.reviews[]? | select(.state == "APPROVED")] | length > 0')
             has_changes_requested=$(echo "$pr" | jq '
               [.reviews[]? | select(.state == "CHANGES_REQUESTED")] as $cr |
               if ($cr | length) == 0 then false
               else
-                # Check if there is a newer approval from the same author
                 ($cr | map(.author.login) | unique) as $cr_authors |
                 [.reviews[]? | select(.state == "APPROVED" and (.author.login as $a | $cr_authors | index($a) != null))] |
                 length < ($cr_authors | length)
               end
             ')
-            pending_reviewers=$(echo "$pr" | jq -r '[.reviewRequests[]?.login // .reviewRequests[]?.name] | join(", ")')
+
+            # Build a JSON item for this PR
+            item=$(jq -n \
+              --arg number "$number" \
+              --arg title "$title" \
+              --arg author "$author" \
+              --arg url "$url" \
+              --arg age "$age_label" \
+              --argjson age_days "$age_days" \
+              --argjson sprint "$is_sprint" \
+              --arg reviewers "$pending_reviewers" \
+              '{number: $number, title: $title, author: $author, url: $url, age: $age, age_days: $age_days, sprint: $sprint, reviewers: $reviewers}')
 
             if [ "$has_changes_requested" = "true" ]; then
-              changes_requested="${changes_requested}\n${line}"
-              changes_requested_count=$((changes_requested_count + 1))
+              changes_requested_items=$(echo "$changes_requested_items" | jq --argjson item "$item" '. + [$item]')
             elif [ "$has_approval" != "true" ]; then
-              # No approval yet — needs review
-              if [ -n "$pending_reviewers" ]; then
-                line="${line}\n   👀 Waiting on: ${pending_reviewers}"
-              fi
-
               if [ "$age_days" -ge 7 ]; then
-                stale="${stale}\n${line}"
-                stale_count=$((stale_count + 1))
+                stale_items=$(echo "$stale_items" | jq --argjson item "$item" '. + [$item]')
               else
-                needs_review="${needs_review}\n${line}"
-                needs_review_count=$((needs_review_count + 1))
+                needs_review_items=$(echo "$needs_review_items" | jq --argjson item "$item" '. + [$item]')
               fi
             fi
-            # Approved PRs that aren't merged yet are fine — they don't need prodding
           done
 
-          # Build the Slack message
-          total=$((needs_review_count + changes_requested_count + stale_count))
+          # --- Build Slack Block Kit payload ---
+
+          stale_count=$(echo "$stale_items" | jq 'length')
+          changes_count=$(echo "$changes_requested_items" | jq 'length')
+          review_count=$(echo "$needs_review_items" | jq 'length')
+          total=$((stale_count + changes_count + review_count))
+
+          # Helper: render a list of PR items into mrkdwn lines
+          render_items() {
+            local items_json="$1"
+            echo "$items_json" | jq -r '.[] |
+              (if .sprint then "⚡ " else "" end) +
+              "<" + .url + "|#" + .number + "> " +
+              "*" + .title + "*\n" +
+              "      `" + .author + "`  ·  " + .age +
+              (if .sprint then "  ·  🏃 *Sprint Commitment*" else "" end) +
+              (if (.reviewers | length) > 0 then "\n      👀 _Waiting on: " + .reviewers + "_" else "" end)
+            '
+          }
+
+          blocks='[]'
+
+          # Header
+          blocks=$(echo "$blocks" | jq '. + [{"type": "header", "text": {"type": "plain_text", "text": "PR Review Digest", "emoji": true}}]')
 
           if [ "$total" -eq 0 ]; then
-            message="✅ *No PRs need review right now.* All caught up!"
+            blocks=$(echo "$blocks" | jq '. + [
+              {"type": "section", "text": {"type": "mrkdwn", "text": "✅ *All caught up!* No PRs need review right now."}}
+            ]')
           else
-            message="📋 *PR Review Digest* — ${total} PR(s) need attention\n"
-
-            if [ "$stale_count" -gt 0 ]; then
-              message="${message}\n🔴 *Stale (7+ days without approval):*\n${stale}\n"
-            fi
-
-            if [ "$changes_requested_count" -gt 0 ]; then
-              message="${message}\n🟡 *Changes Requested (waiting on author):*\n${changes_requested}\n"
-            fi
-
-            if [ "$needs_review_count" -gt 0 ]; then
-              message="${message}\n🔵 *Needs Review:*\n${needs_review}\n"
-            fi
-
+            # Summary line
+            summary="*${total} PR(s) need attention*"
             if [ "$draft_count" -gt 0 ]; then
-              message="${message}\n⚪ _${draft_count} draft PR(s) not shown_"
+              summary="${summary}  ·  _${draft_count} draft(s) hidden_"
+            fi
+            blocks=$(echo "$blocks" | jq --arg text "$summary" '. + [
+              {"type": "context", "elements": [{"type": "mrkdwn", "text": $text}]}
+            ]')
+
+            # Stale section
+            if [ "$stale_count" -gt 0 ]; then
+              section_text="🔴  *Stale — 7+ days without approval*"
+              pr_lines=$(render_items "$stale_items")
+              blocks=$(echo "$blocks" | jq \
+                --arg header "$section_text" \
+                --arg items "$pr_lines" \
+                '. + [
+                  {"type": "divider"},
+                  {"type": "section", "text": {"type": "mrkdwn", "text": $header}},
+                  {"type": "section", "text": {"type": "mrkdwn", "text": $items}}
+                ]')
+            fi
+
+            # Changes requested section
+            if [ "$changes_count" -gt 0 ]; then
+              section_text="🟡  *Changes Requested — waiting on author*"
+              pr_lines=$(render_items "$changes_requested_items")
+              blocks=$(echo "$blocks" | jq \
+                --arg header "$section_text" \
+                --arg items "$pr_lines" \
+                '. + [
+                  {"type": "divider"},
+                  {"type": "section", "text": {"type": "mrkdwn", "text": $header}},
+                  {"type": "section", "text": {"type": "mrkdwn", "text": $items}}
+                ]')
+            fi
+
+            # Needs review section
+            if [ "$review_count" -gt 0 ]; then
+              section_text="🔵  *Needs Review*"
+              pr_lines=$(render_items "$needs_review_items")
+              blocks=$(echo "$blocks" | jq \
+                --arg header "$section_text" \
+                --arg items "$pr_lines" \
+                '. + [
+                  {"type": "divider"},
+                  {"type": "section", "text": {"type": "mrkdwn", "text": $header}},
+                  {"type": "section", "text": {"type": "mrkdwn", "text": $items}}
+                ]')
             fi
           fi
 
-          # Write to output (escape for GH Actions)
-          {
-            echo "message<<SLACKEOF"
-            echo -e "$message"
-            echo "SLACKEOF"
-          } >> "$GITHUB_OUTPUT"
+          # Footer
+          repo_url="https://github.com/${GH_REPO}/pulls"
+          blocks=$(echo "$blocks" | jq --arg url "$repo_url" '. + [
+            {"type": "divider"},
+            {"type": "context", "elements": [{"type": "mrkdwn", "text": ("📎 <" + $url + "|View all open PRs>")}]}
+          ]')
+
+          # Write payload to file for curl
+          payload=$(jq -n --argjson blocks "$blocks" '{blocks: $blocks}')
+          echo "$payload" > /tmp/slack-payload.json
 
           echo "total=$total" >> "$GITHUB_OUTPUT"
 
       - name: Send Slack notification
         if: always()
-        uses: rtCamp/action-slack-notify@v2
         env:
-          SLACK_USERNAME: PR Review Bot
-          SLACK_TITLE: 'PR Review Reminder'
-          SLACK_MESSAGE: ${{ steps.gather.outputs.message }}
-          SLACK_COLOR: ${{ steps.gather.outputs.total == '0' && 'good' || 'warning' }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_PR_REVIEW_URL }}
-          SLACK_ICON_EMOJI: ':mag:'
-          MSG_MINIMAL: 'true'
+        run: |
+          curl -sf -X POST -H 'Content-Type: application/json' \
+            -d @/tmp/slack-payload.json \
+            "$SLACK_WEBHOOK"
