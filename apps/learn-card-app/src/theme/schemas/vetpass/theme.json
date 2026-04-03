@@ -188,9 +188,9 @@
             "completedColor": "!text-emerald-700"
         },
         "introSlides": {
-            "firstSlideBackground": "navy-500",
-            "secondSlideBackground": "baltic-blue-400",
-            "thirdSlideBackground": "army-green-500",
+            "firstSlideBackground": "bg-navy-500",
+            "secondSlideBackground": "bg-baltic-blue-400",
+            "thirdSlideBackground": "bg-army-green-500",
             "textColors": {
                 "primary": "white",
                 "secondary": "white"
@@ -275,18 +275,11 @@
         "defaults": {
             "primaryColor": "baltic-blue-500",
             "primaryColorShade": "baltic-blue-200",
-            "loaders": [
-                "#0089EE",
-                "#78852F",
-                "#396888",
-                "#66B8FF"
-            ],
+            "loaders": ["#0089EE", "#78852F", "#396888", "#66B8FF"],
             "loginBgColor": "#0089EE",
             "loginButtonBgColor": "#11354E",
             "loginButtonTextColor": "#FFFFFF",
-            "actionModalButtonColors": [
-                "#F1F5F9"
-            ],
+            "actionModalButtonColors": ["#F1F5F9"],
             "featuredCardBgColor": "#F1F5F9",
             "passportTextColor": "text-navy-700",
             "passportCardBgColor": "#F8FAFC",

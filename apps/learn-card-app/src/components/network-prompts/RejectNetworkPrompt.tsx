@@ -1,11 +1,10 @@
 import React from 'react';
 
-import { IonRow, IonCol, useIonModal } from '@ionic/react';
 import { JoinNetworkModalWrapper } from './hooks/useJoinLCNetworkModal';
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
-import ModalLayout from '../../layout/ModalLayout';
+import { ModalTypes, useModal } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
 
@@ -15,38 +14,38 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
     const brandingConfig = useBrandingConfig();
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
-
-    const [presentNetworkModal, dismissNetworkModal] = useIonModal(JoinNetworkModalWrapper, {
-        handleCloseModal: () => dismissNetworkModal(),
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
     });
 
     return (
-        <ModalLayout handleOnClick={handleCloseModal}>
-            <IonRow className="flex flex-col pb-4 pt-2 w-full">
-                <IonCol className="w-full flex items-center justify-center">
+        <section className="w-full px-6 pt-6 pb-4">
+            <div className="flex flex-col pb-4 pt-2 w-full">
+                <div className="w-full flex items-center justify-center">
                     <h6 className="tracking-[12px] text-base font-bold text-black">
                         {brandingConfig?.name || 'LEARNCARD'}
                     </h6>
-                </IonCol>
-                <IonCol className="w-full flex items-center justify-center mt-8">
+                </div>
+                <div className="w-full flex items-center justify-center mt-8">
                     <h6 className="text-center text-black font-poppins text-xl">No Problem!</h6>
-                </IonCol>
-                <IonCol className="w-full flex items-center justify-center mt-8">
+                </div>
+                <div className="w-full flex items-center justify-center mt-8">
                     <h6 className="text-center text-black font-poppins text-xl">
                         You can still use LearnCard.
                     </h6>
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center w-full">
-                <IonCol className="text-center">
+                </div>
+            </div>
+            <div className="flex items-center justify-center w-full">
+                <div className="text-center">
                     <p className="text-center text-sm font-semibold px-[16px] text-grayscale-600">
                         You can still receive and share credentials with “school connect” and your{' '}
                         <span className={`text-${primaryColor} font-bold`}>LearnCard number</span>.
                     </p>
-                </IonCol>
-            </IonRow>
-            <IonRow className="w-full flex items-center justify-center mt-6">
-                <IonCol className="flex items-center flex-col max-w-[90%] border-b-[1px] border-grayscale-200">
+                </div>
+            </div>
+            <div className="w-full flex items-center justify-center mt-6">
+                <div className="flex items-center flex-col max-w-[90%] border-b-[1px] border-grayscale-200">
                     <button
                         onClick={() => handleCloseModal()}
                         type="submit"
@@ -59,31 +58,39 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
                         <button
                             onClick={() => {
                                 handleCloseModal();
-                                presentNetworkModal({
-                                    cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                                    backdropDismiss: false,
-                                    showBackdrop: false,
-                                });
+                                setTimeout(() => {
+                                    newModal(
+                                        <JoinNetworkModalWrapper
+                                            handleCloseModal={closeModal}
+                                            showNotificationsModal={false}
+                                        />,
+                                        { hideButton: true, sectionClassName: '!max-w-[400px]' },
+                                        {
+                                            desktop: ModalTypes.Cancel,
+                                            mobile: ModalTypes.Cancel,
+                                        }
+                                    );
+                                }, 0);
                             }}
                             className="text-grayscale-900 text-center text-base w-full font-medium"
                         >
                             Join LearnCard Network
                         </button>
                     </div>
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center mt-4 w-full">
-                <IonCol className="flex flex-col items-center justify-center text-center">
+                </div>
+            </div>
+            <div className="flex items-center justify-center mt-4 w-full">
+                <div className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal px-16 text-grayscale-600">
                         You own your own data.
                         <br />
                         All connections are encrypted.
                     </p>
                     <button className={`text-${primaryColor} font-bold`}>Learn More</button>
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center w-full">
-                <IonCol className="flex items-center justify-center">
+                </div>
+            </div>
+            <div className="flex items-center justify-center w-full">
+                <div className="flex items-center justify-center">
                     <button onClick={openPP} className={`text-${primaryColor} font-bold text-sm`}>
                         Privacy Policy
                     </button>
@@ -91,9 +98,9 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
                     <button onClick={openToS} className={`text-${primaryColor} font-bold text-sm`}>
                         Terms of Service
                     </button>
-                </IonCol>
-            </IonRow>
-        </ModalLayout>
+                </div>
+            </div>
+        </section>
     );
 };
 

@@ -182,9 +182,9 @@
             "completedColor": "!text-emerald-700"
         },
         "introSlides": {
-            "firstSlideBackground": "indigo-500",
-            "secondSlideBackground": "cyan-401",
-            "thirdSlideBackground": "lime-500",
+            "firstSlideBackground": "bg-indigo-500",
+            "secondSlideBackground": "bg-cyan-401",
+            "thirdSlideBackground": "bg-lime-500",
             "textColors": {
                 "primary": "white",
                 "secondary": "white"
@@ -269,12 +269,7 @@
         "defaults": {
             "primaryColor": "indigo-500",
             "primaryColorShade": "indigo-200",
-            "loaders": [
-                "#8B5CF6",
-                "#06B6D4",
-                "#059669",
-                "#3B82F6"
-            ],
+            "loaders": ["#8B5CF6", "#06B6D4", "#059669", "#3B82F6"],
             "loginBgColor": "#00ba88",
             "loginButtonBgColor": "#047857",
             "loginButtonTextColor": "#FFFFFF",

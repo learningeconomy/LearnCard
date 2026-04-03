@@ -25,7 +25,7 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
-import { IonCol, IonRow, useIonModal, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
+import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
 import Pencil from '../svgs/Pencil';
 import TrashBin from '../svgs/TrashBin';
 import InfoIcon from '../svgs/InfoIcon';
@@ -162,10 +162,16 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
     });
 
-    const [presentNetworkModal, dismissNetworkModal] = useIonModal(JoinNetworkModalWrapper, {
-        handleCloseModal: () => dismissNetworkModal(),
-        showNotificationsModal: showNotificationsModal,
-    });
+    const presentNetworkModal = () => {
+        newModal(
+            <JoinNetworkModalWrapper
+                handleCloseModal={closeModal}
+                showNotificationsModal={showNotificationsModal}
+            />,
+            { hideButton: true, sectionClassName: '!max-w-[400px]' },
+            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+        );
+    };
 
     const validate = () => {
         let Schema;
@@ -354,11 +360,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         setIsLoading(false);
                         handleCloseModal();
                         if (showNetworkModal) {
-                            presentNetworkModal({
-                                cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                                backdropDismiss: false,
-                                showBackdrop: false,
-                            });
+                            presentNetworkModal();
                         }
                     } else {
                         // prevent updating the firebase account when in child mode
@@ -379,11 +381,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         setIsLoading(false);
                         handleCloseModal();
                         if (showNetworkModal) {
-                            presentNetworkModal({
-                                cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                                backdropDismiss: false,
-                                showBackdrop: false,
-                            });
+                            presentNetworkModal();
                         }
                     }
                 } catch (error) {
