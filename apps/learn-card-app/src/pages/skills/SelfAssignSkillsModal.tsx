@@ -33,7 +33,6 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     const { closeModal, newModal } = useModal();
 
     const [isUpdating, setIsUpdating] = useState(false);
-    const [step, setStep] = useState<Step>(Step.Add);
     const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
 
     const frameworkId = flags?.selfAssignedSkillsFrameworkId;
@@ -106,9 +105,6 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
         closeModal();
     };
 
-    const isAdd = step === Step.Add;
-    const isReview = step === Step.Review;
-
     const errorLoadingFramework = !selfAssignedSkillFramework && !selfAssignedSkillFrameworkLoading;
 
     return (
@@ -117,14 +113,9 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <PuzzlePiece className="w-[40px] h-[40px]" version="filled" />
                     <h5 className="text-[22px] font-poppins font-[600] leading-[24px]">
-                        {isAdd ? 'Add Skills' : 'Review Selected Skills'}
+                        Add Skills
                     </h5>
                 </div>
-                {isReview && (
-                    <p className="py-[10px] text-grayscale-800 text-[17px] font-poppins">
-                        {conditionalPluralize(selectedSkills.length, 'Selected Skill')}
-                    </p>
-                )}
             </div>
 
             {errorLoadingFramework && <GenericErrorView errorMessage="Error loading framework" />}
@@ -140,8 +131,6 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                     <SkillSearchSelector
                         selectedSkills={selectedSkills}
                         onSelectedSkillsChange={setSelectedSkills}
-                        mode={isReview ? 'review' : 'add'}
-                        shouldCollapseOptions={isReview}
                         showSuggestSkill={true}
                     />
                 </section>
@@ -152,15 +141,6 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                 className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
             >
                 <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
-                    {isReview && (
-                        <button
-                            onClick={() => setStep(Step.Add)}
-                            className="p-[10px] bg-white rounded-full text-grayscale-900 shadow-button-bottom border-solid border-[1px] border-grayscale-200"
-                        >
-                            <SlimCaretLeft className="w-[22px] h-[22px]" />
-                        </button>
-                    )}
-
                     <button
                         onClick={handleClose}
                         className="p-[10px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px] border-solid border-[1px] border-grayscale-200 leading-[22px]"
@@ -169,19 +149,13 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                     </button>
 
                     <button
-                        onClick={
-                            isAdd
-                                ? () => {
-                                      setStep(Step.Review);
-                                  }
-                                : handleSave
-                        }
+                        onClick={handleSave}
                         className="px-[15px] py-[7px] bg-emerald-700 text-white rounded-[30px] text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] shadow-button-bottom h-[44px] flex-1 disabled:bg-grayscale-300"
                         disabled={
                             hasNoChanges || skillsLoading || isUpdating || errorLoadingFramework
                         }
                     >
-                        {isAdd ? 'Select' : 'Save'}
+                        Save
                     </button>
                 </div>
             </IonFooter>
