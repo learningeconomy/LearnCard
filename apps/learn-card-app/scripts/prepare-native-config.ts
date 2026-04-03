@@ -569,7 +569,7 @@ if (nativeConfig) {
         }
     }
 
-    // Patch iOS Info.plist with tenant display name
+    // Patch iOS Info.plist with tenant display name + Google/Firebase URL schemes
     const infoPlistPath = resolve(APP_ROOT, 'ios/App/App/Info.plist');
     const infoPlistTemplatePath = infoPlistPath + '.template';
 
@@ -581,11 +581,50 @@ if (nativeConfig) {
         try {
             let plist = readFileSync(infoPlistPath, 'utf-8');
             const displayName = nativeConfig.displayName;
+            const bundleId = nativeConfig.bundleId;
 
             plist = plist.replace(
                 /(<key>CFBundleDisplayName<\/key>\s*<string>)[^<]+(<\/string>)/,
                 `$1${displayName}$2`,
             );
+
+            // Replace bundle ID placeholders in custom URL scheme names
+            plist = plist.replace(/__BUNDLE_ID__/g, bundleId);
+
+            // Parse GoogleService-Info.plist for Google Sign-In / Firebase Auth URL schemes
+            const googleServicePath = resolve(APP_ROOT, 'ios/App/App/GoogleService-Info.plist');
+
+            if (existsSync(googleServicePath)) {
+                const googlePlist = readFileSync(googleServicePath, 'utf-8');
+
+                const extractPlistValue = (key: string): string | undefined => {
+                    const match = googlePlist.match(
+                        new RegExp(`<key>${key}<\\/key>\\s*<string>([^<]+)<\\/string>`),
+                    );
+                    return match?.[1];
+                };
+
+                const reversedClientId = extractPlistValue('REVERSED_CLIENT_ID');
+                const googleAppId = extractPlistValue('GOOGLE_APP_ID');
+
+                if (reversedClientId) {
+                    plist = plist.replace('__REVERSED_CLIENT_ID__', reversedClientId);
+                    console.log(`   ✓ Patched Info.plist (REVERSED_CLIENT_ID → ${reversedClientId})`);
+                } else {
+                    console.warn('   ⚠️  REVERSED_CLIENT_ID not found in GoogleService-Info.plist');
+                }
+
+                if (googleAppId) {
+                    // Convert GOOGLE_APP_ID "1:123:ios:abc" → Firebase URL scheme "app-1-123-ios-abc"
+                    const firebaseAppUrlScheme = `app-${googleAppId.replace(/:/g, '-')}`;
+                    plist = plist.replace('__FIREBASE_APP_URL_SCHEME__', firebaseAppUrlScheme);
+                    console.log(`   ✓ Patched Info.plist (Firebase URL scheme → ${firebaseAppUrlScheme})`);
+                } else {
+                    console.warn('   ⚠️  GOOGLE_APP_ID not found in GoogleService-Info.plist');
+                }
+            } else {
+                console.warn('   ⚠️  GoogleService-Info.plist not found — URL scheme placeholders not replaced');
+            }
 
             writeFileSync(infoPlistPath, plist, 'utf-8');
             console.log(`   ✓ Patched Info.plist (CFBundleDisplayName → ${displayName})`);
