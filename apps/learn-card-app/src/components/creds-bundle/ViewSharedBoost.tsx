@@ -178,7 +178,9 @@ const ViewSharedBoost: React.FC<{
     }
 
     if (showDraftSuccess) {
-        return <EndorsementDraftRequestSuccess credential={_boost} categoryType={category} />;
+        return (
+            <EndorsementDraftRequestSuccess credential={_boost} categoryType={category} autoSend />
+        );
     }
 
     return (

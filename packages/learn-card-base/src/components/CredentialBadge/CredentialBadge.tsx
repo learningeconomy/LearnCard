@@ -61,7 +61,10 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
     hideMediaBadge,
 }) => {
     const defaultBoostType = BoostCategoryOptionsEnum.socialBadge;
-    const { color, subColor, IconComponent } = boostCategoryMetadata[boostType ?? defaultBoostType];
+    const metadata =
+        boostCategoryMetadata[boostType ?? defaultBoostType] ??
+        boostCategoryMetadata[defaultBoostType];
+    const { color, subColor, IconComponent } = metadata;
 
     let _colorOverride = color ?? 'gray-500';
     let _subColorOverride = subColor ?? 'gray-300';
