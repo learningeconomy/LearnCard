@@ -183,6 +183,7 @@ const buildInboxConfig = (
 ): {
     webhookUrl?: string;
     boostUri?: string;
+    guardianEmail?: string;
     delivery?: {
         suppress: boolean;
         template?: {
@@ -197,6 +198,7 @@ const buildInboxConfig = (
     const config: ReturnType<typeof buildInboxConfig> = {
         webhookUrl: options?.webhookUrl,
         boostUri,
+        ...(options?.guardianEmail ? { guardianEmail: options.guardianEmail } : {}),
     };
 
     if (options?.suppressDelivery || options?.branding) {
@@ -857,6 +859,9 @@ export const boostsRouter = t.router({
                                     issuanceId: inboxResult.inboxCredential.id,
                                     status: inboxResult.status,
                                     claimUrl: inboxResult.claimUrl,
+                                    ...(inboxResult.guardianStatus
+                                        ? { guardianStatus: inboxResult.guardianStatus }
+                                        : {}),
                                 },
                             };
                         } catch (error) {
