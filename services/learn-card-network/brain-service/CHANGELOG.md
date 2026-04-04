@@ -1,5 +1,29 @@
 # @learncard/network-brain-service
 
+## 3.13.3
+
+### Patch Changes
+
+-   [#1122](https://github.com/learningeconomy/LearnCard/pull/1122) [`8b5325da517d957ef93598511ba7dca14b31a656`](https://github.com/learningeconomy/LearnCard/commit/8b5325da517d957ef93598511ba7dca14b31a656) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1663] Streamline Auto-verify email
+
+-   [#1135](https://github.com/learningeconomy/LearnCard/pull/1135) [`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1602] - Gate Sensitive Profile Fields (Country, DOB, NotificationsWebhook, Email)
+
+-   Updated dependencies [[`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369)]:
+    -   @learncard/types@5.13.3
+    -   @learncard/core@9.4.13
+    -   @learncard/helpers@1.2.13
+    -   @learncard/did-web-plugin@1.1.13
+    -   @learncard/didkey-plugin@1.1.13
+    -   @learncard/didkit-plugin@1.8.3
+    -   @learncard/didkit-plugin-node@0.2.9
+    -   @learncard/encryption-plugin@1.1.13
+    -   @learncard/learn-card-plugin@1.2.13
+    -   @learncard/vc-plugin@1.4.9
+    -   @learncard/vc-templates-plugin@1.1.13
+    -   @learncard/crypto-plugin@1.1.13
+    -   @learncard/dynamic-loader-plugin@1.1.13
+    -   @learncard/expiration-plugin@1.2.13
+
 ## 3.13.2
 
 ### Patch Changes

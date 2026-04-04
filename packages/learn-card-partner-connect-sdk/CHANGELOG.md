@@ -1,5 +1,12 @@
 # @learncard/partner-connect
 
+## 0.2.13
+
+### Patch Changes
+
+-   Updated dependencies [[`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369)]:
+    -   @learncard/types@5.13.3
+
 ## 0.2.12
 
 ### Patch Changes
