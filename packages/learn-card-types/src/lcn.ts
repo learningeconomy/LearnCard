@@ -482,8 +482,8 @@ export const SendBoostInputValidator = z
     })
     .refine(
         data => {
-            if (data.options?.guardianEmail && data.recipient) {
-                return data.options.guardianEmail !== data.recipient;
+            if (data.options?.guardianEmail) {
+                return data.options.guardianEmail.toLowerCase() !== data.recipient.toLowerCase();
             }
             return true;
         },
