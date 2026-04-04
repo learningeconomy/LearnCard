@@ -1571,6 +1571,18 @@ export async function getLearnCardNetworkPlugin(
                 // Open route; no auth required
                 return client.inbox.approveGuardianRequestByPath.query({ token });
             },
+            getGuardianPendingCredential: async (_learnCard, token) => {
+                // Open route; no auth required
+                return client.inbox.getGuardianPendingCredential.query({ token });
+            },
+            approveGuardianCredential: async (_learnCard, token) => {
+                // Open route; no auth required
+                return client.inbox.approveGuardianCredential.mutate({ token });
+            },
+            rejectGuardianCredential: async (_learnCard, token) => {
+                // Open route; no auth required
+                return client.inbox.rejectGuardianCredential.mutate({ token });
+            },
             addContactMethod: async (_learnCard, contactMethod) => {
                 await ensureUser();
 

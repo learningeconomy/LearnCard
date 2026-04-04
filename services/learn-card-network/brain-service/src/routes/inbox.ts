@@ -27,7 +27,11 @@ import {
     markGuardianApprovalTokenAsUsed,
 } from '@helpers/guardian-approval.helpers';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
-import { getInboxCredentialsForProfile } from '@accesslayer/inbox-credential/read';
+import {
+    getInboxCredentialsForProfile,
+    getInboxCredentialByIdAndGuardianEmail,
+} from '@accesslayer/inbox-credential/read';
+import { updateInboxCredential } from '@accesslayer/inbox-credential/update';
 import { readIntegrationByPublishableKey } from '@accesslayer/integration/read';
 import {
     getPrimarySigningAuthorityForListing,
@@ -44,7 +48,7 @@ import {
 import { getIntegrationForListing } from '@accesslayer/app-store-listing/relationships/read';
 import { isDomainWhitelisted } from '@helpers/integrations.helpers';
 import { getContactMethodsForProfile } from '@accesslayer/contact-method/read';
-import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { getProfileByProfileId, getProfileByDid } from '@accesslayer/profile/read';
 import { updateProfile } from '@accesslayer/profile/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
@@ -712,6 +716,182 @@ export const inboxRouter = t.router({
             }
 
             return inboxCredential;
+        }),
+
+    // Open route: get pending credential details for a guardian to review
+    getGuardianPendingCredential: openRoute
+        .meta({
+            openapi: {
+                method: 'GET',
+                path: '/inbox/guardian-credential-approval/{token}',
+                tags: ['Universal Inbox'],
+                summary: 'Get Guardian Pending Credential',
+                description:
+                    'Returns metadata about a credential awaiting guardian approval. Uses the credential-scoped approval token from the guardian email.',
+            },
+        })
+        .input(z.object({ token: z.string() }))
+        .output(
+            z.object({
+                inboxCredentialId: z.string(),
+                guardianStatus: z.string(),
+                issuer: z.object({ displayName: z.string(), profileId: z.string() }),
+                credentialName: z.string().optional(),
+                createdAt: z.string(),
+                expiresAt: z.string(),
+            })
+        )
+        .query(async ({ input }) => {
+            const { token } = input;
+
+            const validation = await validateGuardianApprovalTokenDetailed(token);
+            if (!validation.valid) {
+                const errorMessages = {
+                    invalid: 'Invalid or unknown approval token.',
+                    expired: 'This approval link has expired.',
+                    already_used: 'This approval link has already been used.',
+                };
+                throw new TRPCError({ code: 'BAD_REQUEST', message: errorMessages[validation.reason] });
+            }
+
+            const { inboxCredentialId, guardianEmail } = validation.data;
+            if (!inboxCredentialId) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token is not a credential-scoped approval token.' });
+            }
+
+            const inboxCredential = await getInboxCredentialByIdAndGuardianEmail(inboxCredentialId, guardianEmail);
+            if (!inboxCredential) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found for this token.' });
+            }
+
+            const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
+
+            // Parse credential name safely
+            let credentialName: string | undefined;
+            try {
+                const parsed = JSON.parse(inboxCredential.credential);
+                credentialName = parsed?.name ?? parsed?.credentialSubject?.achievement?.name;
+            } catch {}
+
+            return {
+                inboxCredentialId: inboxCredential.id,
+                guardianStatus: inboxCredential.guardianStatus ?? 'AWAITING_GUARDIAN',
+                issuer: {
+                    displayName: issuerProfile?.displayName ?? 'Unknown Issuer',
+                    profileId: issuerProfile?.profileId ?? '',
+                },
+                credentialName,
+                createdAt: inboxCredential.createdAt,
+                expiresAt: inboxCredential.expiresAt,
+            };
+        }),
+
+    // Open route: guardian approves a credential
+    approveGuardianCredential: openRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/inbox/guardian-credential-approval/{token}/approve',
+                tags: ['Universal Inbox'],
+                summary: 'Approve Guardian Credential',
+                description:
+                    'Guardian approves a pending credential. Sets guardianStatus=GUARDIAN_APPROVED and marks isAccepted=true so the recipient can claim it.',
+            },
+        })
+        .input(z.object({ token: z.string() }))
+        .output(z.object({ message: z.string() }))
+        .mutation(async ({ input }) => {
+            const { token } = input;
+
+            const validation = await validateGuardianApprovalTokenDetailed(token);
+            if (!validation.valid) {
+                const errorMessages = {
+                    invalid: 'Invalid or unknown approval token.',
+                    expired: 'This approval link has expired.',
+                    already_used: 'This approval link has already been used.',
+                };
+                throw new TRPCError({ code: 'BAD_REQUEST', message: errorMessages[validation.reason] });
+            }
+
+            const { inboxCredentialId, guardianEmail } = validation.data;
+            if (!inboxCredentialId) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token is not a credential-scoped approval token.' });
+            }
+
+            const inboxCredential = await getInboxCredentialByIdAndGuardianEmail(inboxCredentialId, guardianEmail);
+            if (!inboxCredential) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found for this token.' });
+            }
+
+            if (inboxCredential.guardianStatus !== 'AWAITING_GUARDIAN') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `Credential is already ${inboxCredential.guardianStatus?.toLowerCase().replace('_', ' ')}.`,
+                });
+            }
+
+            await updateInboxCredential(inboxCredentialId, {
+                guardianStatus: 'GUARDIAN_APPROVED',
+                isAccepted: true,
+                guardianApprovedAt: new Date().toISOString(),
+            });
+
+            await markGuardianApprovalTokenAsUsed(token);
+
+            return { message: 'Credential approved. The recipient can now claim it.' };
+        }),
+
+    // Open route: guardian rejects a credential
+    rejectGuardianCredential: openRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/inbox/guardian-credential-approval/{token}/reject',
+                tags: ['Universal Inbox'],
+                summary: 'Reject Guardian Credential',
+                description:
+                    'Guardian rejects a pending credential. Sets guardianStatus=GUARDIAN_REJECTED so the credential will not be claimable.',
+            },
+        })
+        .input(z.object({ token: z.string() }))
+        .output(z.object({ message: z.string() }))
+        .mutation(async ({ input }) => {
+            const { token } = input;
+
+            const validation = await validateGuardianApprovalTokenDetailed(token);
+            if (!validation.valid) {
+                const errorMessages = {
+                    invalid: 'Invalid or unknown approval token.',
+                    expired: 'This approval link has expired.',
+                    already_used: 'This approval link has already been used.',
+                };
+                throw new TRPCError({ code: 'BAD_REQUEST', message: errorMessages[validation.reason] });
+            }
+
+            const { inboxCredentialId, guardianEmail } = validation.data;
+            if (!inboxCredentialId) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token is not a credential-scoped approval token.' });
+            }
+
+            const inboxCredential = await getInboxCredentialByIdAndGuardianEmail(inboxCredentialId, guardianEmail);
+            if (!inboxCredential) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found for this token.' });
+            }
+
+            if (inboxCredential.guardianStatus !== 'AWAITING_GUARDIAN') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `Credential is already ${inboxCredential.guardianStatus?.toLowerCase().replace('_', ' ')}.`,
+                });
+            }
+
+            await updateInboxCredential(inboxCredentialId, {
+                guardianStatus: 'GUARDIAN_REJECTED',
+            });
+
+            await markGuardianApprovalTokenAsUsed(token);
+
+            return { message: 'Credential rejected.' };
         }),
 });
 

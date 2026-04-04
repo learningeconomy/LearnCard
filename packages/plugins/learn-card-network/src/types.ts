@@ -600,6 +600,16 @@ export type LearnCardNetworkPluginMethods = {
     }) => Promise<{ message: string; approvalUrl: string }>;
     approveGuardianRequest: (token: string) => Promise<{ message: string }>;
     approveGuardianRequestByPath: (token: string) => Promise<{ message: string }>;
+    getGuardianPendingCredential: (token: string) => Promise<{
+        inboxCredentialId: string;
+        guardianStatus: string;
+        issuer: { displayName: string; profileId: string };
+        credentialName?: string;
+        createdAt: string;
+        expiresAt: string;
+    }>;
+    approveGuardianCredential: (token: string) => Promise<{ message: string }>;
+    rejectGuardianCredential: (token: string) => Promise<{ message: string }>;
     addContactMethod: (
         contactMethod: ContactMethodQueryType
     ) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;

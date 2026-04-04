@@ -43,6 +43,14 @@ export async function finalizeInboxCredentialsForProfile(
     for (const cm of verifiedContacts) {
         const pending = await getAcceptedPendingInboxCredentialsForContactMethodId(cm.id);
         for (const inboxCredential of pending) {
+            // Skip credentials still awaiting or rejected by a guardian
+            if (
+                inboxCredential.guardianStatus === 'AWAITING_GUARDIAN' ||
+                inboxCredential.guardianStatus === 'GUARDIAN_REJECTED'
+            ) {
+                continue;
+            }
+
             processed += 1;
 
             // Look up the sender/issuer profile outside try/catch so it's
