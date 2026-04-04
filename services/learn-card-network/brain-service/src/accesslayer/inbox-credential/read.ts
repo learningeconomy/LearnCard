@@ -170,11 +170,10 @@ export const getInboxCredentialsByGuardianEmail = async (
     guardianEmail: string,
     guardianStatus?: string
 ): Promise<InboxCredentialType[]> => {
-    const statusClause = guardianStatus
-        ? `AND inboxCredential.guardianStatus = "${guardianStatus}"`
-        : '';
+    const bindParams = { guardianEmail, ...(guardianStatus ? { guardianStatus } : {}) };
+    const statusClause = guardianStatus ? 'AND inboxCredential.guardianStatus = $guardianStatus' : '';
 
-    const result = await new QueryBuilder(new BindParam({ guardianEmail }))
+    const result = await new QueryBuilder(new BindParam(bindParams))
         .match({ model: InboxCredential, identifier: 'inboxCredential' })
         .where(`inboxCredential.guardianEmail = $guardianEmail ${statusClause} AND datetime(inboxCredential.expiresAt) > datetime()`)
         .return('inboxCredential')
