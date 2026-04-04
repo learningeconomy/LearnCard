@@ -1,5 +1,24 @@
 # learn-card-base
 
+## 0.1.25
+
+### Patch Changes
+
+-   [#1134](https://github.com/learningeconomy/LearnCard/pull/1134) [`4baedfa4755593e43d64d0e773367d830dd8a161`](https://github.com/learningeconomy/LearnCard/commit/4baedfa4755593e43d64d0e773367d830dd8a161) Thanks [@smurflo2](https://github.com/smurflo2)! - Self-Assigned Skills UI updates
+
+-   [#1143](https://github.com/learningeconomy/LearnCard/pull/1143) [`a290fd16ef3c2ec81281a0bc3b7ffebbccb9f6b5`](https://github.com/learningeconomy/LearnCard/commit/a290fd16ef3c2ec81281a0bc3b7ffebbccb9f6b5) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1652] Endorsement link doesn't deep link correctly into native apps
+
+-   [#1145](https://github.com/learningeconomy/LearnCard/pull/1145) [`85f43a3a299b3429599bb9c13c4f95c975bd8baf`](https://github.com/learningeconomy/LearnCard/commit/85f43a3a299b3429599bb9c13c4f95c975bd8baf) Thanks [@Custard7](https://github.com/Custard7)! - fix: Stale chunk error crashing the app (Sentry LEARN-CARD-APP-26)
+
+-   [#1135](https://github.com/learningeconomy/LearnCard/pull/1135) [`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1602] - Gate Sensitive Profile Fields (Country, DOB, NotificationsWebhook, Email)
+
+-   Updated dependencies [[`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369)]:
+    -   @learncard/types@5.13.3
+    -   @learncard/lca-api-plugin@1.2.3
+    -   @learncard/helpers@1.2.13
+    -   @learncard/ler-rs-plugin@0.1.4
+    -   @learncard/sss-key-manager@0.1.3
+
 ## 0.1.24
 
 ### Patch Changes
