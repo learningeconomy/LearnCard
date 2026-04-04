@@ -18,6 +18,15 @@ export const roleIcons: Record<LearnCardRolesEnum, string> = {
     [LearnCardRolesEnum.developer]: DeveloperIcon,
 };
 
+export const iconBgColors: Record<LearnCardRolesEnum, string> = {
+    [LearnCardRolesEnum.learner]: 'var(--teal-200, #99F6E4)',
+    [LearnCardRolesEnum.guardian]: 'var(--ion-color-violet-200)',
+    [LearnCardRolesEnum.teacher]: 'var(--ion-color-amber-100)',
+    [LearnCardRolesEnum.admin]: 'var(--ion-color-cyan-100)',
+    [LearnCardRolesEnum.counselor]: 'var(--ion-color-violet-200)',
+    [LearnCardRolesEnum.developer]: 'var(--lime-300, #BEF264)',
+};
+
 type OnboardingRoleItemProps = {
     role: LearnCardRolesEnum | null;
     setRole: (role: LearnCardRolesEnum) => void;
@@ -38,15 +47,6 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
 
     const iconSrc = roleItem ? roleIcons[roleItem.type] : undefined;
     const hasIcon = Boolean(iconSrc);
-
-    const iconBgColors: Record<LearnCardRolesEnum, string> = {
-        [LearnCardRolesEnum.learner]: 'var(--teal-200, #99F6E4)',
-        [LearnCardRolesEnum.guardian]: 'var(--ion-color-violet-200)',
-        [LearnCardRolesEnum.teacher]: 'var(--ion-color-amber-100)',
-        [LearnCardRolesEnum.admin]: 'var(--ion-color-cyan-100)',
-        [LearnCardRolesEnum.counselor]: 'var(--ion-color-violet-200)',
-        [LearnCardRolesEnum.developer]: 'var(--lime-300, #BEF264)',
-    };
 
     const iconBgStyle: React.CSSProperties | undefined = roleItem
         ? {
