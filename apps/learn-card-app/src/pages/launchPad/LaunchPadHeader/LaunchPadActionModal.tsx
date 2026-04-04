@@ -39,11 +39,10 @@ import { RequestInsightsModal } from '../../ai-insights/request-insights/Request
 import ShareInsightsModal from '../../ai-insights/share-insights/ShareInsightsModal';
 import { createTeacherStudentContract } from '../../ai-insights/request-insights/request-insights.helpers';
 import { createAiInsightsService } from '../../ai-insights/learner-insights/learner-insights.helpers';
-import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
-import GuardianIcon from '../../../assets/images/quicknavroles/guardianhomeicon.png';
-import TeacherIcon from '../../../assets/images/quicknavroles/teacherappleicon.png';
-import AdminIcon from '../../../assets/images/quicknavroles/adminshieldicon.png';
-import DeveloperIcon from '../../../assets/images/quicknavroles/developeralienicon.png';
+import {
+    roleIcons,
+    iconBgColors,
+} from '../../../components/onboarding/onboardingRoles/OnboardingRoleItem';
 import { useTheme } from 'apps/learn-card-app/src/theme/hooks/useTheme';
 import { IconSetEnum } from 'apps/learn-card-app/src/theme/icons/index';
 import AccountSwitcherModal from 'apps/learn-card-app/src/components/learncard/AccountSwitcherModal';
@@ -387,10 +386,10 @@ const ActionButton: React.FC<{
         <button
             type="button"
             onClick={handleClick}
-            className={`${bg} w-full text-left flex px-5 py-4  text-[18px] font-poppins font-semibold text-grayscale-900 rounded-[20px] border border-solid border-[3px] border-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
+            className={`${bg} w-[160px] h-[160px] flex flex-col items-center justify-center px-[13px] py-[10px] text-[16px] font-poppins font-semibold text-grayscale-900 rounded-[20px] text-center border-solid border-[3px] border-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
         >
-            <div className="flex items-center justify-center">
-                <span className="mr-2">
+            <div className="flex flex-col items-center justify-center">
+                <span className="mr-2 pb-[5px]">
                     {getIconForActionButton(label, { buildMyLCIcon, AiInsightsIcon })}
                 </span>{' '}
                 {label}
@@ -441,22 +440,6 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
     ) as LearnCardRolesEnum;
     const roleLabel = LearnCardRoles.find(r => r.type === activeRole)?.title ?? 'Learner';
-    const roleIcons: Record<LearnCardRolesEnum, string> = {
-        [LearnCardRolesEnum.learner]: LearnerIcon,
-        [LearnCardRolesEnum.guardian]: GuardianIcon,
-        [LearnCardRolesEnum.teacher]: TeacherIcon,
-        [LearnCardRolesEnum.admin]: AdminIcon,
-        [LearnCardRolesEnum.counselor]: TeacherIcon,
-        [LearnCardRolesEnum.developer]: DeveloperIcon,
-    };
-    const iconBgColors: Record<LearnCardRolesEnum, string> = {
-        [LearnCardRolesEnum.learner]: 'var(--teal-200, #99F6E4)',
-        [LearnCardRolesEnum.guardian]: 'var(--ion-color-violet-200)',
-        [LearnCardRolesEnum.teacher]: 'var(--ion-color-amber-100)',
-        [LearnCardRolesEnum.admin]: 'var(--ion-color-cyan-100)',
-        [LearnCardRolesEnum.counselor]: 'var(--ion-color-violet-200)',
-        [LearnCardRolesEnum.developer]: 'var(--lime-300, #BEF264)',
-    };
     const roleIconSrc = roleIcons[activeRole];
     const roleIconBgStyle: React.CSSProperties = { backgroundColor: iconBgColors[activeRole] };
 
@@ -639,19 +622,19 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     return (
         <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[500px]">
-            <button
-                type="button"
-                aria-label="Close modal"
-                onClick={closeModal}
-                className="self-end mt-[8px] h-[20px] w-[40px] rounded-full bg-transparent text-[#2A2F55] flex items-center justify-center"
-            >
-                <X className="w-[20px] h-[20px]" />
-            </button>
-            <div className="rounded-[15px] bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px]">
-                <div className="w-full flex items-center justify-center">
+            <div className="rounded-[15px] bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px] mt-[40px]">
+                <button
+                    type="button"
+                    aria-label="Close modal"
+                    onClick={closeModal}
+                    className="ml-auto h-[20px] w-[20px] rounded-full bg-transparent text-[#2A2F55] flex items-center justify-center"
+                >
+                    <X className="w-[20px] h-[20px]" />
+                </button>
+                <div className="w-full flex items-center justify-center mb-[5px]">
                     <ProfilePicture
-                        customContainerClass="flex justify-center items-center h-[48px] w-[48px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[48px] min-h-[48px]"
-                        customImageClass="flex justify-center items-center h-[48px] w-[48px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[48px] min-h-[48px]"
+                        customContainerClass="flex justify-center items-center h-[35px] w-[35px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[35px] min-h-[35px]"
+                        customImageClass="flex justify-center items-center h-[35px] w-[35px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[35px] min-h-[35px]"
                         customSize={120}
                     />
                 </div>
@@ -722,13 +705,9 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                         </span>
                     </button>
                 </div>
-
-                <h3 className="text-center text-[22px] font-poppins font-semibold text-grayscale-900 mt-[12px]">
-                    What would you like to do?
-                </h3>
             </div>
 
-            <div className="mt-1 flex flex-col gap-3">
+            <div className="mt-1 flex flex-wrap justify-center items-center gap-[15px]">
                 {actions.map((label, i) => (
                     <ActionButton
                         key={`${label}-${i}`}
