@@ -20,6 +20,10 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { generateInboxClaimToken, generateClaimUrl } from '@helpers/contact-method.helpers';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
+import {
+    generateGuardianCredentialApprovalToken,
+    generateGuardianCredentialApprovalUrl,
+} from '@helpers/guardian-approval.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialDelivered } from '@helpers/activity.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
@@ -135,16 +139,17 @@ export const claimIntoInbox = async(
 export const issueToInbox = async (
     issuerProfile: ProfileType,
     recipient: ContactMethodQueryType,
-    credential: VC | UnsignedVC | VP, 
-    configuration: IssueInboxCredentialType['configuration'] & { boostUri?: string; activityId?: string; integrationId?: string } = {},
+    credential: VC | UnsignedVC | VP,
+    configuration: IssueInboxCredentialType['configuration'] & { boostUri?: string; activityId?: string; integrationId?: string; guardianEmail?: string } = {},
     ctx: Context
-): Promise<{ 
+): Promise<{
     status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'DELIVERED' | 'CLAIMED'; // DELIVERED & CLAIMED are deprecated, use ISSUED
     inboxCredential: InboxCredentialType;
     claimUrl?: string;
     recipientDid?: string;
+    guardianStatus?: 'AWAITING_GUARDIAN' | 'GUARDIAN_APPROVED' | 'GUARDIAN_REJECTED';
 }> => {
-    const { signingAuthority: _signingAuthority, webhookUrl, expiresInDays, delivery, boostUri, activityId, integrationId } = configuration;
+    const { signingAuthority: _signingAuthority, webhookUrl, expiresInDays, delivery, boostUri, activityId, integrationId, guardianEmail } = configuration;
     
     const isSigned = !!credential?.proof;
     let signingAuthority: IssueInboxSigningAuthority | undefined = _signingAuthority;
@@ -199,7 +204,7 @@ export const issueToInbox = async (
     // Check if recipient already exists with verified email
     const existingProfile = await getProfileByVerifiedContactMethod(recipient.type, recipient.value);
 
-    if (existingProfile) {
+    if (existingProfile && !guardianEmail) {
         // Auto-deliver to existing user
         let finalCredential: VC;
 
@@ -334,6 +339,12 @@ export const issueToInbox = async (
             integrationId,
             signingAuthority,
             expiresInDays,
+            ...(guardianEmail
+                ? {
+                      guardianEmail,
+                      guardianStatus: 'AWAITING_GUARDIAN' as const,
+                  }
+                : {}),
         });
 
         // Generate claim token
@@ -347,9 +358,60 @@ export const issueToInbox = async (
             });
         }
 
+        if (guardianEmail) {
+            // Guardian gate: send TWO emails instead of the normal claim email
+            // 1) Student: "Your guardian must approve before you can claim"
+            const studentDeliveryService = getDeliveryService(recipient);
+            await studentDeliveryService.send({
+                contactMethod: recipient,
+                templateId: 'credential-awaiting-guardian',
+                templateModel: {
+                    issuer: {
+                        name: issuerProfile.displayName,
+                        ...(delivery?.template?.model?.issuer ?? {}),
+                    },
+                    credential: {
+                        name: (credential as any)?.name,
+                        ...(delivery?.template?.model?.credential ?? {}),
+                    },
+                    recipient: {
+                        ...(delivery?.template?.model?.recipient ?? {}),
+                        ...(recipient.type === 'email' ? { email: recipient.value } : {}),
+                    },
+                },
+                messageStream: 'universal-inbox',
+            });
 
+            // 2) Guardian: "Approval required — click to review and approve"
+            const approvalToken = await generateGuardianCredentialApprovalToken(
+                inboxCredential.id,
+                guardianEmail
+            );
+            const approvalUrl = generateGuardianCredentialApprovalUrl(approvalToken);
 
-        if (!delivery?.suppress) {
+            const guardianDeliveryService = getDeliveryService({ type: 'email', value: guardianEmail });
+            await guardianDeliveryService.send({
+                contactMethod: { type: 'email', value: guardianEmail },
+                templateId: 'guardian-credential-approval',
+                templateModel: {
+                    approvalUrl,
+                    approvalToken,
+                    issuer: {
+                        name: issuerProfile.displayName,
+                        ...(delivery?.template?.model?.issuer ?? {}),
+                    },
+                    credential: {
+                        name: (credential as any)?.name,
+                        ...(delivery?.template?.model?.credential ?? {}),
+                    },
+                    recipient: {
+                        ...(delivery?.template?.model?.recipient ?? {}),
+                        ...(recipient.type === 'email' ? { email: recipient.value } : {}),
+                    },
+                },
+                messageStream: 'universal-inbox',
+            });
+        } else if (!delivery?.suppress) {
             const emailClaimToken = await generateInboxClaimToken(recipientContactMethod.id, expiresInDays ? 24 * expiresInDays : 24, true);
             const emailClaimUrl = generateClaimUrl(emailClaimToken);
             // Record email being sent
@@ -408,7 +470,7 @@ export const issueToInbox = async (
                     title: 'Credential Delivered to Inbox',
                     body: `${issuerProfile.displayName} sent a credential to ${recipient.type}'s inbox at ${recipient.value}!`,
                 },
-                data: { 
+                data: {
                     inbox: {
                         issuanceId: inboxCredential.id,
                         status: LCNInboxStatusEnumValidator.enum.PENDING,
@@ -428,6 +490,7 @@ export const issueToInbox = async (
             status: LCNInboxStatusEnumValidator.enum.PENDING,
             inboxCredential,
             claimUrl,
+            ...(guardianEmail ? { guardianStatus: 'AWAITING_GUARDIAN' as const } : {}),
         };
     }
 };
