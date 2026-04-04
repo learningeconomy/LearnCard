@@ -165,3 +165,40 @@ export const getExpiredInboxCredentials = async (limit = 100): Promise<InboxCred
         ) ?? []
     );
 };
+
+export const getInboxCredentialsByGuardianEmail = async (
+    guardianEmail: string,
+    guardianStatus?: string
+): Promise<InboxCredentialType[]> => {
+    const statusClause = guardianStatus
+        ? `AND inboxCredential.guardianStatus = "${guardianStatus}"`
+        : '';
+
+    const result = await new QueryBuilder(new BindParam({ guardianEmail }))
+        .match({ model: InboxCredential, identifier: 'inboxCredential' })
+        .where(`inboxCredential.guardianEmail = $guardianEmail ${statusClause} AND datetime(inboxCredential.expiresAt) > datetime()`)
+        .return('inboxCredential')
+        .run();
+
+    return (
+        QueryRunner.getResultProperties<InboxCredentialType[]>(result, 'inboxCredential')?.map(
+            credential => inflateObject<InboxCredentialType>(credential as any)
+        ) ?? []
+    );
+};
+
+export const getInboxCredentialByIdAndGuardianEmail = async (
+    id: string,
+    guardianEmail: string
+): Promise<InboxCredentialType | null> => {
+    const result = await new QueryBuilder(new BindParam({ id, guardianEmail }))
+        .match({ model: InboxCredential, identifier: 'inboxCredential' })
+        .where('inboxCredential.id = $id AND inboxCredential.guardianEmail = $guardianEmail')
+        .return('inboxCredential')
+        .limit(1)
+        .run();
+
+    const credential = result.records[0]?.get('inboxCredential')?.properties;
+    if (!credential) return null;
+    return inflateObject<InboxCredentialType>(credential as any);
+};
