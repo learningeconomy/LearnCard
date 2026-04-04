@@ -21,6 +21,8 @@ export const createInboxCredential = async (input: {
     integrationId?: string;
     signingAuthority?: { endpoint: string; name: string; listingSlug?: string };
     expiresInDays?: number;
+    guardianEmail?: string;
+    guardianStatus?: 'AWAITING_GUARDIAN' | 'GUARDIAN_APPROVED' | 'GUARDIAN_REJECTED';
 }): Promise<InboxCredentialInstance> => {
 
     const id = uuid();
@@ -45,6 +47,8 @@ export const createInboxCredential = async (input: {
             'signingAuthority.name': input.signingAuthority.name,
             ...(input.signingAuthority.listingSlug ? { 'signingAuthority.listingSlug': input.signingAuthority.listingSlug } : {}),
         } : {}),
+        ...(input.guardianEmail ? { guardianEmail: input.guardianEmail } : {}),
+        ...(input.guardianStatus ? { guardianStatus: input.guardianStatus } : {}),
     };
 
     await new QueryBuilder(
