@@ -436,6 +436,52 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const isChildProfile = profileType === 'child';
     const { isAiEnabled } = useAiFeatureGate();
 
+    const roleDescriptions: Record<LearnCardRolesEnum, React.ReactNode> = {
+        [LearnCardRolesEnum.learner]: (
+            <>
+                <span className="font-semibold">I'm a student</span> building my profile and
+                tracking my progress.
+            </>
+        ),
+        [LearnCardRolesEnum.teacher]: (
+            <>
+                <span className="font-semibold">I'm an educator</span> working directly with
+                learners.
+            </>
+        ),
+        [LearnCardRolesEnum.guardian]: (
+            <>
+                <span className="font-semibold">I'm a parent or guardian</span> supporting a
+                learner.
+            </>
+        ),
+        [LearnCardRolesEnum.admin]: (
+            <>
+                <span className="font-semibold">I manage</span> an organization or institution.
+            </>
+        ),
+        [LearnCardRolesEnum.counselor]: (
+            <>
+                <span className="font-semibold">I provide</span> guidance and support.
+            </>
+        ),
+        [LearnCardRolesEnum.developer]: (
+            <>
+                <span className="font-semibold">I manage</span> systems, data, and technology for my
+                organization.
+            </>
+        ),
+    };
+
+    const lineColor = {
+        [LearnCardRolesEnum.learner]: '#2DD4BF',
+        [LearnCardRolesEnum.guardian]: '#8B5CF6',
+        [LearnCardRolesEnum.teacher]: '#FACC15',
+        [LearnCardRolesEnum.admin]: '#06B6D4',
+        [LearnCardRolesEnum.counselor]: '#8B5CF6',
+        [LearnCardRolesEnum.developer]: '#84CC16',
+    };
+
     const activeRole = (
         isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
     ) as LearnCardRolesEnum;
@@ -637,6 +683,25 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                         customImageClass="flex justify-center items-center h-[35px] w-[35px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[35px] min-h-[35px]"
                         customSize={120}
                     />
+                </div>
+                <div className="flex flex-col items-center justify-center mb-[15px]">
+                    <p className="text-center text-[16px] text-grayscale-800 font-poppins font-normal mb-[5px]">
+                        {roleDescriptions[activeRole]}
+                    </p>
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="46"
+                        height="4"
+                        viewBox="0 0 46 4"
+                        fill="none"
+                    >
+                        <path
+                            d="M2 2H44"
+                            stroke={lineColor[activeRole]}
+                            stroke-width="4"
+                            stroke-linecap="round"
+                        />
+                    </svg>
                 </div>
 
                 <div className="w-full flex items-center justify-center">
