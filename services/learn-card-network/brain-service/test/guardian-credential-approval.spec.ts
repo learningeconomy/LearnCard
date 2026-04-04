@@ -40,28 +40,21 @@ describe('Guardian-Gated Credential Issuance', () => {
 
     describe('send with guardianEmail', () => {
         it('should create inbox credential with AWAITING_GUARDIAN status', async () => {
-            let result: any;
-            try {
-                const signedVc = await userA.learnCard.invoke.issueCredential(testUnsignedBoost);
+            const signedVc = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+            });
 
-                result = await userA.clients.fullAuth.boost.send({
-                    type: 'boost',
-                    recipient: 'student@school.edu',
-                    template: { credential: testUnsignedBoost },
-                    signedCredential: signedVc,
-                    options: {
-                        guardianEmail: 'parent@home.com',
-                        branding: { issuerName: 'Springfield Elementary' },
-                    },
-                });
-            } catch (e: any) {
-                console.log('SEND ERROR type:', typeof e, Object.prototype.toString.call(e));
-                console.log('SEND ERROR keys:', Object.getOwnPropertyNames(e));
-                console.log('SEND ERROR str:', String(e));
-                console.log('SEND ERROR message:', e?.message);
-                console.log('SEND ERROR code:', e?.code);
-                throw e;
-            }
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'student@school.edu',
+                template: { credential: testUnsignedBoost },
+                signedCredential: signedVc,
+                options: {
+                    guardianEmail: 'parent@home.com',
+                    branding: { issuerName: 'Springfield Elementary' },
+                },
+            });
 
             expect(result.inbox?.guardianStatus).toBe('AWAITING_GUARDIAN');
 
@@ -73,7 +66,10 @@ describe('Guardian-Gated Credential Issuance', () => {
         });
 
         it('should send exactly 2 emails: one to student, one to guardian', async () => {
-            const signedVc = await userA.learnCard.invoke.issueCredential(testUnsignedBoost);
+            const signedVc = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+            });
 
             await userA.clients.fullAuth.boost.send({
                 type: 'boost',
