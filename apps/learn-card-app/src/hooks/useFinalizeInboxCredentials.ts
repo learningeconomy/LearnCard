@@ -40,6 +40,12 @@ export const clearFinalizeCache = (): void => {
 
 const hasProfileId = (p: LCNProfile | undefined): boolean => !!p && typeof p.profileId === 'string' && p.profileId.length > 0;
 
+const isTRPCForbiddenError = (err: unknown): boolean => {
+    if (!err || typeof err !== 'object') return false;
+    const maybeCode = (err as { data?: { code?: string } }).data?.code;
+    return maybeCode === 'FORBIDDEN';
+};
+
 export const useFinalizeInboxCredentials = () => {
     const { data: isLCNUser } = useIsCurrentUserLCNUser();
     const isLoggedIn = useIsLoggedIn();
@@ -72,7 +78,19 @@ export const useFinalizeInboxCredentials = () => {
                 // Skip if recently finalized for this profile
                 if (!needsFinalize(profileId)) return;
 
-                const result = await wallet.invoke?.finalizeInboxCredentials();
+                let result;
+                try {
+                    result = await wallet.invoke?.finalizeInboxCredentials();
+                } catch (err: unknown) {
+                    // Guardian-gated: managed child without parent VP — silently skip, don't mark finalized
+                    if (isTRPCForbiddenError(err)) {
+                        console.debug('[finalize] Skipped: guardian approval required for managed child profile');
+                        return; // Do NOT call markFinalized — retry on next 30-min cycle
+                    }
+                    // Re-throw other errors
+                    throw err;
+                }
+
                 const vcs: VC[] = result?.verifiableCredentials || [];
 
                 if (!vcs.length) {
