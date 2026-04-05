@@ -183,7 +183,10 @@ export const storeGuardianUpgradeContext = async (
         approvedAt: new Date().toISOString(),
     };
     const ttlSeconds = Math.floor(ttlHours * 60 * 60);
-    await cache.set(key, JSON.stringify(data), ttlSeconds);
+    const result = await cache.set(key, JSON.stringify(data), ttlSeconds);
+    if (!result) {
+        console.error('[storeGuardianUpgradeContext] Failed to store upgrade context for token:', token);
+    }
 };
 
 export const getGuardianUpgradeContext = async (
@@ -201,5 +204,8 @@ export const getGuardianUpgradeContext = async (
 
 export const deleteGuardianUpgradeContext = async (token: string): Promise<void> => {
     const key = `${GUARDIAN_UPGRADE_PREFIX}${token}`;
-    await cache.delete([key]);
+    const result = await cache.delete([key]);
+    if (!result) {
+        console.warn('[deleteGuardianUpgradeContext] Failed to delete upgrade context for token:', token);
+    }
 };
