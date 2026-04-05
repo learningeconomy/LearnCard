@@ -356,7 +356,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                                 <IonButton
                                     expand="block"
                                     color="light"
-                                    href="https://apps.apple.com/app/learncard/id6447611416"
+                                    href="https://apps.apple.com/us/app/learncard/id1635841898"
                                     target="_blank"
                                 >
                                     Download on the App Store
@@ -365,7 +365,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                                     expand="block"
                                     fill="outline"
                                     color="light"
-                                    href="https://play.google.com/store/apps/details?id=com.learningeconomy.learncard"
+                                    href="https://play.google.com/store/apps/details?id=com.learncard.app"
                                     target="_blank"
                                 >
                                     Get it on Google Play
