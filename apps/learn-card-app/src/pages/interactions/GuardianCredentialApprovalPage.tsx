@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { IonContent, IonPage, IonSpinner, IonButton } from '@ionic/react';
+import React, { useEffect, useRef, useState } from 'react';
+import { IonContent, IonPage, IonSpinner, IonButton, IonInput, IonItem } from '@ionic/react';
 import { useParams } from 'react-router-dom';
 
 import { initLearnCard } from '@learncard/init';
@@ -17,11 +17,23 @@ type CredentialInfo = {
     expiresAt: string;
 };
 
-type PageState = 'loading' | 'ready' | 'approving' | 'rejecting' | 'approved' | 'rejected' | 'error';
+type PageState =
+    | 'loading'
+    | 'ready'
+    | 'sending_code'
+    | 'code_sent'
+    | 'approving'
+    | 'rejecting'
+    | 'approved'
+    | 'rejected'
+    | 'error';
 
-const getNetworkInitOverrides = () => ({
-    network: true as const,
-});
+type LCNOpenInvoke = {
+    getGuardianPendingCredential: (token: string) => Promise<CredentialInfo>;
+    sendGuardianChallenge: (token: string) => Promise<{ message: string }>;
+    approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
+    rejectGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
+};
 
 const toErrorMessage = (err: unknown): string =>
     err instanceof Error
@@ -35,6 +47,10 @@ const GuardianCredentialApprovalPage: React.FC = () => {
     const [credentialInfo, setCredentialInfo] = useState<CredentialInfo | null>(null);
     const [error, setError] = useState<string>('');
     const [resultMessage, setResultMessage] = useState<string>('');
+    const [otpCode, setOtpCode] = useState<string>('');
+
+    // Initialize wallet once
+    const invokeRef = useRef<LCNOpenInvoke | null>(null);
 
     useEffect(() => {
         if (!token) {
@@ -43,20 +59,17 @@ const GuardianCredentialApprovalPage: React.FC = () => {
             return;
         }
 
-        const fetchInfo = async () => {
+        const init = async () => {
             try {
                 const wallet = await initLearnCard({
                     seed: 'a',
-                    ...getNetworkInitOverrides(),
+                    network: true as const,
                     didkit,
                     allowRemoteContexts: true,
                 });
+                invokeRef.current = wallet.invoke as unknown as LCNOpenInvoke;
 
-                type LCNOpenInvoke = {
-                    getGuardianPendingCredential: (token: string) => Promise<CredentialInfo>;
-                };
-
-                const info = await (wallet.invoke as unknown as LCNOpenInvoke).getGuardianPendingCredential(token);
+                const info = await invokeRef.current.getGuardianPendingCredential(token);
                 setCredentialInfo(info);
 
                 if (info.guardianStatus === 'GUARDIAN_APPROVED') {
@@ -74,25 +87,26 @@ const GuardianCredentialApprovalPage: React.FC = () => {
             }
         };
 
-        fetchInfo();
+        init();
     }, [token]);
 
+    const handleSendCode = async () => {
+        if (!token || !invokeRef.current) return;
+        setState('sending_code');
+        try {
+            await invokeRef.current.sendGuardianChallenge(token);
+            setState('code_sent');
+        } catch (e: unknown) {
+            setError(toErrorMessage(e));
+            setState('error');
+        }
+    };
+
     const handleApprove = async () => {
-        if (!token) return;
+        if (!token || !invokeRef.current || !otpCode) return;
         setState('approving');
         try {
-            const wallet = await initLearnCard({
-                seed: 'a',
-                ...getNetworkInitOverrides(),
-                didkit,
-                allowRemoteContexts: true,
-            });
-
-            type LCNOpenInvoke = {
-                approveGuardianCredential: (token: string) => Promise<{ message: string }>;
-            };
-
-            const res = await (wallet.invoke as unknown as LCNOpenInvoke).approveGuardianCredential(token);
+            const res = await invokeRef.current.approveGuardianCredential(token, otpCode);
             setResultMessage(res.message ?? 'Credential approved.');
             setState('approved');
         } catch (e: unknown) {
@@ -102,21 +116,10 @@ const GuardianCredentialApprovalPage: React.FC = () => {
     };
 
     const handleReject = async () => {
-        if (!token) return;
+        if (!token || !invokeRef.current || !otpCode) return;
         setState('rejecting');
         try {
-            const wallet = await initLearnCard({
-                seed: 'a',
-                ...getNetworkInitOverrides(),
-                didkit,
-                allowRemoteContexts: true,
-            });
-
-            type LCNOpenInvoke = {
-                rejectGuardianCredential: (token: string) => Promise<{ message: string }>;
-            };
-
-            const res = await (wallet.invoke as unknown as LCNOpenInvoke).rejectGuardianCredential(token);
+            const res = await invokeRef.current.rejectGuardianCredential(token, otpCode);
             setResultMessage(res.message ?? 'Credential rejected.');
             setState('rejected');
         } catch (e: unknown) {
@@ -125,7 +128,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
         }
     };
 
-    const isProcessing = state === 'approving' || state === 'rejecting';
+    const isProcessing = state === 'approving' || state === 'rejecting' || state === 'sending_code';
 
     return (
         <IonPage>
@@ -147,7 +150,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                         </div>
                     )}
 
-                    {state === 'ready' && credentialInfo && (
+                    {(state === 'ready' || state === 'sending_code' || state === 'code_sent') && credentialInfo && (
                         <>
                             <h1 className="text-2xl font-bold mb-2">Guardian Approval Required</h1>
                             <p className="text-emerald-100 max-w-[520px] mb-6">
@@ -168,25 +171,69 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-3 w-full max-w-sm">
-                                <IonButton
-                                    expand="block"
-                                    color="light"
-                                    onClick={handleApprove}
-                                    disabled={isProcessing}
-                                >
-                                    {state === 'approving' ? <IonSpinner name="crescent" /> : 'Approve'}
-                                </IonButton>
-                                <IonButton
-                                    expand="block"
-                                    fill="outline"
-                                    color="light"
-                                    onClick={handleReject}
-                                    disabled={isProcessing}
-                                >
-                                    {state === 'rejecting' ? <IonSpinner name="crescent" /> : 'Reject'}
-                                </IonButton>
-                            </div>
+                            {state === 'ready' && (
+                                <div className="w-full max-w-sm">
+                                    <p className="text-emerald-100 text-sm mb-4">
+                                        To approve or reject, we'll send a verification code to your email.
+                                    </p>
+                                    <IonButton
+                                        expand="block"
+                                        color="light"
+                                        onClick={handleSendCode}
+                                        disabled={isProcessing}
+                                    >
+                                        Send Verification Code
+                                    </IonButton>
+                                </div>
+                            )}
+
+                            {state === 'sending_code' && (
+                                <div className="flex flex-col items-center gap-3">
+                                    <IonSpinner color="light" />
+                                    <p className="font-semibold text-lg">Sending code…</p>
+                                </div>
+                            )}
+
+                            {state === 'code_sent' && (
+                                <div className="flex flex-col gap-3 w-full max-w-sm">
+                                    <p className="text-emerald-100 text-sm mb-2">
+                                        Enter the 6-digit code we sent to your email.
+                                    </p>
+                                    <IonItem color="light" className="rounded-xl mb-2">
+                                        <IonInput
+                                            type="number"
+                                            inputmode="numeric"
+                                            maxlength={6}
+                                            placeholder="000000"
+                                            value={otpCode}
+                                            onIonInput={e => setOtpCode(String(e.detail.value ?? ''))}
+                                        />
+                                    </IonItem>
+                                    <IonButton
+                                        expand="block"
+                                        color="light"
+                                        onClick={handleApprove}
+                                        disabled={isProcessing || otpCode.length !== 6}
+                                    >
+                                        Approve
+                                    </IonButton>
+                                    <IonButton
+                                        expand="block"
+                                        fill="outline"
+                                        color="light"
+                                        onClick={handleReject}
+                                        disabled={isProcessing || otpCode.length !== 6}
+                                    >
+                                        Reject
+                                    </IonButton>
+                                    <button
+                                        className="text-emerald-200 text-sm underline mt-2 bg-transparent border-none cursor-pointer"
+                                        onClick={() => { setOtpCode(''); setState('ready'); }}
+                                    >
+                                        Resend code
+                                    </button>
+                                </div>
+                            )}
                         </>
                     )}
 
