@@ -20,8 +20,6 @@ import { prepareCredentialFromBoost, getBoostUri } from '@helpers/boost.helpers'
 import { hasMustacheVariables, renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
 import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
 import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
-import crypto from 'crypto';
-
 import {
     generateGuardianApprovalToken,
     generateGuardianApprovalUrl,
@@ -71,7 +69,7 @@ import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationship
 import { getProfileByContactMethod } from '@accesslayer/contact-method/read';
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import { getProfileForInboxCredential } from '@accesslayer/inbox-credential/read';
-import { getLearnCard } from '@helpers/learnCard.helpers';
+import { getDidWeb } from '@helpers/did.helpers';
 import { updateProfile } from '@accesslayer/profile/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
@@ -1058,7 +1056,7 @@ export const inboxRouter = t.router({
             z.object({
                 token: z.string(),
                 displayName: z.string().min(1).max(100),
-                profileId: z.string().min(3).max(50),
+                profileId: z.string().min(3).max(40),
             })
         )
         .output(
@@ -1066,10 +1064,10 @@ export const inboxRouter = t.router({
                 message: z.string(),
                 guardianProfileId: z.string(),
                 childProfileId: z.string(),
-                managerId: z.string(),
+                managerId: z.string().nullable(),
             })
         )
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
             const { token, displayName, profileId } = input;
 
             // 1. Validate upgrade context (proves the guardian completed OTP approval)
@@ -1098,9 +1096,8 @@ export const inboxRouter = t.router({
                     });
                 }
 
-                // Generate a DID for the new guardian profile
-                const randomSeed = crypto.randomBytes(32).toString('hex');
-                const guardianLearnCard = await getLearnCard(randomSeed);
+                // Derive a deterministic did:web DID from the domain and profileId
+                const did = getDidWeb(ctx.domain, profileId);
 
                 // Create guardian profile
                 guardianProfile = await createProfile({
@@ -1108,7 +1105,7 @@ export const inboxRouter = t.router({
                     displayName,
                     shortBio: '',
                     bio: '',
-                    did: guardianLearnCard.id.did(),
+                    did,
                 });
 
                 if (!guardianProfile) {
@@ -1132,7 +1129,7 @@ export const inboxRouter = t.router({
             const existingManagers = await getProfilesThatManageAProfile(childProfile.profileId);
             const alreadyManages = existingManagers.some(m => m.profileId === guardianProfile!.profileId);
 
-            let managerId: string;
+            let managerId: string | null;
 
             if (!alreadyManages) {
                 // Create ProfileManager node + relationships
@@ -1146,7 +1143,7 @@ export const inboxRouter = t.router({
                 ]);
                 managerId = manager.id;
             } else {
-                managerId = 'existing';
+                managerId = null; // relationship already existed
             }
 
             // 5. Clean up the upgrade context token
