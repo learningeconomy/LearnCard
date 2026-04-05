@@ -20,12 +20,16 @@ import { prepareCredentialFromBoost, getBoostUri } from '@helpers/boost.helpers'
 import { hasMustacheVariables, renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
 import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
 import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
+import crypto from 'crypto';
+
 import {
     generateGuardianApprovalToken,
     generateGuardianApprovalUrl,
     validateGuardianApprovalTokenDetailed,
     markGuardianApprovalTokenAsUsed,
     storeGuardianUpgradeContext,
+    getGuardianUpgradeContext,
+    deleteGuardianUpgradeContext,
 } from '@helpers/guardian-approval.helpers';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
 import {
@@ -60,6 +64,14 @@ import {
     validateContactMethodVerificationToken,
 } from '@helpers/contact-method.helpers';
 import { getProfileByProfileId, getProfileByDid } from '@accesslayer/profile/read';
+import { createProfile } from '@accesslayer/profile/create';
+import { createProfileManager } from '@accesslayer/profile-manager/create';
+import { createManagesRelationship } from '@accesslayer/profile-manager/relationships/create';
+import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
+import { getProfileByContactMethod } from '@accesslayer/contact-method/read';
+import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
+import { getProfileForInboxCredential } from '@accesslayer/inbox-credential/read';
+import { getLearnCard } from '@helpers/learnCard.helpers';
 import { updateProfile } from '@accesslayer/profile/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
@@ -1028,6 +1040,124 @@ export const inboxRouter = t.router({
             }
 
             return { message: 'Credential rejected.' };
+        }),
+
+    // Open route: guardian creates a full account and establishes ProfileManager -> child relationship
+    registerGuardianAsManager: openRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/inbox/guardian-upgrade/{token}',
+                tags: ['Universal Inbox'],
+                summary: 'Register Guardian as Profile Manager',
+                description:
+                    'After approving a credential via email OTP, the guardian can use this route to create a LearnCard account and establish a ProfileManager → MANAGES → child Profile relationship. The upgrade token (stored in Redis by approveGuardianCredential) proves identity.',
+            },
+        })
+        .input(
+            z.object({
+                token: z.string(),
+                displayName: z.string().min(1).max(100),
+                profileId: z.string().min(3).max(50),
+            })
+        )
+        .output(
+            z.object({
+                message: z.string(),
+                guardianProfileId: z.string(),
+                childProfileId: z.string(),
+                managerId: z.string(),
+            })
+        )
+        .mutation(async ({ input }) => {
+            const { token, displayName, profileId } = input;
+
+            // 1. Validate upgrade context (proves the guardian completed OTP approval)
+            const upgradeCtx = await getGuardianUpgradeContext(token);
+            if (!upgradeCtx) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Upgrade link is invalid or expired.' });
+            }
+
+            // 2. Resolve child profile from inbox credential
+            const childProfile = await getProfileForInboxCredential(upgradeCtx.inboxCredentialId);
+            if (!childProfile) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find the student profile.' });
+            }
+
+            // 3. Check if guardian already has a profile (by email contact method)
+            const existingCm = await getContactMethodByValue('email', upgradeCtx.guardianEmail);
+            let guardianProfile = existingCm ? await getProfileByContactMethod(existingCm.id) : null;
+
+            if (!guardianProfile) {
+                // Check profileId availability
+                const existingProfile = await getProfileByProfileId(profileId);
+                if (existingProfile) {
+                    throw new TRPCError({
+                        code: 'CONFLICT',
+                        message: 'That handle is already taken. Please choose a different one.',
+                    });
+                }
+
+                // Generate a DID for the new guardian profile
+                const randomSeed = crypto.randomBytes(32).toString('hex');
+                const guardianLearnCard = await getLearnCard(randomSeed);
+
+                // Create guardian profile
+                guardianProfile = await createProfile({
+                    profileId,
+                    displayName,
+                    shortBio: '',
+                    bio: '',
+                    did: guardianLearnCard.id.did(),
+                });
+
+                if (!guardianProfile) {
+                    throw new TRPCError({
+                        code: 'INTERNAL_SERVER_ERROR',
+                        message: 'An unexpected error occurred creating the guardian profile.',
+                    });
+                }
+
+                // Create a verified contact method for the guardian email (already proven via OTP)
+                const contactMethod = await createContactMethod({
+                    type: 'email',
+                    value: upgradeCtx.guardianEmail,
+                    isVerified: true,
+                    isPrimary: true,
+                });
+                await createProfileContactMethodRelationship(guardianProfile.profileId, contactMethod.id);
+            }
+
+            // 4. Check if MANAGES relationship already exists via a ProfileManager
+            const existingManagers = await getProfilesThatManageAProfile(childProfile.profileId);
+            const alreadyManages = existingManagers.some(m => m.profileId === guardianProfile!.profileId);
+
+            let managerId: string;
+
+            if (!alreadyManages) {
+                // Create ProfileManager node + relationships
+                const manager = await createProfileManager({ displayName });
+                await Promise.all([
+                    createManagesRelationship(manager.id, childProfile.profileId),
+                    manager.relateTo({
+                        alias: 'administratedBy',
+                        where: { profileId: guardianProfile.profileId },
+                    }),
+                ]);
+                managerId = manager.id;
+            } else {
+                managerId = 'existing';
+            }
+
+            // 5. Clean up the upgrade context token
+            await deleteGuardianUpgradeContext(token);
+
+            return {
+                message: 'Account created and management relationship established.',
+                guardianProfileId: guardianProfile.profileId,
+                childProfileId: childProfile.profileId,
+                managerId,
+            };
         }),
 });
 
