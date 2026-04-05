@@ -30,6 +30,7 @@ import { getDeliveryService } from '@services/delivery/delivery.factory';
 import {
     getInboxCredentialsForProfile,
     getInboxCredentialByIdAndGuardianEmail,
+    getContactMethodForInboxCredential,
 } from '@accesslayer/inbox-credential/read';
 import { updateInboxCredential } from '@accesslayer/inbox-credential/update';
 import { readIntegrationByPublishableKey } from '@accesslayer/integration/read';
@@ -47,7 +48,16 @@ import {
 } from '@accesslayer/app-store-listing/read';
 import { getIntegrationForListing } from '@accesslayer/app-store-listing/relationships/read';
 import { isDomainWhitelisted } from '@helpers/integrations.helpers';
-import { getContactMethodsForProfile } from '@accesslayer/contact-method/read';
+import {
+    getContactMethodsForProfile,
+    getContactMethodByValue,
+    getContactMethodById,
+} from '@accesslayer/contact-method/read';
+import { createContactMethod } from '@accesslayer/contact-method/create';
+import {
+    generateContactMethodVerificationToken,
+    validateContactMethodVerificationToken,
+} from '@helpers/contact-method.helpers';
 import { getProfileByProfileId, getProfileByDid } from '@accesslayer/profile/read';
 import { updateProfile } from '@accesslayer/profile/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
@@ -786,16 +796,16 @@ export const inboxRouter = t.router({
             };
         }),
 
-    // Open route: guardian approves a credential
-    approveGuardianCredential: openRoute
+    // Open route: send OTP to guardian's email so they can prove email ownership
+    sendGuardianChallenge: openRoute
         .meta({
             openapi: {
                 method: 'POST',
-                path: '/inbox/guardian-credential-approval/{token}/approve',
+                path: '/inbox/guardian-credential-approval/{token}/challenge',
                 tags: ['Universal Inbox'],
-                summary: 'Approve Guardian Credential',
+                summary: 'Send Guardian OTP Challenge',
                 description:
-                    'Guardian approves a pending credential. Sets guardianStatus=GUARDIAN_APPROVED and marks isAccepted=true so the recipient can claim it.',
+                    'Sends a 6-digit verification code to the guardian email associated with this approval token. The code must be passed to approve or reject.',
             },
         })
         .input(z.object({ token: z.string() }))
@@ -818,6 +828,80 @@ export const inboxRouter = t.router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token is not a credential-scoped approval token.' });
             }
 
+            // Find or create a ContactMethod for the guardian's email
+            let guardianContactMethod = await getContactMethodByValue('email', guardianEmail);
+            if (!guardianContactMethod) {
+                guardianContactMethod = await createContactMethod({
+                    type: 'email',
+                    value: guardianEmail,
+                    isVerified: false,
+                    isPrimary: false,
+                });
+            }
+
+            // Generate a 6-digit OTP with a 1-hour TTL
+            const otpCode = await generateContactMethodVerificationToken(
+                guardianContactMethod.id,
+                'email',
+                1,
+                '6-digit-code'
+            );
+
+            const deliveryService = getDeliveryService({ type: 'email', value: guardianEmail });
+            await deliveryService.send({
+                contactMethod: { type: 'email', value: guardianEmail },
+                templateId: 'guardian-email-otp',
+                templateModel: {
+                    verificationCode: otpCode,
+                },
+                messageStream: 'universal-inbox',
+            });
+
+            return { message: 'Verification code sent.' };
+        }),
+
+    // Open route: guardian approves a credential (requires OTP verification)
+    approveGuardianCredential: openRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/inbox/guardian-credential-approval/{token}/approve',
+                tags: ['Universal Inbox'],
+                summary: 'Approve Guardian Credential',
+                description:
+                    'Guardian approves a pending credential. Requires a valid OTP from sendGuardianChallenge. Sets guardianStatus=GUARDIAN_APPROVED and marks isAccepted=true so the recipient can claim it.',
+            },
+        })
+        .input(z.object({ token: z.string(), otpCode: z.string() }))
+        .output(z.object({ message: z.string() }))
+        .mutation(async ({ input }) => {
+            const { token, otpCode } = input;
+
+            const validation = await validateGuardianApprovalTokenDetailed(token);
+            if (!validation.valid) {
+                const errorMessages = {
+                    invalid: 'Invalid or unknown approval token.',
+                    expired: 'This approval link has expired.',
+                    already_used: 'This approval link has already been used.',
+                };
+                throw new TRPCError({ code: 'BAD_REQUEST', message: errorMessages[validation.reason] });
+            }
+
+            const { inboxCredentialId, guardianEmail } = validation.data;
+            if (!inboxCredentialId) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token is not a credential-scoped approval token.' });
+            }
+
+            // Validate OTP — proves the guardian controls guardianEmail
+            const otpContactMethodId = await validateContactMethodVerificationToken(otpCode);
+            if (!otpContactMethodId) {
+                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid or expired verification code.' });
+            }
+            const otpContactMethod = await getContactMethodById(otpContactMethodId);
+            if (!otpContactMethod || otpContactMethod.value.toLowerCase() !== guardianEmail.toLowerCase()) {
+                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Verification code does not match guardian email.' });
+            }
+
             const inboxCredential = await getInboxCredentialByIdAndGuardianEmail(inboxCredentialId, guardianEmail);
             if (!inboxCredential) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found for this token.' });
@@ -826,7 +910,7 @@ export const inboxRouter = t.router({
             if (inboxCredential.guardianStatus !== 'AWAITING_GUARDIAN') {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
-                    message: `Credential is already ${inboxCredential.guardianStatus?.toLowerCase().replace('_', ' ')}.`,
+                    message: `Credential is already ${inboxCredential.guardianStatus?.toLowerCase().replace(/_/g, ' ')}.`,
                 });
             }
 
@@ -838,10 +922,29 @@ export const inboxRouter = t.router({
 
             await markGuardianApprovalTokenAsUsed(token);
 
+            // Notify the student
+            try {
+                const studentContactMethod = await getContactMethodForInboxCredential(inboxCredentialId);
+                if (studentContactMethod) {
+                    const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
+                    const deliveryService = getDeliveryService(studentContactMethod);
+                    await deliveryService.send({
+                        contactMethod: studentContactMethod,
+                        templateId: 'guardian-approved-claim',
+                        templateModel: {
+                            issuer: { name: issuerProfile?.displayName ?? 'Your issuer' },
+                        },
+                        messageStream: 'universal-inbox',
+                    });
+                }
+            } catch (err) {
+                console.error('[approveGuardianCredential] Failed to send student notification:', err);
+            }
+
             return { message: 'Credential approved. The recipient can now claim it.' };
         }),
 
-    // Open route: guardian rejects a credential
+    // Open route: guardian rejects a credential (requires OTP verification)
     rejectGuardianCredential: openRoute
         .meta({
             openapi: {
@@ -850,13 +953,13 @@ export const inboxRouter = t.router({
                 tags: ['Universal Inbox'],
                 summary: 'Reject Guardian Credential',
                 description:
-                    'Guardian rejects a pending credential. Sets guardianStatus=GUARDIAN_REJECTED so the credential will not be claimable.',
+                    'Guardian rejects a pending credential. Requires a valid OTP from sendGuardianChallenge. Sets guardianStatus=GUARDIAN_REJECTED so the credential will not be claimable.',
             },
         })
-        .input(z.object({ token: z.string() }))
+        .input(z.object({ token: z.string(), otpCode: z.string() }))
         .output(z.object({ message: z.string() }))
         .mutation(async ({ input }) => {
-            const { token } = input;
+            const { token, otpCode } = input;
 
             const validation = await validateGuardianApprovalTokenDetailed(token);
             if (!validation.valid) {
@@ -873,6 +976,16 @@ export const inboxRouter = t.router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token is not a credential-scoped approval token.' });
             }
 
+            // Validate OTP — proves the guardian controls guardianEmail
+            const otpContactMethodId = await validateContactMethodVerificationToken(otpCode);
+            if (!otpContactMethodId) {
+                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid or expired verification code.' });
+            }
+            const otpContactMethod = await getContactMethodById(otpContactMethodId);
+            if (!otpContactMethod || otpContactMethod.value.toLowerCase() !== guardianEmail.toLowerCase()) {
+                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Verification code does not match guardian email.' });
+            }
+
             const inboxCredential = await getInboxCredentialByIdAndGuardianEmail(inboxCredentialId, guardianEmail);
             if (!inboxCredential) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found for this token.' });
@@ -881,7 +994,7 @@ export const inboxRouter = t.router({
             if (inboxCredential.guardianStatus !== 'AWAITING_GUARDIAN') {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
-                    message: `Credential is already ${inboxCredential.guardianStatus?.toLowerCase().replace('_', ' ')}.`,
+                    message: `Credential is already ${inboxCredential.guardianStatus?.toLowerCase().replace(/_/g, ' ')}.`,
                 });
             }
 
@@ -890,6 +1003,25 @@ export const inboxRouter = t.router({
             });
 
             await markGuardianApprovalTokenAsUsed(token);
+
+            // Notify the student
+            try {
+                const studentContactMethod = await getContactMethodForInboxCredential(inboxCredentialId);
+                if (studentContactMethod) {
+                    const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
+                    const deliveryService = getDeliveryService(studentContactMethod);
+                    await deliveryService.send({
+                        contactMethod: studentContactMethod,
+                        templateId: 'guardian-rejected-credential',
+                        templateModel: {
+                            issuer: { name: issuerProfile?.displayName ?? 'Your issuer' },
+                        },
+                        messageStream: 'universal-inbox',
+                    });
+                }
+            } catch (err) {
+                console.error('[rejectGuardianCredential] Failed to send student notification:', err);
+            }
 
             return { message: 'Credential rejected.' };
         }),
