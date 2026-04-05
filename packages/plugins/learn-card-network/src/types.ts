@@ -608,8 +608,9 @@ export type LearnCardNetworkPluginMethods = {
         createdAt: string;
         expiresAt: string;
     }>;
-    approveGuardianCredential: (token: string) => Promise<{ message: string }>;
-    rejectGuardianCredential: (token: string) => Promise<{ message: string }>;
+    sendGuardianChallenge: (token: string) => Promise<{ message: string }>;
+    approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
+    rejectGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
     addContactMethod: (
         contactMethod: ContactMethodQueryType
     ) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;
