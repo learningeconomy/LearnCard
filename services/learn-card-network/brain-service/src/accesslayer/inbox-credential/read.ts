@@ -1,6 +1,6 @@
 import { QueryBuilder, BindParam, QueryRunner } from 'neogma';
 import { InboxCredential, ContactMethod, InboxCredentialInstance } from '@models';
-import { InboxCredentialType, InboxCredentialQuery } from '@learncard/types';
+import { InboxCredentialType, InboxCredentialQuery, ContactMethodType } from '@learncard/types';
 import { inflateObject } from '@helpers/objects.helpers';
 import {
     convertObjectRegExpToNeo4j,
@@ -200,4 +200,20 @@ export const getInboxCredentialByIdAndGuardianEmail = async (
     const credential = result.records[0]?.get('inboxCredential')?.properties;
     if (!credential) return null;
     return inflateObject<InboxCredentialType>(credential as any);
+};
+
+export const getContactMethodForInboxCredential = async (
+    inboxCredentialId: string
+): Promise<ContactMethodType | null> => {
+    const result = await new QueryBuilder(new BindParam({ id: inboxCredentialId }))
+        .match({ model: InboxCredential, identifier: 'inboxCredential' })
+        .where('inboxCredential.id = $id')
+        .match('(inboxCredential)-[:ADDRESSED_TO]->(contactMethod:ContactMethod)')
+        .return('contactMethod')
+        .limit(1)
+        .run();
+
+    const cm = result.records[0]?.get('contactMethod')?.properties;
+    if (!cm) return null;
+    return inflateObject<ContactMethodType>(cm as any);
 };
