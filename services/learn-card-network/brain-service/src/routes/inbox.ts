@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, profileRoute, openRoute, verifiedContactRoute } from '@routes';
+import { t, profileRoute, openRoute, verifiedContactRoute, guardianGatedRoute } from '@routes';
 import {
     PaginationOptionsValidator,
     IssueInboxCredentialValidator,
@@ -630,7 +630,7 @@ export const inboxRouter = t.router({
         }),
 
     // Finalize all pending inbox credentials for verified contact methods
-    finalize: profileRoute
+    finalize: guardianGatedRoute
         .meta({
             openapi: {
                 protect: true,
@@ -654,6 +654,15 @@ export const inboxRouter = t.router({
         )
         .mutation(async ({ ctx }) => {
             const { profile } = ctx.user;
+            const { isChildAccount, hasGuardianApproval } = ctx;
+
+            if (isChildAccount && !hasGuardianApproval) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Child accounts require guardian approval to finalize inbox credentials.',
+                });
+            }
+
             return finalizeInboxCredentialsForProfile(profile, ctx.domain);
         }),
 
