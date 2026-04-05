@@ -161,3 +161,45 @@ export const generateGuardianCredentialApprovalUrl = (token: string): string => 
 
     return `${protocol}://${domain}/interactions/guardian-credential-approval/${token}`;
 };
+
+const GUARDIAN_UPGRADE_PREFIX = 'guardian_upgrade:';
+
+export type GuardianUpgradeContext = {
+    guardianEmail: string;
+    inboxCredentialId: string;
+    approvedAt: string;
+};
+
+export const storeGuardianUpgradeContext = async (
+    token: string,
+    guardianEmail: string,
+    inboxCredentialId: string,
+    ttlHours = 72 // 3 days to upgrade
+): Promise<void> => {
+    const key = `${GUARDIAN_UPGRADE_PREFIX}${token}`;
+    const data: GuardianUpgradeContext = {
+        guardianEmail,
+        inboxCredentialId,
+        approvedAt: new Date().toISOString(),
+    };
+    const ttlSeconds = Math.floor(ttlHours * 60 * 60);
+    await cache.set(key, JSON.stringify(data), ttlSeconds);
+};
+
+export const getGuardianUpgradeContext = async (
+    token: string
+): Promise<GuardianUpgradeContext | null> => {
+    const key = `${GUARDIAN_UPGRADE_PREFIX}${token}`;
+    const data = await cache.get(key);
+    if (!data) return null;
+    try {
+        return JSON.parse(data) as GuardianUpgradeContext;
+    } catch {
+        return null;
+    }
+};
+
+export const deleteGuardianUpgradeContext = async (token: string): Promise<void> => {
+    const key = `${GUARDIAN_UPGRADE_PREFIX}${token}`;
+    await cache.delete([key]);
+};

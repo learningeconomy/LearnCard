@@ -25,6 +25,7 @@ import {
     generateGuardianApprovalUrl,
     validateGuardianApprovalTokenDetailed,
     markGuardianApprovalTokenAsUsed,
+    storeGuardianUpgradeContext,
 } from '@helpers/guardian-approval.helpers';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
 import {
@@ -921,6 +922,9 @@ export const inboxRouter = t.router({
             });
 
             await markGuardianApprovalTokenAsUsed(token);
+
+            // Store upgrade context so guardian can create an account (72h TTL)
+            await storeGuardianUpgradeContext(token, guardianEmail, inboxCredentialId);
 
             // Notify the student
             try {
