@@ -311,6 +311,11 @@ describe('Guardian-Gated Credential Issuance', () => {
             const { ProfileManager } = await import('@models');
             const managers = await ProfileManager.findMany({ where: {} });
             expect(managers.length).toBeGreaterThan(0);
+
+            // Verify the guardian's email ContactMethod was linked
+            const cms = await ContactMethod.findMany({ where: { value: 'parent@home.com' } });
+            expect(cms.length).toBeGreaterThanOrEqual(1);
+            expect(cms[0]!.value).toBe('parent@home.com');
         });
 
         it('should return BAD_REQUEST for invalid/expired upgrade token', async () => {

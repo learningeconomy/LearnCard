@@ -57,6 +57,7 @@ import {
     getContactMethodById,
 } from '@accesslayer/contact-method/read';
 import { createContactMethod } from '@accesslayer/contact-method/create';
+import { updateContactMethod } from '@accesslayer/contact-method/update';
 import {
     generateContactMethodVerificationToken,
     validateContactMethodVerificationToken,
@@ -1132,6 +1133,12 @@ export const inboxRouter = t.router({
                     isVerified: true,
                     isPrimary: true,
                 });
+
+                // If we reused an existing CM, mark it verified (OTP in approveGuardianCredential proved ownership)
+                if (existingCm && !existingCm.isVerified) {
+                    await updateContactMethod(existingCm.id, { isVerified: true });
+                }
+
                 await createProfileContactMethodRelationship(guardianProfile.profileId, contactMethod.id);
             }
 
