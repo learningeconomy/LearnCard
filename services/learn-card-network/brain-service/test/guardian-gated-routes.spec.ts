@@ -178,4 +178,47 @@ describe('Guardian Gated Routes - Context Passing', () => {
             expect(profile).toBeDefined();
         });
     });
+
+    describe('finalize — guardian gating', () => {
+        it('should return FORBIDDEN for managed child without guardian VP', async () => {
+            mockGetProfileByDid.mockResolvedValue(mockChildProfile as any);
+            mockIsProfileManaged.mockResolvedValue(true);
+            mockGetProfilesThatManageAProfile.mockResolvedValue([mockGuardianProfile as any]);
+
+            // No guardian approval token passed — hasGuardianApproval will be false
+            const caller = createCaller(childLearnCard.id.did());
+
+            await expect(caller.inbox.finalize({})).rejects.toMatchObject({
+                code: 'FORBIDDEN',
+                message: expect.stringMatching(/guardian approval/i),
+            });
+        });
+
+        it('should not return FORBIDDEN for a non-managed profile', async () => {
+            mockGetProfileByDid.mockResolvedValue(mockNonManagedProfile as any);
+            mockIsProfileManaged.mockResolvedValue(false);
+
+            const caller = createCaller(nonManagedLearnCard.id.did());
+
+            // Should pass the guardian gate and attempt finalization.
+            // Profile has no verified contact methods so result is an empty processed set.
+            const result = await caller.inbox.finalize({});
+            expect(result).toBeDefined();
+            expect(result.processed).toBeGreaterThanOrEqual(0);
+        });
+
+        it('should allow managed child through when a valid guardian approval token is provided', async () => {
+            mockGetProfileByDid.mockResolvedValue(mockChildProfile as any);
+            mockIsProfileManaged.mockResolvedValue(true);
+            mockGetProfilesThatManageAProfile.mockResolvedValue([mockGuardianProfile as any]);
+
+            const token = await generateGuardianApprovalToken(guardianLearnCard, 'child-user');
+            const caller = createCaller(childLearnCard.id.did(), token);
+
+            // Should pass the guardian gate and proceed to finalization
+            const result = await caller.inbox.finalize({});
+            expect(result).toBeDefined();
+            expect(result.processed).toBeGreaterThanOrEqual(0);
+        });
+    });
 });

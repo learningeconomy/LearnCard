@@ -1124,8 +1124,9 @@ export const inboxRouter = t.router({
                     });
                 }
 
-                // Create a verified contact method for the guardian email (already proven via OTP)
-                const contactMethod = await createContactMethod({
+                // Use the existing ContactMethod (created by sendGuardianChallenge) or create a new one.
+                // The OTP flow already proves email ownership, so mark the CM as verified.
+                const contactMethod = existingCm ?? await createContactMethod({
                     type: 'email',
                     value: upgradeCtx.guardianEmail,
                     isVerified: true,

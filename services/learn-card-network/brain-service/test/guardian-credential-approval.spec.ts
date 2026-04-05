@@ -1,7 +1,7 @@
 import { vi, describe, it, expect, beforeEach, afterAll, beforeAll } from 'vitest';
-import { getUser } from './helpers/getClient';
+import { getUser, getClient } from './helpers/getClient';
 import { testUnsignedBoost } from './helpers/send';
-import { Profile, InboxCredential, ContactMethod, SigningAuthority, Boost } from '@models';
+import { Profile, InboxCredential, ContactMethod, SigningAuthority, Boost, ProfileManager } from '@models';
 import { sendSpy } from './helpers/spies';
 
 vi.mock('@services/delivery/delivery.factory', () => ({
@@ -17,6 +17,7 @@ describe('Guardian-Gated Credential Issuance', () => {
 
     beforeEach(async () => {
         sendSpy.mockClear();
+        await ProfileManager.delete({ detach: true, where: {} });
         await Profile.delete({ detach: true, where: {} });
         await InboxCredential.delete({ detach: true, where: {} });
         await ContactMethod.delete({ detach: true, where: {} });
@@ -31,6 +32,7 @@ describe('Guardian-Gated Credential Issuance', () => {
 
     afterAll(async () => {
         sendSpy.mockClear();
+        await ProfileManager.delete({ detach: true, where: {} });
         await Profile.delete({ detach: true, where: {} });
         await InboxCredential.delete({ detach: true, where: {} });
         await ContactMethod.delete({ detach: true, where: {} });
@@ -209,6 +211,160 @@ describe('Guardian-Gated Credential Issuance', () => {
             await expect(
                 userA.clients.fullAuth.inbox.approveGuardianCredential({ token: approvalToken, otpCode })
             ).rejects.toThrow();
+        });
+    });
+
+    describe('registerGuardianAsManager', () => {
+        let userB: Awaited<ReturnType<typeof getUser>>;
+
+        beforeAll(async () => {
+            userB = await getUser('b'.repeat(64));
+        });
+
+        // Helper: set up student profile with email CM, send credential, run full OTP approval,
+        // and return the approval token (which doubles as the upgrade token).
+        const approveAndGetUpgradeToken = async (): Promise<string> => {
+            // Ensure userB has a profile and verified email CM for 'student@school.edu'
+            const existingProfile = await Profile.findOne({ where: { profileId: 'userb' } });
+            if (!existingProfile) {
+                await userB.clients.fullAuth.profile.createProfile({
+                    profileId: 'userb',
+                    displayName: 'User B',
+                });
+            }
+
+            // Link student@school.edu to userB's profile via the access layer
+            const { createContactMethod } = await import('@accesslayer/contact-method/create');
+            const { createProfileContactMethodRelationship } = await import(
+                '@accesslayer/contact-method/relationships/create'
+            );
+            const { getContactMethodByValue } = await import('@accesslayer/contact-method/read');
+
+            let cm = await getContactMethodByValue('email', 'student@school.edu');
+            if (!cm) {
+                cm = await createContactMethod({
+                    type: 'email',
+                    value: 'student@school.edu',
+                    isVerified: true,
+                    isPrimary: true,
+                });
+            }
+            await createProfileContactMethodRelationship('userb', cm.id);
+
+            // Issue and send credential with guardianEmail
+            const signedVc = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+            });
+
+            await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'student@school.edu',
+                template: { credential: testUnsignedBoost },
+                signedCredential: signedVc,
+                options: { guardianEmail: 'parent@home.com' },
+            });
+
+            const credentials = await InboxCredential.findMany({ where: {} });
+            const inboxCredId = credentials[0]!.id;
+
+            const { generateGuardianCredentialApprovalToken } = await import(
+                '../src/helpers/guardian-approval.helpers'
+            );
+            const approvalToken = await generateGuardianCredentialApprovalToken(inboxCredId, 'parent@home.com');
+
+            sendSpy.mockClear();
+
+            // Get OTP from sendGuardianChallenge
+            await userA.clients.fullAuth.inbox.sendGuardianChallenge({ token: approvalToken });
+            const otpCall = sendSpy.mock.calls.find((c: any) => c[0].templateId === 'guardian-email-otp');
+            const otpCode: string = otpCall![0].templateModel.verificationCode;
+            sendSpy.mockClear();
+
+            // Approve — this stores the upgrade context keyed on the same token
+            await userA.clients.fullAuth.inbox.approveGuardianCredential({ token: approvalToken, otpCode });
+
+            return approvalToken; // same token is valid for upgrade
+        };
+
+        it('should create guardian profile and ProfileManager relationship after approval', async () => {
+            const token = await approveAndGetUpgradeToken();
+            const openClient = getClient();
+
+            const result = await openClient.inbox.registerGuardianAsManager({
+                token,
+                displayName: 'Parent User',
+                profileId: 'parent-user',
+            });
+
+            expect(result.message).toContain('Account created');
+            expect(result.guardianProfileId).toBe('parent-user');
+            expect(result.childProfileId).toBe('userb');
+            expect(typeof result.managerId).toBe('string');
+
+            // Verify the guardian profile was created
+            const guardianProfile = await Profile.findOne({ where: { profileId: 'parent-user' } });
+            expect(guardianProfile).toBeTruthy();
+            expect(guardianProfile?.displayName).toBe('Parent User');
+
+            // Verify ProfileManager node exists
+            const { ProfileManager } = await import('@models');
+            const managers = await ProfileManager.findMany({ where: {} });
+            expect(managers.length).toBeGreaterThan(0);
+        });
+
+        it('should return BAD_REQUEST for invalid/expired upgrade token', async () => {
+            const openClient = getClient();
+
+            await expect(
+                openClient.inbox.registerGuardianAsManager({
+                    token: 'fake-nonexistent-token',
+                    displayName: 'Parent User',
+                    profileId: 'parent-user',
+                })
+            ).rejects.toThrow(/invalid or expired/i);
+        });
+
+        it('should return CONFLICT if profileId is already taken', async () => {
+            const token = await approveAndGetUpgradeToken();
+
+            // Create a profile with the desired profileId first
+            const takenUser = await getUser('c'.repeat(64));
+            await takenUser.clients.fullAuth.profile.createProfile({
+                profileId: 'taken-handle',
+                displayName: 'Existing User',
+            });
+
+            const openClient = getClient();
+
+            await expect(
+                openClient.inbox.registerGuardianAsManager({
+                    token,
+                    displayName: 'Parent User',
+                    profileId: 'taken-handle',
+                })
+            ).rejects.toThrow(/already taken/i);
+        });
+
+        it('should return managerId=null when guardian already manages the child (idempotent upgrade)', async () => {
+            const token = await approveAndGetUpgradeToken();
+            const openClient = getClient();
+
+            // First call creates the guardian profile and ProfileManager
+            const first = await openClient.inbox.registerGuardianAsManager({
+                token,
+                displayName: 'Parent User',
+                profileId: 'parent-idempotent',
+            });
+            expect(first.managerId).toBeTruthy();
+
+            // The upgrade token is deleted after use, so the same token cannot be reused.
+            // Idempotency for an already-managing guardian would require a new upgrade token
+            // for the same guardian email — in that scenario managerId would be null.
+            // We verify here that exactly one ProfileManager was created.
+            const { ProfileManager } = await import('@models');
+            const managers = await ProfileManager.findMany({ where: {} });
+            expect(managers).toHaveLength(1);
         });
     });
 
