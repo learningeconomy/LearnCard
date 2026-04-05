@@ -1,6 +1,7 @@
 import { QueryBuilder, BindParam, QueryRunner } from 'neogma';
 import { InboxCredential, ContactMethod, InboxCredentialInstance } from '@models';
 import { InboxCredentialType, InboxCredentialQuery, ContactMethodType } from '@learncard/types';
+import { ProfileType } from 'types/profile';
 import { inflateObject } from '@helpers/objects.helpers';
 import {
     convertObjectRegExpToNeo4j,
@@ -216,4 +217,20 @@ export const getContactMethodForInboxCredential = async (
     const cm = result.records[0]?.get('contactMethod')?.properties;
     if (!cm) return null;
     return inflateObject<ContactMethodType>(cm as any);
+};
+
+export const getProfileForInboxCredential = async (
+    inboxCredentialId: string
+): Promise<ProfileType | null> => {
+    const result = await new QueryBuilder(new BindParam({ id: inboxCredentialId }))
+        .match({ model: InboxCredential, identifier: 'inboxCredential' })
+        .where('inboxCredential.id = $id')
+        .match('(inboxCredential)-[:ADDRESSED_TO]->(cm:ContactMethod)<-[:HAS_CONTACT_METHOD]-(profile:Profile)')
+        .return('profile')
+        .limit(1)
+        .run();
+
+    const p = result.records[0]?.get('profile')?.properties;
+    if (!p) return null;
+    return inflateObject<ProfileType>(p as any);
 };
