@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import _ from 'lodash';
 
-import type { OccupationDetailsResponse } from '../../types/careerOneStop';
+import type { CareerOneStopOccupation, OccupationDetailsResponse } from '../../types/careerOneStop';
 import { useWallet } from 'learn-card-base';
 
 import { LEARNCARD_AI_URL } from 'learn-card-base';
@@ -23,6 +23,17 @@ const fetchOccupationDetailsForKeyword = async (
     }
 
     return res.json();
+};
+
+export const useOccupationSuggestionsForKeyword = (keyword: string) => {
+    return useQuery({
+        queryKey: ['occupation-suggestions', keyword],
+        queryFn: async () => {
+            return fetchOccupationDetailsForKeyword(keyword);
+        },
+        enabled: keyword.length >= 2,
+        staleTime: 1000 * 60 * 5,
+    });
 };
 
 export const useOccupationDetailsForKeyword = (keyword: string) => {
