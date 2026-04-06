@@ -121,11 +121,9 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
         setSelectedSkills(nextSkills);
 
         try {
-            const selectedFrameworkId = frameworkId ?? sasBoostSkills?.[0]?.frameworkId;
-
             await saveSkills({
                 skills: nextSkills.map(skill => ({
-                    frameworkId: selectedFrameworkId ?? '',
+                    frameworkId,
                     id: skill.id,
                     proficiencyLevel: skill.proficiency,
                 })),
