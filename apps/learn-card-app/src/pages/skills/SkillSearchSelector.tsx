@@ -272,30 +272,16 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         }
     };
 
-    const handleAddRelatedSkill = (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => {
-        handleAddSkillToSelection(skill, proficiencyLevel);
-    };
-
-    const handleEditRelatedSkill = (skillId: string, proficiencyLevel: SkillLevel) => {
-        handleEditSkillInSelection(skillId, proficiencyLevel);
-    };
-
-    const handleRemoveRelatedSkill = (skillId: string) => {
-        handleRemoveSkillFromSelection(skillId);
-    };
-
     const openAddSkillModal = (skill: SkillFrameworkNode) => {
         newModal(
             <AddSkillModal
                 frameworkId={frameworkId}
                 skill={skill}
-                handleAdd={(skill, proficiencyLevel) => {
-                    handleAddSkillToSelection(skill, proficiencyLevel);
-                }}
+                handleAdd={handleAddSkillToSelection}
                 selectedSkills={selectedSkills}
-                handleAddRelatedSkill={handleAddRelatedSkill}
-                handleEditRelatedSkill={handleEditRelatedSkill}
-                handleRemoveRelatedSkill={handleRemoveRelatedSkill}
+                handleAddRelatedSkill={handleAddSkillToSelection}
+                handleEditRelatedSkill={handleEditSkillInSelection}
+                handleRemoveRelatedSkill={handleRemoveSkillFromSelection}
             />,
             undefined,
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
@@ -421,13 +407,13 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                                             selectedSkillsBySemanticScore
                                                         }
                                                         handleAddRelatedSkill={
-                                                            handleAddRelatedSkill
+                                                            handleAddSkillToSelection
                                                         }
                                                         handleEditRelatedSkill={
-                                                            handleEditRelatedSkill
+                                                            handleEditSkillInSelection
                                                         }
                                                         handleRemoveRelatedSkill={
-                                                            handleRemoveRelatedSkill
+                                                            handleRemoveSkillFromSelection
                                                         }
                                                     />
                                                 </SwiperSlide>
@@ -481,9 +467,11 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                                 }
                                                 disabled={isSavingSkills}
                                                 selectedSkills={selectedSkills}
-                                                handleAddRelatedSkill={handleAddRelatedSkill}
-                                                handleEditRelatedSkill={handleEditRelatedSkill}
-                                                handleRemoveRelatedSkill={handleRemoveRelatedSkill}
+                                                handleAddRelatedSkill={handleAddSkillToSelection}
+                                                handleEditRelatedSkill={handleEditSkillInSelection}
+                                                handleRemoveRelatedSkill={
+                                                    handleRemoveSkillFromSelection
+                                                }
                                             />
                                         ))}
                                     </div>
