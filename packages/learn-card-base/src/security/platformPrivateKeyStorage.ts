@@ -7,6 +7,7 @@ import {
 } from 'learn-card-base/security/webSecureStorage';
 import currentUserStore from 'learn-card-base/stores/currentUserStore';
 import { sqliteStore } from 'learn-card-base/stores/sqliteStore';
+import { waitForSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
 
 // Platform-aware private key storage helpers
 // - Web: delegates to AES-GCM + IndexedDB secure storage
@@ -90,6 +91,13 @@ export async function getPlatformPrivateKey(): Promise<string | null> {
     if (platform === 'web') {
         return getWebSecurePrivateKey();
     }
+
+    // Wait for SQLite to finish initializing on native. Without this,
+    // a cold start (e.g. Android killing the app process) can race:
+    // the coordinator calls getCachedPrivateKey before the SQLite plugin
+    // has set sqliteStore.db, causing the pk-first path to fail and
+    // falling through to Web3Auth with a potentially stale token.
+    await waitForSQLiteReady();
 
     const db = sqliteStore.get.db();
 
