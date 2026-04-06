@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
@@ -9,6 +9,7 @@ import {
     useGetBoostSkills,
     useGetSelfAssignedSkillsBoost,
     useManageSelfAssignedSkillsBoost,
+    useSemanticSearchSkills,
     useModal,
     useToast,
     ToastTypeEnum,
@@ -58,6 +59,14 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
     );
     const { mutateAsync: saveSkills, isPending: skillsSaving } = useManageSelfAssignedSkillsBoost();
 
+    const frameworkId = sasBoostSkills?.[0]?.frameworkId ?? '';
+    const searchQuery = search.trim();
+    const hasSearchQuery = Boolean(searchQuery);
+
+    const { data: semanticSearchSkillsData } = useSemanticSearchSkills(searchQuery, frameworkId, {
+        limit: 25,
+    });
+
     const {
         data: goalsData,
         isLoading: goalsLoading,
@@ -69,6 +78,21 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
     });
 
     const goals = goalsData?.goals ?? [];
+
+    const selectedSkillsBySemanticScore = useMemo(() => {
+        if (!hasSearchQuery) {
+            return selectedSkills;
+        }
+
+        const scoreBySkillId = new Map(
+            semanticSearchSkillsData?.records?.map(skill => [skill.id, skill.score]) ?? []
+        );
+
+        return [...selectedSkills].sort(
+            (left, right) =>
+                (scoreBySkillId.get(right.id) ?? 0) - (scoreBySkillId.get(left.id) ?? 0)
+        );
+    }, [hasSearchQuery, searchQuery, selectedSkills, semanticSearchSkillsData?.records]);
 
     useEffect(() => {
         if (sasBoostSkills) {
@@ -284,7 +308,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                             slidesPerView={'auto'}
                                             grabCursor={true}
                                         >
-                                            {selectedSkills.map(skill => (
+                                            {selectedSkillsBySemanticScore.map(skill => (
                                                 <SwiperSlide
                                                     key={skill.id}
                                                     style={{ width: 'auto' }}
@@ -305,7 +329,9 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                                             )
                                                         }
                                                         disabled={skillsSaving}
-                                                        selectedSkills={selectedSkills}
+                                                        selectedSkills={
+                                                            selectedSkillsBySemanticScore
+                                                        }
                                                         handleAddRelatedSkill={() => undefined}
                                                         handleEditRelatedSkill={() => undefined}
                                                         handleRemoveRelatedSkill={() => undefined}
@@ -342,7 +368,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                     </>
                                 ) : (
                                     <div className="flex flex-col gap-[10px]">
-                                        {selectedSkills.map(skill => (
+                                        {selectedSkillsBySemanticScore.map(skill => (
                                             <SkillTag
                                                 key={skill.id}
                                                 skillId={skill.id}
@@ -355,7 +381,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                                     handleEditSkill(skill.id, proficiencyLevel)
                                                 }
                                                 disabled={skillsSaving}
-                                                selectedSkills={selectedSkills}
+                                                selectedSkills={selectedSkillsBySemanticScore}
                                                 handleAddRelatedSkill={() => undefined}
                                                 handleEditRelatedSkill={() => undefined}
                                                 handleRemoveRelatedSkill={() => undefined}
@@ -523,7 +549,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                 </div>
 
                 <SkillSearchSelector
-                    selectedSkills={selectedSkills}
+                    selectedSkills={selectedSkillsBySemanticScore}
                     onSelectedSkillsChange={async (nextSkills: SelectedSkill[]) => {
                         await persistSkills(nextSkills);
                     }}

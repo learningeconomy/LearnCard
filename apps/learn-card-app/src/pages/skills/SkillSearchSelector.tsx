@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
@@ -35,6 +35,8 @@ import {
 import { SkillFrameworkNode } from '../../components/boost/boost';
 import { SkillLevel } from './skillTypes';
 import type { SelectedSkill } from './skillTypes';
+
+type SemanticSkillRecord = ApiSkillNode & { score?: number };
 
 type SkillSearchSelectorProps = {
     selectedSkills: SelectedSkill[];
@@ -114,6 +116,24 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
 
     const hasSearchQuery = Boolean(searchInput?.trim());
     const searchLoading = hasSearchQuery ? semanticLoading : initialSkillsLoading;
+
+    const selectedSkillsBySemanticScore = useMemo(() => {
+        if (!hasSearchQuery) {
+            return selectedSkills;
+        }
+
+        const scoreBySkillId = new Map<string, number>(
+            semanticResultsApiData?.records?.map((skill: SemanticSkillRecord) => [
+                skill.id,
+                skill.score ?? 0,
+            ]) ?? []
+        );
+
+        return [...selectedSkills].sort(
+            (left, right) =>
+                (scoreBySkillId.get(right.id) ?? 0) - (scoreBySkillId.get(left.id) ?? 0)
+        );
+    }, [hasSearchQuery, selectedSkills, semanticResultsApiData?.records]);
 
     const initialSkills: SkillFrameworkNode[] =
         (initialSkillsData as any)?.records?.map((record: ApiSkillNode) =>
@@ -378,7 +398,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                             slidesPerView={'auto'}
                                             grabCursor={true}
                                         >
-                                            {selectedSkills.map(skill => (
+                                            {selectedSkillsBySemanticScore.map(skill => (
                                                 <SwiperSlide
                                                     key={skill.id}
                                                     style={{ width: 'auto' }}
@@ -397,7 +417,9 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                                             )
                                                         }
                                                         disabled={isSavingSkills}
-                                                        selectedSkills={selectedSkills}
+                                                        selectedSkills={
+                                                            selectedSkillsBySemanticScore
+                                                        }
                                                         handleAddRelatedSkill={
                                                             handleAddRelatedSkill
                                                         }
@@ -442,7 +464,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                     </>
                                 ) : (
                                     <div className="flex flex-row flex-wrap gap-[10px]">
-                                        {selectedSkills.map(skill => (
+                                        {selectedSkillsBySemanticScore.map(skill => (
                                             <SkillTag
                                                 key={skill.id}
                                                 skillId={skill.id}
