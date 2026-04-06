@@ -800,8 +800,8 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                         <path
                             d="M2 2H44"
                             stroke={lineColor[activeRole]}
-                            stroke-width="4"
-                            stroke-linecap="round"
+                            strokeWidth="4"
+                            strokeLinecap="round"
                         />
                     </svg>
                 </div>

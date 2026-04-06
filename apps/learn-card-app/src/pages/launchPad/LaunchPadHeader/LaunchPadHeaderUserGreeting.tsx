@@ -55,11 +55,13 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
                         className="w-full max-w-[600px] flex items-center justify-between px-[10px] py-[5px] rounded-[10px] bg-grayscale-50 shadow-[0_2px_2px_0_rgba(0,0,0,0.25)] border-solid border border-grayscale-200"
                     >
                         <div className="flex items-center">
-                            <img
-                                src={iconSrc}
-                                alt={`${lcNetworkProfile?.role} icon`}
-                                className="h-[20px] w-[20px] object-contain mr-[5px]"
-                            />
+                            {iconSrc && (
+                                <img
+                                    src={iconSrc}
+                                    alt={`${lcNetworkProfile?.role} icon`}
+                                    className="h-[20px] w-[20px] object-contain mr-[5px]"
+                                />
+                            )}
                             <span className="text-[#273B72] font-poppins font-semibold text-[20px]">
                                 What would you like to do?
                             </span>
