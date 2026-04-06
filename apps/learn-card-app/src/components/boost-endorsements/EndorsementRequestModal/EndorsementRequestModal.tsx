@@ -131,7 +131,11 @@ export const EndorsementRequestModal: React.FC<{
               backgroundPosition: 'center',
           };
 
-    if (pendingEndorsement) {
+    // Only show success view if there's a valid pending endorsement with actual content
+    const hasValidPendingEndorsement =
+        pendingEndorsement?.description || pendingEndorsement?.relationship?.type;
+
+    if (pendingEndorsement && hasValidPendingEndorsement) {
         return (
             <EndorsementDraftRequestSuccess
                 credential={credential}
