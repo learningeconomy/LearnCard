@@ -694,6 +694,7 @@ export const boostsRouter = t.router({
                     let boost = null as BoostInstance | null;
                     let boostUri = '';
                     let boostCreated = false;
+                    let boostCreatedFromSignedCredential = false;
 
                     if (input.templateUri) {
                         const resolved = await traceDb('getBoostByUri', () =>
@@ -750,6 +751,7 @@ export const boostsRouter = t.router({
 
                         boostUri = getBoostUri(boost.id, domain);
                         boostCreated = true;
+                        boostCreatedFromSignedCredential = true;
                     }
 
                     if (!boost) {
@@ -1049,6 +1051,7 @@ export const boostsRouter = t.router({
                             credential: signedVc,
                             domain,
                             skipNotification,
+                            skipCertification: boostCreatedFromSignedCredential,
                             contractTerms: contractTerms ?? undefined,
                             activityId,
                             integrationId: input.integrationId,
