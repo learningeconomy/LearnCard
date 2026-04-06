@@ -35,6 +35,8 @@ import { IonSpinner } from '@ionic/react';
 import type { SelectedSkill } from '../skills/skillTypes';
 import SelfAssignSkillsModal from '../skills/SelfAssignSkillsModal';
 import EditGoalsModal from './EditGoalsModal';
+import { SkillFrameworkNode } from '../../components/boost/boost';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 type SemanticSkillRecord = {
     id: string;
@@ -46,6 +48,7 @@ type ExplorePathwaysModalProps = { initialSearchQuery?: string };
 const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSearchQuery = '' }) => {
     const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
+    const flags = useFlags();
 
     const [search, setSearch] = useState(initialSearchQuery);
     const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
@@ -64,7 +67,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
     );
     const { mutateAsync: saveSkills, isPending: skillsSaving } = useManageSelfAssignedSkillsBoost();
 
-    const frameworkId = sasBoostSkills?.[0]?.frameworkId ?? '';
+    const frameworkId = flags?.selfAssignedSkillsFrameworkId;
     const searchQuery = search.trim();
     const hasSearchQuery = Boolean(searchQuery);
 
@@ -134,7 +137,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
         }
     };
 
-    const handleAddSkill = async (skill: { id?: string }, proficiencyLevel: number) => {
+    const handleAddSkill = async (skill: SkillFrameworkNode, proficiencyLevel: number) => {
         if (!skill.id) return;
 
         await persistSkills([
@@ -336,10 +339,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                                     >
                                                         <SkillTag
                                                             skillId={skill.id}
-                                                            frameworkId={
-                                                                sasBoostSkills?.[0]?.frameworkId ??
-                                                                ''
-                                                            }
+                                                            frameworkId={frameworkId}
                                                             proficiencyLevel={skill.proficiency}
                                                             handleRemoveSkill={() =>
                                                                 handleRemoveSkill(skill.id)
