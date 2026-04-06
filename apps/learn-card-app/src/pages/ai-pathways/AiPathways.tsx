@@ -125,12 +125,13 @@ const AiPathways: React.FC = () => {
                                 <ExperimentalFeatureBox className="shadow-box-bottom" />
                             </div>
 
-                            <button
+                            {/* DEV BUTTON */}
+                            {/* <button
                                 className="bg-indigo-500 rounded-full text-white px-[15px] py-[7px]"
                                 onClick={handleExplorePathways}
                             >
                                 Explore Pathways
-                            </button>
+                            </button> */}
 
                             <MySkillProfile />
 
