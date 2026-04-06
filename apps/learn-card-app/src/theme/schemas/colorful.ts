@@ -212,6 +212,11 @@ export const colorfulTheme: Theme = validateThemeData({
             label: 'Apps',
             path: '/launchpad',
         },
+        {
+            id: MobileNavBarLinks.notification,
+            label: 'Alerts',
+            path: '/notifications',
+        },
     ],
     colors: colors[ThemeEnum.Colorful],
     icons: icons[ThemeEnum.Colorful],
