@@ -386,7 +386,7 @@ const ActionButton: React.FC<{
         <button
             type="button"
             onClick={handleClick}
-            className={`${bg} w-[160px] h-[160px] flex flex-col items-center justify-center px-[13px] py-[10px] text-[16px] font-poppins font-semibold text-grayscale-900 rounded-[20px] text-center border-solid border-[3px] border-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
+            className={`${bg} w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.67rem)] h-[160px] flex flex-col items-center justify-center px-[13px] py-[10px] text-[16px] font-poppins font-semibold text-grayscale-900 rounded-[20px] text-center border-solid border-[3px] border-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
         >
             <div className="flex flex-col items-center justify-center">
                 <span className="mr-2 pb-[5px]">
@@ -772,7 +772,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 </div>
             </div>
 
-            <div className="mt-1 flex flex-wrap justify-center items-center gap-[15px]">
+            <div className="mt-1 flex flex-wrap justify-center gap-4">
                 {actions.map((label, i) => (
                     <ActionButton
                         key={`${label}-${i}`}
