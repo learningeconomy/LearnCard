@@ -2,17 +2,18 @@ import React, { useMemo } from 'react';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
+import ExplorePathwaysModal from './ExplorePathwaysModal';
 import MainHeader from '../../components/main-header/MainHeader';
 import AiPathwayCareers from './ai-pathway-careers/AiPathwayCareers';
 import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
 import AiPathwaysEmptyPlaceholder from './AiPathwaysEmptyPlaceholder';
 import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
+import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
 import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
 import ExperimentalFeatureBox from '../../components/generic/ExperimentalFeatureBox';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
-import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
-import ExplorePathwaysModal from './ExplorePathwaysModal';
+import AiPathwaysWhatWouldYouLikeToDoCard from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
 
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
@@ -125,13 +126,9 @@ const AiPathways: React.FC = () => {
                                 <ExperimentalFeatureBox className="shadow-box-bottom" />
                             </div>
 
-                            {/* DEV BUTTON */}
-                            {/* <button
-                                className="bg-indigo-500 rounded-full text-white px-[15px] py-[7px]"
-                                onClick={handleExplorePathways}
-                            >
-                                Explore Pathways
-                            </button> */}
+                            <AiPathwaysWhatWouldYouLikeToDoCard
+                                handleExplorePathways={handleExplorePathways}
+                            />
 
                             <MySkillProfile />
 
