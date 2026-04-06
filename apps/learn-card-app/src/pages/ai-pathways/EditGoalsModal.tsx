@@ -49,7 +49,7 @@ const EditGoalsModal: React.FC<EditGoalsModalProps> = ({}) => {
     };
 
     return (
-        <div className="relative h-full overflow-hidden text-grayscale-900 bg-grayscale-100 bg-opacity-10 backdrop-blur-[5px]">
+        <div className="relative h-full overflow-hidden text-grayscale-900 bg-grayscale-100 bg-opacity-80 backdrop-blur-[3px]">
             {/* <div className="absolute inset-0 bg-white/10" /> */}
 
             <section className="relative h-full px-[20px] flex flex-col justify-center">

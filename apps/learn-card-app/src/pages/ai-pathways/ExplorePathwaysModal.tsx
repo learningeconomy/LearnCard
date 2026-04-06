@@ -131,10 +131,14 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
     };
 
     const openEditGoalsModal = () => {
-        newModal(<EditGoalsModal />, undefined, {
-            desktop: ModalTypes.Right,
-            mobile: ModalTypes.Right,
-        });
+        newModal(
+            <EditGoalsModal />,
+            { sectionClassName: '!bg-transparent' },
+            {
+                desktop: ModalTypes.Right,
+                mobile: ModalTypes.Right,
+            }
+        );
     };
 
     const persistGoals = async (nextGoals: string[]) => {
