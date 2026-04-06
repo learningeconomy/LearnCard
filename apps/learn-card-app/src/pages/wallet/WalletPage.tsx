@@ -183,7 +183,7 @@ const WalletPage: React.FC = () => {
 
     return (
         <IonPage className="bg-white">
-            <MainHeader customClassName="bg-white" />
+            <MainHeader customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none" />
             <GenericErrorBoundary>
                 <IonContent fullscreen>
                     <div className="px-[20px]">
