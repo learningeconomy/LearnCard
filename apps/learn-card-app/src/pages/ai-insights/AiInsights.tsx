@@ -171,6 +171,7 @@ const AiInsights: React.FC = () => {
                         showBackButton
                         subheaderType={SubheaderTypeEnum.AiInsights}
                         hidePlusBtn={true}
+                        customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
                     />
                     <AiFeatureGate>
                         <div className="flex relative justify-center items-center w-full">
