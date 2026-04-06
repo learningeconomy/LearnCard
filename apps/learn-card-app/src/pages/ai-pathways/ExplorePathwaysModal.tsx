@@ -36,6 +36,11 @@ import type { SelectedSkill } from '../skills/skillTypes';
 import SelfAssignSkillsModal from '../skills/SelfAssignSkillsModal';
 import EditGoalsModal from './EditGoalsModal';
 
+type SemanticSkillRecord = {
+    id: string;
+    score?: number;
+};
+
 type ExplorePathwaysModalProps = { initialSearchQuery?: string };
 
 const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSearchQuery = '' }) => {
@@ -84,8 +89,11 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
             return selectedSkills;
         }
 
-        const scoreBySkillId = new Map(
-            semanticSearchSkillsData?.records?.map(skill => [skill.id, skill.score]) ?? []
+        const scoreBySkillId = new Map<string, number>(
+            semanticSearchSkillsData?.records?.map((skill: SemanticSkillRecord) => [
+                skill.id,
+                skill.score ?? 0,
+            ]) ?? []
         );
 
         return [...selectedSkills].sort(
@@ -238,160 +246,179 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
 
             <section className="h-full pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative">
                 <div className="flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid pb-[15px]">
-                    {selectedSkills.length > 0 && (
-                        <div className="flex flex-col gap-[10px] relative">
-                            {skillsSaving && (
-                                <div className="absolute inset-0 z-20 bg-white/70 rounded-[15px] flex items-center justify-center">
-                                    <IonSpinner color="dark" name="crescent" />
-                                </div>
-                            )}
-
-                            <h4 className="flex gap-[15px] items-center text-grayscale-900 font-poppins text-[17px] font-bold">
-                                {conditionalPluralize(selectedSkills.length, 'Skill')}
-
-                                <div className="flex items-center gap-[15px] ml-auto">
-                                    {showSkillsViewToggle && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setSkillsExpanded(prev => !prev)}
-                                            className="text-grayscale-600 text-[14px] font-bold"
-                                        >
-                                            {skillsExpanded ? 'View Less' : 'View All'}
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={openSelfAssignSkillsModal}
-                                        disabled={skillsSaving}
-                                    >
-                                        <Pencil className="text-grayscale-700 h-[30px] w-[30px] disabled:opacity-60" />
-                                    </button>
-                                </div>
-                            </h4>
-
-                            <div className="relative w-full overflow-hidden transition-all duration-300 ease-in-out">
-                                {!skillsExpanded ? (
-                                    <>
-                                        <Swiper
-                                            onSwiper={swiper => {
-                                                skillsSwiperRef.current = swiper;
-                                                handleSwiperUpdate(
-                                                    swiper,
-                                                    setSkillsAtBeginning,
-                                                    setSkillsAtEnd
-                                                );
-                                            }}
-                                            onResize={swiper =>
-                                                handleSwiperUpdate(
-                                                    swiper,
-                                                    setSkillsAtBeginning,
-                                                    setSkillsAtEnd
-                                                )
-                                            }
-                                            onSlideChange={swiper =>
-                                                handleSwiperUpdate(
-                                                    swiper,
-                                                    setSkillsAtBeginning,
-                                                    setSkillsAtEnd
-                                                )
-                                            }
-                                            onReachBeginning={() => setSkillsAtBeginning(true)}
-                                            onFromEdge={() => {
-                                                if (skillsSwiperRef.current) {
-                                                    setSkillsAtBeginning(
-                                                        skillsSwiperRef.current.isBeginning
-                                                    );
-                                                    setSkillsAtEnd(skillsSwiperRef.current.isEnd);
-                                                }
-                                            }}
-                                            onReachEnd={() => setSkillsAtEnd(true)}
-                                            spaceBetween={12}
-                                            slidesPerView={'auto'}
-                                            grabCursor={true}
-                                        >
-                                            {selectedSkillsBySemanticScore.map(skill => (
-                                                <SwiperSlide
-                                                    key={skill.id}
-                                                    style={{ width: 'auto' }}
-                                                >
-                                                    <SkillTag
-                                                        skillId={skill.id}
-                                                        frameworkId={
-                                                            sasBoostSkills?.[0]?.frameworkId ?? ''
-                                                        }
-                                                        proficiencyLevel={skill.proficiency}
-                                                        handleRemoveSkill={() =>
-                                                            handleRemoveSkill(skill.id)
-                                                        }
-                                                        handleEditSkill={proficiencyLevel =>
-                                                            handleEditSkill(
-                                                                skill.id,
-                                                                proficiencyLevel
-                                                            )
-                                                        }
-                                                        disabled={skillsSaving}
-                                                        selectedSkills={
-                                                            selectedSkillsBySemanticScore
-                                                        }
-                                                        handleAddRelatedSkill={() => undefined}
-                                                        handleEditRelatedSkill={() => undefined}
-                                                        handleRemoveRelatedSkill={() => undefined}
-                                                    />
-                                                </SwiperSlide>
-                                            ))}
-                                        </Swiper>
-
-                                        {!skillsAtBeginning && (
-                                            <button
-                                                onClick={() => {
-                                                    skillsSwiperRef.current?.slidePrev();
-                                                }}
-                                                className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
-                                                style={{ opacity: 0.8 }}
-                                                disabled={skillsSaving}
-                                            >
-                                                <SlimCaretLeft className="w-5 h-auto" />
-                                            </button>
-                                        )}
-
-                                        {!skillsAtEnd && (
-                                            <button
-                                                onClick={() => {
-                                                    skillsSwiperRef.current?.slideNext();
-                                                }}
-                                                className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
-                                                style={{ opacity: 0.8 }}
-                                                disabled={skillsSaving}
-                                            >
-                                                <SlimCaretRight className="w-5 h-auto" />
-                                            </button>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className="flex flex-col gap-[10px]">
-                                        {selectedSkillsBySemanticScore.map(skill => (
-                                            <SkillTag
-                                                key={skill.id}
-                                                skillId={skill.id}
-                                                frameworkId={sasBoostSkills?.[0]?.frameworkId ?? ''}
-                                                proficiencyLevel={skill.proficiency}
-                                                handleRemoveSkill={() =>
-                                                    handleRemoveSkill(skill.id)
-                                                }
-                                                handleEditSkill={proficiencyLevel =>
-                                                    handleEditSkill(skill.id, proficiencyLevel)
-                                                }
-                                                disabled={skillsSaving}
-                                                selectedSkills={selectedSkillsBySemanticScore}
-                                                handleAddRelatedSkill={() => undefined}
-                                                handleEditRelatedSkill={() => undefined}
-                                                handleRemoveRelatedSkill={() => undefined}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
+                    <div className="flex flex-col gap-[10px] relative">
+                        {skillsSaving && (
+                            <div className="absolute inset-0 z-20 bg-white/70 rounded-[15px] flex items-center justify-center">
+                                <IonSpinner color="dark" name="crescent" />
                             </div>
-                        </div>
-                    )}
+                        )}
+
+                        {selectedSkills.length === 0 && !sasBoostSkillsLoading && (
+                            <button
+                                onClick={openSelfAssignSkillsModal}
+                                className="flex items-center justify-center gap-[5px] py-[15px] text-grayscale-700 text-[17px] font-bold border-[1px] border-solid border-grayscale-200 rounded-[10px] bg-white"
+                            >
+                                Add Skills
+                                <Plus className="h-[30px] w-[30px]" />
+                            </button>
+                        )}
+
+                        {selectedSkills.length > 0 && (
+                            <>
+                                <h4 className="flex gap-[15px] items-center text-grayscale-900 font-poppins text-[17px] font-bold">
+                                    {conditionalPluralize(selectedSkills.length, 'Skill')}
+
+                                    <div className="flex items-center gap-[15px] ml-auto">
+                                        {showSkillsViewToggle && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setSkillsExpanded(prev => !prev)}
+                                                className="text-grayscale-600 text-[14px] font-bold"
+                                            >
+                                                {skillsExpanded ? 'View Less' : 'View All'}
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={openSelfAssignSkillsModal}
+                                            disabled={skillsSaving}
+                                        >
+                                            <Pencil className="text-grayscale-700 h-[30px] w-[30px] disabled:opacity-60" />
+                                        </button>
+                                    </div>
+                                </h4>
+
+                                <div className="relative w-full overflow-hidden transition-all duration-300 ease-in-out">
+                                    {!skillsExpanded ? (
+                                        <>
+                                            <Swiper
+                                                onSwiper={swiper => {
+                                                    skillsSwiperRef.current = swiper;
+                                                    handleSwiperUpdate(
+                                                        swiper,
+                                                        setSkillsAtBeginning,
+                                                        setSkillsAtEnd
+                                                    );
+                                                }}
+                                                onResize={swiper =>
+                                                    handleSwiperUpdate(
+                                                        swiper,
+                                                        setSkillsAtBeginning,
+                                                        setSkillsAtEnd
+                                                    )
+                                                }
+                                                onSlideChange={swiper =>
+                                                    handleSwiperUpdate(
+                                                        swiper,
+                                                        setSkillsAtBeginning,
+                                                        setSkillsAtEnd
+                                                    )
+                                                }
+                                                onReachBeginning={() => setSkillsAtBeginning(true)}
+                                                onFromEdge={() => {
+                                                    if (skillsSwiperRef.current) {
+                                                        setSkillsAtBeginning(
+                                                            skillsSwiperRef.current.isBeginning
+                                                        );
+                                                        setSkillsAtEnd(
+                                                            skillsSwiperRef.current.isEnd
+                                                        );
+                                                    }
+                                                }}
+                                                onReachEnd={() => setSkillsAtEnd(true)}
+                                                spaceBetween={12}
+                                                slidesPerView={'auto'}
+                                                grabCursor={true}
+                                            >
+                                                {selectedSkillsBySemanticScore.map(skill => (
+                                                    <SwiperSlide
+                                                        key={skill.id}
+                                                        style={{ width: 'auto' }}
+                                                    >
+                                                        <SkillTag
+                                                            skillId={skill.id}
+                                                            frameworkId={
+                                                                sasBoostSkills?.[0]?.frameworkId ??
+                                                                ''
+                                                            }
+                                                            proficiencyLevel={skill.proficiency}
+                                                            handleRemoveSkill={() =>
+                                                                handleRemoveSkill(skill.id)
+                                                            }
+                                                            handleEditSkill={proficiencyLevel =>
+                                                                handleEditSkill(
+                                                                    skill.id,
+                                                                    proficiencyLevel
+                                                                )
+                                                            }
+                                                            disabled={skillsSaving}
+                                                            selectedSkills={
+                                                                selectedSkillsBySemanticScore
+                                                            }
+                                                            handleAddRelatedSkill={() => undefined}
+                                                            handleEditRelatedSkill={() => undefined}
+                                                            handleRemoveRelatedSkill={() =>
+                                                                undefined
+                                                            }
+                                                        />
+                                                    </SwiperSlide>
+                                                ))}
+                                            </Swiper>
+
+                                            {!skillsAtBeginning && (
+                                                <button
+                                                    onClick={() => {
+                                                        skillsSwiperRef.current?.slidePrev();
+                                                    }}
+                                                    className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                                    style={{ opacity: 0.8 }}
+                                                    disabled={skillsSaving}
+                                                >
+                                                    <SlimCaretLeft className="w-5 h-auto" />
+                                                </button>
+                                            )}
+
+                                            {!skillsAtEnd && (
+                                                <button
+                                                    onClick={() => {
+                                                        skillsSwiperRef.current?.slideNext();
+                                                    }}
+                                                    className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
+                                                    style={{ opacity: 0.8 }}
+                                                    disabled={skillsSaving}
+                                                >
+                                                    <SlimCaretRight className="w-5 h-auto" />
+                                                </button>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div className="flex flex-col gap-[10px]">
+                                            {selectedSkillsBySemanticScore.map(skill => (
+                                                <SkillTag
+                                                    key={skill.id}
+                                                    skillId={skill.id}
+                                                    frameworkId={
+                                                        sasBoostSkills?.[0]?.frameworkId ?? ''
+                                                    }
+                                                    proficiencyLevel={skill.proficiency}
+                                                    handleRemoveSkill={() =>
+                                                        handleRemoveSkill(skill.id)
+                                                    }
+                                                    handleEditSkill={proficiencyLevel =>
+                                                        handleEditSkill(skill.id, proficiencyLevel)
+                                                    }
+                                                    disabled={skillsSaving}
+                                                    selectedSkills={selectedSkillsBySemanticScore}
+                                                    handleAddRelatedSkill={() => undefined}
+                                                    handleEditRelatedSkill={() => undefined}
+                                                    handleRemoveRelatedSkill={() => undefined}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </div>
 
                     {sasBoostSkillsLoading && selectedSkills.length === 0 && (
                         <div className="flex items-center justify-center py-[15px]">
