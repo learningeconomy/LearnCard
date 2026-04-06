@@ -1,22 +1,17 @@
-import React, { useState } from 'react';
-import { IonLabel, IonInput } from '@ionic/react';
+import React from 'react';
+import { IonLabel } from '@ionic/react';
 
 import useTheme from '../../../theme/hooks/useTheme';
-import { IconSetEnum } from '../../../theme/icons/index';
 import { CredentialCategoryEnum } from 'learn-card-base';
+
+import PathwaySearchInput from './PathwaySearchInput';
 
 const AiPathwaysWhatWouldYouLikeToDoCard: React.FC<{
     handleExplorePathways: () => void;
 }> = ({ handleExplorePathways }) => {
-    const [keywordInput, setKeywordInput] = useState<string>('');
-    const { getThemedCategoryIcons, getIconSet } = useTheme();
+    const { getThemedCategoryIcons } = useTheme();
 
-    const iconSet = getIconSet(IconSetEnum.sideMenu);
-    const InputDecoration = iconSet[CredentialCategoryEnum.aiPathway] as React.ComponentType<{
-        className?: string;
-        shadeColor?: string;
-    }>;
-    const { IconWithShape: PathwaysIcon, Icon: PathwaysIconOnly } = getThemedCategoryIcons(
+    const { IconWithShape: PathwaysIcon } = getThemedCategoryIcons(
         CredentialCategoryEnum.aiPathway
     );
     const { IconWithShape: SkillsIcon } = getThemedCategoryIcons(CredentialCategoryEnum.skill);
@@ -36,19 +31,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC<{
                     <IonLabel className="text-grayscale-900 font-poppins text-xl">
                         What would you like to do?
                     </IonLabel>
-                    <div className="relative flex items-center">
-                        <InputDecoration className="absolute left-3 w-[24px] h-[24px] text-teal-100 pointer-events-none z-10" />
-                        <IonInput
-                            value={keywordInput}
-                            onIonInput={(e: any) => setKeywordInput(e.detail.value)}
-                            onKeyDown={(e: any) => e.key === 'Enter' && handleExplorePathways()}
-                            autocapitalize="on"
-                            className={`w-full bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-sm`}
-                            style={{ '--padding-start': '44px' } as any}
-                            placeholder="Choose a skill, goal, or job..."
-                            type="text"
-                        />
-                    </div>
+                    <PathwaySearchInput />
                 </div>
 
                 <button
