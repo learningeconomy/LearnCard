@@ -14,8 +14,8 @@ import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import SkillCard from './SkillCard';
 import { PreviousSkillInfo } from './AddSkillModal';
-import { SelectedSkill } from './SkillSearchSelector';
 import { SkillLevel } from './skillTypes';
+import type { SelectedSkill } from './skillTypes';
 import { SkillFrameworkNode } from '../../components/boost/boost';
 
 type RelatedSkillsProps = {
@@ -87,7 +87,7 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({
     if (skillSiblings) {
         relatedSkills.push(
             ...skillSiblings.records
-                .filter(record => record.id !== skillId && record.type === 'competency')
+                .filter((record: any) => record.id !== skillId && record.type === 'competency')
                 .map((record: any) => ({
                     id: record.id,
                     type: SkillType.SIBLING,
