@@ -356,10 +356,10 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                                             selectedSkills={
                                                                 selectedSkillsBySemanticScore
                                                             }
-                                                            handleAddRelatedSkill={() => undefined}
-                                                            handleEditRelatedSkill={() => undefined}
-                                                            handleRemoveRelatedSkill={() =>
-                                                                undefined
+                                                            handleAddRelatedSkill={handleAddSkill}
+                                                            handleEditRelatedSkill={handleEditSkill}
+                                                            handleRemoveRelatedSkill={
+                                                                handleRemoveSkill
                                                             }
                                                         />
                                                     </SwiperSlide>
@@ -410,9 +410,9 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                                                     }
                                                     disabled={skillsSaving}
                                                     selectedSkills={selectedSkillsBySemanticScore}
-                                                    handleAddRelatedSkill={() => undefined}
-                                                    handleEditRelatedSkill={() => undefined}
-                                                    handleRemoveRelatedSkill={() => undefined}
+                                                    handleAddRelatedSkill={handleAddSkill}
+                                                    handleEditRelatedSkill={handleEditSkill}
+                                                    handleRemoveRelatedSkill={handleRemoveSkill}
                                                 />
                                             ))}
                                         </div>
