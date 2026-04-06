@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { ModalTypes, useModal, QRCodeScannerStore, useAiFeatureGate } from 'learn-card-base';
@@ -13,6 +13,7 @@ import ClaimCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/qui
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
 import ResumeQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ResumeQuickNav';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
+import Checkmark from 'learn-card-base/svgs/Checkmark';
 import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
 import ShareInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ShareInsightsQuickNav';
 import UnderstandSkillsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/UnderstandSkillsQuickNav';
@@ -419,6 +420,92 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const [role, setRole] = useState<LearnCardRolesEnum | null>(null);
     const [optimisticRole, setOptimisticRole] = useState<LearnCardRolesEnum | null>(null);
 
+    const roleScrollRef = useRef<HTMLDivElement>(null);
+    const selectedRoleRef = useRef<HTMLButtonElement>(null);
+    const isCenteringRef = useRef(false);
+
+    // Filter out counselor for the visible roles list
+    const visibleRoles = LearnCardRoles.filter(r => r.type !== LearnCardRolesEnum.counselor);
+
+    // Handle infinite scroll - jump to middle set when reaching edges
+    const handleScroll = () => {
+        // Skip jump logic while centering to avoid conflicts
+        if (isCenteringRef.current) return;
+        if (!roleScrollRef.current) return;
+        const container = roleScrollRef.current;
+        const scrollLeft = container.scrollLeft;
+        const scrollWidth = container.scrollWidth;
+        const clientWidth = container.clientWidth;
+        const oneSetWidth = (scrollWidth - clientWidth) / 2;
+
+        // If scrolled to the left clone set, jump to middle
+        if (scrollLeft < oneSetWidth * 0.1) {
+            container.scrollLeft = scrollLeft + oneSetWidth;
+        }
+        // If scrolled to the right clone set, jump to middle
+        else if (scrollLeft > oneSetWidth * 1.9) {
+            container.scrollLeft = scrollLeft - oneSetWidth;
+        }
+    };
+
+    const handleRoleChange = async (newRole: LearnCardRolesEnum) => {
+        setRole(newRole);
+        setOptimisticRole(newRole);
+        try {
+            const wallet = await initWallet();
+            await wallet?.invoke?.updateProfile({
+                role: newRole,
+            });
+            presentToast('Role updated', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+        } catch (e) {
+            setOptimisticRole(null);
+            setRole((lcNetworkProfile?.role as LearnCardRolesEnum) ?? LearnCardRolesEnum.learner);
+            presentToast('Unable to update role', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
+    };
+
+    // Center the selected role in the scroll container (in the middle set)
+    const centerRole = (smooth = true) => {
+        if (selectedRoleRef.current && roleScrollRef.current) {
+            isCenteringRef.current = true;
+            const container = roleScrollRef.current;
+            const selectedElement = selectedRoleRef.current;
+            const containerWidth = container.offsetWidth;
+            const elementLeft = selectedElement.offsetLeft;
+            const elementWidth = selectedElement.offsetWidth;
+            const scrollPosition = elementLeft - containerWidth / 2 + elementWidth / 2;
+            container.scrollTo({
+                left: scrollPosition,
+                behavior: smooth ? 'smooth' : 'instant',
+            });
+            // Re-enable infinite scroll after animation completes
+            setTimeout(
+                () => {
+                    isCenteringRef.current = false;
+                },
+                smooth ? 400 : 50
+            );
+        }
+    };
+
+    // Center on role change
+    useEffect(() => {
+        const timer = setTimeout(() => centerRole(true), 50);
+        return () => clearTimeout(timer);
+    }, [role]);
+
+    // Center on initial mount (instant, longer delay for layout)
+    useEffect(() => {
+        const timer = setTimeout(() => centerRole(false), 150);
+        return () => clearTimeout(timer);
+    }, []);
+
     useEffect(() => {
         if (lcNetworkProfile?.role && optimisticRole === lcNetworkProfile.role) {
             setOptimisticRole(null);
@@ -482,12 +569,27 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         [LearnCardRolesEnum.developer]: '#84CC16',
     };
 
+    const selectedBorderColor: Record<LearnCardRolesEnum, string> = {
+        [LearnCardRolesEnum.learner]: '#5EEAD4',
+        [LearnCardRolesEnum.guardian]: '#C4B5FD',
+        [LearnCardRolesEnum.teacher]: '#FDE047',
+        [LearnCardRolesEnum.admin]: '#67E8F9',
+        [LearnCardRolesEnum.counselor]: '#C4B5FD',
+        [LearnCardRolesEnum.developer]: '#BEF264',
+    };
+
+    const selectedBgColor: Record<LearnCardRolesEnum, string> = {
+        [LearnCardRolesEnum.learner]: '#CCFBF1',
+        [LearnCardRolesEnum.guardian]: '#EDE9FE',
+        [LearnCardRolesEnum.teacher]: '#FEF9C3',
+        [LearnCardRolesEnum.admin]: '#CFFAFE',
+        [LearnCardRolesEnum.counselor]: '#EDE9FE',
+        [LearnCardRolesEnum.developer]: '#ECFCCB',
+    };
+
     const activeRole = (
         isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
     ) as LearnCardRolesEnum;
-    const roleLabel = LearnCardRoles.find(r => r.type === activeRole)?.title ?? 'Learner';
-    const roleIconSrc = roleIcons[activeRole];
-    const roleIconBgStyle: React.CSSProperties = { backgroundColor: iconBgColors[activeRole] };
 
     const RoleActions: Record<LearnCardRolesEnum, string[]> = {
         [LearnCardRolesEnum.learner]: [
@@ -704,71 +806,81 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                     </svg>
                 </div>
 
-                <div className="w-full flex items-center justify-center">
-                    <button
-                        type="button"
-                        disabled={isChildProfile}
-                        onClick={
-                            isChildProfile
-                                ? undefined
-                                : () =>
-                                      newModal(
-                                          <LaunchPadRoleSelector
-                                              role={role}
-                                              setRole={newRole => {
-                                                  setRole(newRole);
-                                                  setOptimisticRole(newRole);
-                                                  (async () => {
-                                                      try {
-                                                          const wallet = await initWallet();
-                                                          await wallet?.invoke?.updateProfile({
-                                                              role: newRole,
-                                                          });
-                                                          presentToast('Role updated', {
-                                                              type: ToastTypeEnum.Success,
-                                                              hasDismissButton: true,
-                                                          });
-                                                      } catch (e) {
-                                                          setOptimisticRole(null);
-                                                          setRole(
-                                                              (lcNetworkProfile?.role as LearnCardRolesEnum) ??
-                                                                  LearnCardRolesEnum.learner
-                                                          );
-                                                          presentToast('Unable to update role', {
-                                                              type: ToastTypeEnum.Error,
-                                                              hasDismissButton: true,
-                                                          });
-                                                      }
-                                                  })();
-                                              }}
-                                          />,
-                                          {
-                                              sectionClassName:
-                                                  '!max-w-[600px] !mx-auto !max-h-[100%]',
-                                          },
-                                          {
-                                              mobile: ModalTypes.Freeform,
-                                              desktop: ModalTypes.Freeform,
-                                          }
-                                      )
-                        }
-                        className="rounded-[10px] border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold"
-                    >
-                        <span className="p-[3px] flex items-center justify-center gap-2">
-                            <span
-                                className="flex items-center justify-center h-[22px] w-[22px] rounded-full"
-                                style={roleIconBgStyle}
-                            >
-                                <img
-                                    src={roleIconSrc}
-                                    alt={`${roleLabel} icon`}
-                                    className="h-[20px] w-[20px] object-contain"
-                                />
-                            </span>
-                            <span>{roleLabel}</span>
-                            {!isChildProfile && <CaretDown className="ml-[5px]" />}
-                        </span>
-                    </button>
+                <div
+                    ref={roleScrollRef}
+                    onScroll={handleScroll}
+                    className="w-full flex items-center gap-[10px] overflow-x-auto scrollbar-hide px-[20px] py-[10px]"
+                >
+                    {/* Render 3 sets: clone, main (with refs), clone for infinite scroll effect */}
+                    {[0, 1, 2].map(setIndex =>
+                        visibleRoles.map(roleItem => {
+                            const isSelected = activeRole === roleItem.type;
+                            const roleIcon = roleIcons[roleItem.type];
+                            // Only assign ref to the middle set (setIndex === 1)
+                            const shouldAssignRef = setIndex === 1 && isSelected;
+
+                            return (
+                                <button
+                                    key={`${setIndex}-${roleItem.type}`}
+                                    ref={shouldAssignRef ? selectedRoleRef : null}
+                                    type="button"
+                                    disabled={isChildProfile}
+                                    onClick={
+                                        isChildProfile
+                                            ? undefined
+                                            : () => handleRoleChange(roleItem.type)
+                                    }
+                                    className={`flex-shrink-0 rounded-[43px] border border-solid transition-all ${
+                                        isChildProfile ? 'cursor-not-allowed' : 'cursor-pointer'
+                                    }`}
+                                    style={
+                                        isSelected
+                                            ? {
+                                                  borderColor: selectedBorderColor[roleItem.type],
+                                                  backgroundColor: selectedBgColor[roleItem.type],
+                                              }
+                                            : {
+                                                  borderColor: '#E2E3E9',
+                                                  backgroundColor: 'white',
+                                                  opacity: 0.6,
+                                              }
+                                    }
+                                >
+                                    <span className="py-[5px] pl-[10px] pr-[5px] flex items-center gap-[15px]">
+                                        <span className="flex items-center gap-2">
+                                            <img
+                                                src={roleIcon}
+                                                alt={`${roleItem.title} icon`}
+                                                className="h-[22px] w-[22px] object-contain"
+                                            />
+                                            <span
+                                                className={`${
+                                                    isSelected
+                                                        ? 'text-grayscale-900'
+                                                        : 'text-grayscale-600'
+                                                } text-[14px] font-poppins font-semibold`}
+                                            >
+                                                {roleItem.title}
+                                            </span>
+                                        </span>
+                                        {isSelected ? (
+                                            <span
+                                                className="flex items-center justify-center h-[24px] w-[24px] rounded-full"
+                                                style={{ backgroundColor: 'white' }}
+                                            >
+                                                <Checkmark
+                                                    version="no-padding"
+                                                    className="h-[15px] w-[15px] text-[#18224E]"
+                                                />
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center justify-center h-[24px] w-[24px] rounded-full bg-grayscale-200" />
+                                        )}
+                                    </span>
+                                </button>
+                            );
+                        })
+                    )}
                 </div>
             </div>
 
