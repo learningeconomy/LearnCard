@@ -16,6 +16,8 @@
  *   pnpm seed:dev-app --app-url http://localhost:4321 --profile dev-user --install-for test-user
  *   pnpm seed:dev-app --app-name "My Game" --domain localhost
  *   pnpm seed:dev-app --app-image https://example.com/my-icon.png
+ *   pnpm seed:dev-app --template-alias my-badge
+ *   pnpm seed:dev-app --sa-endpoint http://localhost:5100/api
  *   pnpm seed:dev-app --promotion FEATURED_CAROUSEL
  *   pnpm seed:dev-app --reset-rate-limits
  *
@@ -25,6 +27,10 @@
 import * as dotenv from 'dotenv';
 import { Neogma } from 'neogma';
 import Redis from 'ioredis';
+import { MongoClient } from 'mongodb';
+import * as crypto from 'crypto';
+import * as nacl from 'tweetnacl';
+import * as bs58 from 'bs58';
 import { v4 as uuid } from 'uuid';
 
 dotenv.config();
@@ -37,6 +43,12 @@ const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD ?? 'this-is-the-password';
 
 const REDIS_HOST = process.env.REDIS_HOST ?? 'localhost';
 const REDIS_PORT = parseInt(process.env.REDIS_PORT ?? '6379', 10);
+
+const MONGO_URI = process.env.MONGO_URI ?? 'mongodb://localhost:27017/?replicaSet=rs0';
+const MONGO_DB_NAME = process.env.MONGO_DB_NAME ?? 'lca-api';
+
+// Brain-service domain used for did:web construction
+const BRAIN_DOMAIN = process.env.DOMAIN_NAME ?? 'localhost%3A4000';
 
 // ---------------------------------------------------------------------------
 // CLI argument parsing
@@ -63,6 +75,9 @@ const parsedUrl = new URL(appUrl);
 const domain = getArg('--domain', parsedUrl.hostname);
 const slug = getArg('--slug', appName.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
 const appImage = getArg('--app-image', '');
+const templateAlias = getArg('--template-alias', 'default');
+const saEndpoint = getArg('--sa-endpoint', 'http://localhost:5100/api');
+const saSeed = getArg('--sa-seed', 'd'.repeat(64));
 const promotionLevel = getArg('--promotion', 'FEATURED_CAROUSEL');
 const resetRateLimits = args.includes('--reset-rate-limits');
 
@@ -72,6 +87,46 @@ const resetRateLimits = args.includes('--reset-rate-limits');
 // ---------------------------------------------------------------------------
 
 const transformProfileId = (raw: string): string => raw.toLowerCase().replace(':', '%3A');
+
+const getDidWeb = (domain: string, profileId: string): string =>
+    `did:web:${domain}:users:${profileId}`;
+
+const getAppDidWeb = (domain: string, appSlug: string): string =>
+    `did:web:${domain}:app:${appSlug}`;
+
+// Derive the did:key for an ed25519 key pair from a hex seed.
+// The brain-service DID doc endpoint filters out did:web DIDs on the
+// USES_SIGNING_AUTHORITY relationship, so we must store a did:key there.
+const deriveDidKeyFromSeed = (hexSeed: string): string => {
+    const seedBytes = Buffer.from(hexSeed.slice(0, 64), 'hex');
+    const keyPair = nacl.sign.keyPair.fromSeed(seedBytes);
+    const multicodec = Buffer.concat([Buffer.from('ed01', 'hex'), Buffer.from(keyPair.publicKey)]);
+
+    return `did:key:z${bs58.encode(multicodec)}`;
+};
+
+// Minimal OBv3 credential template that the example app can issue.
+// Mustache variable {{issuedAt}} is filled in by the SDK's templateData.
+const buildCredentialTemplate = (name: string): string =>
+    JSON.stringify({
+        '@context': [
+            'https://www.w3.org/2018/credentials/v1',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+        ],
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        issuer: { id: 'did:example:issuer', type: ['Profile'], name },
+        issuanceDate: '{{issuedAt}}',
+        credentialSubject: {
+            type: ['AchievementSubject'],
+            achievement: {
+                id: `urn:uuid:${uuid()}`,
+                type: ['Achievement'],
+                name: `${name} Achievement`,
+                description: `Credential issued by ${name}`,
+                criteria: { narrative: 'Earned through the partner app' },
+            },
+        },
+    });
 
 // ---------------------------------------------------------------------------
 // Main
@@ -133,6 +188,9 @@ async function main(): Promise<void> {
         if (appImage) {
             console.log(`  Updated icon_url       → ${appImage}`);
         }
+
+        // Ensure boost + signing authority exist even on re-runs
+        await ensureBoostAndSigningAuthority(run, existingId, normalizedProfileId);
 
         if (resetRateLimits) {
             await clearRateLimits(existingId);
@@ -219,7 +277,10 @@ async function main(): Promise<void> {
     console.log(`  Promotion:           ${promotionLevel}`);
     console.log(`  Launch URL:          ${appUrl}`);
 
-    // 5. Optionally install for a second profile
+    // 5. Create boost template + signing authority for credential issuance
+    await ensureBoostAndSigningAuthority(run, listingId, normalizedProfileId);
+
+    // 6. Optionally install for a second profile
     if (installForProfileId && installForProfileId !== ownerProfileId) {
         const normalizedInstallId = transformProfileId(installForProfileId);
 
@@ -261,6 +322,154 @@ async function main(): Promise<void> {
     }
 
     await neogma.driver.close();
+}
+
+// ---------------------------------------------------------------------------
+// Boost + Signing Authority setup
+// ---------------------------------------------------------------------------
+
+async function ensureBoostAndSigningAuthority(
+    run: Neogma['queryRunner']['run'],
+    listingId: string,
+    profileId: string
+): Promise<void> {
+    // Check if a boost with this templateAlias already exists for the listing
+    const existingBoost = await run(
+        `MATCH (l:AppStoreListing {listing_id: $listingId})-[r:HAS_BOOST {templateAlias: $templateAlias}]->(b:Boost)
+         RETURN b.id AS boostId`,
+        { listingId, templateAlias }
+    );
+
+    const existingBoostId = existingBoost.records[0]?.get('boostId');
+
+    if (!existingBoostId) {
+        // Create Boost node with credential template
+        const boostId = uuid();
+        const boostJson = buildCredentialTemplate(appName);
+
+        await run(
+            `CREATE (b:Boost {
+                id: $boostId,
+                boost: $boostJson,
+                name: $name,
+                category: $category,
+                status: 'LIVE'
+             })
+             WITH b
+             MATCH (p:Profile {profileId: $profileId})
+             CREATE (b)-[:CREATED_BY {date: $date}]->(p)
+             WITH b
+             MATCH (l:AppStoreListing {listing_id: $listingId})
+             CREATE (l)-[:HAS_BOOST {templateAlias: $templateAlias, createdAt: $date}]->(b)
+             RETURN b`,
+            {
+                boostId,
+                boostJson,
+                name: `${appName} Badge`,
+                category: 'Achievement',
+                profileId,
+                listingId,
+                templateAlias,
+                date: new Date().toISOString(),
+            }
+        );
+
+        console.log(`  Boost created:       ${boostId} (alias: "${templateAlias}")`);
+    } else {
+        console.log(`  Boost exists:        ${existingBoostId} (alias: "${templateAlias}")`);
+    }
+
+    // Ensure SigningAuthority node + relationship to listing
+    const existingSa = await run(
+        `MATCH (l:AppStoreListing {listing_id: $listingId})-[r:USES_SIGNING_AUTHORITY]->(sa:SigningAuthority)
+         RETURN sa.endpoint AS endpoint`,
+        { listingId }
+    );
+
+    const appDid = getAppDidWeb(BRAIN_DOMAIN, slug);
+    const saDidKey = deriveDidKeyFromSeed(saSeed);
+
+    if (!existingSa.records.length) {
+
+        await run(
+            `MERGE (sa:SigningAuthority {endpoint: $endpoint})
+             WITH sa
+             MATCH (l:AppStoreListing {listing_id: $listingId})
+             CREATE (l)-[:USES_SIGNING_AUTHORITY {
+                 name: $name,
+                 did: $did,
+                 isPrimary: true
+             }]->(sa)
+             RETURN sa`,
+            {
+                endpoint: saEndpoint,
+                listingId,
+                name: 'default',
+                did: saDidKey,
+            }
+        );
+
+        console.log(`  Signing authority:   ${saEndpoint} (linked to listing)`);
+        console.log(`  SA did:key:          ${saDidKey}`);
+
+        // Also link SA to the owner profile (fallback path)
+        await run(
+            `MATCH (sa:SigningAuthority {endpoint: $endpoint})
+             MATCH (p:Profile {profileId: $profileId})
+             MERGE (p)-[r:USES_SIGNING_AUTHORITY]->(sa)
+             ON CREATE SET r.name = $name, r.did = $did, r.isPrimary = true
+             RETURN r`,
+            {
+                endpoint: saEndpoint,
+                profileId,
+                name: 'default',
+                did: saDidKey,
+            }
+        );
+
+    } else {
+        console.log(`  Signing authority:   already configured`);
+    }
+
+    // Always ensure MongoDB SA exists (idempotent).
+    // The brain-service sends the *app* DID (not the user DID) as ownerDidOverride
+    // when calling /credentials/issue, so MongoDB must key the SA by the app DID.
+    await ensureMongoSigningAuthority(appDid);
+}
+
+async function ensureMongoSigningAuthority(ownerDid: string): Promise<void> {
+    let client: MongoClient | undefined;
+
+    try {
+        client = new MongoClient(MONGO_URI);
+        await client.connect();
+
+        const db = client.db(MONGO_DB_NAME);
+        const collection = db.collection('signingauthorities');
+
+        const existing = await collection.findOne({ ownerDid, name: 'default' });
+
+        if (!existing) {
+            const did = `did:key:z${crypto.createHash('sha256').update(saSeed).digest('hex').slice(0, 48)}`;
+
+            await collection.insertOne({
+                _id: uuid(),
+                ownerDid,
+                name: 'default',
+                seed: saSeed,
+                did,
+            } as any);
+
+            console.log(`  MongoDB SA created:  ownerDid=${ownerDid}`);
+        } else {
+            console.log(`  MongoDB SA exists:   ownerDid=${ownerDid}`);
+        }
+    } catch (err) {
+        console.warn(`\n\u26A0\uFE0F  Could not connect to MongoDB at ${MONGO_URI} — skipping SA setup.`);
+        console.warn('  Credential issuance (sendCredential) will not work without the LCA API signing authority.');
+    } finally {
+        await client?.close();
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -321,20 +530,23 @@ async function clearRateLimits(listingId: string): Promise<void> {
 function printSummary(listingId: string): void {
     console.log('\n✅ Done! Seed summary:');
     console.log('─'.repeat(50));
-    console.log(`  Listing ID:    ${listingId}`);
-    console.log(`  Slug:          ${slug}`);
-    console.log(`  Owner:         ${ownerProfileId}`);
-    console.log(`  App URL:       ${appUrl}`);
-    console.log(`  Domain:        ${domain}`);
-    console.log(`  Promotion:     ${promotionLevel}`);
+    console.log(`  Listing ID:      ${listingId}`);
+    console.log(`  Slug:            ${slug}`);
+    console.log(`  Owner:           ${ownerProfileId}`);
+    console.log(`  App URL:         ${appUrl}`);
+    console.log(`  Domain:          ${domain}`);
+    console.log(`  Promotion:       ${promotionLevel}`);
+    console.log(`  Template Alias:  ${templateAlias}`);
+    console.log(`  SA Endpoint:     ${saEndpoint}`);
 
     if (installForProfileId) {
-        console.log(`  Installed for: ${installForProfileId}`);
+        console.log(`  Installed for:   ${installForProfileId}`);
     }
 
     console.log('─'.repeat(50));
     console.log('\n  Use this listing ID in your app or .env:\n');
-    console.log(`    LISTING_ID=${listingId}\n`);
+    console.log(`    LISTING_ID=${listingId}`);
+    console.log(`    TEMPLATE_ALIAS=${templateAlias}\n`);
 }
 
 main()
