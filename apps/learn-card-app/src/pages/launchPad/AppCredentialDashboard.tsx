@@ -89,7 +89,6 @@ export const AppCredentialDashboard: React.FC<AppCredentialDashboardProps> = ({
                 { 'data.metadata.listingId': listingId, read: false, archived: false },
                 { limit: 100 }
             );
-            console.log("Notifications", result)
 
             if (result) {
                 setNotificationCount(result.notifications.length);
@@ -159,7 +158,6 @@ export const AppCredentialDashboard: React.FC<AppCredentialDashboardProps> = ({
 
     // Re-fetch notification count when listingId resolves (async from usePublicListing)
     useEffect(() => {
-        console.log("Listing ID:", listingId);
         if (listingId) {
             fetchNotificationCount();
         }
