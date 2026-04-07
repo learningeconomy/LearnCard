@@ -12,6 +12,7 @@ import {
 import { X } from 'lucide-react';
 import {
     ModalTypes,
+    SearchInput,
     conditionalPluralize,
     useGetBoostSkills,
     useGetSelfAssignedSkillsBoost,
@@ -35,6 +36,7 @@ type GrowSkillsTab = (typeof growSkillsTabs)[number];
 
 const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
     const { newModal, closeModal } = useModal();
+    const [search, setSearch] = useState('');
     const [activeTab, setActiveTab] = useState<GrowSkillsTab>('All');
 
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
@@ -151,7 +153,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
             </div>
 
             <section className="h-full pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative">
-                <div className="flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid pb-[15px]">
+                {/* <div className="flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid pb-[15px]">
                     <div className="flex flex-col gap-[10px] relative">
                         {loading && (
                             <div className="absolute inset-0 z-20 bg-white/70 rounded-[15px] flex items-center justify-center">
@@ -159,7 +161,12 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
                             </div>
                         )}
                     </div>
-                </div>
+                </div> */}
+                <SearchInput
+                    placeholder="Search by skill, goal, or job..."
+                    value={search}
+                    onChange={setSearch}
+                />
                 <div className="pt-[20px] text-[16px] font-[600] text-grayscale-700">
                     Selected tab: {activeTab}
                 </div>
