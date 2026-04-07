@@ -52,7 +52,7 @@ jobs:
             This is a pnpm + Nx monorepo. Key areas:
 
             **High risk (never auto-approve):**
-            - `services/` — Production backend services (brain-service, lca-api, learn-cloud-service, simple-signing-service). Auth, credentials, signing, Neo4j/MongoDB, serverless deployment.
+            - `services/` route definitions, auth/signing helpers, models, lambda entry points — Production backend services (brain-service, lca-api, learn-cloud-service, simple-signing-service). Auth, credentials, signing, Neo4j/MongoDB, serverless deployment.
             - `packages/learn-card-types/` — Shared Zod validators and types used across the entire stack.
             - `packages/learn-card-core/` — Core wallet/plugin system.
             - `packages/learn-card-init/` — Assembles the plugin stack.
@@ -63,6 +63,9 @@ jobs:
             - `apps/` — Frontend apps (learn-card-app, scouts). User-facing but no server-side auth.
             - `packages/learn-card-base/` — React hooks, queries, UI components.
             - `packages/react-learn-card/` — React component library.
+
+            **Medium-low risk (auto-approvable in Lane 5):**
+            - `services/` non-critical files — logging, error messages, comments, non-auth utilities, type imports, minor refactors.
 
             **Low risk (auto-approvable in Lanes 1, 2, 4):**
             - `docs/` — GitBook documentation.
@@ -88,7 +91,7 @@ jobs:
             - Commits authored by `claude`, `github-actions`, or any bot account
 
             **Blocked labels opt-in override:**
-            - If the PR has the label `auto-approve/docs`, `auto-approve/tests`, `auto-approve/ui`, or `auto-approve/tooling`, the lane check is still performed — the label is a signal, not a bypass. If files don't match the claimed lane, do NOT approve.
+            - If the PR has the label `auto-approve/docs`, `auto-approve/tests`, `auto-approve/ui`, `auto-approve/tooling`, or `auto-approve/backend`, the lane check is still performed — the label is a signal, not a bypass. If files don't match the claimed lane, do NOT approve.
 
             **Hard-stop content patterns (if found in the diff, never auto-approve):**
             - `eval(` usage
@@ -103,7 +106,12 @@ jobs:
             - Removal or weakening of existing tests (deleting assertions, `.skip`, commenting out tests)
 
             **Always-blocked paths (never auto-approve if touched):**
-            - `services/` — any file
+            - `services/*/src/routes/` — route / tRPC procedure definitions
+            - `services/*/src/helpers/auth*`, `services/*/src/helpers/signing*` — auth and signing helpers
+            - `services/*/src/models/` — database models
+            - `services/*/src/constants/auth*` — auth constants
+            - `services/**/lambda.ts`, `services/**/didWeb*.ts`, `services/**/oidc*.ts`, `services/**/xApi*.ts` — Lambda entry points
+            - `services/**/app.ts`, `services/**/server.ts` — service bootstrap files
             - `packages/learn-card-types/` — any file
             - `packages/learn-card-core/` — any file
             - `packages/learn-card-init/` — any file
@@ -124,7 +132,7 @@ jobs:
             - All changed files are test files (`*.test.ts`, `*.spec.ts`, `*.test.tsx`, `*.spec.tsx`) or test fixtures/helpers under `test/`, `tests/`, or `__tests__/` directories.
             - No production code changed (exception: test-support utilities under test directories are fine).
             - No tests are skipped, deleted, or weakened.
-            - LOC limit: ≤ 600 lines changed.
+            - LOC limit: ≤ 750 lines changed.
             - Label hint: `auto-approve/tests`
 
             **Lane 3 — Low-risk UI / frontend**
@@ -132,15 +140,25 @@ jobs:
             - None of the changed files match these risky filename patterns: `*authentication*`, `*authorization*`, `*permission*`, `*access*`, `*provider*` (auth providers), `*client*` (API clients), `*query*` (react-query definitions), `*api*`, `*network*`, `*env*`, `*secret*`, `*credentials*` (credential issuance/verification logic — display-only is fine).
             - Changes are presentational: JSX/TSX component markup, CSS/SCSS/Tailwind styles, copy/text, layout, stories (`*.stories.tsx`), or additive UI behavior.
             - No dangerous content patterns.
-            - LOC limit: ≤ 400 lines changed.
+            - LOC limit: ≤ 750 lines changed.
             - Label hint: `auto-approve/ui`
 
             **Lane 4 — Low-risk tooling / examples / config**
             - All changed files are in `examples/`, `tools/`, `scripts/`, or are package-local config files (non-root `package.json`, `tsconfig.json`, `.eslintrc*`, `.prettierrc*`, `project.json`, `vite.config.*`, `jest.config.*`).
             - No deploy, infra, workflow, root workspace, or secret-related changes.
             - Dependency bumps in package-local `package.json` are OK if patch/minor only (no major version bumps).
-            - LOC limit: ≤ 500 lines changed.
+            - LOC limit: ≤ 750 lines changed.
             - Label hint: `auto-approve/tooling`
+
+            **Lane 5 — Low-risk backend (services/)**
+            - All changed files are in `services/`.
+            - **None** of the changed files are in an always-blocked path (routes, auth/signing helpers, models, auth constants, lambda/app entry points — see list above).
+            - No new tRPC procedures, HTTP endpoints, or middleware being added.
+            - No auth, permission, role, or signing logic being changed.
+            - No database queries being added or modified (e.g., Neo4j Cypher, MongoDB operations).
+            - Acceptable changes: logging, error messages, JSDoc/comments, non-auth utility functions, type imports, test helpers co-located with source, renaming, and minor refactors.
+            - LOC limit: ≤ 500 lines changed.
+            - Label hint: `auto-approve/backend`
 
             ### Manual-Review Markers (do not auto-approve, but not alarming)
 
