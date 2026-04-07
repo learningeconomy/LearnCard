@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 import {
     IonPage,
@@ -68,7 +68,27 @@ export const EmbedAppFullScreen: React.FC = () => {
     const embedUrl = queryParams.get('embedUrl') || history.location.state?.embedUrl;
     const appName = queryParams.get('appName') || history.location.state?.appName || 'Partner App';
 
-    const { handleAppNotification, ToastOverlay } = useAppNotificationToast(appName);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    const handleTapNotificationAction = useCallback(
+        (actionPath: string) => {
+            if (!iframeRef.current || !embedUrl) return;
+
+            try {
+                const base = new URL(embedUrl);
+                base.pathname = base.pathname.replace(/\/$/, '') + actionPath;
+                iframeRef.current.src = `${base.toString()}?lc_host_override=${window.location.origin}`;
+            } catch {
+                // Fallback: just append the path
+                iframeRef.current.src = `${embedUrl.replace(/\/$/, '')}${actionPath}?lc_host_override=${window.location.origin}`;
+            }
+        },
+        [embedUrl]
+    );
+
+    const { handleAppNotification, ToastOverlay } = useAppNotificationToast(appName, {
+        onTapAction: handleTapNotificationAction,
+    });
 
     const launchConfig = history.location.state?.launchConfig;
     const isInstalled = history.location.state?.isInstalled ?? false;
@@ -169,6 +189,7 @@ export const EmbedAppFullScreen: React.FC = () => {
                         </div>
                     )}
                     <iframe
+                        ref={iframeRef}
                         src={embedUrlWithOverride}
                         onLoad={() => setIsLoading(false)}
                         style={{

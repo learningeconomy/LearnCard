@@ -15,12 +15,15 @@
  *   pnpm seed:dev-app --app-url http://localhost:4321
  *   pnpm seed:dev-app --app-url http://localhost:4321 --profile dev-user --install-for test-user
  *   pnpm seed:dev-app --app-name "My Game" --domain localhost
+ *   pnpm seed:dev-app --promotion FEATURED_CAROUSEL
+ *   pnpm seed:dev-app --reset-rate-limits
  *
  * Re-running is safe — the script is idempotent via slug-based lookup.
  */
 
 import * as dotenv from 'dotenv';
 import { Neogma } from 'neogma';
+import Redis from 'ioredis';
 import { v4 as uuid } from 'uuid';
 
 dotenv.config();
@@ -30,6 +33,9 @@ dotenv.config();
 const NEO4J_URI = process.env.NEO4J_URI ?? 'bolt://localhost:7687';
 const NEO4J_USERNAME = process.env.NEO4J_USERNAME ?? 'neo4j';
 const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD ?? 'this-is-the-password';
+
+const REDIS_HOST = process.env.REDIS_HOST ?? 'localhost';
+const REDIS_PORT = parseInt(process.env.REDIS_PORT ?? '6379', 10);
 
 // ---------------------------------------------------------------------------
 // CLI argument parsing
@@ -55,6 +61,8 @@ const installForProfileId = getArg('--install-for', '');
 const parsedUrl = new URL(appUrl);
 const domain = getArg('--domain', parsedUrl.hostname);
 const slug = getArg('--slug', appName.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+const promotionLevel = getArg('--promotion', 'FEATURED_CAROUSEL');
+const resetRateLimits = args.includes('--reset-rate-limits');
 
 // ---------------------------------------------------------------------------
 // Helpers — mirrors the access-layer logic but uses raw Cypher to avoid
@@ -108,7 +116,21 @@ async function main(): Promise<void> {
 
     if (existingId) {
         console.log(`  Listing already exists for slug "${slug}": ${existingId}`);
-        console.log(`  Skipping creation. Delete it manually or use a different --slug.\n`);
+
+        // Update promotion_level in case it changed
+        await run(
+            `MATCH (l:AppStoreListing {listing_id: $listingId})
+             SET l.promotion_level = $promotionLevel
+             RETURN l`,
+            { listingId: existingId, promotionLevel: promotionLevel }
+        );
+
+        console.log(`  Updated promotion_level → ${promotionLevel}`);
+
+        if (resetRateLimits) {
+            await clearRateLimits(existingId);
+        }
+
         printSummary(existingId);
         await neogma.driver.close();
         return;
@@ -179,7 +201,7 @@ async function main(): Promise<void> {
             launchType: 'EMBEDDED_IFRAME',
             launchConfigJson: JSON.stringify({ url: appUrl }),
             category: 'Learning',
-            promotionLevel: 'STANDARD',
+            promotionLevel,
             integrationId,
         }
     );
@@ -187,6 +209,7 @@ async function main(): Promise<void> {
     console.log(`  Listing created:     ${listingId}`);
     console.log(`  Slug:                ${slug}`);
     console.log(`  Status:              LISTED`);
+    console.log(`  Promotion:           ${promotionLevel}`);
     console.log(`  Launch URL:          ${appUrl}`);
 
     // 5. Optionally install for a second profile
@@ -226,7 +249,66 @@ async function main(): Promise<void> {
 
     printSummary(listingId);
 
+    if (resetRateLimits) {
+        await clearRateLimits(listingId);
+    }
+
     await neogma.driver.close();
+}
+
+// ---------------------------------------------------------------------------
+// Rate-limit reset
+// ---------------------------------------------------------------------------
+
+async function clearRateLimits(listingId: string): Promise<void> {
+    const redis = new Redis({ host: REDIS_HOST, port: REDIS_PORT, lazyConnect: true });
+
+    try {
+        await redis.connect();
+    } catch (err) {
+        console.warn(`\n⚠️  Could not connect to Redis at ${REDIS_HOST}:${REDIS_PORT} — skipping rate-limit reset.`);
+        return;
+    }
+
+    console.log('\n🔄 Resetting rate limits...');
+
+    // Key patterns used by brain-service:
+    //   app-notif-rate:{listingId}:*          (SDK sendNotification — 10/hr/user)
+    //   app-notif-server-rate:{listingId}     (server notify route — 60/hr)
+    //   app-counter-rate:{listingId}:*        (SDK incrementCounter — 100/min/user)
+    const patterns = [
+        `app-notif-rate:${listingId}:*`,
+        `app-notif-server-rate:${listingId}`,
+        `app-counter-rate:${listingId}:*`,
+    ];
+
+    let totalDeleted = 0;
+
+    for (const pattern of patterns) {
+        const keys: string[] = [];
+        const stream = redis.scanStream({ match: pattern });
+
+        for await (const batch of stream) {
+            keys.push(...(batch as string[]));
+        }
+
+        if (keys.length > 0) {
+            await redis.unlink(...keys);
+            totalDeleted += keys.length;
+        }
+    }
+
+    // Also delete the exact server-rate key (single key, not a pattern)
+    const serverKey = `app-notif-server-rate:${listingId}`;
+    const existed = await redis.unlink(serverKey);
+
+    if (existed && totalDeleted === 0) {
+        totalDeleted += existed;
+    }
+
+    console.log(`  Cleared ${totalDeleted} rate-limit key(s)`);
+
+    await redis.quit();
 }
 
 function printSummary(listingId: string): void {
@@ -237,6 +319,7 @@ function printSummary(listingId: string): void {
     console.log(`  Owner:         ${ownerProfileId}`);
     console.log(`  App URL:       ${appUrl}`);
     console.log(`  Domain:        ${domain}`);
+    console.log(`  Promotion:     ${promotionLevel}`);
 
     if (installForProfileId) {
         console.log(`  Installed for: ${installForProfileId}`);

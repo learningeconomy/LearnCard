@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { X } from 'lucide-react';
@@ -53,7 +53,26 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         setPendingCredential({ credentialUri, boostUri });
     }, []);
 
-    const { handleAppNotification, ToastOverlay } = useAppNotificationToast(appName);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    const handleTapNotificationAction = useCallback(
+        (actionPath: string) => {
+            if (!iframeRef.current) return;
+
+            try {
+                const base = new URL(embedUrl);
+                base.pathname = base.pathname.replace(/\/$/, '') + actionPath;
+                iframeRef.current.src = `${base.toString()}?lc_host_override=${window.location.origin}`;
+            } catch {
+                iframeRef.current.src = `${embedUrl.replace(/\/$/, '')}${actionPath}?lc_host_override=${window.location.origin}`;
+            }
+        },
+        [embedUrl]
+    );
+
+    const { handleAppNotification, ToastOverlay } = useAppNotificationToast(appName, {
+        onTapAction: handleTapNotificationAction,
+    });
 
     const handleDismissClaimModal = useCallback(() => {
         setPendingCredential(null);
@@ -173,6 +192,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                             </div>
                         )}
                         <iframe
+                            ref={iframeRef}
                             src={embedUrlWithOverride}
                             onLoad={() => setIsLoading(false)}
                             style={{

@@ -8,6 +8,7 @@ interface UseAppNotificationToastReturn {
     handleAppNotification: (notification: {
         title?: string;
         body?: string;
+        actionPath?: string;
         category?: string;
         priority?: string;
     }) => void;
@@ -26,12 +27,21 @@ interface UseAppNotificationToastReturn {
  * // render ToastOverlay inside the component tree
  * ```
  */
-export const useAppNotificationToast = (appName: string): UseAppNotificationToastReturn => {
+export const useAppNotificationToast = (
+    appName: string,
+    options?: { onTapAction?: (actionPath: string) => void }
+): UseAppNotificationToastReturn => {
     const [toastNotification, setToastNotification] =
         useState<AppNotificationToastData | null>(null);
 
     const handleAppNotification = useCallback(
-        (notification: { title?: string; body?: string; category?: string; priority?: string }) => {
+        (notification: {
+            title?: string;
+            body?: string;
+            actionPath?: string;
+            category?: string;
+            priority?: string;
+        }) => {
             setToastNotification({
                 ...notification,
                 appName,
@@ -44,6 +54,7 @@ export const useAppNotificationToast = (appName: string): UseAppNotificationToas
         <AppNotificationToast
             notification={toastNotification}
             onDismiss={() => setToastNotification(null)}
+            onTapAction={options?.onTapAction}
         />
     );
 

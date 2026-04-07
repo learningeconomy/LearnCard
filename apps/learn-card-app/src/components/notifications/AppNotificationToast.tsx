@@ -6,6 +6,7 @@ export interface AppNotificationToastData {
     body?: string;
     appName?: string;
     appIcon?: string;
+    actionPath?: string;
     category?: string;
     priority?: string;
 }
@@ -13,6 +14,7 @@ export interface AppNotificationToastData {
 interface AppNotificationToastProps {
     notification: AppNotificationToastData | null;
     onDismiss: () => void;
+    onTapAction?: (actionPath: string) => void;
     duration?: number;
 }
 
@@ -25,6 +27,7 @@ interface AppNotificationToastProps {
 const AppNotificationToast: React.FC<AppNotificationToastProps> = ({
     notification,
     onDismiss,
+    onTapAction,
     duration = 5000,
 }) => {
     const [isVisible, setIsVisible] = useState(false);
@@ -56,6 +59,14 @@ const AppNotificationToast: React.FC<AppNotificationToastProps> = ({
     if (!notification || !isVisible) return null;
 
     const isHighPriority = notification.priority === 'high';
+    const isTappable = !!notification.actionPath && !!onTapAction;
+
+    const handleTap = () => {
+        if (isTappable) {
+            onTapAction(notification.actionPath!);
+            handleDismiss();
+        }
+    };
 
     const bgGradient = isHighPriority
         ? 'from-orange-500 to-amber-500'
@@ -71,7 +82,8 @@ const AppNotificationToast: React.FC<AppNotificationToastProps> = ({
             style={{ animation: isLeaving ? undefined : 'slideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1)' }}
         >
             <div
-                className={`pointer-events-auto max-w-[420px] w-full rounded-2xl bg-gradient-to-r ${bgGradient} p-[1px] shadow-2xl ring-1 ${ringColor}`}
+                onClick={handleTap}
+                className={`pointer-events-auto max-w-[420px] w-full rounded-2xl bg-gradient-to-r ${bgGradient} p-[1px] shadow-2xl ring-1 ${ringColor} ${isTappable ? 'cursor-pointer' : ''}`}
             >
                 <div className="flex items-start gap-3 rounded-2xl bg-white/95 backdrop-blur-xl px-4 py-3">
                     {/* App icon or bell */}

@@ -83,11 +83,18 @@ export class PartnerConnect {
     /**
      * Configure the active host origin using the following hierarchy:
      * 1. Check for `lc_host_override` query parameter (for staging/testing)
-     * 2. Fall back to first configured origin
-     * 3. Fall back to DEFAULT_HOST_ORIGIN
+     * 2. Check sessionStorage for a previously stored override (survives in-app navigation)
+     * 3. Fall back to first configured origin
+     * 4. Fall back to DEFAULT_HOST_ORIGIN
+     *
+     * When a valid override is found in the query parameter, it is persisted to
+     * sessionStorage so that subsequent page navigations within the same tab
+     * automatically use the same override without requiring it in every URL.
      *
      * This origin will be used for all outgoing messages and incoming message validation.
      */
+    private static readonly SESSION_STORAGE_KEY = 'lc_host_override';
+
     private configureActiveOrigin(): void {
         if (typeof window === 'undefined') {
             this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
@@ -112,12 +119,47 @@ export class PartnerConnect {
                         this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
                 } else {
                     this.activeHostOrigin = hostOverride;
+
+                    // Persist to sessionStorage so subsequent page navigations
+                    // within this tab automatically use the same override.
+                    try {
+                        sessionStorage.setItem(
+                            PartnerConnect.SESSION_STORAGE_KEY,
+                            hostOverride
+                        );
+                    } catch {
+                        // sessionStorage may be unavailable (e.g. sandboxed iframes)
+                    }
+
                     console.log('[LearnCard SDK] Using lc_host_override:', hostOverride);
                 }
             } else {
-                // Use first configured origin or default
-                this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
-                console.log('[LearnCard SDK] Using configured origin:', this.activeHostOrigin);
+                // Fall back to a previously stored override from this session
+                let storedOverride: string | null = null;
+
+                try {
+                    storedOverride = sessionStorage.getItem(
+                        PartnerConnect.SESSION_STORAGE_KEY
+                    );
+                } catch {
+                    // sessionStorage may be unavailable
+                }
+
+                if (storedOverride && this.isOriginInWhitelist(storedOverride)) {
+                    this.activeHostOrigin = storedOverride;
+                    console.log(
+                        '[LearnCard SDK] Using stored lc_host_override:',
+                        storedOverride
+                    );
+                } else {
+                    // Use first configured origin or default
+                    this.activeHostOrigin =
+                        this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
+                    console.log(
+                        '[LearnCard SDK] Using configured origin:',
+                        this.activeHostOrigin
+                    );
+                }
             }
         } catch (error) {
             console.error('[LearnCard SDK] Error configuring active origin:', error);

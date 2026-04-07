@@ -886,6 +886,7 @@ export function useLearnCardMessageHandlers({
                               onAppNotification({
                                   title: (event as Record<string, unknown>).title as string | undefined,
                                   body: (event as Record<string, unknown>).body as string | undefined,
+                                  actionPath: (event as Record<string, unknown>).actionPath as string | undefined,
                                   category: (event as Record<string, unknown>).category as string | undefined,
                                   priority: (event as Record<string, unknown>).priority as string | undefined,
                               });
