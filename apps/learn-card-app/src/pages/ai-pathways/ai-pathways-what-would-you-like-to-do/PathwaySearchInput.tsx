@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonInput } from '@ionic/react';
+import X from '../../../components/svgs/X';
 import ExplorePathwaysModal from '../ExplorePathwaysModal';
 
 import {
@@ -44,6 +45,11 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
         className?: string;
     }>;
     const SkillDecoration = iconSet[CredentialCategoryEnum.skill] as React.ComponentType<{
+        className?: string;
+    }>;
+    const ExperiencesDecoration = iconSet[
+        CredentialCategoryEnum.workHistory
+    ] as React.ComponentType<{
         className?: string;
     }>;
 
@@ -90,6 +96,12 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
         openModal(title);
     };
 
+    const clearSearch = () => {
+        setValue('');
+        setDebouncedValue('');
+        setShowSuggestions(false);
+    };
+
     return (
         <div className="relative flex flex-col">
             <div className="relative flex items-center">
@@ -97,8 +109,9 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
                 <IonInput
                     value={value}
                     onIonInput={(e: any) => {
-                        setValue(e.detail.value);
-                        setShowSuggestions(true);
+                        const nextValue = e.detail.value ?? '';
+                        setValue(nextValue);
+                        setShowSuggestions(Boolean(nextValue));
                     }}
                     onFocus={() => setShowSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
@@ -108,31 +121,55 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
                     }}
                     autocapitalize="off"
                     className="w-full bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-sm"
-                    style={{ '--padding-start': '44px' } as any}
+                    style={{ '--padding-start': '44px', '--padding-end': '44px' } as any}
                     placeholder={placeholder}
                     type="text"
                 />
+                {value && (
+                    <button
+                        type="button"
+                        aria-label="Clear search"
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={clearSearch}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-600 hover:text-grayscale-800 transition-colors z-10"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                )}
             </div>
 
             {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 z-50 bg-white rounded-xl shadow-lg mt-1 overflow-hidden border border-grayscale-200">
-                    {suggestions.map(suggestion => (
+                <div
+                    className="absolute top-full left-0 right-0 z-50 rounded-xl shadow-lg mt-1 overflow-hidden border border-grayscale-200"
+                    style={{
+                        background: 'rgba(255, 255, 255, 0.64)',
+                        backdropFilter: 'blur(8.154845237731934px)',
+                        WebkitBackdropFilter: 'blur(8.154845237731934px)',
+                    }}
+                >
+                    {suggestions.map((suggestion, index) => (
                         <button
                             key={suggestion.key}
                             onMouseDown={() => handleSelectSuggestion(suggestion.title)}
-                            className="w-full flex items-center gap-3 px-4 py-[11px] text-sm text-grayscale-800 font-medium hover:bg-teal-50 border-b border-grayscale-100 last:border-b-0 transition-colors"
+                            className="relative w-full flex items-center gap-3 px-4 py-[11px] text-sm text-grayscale-800 font-medium hover:bg-teal-50 transition-colors"
                         >
                             {suggestion.kind === 'role' ? (
-                                <PathwayDecoration className="w-[22px] h-[22px] shrink-0 text-grayscale-700" />
+                                <ExperiencesDecoration className="w-[22px] h-[22px] shrink-0 text-grayscale-700" />
                             ) : (
                                 <SkillDecoration className="w-[22px] h-[22px] shrink-0 text-grayscale-700" />
                             )}
                             <span className="flex-1 text-left text-grayscale-900 font-semibold text-[14px]">
                                 {suggestion.title}
                             </span>
-                            <span className="text-[10px] font-bold tracking-widest text-grayscale-400 uppercase">
+                            <span className="text-xs font-bold tracking-widest text-grayscale-600 uppercase">
                                 {suggestion.kind === 'role' ? 'ROLE' : 'SKILL'}
                             </span>
+                            {index < suggestions.length - 1 && (
+                                <span
+                                    aria-hidden="true"
+                                    className="absolute bottom-0 left-4 right-4 h-px bg-grayscale-300"
+                                />
+                            )}
                         </button>
                     ))}
                 </div>
