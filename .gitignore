@@ -45,3 +45,5 @@ docs/superpowers
 
 # Local Netlify folder
 .netlify
+# Local environment configuration
+.envrc

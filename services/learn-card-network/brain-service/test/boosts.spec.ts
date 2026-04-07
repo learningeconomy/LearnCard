@@ -1042,6 +1042,104 @@ describe('Boosts', () => {
                 })
             ).resolves.not.toThrow();
         });
+
+        it('should allow sending with only signedCredential (no template or templateUri)', async () => {
+            const signedCredential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                signedCredential,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBeDefined();
+        });
+
+        it('should auto-create a boost when sending with only signedCredential', async () => {
+            const signedCredential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                signedCredential,
+            });
+
+            // The auto-created boost should be fetchable
+            const boost = await userA.clients.fullAuth.boost.getBoost({ uri: result.uri });
+            expect(boost).toBeDefined();
+        });
+
+        it('should allow recipient to claim credential sent with only signedCredential', async () => {
+            const signedCredential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                signedCredential,
+            });
+
+            const userAProfile = (await userA.clients.fullAuth.profile.getProfile())!;
+
+            expect(
+                await userB.clients.fullAuth.credential.receivedCredentials({
+                    from: userAProfile.profileId,
+                })
+            ).toHaveLength(0);
+
+            expect(
+                await userB.clients.fullAuth.credential.acceptCredential({
+                    uri: result.credentialUri,
+                })
+            ).toBe(true);
+
+            expect(
+                await userB.clients.fullAuth.credential.receivedCredentials({
+                    from: userAProfile.profileId,
+                })
+            ).toHaveLength(1);
+        });
+
+        it('should send signedCredential-only to a DID recipient', async () => {
+            const signedCredential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: userB.learnCard.id.did(),
+                signedCredential,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBeDefined();
+        });
     });
 
     describe('send to email/phone (inbox routing)', () => {
@@ -1212,6 +1310,24 @@ describe('Boosts', () => {
 
             expect(result.inbox).toBeDefined();
             expect(result.inbox?.issuanceId).toBeDefined();
+        });
+
+        it('should route signedCredential-only to inbox when recipient is email', async () => {
+            const signedVc = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'signed-only-inbox@example.com',
+                signedCredential: signedVc,
+            });
+
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
+            expect(result.inbox?.status).toBe('PENDING');
+            expect(result.uri).toBeDefined();
         });
 
         it('should auto-deliver when email belongs to existing verified user', async () => {
