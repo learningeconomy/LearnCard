@@ -155,6 +155,89 @@ const result = await learnCard.invoke.send({
 {% endtab %}
 {% endtabs %}
 
+### REST API (`POST /send`)
+
+The `send` method is also available as a REST endpoint. Use an API key or bearer token for authentication.
+
+{% tabs %}
+{% tab title="cURL: Send with Template" %}
+```bash
+curl -X POST https://network.learncard.com/api/send \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "boost",
+    "recipient": "student@example.com",
+    "templateUri": "urn:lc:boost:abc123"
+  }'
+```
+{% endtab %}
+
+{% tab title="cURL: Send Pre-Signed Credential" %}
+```bash
+curl -X POST https://network.learncard.com/api/send \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "boost",
+    "recipient": "student@example.com",
+    "signedCredential": {
+      "@context": [
+        "https://www.w3.org/ns/credentials/v2",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+        "https://w3id.org/security/suites/ed25519-2020/v1"
+      ],
+      "type": ["VerifiableCredential", "OpenBadgeCredential"],
+      "issuer": { "id": "did:web:example.com" },
+      "validFrom": "2025-01-01T00:00:00Z",
+      "name": "Teamwork Badge",
+      "credentialSubject": {
+        "type": ["AchievementSubject"],
+        "achievement": {
+          "type": ["Achievement"],
+          "name": "Teamwork",
+          "description": "Recognized for outstanding collaboration.",
+          "criteria": { "narrative": "Nominated by peers." }
+        }
+      },
+      "proof": {
+        "type": "Ed25519Signature2020",
+        "proofPurpose": "assertionMethod",
+        "proofValue": "z...",
+        "verificationMethod": "did:web:example.com#owner",
+        "created": "2025-01-01T00:00:00Z"
+      }
+    }
+  }'
+```
+{% endtab %}
+
+{% tab title="JavaScript (fetch)" %}
+```javascript
+const response = await fetch('https://network.learncard.com/api/send', {
+    method: 'POST',
+    headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+        type: 'boost',
+        recipient: 'student@example.com',
+        signedCredential: mySignedVC, // A previously signed VC object
+    }),
+});
+
+const result = await response.json();
+console.log(result);
+// { type: 'boost', uri: 'urn:lc:boost:...', inbox: { issuanceId: '...', status: 'PENDING' } }
+```
+{% endtab %}
+{% endtabs %}
+
+{% hint style="info" %}
+**All SDK parameters work in the REST API too** — `templateUri`, `template`, `signedCredential`, `templateData`, `options`, and `contractUri` are all supported in the JSON body.
+{% endhint %}
+
 ### How It Works
 
 1. **Detects recipient type** - Automatically determines if recipient is email, phone, DID, or profile ID
