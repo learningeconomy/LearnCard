@@ -4,7 +4,7 @@ import {
     useOccupationDetailsForKeyword,
     useTrainingProgramsByKeyword,
 } from 'learn-card-base/react-query/queries/careerOneStop';
-import { OccupationDetailsResponse } from 'learn-card-base/types/careerOneStop';
+import { OccupationDetailsResponse, TrainingProgram } from 'learn-card-base/types/careerOneStop';
 import {
     filterCoursesByFieldOfStudy,
     normalizeSchoolPrograms,
@@ -40,6 +40,67 @@ type GrowSkillsModalProps = {};
 const growSkillsTabs = ['All', 'AI Sessions', 'Courses', 'Media'] as const;
 
 type GrowSkillsTab = (typeof growSkillsTabs)[number];
+
+type GrowSkillsCard =
+    | {
+          type: 'ai-session';
+          pathway: any;
+      }
+    | {
+          type: 'course';
+          program: TrainingProgram;
+      }
+    | {
+          type: 'media';
+          title: string;
+          mediaUrl: string;
+          videoCode: string;
+      };
+
+const interleaveGrowSkillsCards = ({
+    aiSessions,
+    courses,
+    media,
+}: {
+    aiSessions: any[];
+    courses: TrainingProgram[];
+    media: Array<{
+        title: string;
+        mediaUrl: string;
+        videoCode: string;
+    }>;
+}) => {
+    const maxLength = Math.max(aiSessions.length, courses.length, media.length);
+    const mixedCards: GrowSkillsCard[] = [];
+
+    for (let index = 0; index < maxLength; index += 1) {
+        const aiSession = aiSessions[index];
+        if (aiSession) {
+            mixedCards.push({
+                type: 'ai-session',
+                pathway: aiSession,
+            });
+        }
+
+        const course = courses[index];
+        if (course) {
+            mixedCards.push({
+                type: 'course',
+                program: course,
+            });
+        }
+
+        const mediaItem = media[index];
+        if (mediaItem) {
+            mixedCards.push({
+                type: 'media',
+                ...mediaItem,
+            });
+        }
+    }
+
+    return mixedCards;
+};
 
 const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
     const { newModal, closeModal } = useModal();
@@ -87,6 +148,9 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
             keywords,
         });
 
+    console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+    console.log('trainingPrograms:', trainingPrograms);
+
     const schoolPrograms = useMemo(() => {
         return trainingPrograms?.length ? normalizeSchoolPrograms(trainingPrograms) : [];
     }, [trainingPrograms]);
@@ -109,23 +173,32 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
     const { data: learningPathwaysData, isLoading: fetchLearningPathwaysLoading } = useAiPathways();
     // See: AiPathwaySessions.tsx
 
-    const showAll = activeTab === 'All';
-    const showAiSessions = showAll || activeTab === 'AI Sessions';
-    const showCourses = showAll || activeTab === 'Courses';
-    const showMedia = showAll || activeTab === 'Media';
+    const cards = useMemo(
+        () =>
+            interleaveGrowSkillsCards({
+                aiSessions: learningPathwaysData || [],
+                courses: schoolPrograms || [],
+                media:
+                    occupations?.map((occupation: OccupationDetailsResponse) => ({
+                        title: occupation.OnetTitle,
+                        mediaUrl: occupation.COSVideoURL,
+                        videoCode: occupation.Video[0]?.VideoCode?.replace(/[^0-9]/g, '') || '',
+                    })) || [],
+            }),
+        [learningPathwaysData, occupations, schoolPrograms]
+    );
 
-    const cards = [
-        ...(schoolPrograms?.map(program => ({
-            program,
-            type: 'course',
-        })) || []),
-        ...(occupations?.map((occupation: OccupationDetailsResponse) => ({
-            title: occupation.OnetTitle,
-            mediaUrl: occupation.COSVideoURL,
-            videoCode: occupation.Video[0]?.VideoCode?.replace(/[^0-9]/g, '') || '',
-            type: 'media',
-        })) || []),
-    ];
+    const visibleCards = useMemo(() => {
+        if (activeTab === 'All') return cards;
+
+        return cards.filter(card => {
+            if (activeTab === 'AI Sessions') return card.type === 'ai-session';
+            if (activeTab === 'Courses') return card.type === 'course';
+            if (activeTab === 'Media') return card.type === 'media';
+
+            return false;
+        });
+    }, [activeTab, cards]);
 
     // console.log('occupations:', occupations);
 
@@ -219,40 +292,37 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
                     Occupations: {occupations?.length || 0}
                 </div> */}
 
-                {showAiSessions && (
-                    <div className="pt-[20px]">
-                        <AiPathwaySessions
-                            learningPathwaysData={learningPathwaysData}
-                            isLoading={fetchLearningPathwaysLoading}
-                        />
-                    </div>
-                )}
-
-                {showCourses && (
+                {visibleCards.length > 0 && (
                     <div className="flex flex-col gap-[15px]">
-                        {cards
-                            .filter(card => card.type === 'course')
-                            .map(card => (
-                                <GrowSkillsCourseItem
-                                    key={card.program?.ProgramName}
-                                    program={card.program}
-                                />
-                            ))}
-                    </div>
-                )}
+                        {visibleCards.map((card, index) => {
+                            if (card.type === 'ai-session') {
+                                return (
+                                    <div
+                                        key={card.pathway?.id || card.pathway?.pathwayUri || index}
+                                    >
+                                        TODO...
+                                    </div>
+                                );
+                            }
 
-                {showMedia && (
-                    <div className="flex flex-col gap-[15px]">
-                        {cards
-                            .filter(card => card.type === 'media')
-                            .map(card => (
+                            if (card.type === 'course') {
+                                return (
+                                    <GrowSkillsCourseItem
+                                        key={card.program?.ProgramName || index}
+                                        program={card.program}
+                                    />
+                                );
+                            }
+
+                            return (
                                 <GrowSkillsMediaItem
-                                    key={card.title}
+                                    key={card.videoCode || card.title || index}
                                     title={card.title}
                                     mediaUrl={card.mediaUrl}
                                     videoCode={card.videoCode}
                                 />
-                            ))}
+                            );
+                        })}
                     </div>
                 )}
 
