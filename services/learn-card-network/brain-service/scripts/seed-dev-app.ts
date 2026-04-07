@@ -15,6 +15,7 @@
  *   pnpm seed:dev-app --app-url http://localhost:4321
  *   pnpm seed:dev-app --app-url http://localhost:4321 --profile dev-user --install-for test-user
  *   pnpm seed:dev-app --app-name "My Game" --domain localhost
+ *   pnpm seed:dev-app --app-image https://example.com/my-icon.png
  *   pnpm seed:dev-app --promotion FEATURED_CAROUSEL
  *   pnpm seed:dev-app --reset-rate-limits
  *
@@ -61,6 +62,7 @@ const installForProfileId = getArg('--install-for', '');
 const parsedUrl = new URL(appUrl);
 const domain = getArg('--domain', parsedUrl.hostname);
 const slug = getArg('--slug', appName.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+const appImage = getArg('--app-image', '');
 const promotionLevel = getArg('--promotion', 'FEATURED_CAROUSEL');
 const resetRateLimits = args.includes('--reset-rate-limits');
 
@@ -117,15 +119,20 @@ async function main(): Promise<void> {
     if (existingId) {
         console.log(`  Listing already exists for slug "${slug}": ${existingId}`);
 
-        // Update promotion_level in case it changed
+        // Update mutable fields in case they changed
         await run(
             `MATCH (l:AppStoreListing {listing_id: $listingId})
              SET l.promotion_level = $promotionLevel
+             ${appImage ? ', l.icon_url = $iconUrl' : ''}
              RETURN l`,
-            { listingId: existingId, promotionLevel: promotionLevel }
+            { listingId: existingId, promotionLevel, ...(appImage && { iconUrl: appImage }) }
         );
 
         console.log(`  Updated promotion_level → ${promotionLevel}`);
+
+        if (appImage) {
+            console.log(`  Updated icon_url       → ${appImage}`);
+        }
 
         if (resetRateLimits) {
             await clearRateLimits(existingId);
@@ -196,7 +203,7 @@ async function main(): Promise<void> {
             displayName: appName,
             tagline: `Dev app at ${appUrl}`,
             fullDescription: `Locally seeded partner app pointing at ${appUrl}`,
-            iconUrl: 'https://example.com/icon.png',
+            iconUrl: appImage || 'https://placehold.co/250x250/orange/white?text=App',
             status: 'LISTED',
             launchType: 'EMBEDDED_IFRAME',
             launchConfigJson: JSON.stringify({ url: appUrl }),

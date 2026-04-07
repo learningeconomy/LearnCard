@@ -131,7 +131,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
         >
             <div
                 ref={ref}
-                onClick={handleMarkRead}
+                onClick={handleOpenApp}
                 className={`flex gap-3 min-h-[100px] justify-start items-center max-w-[600px] relative w-full rounded-3xl py-[15px] px-[15px] ${bgColor} my-[15px] cursor-pointer hover:opacity-90 transition-opacity ${className ?? ''}`}
             >
                 {!isRead && (
