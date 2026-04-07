@@ -10,14 +10,63 @@ import {
 } from './ai-pathway-courses/ai-pathway-courses.helpers';
 
 import { X } from 'lucide-react';
-import { useModal } from 'learn-card-base';
+import {
+    ModalTypes,
+    conditionalPluralize,
+    useGetBoostSkills,
+    useGetSelfAssignedSkillsBoost,
+    useModal,
+    useVerifiableData,
+} from 'learn-card-base';
 import { IonSpinner } from '@ionic/react';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
+import SelfAssignSkillsModal from '../skills/SelfAssignSkillsModal';
+import EditGoalsModal from './EditGoalsModal';
+import {
+    SKILL_PROFILE_GOALS_KEY,
+    SkillProfileGoalsData,
+} from './ai-pathways-skill-profile/SkillProfileStep1';
 
 type GrowSkillsModalProps = {};
 
 const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
-    const { closeModal } = useModal();
+    const { newModal, closeModal } = useModal();
+
+    const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
+    const { data: sasBoostSkills, isLoading: sasBoostSkillsLoading } = useGetBoostSkills(
+        sasBoostData?.uri
+    );
+
+    const openSelfAssignSkillsModal = () => {
+        newModal(<SelfAssignSkillsModal />, undefined, {
+            desktop: ModalTypes.Right,
+            mobile: ModalTypes.Right,
+        });
+    };
+
+    const {
+        data: goalsData,
+        isLoading: goalsLoading,
+        saveIfChanged: saveGoals,
+        isSaving: goalsSaving,
+    } = useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY, {
+        name: 'Career Goals',
+        description: 'Self-reported career goals and aspirations',
+    });
+
+    const goals = goalsData?.goals ?? [];
+
+    const openEditGoalsModal = () => {
+        newModal(
+            <EditGoalsModal />,
+            { sectionClassName: '!bg-transparent' },
+            {
+                desktop: ModalTypes.Right,
+                mobile: ModalTypes.Right,
+            }
+        );
+    };
+
     const fieldOfStudy = 'Computer Science';
 
     const { data: trainingPrograms, isLoading: fetchTrainingProgramsLoading } =
@@ -46,8 +95,27 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
             <div className="px-[15px] py-[20px] bg-white safe-area-top-margin flex flex-col gap-[15px] z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <SkillsIconWithShape className="w-[50px] h-[50px]" />
-                    <h5 className="text-[21px] font-poppins font-[600] leading-[24px]">
+                    <h5 className="text-[21px] font-poppins font-[600] leading-[24px] flex flex-col gap-[5px]">
                         Grow your skills
+                        <div className="text-[14px] font-poppins font-[600] text-grayscale-600 flex items-center gap-[5px]">
+                            {conditionalPluralize(sasBoostSkills?.length || 0, 'Skill')}
+                            <button
+                                onClick={openSelfAssignSkillsModal}
+                                className="text-indigo-500 bg-indigo-50 px-[5px] rounded-[5px]"
+                            >
+                                Edit
+                            </button>
+
+                            <span>•</span>
+
+                            {conditionalPluralize(goals.length, 'Goal')}
+                            <button
+                                onClick={openEditGoalsModal}
+                                className="text-indigo-500 bg-indigo-50 px-[5px] rounded-[5px]"
+                            >
+                                Edit
+                            </button>
+                        </div>
                     </h5>
                 </div>
                 <button onClick={closeModal} className="absolute top-[20px] right-[20px]">
