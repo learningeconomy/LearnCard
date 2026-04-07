@@ -31,6 +31,8 @@ import {
     CredentialCategoryEnum,
 } from 'learn-card-base';
 
+import { useSkillProfileCompletion } from './ai-pathways-skill-profile/SkillProfileProgressBar';
+
 import {
     getFirstAvailableKeywords,
     getAllKeywords,
@@ -44,6 +46,7 @@ import {
 const AiPathways: React.FC = () => {
     const { newModal } = useModal();
     const { getThemedCategoryColors } = useTheme();
+    const { percentage } = useSkillProfileCompletion();
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiPathway);
     const { backgroundSecondaryColor } = colors;
@@ -127,11 +130,19 @@ const AiPathways: React.FC = () => {
                                 <ExperimentalFeatureBox className="shadow-box-bottom" />
                             </div>
 
-                            <AiPathwaysWhatWouldYouLikeToDoCard
-                                handleExplorePathways={handleExplorePathways}
-                            />
+                            {percentage > 0 && (
+                                <AiPathwaysWhatWouldYouLikeToDoCard
+                                    handleExplorePathways={handleExplorePathways}
+                                />
+                            )}
 
                             <MySkillProfile />
+
+                            {percentage === 0 && (
+                                <AiPathwaysWhatWouldYouLikeToDoCard
+                                    handleExplorePathways={handleExplorePathways}
+                                />
+                            )}
 
                             {emptyPathways ? (
                                 <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
