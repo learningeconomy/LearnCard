@@ -4,6 +4,7 @@ import {
     useOccupationDetailsForKeyword,
     useTrainingProgramsByKeyword,
 } from 'learn-card-base/react-query/queries/careerOneStop';
+import { OccupationDetailsResponse } from 'learn-card-base/types/careerOneStop';
 import {
     filterCoursesByFieldOfStudy,
     normalizeSchoolPrograms,
@@ -14,6 +15,7 @@ import {
     ModalTypes,
     SearchInput,
     conditionalPluralize,
+    useAiPathways,
     useGetBoostSkills,
     useGetSelfAssignedSkillsBoost,
     useModal,
@@ -27,6 +29,9 @@ import {
     SKILL_PROFILE_GOALS_KEY,
     SkillProfileGoalsData,
 } from './ai-pathways-skill-profile/SkillProfileStep1';
+import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
+import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
+import GrowSkillsMediaItem from './GrowSkillsMediaItem';
 
 type GrowSkillsModalProps = {};
 
@@ -43,6 +48,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
     const { data: sasBoostSkills, isLoading: sasBoostSkillsLoading } = useGetBoostSkills(
         sasBoostData?.uri
     );
+    const skillNames = sasBoostSkills?.map(s => s.statement) ?? [];
 
     const openSelfAssignSkillsModal = () => {
         newModal(<SelfAssignSkillsModal />, undefined, {
@@ -51,16 +57,13 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
         });
     };
 
-    const {
-        data: goalsData,
-        isLoading: goalsLoading,
-        saveIfChanged: saveGoals,
-        isSaving: goalsSaving,
-    } = useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY, {
-        name: 'Career Goals',
-        description: 'Self-reported career goals and aspirations',
-    });
-
+    const { data: goalsData, isLoading: goalsLoading } = useVerifiableData<SkillProfileGoalsData>(
+        SKILL_PROFILE_GOALS_KEY,
+        {
+            name: 'Career Goals',
+            description: 'Self-reported career goals and aspirations',
+        }
+    );
     const goals = goalsData?.goals ?? [];
 
     const openEditGoalsModal = () => {
@@ -74,12 +77,11 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
         );
     };
 
-    const fieldOfStudy = 'Computer Science';
+    const keywords = [search, ...goals, ...skillNames];
 
     const { data: trainingPrograms, isLoading: fetchTrainingProgramsLoading } =
         useTrainingProgramsByKeyword({
-            keywords: ['Software Developer'],
-            fieldOfStudy,
+            keywords,
         });
 
     const schoolPrograms = useMemo(() => {
@@ -93,7 +95,20 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
     }, [schoolPrograms]);
 
     const { data: occupations, isLoading: fetchOccupationsLoading } =
-        useOccupationDetailsForKeyword('Software Developer');
+        useOccupationDetailsForKeyword(search);
+    // See: AiPathwayExploreContent.tsx
+
+    const { data: learningPathwaysData, isLoading: fetchLearningPathwaysLoading } = useAiPathways();
+    // See: AiPathwaySessions.tsx
+
+    const cards = [
+        ...(occupations?.map((occupation: OccupationDetailsResponse) => ({
+            title: occupation.OnetTitle,
+            mediaUrl: occupation.COSVideoURL,
+            videoCode: occupation.Video[0]?.VideoCode?.replace(/[^0-9]/g, '') || '',
+            type: 'media',
+        })) || []),
+    ];
 
     const loading = false;
 
@@ -163,12 +178,58 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
                     </div>
                 </div> */}
                 <SearchInput
-                    placeholder="Search by skill, goal, or job..."
+                    placeholder="Search by field or job title..."
                     value={search}
                     onChange={setSearch}
                 />
-                <div className="pt-[20px] text-[16px] font-[600] text-grayscale-700">
+                {/* <div className="pt-[20px] text-[16px] font-[600] text-grayscale-700">
                     Selected tab: {activeTab}
+                </div> */}
+                <div className="pt-[20px] text-[16px] font-[600] text-grayscale-700">
+                    Keywords: {keywords.join(', ')}
+                    <br />
+                    Field of study: {search}
+                    <br />
+                    <br />
+                    Training programs: {trainingPrograms?.length || 0}
+                    <br />
+                    School programs: {schoolPrograms?.length || 0}
+                    <br />
+                    {/* Courses: {courses?.length || 0} */}
+                    {/* <br /> */}
+                    Occupations: {occupations?.length || 0}
+                </div>
+
+                <div className="flex flex-col gap-[20px]">
+                    {cards.map(card => {
+                        switch (card.type) {
+                            case 'media':
+                                return (
+                                    <GrowSkillsMediaItem
+                                        key={card.title}
+                                        title={card.title}
+                                        mediaUrl={card.mediaUrl}
+                                        videoCode={card.videoCode}
+                                    />
+                                );
+                            default:
+                                return null;
+                        }
+                    })}
+                </div>
+
+                {/* <div className="pt-[20px]">
+                    <AiPathwaySessions
+                        learningPathwaysData={learningPathwaysData}
+                        isLoading={fetchLearningPathwaysLoading}
+                    />
+                </div> */}
+
+                <div className="pt-[20px]">
+                    <AiPathwayExploreContent
+                        occupations={occupations}
+                        isLoading={fetchOccupationsLoading}
+                    />
                 </div>
             </section>
         </div>

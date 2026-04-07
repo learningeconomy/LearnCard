@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { UseQueryResult, useQuery } from '@tanstack/react-query';
 import _ from 'lodash';
 
 import type { OccupationDetailsResponse } from '../../types/careerOneStop';
@@ -25,7 +25,9 @@ const fetchOccupationDetailsForKeyword = async (
     return res.json();
 };
 
-export const useOccupationDetailsForKeyword = (keyword: string) => {
+export const useOccupationDetailsForKeyword = (
+    keyword: string
+): UseQueryResult<OccupationDetailsResponse[]> => {
     return useQuery({
         queryKey: ['occupation-details', keyword],
         queryFn: async () => {
@@ -164,7 +166,6 @@ export const useCareerOneStopVideo = (videoCode: string | null) => {
  * 8. Combines training programs with filtered syllabus courses
  *
  * @param keywords - Array of keywords to search for
- * @param fieldOfStudy - Optional field of study to filter syllabus courses
  * @returns Enriched training programs with syllabus courses
  */
 export const useTrainingProgramsByKeyword = ({ keywords }: { keywords: string[] | null }) => {

@@ -34,7 +34,7 @@ export const normalizeSchoolPrograms = (trainingPrograms: TrainingProgram[]) => 
 
 export const filterCoursesByFieldOfStudy = (
     trainingPrograms: TrainingProgram[],
-    fieldOfStudy: string
+    fieldOfStudy?: string
 ) => {
     // Extract all courses from all training programs
     const allCourses = trainingPrograms?.flatMap((program: any) => {
@@ -47,7 +47,7 @@ export const filterCoursesByFieldOfStudy = (
 
     // Filter courses by field of study
     const filteredCourses = allCourses.filter((course: any) => {
-        return course?.field?.field === fieldOfStudy;
+        return fieldOfStudy ? course?.field?.field === fieldOfStudy : true;
     });
 
     // Randomize the filtered courses before returning
