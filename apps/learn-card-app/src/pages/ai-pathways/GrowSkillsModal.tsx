@@ -10,6 +10,7 @@ import {
     normalizeSchoolPrograms,
 } from './ai-pathway-courses/ai-pathway-courses.helpers';
 
+import { IonSpinner } from '@ionic/react';
 import { X } from 'lucide-react';
 import {
     ModalTypes,
@@ -21,7 +22,6 @@ import {
     useModal,
     useVerifiableData,
 } from 'learn-card-base';
-import { IonSpinner } from '@ionic/react';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import SelfAssignSkillsModal from '../skills/SelfAssignSkillsModal';
 import EditGoalsModal from './EditGoalsModal';
@@ -108,6 +108,11 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
 
     const { data: learningPathwaysData, isLoading: fetchLearningPathwaysLoading } = useAiPathways();
     // See: AiPathwaySessions.tsx
+
+    const showAll = activeTab === 'All';
+    const showAiSessions = showAll || activeTab === 'AI Sessions';
+    const showCourses = showAll || activeTab === 'Courses';
+    const showMedia = showAll || activeTab === 'Media';
 
     const cards = [
         ...(schoolPrograms?.map(program => ({
@@ -214,37 +219,42 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
                     Occupations: {occupations?.length || 0}
                 </div> */}
 
-                <div className="flex flex-col gap-[15px]">
-                    {cards.map(card => {
-                        switch (card.type) {
-                            case 'course':
-                                return (
-                                    <GrowSkillsCourseItem
-                                        key={card.program?.ProgramName}
-                                        program={card.program}
-                                    />
-                                );
-                            case 'media':
-                                return (
-                                    <GrowSkillsMediaItem
-                                        key={card.title}
-                                        title={card.title}
-                                        mediaUrl={card.mediaUrl}
-                                        videoCode={card.videoCode}
-                                    />
-                                );
-                            default:
-                                return null;
-                        }
-                    })}
-                </div>
+                {showAiSessions && (
+                    <div className="pt-[20px]">
+                        <AiPathwaySessions
+                            learningPathwaysData={learningPathwaysData}
+                            isLoading={fetchLearningPathwaysLoading}
+                        />
+                    </div>
+                )}
 
-                {/* <div className="pt-[20px]">
-                    <AiPathwaySessions
-                        learningPathwaysData={learningPathwaysData}
-                        isLoading={fetchLearningPathwaysLoading}
-                    />
-                </div> */}
+                {showCourses && (
+                    <div className="flex flex-col gap-[15px]">
+                        {cards
+                            .filter(card => card.type === 'course')
+                            .map(card => (
+                                <GrowSkillsCourseItem
+                                    key={card.program?.ProgramName}
+                                    program={card.program}
+                                />
+                            ))}
+                    </div>
+                )}
+
+                {showMedia && (
+                    <div className="flex flex-col gap-[15px]">
+                        {cards
+                            .filter(card => card.type === 'media')
+                            .map(card => (
+                                <GrowSkillsMediaItem
+                                    key={card.title}
+                                    title={card.title}
+                                    mediaUrl={card.mediaUrl}
+                                    videoCode={card.videoCode}
+                                />
+                            ))}
+                    </div>
+                )}
 
                 {/* <div className="pt-[20px]">
                     <AiPathwayCourses
