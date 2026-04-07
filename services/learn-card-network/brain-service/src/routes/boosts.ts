@@ -735,10 +735,8 @@ export const boostsRouter = t.router({
                         boostCreated = true;
                     } else if (input.signedCredential) {
                         // Auto-create boost from the signed credential
-                        const name =
-                            (input.signedCredential as Record<string, unknown>).name as
-                                | string
-                                | undefined;
+                        const credential = input.signedCredential as Record<string, unknown>;
+                        const name = typeof credential.name === 'string' ? credential.name : undefined;
 
                         boost = await traceDb('createBoost:fromSignedCredential', () =>
                             createBoost(
