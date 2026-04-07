@@ -102,7 +102,7 @@ const permissions: string[] = permissionsRaw
 // importing @models (which has circular deps that break under tsx/CJS).
 // ---------------------------------------------------------------------------
 
-const transformProfileId = (raw: string): string => raw.toLowerCase().replace(':', '%3A');
+const transformProfileId = (raw: string): string => raw.toLowerCase().replace(/:/g, '%3A');
 
 const getDidWeb = (domain: string, profileId: string): string =>
     `did:web:${domain}:users:${profileId}`;

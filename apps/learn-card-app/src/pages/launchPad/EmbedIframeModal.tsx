@@ -59,12 +59,16 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         (actionPath: string) => {
             if (!iframeRef.current) return;
 
+            // Only allow relative paths — reject anything with a protocol (e.g. javascript:, data:)
+            if (/^[a-z][a-z0-9+.-]*:/i.test(actionPath)) return;
+
             try {
                 const base = new URL(embedUrl);
-                base.pathname = base.pathname.replace(/\/$/, '') + actionPath;
+                const safePath = actionPath.startsWith('/') ? actionPath : `/${actionPath}`;
+                base.pathname = base.pathname.replace(/\/$/, '') + safePath;
                 iframeRef.current.src = `${base.toString()}?lc_host_override=${window.location.origin}`;
             } catch {
-                iframeRef.current.src = `${embedUrl.replace(/\/$/, '')}${actionPath}?lc_host_override=${window.location.origin}`;
+                // embedUrl is invalid — do not navigate
             }
         },
         [embedUrl]
