@@ -609,7 +609,7 @@ export type LearnCardNetworkPluginMethods = {
         expiresAt: string;
     }>;
     sendGuardianChallenge: (token: string) => Promise<{ message: string }>;
-    approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
+    approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string; alreadyLinked: boolean }>;
     rejectGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
     registerGuardianAsManager: (
         token: string,

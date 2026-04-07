@@ -25,6 +25,7 @@ type PageState =
     | 'approving'
     | 'rejecting'
     | 'approved'
+    | 'already_linked'
     | 'rejected'
     | 'upgrade_prompt'
     | 'registering'
@@ -34,7 +35,7 @@ type PageState =
 type LCNOpenInvoke = {
     getGuardianPendingCredential: (token: string) => Promise<CredentialInfo>;
     sendGuardianChallenge: (token: string) => Promise<{ message: string }>;
-    approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
+    approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string; alreadyLinked: boolean }>;
     rejectGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
     registerGuardianAsManager: (
         token: string,
@@ -133,7 +134,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
         try {
             const res = await invokeRef.current.approveGuardianCredential(token, otpCode);
             setResultMessage(res.message ?? 'Credential approved.');
-            setState('approved');
+            setState(res.alreadyLinked ? 'already_linked' : 'approved');
         } catch (e: unknown) {
             setError(toErrorMessage(e));
             setState('error');
@@ -172,14 +173,14 @@ const GuardianCredentialApprovalPage: React.FC = () => {
         <IonPage>
             <IonContent fullscreen color="emerald-700" className="flex flex-col flex-grow bg-emerald-700">
                 <div className="h-full w-full flex flex-col items-center justify-center px-6 text-center text-white">
-                    <div className="flex flex-col items-center justify-center w-full mb-8">
+                    <a href="/login" className="flex flex-col items-center justify-center w-full mb-8">
                         <img
                             src={LearnCardBrandMark}
                             alt="Learn Card brand mark"
                             className="w-[64px] h-[64px] mb-3"
                         />
                         <img src={LearnCardTextLogo} alt="Learn Card text logo" className="h-4" />
-                    </div>
+                    </a>
 
                     {state === 'loading' && (
                         <div className="flex flex-col items-center gap-3">
@@ -302,6 +303,22 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                                     Create a LearnCard Account
                                 </IonButton>
                             </div>
+                        </>
+                    )}
+
+                    {state === 'already_linked' && (
+                        <>
+                            <h1 className="text-2xl font-bold mb-2">Credential Approved</h1>
+                            <p className="text-emerald-100 max-w-[520px] mb-6">
+                                The credential has been approved. Your LearnCard account has been linked to
+                                this profile.
+                            </p>
+                            <a
+                                href="/login"
+                                className="text-white font-semibold underline underline-offset-2 text-sm"
+                            >
+                                Log in to LearnCard
+                            </a>
                         </>
                     )}
 

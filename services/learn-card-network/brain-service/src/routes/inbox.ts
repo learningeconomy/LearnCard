@@ -894,7 +894,7 @@ export const inboxRouter = t.router({
             },
         })
         .input(z.object({ token: z.string(), otpCode: z.string() }))
-        .output(z.object({ message: z.string() }))
+        .output(z.object({ message: z.string(), alreadyLinked: z.boolean() }))
         .mutation(async ({ input }) => {
             const { token, otpCode } = input;
 
@@ -943,8 +943,42 @@ export const inboxRouter = t.router({
 
             await markGuardianApprovalTokenAsUsed(token);
 
-            // Store upgrade context so guardian can create an account (72h TTL)
+            // Store upgrade context so guardian can create a new account if needed (72h TTL)
             await storeGuardianUpgradeContext(token, guardianEmail, inboxCredentialId);
+
+            // Auto-link: if the guardian already has a LearnCard account, establish the MANAGES
+            // relationship immediately (OTP already proved email ownership — no extra step needed).
+            let alreadyLinked = false;
+            try {
+                const existingCm = await getContactMethodByValue('email', guardianEmail);
+                // Mark CM verified since OTP proved ownership
+                if (existingCm && !existingCm.isVerified) {
+                    await updateContactMethod(existingCm.id, { isVerified: true });
+                }
+                const guardianProfile = existingCm ? await getProfileByContactMethod(existingCm.id) : null;
+                if (guardianProfile) {
+                    const childProfile = await getProfileForInboxCredential(inboxCredentialId);
+                    if (childProfile) {
+                        const existingManagers = await getProfilesThatManageAProfile(childProfile.profileId);
+                        const alreadyManages = existingManagers.some(m => m.profileId === guardianProfile.profileId);
+                        if (!alreadyManages) {
+                            const manager = await createProfileManager({
+                                displayName: guardianProfile.displayName ?? 'Guardian',
+                            });
+                            await Promise.all([
+                                createManagesRelationship(manager.id, childProfile.profileId),
+                                manager.relateTo({
+                                    alias: 'administratedBy',
+                                    where: { profileId: guardianProfile.profileId },
+                                }),
+                            ]);
+                        }
+                        alreadyLinked = true;
+                    }
+                }
+            } catch (err) {
+                console.error('[approveGuardianCredential] Failed to auto-link existing guardian account:', err);
+            }
 
             // Notify the student
             try {
@@ -965,7 +999,7 @@ export const inboxRouter = t.router({
                 console.error('[approveGuardianCredential] Failed to send student notification:', err);
             }
 
-            return { message: 'Credential approved. The recipient can now claim it.' };
+            return { message: 'Credential approved. The recipient can now claim it.', alreadyLinked };
         }),
 
     // Open route: guardian rejects a credential (requires OTP verification)
