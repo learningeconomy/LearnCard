@@ -18,6 +18,7 @@
  *   pnpm seed:dev-app --app-image https://example.com/my-icon.png
  *   pnpm seed:dev-app --template-alias my-badge
  *   pnpm seed:dev-app --sa-endpoint http://localhost:5100/api
+ *   pnpm seed:dev-app --permissions request_identity,send_credential
  *   pnpm seed:dev-app --promotion FEATURED_CAROUSEL
  *   pnpm seed:dev-app --reset-rate-limits
  *
@@ -80,6 +81,21 @@ const saEndpoint = getArg('--sa-endpoint', 'http://localhost:5100/api');
 const saSeed = getArg('--sa-seed', 'd'.repeat(64));
 const promotionLevel = getArg('--promotion', 'FEATURED_CAROUSEL');
 const resetRateLimits = args.includes('--reset-rate-limits');
+
+const ALL_PERMISSIONS = [
+    'request_identity',
+    'send_credential',
+    'launch_feature',
+    'credential_search',
+    'credential_by_id',
+    'request_consent',
+    'template_issuance',
+];
+
+const permissionsRaw = getArg('--permissions', '');
+const permissions: string[] = permissionsRaw
+    ? permissionsRaw.split(',').map(p => p.trim())
+    : ALL_PERMISSIONS;
 
 // ---------------------------------------------------------------------------
 // Helpers — mirrors the access-layer logic but uses raw Cypher to avoid
@@ -175,15 +191,24 @@ async function main(): Promise<void> {
         console.log(`  Listing already exists for slug "${slug}": ${existingId}`);
 
         // Update mutable fields in case they changed
+        const launchConfigJson = JSON.stringify({ url: appUrl, permissions });
+
         await run(
             `MATCH (l:AppStoreListing {listing_id: $listingId})
-             SET l.promotion_level = $promotionLevel
+             SET l.promotion_level = $promotionLevel,
+                 l.launch_config_json = $launchConfigJson
              ${appImage ? ', l.icon_url = $iconUrl' : ''}
              RETURN l`,
-            { listingId: existingId, promotionLevel, ...(appImage && { iconUrl: appImage }) }
+            {
+                listingId: existingId,
+                promotionLevel,
+                launchConfigJson,
+                ...(appImage && { iconUrl: appImage }),
+            }
         );
 
         console.log(`  Updated promotion_level → ${promotionLevel}`);
+        console.log(`  Updated permissions     → ${permissions.join(', ')}`);
 
         if (appImage) {
             console.log(`  Updated icon_url       → ${appImage}`);
@@ -264,7 +289,7 @@ async function main(): Promise<void> {
             iconUrl: appImage || 'https://placehold.co/250x250/orange/white?text=App',
             status: 'LISTED',
             launchType: 'EMBEDDED_IFRAME',
-            launchConfigJson: JSON.stringify({ url: appUrl }),
+            launchConfigJson: JSON.stringify({ url: appUrl, permissions }),
             category: 'Learning',
             promotionLevel,
             integrationId,
@@ -538,6 +563,7 @@ function printSummary(listingId: string): void {
     console.log(`  Promotion:       ${promotionLevel}`);
     console.log(`  Template Alias:  ${templateAlias}`);
     console.log(`  SA Endpoint:     ${saEndpoint}`);
+    console.log(`  Permissions:     ${permissions.join(', ')}`);
 
     if (installForProfileId) {
         console.log(`  Installed for:   ${installForProfileId}`);
