@@ -219,6 +219,24 @@ export const getContactMethodForInboxCredential = async (
     return inflateObject<ContactMethodType>(cm as any);
 };
 
+export const getApprovedInboxCredentialsByGuardianEmail = async (
+    guardianEmail: string
+): Promise<InboxCredentialType[]> => {
+    const result = await new QueryBuilder(new BindParam({ guardianEmail }))
+        .match({ model: InboxCredential, identifier: 'inboxCredential' })
+        .where(
+            'inboxCredential.guardianEmail = $guardianEmail AND inboxCredential.guardianStatus = "GUARDIAN_APPROVED"'
+        )
+        .return('inboxCredential')
+        .run();
+
+    return (
+        QueryRunner.getResultProperties<InboxCredentialType[]>(result, 'inboxCredential')?.map(
+            credential => inflateObject<InboxCredentialType>(credential as any)
+        ) ?? []
+    );
+};
+
 export const getProfileForInboxCredential = async (
     inboxCredentialId: string
 ): Promise<ProfileType | null> => {

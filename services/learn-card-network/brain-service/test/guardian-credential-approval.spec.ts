@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach, afterAll, beforeAll } from 'vitest';
-import { getUser, getClient } from './helpers/getClient';
+import { getUser } from './helpers/getClient';
 import { testUnsignedBoost } from './helpers/send';
 import { Profile, InboxCredential, ContactMethod, SigningAuthority, Boost, ProfileManager } from '@models';
 import { sendSpy } from './helpers/spies';
@@ -214,165 +214,6 @@ describe('Guardian-Gated Credential Issuance', () => {
         });
     });
 
-    describe('registerGuardianAsManager', () => {
-        let userB: Awaited<ReturnType<typeof getUser>>;
-
-        beforeAll(async () => {
-            userB = await getUser('b'.repeat(64));
-        });
-
-        // Helper: set up student profile with email CM, send credential, run full OTP approval,
-        // and return the approval token (which doubles as the upgrade token).
-        const approveAndGetUpgradeToken = async (): Promise<string> => {
-            // Ensure userB has a profile and verified email CM for 'student@school.edu'
-            const existingProfile = await Profile.findOne({ where: { profileId: 'userb' } });
-            if (!existingProfile) {
-                await userB.clients.fullAuth.profile.createProfile({
-                    profileId: 'userb',
-                    displayName: 'User B',
-                });
-            }
-
-            // Link student@school.edu to userB's profile via the access layer
-            const { createContactMethod } = await import('@accesslayer/contact-method/create');
-            const { createProfileContactMethodRelationship } = await import(
-                '@accesslayer/contact-method/relationships/create'
-            );
-            const { getContactMethodByValue } = await import('@accesslayer/contact-method/read');
-
-            let cm = await getContactMethodByValue('email', 'student@school.edu');
-            if (!cm) {
-                cm = await createContactMethod({
-                    type: 'email',
-                    value: 'student@school.edu',
-                    isVerified: true,
-                    isPrimary: true,
-                });
-            }
-            await createProfileContactMethodRelationship('userb', cm.id);
-
-            // Issue and send credential with guardianEmail
-            const signedVc = await userA.learnCard.invoke.issueCredential({
-                ...testUnsignedBoost,
-                issuer: userA.learnCard.id.did(),
-            });
-
-            await userA.clients.fullAuth.boost.send({
-                type: 'boost',
-                recipient: 'student@school.edu',
-                template: { credential: testUnsignedBoost },
-                signedCredential: signedVc,
-                options: { guardianEmail: 'parent@home.com' },
-            });
-
-            const credentials = await InboxCredential.findMany({ where: {} });
-            const inboxCredId = credentials[0]!.id;
-
-            const { generateGuardianCredentialApprovalToken } = await import(
-                '../src/helpers/guardian-approval.helpers'
-            );
-            const approvalToken = await generateGuardianCredentialApprovalToken(inboxCredId, 'parent@home.com');
-
-            sendSpy.mockClear();
-
-            // Get OTP from sendGuardianChallenge
-            await userA.clients.fullAuth.inbox.sendGuardianChallenge({ token: approvalToken });
-            const otpCall = sendSpy.mock.calls.find((c: any) => c[0].templateId === 'guardian-email-otp');
-            const otpCode: string = otpCall![0].templateModel.verificationCode;
-            sendSpy.mockClear();
-
-            // Approve — this stores the upgrade context keyed on the same token
-            await userA.clients.fullAuth.inbox.approveGuardianCredential({ token: approvalToken, otpCode });
-
-            return approvalToken; // same token is valid for upgrade
-        };
-
-        it('should create guardian profile and ProfileManager relationship after approval', async () => {
-            const token = await approveAndGetUpgradeToken();
-            const openClient = getClient();
-
-            const result = await openClient.inbox.registerGuardianAsManager({
-                token,
-                displayName: 'Parent User',
-                profileId: 'parent-user',
-            });
-
-            expect(result.message).toContain('Account created');
-            expect(result.guardianProfileId).toBe('parent-user');
-            expect(result.childProfileId).toBe('userb');
-            expect(typeof result.managerId).toBe('string');
-
-            // Verify the guardian profile was created
-            const guardianProfile = await Profile.findOne({ where: { profileId: 'parent-user' } });
-            expect(guardianProfile).toBeTruthy();
-            expect(guardianProfile?.displayName).toBe('Parent User');
-
-            // Verify ProfileManager node exists
-            const { ProfileManager } = await import('@models');
-            const managers = await ProfileManager.findMany({ where: {} });
-            expect(managers.length).toBeGreaterThan(0);
-
-            // Verify the guardian's email ContactMethod was linked
-            const cms = await ContactMethod.findMany({ where: { value: 'parent@home.com' } });
-            expect(cms.length).toBeGreaterThanOrEqual(1);
-            expect(cms[0]!.value).toBe('parent@home.com');
-        });
-
-        it('should return BAD_REQUEST for invalid/expired upgrade token', async () => {
-            const openClient = getClient();
-
-            await expect(
-                openClient.inbox.registerGuardianAsManager({
-                    token: 'fake-nonexistent-token',
-                    displayName: 'Parent User',
-                    profileId: 'parent-user',
-                })
-            ).rejects.toThrow(/invalid or expired/i);
-        });
-
-        it('should return CONFLICT if profileId is already taken', async () => {
-            const token = await approveAndGetUpgradeToken();
-
-            // Create a profile with the desired profileId first
-            const takenUser = await getUser('c'.repeat(64));
-            await takenUser.clients.fullAuth.profile.createProfile({
-                profileId: 'taken-handle',
-                displayName: 'Existing User',
-            });
-
-            const openClient = getClient();
-
-            await expect(
-                openClient.inbox.registerGuardianAsManager({
-                    token,
-                    displayName: 'Parent User',
-                    profileId: 'taken-handle',
-                })
-            ).rejects.toThrow(/already taken/i);
-        });
-
-        it('should return managerId=null when guardian already manages the child (idempotent upgrade)', async () => {
-            const token = await approveAndGetUpgradeToken();
-            const openClient = getClient();
-
-            // First call creates the guardian profile and ProfileManager
-            const first = await openClient.inbox.registerGuardianAsManager({
-                token,
-                displayName: 'Parent User',
-                profileId: 'parent-idempotent',
-            });
-            expect(first.managerId).toBeTruthy();
-
-            // The upgrade token is deleted after use, so the same token cannot be reused.
-            // Idempotency for an already-managing guardian would require a new upgrade token
-            // for the same guardian email — in that scenario managerId would be null.
-            // We verify here that exactly one ProfileManager was created.
-            const { ProfileManager } = await import('@models');
-            const managers = await ProfileManager.findMany({ where: {} });
-            expect(managers).toHaveLength(1);
-        });
-    });
-
     describe('rejectGuardianCredential', () => {
         let inboxCredId: string;
         let approvalToken: string;
@@ -433,6 +274,101 @@ describe('Guardian-Gated Credential Issuance', () => {
             const studentNotification = sendSpy.mock.calls[0][0];
             expect(studentNotification.contactMethod.value).toBe('student@school.edu');
             expect(studentNotification.templateId).toBe('guardian-rejected-credential');
+        });
+    });
+
+    describe('claimPendingGuardianLinks', () => {
+        it('should return empty array when caller has no verified email contact method', async () => {
+            const result = await userA.clients.fullAuth.inbox.claimPendingGuardianLinks();
+            expect(result).toEqual([]);
+        });
+
+        it('should establish MANAGES relationship and return child info for approved credentials', async () => {
+            const signedVc = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+            });
+            await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'student@school.edu',
+                template: { credential: testUnsignedBoost },
+                signedCredential: signedVc,
+                options: { guardianEmail: 'guardian@home.com' },
+            });
+
+            const credentials = await InboxCredential.findMany({ where: {} });
+            const inboxCred = credentials[0]!;
+            await inboxCred.update({ guardianStatus: 'GUARDIAN_APPROVED', isAccepted: true });
+
+            const guardianUser = await getUser('b'.repeat(64));
+            await guardianUser.clients.fullAuth.profile.createProfile({
+                profileId: 'guardian1',
+                displayName: 'Guardian One',
+            });
+
+            const { createContactMethod } = await import('../src/accesslayer/contact-method/create');
+            const { createProfileContactMethodRelationship } = await import(
+                '../src/accesslayer/contact-method/relationships/create'
+            );
+            const cm = await createContactMethod({
+                type: 'email',
+                value: 'guardian@home.com',
+                isVerified: true,
+                isPrimary: true,
+            });
+            await createProfileContactMethodRelationship('guardian1', cm.id);
+
+            const result = await guardianUser.clients.fullAuth.inbox.claimPendingGuardianLinks();
+
+            expect(result).toHaveLength(1);
+            expect(result[0]!.childDisplayName).toBeTruthy();
+            expect(result[0]!.managerId).toBeTruthy();
+
+            const { getProfilesThatManageAProfile } = await import(
+                '../src/accesslayer/profile/relationships/read'
+            );
+            const managers = await getProfilesThatManageAProfile(result[0]!.childProfileId);
+            expect(managers.some(m => m.profileId === 'guardian1')).toBe(true);
+        });
+
+        it('should be idempotent — second call returns managerId: null for already-linked children', async () => {
+            const signedVc = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+            });
+            await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'student2@school.edu',
+                template: { credential: testUnsignedBoost },
+                signedCredential: signedVc,
+                options: { guardianEmail: 'guardian2@home.com' },
+            });
+            const credentials = await InboxCredential.findMany({ where: {} });
+            await credentials[0]!.update({ guardianStatus: 'GUARDIAN_APPROVED', isAccepted: true });
+
+            const guardianUser = await getUser('c'.repeat(64));
+            await guardianUser.clients.fullAuth.profile.createProfile({
+                profileId: 'guardian2',
+                displayName: 'Guardian Two',
+            });
+            const { createContactMethod } = await import('../src/accesslayer/contact-method/create');
+            const { createProfileContactMethodRelationship } = await import(
+                '../src/accesslayer/contact-method/relationships/create'
+            );
+            const cm = await createContactMethod({
+                type: 'email',
+                value: 'guardian2@home.com',
+                isVerified: true,
+                isPrimary: true,
+            });
+            await createProfileContactMethodRelationship('guardian2', cm.id);
+
+            const first = await guardianUser.clients.fullAuth.inbox.claimPendingGuardianLinks();
+            const second = await guardianUser.clients.fullAuth.inbox.claimPendingGuardianLinks();
+
+            expect(first).toHaveLength(1);
+            expect(first[0]!.managerId).toBeTruthy();
+            expect(second[0]?.managerId).toBeNull();
         });
     });
 });
