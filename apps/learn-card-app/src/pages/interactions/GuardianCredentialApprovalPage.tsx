@@ -53,6 +53,15 @@ const toErrorMessage = (err: unknown): string =>
         ? err.message
         : 'Something went wrong. The approval link may be invalid or expired.';
 
+const isLocalHost =
+    typeof window !== 'undefined' &&
+    ['localhost', '127.0.0.1', '::1'].includes(window?.location?.hostname);
+
+const getNetworkInitOverrides = () =>
+    isLocalHost
+        ? { network: 'http://localhost:4000/trpc' as const }
+        : { network: true as const };
+
 const GuardianCredentialApprovalPage: React.FC = () => {
     const { token } = useParams<{ token: string }>();
 
@@ -79,7 +88,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
             try {
                 const wallet = await initLearnCard({
                     seed: 'a',
-                    network: true as const,
+                    ...getNetworkInitOverrides(),
                     didkit,
                     allowRemoteContexts: true,
                 });
@@ -184,7 +193,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                             <h1 className="text-2xl font-bold mb-2">Guardian Approval Required</h1>
                             <p className="text-emerald-100 max-w-[520px] mb-6">
                                 <strong>{credentialInfo.issuer.displayName}</strong> wants to issue a
-                                credential to a student in your care.
+                                credential to one of your students.
                             </p>
 
                             <div className="bg-white/10 rounded-2xl px-6 py-5 mb-8 w-full max-w-md text-left">

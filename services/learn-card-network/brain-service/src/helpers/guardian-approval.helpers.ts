@@ -154,7 +154,7 @@ export const generateGuardianCredentialApprovalUrl = (token: string): string => 
     const domainName = process.env.CLIENT_APP_DOMAIN_NAME;
     const domain =
         !domainName || process.env.IS_OFFLINE
-            ? `localhost:${process.env.PORT || 3000}`
+            ? `localhost:${process.env.CLIENT_APP_PORT || 3000}`
             : domainName;
 
     const protocol = process.env.IS_OFFLINE ? 'http' : 'https';
