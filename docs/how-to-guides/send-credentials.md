@@ -21,7 +21,7 @@ The `send` method is the simplest and most ergonomic way to send credentials to 
 ### Prerequisites
 
 * LearnCard SDK initialized with `network: true`
-* A [signing authority](create-signing-authority.md) configured (for server-side signing) **OR** local key material available (for client-side signing)
+* A [signing authority](create-signing-authority.md) configured (for server-side signing) **OR** local key material available (for client-side signing) **OR** a pre-signed credential (no signing authority needed)
 
 ### Basic Usage
 
@@ -112,6 +112,35 @@ const result = await learnCard.invoke.send({
 ```
 {% endtab %}
 
+{% tab title="Send a Pre-Signed Credential" %}
+```typescript
+// Sign a credential yourself, then send it — no template needed
+const signedCredential = await learnCard.invoke.issueCredential({
+    "@context": [
+        "https://www.w3.org/ns/credentials/v2",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+    ],
+    "type": ["VerifiableCredential", "OpenBadgeCredential"],
+    "issuer": learnCard.id.did(),
+    "credentialSubject": {
+        "type": ["AchievementSubject"],
+        "achievement": {
+            "type": ["Achievement"],
+            "name": "Teamwork Badge",
+            "description": "Recognized for outstanding collaboration.",
+            "criteria": { "narrative": "Nominated by peers." }
+        }
+    }
+});
+
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'recipient@example.com', // or profile ID, DID
+    signedCredential,
+});
+```
+{% endtab %}
+
 {% tab title="With ConsentFlow Contract" %}
 ```typescript
 // Send through a consent flow contract
@@ -130,10 +159,14 @@ const result = await learnCard.invoke.send({
 
 1. **Detects recipient type** - Automatically determines if recipient is email, phone, DID, or profile ID
 2. **Routes appropriately** - Uses direct send for profiles/DIDs, Universal Inbox for email/phone
-3. **Prepares the credential** - Uses your template or creates a new boost on-the-fly
-4. **Signs the credential** - Uses client-side signing if available, otherwise falls back to your registered signing authority
+3. **Prepares the credential** - Uses your template, creates a new template on-the-fly, or uses your pre-signed credential as-is
+4. **Signs the credential** - Skips signing if you provided a `signedCredential`; otherwise uses client-side signing if available, or falls back to your registered signing authority
 5. **Delivers the credential** - Direct delivery or sends claim email/SMS based on recipient type
 6. **Auto-delivery for verified users** - If the email/phone is already verified and linked to a LearnCard profile, the credential is delivered directly to their wallet without requiring them to click a claim link
+
+{% hint style="info" %}
+**Pre-Signed Credentials**: When you provide only `signedCredential` (without `templateUri` or `template`), the system automatically creates a template from your credential. This is ideal when you've already signed the credential yourself and don't need the server to sign it. Your original proof is preserved through the entire flow, including email inbox claims.
+{% endhint %}
 
 ### Response
 
