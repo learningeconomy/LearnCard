@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import {
     useOccupationDetailsForKeyword,
@@ -29,8 +29,13 @@ import {
 
 type GrowSkillsModalProps = {};
 
+const growSkillsTabs = ['All', 'AI Sessions', 'Courses', 'Media'] as const;
+
+type GrowSkillsTab = (typeof growSkillsTabs)[number];
+
 const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
     const { newModal, closeModal } = useModal();
+    const [activeTab, setActiveTab] = useState<GrowSkillsTab>('All');
 
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
     const { data: sasBoostSkills, isLoading: sasBoostSkillsLoading } = useGetBoostSkills(
@@ -118,6 +123,28 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
                         </div>
                     </h5>
                 </div>
+
+                <div className="flex flex-wrap gap-[10px]">
+                    {growSkillsTabs.map(tab => {
+                        const isActive = activeTab === tab;
+
+                        return (
+                            <button
+                                key={tab}
+                                type="button"
+                                onClick={() => setActiveTab(tab)}
+                                className={`rounded-[10px] px-[15px] py-[7px] text-[13px] font-[600] font-poppins leading-[18px] tracking-[0.75px] transition-colors ${
+                                    isActive
+                                        ? 'border-[2px] border-violet-500 border-solid bg-violet-50 text-violet-600'
+                                        : 'border-[2px] border-transparent bg-grayscale-100 text-grayscale-700'
+                                }`}
+                            >
+                                {tab}
+                            </button>
+                        );
+                    })}
+                </div>
+
                 <button onClick={closeModal} className="absolute top-[20px] right-[20px]">
                     <X />
                 </button>
@@ -133,7 +160,9 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
                         )}
                     </div>
                 </div>
-                Main content...
+                <div className="pt-[20px] text-[16px] font-[600] text-grayscale-700">
+                    Selected tab: {activeTab}
+                </div>
             </section>
         </div>
     );
