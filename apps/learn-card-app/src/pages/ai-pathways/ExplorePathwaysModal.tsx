@@ -37,6 +37,7 @@ import SelfAssignSkillsModal from '../skills/SelfAssignSkillsModal';
 import EditGoalsModal from './EditGoalsModal';
 import { SkillFrameworkNode } from '../../components/boost/boost';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import GrowSkillsModal from './GrowSkillsModal';
 
 type SemanticSkillRecord = {
     id: string;
@@ -174,6 +175,14 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                 mobile: ModalTypes.Right,
             }
         );
+    };
+
+    const openGrowSkillsModal = () => {
+        closeModal();
+        newModal(<GrowSkillsModal />, undefined, {
+            desktop: ModalTypes.Right,
+            mobile: ModalTypes.Right,
+        });
     };
 
     const persistGoals = async (nextGoals: string[]) => {
@@ -595,7 +604,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
             <footer className="w-full flex justify-center bg-opacity-70 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white">
                 <div className="w-full flex flex-col items-center justify-center gap-[10px] max-w-[600px]">
                     <button
-                        onClick={closeModal}
+                        onClick={openGrowSkillsModal}
                         className="w-full bg-violet-500 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
                     >
                         <PuzzlePiece className="w-[30px] h-[30px]" version="filled" />
