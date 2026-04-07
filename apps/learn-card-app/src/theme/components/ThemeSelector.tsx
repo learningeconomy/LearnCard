@@ -1,18 +1,12 @@
-import React, { useMemo, useCallback, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import themeStore, { isThemeSwitchingEnabled, getAllowedThemes } from '../store/themeStore';
-import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
+import { getAllowedThemes, isThemeSwitchingEnabled } from '../store/themeStore';
 
-import { useTheme } from '../hooks/useTheme';
+import { applyTheme, useTheme } from '../hooks/useTheme';
 import { loadThemeSchema, getRegisteredThemeIds } from '../helpers/loadTheme';
 import { ThemeButton } from '../validators/theme.validators';
-import { ViewMode } from '../types/theme.types';
-import {
-    useCreatePreferences,
-    useGetPreferencesForDid,
-    useUpdatePreferences,
-} from 'learn-card-base';
+import { useUpdatePreferences } from 'learn-card-base';
 
 export enum themeSelectorViewMode {
     Mini = 'mini',
@@ -30,8 +24,7 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     viewMode = themeSelectorViewMode.Full,
 }) => {
     const flags = useFlags();
-    const { theme, syncThemeDefaults } = useTheme();
-    const setTheme = themeStore.set.theme;
+    const { theme } = useTheme();
 
     const allowedThemeIds = useMemo(() => {
         const allowed = new Set(getAllowedThemes());
@@ -41,13 +34,8 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
 
     const schemas = useMemo(() => allowedThemeIds.map(loadThemeSchema), [allowedThemeIds]);
 
-    const { mutateAsync: createPreferences, isPending: isCreatingPreferences } =
-        useCreatePreferences();
     const { mutateAsync: updatePreferences, isPending: isUpdatingPreferences } =
         useUpdatePreferences();
-    const { data: preferences, refetch: refetchPreferences } = useGetPreferencesForDid(
-        flags?.enableThemeToggle
-    );
 
     const themeButtons = useMemo<ThemeButton[]>(() => {
         return schemas.map(schema => ({
@@ -57,56 +45,12 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
         }));
     }, [schemas]);
 
-    const handleThemeChange = useCallback((t: string) => setTheme(t), [setTheme]);
-
-    const handleSetViewMode = (themeSelected: string) => {
-        const schema = loadThemeSchema(themeSelected);
-        if (schema?.defaults?.viewMode === ViewMode.Grid) {
-            passportPageStore.set.setViewMode(PassportPageViewMode.grid);
-        } else if (schema?.defaults?.viewMode === ViewMode.List) {
-            passportPageStore.set.setViewMode(PassportPageViewMode.list);
-        }
-    };
-
     const handleSetTheme = async (themeSelected: string) => {
-        if (!preferences?.theme) {
-            await createPreferences({
-                theme: themeSelected,
-            });
-        } else {
-            await updatePreferences({
-                theme: themeSelected,
-            });
-        }
-        handleThemeChange(themeSelected);
-        handleSetViewMode(themeSelected);
-        syncThemeDefaults(themeSelected);
-        refetchPreferences();
+        await updatePreferences({
+            theme: themeSelected,
+        });
+        applyTheme(themeSelected);
     };
-
-    const syncTheme = useCallback(() => {
-        if (!isThemeSwitchingEnabled()) return;
-
-        const preferred = preferences?.theme as string | undefined;
-
-        if (preferred === undefined) return;
-
-        const allowed = new Set(getAllowedThemes());
-
-        if (!allowed.has(preferred)) return;
-
-        const cachedTheme = themeStore.get.theme();
-
-        if (cachedTheme !== preferred) {
-            handleSetTheme(preferred);
-        }
-    }, [preferences]);
-
-    // only sync theme if preferences are loaded
-    // && the cached theme is different from the theme stored in the DB
-    useEffect(() => {
-        syncTheme();
-    }, [syncTheme]);
 
     if (flags?.enableThemeToggle === false) return null;
 
@@ -125,7 +69,7 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
                             onClick={async () => {
                                 await handleSetTheme(btn.theme);
                             }}
-                            disabled={isCreatingPreferences}
+                            disabled={isUpdatingPreferences}
                             aria-pressed={selected}
                             className={`w-full flex items-center justify-start py-[12px] px-2 text-xs text-grayscale-900 rounded-full ${
                                 selected ? 'bg-white rounded-[16px] shadow-soft-bottom' : ''
@@ -172,7 +116,7 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
                                     onClick={async () => {
                                         await handleSetTheme(btn.theme);
                                     }}
-                                    disabled={isCreatingPreferences}
+                                    disabled={isUpdatingPreferences}
                                     aria-pressed={selected}
                                     className={`w-full flex items-center justify-start py-[12px] px-2 text-xs text-grayscale-900 rounded-[10px] ${
                                         selected ? 'bg-white rounded-[16px] shadow-soft-bottom' : ''

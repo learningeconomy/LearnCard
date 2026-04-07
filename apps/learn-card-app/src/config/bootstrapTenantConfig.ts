@@ -16,21 +16,110 @@ import { initializeFirebaseFromTenant } from '../firebase/firebase';
 import { initSentryFromTenant } from '../constants/sentry';
 import { initUserflowFromTenant } from '../constants/userflow';
 import { enforceDefaultTheme } from '../theme/store/themeStore';
-import { createConfigResolutionListener, emitConfigDebugEvent, emitConfigSuccess } from '../components/debug/configDebugEvents';
+import {
+    createConfigResolutionListener,
+    emitConfigDebugEvent,
+    emitConfigSuccess,
+} from '../components/debug/configDebugEvents';
 
-// Module-level singleton so other modules can access config synchronously
-let _resolvedConfig: TenantConfig | null = null;
+type TenantBootstrapState = {
+    resolvedConfig: TenantConfig | null;
+    bootstrapPromise: Promise<TenantConfig> | null;
+};
+
+const TENANT_BOOTSTRAP_STATE_KEY = '__learncardTenantBootstrapState__';
+
+const getTenantBootstrapState = (): TenantBootstrapState => {
+    const globalScope = globalThis as typeof globalThis & {
+        [TENANT_BOOTSTRAP_STATE_KEY]?: TenantBootstrapState;
+    };
+
+    if (!globalScope[TENANT_BOOTSTRAP_STATE_KEY]) {
+        globalScope[TENANT_BOOTSTRAP_STATE_KEY] = {
+            resolvedConfig: null,
+            bootstrapPromise: null,
+        };
+    }
+
+    return globalScope[TENANT_BOOTSTRAP_STATE_KEY];
+};
+
+// Module-level cache backed by global state so HMR does not clear the resolved config.
+let _resolvedConfig: TenantConfig | null = getTenantBootstrapState().resolvedConfig;
+
+const setResolvedTenantConfig = (config: TenantConfig): void => {
+    _resolvedConfig = config;
+    getTenantBootstrapState().resolvedConfig = config;
+};
+
+const initializeTenantSubsystems = (config: TenantConfig): void => {
+    // 1. Initialize Firebase with tenant-specific project config
+    initializeFirebaseFromTenant(config.auth.firebase);
+    emitConfigDebugEvent(
+        'bootstrap:firebase_init',
+        `Firebase initialized (project: ${config.auth.firebase?.projectId ?? 'default'})`,
+        { data: { projectId: config.auth.firebase?.projectId } }
+    );
+
+    // 2. Bridge auth config so getAuthConfig() returns tenant-aware values
+    setAuthConfigFromTenant(config);
+    emitConfigDebugEvent(
+        'bootstrap:auth_config_set',
+        `Auth config bridged (provider: ${config.auth.provider})`,
+        { data: { provider: config.auth.provider, keyDerivation: config.auth.keyDerivation } }
+    );
+
+    // 3. Populate network store with tenant API endpoints
+    initNetworkStoreFromTenant(config.apis);
+    emitConfigDebugEvent(
+        'bootstrap:network_store_init',
+        'Network store populated with tenant API endpoints'
+    );
+
+    // 4. Initialize Sentry from tenant observability config
+    initSentryFromTenant();
+    emitConfigDebugEvent(
+        'bootstrap:sentry_init',
+        `Sentry initialized (DSN: ${config.observability.sentryDsn ? 'configured' : 'none'})`
+    );
+
+    // 5. Initialize Userflow from tenant observability config
+    initUserflowFromTenant();
+    emitConfigDebugEvent(
+        'bootstrap:userflow_init',
+        `Userflow initialized (token: ${
+            config.observability.userflowToken ? 'configured' : 'none'
+        })`
+    );
+
+    // 6. Force theme to defaultTheme when tenant disables theme switching
+    enforceDefaultTheme();
+    emitConfigDebugEvent(
+        'bootstrap:theme_enforced',
+        `Theme enforcement ran (default: ${config.branding.defaultTheme})`,
+        {
+            data: {
+                defaultTheme: config.branding.defaultTheme,
+                themeSwitching: config.features.themeSwitching,
+            },
+        }
+    );
+};
 
 /**
  * Get the resolved TenantConfig synchronously.
  * Only available after `bootstrapTenantConfig()` has been called.
  */
 export const getResolvedTenantConfig = (): TenantConfig => {
-    if (!_resolvedConfig) {
+    const config = _resolvedConfig ?? getTenantBootstrapState().resolvedConfig;
+
+    if (!config) {
         throw new Error('TenantConfig not yet resolved. Call bootstrapTenantConfig() first.');
     }
 
-    return _resolvedConfig;
+    _resolvedConfig = config;
+
+    return config;
 };
 
 /**
@@ -93,7 +182,7 @@ export const getNativeBundleId = (): string => {
  */
 export const getLCNApiUrl = (): string => {
     const config = getResolvedTenantConfig();
-    
+
     // Use the brainServiceApi from tenant config (this is what becomes networkApiUrl in the store)
     // or fallback to default
     return config.apis?.brainServiceApi ?? 'https://network.learncard.com/api';
@@ -112,6 +201,12 @@ export const getLCNApiUrl = (): string => {
  *   5. Userflow product tours
  */
 export const bootstrapTenantConfig = async (): Promise<TenantConfig> => {
+    const bootstrapState = getTenantBootstrapState();
+
+    if (bootstrapState.bootstrapPromise) {
+        return bootstrapState.bootstrapPromise;
+    }
+
     const onEvent = createConfigResolutionListener();
 
     emitConfigDebugEvent('bootstrap:start', 'Starting tenant config bootstrap');
@@ -126,39 +221,28 @@ export const bootstrapTenantConfig = async (): Promise<TenantConfig> => {
         });
     });
 
-    const t0 = Date.now();
+    bootstrapState.bootstrapPromise = (async () => {
+        const t0 = Date.now();
 
-    const config = await resolveTenantConfig({ onEvent });
+        const config = bootstrapState.resolvedConfig ?? (await resolveTenantConfig({ onEvent }));
 
-    _resolvedConfig = config;
+        setResolvedTenantConfig(config);
+        initializeTenantSubsystems(config);
 
-    // 1. Initialize Firebase with tenant-specific project config
-    initializeFirebaseFromTenant(config.auth.firebase);
-    emitConfigDebugEvent('bootstrap:firebase_init', `Firebase initialized (project: ${config.auth.firebase?.projectId ?? 'default'})`, { data: { projectId: config.auth.firebase?.projectId } });
+        const totalMs = Date.now() - t0;
 
-    // 2. Bridge auth config so getAuthConfig() returns tenant-aware values
-    setAuthConfigFromTenant(config);
-    emitConfigDebugEvent('bootstrap:auth_config_set', `Auth config bridged (provider: ${config.auth.provider})`, { data: { provider: config.auth.provider, keyDerivation: config.auth.keyDerivation } });
+        emitConfigSuccess(
+            'bootstrap:complete',
+            `Bootstrap complete in ${totalMs}ms — tenant: ${config.tenantId}`,
+            { tenantId: config.tenantId, totalMs }
+        );
 
-    // 3. Populate network store with tenant API endpoints
-    initNetworkStoreFromTenant(config.apis);
-    emitConfigDebugEvent('bootstrap:network_store_init', 'Network store populated with tenant API endpoints');
+        return config;
+    })();
 
-    // 4. Initialize Sentry from tenant observability config
-    initSentryFromTenant();
-    emitConfigDebugEvent('bootstrap:sentry_init', `Sentry initialized (DSN: ${config.observability.sentryDsn ? 'configured' : 'none'})`);
-
-    // 5. Initialize Userflow from tenant observability config
-    initUserflowFromTenant();
-    emitConfigDebugEvent('bootstrap:userflow_init', `Userflow initialized (token: ${config.observability.userflowToken ? 'configured' : 'none'})`);
-
-    // 6. Force theme to defaultTheme when tenant disables theme switching
-    enforceDefaultTheme();
-    emitConfigDebugEvent('bootstrap:theme_enforced', `Theme enforcement ran (default: ${config.branding.defaultTheme})`, { data: { defaultTheme: config.branding.defaultTheme, themeSwitching: config.features.themeSwitching } });
-
-    const totalMs = Date.now() - t0;
-
-    emitConfigSuccess('bootstrap:complete', `Bootstrap complete in ${totalMs}ms — tenant: ${config.tenantId}`, { tenantId: config.tenantId, totalMs });
-
-    return config;
+    try {
+        return await bootstrapState.bootstrapPromise;
+    } finally {
+        bootstrapState.bootstrapPromise = null;
+    }
 };
