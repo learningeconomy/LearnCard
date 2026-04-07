@@ -1,0 +1,71 @@
+name: Smoketest
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  smoketest:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}-smoketest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 24.12
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.12.0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+          run_install: false
+
+      - name: Install smoketest dependencies
+        run: |
+          cd tests/smoketests
+          pnpm install --no-frozen-lockfile
+
+      - name: Install Playwright
+        run: |
+          cd tests/smoketests
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Run API smoketests
+        run: pnpm exec playwright test --project=api
+        working-directory: tests/smoketests
+        env:
+          SMOKETEST_APP_URL: ${{ vars.SMOKETEST_APP_URL }}
+          SMOKETEST_API_URL: ${{ vars.SMOKETEST_API_URL }}
+          SMOKETEST_CLOUD_URL: ${{ vars.SMOKETEST_CLOUD_URL }}
+          SMOKETEST_LCA_API_URL: ${{ vars.SMOKETEST_LCA_API_URL }}
+
+      - name: Run browser smoketests
+        run: pnpm exec playwright test --project=browser
+        working-directory: tests/smoketests
+        env:
+          SMOKETEST_APP_URL: ${{ vars.SMOKETEST_APP_URL }}
+          SMOKETEST_API_URL: ${{ vars.SMOKETEST_API_URL }}
+          SMOKETEST_CLOUD_URL: ${{ vars.SMOKETEST_CLOUD_URL }}
+          SMOKETEST_LCA_API_URL: ${{ vars.SMOKETEST_LCA_API_URL }}
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoketest-report-${{ inputs.environment }}
+          path: tests/smoketests/playwright-report/
+          retention-days: 14

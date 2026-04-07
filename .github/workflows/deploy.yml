@@ -970,6 +970,28 @@ jobs:
               run: pnpm publish -r --no-git-checks --filter=!@learncard/didkit-plugin-node
 
     # ============================================================================
+    # SMOKETEST (after staging deploys)
+    # ============================================================================
+    smoketest-staging:
+        name: Smoketest Staging
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api, deploy-frontend]
+        if: |
+            always() &&
+            !cancelled() &&
+            needs.determine-affected.outputs.is_release != 'true' &&
+            needs.determine-affected.outputs.is_manual != 'true' &&
+            (
+              needs.deploy-brain-service.result == 'success' ||
+              needs.deploy-learn-cloud.result == 'success' ||
+              needs.deploy-lca-api.result == 'success' ||
+              needs.deploy-frontend.result == 'success'
+            )
+        uses: ./.github/workflows/smoketest.yml
+        with:
+            environment: staging
+        secrets: inherit
+
+    # ============================================================================
     # CHANGESET PR MANAGEMENT (only on non-release, non-manual pushes)
     # ============================================================================
     manage-releases:

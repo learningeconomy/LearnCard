@@ -1,0 +1,29 @@
+{
+  "name": "smoketests",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "tests/smoketests",
+  "projectType": "application",
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec playwright test",
+        "cwd": "tests/smoketests"
+      }
+    },
+    "test:api": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec playwright test --project=api",
+        "cwd": "tests/smoketests"
+      }
+    },
+    "test:browser": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec playwright test --project=browser",
+        "cwd": "tests/smoketests"
+      }
+    }
+  }
+}
