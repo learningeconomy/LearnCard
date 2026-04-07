@@ -77,7 +77,6 @@ const AiPathways: React.FC = () => {
     const { data: trainingPrograms, isLoading: fetchTrainingProgramsLoading } =
         useTrainingProgramsByKeyword({
             keywords: allKeywords as string[],
-            fieldOfStudy,
         });
 
     const schoolPrograms = useMemo(() => {
