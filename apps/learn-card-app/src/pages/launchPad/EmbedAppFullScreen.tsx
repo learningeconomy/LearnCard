@@ -165,6 +165,7 @@ export const EmbedAppFullScreen: React.FC = () => {
                             appId={appId}
                             appName={appName}
                             pendingCredential={pendingCredential}
+                            onNavigateAction={handleTapNotificationAction}
                         />
                     </IonButtons>
                 </IonToolbar>
