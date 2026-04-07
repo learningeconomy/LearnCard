@@ -31,6 +31,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
 }) => {
     const history = useHistory();
     const [isRead, setIsRead] = useState<boolean>(notification?.read ?? false);
+    const [iconFailed, setIconFailed] = useState(false);
 
     const ref = useRef<HTMLDivElement>(null);
     useOnScreen<HTMLDivElement>(ref as React.RefObject<HTMLDivElement>, '-130px');
@@ -82,18 +83,19 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
             return;
         }
 
-        // If the app is an embedded iframe with an actionPath, launch it directly
-        // in full-screen mode with the actionPath appended to the embed URL.
-        if (listing.launch_type === 'EMBEDDED_IFRAME' && launchConfig?.url && actionPath) {
+        // If the app is an embedded iframe, launch it in full-screen mode.
+        // When actionPath is provided, append it to the embed URL for deep linking.
+        if (listing.launch_type === 'EMBEDDED_IFRAME' && launchConfig?.url) {
             let embedUrl = launchConfig.url as string;
 
-            try {
-                const url = new URL(embedUrl);
-                url.pathname = url.pathname.replace(/\/$/, '') + actionPath;
-                embedUrl = url.toString();
-            } catch {
-                // If URL parsing fails, just append the path
-                embedUrl = embedUrl.replace(/\/$/, '') + actionPath;
+            if (actionPath) {
+                try {
+                    const url = new URL(embedUrl);
+                    url.pathname = url.pathname.replace(/\/$/, '') + actionPath;
+                    embedUrl = url.toString();
+                } catch {
+                    embedUrl = embedUrl.replace(/\/$/, '') + actionPath;
+                }
             }
 
             const appSlug = (listing as Record<string, unknown>).slug as string | undefined;
@@ -108,14 +110,15 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
             return;
         }
 
-        // No actionPath or not embeddable — open the listing page
+        // Not embeddable — open the listing page
         history.push(`/app/${listingId}`);
     };
 
     const isHighPriority = priority === 'high';
 
     const bgColor = isHighPriority ? 'bg-orange-50' : 'bg-sky-50';
-    const iconBgColor = appIcon ? '' : isHighPriority ? 'bg-orange-100' : 'bg-sky-100';
+    const showFallbackIcon = !appIcon || iconFailed;
+    const iconBgColor = showFallbackIcon ? (isHighPriority ? 'bg-orange-100' : 'bg-sky-100') : '';
     const iconTextColor = isHighPriority ? 'text-orange-600' : 'text-sky-600';
 
     return (
@@ -137,16 +140,14 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
 
                 {/* App icon or fallback */}
                 <div
-                    className={`flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center ${iconBgColor} ${!appIcon ? iconTextColor : ''}`}
+                    className={`flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center ${iconBgColor} ${showFallbackIcon ? iconTextColor : ''}`}
                 >
-                    {appIcon ? (
+                    {appIcon && !iconFailed ? (
                         <img
                             src={appIcon}
                             alt={appName}
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                            }}
+                            onError={() => setIconFailed(true)}
                         />
                     ) : (
                         <Bell className="w-7 h-7" />
