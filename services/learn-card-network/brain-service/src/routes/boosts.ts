@@ -694,6 +694,7 @@ export const boostsRouter = t.router({
                     let boost = null as BoostInstance | null;
                     let boostUri = '';
                     let boostCreated = false;
+                    let boostCreatedFromSignedCredential = false;
 
                     if (input.templateUri) {
                         const resolved = await traceDb('getBoostByUri', () =>
@@ -732,12 +733,30 @@ export const boostsRouter = t.router({
 
                         boostUri = getBoostUri(boost.id, domain);
                         boostCreated = true;
+                    } else if (input.signedCredential) {
+                        // Auto-create boost from the signed credential
+                        const credential = input.signedCredential as Record<string, unknown>;
+                        const name = typeof credential.name === 'string' ? credential.name : undefined;
+
+                        boost = await traceDb('createBoost:fromSignedCredential', () =>
+                            createBoost(
+                                input.signedCredential!,
+                                profile,
+                                { ...(name ? { name } : {}) },
+                                domain
+                            )
+                        );
+
+                        boostUri = getBoostUri(boost.id, domain);
+                        boostCreated = true;
+                        boostCreatedFromSignedCredential = true;
                     }
 
                     if (!boost) {
                         throw new TRPCError({
                             code: 'BAD_REQUEST',
-                            message: 'A templateUri or template creation payload is required.',
+                            message:
+                                'A templateUri, template, or signedCredential must be provided.',
                         });
                     }
 
@@ -1030,6 +1049,7 @@ export const boostsRouter = t.router({
                             credential: signedVc,
                             domain,
                             skipNotification,
+                            skipCertification: boostCreatedFromSignedCredential,
                             contractTerms: contractTerms ?? undefined,
                             activityId,
                             integrationId: input.integrationId,

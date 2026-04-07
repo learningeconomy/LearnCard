@@ -39,3 +39,6 @@ docs/superpowers/plans/
 docs/superpowers/specs/
 docs/superpowers
 .github/copilot-instructions.md
+
+# Local environment configuration
+.envrc

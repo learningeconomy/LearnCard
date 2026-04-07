@@ -464,8 +464,8 @@ export const SendBoostInputValidator = z
         templateData: z.record(z.string(), z.unknown()).optional(),
         integrationId: z.string().optional().describe('Integration ID for activity tracking'),
     })
-    .refine(data => data.templateUri || data.template, {
-        message: 'Either templateUri or template creation data must be provided.',
+    .refine(data => data.templateUri || data.template || data.signedCredential, {
+        message: 'Either templateUri, template, or signedCredential must be provided.',
         path: ['templateUri'],
     });
 export type SendBoostInput = z.infer<typeof SendBoostInputValidator>;

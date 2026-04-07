@@ -1,9 +1,10 @@
 import React from 'react';
 import { IonInput } from '@ionic/react';
+import { SetState } from '@learncard/helpers';
 
 type TextInputProps = {
     value: string | number | null | undefined;
-    onChange: (value: string | null | undefined) => void;
+    onChange: (value: string | null | undefined) => void | SetState<string>;
     placeholder?: string;
     type?: 'text' | 'email' | 'password' | 'number' | 'search' | 'tel' | 'url';
     disabled?: boolean;

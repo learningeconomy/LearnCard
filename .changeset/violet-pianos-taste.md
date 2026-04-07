@@ -3,4 +3,4 @@
 'learn-card-app': patch
 ---
 
-Self-Assigned Skills UI updates
+Add Explore Pathways modal with Skill + Goal editing

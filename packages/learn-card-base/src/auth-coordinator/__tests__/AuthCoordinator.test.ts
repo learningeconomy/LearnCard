@@ -1148,6 +1148,71 @@ describe('AuthCoordinator', () => {
     });
 
     // -----------------------------------------------------------------------
+    // getIdToken force-refresh (LC-1738 regression)
+    // -----------------------------------------------------------------------
+
+    describe('getIdToken force-refresh', () => {
+        it('passes forceRefresh=true to getIdToken during initialize (auth-provider path)', async () => {
+            const getIdToken = vi.fn().mockResolvedValue('fresh-token');
+
+            const { coordinator } = setup({
+                authProvider: { getIdToken },
+            });
+
+            await coordinator.initialize();
+
+            expect(getIdToken).toHaveBeenCalledWith(true);
+        });
+
+        it('passes forceRefresh=true to getIdToken on retry after error', async () => {
+            const getIdToken = vi.fn().mockResolvedValue('fresh-token');
+
+            const { coordinator } = setup({
+                authProvider: {
+                    getIdToken,
+                    getCurrentUser: vi.fn()
+                        .mockRejectedValueOnce(new Error('Transient failure'))
+                        .mockResolvedValueOnce(mockUser),
+                },
+            });
+
+            await coordinator.initialize();
+
+            getIdToken.mockClear();
+
+            await coordinator.retry();
+
+            expect(getIdToken).toHaveBeenCalledWith(true);
+        });
+
+        it('passes forceRefresh=true to getIdToken during setupNewKey', async () => {
+            const getIdToken = vi.fn().mockResolvedValue('fresh-token');
+
+            const { coordinator } = setup({
+                authProvider: { getIdToken },
+                keyDerivation: {
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        exists: false,
+                        needsMigration: false,
+                        primaryDid: null,
+                        recoveryMethods: [],
+                        authShare: null,
+                        shareVersion: null,
+                    } satisfies ServerKeyStatus),
+                },
+            });
+
+            await coordinator.initialize();
+
+            getIdToken.mockClear();
+
+            await coordinator.setupNewKey('new-private-key', 'did:key:zNew');
+
+            expect(getIdToken).toHaveBeenCalledWith(true);
+        });
+    });
+
+    // -----------------------------------------------------------------------
     // verifyKeyIntegrity()
     // -----------------------------------------------------------------------
 

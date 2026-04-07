@@ -13,8 +13,8 @@ import SkillProficiencyBar from './SkillProficiencyBar';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
 
 import { SkillLevel } from './skillTypes';
+import type { SelectedSkill } from './skillTypes';
 import { FrameworkNodeRole, SkillFrameworkNode } from '../../components/boost/boost';
-import { SelectedSkill } from './SkillSearchSelector';
 
 export type PreviousSkillInfo = {
     skill: SkillFrameworkNode;

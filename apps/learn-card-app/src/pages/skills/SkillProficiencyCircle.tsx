@@ -19,7 +19,7 @@ const SkillProficiencyCircle: React.FC<SkillProficiencyCircleProps> = ({
     const radius = (size - strokeWidth) / 2;
     const center = size / 2;
 
-    const color = SKILL_LEVEL_META[proficiencyLevel].color;
+    const color = SKILL_LEVEL_META[proficiencyLevel]?.color;
     const isHidden = proficiencyLevel === SkillLevel.Hidden;
 
     const polarToCartesian = (cx: number, cy: number, r: number, angleDegrees: number) => {
