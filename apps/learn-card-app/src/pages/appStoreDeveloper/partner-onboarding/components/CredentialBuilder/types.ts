@@ -22,7 +22,10 @@ export const staticField = (value: string): TemplateFieldValue => ({
 });
 
 // Helper to create a dynamic field
-export const dynamicField = (variableName: string, defaultValue: string = ''): TemplateFieldValue => ({
+export const dynamicField = (
+    variableName: string,
+    defaultValue: string = ''
+): TemplateFieldValue => ({
     value: defaultValue,
     isDynamic: true,
     variableName,
@@ -84,6 +87,7 @@ export interface AchievementTemplate {
     version?: TemplateFieldValue;
     otherIdentifier?: IdentifierEntryTemplate[];
     resultDescription?: ResultDescriptionTemplate[]; // Defines possible results
+    ctid?: TemplateFieldValue; // Credential Engine Registry ID (CTID)
 }
 
 // OBv3 Alignment structure
@@ -149,32 +153,32 @@ export type CredentialSchemaType = 'obv3' | 'clr2' | 'custom';
 export interface OBv3CredentialTemplate {
     // Schema type detection (for hybrid mode)
     schemaType?: CredentialSchemaType;
-    
+
     // Raw JSON storage for non-OBv3 credentials (passthrough mode)
     rawJson?: Record<string, unknown>;
-    
+
     // Contexts (usually fixed)
     contexts: string[];
-    
+
     // Types
     types: string[];
-    
+
     // Core credential info
     id?: TemplateFieldValue;
     name: TemplateFieldValue;
     description?: TemplateFieldValue;
     image?: TemplateFieldValue;
-    
+
     // Issuer
     issuer: IssuerTemplate;
-    
+
     // Subject
     credentialSubject: CredentialSubjectTemplate;
-    
+
     // Dates (VC v2 syntax)
     validFrom: TemplateFieldValue;
     validUntil?: TemplateFieldValue;
-    
+
     // Custom fields in extensions
     customFields: CustomFieldTemplate[];
 }
@@ -188,7 +192,7 @@ export interface CredentialBuilderState {
 }
 
 // Section identifiers
-export type SectionId = 
+export type SectionId =
     | 'credential'
     | 'issuer'
     | 'recipient'
@@ -241,7 +245,4 @@ export const DEFAULT_CONTEXTS = [
 ];
 
 // Default types
-export const DEFAULT_TYPES = [
-    'VerifiableCredential',
-    'OpenBadgeCredential',
-];
+export const DEFAULT_TYPES = ['VerifiableCredential', 'OpenBadgeCredential'];
