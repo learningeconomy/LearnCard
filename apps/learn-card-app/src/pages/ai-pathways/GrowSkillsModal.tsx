@@ -70,18 +70,11 @@ const interleaveGrowSkillsCards = ({
         videoCode: string;
     }>;
 }) => {
-    const maxLength = Math.max(aiSessions.length, courses.length, media.length);
     const mixedCards: GrowSkillsCard[] = [];
 
-    for (let index = 0; index < maxLength; index += 1) {
-        const aiSession = aiSessions[index];
-        if (aiSession) {
-            mixedCards.push({
-                type: 'ai-session',
-                pathway: aiSession,
-            });
-        }
+    const maxCourseMediaLength = Math.max(courses.length, media.length);
 
+    for (let index = 0; index < maxCourseMediaLength; index += 1) {
         const course = courses[index];
         if (course) {
             mixedCards.push({
@@ -98,6 +91,13 @@ const interleaveGrowSkillsCards = ({
             });
         }
     }
+
+    aiSessions.forEach(aiSession => {
+        mixedCards.push({
+            type: 'ai-session',
+            pathway: aiSession,
+        });
+    });
 
     return mixedCards;
 };
