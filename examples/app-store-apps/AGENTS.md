@@ -297,7 +297,7 @@ counters.forEach(c => console.log(c.key, c.value));
 
 **Key points:**
 
--   Counters are atomic (uses Neo4j `MERGE ON CREATE/ON MATCH`)
+-   Counters are atomic
 -   Counter keys: alphanumeric + `_` / `-`, max 64 chars
 -   Max 50 counter keys per user per app
 -   Max 100 counter writes per user per app per minute
