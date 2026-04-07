@@ -1000,7 +1000,7 @@ const handleGetTemplateRecipientsEvent = async (
 // Helper to handle send-notification app event
 const handleSendNotificationEvent = async (
     ctx: { domain: string },
-    profile: { profileId: string },
+    profile: { profileId: string; notificationsWebhook?: string },
     listingId: string,
     event: Record<string, unknown>
 ): Promise<Record<string, unknown>> => {
@@ -1042,7 +1042,13 @@ const handleSendNotificationEvent = async (
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.APP_NOTIFICATION,
-        to: { did: profileDid, profileId: profile.profileId },
+        to: {
+            did: profileDid,
+            profileId: profile.profileId,
+            ...(profile.notificationsWebhook && {
+                notificationsWebhook: profile.notificationsWebhook,
+            }),
+        },
         from: {
             did: getAppDidWeb(ctx.domain, listing.slug ?? listingId),
             profileId: listing.slug ?? listingId,
@@ -2048,9 +2054,18 @@ export const appStoreRouter = t.router({
 
             const recipientDid = getDidWeb(ctx.domain, recipientProfileId);
 
+            // Look up recipient profile to get notificationsWebhook for delivery
+            const recipientProfile = await getProfileByProfileId(recipientProfileId);
+
             await addNotificationToQueue({
                 type: LCNNotificationTypeEnumValidator.enum.APP_NOTIFICATION,
-                to: { did: recipientDid, profileId: recipientProfileId },
+                to: {
+                    did: recipientDid,
+                    profileId: recipientProfileId,
+                    ...(recipientProfile?.notificationsWebhook && {
+                        notificationsWebhook: recipientProfile.notificationsWebhook,
+                    }),
+                },
                 from: {
                     did: getAppDidWeb(ctx.domain, listing.slug ?? listingId),
                     profileId: listing.slug ?? listingId,
