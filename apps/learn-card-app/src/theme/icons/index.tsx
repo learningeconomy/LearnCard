@@ -35,9 +35,15 @@ export type SideMenuIcons = {
 };
 
 export type NavbarIcons = {
-    wallet: React.FC<{ className?: string; version?: string }>;
-    plus: React.FC<{ className?: string; version?: string }>;
+    wallet: React.FC<{
+        className?: string;
+        version?: string;
+        isSyncing?: boolean;
+        isCompleted?: boolean;
+    }>;
+    plus: string;
     launchPad: React.FC<{ className?: string; version?: string }>;
+    notification: React.FC<{ className?: string; version?: string }>;
 };
 
 export type PlaceholdersIcons = {
