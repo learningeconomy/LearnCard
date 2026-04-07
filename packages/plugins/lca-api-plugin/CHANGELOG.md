@@ -1,5 +1,18 @@
 # lca-api-plugin
 
+## 1.2.3
+
+### Patch Changes
+
+-   [#1135](https://github.com/learningeconomy/LearnCard/pull/1135) [`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1602] - Gate Sensitive Profile Fields (Country, DOB, NotificationsWebhook, Email)
+
+-   Updated dependencies [[`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369)]:
+    -   @learncard/types@5.13.3
+    -   @learncard/lca-api-client@1.2.0
+    -   @learncard/core@9.4.13
+    -   @learncard/init@2.3.11
+    -   @learncard/didkit-plugin@1.8.3
+
 ## 1.2.2
 
 ### Patch Changes
