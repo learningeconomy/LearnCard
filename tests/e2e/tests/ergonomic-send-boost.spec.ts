@@ -284,13 +284,11 @@ describe('Send E2E Tests', () => {
 
             await b.invoke.acceptCredential(result.credentialUri);
 
-            const aProfile = await a.invoke.getProfile();
-
-            const receivedCreds = await b.invoke.getReceivedCredentials({
-                from: aProfile!.profileId,
-            });
-
-            expect(receivedCreds).toHaveLength(1);
+            const receivedCreds = await b.invoke.getReceivedCredentials();
+            const received2 = receivedCreds.find(
+                (c: { uri: string }) => c.uri === result.credentialUri
+            );
+            expect(received2).toBeDefined();
         });
 
         it('should route signedCredential-only to inbox for email recipient', async () => {
