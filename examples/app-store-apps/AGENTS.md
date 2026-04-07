@@ -273,6 +273,37 @@ const response = await fetch(`${brainServiceUrl}/app-store/listing/${listingId}/
 -   Notifications appear in the user's LearnCard notification inbox as `APP_NOTIFICATION` type
 -   Filter notifications by app using `data.metadata.listingId` in lca-api queries
 
+#### 5. App Counters
+
+Apps can store per-user, per-app counters (e.g. coins, streaks, levels) via the Partner Connect SDK. Counters are stored server-side in Neo4j and are scoped to (user, app, key).
+
+**SDK usage:**
+
+```typescript
+// Increment (creates counter if it doesn't exist)
+const result = await learnCard.incrementCounter('coins', 10);
+console.log(result.previousValue, '→', result.newValue); // 0 → 10
+
+// Decrement
+await learnCard.incrementCounter('coins', -5);
+
+// Read single counter
+const { value } = await learnCard.getCounter('coins');
+
+// Read all counters for this app
+const { counters } = await learnCard.getCounters();
+counters.forEach(c => console.log(c.key, c.value));
+```
+
+**Key points:**
+
+-   Counters are atomic (uses Neo4j `MERGE ON CREATE/ON MATCH`)
+-   Counter keys: alphanumeric + `_` / `-`, max 64 chars
+-   Max 50 counter keys per user per app
+-   Max 100 counter writes per user per app per minute
+-   If the counter doesn't exist, `getCounter` returns `{ value: 0 }`
+-   `getCounters()` with no args returns all counters; pass an array of keys to fetch specific ones (max 50)
+
 ### Deployment Considerations
 
 #### Environment Variables

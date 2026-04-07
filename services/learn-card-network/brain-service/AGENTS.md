@@ -661,6 +661,130 @@ Notifications can be filtered by app using the `data.metadata.listingId` field i
 | `src/helpers/notifications.helpers.ts` | `addNotificationToQueue` — SQS / webhook delivery |
 | `@learncard/types` `lcn.ts` | `LCNNotificationTypeEnumValidator` (`APP_NOTIFICATION`), `SendNotificationEventValidator` |
 
+## App Counters
+
+Apps can store per-user, per-app counters (e.g. coins, streaks, levels) via `APP_COUNTER` relationships in Neo4j.
+
+### Data Model
+
+Counters are stored as `APP_COUNTER` relationships between `Profile` and `AppStoreListing`:
+
+```
+(Profile)-[:APP_COUNTER {key, value, createdAt, updatedAt}]->(AppStoreListing)
+```
+
+Multiple parallel `APP_COUNTER` relationships (one per key) can exist between the same Profile and AppStoreListing.
+
+### Event Types
+
+| Event | Validator | Purpose |
+|---|---|---|
+| `increment-counter` | `IncrementCounterEventValidator` | Atomic increment/decrement via `MERGE ON CREATE/ON MATCH` |
+| `get-counter` | `GetCounterEventValidator` | Read single counter (returns `{ value: 0 }` if missing) |
+| `get-counters` | `GetCountersEventValidator` | Read multiple or all counters for a (user, app) pair |
+
+### Limits
+
+- Max **50 counter keys** per user per app (`MAX_COUNTER_KEYS_PER_USER_PER_APP`)
+- Max **100 writes** per user per app per minute (Redis rate limit key: `app-counter-rate:{listingId}:{profileId}`)
+- Counter keys: alphanumeric + `_` / `-`, max 64 chars
+- Amount: any finite integer
+
+### Key Files
+
+| File | Purpose |
+|---|---|
+| `src/accesslayer/app-counter/create.ts` | `incrementAppCounter` — atomic `MERGE`-based upsert |
+| `src/accesslayer/app-counter/read.ts` | `getAppCounter`, `getAppCounters`, `countAppCounterKeys` |
+| `src/helpers/app-counter.helpers.ts` | Event handlers with validation + rate limiting |
+| `src/types/app-counter.ts` | TypeScript types for counter I/O |
+| `@learncard/types` `lcn.ts` | `IncrementCounterEventValidator`, `GetCounterEventValidator`, `GetCountersEventValidator` |
+| `test/app-counters.spec.ts` | Counter tests |
+
+### Useful Cypher Queries
+
+```cypher
+-- List all counters for a user in an app
+MATCH (p:Profile {profileId: 'user123'})-[c:APP_COUNTER]->(l:AppStoreListing {listing_id: 'abc'})
+RETURN c.key, c.value, c.updatedAt
+
+-- Delete all counters (test cleanup)
+MATCH ()-[r:APP_COUNTER]->() DELETE r
+```
+
+## Seed Dev App Script
+
+Location: `scripts/seed-dev-app.ts`
+
+An idempotent script that seeds a fully functional partner app listing into the local Neo4j + MongoDB databases for development and testing. It creates all the infrastructure needed to test notifications, counters, and credential issuance.
+
+### What It Creates
+
+1. **Profile** — owner profile (default: `dev-owner`)
+2. **Integration** — integration node linked to the owner
+3. **AppStoreListing** — listed app with embed URL, slug, display name, icon
+4. **Signing Authority** — in MongoDB, linked to the listing via Neo4j relationship
+5. **Boost Template** — credential template attached to the listing
+6. **(Optional) Install** — installs the app for another profile via `--install-for`
+7. **(Optional) Rate Limit Reset** — clears Redis rate limit keys via `--reset-rate-limits`
+
+### Usage
+
+```bash
+cd services/learn-card-network/brain-service
+
+# Basic (defaults to http://localhost:4321)
+pnpm seed:dev-app
+
+# Custom app URL
+pnpm seed:dev-app -- --app-url http://localhost:4321
+
+# Install for a specific user (needed for notifications)
+pnpm seed:dev-app -- --install-for my-profile-id
+
+# Reset rate limits (useful when testing repeatedly)
+pnpm seed:dev-app -- --reset-rate-limits
+
+# Custom name, slug, permissions
+pnpm seed:dev-app -- --app-name "My Game" --slug my-game
+pnpm seed:dev-app -- --permissions request_identity,send_credential
+
+# Custom signing authority endpoint
+pnpm seed:dev-app -- --sa-endpoint http://localhost:5100/api
+
+# Custom promotion level
+pnpm seed:dev-app -- --promotion FEATURED_CAROUSEL
+```
+
+### All Flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `--app-url` | `http://localhost:4321` | Embed URL for the partner app |
+| `--app-name` | `Dev Partner App` | Display name |
+| `--slug` | derived from app-name | URL slug |
+| `--profile` | `dev-owner` | Owner profile ID |
+| `--install-for` | _(none)_ | Profile ID to install the app for |
+| `--domain` | hostname from app-url | Domain for DID construction |
+| `--app-image` | _(none)_ | Custom app icon URL |
+| `--template-alias` | `default` | Alias for the boost template |
+| `--sa-endpoint` | `http://localhost:5100/api` | Signing authority endpoint |
+| `--sa-seed` | `'d'.repeat(64)` | Seed for signing authority key |
+| `--permissions` | all permissions | Comma-separated permission list |
+| `--promotion` | `FEATURED_CAROUSEL` | Promotion level for app store visibility |
+| `--reset-rate-limits` | _(flag)_ | Clear Redis rate limit keys for this app |
+
+### Prerequisites
+
+- Neo4j running (`pnpm dev:services` from `apps/learn-card-app` or local Docker)
+- Redis running (same)
+- MongoDB running (same)
+- Falls back to local docker-compose defaults if no `.env` is present
+
+### Re-running
+
+The script is **idempotent** — it uses slug-based lookup and updates existing nodes rather than creating duplicates. Safe to re-run at any time.
+
 ## Debugging
 
 ### Docker Logs
