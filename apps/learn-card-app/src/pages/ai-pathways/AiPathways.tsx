@@ -145,7 +145,6 @@ const AiPathways: React.FC = () => {
                                         courses={courses}
                                         schoolPrograms={schoolPrograms}
                                         keywords={allKeywords}
-                                        fieldOfStudy={fieldOfStudy}
                                         isLoading={isLoading}
                                     />
                                     <AiPathwaySessions

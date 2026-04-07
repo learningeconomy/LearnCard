@@ -31,7 +31,9 @@ import {
 } from './ai-pathways-skill-profile/SkillProfileStep1';
 import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
 import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
+import GrowSkillsCourseItem from './GrowSkillsCourseItem';
 import GrowSkillsMediaItem from './GrowSkillsMediaItem';
+import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
 
 type GrowSkillsModalProps = {};
 
@@ -77,7 +79,8 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
         );
     };
 
-    const keywords = [search, ...goals, ...skillNames];
+    // const keywords = [search, ...goals, ...skillNames];
+    const keywords = [search];
 
     const { data: trainingPrograms, isLoading: fetchTrainingProgramsLoading } =
         useTrainingProgramsByKeyword({
@@ -88,11 +91,16 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
         return trainingPrograms?.length ? normalizeSchoolPrograms(trainingPrograms) : [];
     }, [trainingPrograms]);
 
-    const courses = useMemo(() => {
-        return schoolPrograms?.length
-            ? filterCoursesByFieldOfStudy(schoolPrograms, fieldOfStudy)
-            : [];
-    }, [schoolPrograms]);
+    console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+    console.log('schoolPrograms:', schoolPrograms);
+
+    const fieldOfStudy = search;
+    const courses = schoolPrograms;
+    // const courses = useMemo(() => {
+    //     return schoolPrograms?.length
+    //         ? filterCoursesByFieldOfStudy(schoolPrograms, fieldOfStudy)
+    //         : [];
+    // }, [schoolPrograms, fieldOfStudy]);
 
     const { data: occupations, isLoading: fetchOccupationsLoading } =
         useOccupationDetailsForKeyword(search);
@@ -102,6 +110,10 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
     // See: AiPathwaySessions.tsx
 
     const cards = [
+        ...(schoolPrograms?.map(program => ({
+            program,
+            type: 'course',
+        })) || []),
         ...(occupations?.map((occupation: OccupationDetailsResponse) => ({
             title: occupation.OnetTitle,
             mediaUrl: occupation.COSVideoURL,
@@ -109,6 +121,8 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
             type: 'media',
         })) || []),
     ];
+
+    // console.log('occupations:', occupations);
 
     const loading = false;
 
@@ -167,7 +181,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
                 </button>
             </div>
 
-            <section className="h-full pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative">
+            <section className="h-full pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative flex flex-col gap-[15px]">
                 {/* <div className="flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid pb-[15px]">
                     <div className="flex flex-col gap-[10px] relative">
                         {loading && (
@@ -185,7 +199,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
                 {/* <div className="pt-[20px] text-[16px] font-[600] text-grayscale-700">
                     Selected tab: {activeTab}
                 </div> */}
-                <div className="pt-[20px] text-[16px] font-[600] text-grayscale-700">
+                {/* <div className="pt-[20px] text-[16px] font-[600] text-grayscale-700 mb-[20px]">
                     Keywords: {keywords.join(', ')}
                     <br />
                     Field of study: {search}
@@ -195,14 +209,21 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
                     <br />
                     School programs: {schoolPrograms?.length || 0}
                     <br />
-                    {/* Courses: {courses?.length || 0} */}
-                    {/* <br /> */}
+                    Courses: {courses?.length || 0}
+                    <br />
                     Occupations: {occupations?.length || 0}
-                </div>
+                </div> */}
 
-                <div className="flex flex-col gap-[20px]">
+                <div className="flex flex-col gap-[15px]">
                     {cards.map(card => {
                         switch (card.type) {
+                            case 'course':
+                                return (
+                                    <GrowSkillsCourseItem
+                                        key={card.program?.ProgramName}
+                                        program={card.program}
+                                    />
+                                );
                             case 'media':
                                 return (
                                     <GrowSkillsMediaItem
@@ -225,12 +246,18 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
                     />
                 </div> */}
 
-                <div className="pt-[20px]">
+                {/* <div className="pt-[20px]">
+                    <AiPathwayCourses
+                        courses={courses}
+                        schoolPrograms={schoolPrograms}
+                        keywords={keywords}
+                        isLoading={fetchTrainingProgramsLoading}
+                    />
                     <AiPathwayExploreContent
                         occupations={occupations}
                         isLoading={fetchOccupationsLoading}
                     />
-                </div>
+                </div> */}
             </section>
         </div>
     );
