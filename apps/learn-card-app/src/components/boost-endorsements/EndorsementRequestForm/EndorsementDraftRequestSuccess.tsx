@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { VC } from '@learncard/types';
 
 import EndorsementRequestFormFooter from './EndorsementRequestFormFooter';
@@ -31,7 +31,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
     categoryType?: CredentialCategoryEnum;
     autoSend?: boolean;
     endorsementState?: BoostEndorsement;
-}> = ({ closeModal, credential, categoryType, autoSend = true, endorsementState }) => {
+}> = ({ closeModal, credential, categoryType, autoSend = false, endorsementState }) => {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
@@ -47,13 +47,12 @@ export const EndorsementDraftRequestSuccess: React.FC<{
     const shareLinkInfo = endorsementsRequestStore.useTracked.credentialInfo();
 
     const [endorsement, setEndorsement] = useState<BoostEndorsement | null>(null);
+    const hasAutoSentRef = useRef(false);
 
     const status = endorsement?.status || false;
     const endorsementStatus = status;
 
     const _issueeName = issueeProfile?.displayName || issueeName;
-
-    console.log('credential', credential);
 
     const handleEndorsementPreview = () => {
         newModal(
@@ -152,7 +151,18 @@ export const EndorsementDraftRequestSuccess: React.FC<{
     }, [endorsementState]);
 
     useEffect(() => {
-        if (credential?.id && autoSend) {
+        // Only auto-send if there's actual draft content to send
+        // Prevents auto-submitting blank endorsements from stale/empty state
+        // Use ref to prevent duplicate sends (ref doesn't cause re-renders)
+        if (hasAutoSentRef.current) {
+            return;
+        }
+
+        const hasValidDraft =
+            draftEndorsementRequest?.relationship?.type && draftEndorsementRequest?.description;
+
+        if (credential?.id && autoSend && hasValidDraft && currentLCNUser) {
+            hasAutoSentRef.current = true;
             setEndorsement({
                 ...draftEndorsementRequest,
                 user: {

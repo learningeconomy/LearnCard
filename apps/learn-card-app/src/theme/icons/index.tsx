@@ -112,7 +112,11 @@ import { NavBarFormalIcons } from 'learn-card-base';
 
 import ColorFulPlus from '../../assets/images/colorful-plus.png';
 import FormalPlus from '../../assets/images/formal-plus.png';
-const { wallet: NavBarPassportIcon, launchPad: NavBarLaunchPadIcon } = NavBarIcons;
+const {
+    wallet: NavBarPassportIcon,
+    launchPad: NavBarLaunchPadIcon,
+    notification: NavBarNotificationIcon,
+} = NavBarIcons;
 const { passport: NavBarPassportIconFormal, launchPad: NavBarLaunchPadIconFormal } =
     NavBarFormalIcons;
 
@@ -156,9 +160,15 @@ export type SideMenuIcons = {
 };
 
 export type NavbarIcons = {
-    wallet: React.FC<{ className?: string; version?: string }>;
-    plus: React.FC<{ className?: string; version?: string }>;
+    wallet: React.FC<{
+        className?: string;
+        version?: string;
+        isSyncing?: boolean;
+        isCompleted?: boolean;
+    }>;
+    plus: string;
     launchPad: React.FC<{ className?: string; version?: string }>;
+    notification: React.FC<{ className?: string; version?: string }>;
 };
 
 export type PlaceholdersIcons = {
@@ -278,6 +288,7 @@ export const icons = {
             wallet: NavBarPassportIcon,
             plus: ColorFulPlus,
             launchPad: NavBarLaunchPadIcon,
+            notification: NavBarNotificationIcon,
         },
         placeholders: {
             floatingBottle: FloatingBottle,
@@ -330,6 +341,7 @@ export const icons = {
             wallet: NavBarPassportIconFormal,
             plus: FormalPlus,
             launchPad: NavBarLaunchPadIconFormal,
+            notification: NavBarNotificationIcon,
         },
         placeholders: {
             floatingBottle: FloatingBottleFormal,
