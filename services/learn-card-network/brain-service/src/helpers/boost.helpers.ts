@@ -89,7 +89,7 @@ export const convertCredentialToBoostTemplateJSON = (
     credential: VC | UnsignedVC,
     defaultIssuerDid?: string
 ): string => {
-    const template = { ...credential };
+    const template = cloneDeep(credential);
 
     delete template.proof;
     template.issuer = defaultIssuerDid ?? 'did:example:123';
