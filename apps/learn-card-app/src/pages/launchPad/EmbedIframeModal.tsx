@@ -64,9 +64,14 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
 
             try {
                 const base = new URL(embedUrl);
+                const expectedOrigin = base.origin;
                 const safePath = actionPath.startsWith('/') ? actionPath : `/${actionPath}`;
                 base.pathname = base.pathname.replace(/\/$/, '') + safePath;
-                iframeRef.current.src = `${base.toString()}?lc_host_override=${window.location.origin}`;
+
+                // Verify the constructed URL hasn't escaped to a different origin
+                if (base.origin !== expectedOrigin) return;
+
+                iframeRef.current.src = `${base.toString()}?lc_host_override=${encodeURIComponent(window.location.origin)}`;
             } catch {
                 // embedUrl is invalid — do not navigate
             }
