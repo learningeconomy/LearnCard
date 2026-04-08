@@ -6,15 +6,18 @@
 
 import vcV2 from './vc-v2.json';
 import obV3 from './ob-v3p0-3.0.3.json';
+import clrV2p0 from './clr-v2p0.json';
 
 const CONTEXT_MAP: Record<string, unknown> = {
     'https://www.w3.org/ns/credentials/v2': vcV2,
     'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json': obV3,
+    'https://purl.imsglobal.org/spec/clr/v2p0/context.json': clrV2p0,
+    'https://purl.imsglobal.org/spec/clr/v2p0/context-2.0.1.json': clrV2p0,
 };
 
 /**
  * Custom document loader that resolves known contexts from bundled JSON files.
- * Throws for unknown context URLs (we only support the two standard OBv3 contexts).
+ * Throws for unknown context URLs (we support OBv3, CLR 2.0, and VC v2 contexts).
  */
 export const bundledDocumentLoader = async (url: string) => {
     const cached = CONTEXT_MAP[url];
