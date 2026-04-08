@@ -10,8 +10,8 @@ import Pencil from '../../components/svgs/Pencil';
 import TrashBin from '../../components/svgs/TrashBin';
 import AddSkillModal, { PreviousSkillInfo } from './AddSkillModal';
 import { SkillLevel, SKILL_LEVEL_META } from './skillTypes';
+import type { SelectedSkill } from './skillTypes';
 import { SkillFrameworkNode } from '../../components/boost/boost';
-import { SelectedSkill } from './SkillSearchSelector';
 import { convertApiSkillNodeToSkillTreeNode } from 'src/helpers/skillFramework.helpers';
 
 type SkillCardProps = {

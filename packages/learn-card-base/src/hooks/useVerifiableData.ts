@@ -227,6 +227,21 @@ export const useVerifiableData = <T>(key: string, options?: VerifiableDataOption
             const wallet = await initWallet();
             return storeVerifiableData(wallet, key, data, category, credentialOptions);
         },
+        onMutate: async (data: T) => {
+            await queryClient.cancelQueries({ queryKey });
+
+            const previousData = queryClient.getQueryData<VerifiableDataResult<T>>(queryKey);
+
+            queryClient.setQueryData<VerifiableDataResult<T>>(queryKey, current => ({
+                data,
+                issuanceDate: current?.issuanceDate ?? new Date().toISOString(),
+            }));
+
+            return { previousData };
+        },
+        onError: (_error, _data, context) => {
+            queryClient.setQueryData(queryKey, context?.previousData);
+        },
         onSuccess: (_, data) => {
             // Update the cache with the new data
             queryClient.setQueryData(queryKey, {

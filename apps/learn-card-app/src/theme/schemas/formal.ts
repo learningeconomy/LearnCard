@@ -212,6 +212,11 @@ export const formalTheme: Theme = validateThemeData({
             label: 'Apps',
             path: '/launchpad',
         },
+        {
+            id: MobileNavBarLinks.notification,
+            label: 'Alerts',
+            path: '/notifications',
+        },
     ],
     colors: colors[ThemeEnum.Formal],
     icons: icons[ThemeEnum.Formal],

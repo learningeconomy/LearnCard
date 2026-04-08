@@ -8,22 +8,16 @@ import {
     useGetBoostSkills,
     useToast,
     ToastTypeEnum,
-    conditionalPluralize,
     useGetSkillFrameworkById,
 } from 'learn-card-base';
 
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
-import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
 import SkillsCloseConfirmationModal from './SkillsCloseConfirmationModal';
 import { IonFooter, IonSpinner } from '@ionic/react';
 import { GenericErrorView } from 'learn-card-base/components/generic/GenericErrorBoundary';
 
-import SkillSearchSelector, { SelectedSkill } from './SkillSearchSelector';
-
-enum Step {
-    Add,
-    Review,
-}
+import SkillSearchSelector from './SkillSearchSelector';
+import { SelectedSkill } from './skillTypes';
 
 type SelfAssignSkillsModalProps = {};
 

@@ -1,5 +1,57 @@
 # learn-card-core
 
+## 2.3.12
+
+### Patch Changes
+
+-   Updated dependencies [[`c68bed993c5304a667dc75d422a118858848737a`](https://github.com/learningeconomy/LearnCard/commit/c68bed993c5304a667dc75d422a118858848737a)]:
+    -   @learncard/types@5.13.4
+    -   @learncard/core@9.4.14
+    -   @learncard/helpers@1.2.14
+    -   @learncard/chapi-plugin@1.1.14
+    -   @learncard/did-web-plugin@1.1.14
+    -   @learncard/didkey-plugin@1.1.14
+    -   @learncard/didkit-plugin@1.8.4
+    -   @learncard/didkit-plugin-node@0.2.10
+    -   @learncard/encryption-plugin@1.1.14
+    -   @learncard/learn-card-plugin@1.2.14
+    -   @learncard/network-plugin@2.10.14
+    -   @learncard/learn-cloud-plugin@2.3.18
+    -   @learncard/vc-plugin@1.4.10
+    -   @learncard/vc-api-plugin@1.1.14
+    -   @learncard/vc-templates-plugin@1.1.14
+    -   @learncard/vpqr-plugin@1.1.14
+    -   @learncard/crypto-plugin@1.1.14
+    -   @learncard/dynamic-loader-plugin@1.1.14
+    -   @learncard/ethereum-plugin@1.1.15
+    -   @learncard/expiration-plugin@1.2.14
+
+## 2.3.11
+
+### Patch Changes
+
+-   Updated dependencies [[`8b5325da517d957ef93598511ba7dca14b31a656`](https://github.com/learningeconomy/LearnCard/commit/8b5325da517d957ef93598511ba7dca14b31a656), [`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369)]:
+    -   @learncard/network-plugin@2.10.13
+    -   @learncard/types@5.13.3
+    -   @learncard/core@9.4.13
+    -   @learncard/helpers@1.2.13
+    -   @learncard/chapi-plugin@1.1.13
+    -   @learncard/did-web-plugin@1.1.13
+    -   @learncard/didkey-plugin@1.1.13
+    -   @learncard/didkit-plugin@1.8.3
+    -   @learncard/didkit-plugin-node@0.2.9
+    -   @learncard/encryption-plugin@1.1.13
+    -   @learncard/learn-card-plugin@1.2.13
+    -   @learncard/learn-cloud-plugin@2.3.17
+    -   @learncard/vc-plugin@1.4.9
+    -   @learncard/vc-api-plugin@1.1.13
+    -   @learncard/vc-templates-plugin@1.1.13
+    -   @learncard/vpqr-plugin@1.1.13
+    -   @learncard/crypto-plugin@1.1.13
+    -   @learncard/dynamic-loader-plugin@1.1.13
+    -   @learncard/ethereum-plugin@1.1.14
+    -   @learncard/expiration-plugin@1.2.13
+
 ## 2.3.10
 
 ### Patch Changes
