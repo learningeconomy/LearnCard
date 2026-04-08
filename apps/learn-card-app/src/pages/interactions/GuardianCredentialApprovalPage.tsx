@@ -27,9 +27,6 @@ type PageState =
     | 'approved'
     | 'already_linked'
     | 'rejected'
-    | 'upgrade_prompt'
-    | 'registering'
-    | 'registered'
     | 'error';
 
 type LCNOpenInvoke = {
@@ -37,16 +34,6 @@ type LCNOpenInvoke = {
     sendGuardianChallenge: (token: string) => Promise<{ message: string }>;
     approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string; alreadyLinked: boolean }>;
     rejectGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
-    registerGuardianAsManager: (
-        token: string,
-        displayName: string,
-        profileId: string
-    ) => Promise<{
-        message: string;
-        guardianProfileId: string;
-        childProfileId: string;
-        managerId: string | null;
-    }>;
 };
 
 const toErrorMessage = (err: unknown): string =>
@@ -71,9 +58,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
     const [error, setError] = useState<string>('');
     const [resultMessage, setResultMessage] = useState<string>('');
     const [otpCode, setOtpCode] = useState<string>('');
-    const [upgradeDisplayName, setUpgradeDisplayName] = useState('');
-    const [upgradeHandle, setUpgradeHandle] = useState('');
-    const [upgradeError, setUpgradeError] = useState('');
+
 
     // Initialize wallet once
     const invokeRef = useRef<LCNOpenInvoke | null>(null);
@@ -151,19 +136,6 @@ const GuardianCredentialApprovalPage: React.FC = () => {
         } catch (e: unknown) {
             setError(toErrorMessage(e));
             setState('error');
-        }
-    };
-
-    const handleUpgrade = async () => {
-        if (!token || !invokeRef.current || !upgradeDisplayName.trim() || !upgradeHandle.trim()) return;
-        setState('registering');
-        setUpgradeError('');
-        try {
-            await invokeRef.current.registerGuardianAsManager(token, upgradeDisplayName.trim(), upgradeHandle.trim());
-            setState('registered');
-        } catch (e: unknown) {
-            setUpgradeError(toErrorMessage(e));
-            setState('upgrade_prompt');
         }
     };
 
@@ -288,21 +260,18 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                     {state === 'approved' && (
                         <>
                             <h1 className="text-2xl font-bold mb-2">Credential Approved</h1>
-                            <p className="text-emerald-100 max-w-[520px] mb-4">
+                            <p className="text-emerald-100 max-w-[520px] mb-6">
                                 {resultMessage || 'The credential has been approved. The recipient can now claim it.'}
                             </p>
-                            <div className="w-full max-w-sm mt-2">
-                                <p className="text-emerald-100 text-sm mb-4">
-                                    Want to manage future approvals without email verification each time?
-                                </p>
-                                <IonButton
-                                    expand="block"
-                                    color="light"
-                                    onClick={() => setState('upgrade_prompt')}
-                                >
-                                    Create a LearnCard Account
-                                </IonButton>
-                            </div>
+                            <p className="text-emerald-100 text-sm max-w-[420px] mb-4">
+                                Sign in or create a LearnCard account with this email to manage future approvals directly in the app.
+                            </p>
+                            <a
+                                href="/login"
+                                className="text-white font-semibold underline underline-offset-2 text-sm"
+                            >
+                                Log in / Sign up →
+                            </a>
                         </>
                     )}
 
@@ -322,83 +291,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                         </>
                     )}
 
-                    {state === 'upgrade_prompt' && (
-                        <>
-                            <h1 className="text-2xl font-bold mb-2">Create Your Account</h1>
-                            <p className="text-emerald-100 max-w-[520px] mb-6">
-                                Set up your account to manage future credential approvals directly in the app.
-                            </p>
-                            <div className="flex flex-col gap-3 w-full max-w-sm">
-                                <IonItem color="light" className="rounded-xl">
-                                    <IonInput
-                                        placeholder="Display Name"
-                                        value={upgradeDisplayName}
-                                        onIonInput={e => setUpgradeDisplayName(String(e.detail.value ?? ''))}
-                                    />
-                                </IonItem>
-                                <IonItem color="light" className="rounded-xl">
-                                    <IonInput
-                                        placeholder="Username (e.g. jsmith)"
-                                        value={upgradeHandle}
-                                        onIonInput={e => setUpgradeHandle(String(e.detail.value ?? ''))}
-                                    />
-                                </IonItem>
-                                {upgradeError && (
-                                    <p className="text-red-300 text-sm">{upgradeError}</p>
-                                )}
-                                <IonButton
-                                    expand="block"
-                                    color="light"
-                                    onClick={handleUpgrade}
-                                    disabled={!upgradeDisplayName.trim() || !upgradeHandle.trim()}
-                                >
-                                    Create Account
-                                </IonButton>
-                                <button
-                                    className="text-emerald-200 text-sm underline mt-2 bg-transparent border-none cursor-pointer"
-                                    onClick={() => setState('approved')}
-                                >
-                                    Skip for now
-                                </button>
-                            </div>
-                        </>
-                    )}
 
-                    {state === 'registering' && (
-                        <div className="flex flex-col items-center gap-3">
-                            <IonSpinner color="light" />
-                            <p className="font-semibold text-lg">Creating your account…</p>
-                        </div>
-                    )}
-
-                    {state === 'registered' && (
-                        <>
-                            <h1 className="text-2xl font-bold mb-2">Account Created!</h1>
-                            <p className="text-emerald-100 max-w-[520px] mb-4">
-                                Your account has been set up and linked to this student. Download the LearnCard
-                                app to manage their credentials going forward.
-                            </p>
-                            <div className="flex flex-col gap-3 w-full max-w-sm mt-4">
-                                <IonButton
-                                    expand="block"
-                                    color="light"
-                                    href="https://apps.apple.com/us/app/learncard/id1635841898"
-                                    target="_blank"
-                                >
-                                    Download on the App Store
-                                </IonButton>
-                                <IonButton
-                                    expand="block"
-                                    fill="outline"
-                                    color="light"
-                                    href="https://play.google.com/store/apps/details?id=com.learncard.app"
-                                    target="_blank"
-                                >
-                                    Get it on Google Play
-                                </IonButton>
-                            </div>
-                        </>
-                    )}
 
                     {state === 'rejected' && (
                         <>

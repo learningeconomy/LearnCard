@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import type { FC } from 'react';
 
-import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
-import { useGetBoosts } from 'learn-card-base/react-query/queries/queries';
+import { useWallet, useToast, ToastTypeEnum, switchedProfileStore } from 'learn-card-base';
+import { useGetBoosts, useGetManagedProfiles } from 'learn-card-base/react-query/queries/queries';
 
 import AdminToolsOptionItemHeader from '../AdminToolsModal/helpers/AdminToolsOptionItemHeader';
 import type { AdminToolOption } from '../AdminToolsModal/admin-tools.helpers';
@@ -17,6 +17,8 @@ const AdminToolsGuardianCredentialTestOption: FC<{ option: AdminToolOption }> = 
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const { data: boosts = [], isLoading: boostsLoading } = useGetBoosts();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+    const { data: managedProfiles, isLoading: managedLoading } = useGetManagedProfiles(switchedDid ?? '');
 
     const [recipientEmail, setRecipientEmail] = useState('');
     const [guardianEmail, setGuardianEmail] = useState('');
@@ -186,6 +188,35 @@ const AdminToolsGuardianCredentialTestOption: FC<{ option: AdminToolOption }> = 
                             </button>
                         </div>
                     )}
+
+                    {/* Managed Accounts */}
+                    <hr className="border-grayscale-100" />
+                    <div>
+                        <p className={`${labelClass} mb-[8px]`}>Managed Accounts</p>
+                        {managedLoading && (
+                            <span className="animate-spin inline-block w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full" />
+                        )}
+                        {!managedLoading && !managedProfiles?.records?.length && (
+                            <p className="text-[13px] text-grayscale-400 font-notoSans">
+                                You're not currently managing any accounts.
+                            </p>
+                        )}
+                        {!managedLoading && managedProfiles?.records?.map(profile => (
+                            <div
+                                key={profile.profileId}
+                                className="flex items-center gap-[8px] py-[8px] border-b border-grayscale-100 last:border-0"
+                            >
+                                <div>
+                                    <p className="text-[14px] font-[600] text-grayscale-900 font-notoSans">
+                                        {profile.displayName || profile.profileId}
+                                    </p>
+                                    <p className="text-[12px] text-grayscale-400 font-notoSans">
+                                        @{profile.profileId}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </section>
         </section>
