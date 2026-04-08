@@ -128,11 +128,16 @@ export const createWeb3AuthStrategy = (
 
         await web3auth.init();
 
-        await web3auth.connect({
-            verifier: config.verifier,
-            verifierId: uid,
-            idToken,
-        });
+        // After init(), Web3Auth may have auto-restored a persisted session
+        // (e.g. on Android app resume). Calling connect() when already
+        // connected throws "Already connected", so skip it in that case.
+        if (!web3auth.connected) {
+            await web3auth.connect({
+                verifier: config.verifier,
+                verifierId: uid,
+                idToken,
+            });
+        }
 
         const provider = web3auth.provider;
 
