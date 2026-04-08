@@ -11,6 +11,10 @@ import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
+import {
+    getContractUriFromLaunchConfig,
+    getContractUriFromGuideState,
+} from '@helpers/integrations.helpers';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 
@@ -1001,7 +1005,8 @@ const handleRequestLearnerContextEvent = async (
     ctx: { domain: string },
     profile: ProfileType,
     listingId: string,
-    event: Record<string, unknown>
+    event: Record<string, unknown>,
+    listing?: { launch_config_json?: string }
 ): Promise<Record<string, unknown>> => {
     const { instructions, detailLevel = 'compact' } = event as {
         instructions?: string;
@@ -1022,36 +1027,34 @@ const handleRequestLearnerContextEvent = async (
         credentialUris.push(credentialUri);
     }
 
-    const integration = await getIntegrationForListing(listingId);
+    // Resolve contractUri from launch_config_json or guideState
+    let contractUri = getContractUriFromLaunchConfig(listing);
 
-    if (integration?.guideState) {
-        const guideState = integration.guideState;
+    if (!contractUri) {
+        const integration = await getIntegrationForListing(listingId);
+        contractUri = getContractUriFromGuideState(integration);
+    }
 
+    if (contractUri) {
         try {
-            const contractUri =
-                guideState?.config?.embedAppConfig?.featureConfig['request-data-consent']
-                    ?.contractUri;
+            const contractDetails = await getContractDetailsByUri(contractUri);
 
-            if (contractUri) {
-                const contractDetails = await getContractDetailsByUri(contractUri);
+            if (contractDetails?.contract) {
+                const terms = await getContractTermsForProfile(
+                    profile,
+                    contractDetails.contract
+                );
 
-                if (contractDetails?.contract) {
-                    const terms = await getContractTermsForProfile(
-                        profile,
-                        contractDetails.contract
+                if (event.includeCredentials && terms?.terms?.read?.credentials) {
+                    const uris = Object.values(terms.terms.read.credentials.categories).flatMap(
+                        (category: unknown) => (category as { shared?: string[] })?.shared ?? []
                     );
 
-                    if (event.includeCredentials && terms?.terms?.read?.credentials) {
-                        const uris = Object.values(terms.terms.read.credentials.categories).flatMap(
-                            category => category.shared ?? []
-                        );
+                    credentialUris.push(...uris);
+                }
 
-                        credentialUris.push(...uris);
-                    }
-
-                    if (event.includePersonalData && terms?.terms?.read?.personal) {
-                        personalData = terms.terms.read.personal;
-                    }
+                if (event.includePersonalData && terms?.terms?.read?.personal) {
+                    personalData = terms.terms.read.personal;
                 }
             }
         } catch (error) {
@@ -2067,7 +2070,7 @@ export const appStoreRouter = t.router({
             }
 
             if (eventType === 'request-learner-context') {
-                return handleRequestLearnerContextEvent(ctx, profile, resolvedListingId, event);
+                return handleRequestLearnerContextEvent(ctx, profile, resolvedListingId, event, listing);
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });

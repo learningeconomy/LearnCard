@@ -345,6 +345,30 @@ export function useLearnCardMessageHandlers({
                     log('Consent requested for contract:', contractUri, options);
                     return showConsentFlow(contractUri, options);
                 },
+                getContractUri: () => launchConfig?.contractUri as string | undefined,
+                getIntegrationContractUri: async () => {
+                    if (!appId) return undefined;
+
+                    const integration = await getIntegrationForListing(appId);
+                    const guideState = integration?.guideState as
+                        | {
+                              config?: {
+                                  consentFlowConfig?: { contractUri?: string };
+                                  embedAppConfig?: {
+                                      featureConfig?: {
+                                          'request-data-consent'?: { contractUri?: string };
+                                      };
+                                  };
+                              };
+                          }
+                        | undefined;
+
+                    return (
+                        guideState?.config?.embedAppConfig?.featureConfig?.['request-data-consent']
+                            ?.contractUri ||
+                        guideState?.config?.consentFlowConfig?.contractUri
+                    );
+                },
 
                 // Credential handlers
                 showCredentialAcceptanceModal: async (credential: any) => {
@@ -1022,6 +1046,7 @@ export function useLearnCardMessageHandlers({
             onCredentialIssued,
             log,
             logError,
+            launchConfig,
             getIntegrationForListing,
         ]
     );

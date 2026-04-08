@@ -92,66 +92,25 @@ export const createRequestConsentHandler = (dependencies: {
         contractUri: string,
         options?: { redirect?: boolean }
     ) => Promise<ConsentModalResult>;
-    getIntegrationForListing?: (listingId: string) => Promise<{
-        guideState?: Record<string, unknown>;
-    } | null>;
-    getAppListingId?: () => string | undefined;
+    getContractUri?: () => string | undefined;
+    getIntegrationContractUri?: () => Promise<string | undefined>;
 }): ActionHandler<'REQUEST_CONSENT'> => {
     return async ({ payload }) => {
-        const { showConsentModal, getIntegrationForListing, getAppListingId } = dependencies;
+        const { showConsentModal, getContractUri, getIntegrationContractUri } = dependencies;
 
-        let contractUri = payload.contractUri;
+        // Use payload contractUri first, then launch config, then guideState fallback
+        const contractUri =
+            payload.contractUri || getContractUri?.() || (await getIntegrationContractUri?.());
 
-        // If no contract URI provided, try to resolve from app's integration
         if (!contractUri) {
-            const listingId = getAppListingId?.();
-            if (!listingId) {
-                return {
-                    success: false,
-                    error: {
-                        code: 'INVALID_PAYLOAD',
-                        message: 'Could not find a listing for this app',
-                    },
-                };
-            }
-
-            if (!getIntegrationForListing) {
-                return {
-                    success: false,
-                    error: {
-                        code: 'INVALID_PAYLOAD',
-                        message: 'Could not find an integration for this app listing',
-                    },
-                };
-            }
-
-            const integration = await getIntegrationForListing(listingId);
-            const guideState = integration?.guideState as
-                | {
-                    config?: {
-                        embedAppConfig?: {
-                            featureConfig?: {
-                                'request-data-consent'?: { contractUri?: string };
-                            };
-                        };
-                    };
-                }
-                | undefined;
-
-            contractUri =
-                guideState?.config?.embedAppConfig?.featureConfig?.['request-data-consent']
-                    ?.contractUri;
-
-            if (!contractUri) {
-                return {
-                    success: false,
-                    error: {
-                        code: 'INVALID_PAYLOAD',
-                        message:
-                            'No contract URI provided and no contract configured for this app listing',
-                    },
-                };
-            }
+            return {
+                success: false,
+                error: {
+                    code: 'INVALID_PAYLOAD',
+                    message:
+                        'No contract URI provided and no contract configured for this app listing',
+                },
+            };
         }
 
         try {
@@ -594,6 +553,8 @@ export function createActionHandlers(dependencies: {
         contractUri: string,
         options?: { redirect?: boolean }
     ) => Promise<ConsentModalResult>;
+    getContractUri?: () => string | undefined;
+    getIntegrationContractUri?: () => Promise<string | undefined>;
     getIntegrationForListing?: (listingId: string) => Promise<LCNIntegration | undefined>;
 
     // Credentials
