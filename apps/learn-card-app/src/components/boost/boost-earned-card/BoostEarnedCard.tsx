@@ -38,6 +38,7 @@ import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoa
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import CustomBoostTitleDisplay from './helpers/CustomBoostTitleDisplay';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
+import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
 
 import { getClrLinkedCredentials } from 'learn-card-base/helpers/credentialHelpers';
 
@@ -218,6 +219,15 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         handlePresentBoostMenuModal();
     };
 
+    const clrAchievements: any[] =
+        isClrCredential && Array.isArray(cred?.credentialSubject?.achievement)
+            ? cred.credentialSubject.achievement
+            : [];
+    const clrAssociations: any[] =
+        isClrCredential && Array.isArray(cred?.credentialSubject?.association)
+            ? cred.credentialSubject.association
+            : [];
+
     const customLinkedCredentialsComponent =
         linkedCredentialCount > 0 ? (
             <BoostLinkedCredentialsBox
@@ -227,6 +237,11 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 linkedCredentialCount={linkedCredentialCount}
                 linkedCredentials={getClrLinkedCredentials(credential)}
                 defaultImg={defaultImg}
+            />
+        ) : clrAchievements.length > 0 ? (
+            <ClrAchievementsSummaryBox
+                achievements={clrAchievements}
+                associations={clrAssociations}
             />
         ) : undefined;
 
