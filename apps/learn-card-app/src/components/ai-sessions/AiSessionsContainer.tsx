@@ -79,9 +79,10 @@ export const AiSessionsContainer: React.FC<{
 
     const [chatBotSelected, setChatBotSelected] = useState<NewAiSessionStepEnum | null>(null);
 
-    const topicUri = _topicUri || query.get('topicBoostUri');
-    const { data: enrichedSessionData, isLoading: isLoadingEnrichedSessions } =
-        useGetEnrichedSession(topicUri as string);
+    const topicUri = (_topicUri || (query.get('topicBoostUri') as string)).replace(
+        /localhost:/,
+        'localhost%3A'
+    );
 
     const topicRecord = enrichedSessionData?.topicRecord;
     const topicVc = enrichedSessionData?.topicVc;
@@ -226,7 +227,10 @@ export const AiSessionsContainer: React.FC<{
         <AiFeatureGate>
             <>
                 {isFinishingAssessment && topicRecord && isDesktop && (
-                    <AiSessionLoader topicRecord={topicRecord} overrideText={finishedAssessmentText} />
+                    <AiSessionLoader
+                        topicRecord={topicRecord}
+                        overrideText={finishedAssessmentText}
+                    />
                 )}
                 <AiSessionsLayout
                     handleSetChatBotSelected={handleSetChatBotSelected}
