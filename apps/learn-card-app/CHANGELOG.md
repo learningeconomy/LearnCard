@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.95.4
+
+### Patch Changes
+
+-   [#1153](https://github.com/learningeconomy/LearnCard/pull/1153) [`822d1b8e6bb16634881f513fbb4598fb263d6cb5`](https://github.com/learningeconomy/LearnCard/commit/822d1b8e6bb16634881f513fbb4598fb263d6cb5) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC 1699] Apps Page and LaunchPadActionModal Updates
+
+-   [#1154](https://github.com/learningeconomy/LearnCard/pull/1154) [`c66315c41224b0eb92f5a6a030dda732d7827b25`](https://github.com/learningeconomy/LearnCard/commit/c66315c41224b0eb92f5a6a030dda732d7827b25) Thanks [@smurflo2](https://github.com/smurflo2)! - Add Explore Pathways modal with Skill + Goal editing
+
+-   [#1146](https://github.com/learningeconomy/LearnCard/pull/1146) [`741e391412998677162a858eb96cec931c21de1c`](https://github.com/learningeconomy/LearnCard/commit/741e391412998677162a858eb96cec931c21de1c) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1695] Mobile header and footer polishes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.14
+    -   @learncard/lca-api-plugin@1.2.4
+    -   @learncard/ler-rs-plugin@0.1.5
+    -   @learncard/open-badge-v2-plugin@1.1.15
+    -   @learncard/react@2.9.21
+    -   @learncard/sss-key-manager@0.1.4
+
 ## 1.95.3
 
 ### Patch Changes

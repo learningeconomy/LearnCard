@@ -1,5 +1,13 @@
 # @learncard/app-store-demo-lore-card
 
+## 0.0.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.12
+    -   @learncard/partner-connect@0.2.14
+
 ## 0.0.17
 
 ### Patch Changes
