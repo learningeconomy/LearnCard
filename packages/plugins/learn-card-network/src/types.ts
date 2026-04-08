@@ -614,16 +614,6 @@ export type LearnCardNetworkPluginMethods = {
     sendGuardianChallenge: (token: string) => Promise<{ message: string }>;
     approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string; alreadyLinked: boolean }>;
     rejectGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
-    registerGuardianAsManager: (
-        token: string,
-        displayName: string,
-        profileId: string
-    ) => Promise<{
-        message: string;
-        guardianProfileId: string;
-        childProfileId: string;
-        managerId: string | null;
-    }>;
     addContactMethod: (
         contactMethod: ContactMethodQueryType
     ) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;

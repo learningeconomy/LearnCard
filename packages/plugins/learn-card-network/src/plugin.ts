@@ -1591,10 +1591,6 @@ export async function getLearnCardNetworkPlugin(
                 // Open route; no auth required
                 return client.inbox.rejectGuardianCredential.mutate({ token, otpCode });
             },
-            registerGuardianAsManager: async (_learnCard, token, displayName, profileId) => {
-                // Open route; no auth required
-                return client.inbox.registerGuardianAsManager.mutate({ token, displayName, profileId });
-            },
             addContactMethod: async (_learnCard, contactMethod) => {
                 await ensureUser();
 
