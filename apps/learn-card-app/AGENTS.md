@@ -231,17 +231,17 @@ The embed URL is mocked via `mockEmbedRoute(page)` to serve a simple HTML page i
 
 Location: `src/pages/appStoreDeveloper/partner-onboarding/components/CredentialBuilder/`
 
-A form-based OBv3 credential template builder used by partner onboarding guides. Key files:
+A form-based credential template builder supporting OBv3 and CLR 2.0, used by partner onboarding guides. Key files:
 
-| File                    | Purpose                                                                                       |
-| ----------------------- | --------------------------------------------------------------------------------------------- |
-| `CredentialBuilder.tsx` | Main component — form mode, JSON mode, validation                                             |
-| `types.ts`              | Template types: `OBv3CredentialTemplate`, `TemplateFieldValue` (static/dynamic/system)        |
-| `utils.ts`              | `templateToJson()` / `jsonToTemplate()` serialization, `validateTemplate()` structural checks |
-| `validateJsonLd.ts`     | Client-side JSON-LD expansion validation using bundled contexts                               |
-| `contexts/`             | Bundled VC v2 + OBv3 3.0.3 context JSON + document loader                                     |
-| `presets.ts`            | Template presets (badge, certificate, etc.)                                                   |
-| `sections/`             | Form sections: Achievement, Evidence, Dates, CustomFields, etc.                               |
+| File                    | Purpose                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `CredentialBuilder.tsx` | Main component — form mode, JSON mode, validation; routes to CLR or OBv3 builder based on `schemaType`       |
+| `types.ts`              | Template types: `OBv3CredentialTemplate`, `TemplateFieldValue` (static/dynamic/system), CLR types            |
+| `utils.ts`              | `templateToJson()` / `jsonToTemplate()` serialization, `validateTemplate()` structural checks (OBv3 + CLR)   |
+| `validateJsonLd.ts`     | Client-side JSON-LD expansion validation using bundled contexts                                              |
+| `contexts/`             | Bundled VC v2, OBv3 3.0.3, and CLR v2p0 context JSON + document loader                                      |
+| `presets.ts`            | Template presets — OBv3 (badge, certificate, etc.) + CLR 2.0 (Academic Transcript, Program Completion, etc.) |
+| `sections/`             | Form sections: Achievement, Evidence, Dates, CustomFields, AchievementsListSection (CLR), AssociationsSection (CLR) |
 
 ### JSON-LD Validation Architecture
 
@@ -255,6 +255,35 @@ All three layers feed into `onValidationChange(status, error)` which parent comp
 
 **Note:** `issueCredential()` injects signing contexts (e.g., `ed25519-2020/v1`) into the credential's `@context`. `jsonToTemplate()` strips these via `SIGNING_ARTIFACT_CONTEXTS` to avoid validation failures when loading saved templates.
 
+### CLR 2.0 Support
+
+CLR 2.0 (Comprehensive Learner Record) wraps multiple OBv3 achievements into a single credential representing a learner's transcript. `detectSchemaType()` in `utils.ts` sniffs the `@context`/`type` arrays and returns `'clr2'` when the CLR context is present.
+
+**Schema type routing in `CredentialBuilder.tsx`:**
+
+```
+schemaType === 'clr2'    → IssuerSection + AchievementsListSection + AssociationsSection + EvidenceSection + DatesSection
+schemaType === 'obv3'    → existing OBv3 sections (unchanged)
+schemaType === 'custom'  → JSON-Only Mode
+```
+
+**Key CLR types** (`types.ts`):
+- `ClrSubjectTemplate` — holds `achievements: AchievementEntryTemplate[]` and `associations: AssociationTemplate[]`
+- `AchievementEntryTemplate` — wraps an `AchievementTemplate` with per-entry `creditsEarned`, `activityStartDate`, `activityEndDate`, `result[]`
+- `AssociationTemplate` — `sourceAchievementId`, `associationType` (enum: `isChildOf`, `isPartOf`, `isRelatedTo`, `isPeerOf`, `isEnabledBy`, `precedes`, `replacedBy`), `targetAchievementId`
+
+**Serialization** (`utils.ts`):
+- `clrTemplateToJson()` → outputs `ClrCredential` type, CLR v2p0 `@context`, `ClrSubject` with `achievement[]` and `association[]`
+- `jsonToClrTemplate()` → parses CLR JSON back into `clrSubject`; association IDs are stable UUIDs injected into each achievement JSON at serialization time so they survive round-trips
+
+**UI sections** (`sections/`):
+- `AchievementsListSection` — add/remove/expand-collapse/edit entries; drag-and-drop reorder via `GripVertical` handle (HTML5 DnD; dragged item fades to 40% opacity, drop target gets indigo ring)
+- `AssociationsSection` — source/type/target dropdowns, inline human-readable summary, referential validation
+
+**Presets** (`presets.ts`): `CLR2_PRESETS` — Blank CLR, Academic Transcript, Program Completion, Competency Record. Combined with OBv3 presets in `ALL_PRESETS`. The template selector groups them under "CLR 2.0 (Multi-Achievement)".
+
+**Preview**: `BoostEarnedCard` detects `isClrCredential` and renders `ClrAchievementsSummaryBox` (shows achievement names + associations) instead of the standard OBv3 card layout.
+
 ### Credential Context Layers
 
 ```
@@ -262,11 +291,13 @@ All three layers feed into `onValidationChange(status, error)` which parent comp
 ┌─────────────────────────────────────────────┐
 │ 1. W3C VC v2                                │  ← VerifiableCredential, issuer, credentialSubject, proof
 │ 2. OBv3 3.0.3                               │  ← Achievement, criteria, alignment, evidence
-│ 3. LearnCard Boost (optional, internal only) │  ← BoostCredential, display, skills, attachments
+│ 3. CLR v2p0 (CLR credentials only)          │  ← ClrCredential, ClrSubject, association types
+│ 4. LearnCard Boost (optional, internal only) │  ← BoostCredential, display, skills, attachments
 └─────────────────────────────────────────────┘
 Each layer defines its own terms; later layers rely on earlier ones being present.
 Properties not defined in ANY loaded context → "key expansion failed" error.
 Boost contexts: packages/learn-card-contexts/boosts/ (lcn: namespace)
+CLR context: https://purl.imsglobal.org/spec/clr/v2p0/context.json (bundled in CredentialBuilder/contexts/)
 ```
 
 ### Consumers of CredentialBuilder
