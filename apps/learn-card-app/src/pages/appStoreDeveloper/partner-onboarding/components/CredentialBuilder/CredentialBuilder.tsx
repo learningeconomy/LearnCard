@@ -40,6 +40,7 @@ import {
     AchievementSection,
     AchievementsListSection,
     AssociationsSection,
+    LinkedCredentialsSection,
     RecipientSection,
     EvidenceSection,
     DatesSection,
@@ -984,6 +985,14 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             onToggle={() => toggleSection('associations')}
                             validationErrors={validationErrors}
                         />
+
+                        {(template.clrSubject?.verifiableCredential?.length ?? 0) > 0 && (
+                            <LinkedCredentialsSection
+                                template={template}
+                                isExpanded={expandedSections.has('linked-credentials')}
+                                onToggle={() => toggleSection('linked-credentials')}
+                            />
+                        )}
 
                         <EvidenceSection
                             template={template}

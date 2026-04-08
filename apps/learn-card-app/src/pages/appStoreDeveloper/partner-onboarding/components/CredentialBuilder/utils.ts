@@ -467,6 +467,11 @@ export const clrTemplateToJson = (template: OBv3CredentialTemplate): Record<stri
         }));
     }
 
+    // Serialize embedded signed VCs (passthrough — these are pre-signed, not editable)
+    if (template.clrSubject?.verifiableCredential && template.clrSubject.verifiableCredential.length > 0) {
+        credentialSubject.verifiableCredential = template.clrSubject.verifiableCredential;
+    }
+
     credential.credentialSubject = credentialSubject;
 
     // Evidence (top-level, same as OBv3)
@@ -635,6 +640,11 @@ export const jsonToClrTemplate = (json: Record<string, unknown>, contexts: strin
         targetAchievementId: String(assoc.targetId || ''),
     }));
 
+    // Parse embedded signed VCs (the other CLR 2.0 mechanism)
+    const verifiableCredentialArr = Array.isArray(subjectObj.verifiableCredential)
+        ? subjectObj.verifiableCredential as Record<string, unknown>[]
+        : [];
+
     return {
         schemaType: 'clr2',
         contexts,
@@ -652,6 +662,7 @@ export const jsonToClrTemplate = (json: Record<string, unknown>, contexts: strin
         clrSubject: {
             achievements,
             associations,
+            verifiableCredential: verifiableCredentialArr.length > 0 ? verifiableCredentialArr : undefined,
         },
         validFrom: jsonToField(json.validFrom || json.issuanceDate || '{{issue_date}}'),
         validUntil: json.validUntil || json.expirationDate ? jsonToField(json.validUntil || json.expirationDate) : undefined,
@@ -1109,9 +1120,11 @@ export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidat
     // CLR 2.0 validation
     if (template.schemaType === 'clr2') {
         const achievements = template.clrSubject?.achievements || [];
+        const embeddedVCs = template.clrSubject?.verifiableCredential || [];
 
-        if (achievements.length === 0) {
-            errors.push({ field: 'achievements-list', message: 'At least one achievement is required' });
+        // A CLR needs at least one of: achievements or embedded verifiableCredentials
+        if (achievements.length === 0 && embeddedVCs.length === 0) {
+            errors.push({ field: 'achievements-list', message: 'At least one achievement or embedded credential is required' });
         }
 
         for (let i = 0; i < achievements.length; i++) {

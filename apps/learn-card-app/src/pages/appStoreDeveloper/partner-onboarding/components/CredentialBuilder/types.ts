@@ -167,6 +167,8 @@ export interface AssociationTemplate {
 export interface ClrSubjectTemplate {
     achievements: AchievementEntryTemplate[];
     associations: AssociationTemplate[];
+    // Embedded signed VCs (the other half of CLR 2.0 — proof-bearing credentials)
+    verifiableCredential?: Record<string, unknown>[];
 }
 
 // Full OBv3 Credential Template (also supports CLR 2.0 via clrSubject)
@@ -222,6 +224,7 @@ export type SectionId =
     | 'achievement'
     | 'achievements-list'
     | 'associations'
+    | 'linked-credentials'
     | 'criteria'
     | 'alignment'
     | 'evidence'

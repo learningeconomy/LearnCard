@@ -26,7 +26,13 @@ export const validateCredentialJsonLd = async (
         // doesn't choke on `{{variable_name}}` strings.
         const sanitized = replaceMustacheForValidation(credential);
 
-        await jsonld.expand(sanitized, {
+        // Strip embedded verifiableCredential from CLR credentialSubject before
+        // expansion. These are pre-signed VCs with their own @context arrays that
+        // our bundled document loader doesn't cover. They're already validated by
+        // their original issuers — we only need to validate the CLR wrapper.
+        const forExpansion = stripEmbeddedVCs(sanitized as Record<string, unknown>);
+
+        await jsonld.expand(forExpansion, {
             documentLoader: bundledDocumentLoader,
         });
 
@@ -37,6 +43,33 @@ export const validateCredentialJsonLd = async (
         return { valid: false, errors };
     }
 };
+
+/**
+ * Deep-clone a credential, removing credentialSubject.verifiableCredential if present.
+ * Embedded signed VCs reference their own @context arrays (VC v1, signing contexts, etc.)
+ * that our bundled document loader doesn't cover. Since they're pre-signed and already
+ * validated by their issuers, we only need to validate the CLR wrapper structure.
+ */
+function stripEmbeddedVCs(credential: Record<string, unknown>): Record<string, unknown> {
+    const subject = credential.credentialSubject;
+
+    if (!subject || typeof subject !== 'object' || Array.isArray(subject)) {
+        return credential;
+    }
+
+    const subjectObj = subject as Record<string, unknown>;
+
+    if (!('verifiableCredential' in subjectObj)) {
+        return credential;
+    }
+
+    const { verifiableCredential: _stripped, ...restSubject } = subjectObj;
+
+    return {
+        ...credential,
+        credentialSubject: restSubject,
+    };
+}
 
 /**
  * Deep-clone a credential object, replacing Mustache template variables
