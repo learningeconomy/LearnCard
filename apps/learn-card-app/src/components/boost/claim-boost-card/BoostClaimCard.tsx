@@ -183,6 +183,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     const isID = credential?.display?.displayType === 'id' || false;
     const isFamily = category === CredentialCategoryEnum.family;
+    const selectedCredential = credential;
 
     let claimStatusText;
     const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed;
@@ -216,7 +217,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         }
         newModal(
             <BoostDetailsSideMenu
-                credential={credential}
+                credential={selectedCredential}
                 // categoryType={categoryType}
                 verificationItems={vcVerifications}
                 hideEndorsementRequestCard={hideEndorsementRequestCard}
@@ -237,6 +238,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 endorsementVC={credential}
                 handleSaveEndorsement={handleBoostCredential}
                 isClaimed={isClaimed}
+                isLoading={isClaimLoading}
             />
         );
     }
@@ -331,11 +333,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 </footer>
                 {!isMobile && (
                     <BoostDetailsSideBar
-                        credential={
-                            credential?.type.includes('ClrCredential')
-                                ? credential?.credentialSubject?.verifiableCredential[0]
-                                : credential
-                        }
+                        credential={selectedCredential}
                         // categoryType={categoryType}
                         verificationItems={vcVerifications}
                         hideEndorsementRequestCard={hideEndorsementRequestCard}

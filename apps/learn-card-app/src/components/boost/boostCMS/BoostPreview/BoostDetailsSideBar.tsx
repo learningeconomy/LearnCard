@@ -4,6 +4,7 @@ import X from '../../../svgs/X';
 import { IonFooter } from '@ionic/react';
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
+import CredentialResultsBox from './CredentialResultsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
@@ -28,6 +29,7 @@ import {
     DisplayTypeEnum,
 } from 'learn-card-base';
 import { VC, VerificationItem } from '@learncard/types';
+import moment from 'moment';
 
 type BoostDetailsSideBarProps = {
     credential: VC;
@@ -39,6 +41,7 @@ type BoostDetailsSideBarProps = {
     existingEndorsements?: VC[];
     hideEndorsementRequestCard?: boolean;
     isEarnedBoost?: boolean;
+    isClrChildCredential?: boolean;
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
@@ -50,6 +53,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     existingEndorsements = [],
     hideEndorsementRequestCard = false,
     isEarnedBoost,
+    isClrChildCredential = false,
 }) => {
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
@@ -57,12 +61,31 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     const { createdAt, credentialSubject } = getInfoFromCredential(credential, 'MMMM DD, YYYY', {
         uppercaseDate: false,
     });
+
+    const activityStartDate = credential?.credentialSubject?.activityStartDate;
+    const activityEndDate = credential?.credentialSubject?.activityEndDate;
+    const dateRangeText =
+        activityStartDate || activityEndDate
+            ? [
+                  activityStartDate && moment(activityStartDate).format('MMM YYYY'),
+                  activityEndDate && moment(activityEndDate).format('MMM YYYY'),
+              ]
+                  .filter(Boolean)
+                  .join(' – ')
+            : null;
     const { isMobile } = useDeviceTypeByWidth();
 
-    const { description, criteria, alignment, attachments, title, evidence, skills } = useGetVCInfo(
-        credential,
-        categoryType
-    );
+    const {
+        description,
+        criteria,
+        alignment,
+        attachments,
+        title,
+        evidence,
+        skills,
+        results,
+        creditsEarned,
+    } = useGetVCInfo(credential, categoryType);
 
     const isMediaDisplay = displayType === DisplayTypeEnum.Media;
 
@@ -95,10 +118,16 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                     >
                         {isMediaDisplay && <BoostSideMenuMediaDetails credential={credential} />}
 
+                        {!isMediaDisplay && dateRangeText && (
+                            <span className="text-grayscale-500 font-poppins text-[12px] font-[500] w-full">
+                                {dateRangeText}
+                            </span>
+                        )}
+
                         {!isMediaDisplay && (
                             <span
                                 className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
-                                    description
+                                    description || dateRangeText
                                         ? 'pt-[10px] border-t-[1px] border-solid border-grayscale-200'
                                         : ''
                                 }`}
@@ -107,6 +136,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                             </span>
                         )}
                     </TruncateTextBox>
+
+                    <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
 
                     {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
 

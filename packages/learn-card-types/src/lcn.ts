@@ -20,6 +20,12 @@ export const LCNProfileDisplayValidator = z.object({
 });
 export type LCNProfileDisplay = z.infer<typeof LCNProfileDisplayValidator>;
 
+export const ProfileVisibilityEnum = z.enum(['public', 'connections_only', 'private']);
+export type ProfileVisibility = z.infer<typeof ProfileVisibilityEnum>;
+
+export const AllowConnectionRequestsEnum = z.enum(['anyone', 'invite_only']);
+export type AllowConnectionRequests = z.infer<typeof AllowConnectionRequestsEnum>;
+
 export const LCNProfileValidator = z.object({
     profileId: z.string().min(3).max(40).describe('Unique, URL-safe identifier for the profile.'),
     displayName: z.string().default('').describe('Human-readable display name for the profile.'),
@@ -30,6 +36,17 @@ export const LCNProfileValidator = z.object({
         .boolean()
         .optional()
         .describe('Whether the profile is private or not and shows up in search results.'),
+    profileVisibility: ProfileVisibilityEnum.default('public')
+        .optional()
+        .describe("Profile visibility: 'public', 'connections_only', or 'private'."),
+    showEmail: z
+        .boolean()
+        .default(false)
+        .optional()
+        .describe('Whether to show email to connections.'),
+    allowConnectionRequests: AllowConnectionRequestsEnum.default('anyone')
+        .optional()
+        .describe("Who can send connection requests: 'anyone' or 'invite_only'."),
     email: z.string().optional().describe('Contact email address for the profile. (deprecated)'),
     image: z.string().optional().describe('Profile image URL for the profile.'),
     heroImage: z.string().optional().describe('Hero image URL for the profile.'),
@@ -67,6 +84,40 @@ export const LCNProfileValidator = z.object({
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
 
+export const LCNPublicProfileValidator = LCNProfileValidator.pick({
+    profileId: true,
+    displayName: true,
+    shortBio: true,
+    image: true,
+    heroImage: true,
+    type: true,
+    isServiceProfile: true,
+    display: true,
+});
+export type LCNPublicProfile = z.infer<typeof LCNPublicProfileValidator>;
+
+export const LCNAuthedProfileValidator = LCNPublicProfileValidator.extend({
+    bio: LCNProfileValidator.shape.bio,
+    websiteLink: LCNProfileValidator.shape.websiteLink,
+    role: LCNProfileValidator.shape.role,
+    highlightedCredentials: LCNProfileValidator.shape.highlightedCredentials,
+    did: LCNProfileValidator.shape.did,
+});
+export type LCNAuthedProfile = z.infer<typeof LCNAuthedProfileValidator>;
+
+export const LCNConnectionProfileValidator = LCNAuthedProfileValidator.extend({
+    email: LCNProfileValidator.shape.email,
+});
+export type LCNConnectionProfile = z.infer<typeof LCNConnectionProfileValidator>;
+
+export const LCNVisibleProfileValidator = z.union([
+    LCNConnectionProfileValidator.strict(),
+    LCNAuthedProfileValidator.strict(),
+    LCNPublicProfileValidator.strict(),
+    LCNProfileValidator,
+]);
+export type LCNVisibleProfile = z.infer<typeof LCNVisibleProfileValidator>;
+
 export const LCNProfileQueryValidator = z
     .object({
         profileId: StringQuery,
@@ -85,6 +136,11 @@ export const PaginatedLCNProfilesValidator = PaginationResponseValidator.extend(
     records: LCNProfileValidator.array(),
 });
 export type PaginatedLCNProfiles = z.infer<typeof PaginatedLCNProfilesValidator>;
+
+export const PaginatedVisibleLCNProfilesValidator = PaginationResponseValidator.extend({
+    records: LCNVisibleProfileValidator.array(),
+});
+export type PaginatedVisibleLCNProfiles = z.infer<typeof PaginatedVisibleLCNProfilesValidator>;
 
 export const LCNProfileConnectionStatusEnum = z.enum([
     'CONNECTED',
@@ -283,7 +339,7 @@ export const PaginatedBoostsValidator = PaginationResponseValidator.extend({
 export type PaginatedBoostsType = z.infer<typeof PaginatedBoostsValidator>;
 
 export const BoostRecipientValidator = z.object({
-    to: LCNProfileValidator,
+    to: LCNVisibleProfileValidator,
     from: z.string(),
     received: z.string().optional(),
     uri: z.string().optional(),
@@ -296,7 +352,7 @@ export const PaginatedBoostRecipientsValidator = PaginationResponseValidator.ext
 export type PaginatedBoostRecipientsType = z.infer<typeof PaginatedBoostRecipientsValidator>;
 
 export const BoostRecipientWithChildrenValidator = z.object({
-    to: LCNProfileValidator,
+    to: LCNVisibleProfileValidator,
     from: z.string(),
     received: z.string().optional(),
     boostUris: z.array(z.string()),
@@ -408,8 +464,8 @@ export const SendBoostInputValidator = z
         templateData: z.record(z.string(), z.unknown()).optional(),
         integrationId: z.string().optional().describe('Integration ID for activity tracking'),
     })
-    .refine(data => data.templateUri || data.template, {
-        message: 'Either templateUri or template creation data must be provided.',
+    .refine(data => data.templateUri || data.template || data.signedCredential, {
+        message: 'Either templateUri, template, or signedCredential must be provided.',
         path: ['templateUri'],
     });
 export type SendBoostInput = z.infer<typeof SendBoostInputValidator>;
@@ -515,6 +571,34 @@ export const ConsentFlowContractDetailsValidator = z.object({
 });
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
+
+export const ConsentFlowContractRequestStatusValidator = z
+    .enum(['pending', 'accepted', 'denied'])
+    .nullable();
+export type ConsentFlowContractRequestStatus = z.infer<
+    typeof ConsentFlowContractRequestStatusValidator
+>;
+
+export const ConsentFlowContractRequestReadStatusValidator = z.enum(['unseen', 'seen']).nullable();
+export type ConsentFlowContractRequestReadStatus = z.infer<
+    typeof ConsentFlowContractRequestReadStatusValidator
+>;
+
+export const ConsentFlowContractRequestForProfileValidator = z.object({
+    profile: LCNProfileValidator,
+    status: ConsentFlowContractRequestStatusValidator,
+    readStatus: ConsentFlowContractRequestReadStatusValidator.optional(),
+});
+export type ConsentFlowContractRequestForProfile = z.infer<
+    typeof ConsentFlowContractRequestForProfileValidator
+>;
+
+export const ConsentFlowContractRequestForProfileListValidator = z.array(
+    ConsentFlowContractRequestForProfileValidator
+);
+export type ConsentFlowContractRequestForProfileList = z.infer<
+    typeof ConsentFlowContractRequestForProfileListValidator
+>;
 
 export const PaginatedConsentFlowContractsValidator = PaginationResponseValidator.extend({
     records: ConsentFlowContractDetailsValidator.omit({ owner: true }).array(),
@@ -776,6 +860,7 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'APP_LISTING_SUBMITTED',
     'APP_LISTING_APPROVED',
     'APP_LISTING_REJECTED',
+    'APP_LISTING_WITHDRAWN',
     'DEVICE_LINK_REQUEST',
 ]);
 
@@ -1683,6 +1768,14 @@ export type PromotionLevel = z.infer<typeof PromotionLevelValidator>;
 export const AgeRatingValidator = z.enum(['4+', '9+', '12+', '17+']);
 export type AgeRating = z.infer<typeof AgeRatingValidator>;
 
+export const AppStoreListingSubmitterValidator = z.object({
+    profileId: z.string(),
+    displayName: z.string(),
+    email: z.string().optional(),
+});
+
+export type AppStoreListingSubmitter = z.infer<typeof AppStoreListingSubmitterValidator>;
+
 export const AppStoreListingValidator = z.object({
     listing_id: z.string(),
     slug: z.string().optional(),
@@ -1705,6 +1798,9 @@ export const AppStoreListingValidator = z.object({
     hero_background_color: z.string().optional(),
     min_age: z.number().int().min(0).max(18).optional(),
     age_rating: AgeRatingValidator.optional(),
+    submitted_at: z.string().optional(),
+    submitter: AppStoreListingSubmitterValidator.optional(),
+    contact_email: z.string().email().optional(),
 });
 
 export type AppStoreListing = z.infer<typeof AppStoreListingValidator>;

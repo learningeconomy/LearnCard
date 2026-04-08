@@ -22,6 +22,7 @@ import {
     getListingsForIntegration,
     countListingsForIntegration,
     getListedApps,
+    getListedAppsWithSubmitter,
     getInstalledAppsForProfile,
     countInstalledAppsForProfile,
     checkIfProfileInstalledApp,
@@ -30,6 +31,7 @@ import { updateAppStoreListing } from '@accesslayer/app-store-listing/update';
 import { deleteAppStoreListing } from '@accesslayer/app-store-listing/delete';
 import {
     associateListingWithIntegration,
+    associateListingWithSubmitter,
     installAppForProfile,
     associateBoostWithListing,
 } from '@accesslayer/app-store-listing/relationships/create';
@@ -224,6 +226,7 @@ const AppStoreListingBaseSchema = z.object({
         .optional(),
     min_age: z.number().optional(),
     age_rating: AgeRating.optional(),
+    contact_email: z.string().email().optional(),
 });
 
 // Iframe URL validation refinement (applied to schemas that include launch_type)
@@ -262,6 +265,14 @@ type ListingStorageInput<T extends Record<string, unknown>> = Omit<
 > & {
     highlights_json?: string;
     screenshots_json?: string;
+};
+
+// Helper to strip sensitive fields (contact_email) from listings for public responses
+const stripSensitiveFields = <T extends Record<string, unknown>>(
+    listing: T
+): Omit<T, 'contact_email'> => {
+    const { contact_email, ...rest } = listing;
+    return rest as Omit<T, 'contact_email'>;
 };
 
 // Helper to transform listing for API response (JSON strings -> arrays)
@@ -368,10 +379,18 @@ const AppStoreListingCreateInputValidator = AppStoreListingBaseSchema.omit({
     promotion_level: true,
 }).superRefine(iframeUrlRefinement);
 
+// Submitter info for admin responses
+const AppStoreListingSubmitterValidator = z.object({
+    profileId: z.string(),
+    displayName: z.string(),
+    email: z.string().optional(),
+});
+
 // Extended validator that includes the transformed array fields for API responses
 const AppStoreListingResponseValidator = AppStoreListingValidator.extend({
     highlights: z.array(z.string()).optional(),
     screenshots: z.array(z.string()).optional(),
+    submitter: AppStoreListingSubmitterValidator.optional(),
 }).omit({
     highlights_json: true,
     screenshots_json: true,
@@ -680,7 +699,7 @@ const handleSendCredentialEvent = async (
         metadata: { listingId, templateAlias },
     });
 
-    // Send to user's wallet
+    // Send to user's wallet (credential stays pending until user claims via the app UI)
     const credentialUri = await sendBoost({
         from: integrationOwner,
         to: target,
@@ -1091,6 +1110,7 @@ export const appStoreRouter = t.router({
             });
 
             await associateListingWithIntegration(listing.listing_id, input.integrationId);
+            await associateListingWithSubmitter(listing.listing_id, ctx.user.profile.profileId);
 
             return listing.listing_id;
         }),
@@ -1361,9 +1381,19 @@ export const appStoreRouter = t.router({
                 });
             }
 
+            const submittedAt = new Date().toISOString();
+
+            // Update status on the listing node
             const result = await updateAppStoreListing(listing, {
                 app_listing_status: 'PENDING_REVIEW',
             });
+
+            // Create or update SUBMITTED_LISTING relationship with submitted_at
+            await associateListingWithSubmitter(
+                listing.listing_id,
+                ctx.user.profile.profileId,
+                submittedAt
+            );
 
             // Notify all App Store admins about the new submission
             if (APP_STORE_ADMIN_PROFILE_IDS.length > 0) {
@@ -1377,6 +1407,64 @@ export const appStoreRouter = t.router({
                         message: {
                             title: 'New App Listing Submitted',
                             body: `"${listing.display_name}" has been submitted for review.`,
+                        },
+                        data: {
+                            metadata: {
+                                listingId: listing.listing_id,
+                                listingName: listing.display_name,
+                            },
+                        },
+                    });
+                }
+            }
+
+            return result;
+        }),
+
+    unsubmitForReview: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/unsubmit-for-review',
+                tags: ['App Store'],
+                summary: 'Unsubmit Listing from Review',
+                description: 'Withdraw a PENDING_REVIEW listing back to DRAFT status',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            // Only PENDING_REVIEW listings can be unsubmitted
+            if (listing.app_listing_status !== 'PENDING_REVIEW') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `Cannot unsubmit listing with status "${listing.app_listing_status}". Only PENDING_REVIEW listings can be unsubmitted.`,
+                });
+            }
+
+            const result = await updateAppStoreListing(listing, {
+                app_listing_status: 'DRAFT',
+            });
+
+            // Notify all App Store admins that the submission was withdrawn
+            if (APP_STORE_ADMIN_PROFILE_IDS.length > 0) {
+                const adminProfiles = await getProfilesByProfileIds(APP_STORE_ADMIN_PROFILE_IDS);
+
+                for (const adminProfile of adminProfiles) {
+                    await addNotificationToQueue({
+                        type: 'APP_LISTING_WITHDRAWN',
+                        to: adminProfile,
+                        from: ctx.user.profile,
+                        message: {
+                            title: 'App Listing Withdrawn',
+                            body: `"${listing.display_name}" has been withdrawn from review.`,
                         },
                         data: {
                             metadata: {
@@ -1448,7 +1536,9 @@ export const appStoreRouter = t.router({
 
             const hasMore = results.length > limit;
             const rawRecords = hasMore ? results.slice(0, limit) : results;
-            const records = rawRecords.map(transformListingForResponse);
+            const records = rawRecords.map(l =>
+                stripSensitiveFields(transformListingForResponse(l))
+            );
             const cursor = hasMore ? rawRecords[rawRecords.length - 1]?.listing_id : undefined;
 
             return { hasMore, cursor, records };
@@ -1474,7 +1564,7 @@ export const appStoreRouter = t.router({
                 return undefined;
             }
 
-            return transformListingForResponse(listing);
+            return stripSensitiveFields(transformListingForResponse(listing));
         }),
 
     getPublicListingBySlug: openRoute
@@ -1497,7 +1587,7 @@ export const appStoreRouter = t.router({
                 return undefined;
             }
 
-            return transformListingForResponse(listing);
+            return stripSensitiveFields(transformListingForResponse(listing));
         }),
 
     getListingInstallCount: openRoute
@@ -1675,7 +1765,9 @@ export const appStoreRouter = t.router({
 
             const hasMore = results.length > limit;
             const rawRecords = hasMore ? results.slice(0, limit) : results;
-            const records = rawRecords.map(transformListingForResponse);
+            const records = rawRecords.map(l =>
+                stripSensitiveFields(transformListingForResponse(l))
+            );
             const cursor = hasMore ? rawRecords[rawRecords.length - 1]?.installed_at : undefined;
 
             return { hasMore, cursor, records };
@@ -2120,8 +2212,8 @@ export const appStoreRouter = t.router({
             const limit = input?.limit ?? 25;
 
             // Get listings with optional status filter, or all statuses if not specified
-            // Admin can see all listings including demoted ones
-            const results = await getListedApps({
+            // Admin can see all listings including demoted ones, with submitter info
+            const results = await getListedAppsWithSubmitter({
                 limit: limit + 1,
                 cursor: input?.cursor,
                 status: input?.status,

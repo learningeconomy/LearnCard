@@ -1,5 +1,42 @@
 # @learncard/network-brain-client
 
+## 2.5.26
+
+### Patch Changes
+
+-   Updated dependencies [[`c68bed993c5304a667dc75d422a118858848737a`](https://github.com/learningeconomy/LearnCard/commit/c68bed993c5304a667dc75d422a118858848737a)]:
+    -   @learncard/network-brain-service@3.13.4
+
+## 2.5.25
+
+### Patch Changes
+
+-   Updated dependencies [[`8b5325da517d957ef93598511ba7dca14b31a656`](https://github.com/learningeconomy/LearnCard/commit/8b5325da517d957ef93598511ba7dca14b31a656), [`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369)]:
+    -   @learncard/network-brain-service@3.13.3
+
+## 2.5.24
+
+### Patch Changes
+
+-   Updated dependencies [[`359a64bc190505255cf49b9317a7853b8fc71226`](https://github.com/learningeconomy/LearnCard/commit/359a64bc190505255cf49b9317a7853b8fc71226), [`00976e097128d18c25c8016a75be9580cd3a7050`](https://github.com/learningeconomy/LearnCard/commit/00976e097128d18c25c8016a75be9580cd3a7050), [`bba1f735e107d9cc86880e9f869413bc7072bff8`](https://github.com/learningeconomy/LearnCard/commit/bba1f735e107d9cc86880e9f869413bc7072bff8), [`fce9d2fd32898cfc64c59b88ca644dea3b53d1a5`](https://github.com/learningeconomy/LearnCard/commit/fce9d2fd32898cfc64c59b88ca644dea3b53d1a5), [`a702862957303a3e25c21bdc7f0998b3ee3e64a3`](https://github.com/learningeconomy/LearnCard/commit/a702862957303a3e25c21bdc7f0998b3ee3e64a3)]:
+    -   @learncard/network-brain-service@3.13.2
+
+## 2.5.23
+
+### Patch Changes
+
+-   Updated dependencies [[`e8c886eac8907e127805e760c9622118c80c7bf5`](https://github.com/learningeconomy/LearnCard/commit/e8c886eac8907e127805e760c9622118c80c7bf5), [`c83e3de987c11a6d95deec31c1fdb2401a990db2`](https://github.com/learningeconomy/LearnCard/commit/c83e3de987c11a6d95deec31c1fdb2401a990db2), [`fe4a1a265132271860460b8121e28ec0eacf4cb0`](https://github.com/learningeconomy/LearnCard/commit/fe4a1a265132271860460b8121e28ec0eacf4cb0), [`6a1e0096ab35d0c98a51c6e06aea347f2a3e89c2`](https://github.com/learningeconomy/LearnCard/commit/6a1e0096ab35d0c98a51c6e06aea347f2a3e89c2)]:
+    -   @learncard/network-brain-service@3.13.1
+
+## 2.5.22
+
+### Patch Changes
+
+-   [#1075](https://github.com/learningeconomy/LearnCard/pull/1075) [`50fa611b714ae47fa3d6d56e7751ba59b5b71322`](https://github.com/learningeconomy/LearnCard/commit/50fa611b714ae47fa3d6d56e7751ba59b5b71322) Thanks [@smurflo2](https://github.com/smurflo2)! - Add guardianGatedRoute so backend has access to isChildProfile and hasGuardianApproval
+
+-   Updated dependencies [[`3935a7c28ded7270133496f30562bad54a14f200`](https://github.com/learningeconomy/LearnCard/commit/3935a7c28ded7270133496f30562bad54a14f200), [`01a12c4353c28196a6e49ea6996656717faa246a`](https://github.com/learningeconomy/LearnCard/commit/01a12c4353c28196a6e49ea6996656717faa246a), [`50fa611b714ae47fa3d6d56e7751ba59b5b71322`](https://github.com/learningeconomy/LearnCard/commit/50fa611b714ae47fa3d6d56e7751ba59b5b71322), [`b8f9581422406f78d3738c4c3a6d9f335725b745`](https://github.com/learningeconomy/LearnCard/commit/b8f9581422406f78d3738c4c3a6d9f335725b745), [`34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c`](https://github.com/learningeconomy/LearnCard/commit/34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c)]:
+    -   @learncard/network-brain-service@3.13.0
+
 ## 2.5.21
 
 ### Patch Changes

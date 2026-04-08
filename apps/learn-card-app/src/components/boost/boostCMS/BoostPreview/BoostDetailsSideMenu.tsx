@@ -5,6 +5,7 @@ import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import { IonFooter, IonPage } from '@ionic/react';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import EndorsementThumb from 'learn-card-base/svgs/EndorsmentThumb';
+import CredentialResultsBox from './CredentialResultsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
@@ -25,6 +26,7 @@ import CredentialVerificationDisplay, {
 } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { CredentialCategoryEnum, useModal, DisplayTypeEnum } from 'learn-card-base';
 import { VC, VerificationItem } from '@learncard/types';
+import moment from 'moment';
 
 type BoostDetailsSideMenuProps = {
     credential: VC;
@@ -36,6 +38,7 @@ type BoostDetailsSideMenuProps = {
     existingEndorsements?: VC[];
     hideEndorsementRequestCard?: boolean;
     isEarnedBoost?: boolean;
+    isClrChildCredential?: boolean;
 };
 const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     credential,
@@ -47,6 +50,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     existingEndorsements,
     hideEndorsementRequestCard,
     isEarnedBoost,
+    isClrChildCredential = false,
 }) => {
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
@@ -54,12 +58,31 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     const { createdAt } = getInfoFromCredential(credential, 'MMMM DD YYYY', {
         uppercaseDate: false,
     });
+
+    const activityStartDate = credential?.credentialSubject?.activityStartDate;
+    const activityEndDate = credential?.credentialSubject?.activityEndDate;
+    const dateRangeText =
+        activityStartDate || activityEndDate
+            ? [
+                  activityStartDate && moment(activityStartDate).format('MMM YYYY'),
+                  activityEndDate && moment(activityEndDate).format('MMM YYYY'),
+              ]
+                  .filter(Boolean)
+                  .join(' – ')
+            : null;
     const isMobile = window.innerWidth < 992;
 
-    const { description, criteria, alignment, attachments, title, evidence, skills } = useGetVCInfo(
-        credential,
-        categoryType
-    );
+    const {
+        description,
+        criteria,
+        alignment,
+        attachments,
+        title,
+        evidence,
+        skills,
+        results,
+        creditsEarned,
+    } = useGetVCInfo(credential, categoryType);
 
     const credentialDarkColor = getCategoryDarkColor(categoryType);
 
@@ -102,10 +125,16 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                     >
                         {isMediaDisplay && <BoostSideMenuMediaDetails credential={credential} />}
 
+                        {!isMediaDisplay && dateRangeText && (
+                            <span className="text-grayscale-500 font-poppins text-[12px] font-[500] w-full">
+                                {dateRangeText}
+                            </span>
+                        )}
+
                         {!isMediaDisplay && (
                             <span
                                 className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
-                                    description
+                                    description || dateRangeText
                                         ? 'pt-[10px] border-t-[1px] border-solid border-grayscale-200'
                                         : ''
                                 }`}
@@ -114,6 +143,8 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                             </span>
                         )}
                     </TruncateTextBox>
+
+                    <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
 
                     {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
 

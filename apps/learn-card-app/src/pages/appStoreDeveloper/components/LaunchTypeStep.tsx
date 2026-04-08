@@ -1,5 +1,14 @@
 import React from 'react';
-import { Layout, ExternalLink, Link, ShieldCheck, Server, CheckCircle2, Sparkles, Clock } from 'lucide-react';
+import {
+    Layout,
+    ExternalLink,
+    Link,
+    ShieldCheck,
+    Server,
+    CheckCircle2,
+    Sparkles,
+    Clock,
+} from 'lucide-react';
 
 import type { AppStoreListingCreate, LaunchType } from '../types';
 import { LAUNCH_TYPE_INFO } from '../types';
@@ -21,7 +30,7 @@ const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
 export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }) => {
     const handleSelect = (type: LaunchType, comingSoon?: boolean) => {
         if (comingSoon) return;
-        onChange({ ...data, launch_type: type, launch_config_json: '' });
+        onChange({ launch_type: type, launch_config_json: '' });
     };
 
     return (
@@ -35,74 +44,77 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
             </div>
 
             <div className="grid gap-3">
-                {(Object.entries(LAUNCH_TYPE_INFO) as [LaunchType, typeof LAUNCH_TYPE_INFO[LaunchType]][]).map(
-                    ([type, info]) => {
-                        const isSelected = data.launch_type === type;
-                        const isComingSoon = info.comingSoon;
-                        const IconComponent = ICON_MAP[info.icon];
+                {(
+                    Object.entries(LAUNCH_TYPE_INFO) as [
+                        LaunchType,
+                        (typeof LAUNCH_TYPE_INFO)[LaunchType]
+                    ][]
+                ).map(([type, info]) => {
+                    const isSelected = data.launch_type === type;
+                    const isComingSoon = info.comingSoon;
+                    const IconComponent = ICON_MAP[info.icon];
 
-                        return (
-                            <button
-                                key={type}
-                                type="button"
-                                onClick={() => handleSelect(type, isComingSoon)}
-                                disabled={isComingSoon}
-                                className={`relative w-full p-4 rounded-xl border-2 text-left transition-all duration-200 group ${
-                                    isComingSoon
-                                        ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
-                                        : isSelected
+                    return (
+                        <button
+                            key={type}
+                            type="button"
+                            onClick={() => handleSelect(type, isComingSoon)}
+                            disabled={isComingSoon}
+                            className={`relative w-full p-4 rounded-xl border-2 text-left transition-all duration-200 group ${isComingSoon
+                                    ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
+                                    : isSelected
                                         ? 'border-cyan-500 bg-cyan-50'
                                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                                 }`}
-                            >
-                                <div className="flex items-start gap-4">
-                                    <div
-                                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                                            isComingSoon
-                                                ? 'bg-gray-200 text-gray-400'
-                                                : isSelected
+                        >
+                            <div className="flex items-start gap-4">
+                                <div
+                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isComingSoon
+                                            ? 'bg-gray-200 text-gray-400'
+                                            : isSelected
                                                 ? 'bg-cyan-500 text-white'
                                                 : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
                                         }`}
-                                    >
-                                        {IconComponent && <IconComponent className="w-5 h-5" />}
-                                    </div>
+                                >
+                                    {IconComponent && <IconComponent className="w-5 h-5" />}
+                                </div>
 
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <h3
-                                                className={`font-semibold text-sm ${
-                                                    isComingSoon
-                                                        ? 'text-gray-500'
-                                                        : isSelected
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <h3
+                                            className={`font-semibold text-sm ${isComingSoon
+                                                    ? 'text-gray-500'
+                                                    : isSelected
                                                         ? 'text-cyan-700'
                                                         : 'text-gray-700'
                                                 }`}
-                                            >
-                                                {info.label}
-                                            </h3>
+                                        >
+                                            {info.label}
+                                        </h3>
 
-                                            {isComingSoon && (
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                                                    <Clock className="w-3 h-3" />
-                                                    Coming Soon
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <p className={`text-xs mt-0.5 ${isComingSoon ? 'text-gray-400' : 'text-gray-500'}`}>
-                                            {info.description}
-                                        </p>
+                                        {isComingSoon && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
+                                                <Clock className="w-3 h-3" />
+                                                Coming Soon
+                                            </span>
+                                        )}
                                     </div>
 
-                                    {isSelected && !isComingSoon && (
-                                        <CheckCircle2 className="w-5 h-5 text-cyan-500 flex-shrink-0" />
-                                    )}
+                                    <p
+                                        className={`text-xs mt-0.5 ${isComingSoon ? 'text-gray-400' : 'text-gray-500'
+                                            }`}
+                                    >
+                                        {info.description}
+                                    </p>
                                 </div>
-                            </button>
-                        );
-                    }
-                )}
+
+                                {isSelected && !isComingSoon && (
+                                    <CheckCircle2 className="w-5 h-5 text-cyan-500 flex-shrink-0" />
+                                )}
+                            </div>
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Type-specific hints */}

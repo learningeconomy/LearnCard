@@ -13,7 +13,7 @@ import {
     PaginatedBoostRecipientsValidator,
     PaginatedBoostsValidator,
     PaginationOptionsValidator,
-    PaginatedLCNProfilesValidator,
+    PaginatedVisibleLCNProfilesValidator,
     PaginatedSkillFrameworksValidator,
     BoostPermissions,
     BoostQueryValidator,
@@ -111,7 +111,10 @@ import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
-import { getContactMethodByValue, getProfileByContactMethod } from '@accesslayer/contact-method/read';
+import {
+    getContactMethodByValue,
+    getProfileByContactMethod,
+} from '@accesslayer/contact-method/read';
 import {
     getSigningAuthorityForUserByName,
     getPrimarySigningAuthorityForUser,
@@ -163,6 +166,13 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { removeConnectionsForBoost } from '@helpers/connection.helpers';
 import { issueToInbox } from '@helpers/inbox.helpers';
 import { SendOptions } from '@learncard/types';
+import {
+    canViewerSeeFullBoostRecipientList,
+    sanitizeBoostRecipientRecords,
+    resolveProfileTier,
+    sanitizeProfileForTier,
+    stripSensitiveProfileListFields,
+} from '@helpers/profile-privacy.helpers';
 
 /**
  * Builds inbox configuration from SendOptions for the issueToInbox helper.
@@ -684,6 +694,7 @@ export const boostsRouter = t.router({
                     let boost = null as BoostInstance | null;
                     let boostUri = '';
                     let boostCreated = false;
+                    let boostCreatedFromSignedCredential = false;
 
                     if (input.templateUri) {
                         const resolved = await traceDb('getBoostByUri', () =>
@@ -722,12 +733,30 @@ export const boostsRouter = t.router({
 
                         boostUri = getBoostUri(boost.id, domain);
                         boostCreated = true;
+                    } else if (input.signedCredential) {
+                        // Auto-create boost from the signed credential
+                        const credential = input.signedCredential as Record<string, unknown>;
+                        const name = typeof credential.name === 'string' ? credential.name : undefined;
+
+                        boost = await traceDb('createBoost:fromSignedCredential', () =>
+                            createBoost(
+                                input.signedCredential!,
+                                profile,
+                                { ...(name ? { name } : {}) },
+                                domain
+                            )
+                        );
+
+                        boostUri = getBoostUri(boost.id, domain);
+                        boostCreated = true;
+                        boostCreatedFromSignedCredential = true;
                     }
 
                     if (!boost) {
                         throw new TRPCError({
                             code: 'BAD_REQUEST',
-                            message: 'A templateUri or template creation payload is required.',
+                            message:
+                                'A templateUri, template, or signedCredential must be provided.',
                         });
                     }
 
@@ -756,16 +785,25 @@ export const boostsRouter = t.router({
                         let inboxRecipientName: string | undefined;
                         let inboxRecipientDid: string | undefined;
                         if (inboxRecipient.type === 'email' || inboxRecipient.type === 'phone') {
-                            const contactMethod = await traceDb('getContactMethodByValue:inbox', () =>
-                                getContactMethodByValue(inboxRecipient.type as 'email' | 'phone', inboxRecipient.value)
+                            const contactMethod = await traceDb(
+                                'getContactMethodByValue:inbox',
+                                () =>
+                                    getContactMethodByValue(
+                                        inboxRecipient.type as 'email' | 'phone',
+                                        inboxRecipient.value
+                                    )
                             );
                             if (contactMethod) {
-                                const recipientProfile = await traceDb('getProfileByContactMethod:inbox', () =>
-                                    getProfileByContactMethod(contactMethod.id)
+                                const recipientProfile = await traceDb(
+                                    'getProfileByContactMethod:inbox',
+                                    () => getProfileByContactMethod(contactMethod.id)
                                 );
                                 inboxRecipientName = recipientProfile?.displayName;
                                 if (recipientProfile?.profileId) {
-                                    inboxRecipientDid = getDidWeb(domain, recipientProfile.profileId);
+                                    inboxRecipientDid = getDidWeb(
+                                        domain,
+                                        recipientProfile.profileId
+                                    );
                                 }
                             }
                         }
@@ -1011,6 +1049,7 @@ export const boostsRouter = t.router({
                             credential: signedVc,
                             domain,
                             skipNotification,
+                            skipCertification: boostCreatedFromSignedCredential,
                             contractTerms: contractTerms ?? undefined,
                             activityId,
                             integrationId: input.integrationId,
@@ -1422,13 +1461,20 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            //TODO: Should we restrict who can see the recipients of a boost? Maybe to Boost owner / people who have the boost?
-            return getBoostRecipientsSkipLimit(boost, {
+            const canViewFullList = await canViewerSeeFullBoostRecipientList(
+                ctx.user.profile.profileId,
+                boost,
+                domain
+            );
+
+            const records = await getBoostRecipientsSkipLimit(boost, {
                 limit,
                 skip,
                 includeUnacceptedBoosts,
                 domain,
             });
+
+            return sanitizeBoostRecipientRecords(ctx.user.profile, records, !canViewFullList);
         }),
 
     getPaginatedBoostRecipients: profileRoute
@@ -1460,6 +1506,11 @@ export const boostsRouter = t.router({
             const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            const canViewFullList = await canViewerSeeFullBoostRecipientList(
+                ctx.user.profile.profileId,
+                boost,
+                domain
+            );
 
             const records = await getBoostRecipients(boost, {
                 limit: limit + 1,
@@ -1471,10 +1522,16 @@ export const boostsRouter = t.router({
 
             const hasMore = records.length > limit;
             const newCursor = records.at(hasMore ? -2 : -1)?.sent;
+            const paginatedRecords = records.slice(0, limit);
+            const sanitizedRecords = await sanitizeBoostRecipientRecords(
+                ctx.user.profile,
+                paginatedRecords,
+                !canViewFullList
+            );
 
             return {
                 hasMore,
-                records: records.slice(0, limit),
+                records: sanitizedRecords,
                 ...(newCursor && { cursor: newCursor }),
             };
         }),
@@ -1532,6 +1589,11 @@ export const boostsRouter = t.router({
             const boost = await getBoostByUri(uri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            const canViewFullList = await canViewerSeeFullBoostRecipientList(
+                ctx.user.profile.profileId,
+                boost,
+                domain
+            );
 
             const records = await getConnectedBoostRecipients(ctx.user.profile, boost, {
                 limit: limit + 1,
@@ -1543,10 +1605,16 @@ export const boostsRouter = t.router({
 
             const hasMore = records.length > limit;
             const newCursor = records.at(hasMore ? -2 : -1)?.sent;
+            const paginatedRecords = records.slice(0, limit);
+            const sanitizedRecords = await sanitizeBoostRecipientRecords(
+                ctx.user.profile,
+                paginatedRecords,
+                !canViewFullList
+            );
 
             return {
                 hasMore,
-                records: records.slice(0, limit),
+                records: sanitizedRecords,
                 ...(newCursor && { cursor: newCursor }),
             };
         }),
@@ -1815,6 +1883,11 @@ export const boostsRouter = t.router({
             const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            const canViewFullList = await canViewerSeeFullBoostRecipientList(
+                ctx.user.profile.profileId,
+                boost,
+                domain
+            );
 
             const records = await getBoostRecipientsWithChildren(boost, {
                 limit: limit + 1,
@@ -1836,10 +1909,16 @@ export const boostsRouter = t.router({
                     newCursor = lastRecord.to.profileId;
                 }
             }
+            const paginatedRecords = records.slice(0, limit);
+            const sanitizedRecords = await sanitizeBoostRecipientRecords(
+                ctx.user.profile,
+                paginatedRecords,
+                !canViewFullList
+            );
 
             return {
                 hasMore,
-                records: records.slice(0, limit),
+                records: sanitizedRecords,
                 ...(newCursor && { cursor: newCursor }),
             };
         }),
@@ -2305,7 +2384,7 @@ export const boostsRouter = t.router({
                 uri: z.string(),
             })
         )
-        .output(PaginatedLCNProfilesValidator)
+        .output(PaginatedVisibleLCNProfilesValidator)
         .query(async ({ input, ctx }) => {
             const { uri, limit, cursor, includeSelf } = input;
 
@@ -2326,11 +2405,17 @@ export const boostsRouter = t.router({
 
             const hasMore = results.length > limit;
             const nextCursor = hasMore ? results.at(-2)?.profileId : undefined;
+            const sanitizedRecords = await Promise.all(
+                results.slice(0, limit).map(async profile => {
+                    const tier = await resolveProfileTier(ctx.user.profile, profile);
+                    return stripSensitiveProfileListFields(sanitizeProfileForTier(profile, tier));
+                })
+            );
 
             return {
                 hasMore,
                 ...(nextCursor && { cursor: nextCursor }),
-                records: results.slice(0, limit),
+                records: sanitizedRecords,
             };
         }),
 

@@ -1,5 +1,40 @@
 # lca-api-plugin
 
+## 1.1.17
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.1.17
+
+## 1.1.16
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.1.16
+
+## 1.1.15
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.1.15
+
+## 1.1.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.1.14
+
+## 1.1.13
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.1.13
+
 ## 1.1.12
 
 ### Patch Changes

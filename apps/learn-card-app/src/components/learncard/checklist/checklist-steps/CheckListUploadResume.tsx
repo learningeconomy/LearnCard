@@ -7,11 +7,15 @@ import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import RefreshIcon from 'learn-card-base/svgs/RefreshIcon';
 import CheckListItemSkeleton from './CheckListItemSkeleton';
 import CheckListManagerFooter from '../CheckListManager/CheckListManagerFooter';
+import CheckListCredentialReviewStep from './CheckListCredentialReviewStep';
+import { getWalletCategory } from './AchievementTypeSelectorModal';
 
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
     useWallet,
     useConfirmation,
+    useToast,
+    ToastTypeEnum,
     checklistStore,
     useGetCheckListStatus,
     UploadTypesEnum,
@@ -31,28 +35,67 @@ export const CheckListUploadResume: React.FC = () => {
     const { initWallet } = useWallet();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { getFile, isUploading, isSaving, parseFile, base64Data, rawArtifactCredential } =
+    const { getFile, isUploading, isSaving, fetchParsedCredentials, storeSelectedCredentials, parsedCredentials, setParsedCredentials, base64Data, rawArtifactCredential } =
         useUploadFile(UploadTypesEnum.Resume);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
+    const { presentToast } = useToast();
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
+    const [showReview, setShowReview] = useState<boolean>(false);
+    const [isSavingSelected, setIsSavingSelected] = useState<boolean>(false);
+    const [savedCredentialCount, setSavedCredentialCount] = useState<number>(0);
+    const [loaderDismissed, setLoaderDismissed] = useState<boolean>(false);
 
     const [resume, setResume] = useState<ResumeType | null>(null);
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
+    // Restore pending review from store on mount
     useEffect(() => {
+        const pending = checklistStore.get.pendingReview().resume;
+        if (pending && pending.credentials.length > 0) {
+            setParsedCredentials(pending.credentials);
+            setShowReview(true);
+        }
         handleSetResume();
     }, []);
 
     useEffect(() => {
         if (base64Data && rawArtifactCredential) {
-            parseFile(UploadTypesEnum.Resume).finally(() => {
-                handleSetResume();
-            });
+            fetchParsedCredentials(UploadTypesEnum.Resume)
+                .then(vcs => {
+                    if (vcs.length > 0) {
+                        // Persist to store so it survives unmount
+                        checklistStore.set.setPendingReview('resume', {
+                            credentials: vcs,
+                            rawArtifact: rawArtifactCredential,
+                        });
+                        setShowReview(true);
+                    } else {
+                        storeSelectedCredentials([], rawArtifactCredential, UploadTypesEnum.Resume).finally(
+                            () => handleSetResume()
+                        );
+                    }
+                })
+                .catch(error => {
+                    const msg = error?.message || 'Something went wrong';
+                    // Strip nested "Error: Error:" prefixes from the AI service
+                    const cleanMsg = msg.replace(/^(Error:\s*)+/i, '');
+                    presentToast(cleanMsg, {
+                        title: 'Could not extract credentials',
+                        hasDismissButton: true,
+                        type: ToastTypeEnum.Error,
+                        hasX: true,
+                        duration: 7000,
+                    });
+                    // Still store the raw artifact so the file isn't lost
+                    storeSelectedCredentials([], rawArtifactCredential, UploadTypesEnum.Resume).finally(
+                        () => handleSetResume()
+                    );
+                });
         }
     }, [base64Data, rawArtifactCredential]);
 
@@ -126,6 +169,50 @@ export const CheckListUploadResume: React.FC = () => {
 
     const triggerFileInput = () => fileInputRef.current?.click();
 
+    const handleReviewConfirm = async (selectedVcs: any[]) => {
+        setIsSavingSelected(true);
+        // Use rawArtifact from store if component was remounted
+        const pending = checklistStore.get.pendingReview().resume;
+        const artifact = rawArtifactCredential || pending?.rawArtifact;
+        await storeSelectedCredentials(selectedVcs, artifact, UploadTypesEnum.Resume);
+        checklistStore.set.setPendingReview('resume', null);
+        setSavedCredentialCount(selectedVcs.length);
+        setShowReview(false);
+        await handleSetResume();
+        setIsSavingSelected(false);
+    };
+
+    const handleReviewBack = () => {
+        // Keep pending review in store so user can return to it via the checklist
+        setShowReview(false);
+    };
+
+    const handleEditCredential = (index: number, editedVc: any) => {
+        setParsedCredentials(prev => {
+            const updated = prev.map((cred, i) => {
+                if (i !== index) return cred;
+                const achievementType = editedVc?.credentialSubject?.achievement?.achievementType;
+                const type = Array.isArray(achievementType) ? achievementType[0] : achievementType;
+                const category = type ? getWalletCategory(type) || undefined : undefined;
+                return {
+                    ...cred,
+                    vc: editedVc,
+                    metadata: {
+                        ...cred.metadata,
+                        name: editedVc?.credentialSubject?.achievement?.name || cred.metadata?.name,
+                        ...(category ? { category } : {}),
+                    },
+                };
+            });
+            // Keep store in sync with edits
+            const pending = checklistStore.get.pendingReview().resume;
+            if (pending) {
+                checklistStore.set.setPendingReview('resume', { ...pending, credentials: updated });
+            }
+            return updated;
+        });
+    };
+
     let buttonText = resume ? 'Update' : 'Add';
     buttonText = isUploading ? 'Uploading...' : buttonText;
     const buttonIcon = resume ? (
@@ -136,71 +223,125 @@ export const CheckListUploadResume: React.FC = () => {
 
     return (
         <>
-            {(isSaving || checklistStore.get.isParsing().resume) && (
-                <ChecklistLoader fileType={UploadTypesEnum.Resume} />
-            )}
-            <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
-                <div className="flex flex-col items-start justify-center py-2 w-full">
-                    <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
-                        Resume
-                    </h4>
-                    <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
-                        Upload your most recent resume.
-                    </p>
+            {showReview ? (
+                <CheckListCredentialReviewStep
+                    credentials={parsedCredentials}
+                    fileType={UploadTypesEnum.Resume}
+                    onConfirm={handleReviewConfirm}
+                    onBack={handleReviewBack}
+                    onEditCredential={handleEditCredential}
+                    isLoading={isSavingSelected}
+                />
+            ) : (
+                <>
+                    {(isSaving || checklistStore.get.isParsing().resume) && !loaderDismissed && (
+                        <ChecklistLoader
+                            fileType={UploadTypesEnum.Resume}
+                            onDismiss={() => setLoaderDismissed(true)}
+                        />
+                    )}
+                    <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
+                        <div className="flex flex-col items-start justify-center py-2 w-full">
+                            <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
+                                Resume
+                            </h4>
+                            <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
+                                Upload your most recent resume.
+                            </p>
 
-                    <input
-                        type="file"
-                        accept=".pdf,.txt,.docx"
-                        onChange={async e => {
-                            await getFile(e, UploadTypesEnum.Resume);
-                        }}
-                        ref={fileInputRef}
-                        style={{ display: 'none' }}
-                    />
+                            {savedCredentialCount > 0 && (
+                                <div className="w-full flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 mb-4">
+                                    <svg
+                                        className="w-4 h-4 text-emerald-600 shrink-0"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2.5}
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M5 13l4 4L19 7"
+                                        />
+                                    </svg>
+                                    <p className="text-xs text-emerald-700 font-medium">
+                                        {savedCredentialCount} credential{savedCredentialCount !== 1 ? 's' : ''} saved to your wallet.
+                                    </p>
+                                </div>
+                            )}
 
-                    <button
-                        disabled={isUploading || isLoading}
-                        onClick={triggerFileInput}
-                        className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] ${
-                            resume
-                                ? `bg-grayscale-100 text-${primaryColor}`
-                                : `bg-${primaryColor} text-white`
-                        }`}
-                    >
-                        {buttonIcon}
-                        {buttonText}
-                    </button>
-                </div>
+                            {loaderDismissed && checklistStore.get.isParsing().resume && (
+                                <div className="w-full flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2.5 mb-4">
+                                    <svg
+                                        className="w-4 h-4 text-indigo-500 shrink-0 animate-spin"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    <p className="text-xs text-indigo-700 font-medium">
+                                        Processing your resume in the background...
+                                    </p>
+                                </div>
+                            )}
 
-                {(isLoading || isDeleting) && <CheckListItemSkeleton />}
+                            <input
+                                type="file"
+                                accept=".pdf,.txt,.docx"
+                                onChange={async e => {
+                                    setLoaderDismissed(false);
+                                    await getFile(e, UploadTypesEnum.Resume);
+                                }}
+                                ref={fileInputRef}
+                                style={{ display: 'none' }}
+                            />
 
-                {resume && !isLoading && !isDeleting && (
-                    <div className="flex items-center justify-between w-full mt-4 relative pb-4">
-                        <div className="flex items-center justify-start overflow-hidden">
-                            <DocIcon className="text-[#FF3636] h-[55px] min-h-[55px] min-w-[55px] w-[55px] mr-2" />
-                            <div className="flex flex-col overflow-hidden min-w-0 pr-4">
-                                <p className="text-grayscale-800 text-sm font-semibold truncate">
-                                    {resume.fileName}
-                                </p>
-                                <p className="text-xs text-grayscale-600">
-                                    {resume.fileType} • {resume.fileSize}
-                                </p>
-                            </div>
+                            <button
+                                disabled={isUploading || isLoading}
+                                onClick={triggerFileInput}
+                                className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] ${
+                                    resume
+                                        ? `bg-grayscale-100 text-${primaryColor}`
+                                        : `bg-${primaryColor} text-white`
+                                }`}
+                            >
+                                {buttonIcon}
+                                {buttonText}
+                            </button>
                         </div>
 
-                        <button
-                            onClick={confirmDelete}
-                            className="bg-white overflow-hidden flex items-center justify-center rounded-full shadow-bottom p-2 min-h-[45px] min-w-[45px] h-[45px] w-[45px]"
-                        >
-                            <TrashBin className="text-blue-950 h-[25px] w-[25px]" />
-                        </button>
+                        {(isLoading || isDeleting) && <CheckListItemSkeleton />}
+
+                        {resume && !isLoading && !isDeleting && (
+                            <div className="flex items-center justify-between w-full mt-4 relative pb-4">
+                                <div className="flex items-center justify-start overflow-hidden">
+                                    <DocIcon className="text-[#FF3636] h-[55px] min-h-[55px] min-w-[55px] w-[55px] mr-2" />
+                                    <div className="flex flex-col overflow-hidden min-w-0 pr-4">
+                                        <p className="text-grayscale-800 text-sm font-semibold truncate">
+                                            {resume.fileName}
+                                        </p>
+                                        <p className="text-xs text-grayscale-600">
+                                            {resume.fileType} • {resume.fileSize}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={confirmDelete}
+                                    className="bg-white overflow-hidden flex items-center justify-center rounded-full shadow-bottom p-2 min-h-[45px] min-w-[45px] h-[45px] w-[45px]"
+                                >
+                                    <TrashBin className="text-blue-950 h-[25px] w-[25px]" />
+                                </button>
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
-            <CheckListManagerFooter
-                // handleSave={handleSaveResume}
-                loading={isSaving || checklistStore.get.isParsing().resume}
-            />
+                    <CheckListManagerFooter
+                        // handleSave={handleSaveResume}
+                        loading={isSaving || checklistStore.get.isParsing().resume}
+                    />
+                </>
+            )}
         </>
     );
 };
