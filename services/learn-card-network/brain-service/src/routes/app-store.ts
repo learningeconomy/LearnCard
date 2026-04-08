@@ -1023,7 +1023,14 @@ const handleSendNotificationEvent = async (
     const rateLimitKey = `app-notif-rate:${listingId}:${profile.profileId}`;
     const count = await cache.incr(rateLimitKey, 3600);
 
-    if (count !== undefined && count > 10) {
+    if (count === undefined) {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Rate limiting service unavailable',
+        });
+    }
+
+    if (count > 10) {
         // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
         // while keeping the semantic code in the message for clients.
         throw new TRPCError({
@@ -2043,7 +2050,14 @@ export const appStoreRouter = t.router({
             const rateLimitKey = `app-notif-server-rate:${listingId}`;
             const count = await cache.incr(rateLimitKey, 3600);
 
-            if (count !== undefined && count > 60) {
+            if (count === undefined) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Rate limiting service unavailable',
+                });
+            }
+
+            if (count > 60) {
                 // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
                 // while keeping the semantic code in the message for clients.
                 throw new TRPCError({

@@ -32,11 +32,13 @@ const AppNotificationToast: React.FC<AppNotificationToastProps> = ({
 }) => {
     const [isVisible, setIsVisible] = useState(false);
     const [isLeaving, setIsLeaving] = useState(false);
+    const [iconFailed, setIconFailed] = useState(false);
 
     useEffect(() => {
         if (notification) {
             setIsVisible(true);
             setIsLeaving(false);
+            setIconFailed(false);
 
             const timer = setTimeout(() => {
                 handleDismiss();
@@ -88,16 +90,12 @@ const AppNotificationToast: React.FC<AppNotificationToastProps> = ({
                 <div className="flex items-start gap-3 rounded-2xl bg-white/95 backdrop-blur-xl px-4 py-3">
                     {/* App icon or bell */}
                     <div className={`flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br ${bgGradient} shadow-sm`}>
-                        {notification.appIcon ? (
+                        {notification.appIcon && !iconFailed ? (
                             <img
                                 src={notification.appIcon}
                                 alt={notification.appName ?? 'App'}
                                 className="w-full h-full object-cover"
-                                onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = 'none';
-                                    (e.target as HTMLImageElement).parentElement!.innerHTML =
-                                        '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
-                                }}
+                                onError={() => setIconFailed(true)}
                             />
                         ) : (
                             <Bell className="w-5 h-5 text-white" />

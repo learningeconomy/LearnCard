@@ -33,7 +33,14 @@ export const handleIncrementCounterEvent = async (
     const rateLimitKey = `app-counter-rate:${listingId}:${profile.profileId}`;
     const rateCount = await cache.incr(rateLimitKey, 60);
 
-    if (rateCount !== undefined && rateCount > COUNTER_RATE_LIMIT_PER_MIN) {
+    if (rateCount === undefined) {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Rate limiting service unavailable',
+        });
+    }
+
+    if (rateCount > COUNTER_RATE_LIMIT_PER_MIN) {
         // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
         // while keeping the semantic code in the message for clients.
         throw new TRPCError({
