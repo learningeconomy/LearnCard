@@ -123,6 +123,23 @@ describe('CTID Feature', () => {
             expect(achievement?.alignment).toBeUndefined();
         });
 
+        it('does not generate alignment entry when dynamic CTID has empty variable name', () => {
+            const template = createMinimalTemplate();
+            // Simulate dynamic mode toggled on but no variable name entered yet
+            template.credentialSubject.achievement.ctid = {
+                value: '',
+                isDynamic: true,
+                variableName: '',
+            };
+
+            const json = templateToJson(template);
+            const credSubject = json.credentialSubject as Record<string, unknown>;
+            const achievement = credSubject?.achievement as Record<string, unknown>;
+
+            // Should NOT generate an alignment with "undefined" in the URL
+            expect(achievement?.alignment).toBeUndefined();
+        });
+
         it('appends CTID alignment to existing user-defined alignments', () => {
             const template = createMinimalTemplate();
             template.credentialSubject.achievement.ctid = staticField(
