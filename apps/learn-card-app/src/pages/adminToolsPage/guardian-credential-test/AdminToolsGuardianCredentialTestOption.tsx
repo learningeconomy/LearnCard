@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import type { FC } from 'react';
 
-import { useWallet, useToast, ToastTypeEnum, switchedProfileStore } from 'learn-card-base';
-import { useGetBoosts, useGetManagedProfiles } from 'learn-card-base/react-query/queries/queries';
+import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { useGetBoosts, useGetMyManagedChildren } from 'learn-card-base/react-query/queries/queries';
 
 import AdminToolsOptionItemHeader from '../AdminToolsModal/helpers/AdminToolsOptionItemHeader';
 import type { AdminToolOption } from '../AdminToolsModal/admin-tools.helpers';
@@ -17,8 +17,7 @@ const AdminToolsGuardianCredentialTestOption: FC<{ option: AdminToolOption }> = 
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const { data: boosts = [], isLoading: boostsLoading } = useGetBoosts();
-    const switchedDid = switchedProfileStore.use.switchedDid();
-    const { data: managedProfiles, isLoading: managedLoading } = useGetManagedProfiles(switchedDid ?? '');
+    const { data: managedChildren = [], isLoading: managedLoading } = useGetMyManagedChildren();
 
     const [recipientEmail, setRecipientEmail] = useState('');
     const [guardianEmail, setGuardianEmail] = useState('');
@@ -196,12 +195,12 @@ const AdminToolsGuardianCredentialTestOption: FC<{ option: AdminToolOption }> = 
                         {managedLoading && (
                             <span className="animate-spin inline-block w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full" />
                         )}
-                        {!managedLoading && !managedProfiles?.records?.length && (
+                        {!managedLoading && managedChildren.length === 0 && (
                             <p className="text-[13px] text-grayscale-400 font-notoSans">
                                 You're not currently managing any accounts.
                             </p>
                         )}
-                        {!managedLoading && managedProfiles?.records?.map(profile => (
+                        {!managedLoading && managedChildren.map(profile => (
                             <div
                                 key={profile.profileId}
                                 className="flex items-center gap-[8px] py-[8px] border-b border-grayscale-100 last:border-0"

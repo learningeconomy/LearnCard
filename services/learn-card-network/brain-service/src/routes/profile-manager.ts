@@ -20,7 +20,7 @@ import { getLearnCard } from '@helpers/learnCard.helpers';
 import { createProfile } from '@accesslayer/profile/create';
 import { createManagesRelationship } from '@accesslayer/profile-manager/relationships/create';
 import { getBoostByUri } from '@accesslayer/boost/read';
-import { getManagedProfiles } from '@accesslayer/profile-manager/relationships/read';
+import { getManagedProfiles, getProfilesManagedByProfile } from '@accesslayer/profile-manager/relationships/read';
 import { updateProfileManager } from '@accesslayer/profile-manager/update';
 import { getProfileManagerById } from '@accesslayer/profile-manager/read';
 
@@ -179,6 +179,25 @@ export const profileManagersRouter = t.router({
                 ...(nextCursor && { cursor: nextCursor }),
                 records: profiles.slice(0, limit),
             };
+        }),
+
+    getMyManagedChildren: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile-manager/my-managed-children',
+                tags: ['Profile Managers'],
+                summary: 'Get profiles managed by the current user',
+                description:
+                    'Returns all profiles managed via ProfileManagers that the current profile administrates.',
+            },
+            requiredScope: 'profileManagers:read',
+        })
+        .input(z.void())
+        .output(z.array(LCNProfileValidator))
+        .query(async ({ ctx }) => {
+            return getProfilesManagedByProfile(ctx.user.profile.profileId);
         }),
 
     getProfileManager: openProfileManagerRoute

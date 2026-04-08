@@ -971,6 +971,17 @@ export const useGetManagedProfiles = (userDid: string) => {
     });
 };
 
+export const useGetMyManagedChildren = () => {
+    const { initWallet } = useWallet();
+    return useQuery<LCNProfile[]>({
+        queryKey: ['useGetMyManagedChildren'],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return (await wallet.invoke.getMyManagedChildren?.()) ?? [];
+        },
+    });
+};
+
 export const useGetDid = (method?: string, enabled = true) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();

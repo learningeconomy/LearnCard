@@ -54,6 +54,32 @@ administrator = implicitAdministrator OR
     return results.map(({ administrator }) => administrator).filter(Boolean);
 };
 
+export const getProfilesManagedByProfile = async (
+    profileId: string
+): Promise<ProfileType[]> => {
+    const results = convertQueryResultToPropertiesObjectArray<{
+        child: FlatProfileType;
+    }>(
+        await new QueryBuilder(new BindParam({ profileId }))
+            .match({
+                related: [
+                    { model: Profile, where: { profileId }, identifier: 'guardian' },
+                    {
+                        ...ProfileManager.getRelationshipByAlias('administratedBy'),
+                        direction: 'in',
+                    },
+                    { model: ProfileManager, identifier: 'pm' },
+                    ProfileManager.getRelationshipByAlias('manages'),
+                    { model: Profile, identifier: 'child' },
+                ],
+            })
+            .return('DISTINCT child')
+            .run()
+    );
+
+    return results.map(result => inflateObject(result.child as any));
+};
+
 export const getManagedProfiles = async (
     manager: ProfileManagerType,
     {
