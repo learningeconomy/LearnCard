@@ -42,4 +42,5 @@ export const DEFAULT_NAVBAR: NavbarLink[] = [
     { id: MobileNavBarLinks.wallet, label: 'Passport', path: '/passport' },
     { id: MobileNavBarLinks.plus, label: 'Plus', path: '/boost' },
     { id: MobileNavBarLinks.launchpad, label: 'Apps', path: '/launchpad' },
+    { id: MobileNavBarLinks.notification, label: 'Alerts', path: '/notifications' },
 ];

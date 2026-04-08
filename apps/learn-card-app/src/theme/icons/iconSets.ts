@@ -118,7 +118,7 @@ import { NavBarFormalIcons } from 'learn-card-base';
 import ColorFulPlus from '../../assets/images/colorful-plus.png';
 import FormalPlus from '../../assets/images/formal-plus.png';
 
-const { wallet: NavBarPassportIcon, launchPad: NavBarLaunchPadIcon } = NavBarIcons;
+const { wallet: NavBarPassportIcon, launchPad: NavBarLaunchPadIcon, notification: NavBarBellIcon } = NavBarIcons;
 const { passport: NavBarPassportIconFormal, launchPad: NavBarLaunchPadIconFormal } =
     NavBarFormalIcons;
 
@@ -146,6 +146,7 @@ import {
     VetpassStudiesIcon,
     VetpassPassportNavbar,
     VetpassAppsNavbar,
+    VetpassAlertsNavbar,
 } from './vetpass/index';
 
 import FloatingBottle from '../../components/svgs/placeholders/FloatingBottle';
@@ -259,6 +260,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             wallet: NavBarPassportIcon,
             plus: ColorFulPlus,
             launchPad: NavBarLaunchPadIcon,
+            notification: NavBarBellIcon,
         },
 
         placeholders: {
@@ -312,6 +314,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             wallet: NavBarPassportIconFormal,
             plus: FormalPlus,
             launchPad: NavBarLaunchPadIconFormal,
+            notification: NavBarBellIcon,
         },
 
         placeholders: {
@@ -409,6 +412,7 @@ export const PARTIAL_ICON_SETS: Record<string, PartialIconSetDef> = {
             navbar: {
                 wallet: VetpassPassportNavbar,
                 launchPad: VetpassAppsNavbar,
+                notification: VetpassAlertsNavbar,
             },
         },
     },

@@ -25,6 +25,23 @@ ion-tab-bar {
     }
 }
 
+.mobile-nav-left-button {
+    margin-right: 40px;
+
+    @media (max-width: 579px) {
+        margin-right: 0px;
+    }
+
+    @media (max-width: 479px) {
+        margin-right: 0px;
+        margin-left: 0px;
+    }
+}
+
+.mobile-nav-right-button {
+    margin-left: 0px;
+}
+
 .mobile-nav-notification-button {
     position: absolute;
     right: 20px;
