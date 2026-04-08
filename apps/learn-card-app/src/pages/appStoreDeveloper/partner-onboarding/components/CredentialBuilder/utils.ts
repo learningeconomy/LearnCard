@@ -338,8 +338,8 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
     }
 
     // Add CTID alignment entry if present
-    if (ach.ctid?.value || ach.ctid?.isDynamic) {
-        const ctidValue = fieldToJson(ach.ctid);
+    const ctidValue = fieldToJson(ach.ctid);
+    if (ctidValue) {
         const achievementNameValue =
             fieldToJson(template.credentialSubject.achievement.name) || 'Achievement';
         alignments.push({
