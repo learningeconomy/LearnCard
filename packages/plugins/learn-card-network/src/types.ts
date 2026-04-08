@@ -144,6 +144,9 @@ export type LearnCardNetworkPluginMethods = {
     getManagedProfiles: (
         options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
     ) => Promise<PaginatedLCNProfiles>;
+    claimPendingGuardianLinks: () => Promise<
+        Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }>
+    >;
     getManagedServiceProfiles: (
         options: Partial<PaginationOptionsType> & { id?: string }
     ) => Promise<PaginatedLCNProfiles>;

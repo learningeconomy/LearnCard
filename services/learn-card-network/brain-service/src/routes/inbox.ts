@@ -25,15 +25,13 @@ import {
     generateGuardianApprovalUrl,
     validateGuardianApprovalTokenDetailed,
     markGuardianApprovalTokenAsUsed,
-    storeGuardianUpgradeContext,
-    getGuardianUpgradeContext,
-    deleteGuardianUpgradeContext,
 } from '@helpers/guardian-approval.helpers';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
 import {
     getInboxCredentialsForProfile,
     getInboxCredentialByIdAndGuardianEmail,
     getContactMethodForInboxCredential,
+    getApprovedInboxCredentialsByGuardianEmail,
 } from '@accesslayer/inbox-credential/read';
 import { updateInboxCredential } from '@accesslayer/inbox-credential/update';
 import { readIntegrationByPublishableKey } from '@accesslayer/integration/read';
@@ -63,14 +61,13 @@ import {
     validateContactMethodVerificationToken,
 } from '@helpers/contact-method.helpers';
 import { getProfileByProfileId, getProfileByDid } from '@accesslayer/profile/read';
-import { createProfile } from '@accesslayer/profile/create';
+
 import { createProfileManager } from '@accesslayer/profile-manager/create';
 import { createManagesRelationship } from '@accesslayer/profile-manager/relationships/create';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { getProfileByContactMethod } from '@accesslayer/contact-method/read';
-import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import { getProfileForInboxCredential } from '@accesslayer/inbox-credential/read';
-import { getDidWeb } from '@helpers/did.helpers';
+
 import { updateProfile } from '@accesslayer/profile/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
@@ -943,9 +940,6 @@ export const inboxRouter = t.router({
 
             await markGuardianApprovalTokenAsUsed(token);
 
-            // Store upgrade context so guardian can create a new account if needed (72h TTL)
-            await storeGuardianUpgradeContext(token, guardianEmail, inboxCredentialId);
-
             // Auto-link: if the guardian already has a LearnCard account, establish the MANAGES
             // relationship immediately (OTP already proved email ownership — no extra step needed).
             let alreadyLinked = false;
@@ -1084,128 +1078,82 @@ export const inboxRouter = t.router({
             return { message: 'Credential rejected.' };
         }),
 
-    // Open route: guardian creates a full account and establishes ProfileManager -> child relationship
-    registerGuardianAsManager: openRoute
+    claimPendingGuardianLinks: profileRoute
         .meta({
             openapi: {
                 method: 'POST',
-                path: '/inbox/guardian-upgrade/{token}',
+                path: '/inbox/claim-guardian-links',
                 tags: ['Universal Inbox'],
-                summary: 'Register Guardian as Profile Manager',
+                summary: 'Claim Pending Guardian Links',
                 description:
-                    'After approving a credential via email OTP, the guardian can use this route to create a LearnCard account and establish a ProfileManager → MANAGES → child Profile relationship. The upgrade token (stored in Redis by approveGuardianCredential) proves identity.',
+                    'After creating a LearnCard account, call this to automatically establish ProfileManager → MANAGES relationships for any credentials previously approved by this email address.',
             },
         })
-        .input(
-            z.object({
-                token: z.string(),
-                displayName: z.string().min(1).max(100),
-                profileId: z.string().min(3).max(40),
-            })
-        )
+        .input(z.object({}))
         .output(
-            z.object({
-                message: z.string(),
-                guardianProfileId: z.string(),
-                childProfileId: z.string(),
-                managerId: z.string().nullable(),
-            })
+            z.array(
+                z.object({
+                    childProfileId: z.string(),
+                    childDisplayName: z.string(),
+                    managerId: z.string().nullable(),
+                })
+            )
         )
-        .mutation(async ({ input, ctx }) => {
-            const { token, displayName, profileId } = input;
+        .mutation(async ({ ctx }) => {
+            const { profile } = ctx.user;
 
-            // 1. Validate upgrade context (proves the guardian completed OTP approval)
-            const upgradeCtx = await getGuardianUpgradeContext(token);
-            if (!upgradeCtx) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Upgrade link is invalid or expired.' });
-            }
+            const contactMethods = await getContactMethodsForProfile(profile.did);
+            const verifiedEmail = contactMethods.find(
+                cm => cm.type === 'email' && cm.isVerified
+            );
+            if (!verifiedEmail) return [];
 
-            // 2. Resolve child profile from inbox credential
-            const childProfile = await getProfileForInboxCredential(upgradeCtx.inboxCredentialId);
-            if (!childProfile) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find the student profile.' });
-            }
+            const approvedCredentials = await getApprovedInboxCredentialsByGuardianEmail(
+                verifiedEmail.value
+            );
+            if (approvedCredentials.length === 0) return [];
 
-            // 3. Check if guardian already has a profile (by email contact method)
-            const existingCm = await getContactMethodByValue('email', upgradeCtx.guardianEmail);
-            let guardianProfile = existingCm ? await getProfileByContactMethod(existingCm.id) : null;
+            const results: Array<{
+                childProfileId: string;
+                childDisplayName: string;
+                managerId: string | null;
+            }> = [];
 
-            if (!guardianProfile) {
-                // Check profileId availability
-                const existingProfile = await getProfileByProfileId(profileId);
-                if (existingProfile) {
-                    throw new TRPCError({
-                        code: 'CONFLICT',
-                        message: 'That handle is already taken. Please choose a different one.',
+            for (const inboxCredential of approvedCredentials) {
+                try {
+                    const childProfile = await getProfileForInboxCredential(inboxCredential.id);
+                    if (!childProfile) continue;
+
+                    const existingManagers = await getProfilesThatManageAProfile(childProfile.profileId);
+                    const alreadyManages = existingManagers.some(m => m.profileId === profile.profileId);
+
+                    let managerId: string | null = null;
+
+                    if (!alreadyManages) {
+                        const manager = await createProfileManager({
+                            displayName: profile.displayName ?? 'Guardian',
+                        });
+                        await Promise.all([
+                            createManagesRelationship(manager.id, childProfile.profileId),
+                            manager.relateTo({
+                                alias: 'administratedBy',
+                                where: { profileId: profile.profileId },
+                            }),
+                        ]);
+                        managerId = manager.id;
+                    }
+
+                    results.push({
+                        childProfileId: childProfile.profileId,
+                        childDisplayName: childProfile.displayName ?? childProfile.profileId,
+                        managerId,
                     });
+                } catch (err) {
+                    console.error('[claimPendingGuardianLinks] Failed to process credential:', inboxCredential.id, err);
                 }
-
-                // Derive a deterministic did:web DID from the domain and profileId
-                const did = getDidWeb(ctx.domain, profileId);
-
-                // Create guardian profile
-                guardianProfile = await createProfile({
-                    profileId,
-                    displayName,
-                    shortBio: '',
-                    bio: '',
-                    did,
-                });
-
-                if (!guardianProfile) {
-                    throw new TRPCError({
-                        code: 'INTERNAL_SERVER_ERROR',
-                        message: 'An unexpected error occurred creating the guardian profile.',
-                    });
-                }
-
-                // Use the existing ContactMethod (created by sendGuardianChallenge) or create a new one.
-                // The OTP flow already proves email ownership, so mark the CM as verified.
-                const contactMethod = existingCm ?? await createContactMethod({
-                    type: 'email',
-                    value: upgradeCtx.guardianEmail,
-                    isVerified: true,
-                    isPrimary: true,
-                });
-
-                // If we reused an existing CM, mark it verified (OTP in approveGuardianCredential proved ownership)
-                if (existingCm && !existingCm.isVerified) {
-                    await updateContactMethod(existingCm.id, { isVerified: true });
-                }
-
-                await createProfileContactMethodRelationship(guardianProfile.profileId, contactMethod.id);
             }
 
-            // 4. Check if MANAGES relationship already exists via a ProfileManager
-            const existingManagers = await getProfilesThatManageAProfile(childProfile.profileId);
-            const alreadyManages = existingManagers.some(m => m.profileId === guardianProfile!.profileId);
-
-            let managerId: string | null;
-
-            if (!alreadyManages) {
-                // Create ProfileManager node + relationships
-                const manager = await createProfileManager({ displayName });
-                await Promise.all([
-                    createManagesRelationship(manager.id, childProfile.profileId),
-                    manager.relateTo({
-                        alias: 'administratedBy',
-                        where: { profileId: guardianProfile.profileId },
-                    }),
-                ]);
-                managerId = manager.id;
-            } else {
-                managerId = null; // relationship already existed
-            }
-
-            // 5. Clean up the upgrade context token
-            await deleteGuardianUpgradeContext(token);
-
-            return {
-                message: 'Account created and management relationship established.',
-                guardianProfileId: guardianProfile.profileId,
-                childProfileId: childProfile.profileId,
-                managerId,
-            };
+            return results;
         }),
 });
 

@@ -338,6 +338,10 @@ export async function getLearnCardNetworkPlugin(
             getManagedProfiles: async (_learnCard, options = {}) => {
                 return client.profileManager.getManagedProfiles.query(options);
             },
+            claimPendingGuardianLinks: async () => {
+                await ensureUser();
+                return client.inbox.claimPendingGuardianLinks.mutate({});
+            },
             getManagedServiceProfiles: async (_learnCard, options = {}) => {
                 await ensureUser();
 

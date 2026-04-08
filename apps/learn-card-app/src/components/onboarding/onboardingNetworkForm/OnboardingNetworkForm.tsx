@@ -59,6 +59,7 @@ import UnderageModalContent from './components/UnderageModalContent';
 import USConsentNoticeModalContent from './components/USConsentNoticeModalContent';
 import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
 import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
+import GuardianLinkedModal from '../GuardianLinkedModal';
 import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
 import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
@@ -344,6 +345,15 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         role: role ?? undefined,
                         country: country ?? undefined,
                     });
+
+                    // Check for pending guardian approvals linked to this email (non-blocking)
+                    let claimedChildren: Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }> = [];
+                    try {
+                        claimedChildren = await wallet.invoke.claimPendingGuardianLinks?.() ?? [];
+                    } catch (err) {
+                        console.error('claimPendingGuardianLinks failed (non-blocking):', err);
+                    }
+
                     await refetchIsCurrentUserLCNUser();
                     await wallet.invoke.resetLCAClient();
                     await queryClient.resetQueries();
@@ -371,6 +381,17 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                 sectionClassName: '!max-w-full',
                             },
                             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                        );
+                    }
+
+                    if (claimedChildren.length > 0) {
+                        newModal(
+                            <GuardianLinkedModal
+                                children={claimedChildren}
+                                onDismiss={closeModal}
+                            />,
+                            { sectionClassName: '!max-w-[400px]' },
+                            { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                         );
                     }
                 }
