@@ -28,25 +28,27 @@ export const THEMES: Record<string, Theme> = new Proxy({} as Record<string, Them
     getOwnPropertyDescriptor: (_target, prop: string) => {
         const theme = themeRegistry.get(prop);
 
-        return theme
-            ? { configurable: true, enumerable: true, value: theme }
-            : undefined;
+        return theme ? { configurable: true, enumerable: true, value: theme } : undefined;
     },
 });
 
 /** All registered theme IDs, in registration order. */
 export const getRegisteredThemeIds = (): string[] => [...themeRegistry.keys()];
 
+/** Check whether a theme ID exists in the registry. */
+export const isRegisteredThemeId = (theme?: string | null): theme is string =>
+    typeof theme === 'string' && themeRegistry.has(theme);
+
 export type ThemeMap = Record<string, Theme>;
 
 /**
- * Load a validated theme by its ID.
- * Falls back to the first registered theme if the ID is unknown.
+ * Resolve a theme ID to a registered theme ID.
+ * Falls back to `fallbackTheme`, then the first registered theme.
  */
-export const loadThemeSchema = (theme: string): Theme => {
-    const found = themeRegistry.get(theme);
+export const resolveThemeId = (theme?: string | null, fallbackTheme?: string | null): string => {
+    if (isRegisteredThemeId(theme)) return theme;
 
-    if (found) return found;
+    if (isRegisteredThemeId(fallbackTheme)) return fallbackTheme;
 
     const fallback = themeRegistry.values().next().value;
 
@@ -54,5 +56,13 @@ export const loadThemeSchema = (theme: string): Theme => {
         throw new Error(`No themes registered. Requested: "${theme}"`);
     }
 
-    return fallback;
+    return fallback.id;
+};
+
+/**
+ * Load a validated theme by its ID.
+ * Falls back to the first registered theme if the ID is unknown.
+ */
+export const loadThemeSchema = (theme: string): Theme => {
+    return themeRegistry.get(resolveThemeId(theme)) as Theme;
 };

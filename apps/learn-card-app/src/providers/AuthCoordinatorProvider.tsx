@@ -1,13 +1,13 @@
 /**
  * AuthCoordinatorProvider (App-specific wrapper)
- * 
+ *
  * Enriched wrapper around the shared AuthCoordinatorProvider from learn-card-base.
  * Provides a single source of truth for the layered auth model:
- * 
+ *
  *   Layer 0 (Core):     Private Key → DID → Wallet    [required for anything]
  *   Layer 1 (Optional): Auth Provider (Firebase)       [needed for SSS server ops]
  *   Layer 2 (Optional): LCN Profile                    [needed for network interactions]
- * 
+ *
  * Also handles:
  * - Auto-setup for new users (needs_setup → generates Ed25519 key)
  * - Auto-migration for Web3Auth users (needs_migration → migrates to SSS)
@@ -17,7 +17,15 @@
  * - LCN profile fetching once wallet is available
  */
 
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, {
+    createContext,
+    useContext,
+    useState,
+    useEffect,
+    useMemo,
+    useCallback,
+    useRef,
+} from 'react';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Web3Auth } from '@web3auth/single-factor-auth';
@@ -56,7 +64,10 @@ import { walletStore } from 'learn-card-base/stores/walletStore';
 import { pushUtilities } from 'learn-card-base/utils/pushUtilities';
 import { getRandomBaseColor } from 'learn-card-base/helpers/colorHelpers';
 import { getCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
-import { setPlatformPrivateKey, clearPlatformPrivateKey } from 'learn-card-base/security/platformPrivateKeyStorage';
+import {
+    setPlatformPrivateKey,
+    clearPlatformPrivateKey,
+} from 'learn-card-base/security/platformPrivateKeyStorage';
 import { clearAll as clearWebSecureAll } from 'learn-card-base/security/webSecureStorage';
 import { unsetAuthToken, clearAuthServiceProvider } from 'learn-card-base/helpers/authHelpers';
 import { clearAllIndexedDB } from 'learn-card-base/helpers/indexedDBHelpers';
@@ -70,7 +81,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline } from 'ionicons/icons';
 
-import { createSSSStrategy, generateEd25519PrivateKey, createAdaptiveStorage, isPublicComputerMode } from '@learncard/sss-key-manager';
+import {
+    createSSSStrategy,
+    generateEd25519PrivateKey,
+    createAdaptiveStorage,
+    isPublicComputerMode,
+} from '@learncard/sss-key-manager';
 import type { RecoveryInput, RecoverySetupInput } from '@learncard/sss-key-manager';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorage';
@@ -93,12 +109,7 @@ import {
     type AuthDebugEventType,
 } from '../components/debug/authDebugEvents';
 
-import {
-    Overlay,
-    ErrorOverlay,
-    StalledMigrationOverlay,
-    EmailLinkOverlay,
-} from 'learn-card-base';
+import { Overlay, ErrorOverlay, StalledMigrationOverlay, EmailLinkOverlay } from 'learn-card-base';
 
 import { RecoveryFlowModal } from '../components/recovery/RecoveryFlowModal';
 import { RecoverySetupModal } from '../components/recovery/RecoverySetupModal';
@@ -160,7 +171,9 @@ const DeviceLinkOverlay: React.FC<{
 
         fetchShare();
 
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [keyDerivation]);
 
     if (loading) {
@@ -178,7 +191,9 @@ const DeviceLinkOverlay: React.FC<{
         return (
             <Overlay>
                 <div className="p-6 text-center">
-                    <p className="text-sm text-red-600 mb-4">{error ?? 'No device key available'}</p>
+                    <p className="text-sm text-red-600 mb-4">
+                        {error ?? 'No device key available'}
+                    </p>
 
                     <button
                         onClick={onClose}
@@ -221,9 +236,7 @@ registerKeyDerivationFactory('sss', () => {
         // IndexedDB to avoid iOS WKWebView IndexedDB eviction issues.
         // On web, use adaptive storage that routes to sessionStorage when the
         // user has enabled "public computer" mode.
-        storage: Capacitor.isNativePlatform()
-            ? createNativeSSSStorage()
-            : createAdaptiveStorage(),
+        storage: Capacitor.isNativePlatform() ? createNativeSSSStorage() : createAdaptiveStorage(),
         enableEmailBackupShare: sss.enableEmailBackupShare,
     });
 });
@@ -245,36 +258,40 @@ registerAuthProviderFactory('firebase', () =>
         getAuth: () => auth(),
         nativeGetIdToken: Capacitor.isNativePlatform()
             ? async (forceRefresh?: boolean) => {
-                // Only Google login signs in on the native Firebase layer.
-                // Apple uses skipNativeAuth:true, and email/phone sign in
-                // via the web SDK only.  For those methods the native plugin
-                // will never have a user, so skip the bridge call entirely
-                // to avoid a flood of unnecessary native round-trips.
-                const loginType = authStore.get.typeOfLogin();
-                const mayHaveNativeUser = loginType === SocialLoginTypes.google;
+                  // Only Google login signs in on the native Firebase layer.
+                  // Apple uses skipNativeAuth:true, and email/phone sign in
+                  // via the web SDK only.  For those methods the native plugin
+                  // will never have a user, so skip the bridge call entirely
+                  // to avoid a flood of unnecessary native round-trips.
+                  const loginType = authStore.get.typeOfLogin();
+                  const mayHaveNativeUser = loginType === SocialLoginTypes.google;
 
-                if (mayHaveNativeUser) {
-                    try {
-                        const { user } = await FirebaseAuthentication.getCurrentUser();
+                  if (mayHaveNativeUser) {
+                      try {
+                          const { user } = await FirebaseAuthentication.getCurrentUser();
 
-                        if (user) {
-                            console.debug('[Auth] Native Firebase user found — using NATIVE token');
-                            const result = await FirebaseAuthentication.getIdToken({ forceRefresh: forceRefresh ?? false });
-                            return result.token;
-                        }
-                    } catch {
-                        // getCurrentUser can fail if the plugin isn't ready yet
-                    }
-                }
+                          if (user) {
+                              console.debug(
+                                  '[Auth] Native Firebase user found — using NATIVE token'
+                              );
+                              const result = await FirebaseAuthentication.getIdToken({
+                                  forceRefresh: forceRefresh ?? false,
+                              });
+                              return result.token;
+                          }
+                      } catch {
+                          // getCurrentUser can fail if the plugin isn't ready yet
+                      }
+                  }
 
-                // Web SDK token — used for Apple, email, phone, and as
-                // fallback when native user isn't available yet for Google.
-                const cu = auth().currentUser;
+                  // Web SDK token — used for Apple, email, phone, and as
+                  // fallback when native user isn't available yet for Google.
+                  const cu = auth().currentUser;
 
-                if (!cu) throw new Error('No Firebase user available');
+                  if (!cu) throw new Error('No Firebase user available');
 
-                return cu.getIdToken(forceRefresh);
-            }
+                  return cu.getIdToken(forceRefresh);
+              }
             : undefined,
         onReauthenticate: async (token: string) => {
             const { signInWithCustomToken } = await import('firebase/auth');
@@ -361,7 +378,22 @@ export interface AppAuthContextValue extends AuthCoordinatorContextValue {
     authProvider: AuthProvider | null;
 }
 
-const AppAuthContext = createContext<AppAuthContextValue | null>(null);
+const APP_AUTH_CONTEXT_KEY = '__learncardAppAuthContext__';
+
+const getAppAuthContext = (): React.Context<AppAuthContextValue | null> => {
+    const globalScope = globalThis as typeof globalThis & {
+        [APP_AUTH_CONTEXT_KEY]?: React.Context<AppAuthContextValue | null>;
+    };
+
+    if (!globalScope[APP_AUTH_CONTEXT_KEY]) {
+        globalScope[APP_AUTH_CONTEXT_KEY] = createContext<AppAuthContextValue | null>(null);
+        globalScope[APP_AUTH_CONTEXT_KEY].displayName = 'AppAuthContext';
+    }
+
+    return globalScope[APP_AUTH_CONTEXT_KEY];
+};
+
+const AppAuthContext = getAppAuthContext();
 
 /**
  * Hook to access the enriched app auth context.
@@ -397,7 +429,10 @@ interface AppAuthCoordinatorProviderProps {
  *
  * Provides the enriched AppAuthContext to all children.
  */
-const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: AuthProvider | null }> = ({ children, authProvider }) => {
+const AuthSessionManager: React.FC<{
+    children: React.ReactNode;
+    authProvider: AuthProvider | null;
+}> = ({ children, authProvider }) => {
     const coordinator = useBaseAuthCoordinator();
     const authConfig = getAuthConfig();
 
@@ -537,7 +572,8 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 console.debug(
                     '[QR Login Pickup] received share:',
                     qrShare.substring(0, 8) + '...',
-                    '| shareVersion raw:', qrVersionStr
+                    '| shareVersion raw:',
+                    qrVersionStr
                 );
 
                 await keyDerivation.storeLocalKey(qrShare);
@@ -550,7 +586,10 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                         console.debug('[QR Login Pickup] storing shareVersion:', version);
                         await keyDerivation.storeLocalShareVersion?.(version);
                     } else {
-                        console.warn('[QR Login Pickup] shareVersion is not a valid number:', qrVersionStr);
+                        console.warn(
+                            '[QR Login Pickup] shareVersion is not a valid number:',
+                            qrVersionStr
+                        );
                     }
                 } else {
                     console.warn('[QR Login Pickup] no shareVersion received from approver device');
@@ -606,7 +645,9 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
         check();
 
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [showRecoverySetup, authProvider, coordinator]);
 
     // --- DID derivation (shared between auto-setup and recovery) ---
@@ -628,7 +669,11 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
             const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
 
             if (!vpJwt || typeof vpJwt !== 'string') {
-                console.error('[signDidAuthVp] getDidAuthVp returned non-string:', typeof vpJwt, vpJwt);
+                console.error(
+                    '[signDidAuthVp] getDidAuthVp returned non-string:',
+                    typeof vpJwt,
+                    vpJwt
+                );
                 throw new Error('Failed to sign DID-Auth VP JWT');
             }
 
@@ -645,7 +690,8 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
     const migrationKeyFetchedRef = useRef(false);
 
     useEffect(() => {
-        if (coordinator.state.status !== 'needs_migration' || migrationKeyFetchedRef.current) return;
+        if (coordinator.state.status !== 'needs_migration' || migrationKeyFetchedRef.current)
+            return;
         if (!authProvider) return;
 
         migrationKeyFetchedRef.current = true;
@@ -658,13 +704,17 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 const w3aVerifierId = (w3a.verifierId as string) ?? '';
                 const w3aRpcTarget = (w3a.rpcTarget as string) ?? 'https://rpc.ankr.com/eth';
 
-                emitAuthDebugEvent('web3auth:migration_key', 'Extracting Web3Auth key for migration', {
-                    data: {
-                        clientId: w3aClientId ? `${w3aClientId.slice(0, 8)}...` : '(empty)',
-                        network: w3aNetwork || '(empty)',
-                        verifier: w3aVerifierId || '(empty)',
-                    },
-                });
+                emitAuthDebugEvent(
+                    'web3auth:migration_key',
+                    'Extracting Web3Auth key for migration',
+                    {
+                        data: {
+                            clientId: w3aClientId ? `${w3aClientId.slice(0, 8)}...` : '(empty)',
+                            network: w3aNetwork || '(empty)',
+                            verifier: w3aVerifierId || '(empty)',
+                        },
+                    }
+                );
 
                 const privateKeyProvider = new EthereumPrivateKeyProvider({
                     config: {
@@ -697,7 +747,10 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 const token = await authProvider.getIdToken(true);
 
                 if (!token) {
-                    emitAuthError('web3auth:migration_key', 'No Firebase ID token available — aborting extraction');
+                    emitAuthError(
+                        'web3auth:migration_key',
+                        'No Firebase ID token available — aborting extraction'
+                    );
                     return;
                 }
 
@@ -706,12 +759,17 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 try {
                     const payload = token.split('.')[1] ?? '';
                     jwtClaims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-                } catch { /* non-critical */ }
+                } catch {
+                    /* non-critical */
+                }
 
                 const uid = typeof jwtClaims.sub === 'string' ? jwtClaims.sub : '';
 
                 if (!uid) {
-                    emitAuthError('web3auth:migration_key', 'Could not extract uid from token — aborting extraction');
+                    emitAuthError(
+                        'web3auth:migration_key',
+                        'Could not extract uid from token — aborting extraction'
+                    );
                     return;
                 }
 
@@ -738,22 +796,40 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 const provider = web3auth.provider;
 
                 if (!provider) {
-                    emitAuthError('web3auth:migration_key', 'Web3Auth provider is null after connect — no key extracted');
+                    emitAuthError(
+                        'web3auth:migration_key',
+                        'Web3Auth provider is null after connect — no key extracted'
+                    );
                     return;
                 }
 
-                emitAuthDebugEvent('web3auth:migration_key', 'Requesting private key from Web3Auth provider...');
-                const privateKey = await provider.request({ method: 'eth_private_key' }) as string;
+                emitAuthDebugEvent(
+                    'web3auth:migration_key',
+                    'Requesting private key from Web3Auth provider...'
+                );
+                const privateKey = (await provider.request({
+                    method: 'eth_private_key',
+                })) as string;
 
                 if (privateKey) {
-                    emitAuthSuccess('web3auth:migration_key', 'Web3Auth key extracted for migration');
+                    emitAuthSuccess(
+                        'web3auth:migration_key',
+                        'Web3Auth key extracted for migration'
+                    );
                     coordinator.setMigrationData({ web3AuthKey: privateKey });
                 } else {
-                    emitAuthError('web3auth:migration_key', 'Web3Auth provider returned empty private key');
+                    emitAuthError(
+                        'web3auth:migration_key',
+                        'Web3Auth provider returned empty private key'
+                    );
                 }
             } catch (e) {
                 const msg = e instanceof Error ? e.message : 'Unknown error';
-                emitAuthError('web3auth:migration_key', `Failed to extract Web3Auth key: ${msg}`, e);
+                emitAuthError(
+                    'web3auth:migration_key',
+                    `Failed to extract Web3Auth key: ${msg}`,
+                    e
+                );
             }
         };
 
@@ -773,10 +849,13 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
         didFromPrivateKey,
 
         onReady: (_privateKey, did) => {
-            emitAuthSuccess('auth:coordinator_ready', `Coordinator ready — DID: ${did.slice(0, 30)}...`);
+            emitAuthSuccess(
+                'auth:coordinator_ready',
+                `Coordinator ready — DID: ${did.slice(0, 30)}...`
+            );
         },
 
-        onError: (error) => {
+        onError: error => {
             emitAuthError('auth:coordinator_error', `Auto-setup failed: ${error}`);
         },
     });
@@ -816,7 +895,8 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 }
 
                 // Set currentUserStore for backward compatibility
-                const authUser = coordinator.state.status === 'ready' ? coordinator.state.authUser : undefined;
+                const authUser =
+                    coordinator.state.status === 'ready' ? coordinator.state.authUser : undefined;
 
                 currentUserStore.set.currentUser({
                     uid: authUser?.id ?? '',
@@ -837,17 +917,27 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
                 setWallet(newWallet);
 
-                emitAuthSuccess('auth:wallet_ready', `Wallet initialized — DID: ${did.slice(0, 30)}...`);
+                emitAuthSuccess(
+                    'auth:wallet_ready',
+                    `Wallet initialized — DID: ${did.slice(0, 30)}...`
+                );
 
                 // Check recovery methods for all users
                 // (only relevant for strategies that support recovery)
-                if (keyDerivation.capabilities.recovery && authProvider && keyDerivation.getAvailableRecoveryMethods) {
+                if (
+                    keyDerivation.capabilities.recovery &&
+                    authProvider &&
+                    keyDerivation.getAvailableRecoveryMethods
+                ) {
                     wasNewUserRef.current = false;
 
                     try {
                         const token = await authProvider.getIdToken();
                         const providerType = authProvider.getProviderType();
-                        const methods = await keyDerivation.getAvailableRecoveryMethods(token, providerType);
+                        const methods = await keyDerivation.getAvailableRecoveryMethods(
+                            token,
+                            providerType
+                        );
 
                         // Only count user-configured methods (password, passkey, phrase, backup).
                         // The silently-sent email share is injected by the strategy and isn't
@@ -968,9 +1058,8 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
         return coordinator.state.recoveryMethods.map(m => ({
             type: m.type,
             credentialId: m.credentialId,
-            createdAt: m.createdAt instanceof Date
-                ? m.createdAt.toISOString()
-                : String(m.createdAt),
+            createdAt:
+                m.createdAt instanceof Date ? m.createdAt.toISOString() : String(m.createdAt),
         }));
     }, [coordinator.state]);
 
@@ -979,13 +1068,15 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
     const showRecovery = status === 'needs_recovery' && !!authProvider;
 
-    const showMigrationLoading =
-        status === 'needs_migration' && !migrationStallVisible;
+    const showMigrationLoading = status === 'needs_migration' && !migrationStallVisible;
 
     const showStalledMigration =
         migrationStallVisible &&
         status === 'needs_migration' &&
-        !(coordinator.state.status === 'needs_migration' && coordinator.state.migrationData?.web3AuthKey);
+        !(
+            coordinator.state.status === 'needs_migration' &&
+            coordinator.state.migrationData?.web3AuthKey
+        );
 
     const showError = status === 'error';
 
@@ -998,46 +1089,49 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
         setDeviceLinkVisible(true);
     }, []);
 
-    const enrichedValue: AppAuthContextValue = useMemo(() => ({
-        // Spread all base coordinator fields
-        ...coordinator,
+    const enrichedValue: AppAuthContextValue = useMemo(
+        () => ({
+            // Spread all base coordinator fields
+            ...coordinator,
 
-        // Layer 0: Wallet
-        wallet,
-        walletReady,
-        isLoggedIn,
+            // Layer 0: Wallet
+            wallet,
+            walletReady,
+            isLoggedIn,
 
-        // Layer 2: LCN Profile
-        lcnProfile,
-        lcnProfileLoading,
-        hasLCNAccount,
-        refetchLCNProfile: fetchLCNProfile,
+            // Layer 2: LCN Profile
+            lcnProfile,
+            lcnProfileLoading,
+            hasLCNAccount,
+            refetchLCNProfile: fetchLCNProfile,
 
-        // Device link
-        showDeviceLinkModal,
-        deviceLinkModalVisible: deviceLinkVisible,
+            // Device link
+            showDeviceLinkModal,
+            deviceLinkModalVisible: deviceLinkVisible,
 
-        // Recovery
-        recoveryMethodCount,
-        openRecoverySetup: () => setShowRecoverySetup(true),
+            // Recovery
+            recoveryMethodCount,
+            openRecoverySetup: () => setShowRecoverySetup(true),
 
-        // Provider-agnostic auth provider (consumers should use this
-        // instead of importing Firebase directly)
-        authProvider: authProvider,
-    }), [
-        coordinator,
-        wallet,
-        walletReady,
-        isLoggedIn,
-        lcnProfile,
-        lcnProfileLoading,
-        hasLCNAccount,
-        fetchLCNProfile,
-        showDeviceLinkModal,
-        deviceLinkVisible,
-        recoveryMethodCount,
-        authProvider,
-    ]);
+            // Provider-agnostic auth provider (consumers should use this
+            // instead of importing Firebase directly)
+            authProvider: authProvider,
+        }),
+        [
+            coordinator,
+            wallet,
+            walletReady,
+            isLoggedIn,
+            lcnProfile,
+            lcnProfileLoading,
+            hasLCNAccount,
+            fetchLCNProfile,
+            showDeviceLinkModal,
+            deviceLinkVisible,
+            recoveryMethodCount,
+            authProvider,
+        ]
+    );
 
     return (
         <AppAuthContext.Provider value={enrichedValue}>
@@ -1048,8 +1142,16 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 <Overlay>
                     <RecoveryFlowModal
                         availableMethods={availableMethods}
-                        recoveryReason={coordinator.state.status === 'needs_recovery' ? coordinator.state.recoveryReason : undefined}
-                        maskedRecoveryEmail={coordinator.state.status === 'needs_recovery' ? coordinator.state.maskedRecoveryEmail : null}
+                        recoveryReason={
+                            coordinator.state.status === 'needs_recovery'
+                                ? coordinator.state.recoveryReason
+                                : undefined
+                        }
+                        maskedRecoveryEmail={
+                            coordinator.state.status === 'needs_recovery'
+                                ? coordinator.state.maskedRecoveryEmail
+                                : null
+                        }
                         onRecoverWithPasskey={async (credentialId: string) => {
                             await coordinator.recover({ method: 'passkey', credentialId });
                         }}
@@ -1068,10 +1170,15 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                             await keyDerivation.storeLocalKey(deviceShare);
 
                             if (shareVersion != null) {
-                                console.debug('[Recovery via Device] storing shareVersion:', shareVersion);
+                                console.debug(
+                                    '[Recovery via Device] storing shareVersion:',
+                                    shareVersion
+                                );
                                 await keyDerivation.storeLocalShareVersion?.(shareVersion);
                             } else {
-                                console.warn('[Recovery via Device] no shareVersion received from approver device');
+                                console.warn(
+                                    '[Recovery via Device] no shareVersion received from approver device'
+                                );
                             }
 
                             await coordinator.initialize();
@@ -1096,12 +1203,16 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                         const data = await res.json().catch(() => ({}));
 
                         if (!data.success) {
-                            throw new Error(data.error || 'Failed to send verification code. Please try again.');
+                            throw new Error(
+                                data.error || 'Failed to send verification code. Please try again.'
+                            );
                         }
                     }}
                     onVerifyCode={async (email: string, code: string) => {
                         if (!keyDerivation.upgradeContactMethod) {
-                            throw new Error('Contact method upgrade is not supported by the current key derivation strategy.');
+                            throw new Error(
+                                'Contact method upgrade is not supported by the current key derivation strategy.'
+                            );
                         }
 
                         if (!authProvider) {
@@ -1121,9 +1232,8 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                         // Server returns a custom token because updateUser()
                         // invalidates the client session. Stash it so
                         // onComplete can re-authenticate before proceeding.
-                        const customToken = result && typeof result === 'object'
-                            ? result.customToken
-                            : undefined;
+                        const customToken =
+                            result && typeof result === 'object' ? result.customToken : undefined;
 
                         if (customToken) {
                             emailUpgradeCustomTokenRef.current = customToken;
@@ -1136,9 +1246,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                         // server after the account change. This restores the
                         // client session that was invalidated by the email update.
                         const customToken = emailUpgradeCustomTokenRef.current;
-                        let freshUser = authProvider
-                            ? await authProvider.getCurrentUser()
-                            : null;
+                        let freshUser = authProvider ? await authProvider.getCurrentUser() : null;
 
                         if (customToken && authProvider?.reauthenticateWithToken) {
                             freshUser = await authProvider.reauthenticateWithToken(customToken);
@@ -1182,14 +1290,24 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                                 await keyDerivation.storeLocalKey(localKey);
 
                                 await keyDerivation.storeAuthShare(
-                                    freshToken, authProvider.getProviderType(), remoteKey, did, vpJwt
+                                    freshToken,
+                                    authProvider.getProviderType(),
+                                    remoteKey,
+                                    did,
+                                    vpJwt
                                 );
 
                                 await keyDerivation.sendEmailBackupShare(
-                                    freshToken, authProvider.getProviderType(), pk, newEmail
+                                    freshToken,
+                                    authProvider.getProviderType(),
+                                    pk,
+                                    newEmail
                                 );
                             } catch (e) {
-                                console.warn('Email backup share after upgrade failed (non-fatal):', e);
+                                console.warn(
+                                    'Email backup share after upgrade failed (non-fatal):',
+                                    e
+                                );
                             }
                         }
 
@@ -1208,7 +1326,9 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                         </div>
 
                         <div className="space-y-2">
-                            <h2 className="text-xl font-semibold text-grayscale-900">Upgrading Account</h2>
+                            <h2 className="text-xl font-semibold text-grayscale-900">
+                                Upgrading Account
+                            </h2>
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
                                 We're upgrading your account security. This may take a moment.
@@ -1220,10 +1340,7 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
             {/* ── Stalled migration overlay ────────────────────── */}
             {showStalledMigration && (
-                <StalledMigrationOverlay
-                    onRetry={handleReinitialize}
-                    onLogout={handleLogout}
-                />
+                <StalledMigrationOverlay onRetry={handleReinitialize} onLogout={handleLogout} />
             )}
 
             {/* ── Error overlay ────────────────────────────────── */}
@@ -1241,149 +1358,207 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
                 <DeviceLinkOverlay
                     did={coordinator.state.did}
                     keyDerivation={keyDerivation}
-                    accountHint={coordinator.state.authUser?.email || coordinator.state.authUser?.phone}
+                    accountHint={
+                        coordinator.state.authUser?.email || coordinator.state.authUser?.phone
+                    }
                     onClose={() => setDeviceLinkVisible(false)}
                 />
             )}
 
             {/* ── Recovery setup prompt (new users) ───────────── */}
-            {showRecoverySetup && authProvider && coordinator.state.status === 'ready' && keyDerivation.setupRecoveryMethod && (() => {
-                // Session check still in progress — show loading
-                if (recoverySessionValid === null) {
-                    return (
-                        <Overlay>
-                            <div className="p-8 flex flex-col items-center">
-                                <div className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
-                                <p className="text-sm text-grayscale-500">Verifying session...</p>
-                            </div>
-                        </Overlay>
-                    );
-                }
+            {showRecoverySetup &&
+                authProvider &&
+                coordinator.state.status === 'ready' &&
+                keyDerivation.setupRecoveryMethod &&
+                (() => {
+                    // Session check still in progress — show loading
+                    if (recoverySessionValid === null) {
+                        return (
+                            <Overlay>
+                                <div className="p-8 flex flex-col items-center">
+                                    <div className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
+                                    <p className="text-sm text-grayscale-500">
+                                        Verifying session...
+                                    </p>
+                                </div>
+                            </Overlay>
+                        );
+                    }
 
-                // Session expired — show in-place re-auth overlay
-                if (recoverySessionValid === false) {
+                    // Session expired — show in-place re-auth overlay
+                    if (recoverySessionValid === false) {
+                        return (
+                            <Overlay>
+                                <ReAuthOverlay
+                                    onSuccess={() => setRecoverySessionValid(true)}
+                                    onCancel={() => setShowRecoverySetup(false)}
+                                />
+                            </Overlay>
+                        );
+                    }
+
+                    // Session valid — show the recovery setup modal
+                    const { serverUrl } = getSSSConfig();
+                    const currentPrivateKey =
+                        coordinator.state.status === 'ready' ? coordinator.state.privateKey : '';
+
+                    const setupMethod = async (
+                        input: RecoverySetupInput,
+                        authUser?: {
+                            id: string;
+                            email?: string;
+                            phone?: string;
+                            providerType: string;
+                        } | null
+                    ) => {
+                        console.debug(
+                            '[setupMethod] starting, privateKey length:',
+                            currentPrivateKey?.length,
+                            'method:',
+                            input.method
+                        );
+
+                        let token: string;
+
+                        try {
+                            token = await authProvider.getIdToken();
+                        } catch {
+                            throw new Error(
+                                'Your session has expired. Please close this dialog and sign in again.'
+                            );
+                        }
+
+                        const providerType = authProvider.getProviderType();
+
+                        console.debug(
+                            '[setupMethod] got token, providerType:',
+                            providerType,
+                            'calling setupRecoveryMethod'
+                        );
+
+                        return keyDerivation.setupRecoveryMethod!({
+                            token,
+                            providerType,
+                            privateKey: currentPrivateKey,
+                            input,
+                            authUser: authUser ?? undefined,
+                            signDidAuthVp,
+                        });
+                    };
+
+                    const getTokenAndProvider = async () => {
+                        const token = await authProvider.getIdToken();
+                        const providerType = authProvider.getProviderType();
+                        return { token, providerType };
+                    };
+
+                    const getDidAuthHeaders = async (): Promise<Record<string, string>> => {
+                        const vpJwt = await signDidAuthVp(currentPrivateKey);
+
+                        return {
+                            'Content-Type': 'application/json',
+                            ...(vpJwt ? { Authorization: `Bearer ${vpJwt}` } : {}),
+                            ...getTenantHeaders(),
+                        };
+                    };
+
                     return (
                         <Overlay>
-                            <ReAuthOverlay
-                                onSuccess={() => setRecoverySessionValid(true)}
-                                onCancel={() => setShowRecoverySetup(false)}
+                            <RecoverySetupModal
+                                existingMethods={[]}
+                                maskedRecoveryEmail={null}
+                                onSetupPasskey={async () => {
+                                    const authUser = await authProvider.getCurrentUser();
+                                    const result = await setupMethod(
+                                        { method: 'passkey' },
+                                        authUser
+                                    );
+
+                                    setRecoveryMethodCount(prev => (prev ?? 0) + 1);
+                                    setShowRecoverySetup(false);
+                                    return result.method === 'passkey' ? result.credentialId : '';
+                                }}
+                                onGeneratePhrase={async () => {
+                                    const authUser = await authProvider.getCurrentUser();
+                                    const result = await setupMethod(
+                                        { method: 'phrase' },
+                                        authUser
+                                    );
+                                    return result.method === 'phrase' ? result.phrase : '';
+                                }}
+                                onSetupBackup={async (backupPw: string) => {
+                                    const authUser = await authProvider.getCurrentUser();
+                                    const did =
+                                        coordinator.state.status === 'ready'
+                                            ? coordinator.state.did
+                                            : '';
+                                    const result = await setupMethod(
+                                        { method: 'backup', password: backupPw, did },
+                                        authUser
+                                    );
+
+                                    setRecoveryMethodCount(prev => (prev ?? 0) + 1);
+                                    return result.method === 'backup'
+                                        ? JSON.stringify(result.backupFile, null, 2)
+                                        : '';
+                                }}
+                                onAddRecoveryEmail={async (email: string) => {
+                                    const { token, providerType } = await getTokenAndProvider();
+                                    const headers = await getDidAuthHeaders();
+
+                                    const res = await fetch(
+                                        `${serverUrl}/keys/recovery-email/add`,
+                                        {
+                                            method: 'POST',
+                                            headers,
+                                            body: JSON.stringify({
+                                                authToken: token,
+                                                providerType,
+                                                email,
+                                            }),
+                                        }
+                                    );
+
+                                    if (!res.ok) {
+                                        const data = await res.json().catch(() => ({}));
+                                        throw new Error(
+                                            data?.message || 'Failed to send verification code.'
+                                        );
+                                    }
+                                }}
+                                onVerifyRecoveryEmail={async (code: string) => {
+                                    const { token, providerType } = await getTokenAndProvider();
+                                    const headers = await getDidAuthHeaders();
+
+                                    const res = await fetch(
+                                        `${serverUrl}/keys/recovery-email/verify`,
+                                        {
+                                            method: 'POST',
+                                            headers,
+                                            body: JSON.stringify({
+                                                authToken: token,
+                                                providerType,
+                                                code,
+                                            }),
+                                        }
+                                    );
+
+                                    if (!res.ok) {
+                                        const data = await res.json().catch(() => ({}));
+                                        throw new Error(data?.message || 'Incorrect code.');
+                                    }
+
+                                    return res.json();
+                                }}
+                                onSetupEmailRecovery={async () => {
+                                    const authUser = await authProvider.getCurrentUser();
+                                    await setupMethod({ method: 'email' }, authUser);
+                                    setRecoveryMethodCount(prev => (prev ?? 0) + 1);
+                                }}
+                                onClose={() => setShowRecoverySetup(false)}
                             />
                         </Overlay>
                     );
-                }
-
-                // Session valid — show the recovery setup modal
-                const { serverUrl } = getSSSConfig();
-                const currentPrivateKey = coordinator.state.status === 'ready' ? coordinator.state.privateKey : '';
-
-                const setupMethod = async (input: RecoverySetupInput, authUser?: { id: string; email?: string; phone?: string; providerType: string } | null) => {
-                    console.debug('[setupMethod] starting, privateKey length:', currentPrivateKey?.length, 'method:', input.method);
-
-                    let token: string;
-
-                    try {
-                        token = await authProvider.getIdToken();
-                    } catch {
-                        throw new Error('Your session has expired. Please close this dialog and sign in again.');
-                    }
-
-                    const providerType = authProvider.getProviderType();
-
-                    console.debug('[setupMethod] got token, providerType:', providerType, 'calling setupRecoveryMethod');
-
-                    return keyDerivation.setupRecoveryMethod!({
-                        token,
-                        providerType,
-                        privateKey: currentPrivateKey,
-                        input,
-                        authUser: authUser ?? undefined,
-                        signDidAuthVp,
-                    });
-                };
-
-                const getTokenAndProvider = async () => {
-                    const token = await authProvider.getIdToken();
-                    const providerType = authProvider.getProviderType();
-                    return { token, providerType };
-                };
-
-                const getDidAuthHeaders = async (): Promise<Record<string, string>> => {
-                    const vpJwt = await signDidAuthVp(currentPrivateKey);
-
-                    return {
-                        'Content-Type': 'application/json',
-                        ...(vpJwt ? { Authorization: `Bearer ${vpJwt}` } : {}),
-                        ...getTenantHeaders(),
-                    };
-                };
-
-                return (
-                    <Overlay>
-                        <RecoverySetupModal
-                            existingMethods={[]}
-                            maskedRecoveryEmail={null}
-                            onSetupPasskey={async () => {
-                                const authUser = await authProvider.getCurrentUser();
-                                const result = await setupMethod({ method: 'passkey' }, authUser);
-
-                                setRecoveryMethodCount(prev => (prev ?? 0) + 1);
-                                setShowRecoverySetup(false);
-                                return result.method === 'passkey' ? result.credentialId : '';
-                            }}
-                            onGeneratePhrase={async () => {
-                                const authUser = await authProvider.getCurrentUser();
-                                const result = await setupMethod({ method: 'phrase' }, authUser);
-                                return result.method === 'phrase' ? result.phrase : '';
-                            }}
-                            onSetupBackup={async (backupPw: string) => {
-                                const authUser = await authProvider.getCurrentUser();
-                                const did = coordinator.state.status === 'ready' ? coordinator.state.did : '';
-                                const result = await setupMethod({ method: 'backup', password: backupPw, did }, authUser);
-
-                                setRecoveryMethodCount(prev => (prev ?? 0) + 1);
-                                return result.method === 'backup' ? JSON.stringify(result.backupFile, null, 2) : '';
-                            }}
-                            onAddRecoveryEmail={async (email: string) => {
-                                const { token, providerType } = await getTokenAndProvider();
-                                const headers = await getDidAuthHeaders();
-
-                                const res = await fetch(`${serverUrl}/keys/recovery-email/add`, {
-                                    method: 'POST',
-                                    headers,
-                                    body: JSON.stringify({ authToken: token, providerType, email }),
-                                });
-
-                                if (!res.ok) {
-                                    const data = await res.json().catch(() => ({}));
-                                    throw new Error(data?.message || 'Failed to send verification code.');
-                                }
-                            }}
-                            onVerifyRecoveryEmail={async (code: string) => {
-                                const { token, providerType } = await getTokenAndProvider();
-                                const headers = await getDidAuthHeaders();
-
-                                const res = await fetch(`${serverUrl}/keys/recovery-email/verify`, {
-                                    method: 'POST',
-                                    headers,
-                                    body: JSON.stringify({ authToken: token, providerType, code }),
-                                });
-
-                                if (!res.ok) {
-                                    const data = await res.json().catch(() => ({}));
-                                    throw new Error(data?.message || 'Incorrect code.');
-                                }
-
-                                return res.json();
-                            }}
-                            onSetupEmailRecovery={async () => {
-                                const authUser = await authProvider.getCurrentUser();
-                                await setupMethod({ method: 'email' }, authUser);
-                                setRecoveryMethodCount(prev => (prev ?? 0) + 1);
-                            }}
-                            onClose={() => setShowRecoverySetup(false)}
-                        />
-                    </Overlay>
-                );
             })()}
         </AppAuthContext.Provider>
     );
@@ -1403,7 +1578,9 @@ const getCachedPrivateKey = async (): Promise<string | null> => {
     }
 };
 
-export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> = ({ children }) => {
+export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> = ({
+    children,
+}) => {
     const authConfig = getAuthConfig();
     const { serverUrl } = getSSSConfig();
     const queryClient = useQueryClient();
@@ -1422,8 +1599,8 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
 
     // Resolve auth provider from the registry (env-var driven via VITE_AUTH_PROVIDER)
     const authProvider = useMemo(
-        () => authUser ? resolveAuthProvider(authConfig) : null,
-        [authUser, authConfig.authProvider],
+        () => (authUser ? resolveAuthProvider(authConfig) : null),
+        [authUser, authConfig.authProvider]
     );
 
     // DID derivation helper — uses getSigningLearnCard (no network) for deterministic did:key
@@ -1453,19 +1630,21 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
     );
 
     // Debug event handler
-    const handleDebugEvent = useCallback((
-        type: string,
-        message: string,
-        level: DebugEventLevel,
-        data?: Record<string, unknown>
-    ) => {
-        emitAuthDebugEvent(type as AuthDebugEventType, message, { level, data });
-    }, []);
+    const handleDebugEvent = useCallback(
+        (type: string, message: string, level: DebugEventLevel, data?: Record<string, unknown>) => {
+            emitAuthDebugEvent(type as AuthDebugEventType, message, { level, data });
+        },
+        []
+    );
 
     // Unified logout cleanup — called by the coordinator after its own signOut + clearLocalKeys.
     // Consolidates all app-specific store/DB/storage clearing in one place.
     const handleAppLogout = useCallback(async () => {
-        try { await queryClient.clear(); } catch (e) { console.warn('Failed to clear query cache', e); }
+        try {
+            await queryClient.clear();
+        } catch (e) {
+            console.warn('Failed to clear query cache', e);
+        }
 
         walletStore.set.wallet(null);
         web3AuthStore.set.web3Auth(null);
@@ -1479,7 +1658,11 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         clearAuthServiceProvider();
         unsetAuthToken();
 
-        try { await clearDBRef.current(); } catch (e) { console.warn('Failed to clear SQLite DB', e); }
+        try {
+            await clearDBRef.current();
+        } catch (e) {
+            console.warn('Failed to clear SQLite DB', e);
+        }
 
         currentUserStore.set.currentUser(null);
         currentUserStore.set.currentUserPK(null);
@@ -1491,11 +1674,23 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         firstStartupStore.set.introSlidesCompleted(true);
         firstStartupStore.set.firstStart(false);
 
-        try { await clearPlatformPrivateKey(); } catch (e) { console.warn('Failed to clear platform private key', e); }
+        try {
+            await clearPlatformPrivateKey();
+        } catch (e) {
+            console.warn('Failed to clear platform private key', e);
+        }
 
-        try { await clearWebSecureAll(); } catch (e) { console.warn('Failed to clear secure storage', e); }
+        try {
+            await clearWebSecureAll();
+        } catch (e) {
+            console.warn('Failed to clear secure storage', e);
+        }
 
-        try { await clearAllIndexedDB(keyDerivation); } catch (e) { console.warn('Failed to clear IndexedDB', e); }
+        try {
+            await clearAllIndexedDB(keyDerivation);
+        } catch (e) {
+            console.warn('Failed to clear IndexedDB', e);
+        }
     }, [queryClient, keyDerivation]);
 
     return (
@@ -1516,9 +1711,7 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
                 // would silently break the app.
                 enabled={true}
             >
-                <AuthSessionManager authProvider={authProvider}>
-                    {children}
-                </AuthSessionManager>
+                <AuthSessionManager authProvider={authProvider}>{children}</AuthSessionManager>
             </BaseAuthCoordinatorProvider>
         </SignInAdapterProvider>
     );

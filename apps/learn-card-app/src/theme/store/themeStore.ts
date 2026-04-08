@@ -3,17 +3,24 @@ import { createStore } from '@udecode/zustood';
 import { getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
 import type { TenantConfig } from 'learn-card-base';
 import { emitConfigDebugEvent, emitConfigWarning } from '../../components/debug/configDebugEvents';
+import { isRegisteredThemeId, resolveThemeId } from '../helpers/loadTheme';
 
 const DEFAULT_THEME = 'colorful';
 
+const getAppFallbackTheme = (): string => {
+    return typeof APP_THEME !== 'undefined' && APP_THEME ? APP_THEME : DEFAULT_THEME;
+};
+
 // Get default theme from TenantConfig branding, with env var fallback.
 // Returns a string ID; loadThemeSchema() handles fallback if the ID is unknown.
-const getDefaultTheme = (): string => {
+export const getDefaultTheme = (config?: TenantConfig): string => {
     try {
-        return getResolvedTenantConfig().branding.defaultTheme;
+        const cfg = config ?? getResolvedTenantConfig();
+
+        return resolveThemeId(cfg.branding.defaultTheme, getAppFallbackTheme());
     } catch {
         // TenantConfig not yet resolved — fall back to Vite global
-        return (typeof APP_THEME !== 'undefined' && APP_THEME) ? APP_THEME : DEFAULT_THEME;
+        return resolveThemeId(getAppFallbackTheme(), DEFAULT_THEME);
     }
 };
 
@@ -58,6 +65,33 @@ export const getAllowedThemes = (config?: TenantConfig): string[] => {
     }
 };
 
+export const isThemeSupported = (theme: string, config?: TenantConfig): boolean => {
+    if (!isRegisteredThemeId(theme)) return false;
+
+    try {
+        const cfg = config ?? getResolvedTenantConfig();
+
+        if (cfg.features.themeSwitching === false) {
+            return theme === getDefaultTheme(cfg);
+        }
+
+        return new Set(getAllowedThemes(cfg)).has(theme);
+    } catch {
+        return new Set(getAllowedThemes()).has(theme);
+    }
+};
+
+export const resolveThemeForTenant = (
+    preferredTheme?: string | null,
+    config?: TenantConfig
+): string => {
+    const defaultTheme = getDefaultTheme(config);
+
+    if (!preferredTheme) return defaultTheme;
+
+    return isThemeSupported(preferredTheme, config) ? preferredTheme : defaultTheme;
+};
+
 /**
  * Ensure the persisted theme is valid for the current tenant.
  *
@@ -70,24 +104,37 @@ export const getAllowedThemes = (config?: TenantConfig): string[] => {
 export const enforceDefaultTheme = (): void => {
     try {
         const config = getResolvedTenantConfig();
-        const defaultTheme = getDefaultTheme();
+        const defaultTheme = getDefaultTheme(config);
         const allowed = new Set(getAllowedThemes(config));
         const current = themeStore.get.theme();
 
-        const needsReset =
-            config.features.themeSwitching === false ||
-            !allowed.has(current);
+        const needsReset = config.features.themeSwitching === false || !allowed.has(current);
 
-        emitConfigDebugEvent('theme:enforce_default', `Checking theme enforcement (current: ${current}, default: ${defaultTheme}, switching: ${config.features.themeSwitching})`, {
-            data: { current, defaultTheme, needsReset, allowed: [...allowed], themeSwitching: config.features.themeSwitching },
-        });
+        emitConfigDebugEvent(
+            'theme:enforce_default',
+            `Checking theme enforcement (current: ${current}, default: ${defaultTheme}, switching: ${config.features.themeSwitching})`,
+            {
+                data: {
+                    current,
+                    defaultTheme,
+                    needsReset,
+                    allowed: [...allowed],
+                    themeSwitching: config.features.themeSwitching,
+                },
+            }
+        );
 
         if (needsReset) {
-            const reason = config.features.themeSwitching === false
-                ? 'theme switching disabled'
-                : `"${current}" not in allowed themes`;
+            const reason =
+                config.features.themeSwitching === false
+                    ? 'theme switching disabled'
+                    : `"${current}" not in allowed themes`;
 
-            emitConfigWarning('theme:enforce_reset', `Resetting theme from "${current}" to "${defaultTheme}" (${reason})`, { current, defaultTheme, reason });
+            emitConfigWarning(
+                'theme:enforce_reset',
+                `Resetting theme from "${current}" to "${defaultTheme}" (${reason})`,
+                { current, defaultTheme, reason }
+            );
 
             // Set immediately (covers case where hydration already happened)
             themeStore.set.theme(defaultTheme);

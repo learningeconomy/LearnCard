@@ -12,17 +12,23 @@ import ExperimentalFeatureBox from '../../components/generic/ExperimentalFeature
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
 import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
+import ExplorePathwaysModal from './ExplorePathwaysModal';
 
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
-import { CredentialCategoryEnum } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
 import {
     useOccupationDetailsForKeyword,
     useTrainingProgramsByKeyword,
 } from 'learn-card-base/react-query/queries/careerOneStop';
-import { useAiInsightCredential, useAiPathways } from 'learn-card-base';
+import {
+    useAiInsightCredential,
+    useAiPathways,
+    useModal,
+    ModalTypes,
+    CredentialCategoryEnum,
+} from 'learn-card-base';
 
 import {
     getFirstAvailableKeywords,
@@ -35,6 +41,7 @@ import {
 } from './ai-pathway-courses/ai-pathway-courses.helpers';
 
 const AiPathways: React.FC = () => {
+    const { newModal } = useModal();
     const { getThemedCategoryColors } = useTheme();
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiPathway);
@@ -95,6 +102,13 @@ const AiPathways: React.FC = () => {
         schoolPrograms.length === 0 &&
         learningPathwaysData?.length === 0;
 
+    const handleExplorePathways = () => {
+        newModal(<ExplorePathwaysModal />, undefined, {
+            desktop: ModalTypes.Right,
+            mobile: ModalTypes.Right,
+        });
+    };
+
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
@@ -104,13 +118,20 @@ const AiPathways: React.FC = () => {
                         showBackButton
                         subheaderType={SubheaderTypeEnum.AiPathways}
                         hidePlusBtn={true}
-                        customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
                     />
                     <AiFeatureGate>
                         <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
                             <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
                                 <ExperimentalFeatureBox className="shadow-box-bottom" />
                             </div>
+
+                            {/* DEV BUTTON */}
+                            {/* <button
+                                className="bg-indigo-500 rounded-full text-white px-[15px] py-[7px]"
+                                onClick={handleExplorePathways}
+                            >
+                                Explore Pathways
+                            </button> */}
 
                             <MySkillProfile />
 

@@ -19,7 +19,7 @@ const preferencesInputSchema = z.object({
 });
 
 const preferencesOutputSchema = z.object({
-    theme: z.enum([ThemeEnum.Colorful, ThemeEnum.Formal]),
+    theme: z.enum([ThemeEnum.Colorful, ThemeEnum.Formal]).optional(),
     aiEnabled: z.boolean().optional(),
     aiAutoDisabled: z.boolean().optional(),
     analyticsEnabled: z.boolean().optional(),
@@ -99,7 +99,7 @@ export const preferencesRouter = t.router({
             const preferences = await getPreferencesForDid(ctx.user.did);
 
             return {
-                theme: preferences?.theme ?? ThemeEnum.Colorful,
+                theme: preferences?.theme,
                 aiEnabled: preferences?.aiEnabled,
                 aiAutoDisabled: preferences?.aiAutoDisabled,
                 analyticsEnabled: preferences?.analyticsEnabled,

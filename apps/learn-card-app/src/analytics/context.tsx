@@ -31,7 +31,9 @@ async function loadProvider(): Promise<AnalyticsProvider> {
     switch (providerName) {
         case 'posthog': {
             if (!posthogKey) {
-                console.warn('[Analytics] PostHog selected but no posthogKey configured, falling back to noop');
+                console.warn(
+                    '[Analytics] PostHog selected but no posthogKey configured, falling back to noop'
+                );
                 return new NoopProvider();
             }
 
@@ -60,7 +62,22 @@ interface AnalyticsContextValue {
     isReady: boolean;
 }
 
-const AnalyticsContext = createContext<AnalyticsContextValue | null>(null);
+const ANALYTICS_CONTEXT_KEY = '__learncardAnalyticsContext__';
+
+const getAnalyticsContext = (): React.Context<AnalyticsContextValue | null> => {
+    const globalScope = globalThis as typeof globalThis & {
+        [ANALYTICS_CONTEXT_KEY]?: React.Context<AnalyticsContextValue | null>;
+    };
+
+    if (!globalScope[ANALYTICS_CONTEXT_KEY]) {
+        globalScope[ANALYTICS_CONTEXT_KEY] = createContext<AnalyticsContextValue | null>(null);
+        globalScope[ANALYTICS_CONTEXT_KEY].displayName = 'AnalyticsContext';
+    }
+
+    return globalScope[ANALYTICS_CONTEXT_KEY];
+};
+
+const AnalyticsContext = getAnalyticsContext();
 
 interface AnalyticsProviderProps {
     children: React.ReactNode;
