@@ -12,6 +12,7 @@ overrides:
   uint8arrays: ^3.0.0
   serverless: 3.40.0
   zod: 4.1.13
+  astro>zod: 3.25.76
   zod-openapi: 5.4.5
   trpc-to-openapi: 3.1.0
   '@ceramicnetwork/streamid': 2.7.0
@@ -29056,6 +29057,9 @@ packages:
       typescript: 5.6.2
       zod: 4.1.13
 
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
   zod@4.1.13:
     resolution: {integrity: sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig==}
 
@@ -45410,7 +45414,7 @@ snapshots:
       vfile: 5.3.7
       vite: 3.1.8(less@4.4.2)(sass@1.94.2)(terser@5.44.1)
       yargs-parser: 21.1.1
-      zod: 4.1.13
+      zod: 3.25.76
     transitivePeerDependencies:
       - less
       - sass
@@ -45481,9 +45485,9 @@ snapshots:
       xxhash-wasm: 1.1.0
       yargs-parser: 21.1.1
       yocto-spinner: 0.2.3
-      zod: 4.1.13
-      zod-to-json-schema: 3.25.1(zod@4.1.13)
-      zod-to-ts: 1.2.0(typescript@5.6.2)(zod@4.1.13)
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.1(zod@3.25.76)
+      zod-to-ts: 1.2.0(typescript@5.6.2)(zod@3.25.76)
     optionalDependencies:
       sharp: 0.34.5
     transitivePeerDependencies:
@@ -45577,7 +45581,7 @@ snapshots:
       vitefu: 1.1.2(vite@7.3.1(@types/node@22.19.1)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass@1.94.2)(terser@5.44.1)(tsx@4.20.6)(yaml@2.8.1))
       xxhash-wasm: 1.1.0
       yargs-parser: 22.0.0
-      zod: 4.1.13
+      zod: 3.25.76
     optionalDependencies:
       sharp: 0.34.5
     transitivePeerDependencies:
@@ -66050,14 +66054,21 @@ snapshots:
     dependencies:
       zod: 4.1.13
 
+  zod-to-json-schema@3.25.1(zod@3.25.76):
+    dependencies:
+      zod: 3.25.76
+
   zod-to-json-schema@3.25.1(zod@4.1.13):
     dependencies:
       zod: 4.1.13
+    optional: true
 
-  zod-to-ts@1.2.0(typescript@5.6.2)(zod@4.1.13):
+  zod-to-ts@1.2.0(typescript@5.6.2)(zod@3.25.76):
     dependencies:
       typescript: 5.6.2
-      zod: 4.1.13
+      zod: 3.25.76
+
+  zod@3.25.76: {}
 
   zod@4.1.13: {}
 
