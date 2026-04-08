@@ -85,7 +85,8 @@ export const useFinalizeInboxCredentials = () => {
                     // Guardian-gated: managed child without parent VP — silently skip, don't mark finalized
                     if (isTRPCForbiddenError(err)) {
                         console.debug('[finalize] Skipped: guardian approval required for managed child profile');
-                        return; // Do NOT call markFinalized — retry on next 30-min cycle
+                        markFinalized(profileId); // Cache to prevent retry loop; will re-check after TTL
+                        return;
                     }
                     // Re-throw other errors
                     throw err;

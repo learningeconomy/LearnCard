@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonContent, IonPage, IonSpinner, IonButton, IonInput, IonItem } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner, IonButton } from '@ionic/react';
+import ReactCodeInput from 'react-code-input';
 import { useParams } from 'react-router-dom';
 
 import { initLearnCard } from '@learncard/init';
@@ -210,16 +211,14 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                                     <p className="text-emerald-100 text-sm mb-2">
                                         Enter the 6-digit code we sent to your email.
                                     </p>
-                                    <IonItem color="light" className="rounded-xl mb-2">
-                                        <IonInput
-                                            type="number"
-                                            inputmode="numeric"
-                                            maxlength={6}
-                                            placeholder="000000"
-                                            value={otpCode}
-                                            onIonInput={e => setOtpCode(String(e.detail.value ?? ''))}
-                                        />
-                                    </IonItem>
+                                    <ReactCodeInput
+                                        name="guardianOtp"
+                                        inputMode="numeric"
+                                        fields={6}
+                                        type="text"
+                                        onChange={setOtpCode}
+                                        className="react-code-input"
+                                    />
                                     <IonButton
                                         expand="block"
                                         color="light"

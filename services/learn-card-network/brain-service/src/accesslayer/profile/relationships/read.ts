@@ -150,11 +150,11 @@ export const getProfilesThatAProfileManages = async (
         )
         .where(
             `
-(implicitlyManaged IS NULL AND managed IS NOT NULL) OR 
-implicitlyManaged = managed OR 
-(implicitlyManaged IS NULL AND directlyManaged IS NOT NULL) OR 
-implicitlyManaged = directlyManaged OR 
-(implicitlyManaged IS NOT NULL AND canManageChildrenProfiles = true)
+((implicitlyManaged IS NULL AND managed IS NOT NULL AND (manager IS NULL OR coalesce(manager.managerType, '') <> 'guardian')) OR
+implicitlyManaged = managed OR
+(implicitlyManaged IS NULL AND directlyManaged IS NOT NULL) OR
+implicitlyManaged = directlyManaged OR
+(implicitlyManaged IS NOT NULL AND canManageChildrenProfiles = true))
 `
         )
         .with(

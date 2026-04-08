@@ -958,6 +958,7 @@ export const inboxRouter = t.router({
                         if (!alreadyManages) {
                             const manager = await createProfileManager({
                                 displayName: guardianProfile.displayName ?? 'Guardian',
+                                managerType: 'guardian',
                             });
                             await Promise.all([
                                 createManagesRelationship(manager.id, childProfile.profileId),
@@ -1132,6 +1133,7 @@ export const inboxRouter = t.router({
                     if (!alreadyManages) {
                         const manager = await createProfileManager({
                             displayName: profile.displayName ?? 'Guardian',
+                            managerType: 'guardian',
                         });
                         await Promise.all([
                             createManagesRelationship(manager.id, childProfile.profileId),
