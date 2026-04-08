@@ -1,5 +1,47 @@
 # Changelog
 
+## 1.90.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.14
+    -   @learncard/lca-api-plugin@1.2.4
+    -   @learncard/react@2.9.21
+    -   @learncard/sss-key-manager@0.1.4
+
+## 1.90.3
+
+### Patch Changes
+
+-   Updated dependencies [[`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369)]:
+    -   @learncard/lca-api-plugin@1.2.3
+    -   @learncard/helpers@1.2.13
+    -   @learncard/react@2.9.20
+    -   @learncard/sss-key-manager@0.1.3
+
+## 1.90.2
+
+### Patch Changes
+
+-   [#1120](https://github.com/learningeconomy/LearnCard/pull/1120) [`00976e097128d18c25c8016a75be9580cd3a7050`](https://github.com/learningeconomy/LearnCard/commit/00976e097128d18c25c8016a75be9580cd3a7050) Thanks [@smurflo2](https://github.com/smurflo2)! - OpenSALT import enhancements - proper classification of tier/competency, icons, pagination, and more!
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.12
+    -   @learncard/lca-api-plugin@1.2.2
+    -   @learncard/react@2.9.19
+    -   @learncard/sss-key-manager@0.1.2
+
+## 1.90.1
+
+### Patch Changes
+
+-   Updated dependencies [[`26de4ce53c2e8b6c2bb3e461789e976178250179`](https://github.com/learningeconomy/LearnCard/commit/26de4ce53c2e8b6c2bb3e461789e976178250179)]:
+    -   @learncard/react@2.9.18
+    -   @learncard/helpers@1.2.11
+    -   @learncard/lca-api-plugin@1.2.1
+    -   @learncard/sss-key-manager@0.1.1
+
 ## 1.90.0
 
 ### Minor Changes

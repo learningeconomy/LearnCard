@@ -1,5 +1,37 @@
 # @learncard/app-store-demo-lore-card
 
+## 0.0.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.12
+    -   @learncard/partner-connect@0.2.14
+
+## 0.0.17
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.11
+    -   @learncard/partner-connect@0.2.13
+
+## 0.0.16
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.10
+    -   @learncard/partner-connect@0.2.12
+
+## 0.0.15
+
+### Patch Changes
+
+-   Updated dependencies [[`c83e3de987c11a6d95deec31c1fdb2401a990db2`](https://github.com/learningeconomy/LearnCard/commit/c83e3de987c11a6d95deec31c1fdb2401a990db2)]:
+    -   @learncard/partner-connect@0.2.11
+    -   @learncard/init@2.3.9
+
 ## 0.0.14
 
 ### Patch Changes

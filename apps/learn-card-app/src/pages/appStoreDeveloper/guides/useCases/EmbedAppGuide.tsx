@@ -80,6 +80,7 @@ import type {
     LLMIntegrationMetadata,
     TemplateMetadata,
 } from '../types';
+import { openExternalLink } from 'src/helpers/externalLinkHelpers';
 
 // URL Check types and helper
 interface UrlCheckResult {
@@ -5429,6 +5430,7 @@ const YourAppStep: React.FC<{
     const [isSaving, setIsSaving] = useState(false);
     const [showConfigMismatchPrompt, setShowConfigMismatchPrompt] = useState(false);
     const [hasCheckedConfig, setHasCheckedConfig] = useState(false);
+    const [urlRequiredError, setUrlRequiredError] = useState(false);
     const [peerBadgeTemplates, setPeerBadgeTemplates] = useState<BoostTemplate[]>([]);
     const [issueCredentialTemplates, setIssueCredentialTemplates] = useState<BoostTemplate[]>([]);
 
@@ -6701,14 +6703,36 @@ initializeApp();`);
                             <input
                                 type="url"
                                 value={embedUrl}
-                                onChange={e => setEmbedUrl(e.target.value)}
+                                onChange={e => {
+                                    setEmbedUrl(e.target.value);
+                                    if (urlRequiredError && e.target.value.trim()) {
+                                        setUrlRequiredError(false);
+                                    }
+                                }}
                                 placeholder="https://yourapp.com/embed"
-                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                                    urlRequiredError
+                                        ? 'border-red-300 ring-red-200'
+                                        : 'border-gray-200'
+                                }`}
+                                aria-describedby={urlRequiredError ? 'embed-url-error' : undefined}
+                                aria-invalid={urlRequiredError}
                             />
 
                             <p className="text-xs text-gray-400 mt-1">
                                 The URL that will be loaded in the iframe when users open your app
                             </p>
+
+                            {urlRequiredError && (
+                                <p
+                                    id="embed-url-error"
+                                    className="text-sm text-red-500 mt-2 flex items-center gap-1"
+                                    role="alert"
+                                >
+                                    <AlertCircle className="w-4 h-4" />
+                                    Please enter your embed URL before continuing
+                                </p>
+                            )}
                         </div>
 
                         {/* Permissions */}
@@ -6893,27 +6917,25 @@ initializeApp();`);
 
             {/* Resources */}
             <div className="flex flex-wrap gap-3">
-                <a
-                    href="https://docs.learncard.com/sdks/partner-connect"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <button
+                    onClick={() =>
+                        openExternalLink('https://docs.learncard.com/sdks/partner-connect')
+                    }
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                 >
                     <FileText className="w-4 h-4" />
                     SDK Documentation
                     <ExternalLink className="w-3 h-3" />
-                </a>
+                </button>
 
-                <a
-                    href="https://github.com/learningeconomy/LearnCard"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <button
+                    onClick={() => openExternalLink('https://github.com/learningeconomy/LearnCard')}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                 >
                     <Code className="w-4 h-4" />
                     GitHub Examples
                     <ExternalLink className="w-3 h-3" />
-                </a>
+                </button>
             </div>
 
             {/* Navigation */}
@@ -6927,7 +6949,42 @@ initializeApp();`);
                 </button>
 
                 <button
-                    onClick={onComplete}
+                    onClick={async () => {
+                        if (!embedUrl.trim()) {
+                            setUrlRequiredError(true);
+                            setShowConfigEditor(true);
+                            return;
+                        }
+                        setUrlRequiredError(false);
+
+                        // Save the config before completing to persist embedUrl
+                        if (selectedListing) {
+                            try {
+                                const newConfig: LaunchConfig = {
+                                    url: embedUrl,
+                                    permissions: selectedPermissions,
+                                    contractUri: contractUri || undefined,
+                                };
+
+                                await updateMutation.mutateAsync({
+                                    listingId: selectedListing.listing_id,
+                                    integrationId,
+                                    updates: {
+                                        launch_config_json: JSON.stringify(newConfig, null, 2),
+                                    },
+                                });
+                            } catch (error) {
+                                console.error('Failed to save config before continuing:', error);
+                                presentToast('Failed to save configuration. Please try again.', {
+                                    type: ToastTypeEnum.Error,
+                                    hasDismissButton: true,
+                                });
+                                return;
+                            }
+                        }
+
+                        onComplete();
+                    }}
                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-medium hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg shadow-emerald-200"
                 >
                     <Rocket className="w-5 h-5" />
@@ -7058,35 +7115,44 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
 
     const [isTransitioning, setIsTransitioning] = useState(false);
 
-    const handleStepComplete = useCallback((stepId: string) => {
-        if (isTransitioning) return;
-        setIsTransitioning(true);
-        guideState.markStepComplete(stepId);
-        guideState.nextStep();
-        scrollToTop();
-        setTimeout(() => setIsTransitioning(false), 150);
-    }, [isTransitioning, guideState, scrollToTop]);
+    const handleStepComplete = useCallback(
+        (stepId: string) => {
+            if (isTransitioning) return;
+            setIsTransitioning(true);
+            guideState.markStepComplete(stepId);
+            guideState.nextStep();
+            scrollToTop();
+            setTimeout(() => setIsTransitioning(false), 150);
+        },
+        [isTransitioning, guideState, scrollToTop]
+    );
 
     const handleBack = useCallback(() => {
         guideState.prevStep();
         scrollToTop();
     }, [guideState, scrollToTop]);
 
-    const handleStepClick = useCallback((step: number) => {
-        guideState.goToStep(step);
-        scrollToTop();
-    }, [guideState, scrollToTop]);
+    const handleStepClick = useCallback(
+        (step: number) => {
+            guideState.goToStep(step);
+            scrollToTop();
+        },
+        [guideState, scrollToTop]
+    );
 
     // Allow backward nav freely; forward nav requires all preceding steps complete.
-    const canNavigateToStep = useCallback((index: number) => {
-        if (index === guideState.currentStep) return true;
-        if (index < guideState.currentStep) return true;
-        if (guideState.isStepComplete(STEPS[index].id)) return true;
-        for (let i = 0; i < index; i++) {
-            if (!guideState.isStepComplete(STEPS[i].id)) return false;
-        }
-        return true;
-    }, [guideState.currentStep, guideState.isStepComplete]);
+    const canNavigateToStep = useCallback(
+        (index: number) => {
+            if (index === guideState.currentStep) return true;
+            if (index < guideState.currentStep) return true;
+            if (guideState.isStepComplete(STEPS[index].id)) return true;
+            for (let i = 0; i < index; i++) {
+                if (!guideState.isStepComplete(STEPS[i].id)) return false;
+            }
+            return true;
+        },
+        [guideState.currentStep, guideState.isStepComplete]
+    );
 
     const handleChooseFeaturesComplete = () => {
         if (featuresNeedingSetup.length === 0) {
@@ -7168,7 +7234,9 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                         'SDK installed and configured',
                         'Signing authority configured',
                         'App listing created',
-                        `${selectedFeatures.length} feature${selectedFeatures.length !== 1 ? 's' : ''} configured`,
+                        `${selectedFeatures.length} feature${
+                            selectedFeatures.length !== 1 ? 's' : ''
+                        } configured`,
                         'Integration code generated',
                     ]}
                     title="Ready to Go Live!"

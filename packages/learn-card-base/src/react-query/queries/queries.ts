@@ -18,6 +18,8 @@ import {
     Boost,
     BoostRecipientInfo,
     LCNProfile,
+    LCNVisibleProfile,
+    LCNProfileConnectionStatusEnum,
     AppStoreListing,
     SentCredentialInfo,
     VC,
@@ -31,6 +33,8 @@ import { LCR } from 'learn-card-base/types/credential-records';
 import { useIsLoggedIn, useCurrentUser } from 'learn-card-base';
 import { getBespokeLearnCard, generatePK } from 'learn-card-base/helpers/walletHelpers';
 import { SELF_ASSIGNED_SKILLS_BOOST_NAME } from 'learn-card-base/helpers/credentialHelpers';
+
+type QueriedProfile = LCNProfile | LCNVisibleProfile;
 
 /** ===============================
  *      BOOST QUERIES
@@ -568,7 +572,7 @@ export const useGetBoostAdmins = (boostUri?: string) => {
 export const useGetConnections = () => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    return useQuery<LCNProfile[]>({
+    return useQuery<LCNVisibleProfile[]>({
         queryKey: ['connections', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
@@ -605,7 +609,7 @@ export const useGetConnection = (profileId: string) => {
     profileId = profileId?.toLowerCase();
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    return useQuery<LCNProfile | undefined>({
+    return useQuery<LCNVisibleProfile | undefined>({
         queryKey: ['connection', switchedDid ?? '', profileId],
         queryFn: async () => {
             const wallet = await initWallet();
@@ -623,7 +627,7 @@ export const useGetConnection = (profileId: string) => {
 export const useGetPendingConnections = () => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    return useQuery<LCNProfile[]>({
+    return useQuery<LCNVisibleProfile[]>({
         queryKey: ['pendingConnections', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
@@ -659,7 +663,7 @@ export const useGetPaginatedPendingConnections = (
 export const useGetConnectionsRequests = () => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    return useQuery<LCNProfile[]>({
+    return useQuery<LCNVisibleProfile[]>({
         queryKey: ['getConnectionRequests', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
@@ -695,7 +699,7 @@ export const useGetPaginatedConnectionRequests = (
 export const useGetBlockedProfiles = () => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    return useQuery<LCNProfile[]>({
+    return useQuery<LCNVisibleProfile[]>({
         queryKey: ['getBlockedProfiles', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
@@ -736,7 +740,7 @@ export const useGenerateInvite = () => {
 export const useGetSearchProfiles = (profileId: string) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    return useQuery<LCNProfile[]>({
+    return useQuery<(LCNVisibleProfile & { connectionStatus?: LCNProfileConnectionStatusEnum })[]>({
         queryKey: ['getSearchProfiles', switchedDid ?? '', profileId],
         queryFn: async () => {
             const wallet = await initWallet();
@@ -765,15 +769,15 @@ export const useIsCurrentUserLCNUser = () => {
 export const useGetProfile = (
     profileId?: string,
     enabled = true
-): UseQueryResult<LCNProfile | null> => {
+): UseQueryResult<QueriedProfile | null> => {
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
-    return useQuery<LCNProfile | null>({
+    return useQuery<QueriedProfile | null>({
         enabled: enabled && (!!profileId || isLoggedIn),
         queryKey: ['getProfile', switchedDid ?? '', profileId],
-        queryFn: async (): Promise<LCNProfile | null> => {
+        queryFn: async (): Promise<QueriedProfile | null> => {
             // If user is logged in, try to use the wallet
             if (isLoggedIn) {
                 try {
@@ -781,6 +785,7 @@ export const useGetProfile = (
                     if (wallet) {
                         if (profileId) {
                             const data = await wallet.invoke.getProfile(profileId);
+
                             return data ?? null;
                         } else {
                             const data = await wallet.invoke.getProfile();
@@ -1125,6 +1130,42 @@ export const useGetSkillChildren = (frameworkId: string, skillId: string) => {
             return wallet.invoke.getSkillChildren(frameworkId, skillId);
         },
         enabled: !!frameworkId && !!skillId,
+    });
+};
+
+/**
+ * Infinite Query: Get paginated skill children for a specific skill (or root skills if no skillId)
+ * Supports loading more pages via cursor-based pagination
+ */
+export const useGetSkillChildrenInfinite = (
+    frameworkId: string,
+    skillId?: string,
+    options?: { limit?: number; enabled?: boolean }
+) => {
+    const { initWallet } = useWallet();
+    const { limit = 50, enabled = true } = options ?? {};
+
+    return useInfiniteQuery({
+        queryKey: ['getSkillChildrenInfinite', frameworkId, skillId, limit],
+        queryFn: async ({ pageParam }) => {
+            const wallet = await initWallet();
+            if (skillId) {
+                return wallet.invoke.getSkillChildren(frameworkId, skillId, {
+                    limit,
+                    cursor: pageParam as string | undefined,
+                });
+            } else {
+                // For root level skills, use getSkillFrameworkById with pagination
+                const result = await wallet.invoke.getSkillFrameworkById(frameworkId, {
+                    limit,
+                    cursor: pageParam as string | undefined,
+                });
+                return result?.skills;
+            }
+        },
+        initialPageParam: undefined as string | undefined,
+        getNextPageParam: lastPage => (lastPage?.hasMore ? lastPage.cursor : undefined),
+        enabled: !!frameworkId && enabled,
     });
 };
 

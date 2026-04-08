@@ -52,7 +52,9 @@ export const AiInsightsParentConsent: React.FC<{
                         openConsentFlowModal(
                             true,
                             () => presentToast('AI Insights shared!'),
-                            targetProfile
+                            targetProfile,
+                            undefined,
+                            true
                         );
                     }, 300);
                 } else {

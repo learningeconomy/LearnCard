@@ -426,6 +426,8 @@ jobs:
                   SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS: ${{ secrets.SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS }}
                   SKILL_EMBEDDING_BACKFILL_PAGE_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_PAGE_SIZE }}
                   SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE }}
+                  OIDC_TRUSTED_ISSUERS: ${{ vars.OIDC_TRUSTED_ISSUERS }}
+                  OIDC_EXPECTED_AUDIENCE: ${{ vars.OIDC_EXPECTED_AUDIENCE }}
 
     deploy-learn-cloud:
         name: Deploy LearnCloud (Storage API)

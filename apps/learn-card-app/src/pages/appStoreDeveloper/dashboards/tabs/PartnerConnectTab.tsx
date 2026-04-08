@@ -1,9 +1,9 @@
 /**
  * PartnerConnectTab - Partner Connect SDK Reference & Code Generator
- * 
+ *
  * For embed-app integrations: shows SDK installation, API reference,
  * and dynamic code generation for the @learncard/partner-connect SDK.
- * 
+ *
  * Mirrors functionality from EmbedAppGuide's UseApiStep and YourAppStep.
  */
 
@@ -34,11 +34,17 @@ import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
 import { useToast, ToastTypeEnum, useWallet } from 'learn-card-base';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
-import type { EmbedAppGuideConfig, LLMIntegrationMetadata, TemplateMetadata, GuideState } from '../../guides/types';
+import type {
+    EmbedAppGuideConfig,
+    LLMIntegrationMetadata,
+    TemplateMetadata,
+    GuideState,
+} from '../../guides/types';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { CodeBlock } from '../../components/CodeBlock';
 import { TemplateListManager } from '../../components/TemplateListManager';
+import { openExternalLink } from 'src/helpers/externalLinkHelpers';
 
 interface ApiMethod {
     id: string;
@@ -82,8 +88,16 @@ interface BoostTemplate {
 const FEATURES = [
     { id: 'issue-credentials', title: 'Issue Credentials', icon: <Award className="w-4 h-4" /> },
     { id: 'peer-badges', title: 'Peer-to-Peer Badges', icon: <Send className="w-4 h-4" /> },
-    { id: 'request-credentials', title: 'Request Credentials', icon: <FileSearch className="w-4 h-4" /> },
-    { id: 'request-data-consent', title: 'Request Data Consent', icon: <ClipboardCheck className="w-4 h-4" /> },
+    {
+        id: 'request-credentials',
+        title: 'Request Credentials',
+        icon: <FileSearch className="w-4 h-4" />,
+    },
+    {
+        id: 'request-data-consent',
+        title: 'Request Data Consent',
+        icon: <ClipboardCheck className="w-4 h-4" />,
+    },
     { id: 'launch-feature', title: 'Launch Features', icon: <Navigation className="w-4 h-4" /> },
 ];
 
@@ -94,7 +108,8 @@ const METHODS: ApiMethod[] = [
         category: 'auth',
         icon: <User className="w-4 h-4" />,
         shortDescription: 'SSO authentication',
-        description: 'Request the user\'s identity for single sign-on. Since the user is already authenticated in the LearnCard wallet, this instantly returns their DID and profile information — no login flow required.',
+        description:
+            "Request the user's identity for single sign-on. Since the user is already authenticated in the LearnCard wallet, this instantly returns their DID and profile information — no login flow required.",
         parameters: [],
         returns: {
             type: 'Promise<Identity>',
@@ -134,13 +149,15 @@ const userId = identity.did;`,
         category: 'credentials',
         icon: <Send className="w-4 h-4" />,
         shortDescription: 'Issue a credential',
-        description: 'Issue a credential to the user\'s wallet using a pre-configured template. Create templates in the Templates tab, then reference them by alias. The credential is automatically signed and issued.',
+        description:
+            "Issue a credential to the user's wallet using a pre-configured template. Create templates in the Templates tab, then reference them by alias. The credential is automatically signed and issued.",
         parameters: [
             {
                 name: 'templateAlias',
                 type: 'string',
                 required: true,
-                description: 'The alias of the credential template to use (configured in Templates tab)',
+                description:
+                    'The alias of the credential template to use (configured in Templates tab)',
             },
             {
                 name: 'templateData',
@@ -189,7 +206,8 @@ if (resultWithData.credentialUri) {
         category: 'credentials',
         icon: <FileSearch className="w-4 h-4" />,
         shortDescription: 'Query user credentials',
-        description: 'Request access to search the user\'s credential wallet. The user will see a consent prompt and can choose which credentials to share. Great for verification flows or importing existing credentials.',
+        description:
+            "Request access to search the user's credential wallet. The user will see a consent prompt and can choose which credentials to share. Great for verification flows or importing existing credentials.",
         parameters: [
             {
                 name: 'query',
@@ -241,7 +259,8 @@ if (result.credentials.length > 0) {
         category: 'credentials',
         icon: <FileText className="w-4 h-4" />,
         shortDescription: 'Issue from template',
-        description: 'Issue a credential using a pre-defined boost template. Templates are configured in the LearnCard dashboard and ensure consistent credential formatting. Best for recurring credential types.',
+        description:
+            'Issue a credential using a pre-defined boost template. Templates are configured in the LearnCard dashboard and ensure consistent credential formatting. Best for recurring credential types.',
         parameters: [
             {
                 name: 'templateUri',
@@ -289,7 +308,8 @@ if (result.success) {
         category: 'navigation',
         icon: <Navigation className="w-4 h-4" />,
         shortDescription: 'Navigate host app',
-        description: 'Navigate the LearnCard wallet to a specific feature or page. This allows your app to integrate with wallet features like viewing credentials, managing contacts, or accessing settings.',
+        description:
+            'Navigate the LearnCard wallet to a specific feature or page. This allows your app to integrate with wallet features like viewing credentials, managing contacts, or accessing settings.',
         parameters: [
             {
                 name: 'path',
@@ -328,7 +348,7 @@ await learnCard.launchFeature('/credential/abc123', 'View credential details');
 // /profile    - User profile
 // /activity   - Activity feed`,
         tips: [
-            'Use this to complement your app\'s features with wallet features',
+            "Use this to complement your app's features with wallet features",
             'The description appears as a toast or transition message',
             'Navigation happens within the wallet, not your iframe',
         ],
@@ -339,7 +359,8 @@ await learnCard.launchFeature('/credential/abc123', 'View credential details');
         category: 'consent',
         icon: <ClipboardCheck className="w-4 h-4" />,
         shortDescription: 'Request permissions',
-        description: 'Request user consent for specific permissions or data access. Consent is tied to a contract URI that defines what access is being granted. Use this for ongoing data access agreements.',
+        description:
+            'Request user consent for specific permissions or data access. Consent is tied to a contract URI that defines what access is being granted. Use this for ongoing data access agreements.',
         parameters: [
             {
                 name: 'contractUri',
@@ -381,7 +402,7 @@ if (result.granted) {
     showLimitedFeatures();
 }`,
         tips: [
-            'Be clear about what access you\'re requesting',
+            "Be clear about what access you're requesting",
             'Users can revoke consent at any time',
             'Store consent IDs to track active agreements',
         ],
@@ -404,17 +425,26 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
     const { useListingsForIntegration } = useDeveloperPortal();
 
     // Fetch app listings for this integration
-    const { data: appListings, isLoading: listingsLoading } = useListingsForIntegration(integration.id);
+    const { data: appListings, isLoading: listingsLoading } = useListingsForIntegration(
+        integration.id
+    );
 
     // Local selected listing state (can be overridden by external prop)
-    const [localSelectedListing, setLocalSelectedListing] = useState<AppStoreListing | null>(externalSelectedListing || null);
+    const [localSelectedListing, setLocalSelectedListing] = useState<AppStoreListing | null>(
+        externalSelectedListing || null
+    );
 
     // Use external selection if provided, otherwise use local
     const selectedListing = externalSelectedListing || localSelectedListing;
 
     // Auto-select first listing when listings load
     useEffect(() => {
-        if (appListings && appListings.length > 0 && !localSelectedListing && !externalSelectedListing) {
+        if (
+            appListings &&
+            appListings.length > 0 &&
+            !localSelectedListing &&
+            !externalSelectedListing
+        ) {
             setLocalSelectedListing(appListings[0]);
         }
     }, [appListings, localSelectedListing, externalSelectedListing]);
@@ -426,7 +456,9 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
 
     // Tab navigation state
     const [activeTab, setActiveTab] = useState<'templates' | 'code' | 'setup'>('templates');
-    const [templateType, setTemplateType] = useState<'issue-credentials' | 'peer-badges'>('issue-credentials');
+    const [templateType, setTemplateType] = useState<'issue-credentials' | 'peer-badges'>(
+        'issue-credentials'
+    );
 
     // ============================================================
     // EXTRACT SAVED CONFIG FROM GUIDE STATE
@@ -483,7 +515,8 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
 
                 // 1. Fetch issue-credentials templates (via getAppBoosts - have templateAlias)
                 const issueTemplates: BoostTemplate[] = [];
-                const boostLinks = await wallet.invoke.getAppBoosts(selectedListing.listing_id) || [];
+                const boostLinks =
+                    (await wallet.invoke.getAppBoosts(selectedListing.listing_id)) || [];
 
                 for (const link of boostLinks) {
                     try {
@@ -492,7 +525,10 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
 
                         issueTemplates.push({
                             uri: link.boostUri,
-                            name: fullBoost?.name || (credential?.name as string) || 'Untitled Template',
+                            name:
+                                fullBoost?.name ||
+                                (credential?.name as string) ||
+                                'Untitled Template',
                             description: credential?.description as string,
                             type: fullBoost?.type as string,
                             category: fullBoost?.category as string,
@@ -508,10 +544,15 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
                 const peerTemplates: BoostTemplate[] = [];
                 const peerBoostsResult = await wallet.invoke.getPaginatedBoosts({
                     limit: 50,
-                    query: { meta: { appListingId: selectedListing.listing_id, featureType: 'peer-badges' } },
+                    query: {
+                        meta: {
+                            appListingId: selectedListing.listing_id,
+                            featureType: 'peer-badges',
+                        },
+                    },
                 });
 
-                for (const boost of (peerBoostsResult?.records || [])) {
+                for (const boost of peerBoostsResult?.records || []) {
                     try {
                         const uri = boost.uri as string;
                         const fullBoost = await wallet.invoke.getBoost(uri);
@@ -609,7 +650,11 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
                 dataConsent: dataConsentContractUri,
                 issueCredentials: issueContractUri,
             },
-            permissions: ['request_identity', ...(selectedFeatures.includes('issue-credentials') ? ['send_credential'] : []), ...(selectedFeatures.includes('peer-badges') ? ['initiate_template_issuance'] : [])],
+            permissions: [
+                'request_identity',
+                ...(selectedFeatures.includes('issue-credentials') ? ['send_credential'] : []),
+                ...(selectedFeatures.includes('peer-badges') ? ['initiate_template_issuance'] : []),
+            ],
             generatedAt: new Date().toISOString(),
         };
 
@@ -625,7 +670,13 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
  * Generated: ${new Date().toISOString()}
  * 
  * Features configured:
- * ${selectedFeatures.length > 0 ? selectedFeatures.map(id => `  - ${FEATURES.find(f => f.id === id)?.title || id}`).join('\n * ') : '  - None selected (complete the setup wizard first)'}
+ * ${
+     selectedFeatures.length > 0
+         ? selectedFeatures
+               .map(id => `  - ${FEATURES.find(f => f.id === id)?.title || id}`)
+               .join('\n * ')
+         : '  - None selected (complete the setup wizard first)'
+ }
  * 
  * ================================================================
  * LLM INTEGRATION METADATA
@@ -634,15 +685,34 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
  * Use these values directly - no placeholders to replace!
  * 
  * @llm-config
-${JSON.stringify(llmMetadata, null, 2).split('\n').map(line => ' * ' + line).join('\n')}
+${JSON.stringify(llmMetadata, null, 2)
+    .split('\n')
+    .map(line => ' * ' + line)
+    .join('\n')}
  * 
  * ================================================================
  * QUICK REFERENCE
  * ================================================================
- * ${issueCredentialsTemplates.length > 0 ? `Issue Credentials Templates: ${issueCredentialsTemplates.length} available` : 'Issue Credentials Templates: None configured'}
- * ${peerBadgesTemplates.length > 0 ? `Peer Badges Templates: ${peerBadgesTemplates.length} available` : 'Peer Badges Templates: None configured'}
- * ${dataConsentContractUri ? `Data Consent Contract: ${dataConsentContractUri}` : 'Data Consent Contract: Not configured'}
- * ${issueContractUri ? `Issue Credentials Contract: ${issueContractUri}` : 'Issue Credentials Contract: Not configured'}
+ * ${
+     issueCredentialsTemplates.length > 0
+         ? `Issue Credentials Templates: ${issueCredentialsTemplates.length} available`
+         : 'Issue Credentials Templates: None configured'
+ }
+ * ${
+     peerBadgesTemplates.length > 0
+         ? `Peer Badges Templates: ${peerBadgesTemplates.length} available`
+         : 'Peer Badges Templates: None configured'
+ }
+ * ${
+     dataConsentContractUri
+         ? `Data Consent Contract: ${dataConsentContractUri}`
+         : 'Data Consent Contract: Not configured'
+ }
+ * ${
+     issueContractUri
+         ? `Issue Credentials Contract: ${issueContractUri}`
+         : 'Issue Credentials Contract: Not configured'
+ }
  * 
  * Prerequisites:
  *   1. Install the SDK: npm install @learncard/partner-connect
@@ -741,25 +811,38 @@ async function issueCredentialToUser() {
                 const contractUri = issueContractUri || 'urn:lc:contract:YOUR_CONTRACT_URI';
 
                 // Generate template config with aliases and variables
-                const templateConfigJson = JSON.stringify(issueCredentialsTemplates.map((t: BoostTemplate) => ({
-                    templateAlias: t.templateAlias,
-                    uri: t.uri,
-                    name: t.name,
-                    description: t.description || '',
-                    variables: t.variables || [],
-                })), null, 4);
+                const templateConfigJson = JSON.stringify(
+                    issueCredentialsTemplates.map((t: BoostTemplate) => ({
+                        templateAlias: t.templateAlias,
+                        uri: t.uri,
+                        name: t.name,
+                        description: t.description || '',
+                        variables: t.variables || [],
+                    })),
+                    null,
+                    4
+                );
 
                 // Generate example functions for each template
-                const templateFunctions = issueCredentialsTemplates.map((t: BoostTemplate) => {
-                    const hasVars = t.variables && t.variables.length > 0;
-                    const templateDataParam = hasVars
-                        ? `{\n${t.variables!.map(v => `        ${v}: 'value', // Replace with actual value`).join('\n')}\n    }`
-                        : '// No template variables needed';
+                const templateFunctions = issueCredentialsTemplates
+                    .map((t: BoostTemplate) => {
+                        const hasVars = t.variables && t.variables.length > 0;
+                        const templateDataParam = hasVars
+                            ? `{\n${t
+                                  .variables!.map(
+                                      v => `        ${v}: 'value', // Replace with actual value`
+                                  )
+                                  .join('\n')}\n    }`
+                            : '// No template variables needed';
 
-                    if (hasVars) {
-                        return `
+                        if (hasVars) {
+                            return `
 // Issue "${t.name}" credential
-async function issue${t.templateAlias?.replace(/-/g, '_').replace(/^./, c => c.toUpperCase()) || 'Credential'}(templateData: Record<string, string>) {
+async function issue${
+                                t.templateAlias
+                                    ?.replace(/-/g, '_')
+                                    .replace(/^./, c => c.toUpperCase()) || 'Credential'
+                            }(templateData: Record<string, string>) {
     const result = await learnCard.sendCredential({
         templateAlias: '${t.templateAlias}',
         templateData,
@@ -772,11 +855,19 @@ async function issue${t.templateAlias?.replace(/-/g, '_').replace(/^./, c => c.t
 }
 
 // Example usage:
-// await issue${t.templateAlias?.replace(/-/g, '_').replace(/^./, c => c.toUpperCase()) || 'Credential'}(${templateDataParam});`;
-                    } else {
-                        return `
+// await issue${
+                                t.templateAlias
+                                    ?.replace(/-/g, '_')
+                                    .replace(/^./, c => c.toUpperCase()) || 'Credential'
+                            }(${templateDataParam});`;
+                        } else {
+                            return `
 // Issue "${t.name}" credential (no template variables)
-async function issue${t.templateAlias?.replace(/-/g, '_').replace(/^./, c => c.toUpperCase()) || 'Credential'}() {
+async function issue${
+                                t.templateAlias
+                                    ?.replace(/-/g, '_')
+                                    .replace(/^./, c => c.toUpperCase()) || 'Credential'
+                            }() {
     const result = await learnCard.sendCredential({
         templateAlias: '${t.templateAlias}',
     });
@@ -786,8 +877,9 @@ async function issue${t.templateAlias?.replace(/-/g, '_').replace(/^./, c => c.t
     }
     return result;
 }`;
-                    }
-                }).join('\n');
+                        }
+                    })
+                    .join('\n');
 
                 sections.push(`
 // ============================================================
@@ -821,15 +913,20 @@ async function issueCredentialByAlias(templateAlias: string, templateData?: Reco
 
         // PEER BADGES
         if (selectedFeatures.includes('peer-badges')) {
-            const templateConfigJson = peerBadgesTemplates.length > 0
-                ? JSON.stringify(peerBadgesTemplates.map((t: BoostTemplate) => ({
-                    id: t.uri.split(':').pop() || t.uri,
-                    uri: t.uri,
-                    name: t.name,
-                    description: t.description || '',
-                    type: t.type || 'achievement',
-                })), null, 4)
-                : '[]';
+            const templateConfigJson =
+                peerBadgesTemplates.length > 0
+                    ? JSON.stringify(
+                          peerBadgesTemplates.map((t: BoostTemplate) => ({
+                              id: t.uri.split(':').pop() || t.uri,
+                              uri: t.uri,
+                              name: t.name,
+                              description: t.description || '',
+                              type: t.type || 'achievement',
+                          })),
+                          null,
+                          4
+                      )
+                    : '[]';
 
             sections.push(`
 // ============================================================
@@ -873,7 +970,8 @@ async function sendPeerBadgeByName(searchQuery: string) {
         // REQUEST CREDENTIALS
         if (selectedFeatures.includes('request-credentials')) {
             const queryTitle = requestCredentialsConfig?.queryTitle || 'Share Your Credentials';
-            const queryReason = requestCredentialsConfig?.queryReason || 'Please share relevant credentials';
+            const queryReason =
+                requestCredentialsConfig?.queryReason || 'Please share relevant credentials';
 
             sections.push(`
 // ============================================================
@@ -950,7 +1048,16 @@ async function launchWalletFeature(path: string, description?: string) {
         }
 
         return sections.join('\n');
-    }, [selectedFeatures, selectedListing, integration, issueCredentialsTemplates, peerBadgesTemplates, issueCredentialsConfig, requestDataConsentConfig, requestCredentialsConfig]);
+    }, [
+        selectedFeatures,
+        selectedListing,
+        integration,
+        issueCredentialsTemplates,
+        peerBadgesTemplates,
+        issueCredentialsConfig,
+        requestDataConsentConfig,
+        requestCredentialsConfig,
+    ]);
 
     const selectedMethod = useMemo(
         () => METHODS.find(m => m.id === selectedMethodId) || METHODS[0],
@@ -966,11 +1073,16 @@ async function launchWalletFeature(path: string, description?: string) {
 
     const getCategoryColor = (category: string) => {
         switch (category) {
-            case 'auth': return 'text-violet-600 bg-violet-100';
-            case 'credentials': return 'text-cyan-600 bg-cyan-100';
-            case 'navigation': return 'text-amber-600 bg-amber-100';
-            case 'consent': return 'text-emerald-600 bg-emerald-100';
-            default: return 'text-gray-600 bg-gray-100';
+            case 'auth':
+                return 'text-violet-600 bg-violet-100';
+            case 'credentials':
+                return 'text-cyan-600 bg-cyan-100';
+            case 'navigation':
+                return 'text-amber-600 bg-amber-100';
+            case 'consent':
+                return 'text-emerald-600 bg-emerald-100';
+            default:
+                return 'text-gray-600 bg-gray-100';
         }
     };
 
@@ -1001,8 +1113,10 @@ console.log('User:', identity.profile.displayName);`;
                         <Layout className="w-4 h-4 text-gray-400" />
                         <select
                             value={selectedListing?.listing_id || ''}
-                            onChange={(e) => {
-                                const listing = appListings.find(l => l.listing_id === e.target.value);
+                            onChange={e => {
+                                const listing = appListings.find(
+                                    l => l.listing_id === e.target.value
+                                );
                                 setLocalSelectedListing(listing || null);
                             }}
                             className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
@@ -1029,7 +1143,9 @@ console.log('User:', identity.profile.displayName);`;
                     <div className="flex items-center gap-3">
                         <Info className="w-5 h-5 text-amber-600" />
                         <div>
-                            <p className="text-sm text-amber-800 font-medium">No app listings found</p>
+                            <p className="text-sm text-amber-800 font-medium">
+                                No app listings found
+                            </p>
                             <p className="text-xs text-amber-700">
                                 Create an app listing in the &quot;App Listings&quot; tab first.
                             </p>
@@ -1112,18 +1228,28 @@ console.log('User:', identity.profile.displayName);`;
                             </div>
 
                             {/* Template Type Description */}
-                            <div className={`p-3 rounded-lg text-sm ${
-                                templateType === 'issue-credentials'
-                                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-                                    : 'bg-violet-50 border border-violet-200 text-violet-800'
-                            }`}>
+                            <div
+                                className={`p-3 rounded-lg text-sm ${
+                                    templateType === 'issue-credentials'
+                                        ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                                        : 'bg-violet-50 border border-violet-200 text-violet-800'
+                                }`}
+                            >
                                 {templateType === 'issue-credentials' ? (
                                     <>
-                                        <strong>Issue Credentials:</strong> Templates for credentials your app issues to users via <code className="bg-emerald-100 px-1 rounded">sendCredential()</code>
+                                        <strong>Issue Credentials:</strong> Templates for
+                                        credentials your app issues to users via{' '}
+                                        <code className="bg-emerald-100 px-1 rounded">
+                                            sendCredential()
+                                        </code>
                                     </>
                                 ) : (
                                     <>
-                                        <strong>Peer Badges:</strong> Templates users can send to each other via <code className="bg-violet-100 px-1 rounded">initiateTemplateIssue()</code>
+                                        <strong>Peer Badges:</strong> Templates users can send to
+                                        each other via{' '}
+                                        <code className="bg-violet-100 px-1 rounded">
+                                            initiateTemplateIssue()
+                                        </code>
                                     </>
                                 )}
                             </div>
@@ -1151,28 +1277,53 @@ console.log('User:', identity.profile.displayName);`;
                                             <Code className="w-5 h-5 text-cyan-600" />
                                         </div>
                                         <div>
-                                            <h3 className="font-medium text-gray-800">Your Integration Code</h3>
+                                            <h3 className="font-medium text-gray-800">
+                                                Your Integration Code
+                                            </h3>
                                             <p className="text-xs text-gray-500">
-                                                {issueCredentialsTemplates.length + peerBadgesTemplates.length} template{(issueCredentialsTemplates.length + peerBadgesTemplates.length) !== 1 ? 's' : ''} configured
+                                                {issueCredentialsTemplates.length +
+                                                    peerBadgesTemplates.length}{' '}
+                                                template
+                                                {issueCredentialsTemplates.length +
+                                                    peerBadgesTemplates.length !==
+                                                1
+                                                    ? 's'
+                                                    : ''}{' '}
+                                                configured
                                             </p>
                                         </div>
                                     </div>
 
                                     <button
-                                        onClick={() => handleCopy(generatePersonalizedCode, 'personalized')}
+                                        onClick={() =>
+                                            handleCopy(generatePersonalizedCode, 'personalized')
+                                        }
                                         className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-700 transition-colors"
                                     >
-                                        {copied === 'personalized' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                        {copied === 'personalized' ? (
+                                            <Check className="w-4 h-4" />
+                                        ) : (
+                                            <Copy className="w-4 h-4" />
+                                        )}
                                         {copied === 'personalized' ? 'Copied!' : 'Copy All'}
                                     </button>
                                 </div>
 
                                 <div className="p-4">
-                                    <CodeBlock code={generatePersonalizedCode} maxHeight="max-h-[500px]" />
+                                    <CodeBlock
+                                        code={generatePersonalizedCode}
+                                        maxHeight="max-h-[500px]"
+                                    />
 
                                     <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                                         <p className="text-sm text-amber-800">
-                                            <strong>💡 LLM-Ready:</strong> Copy this code and paste it into an AI assistant (like ChatGPT or Claude) along with your requirements. The <code className="bg-amber-100 px-1 rounded">@llm-config</code> section contains all your template URIs and settings.
+                                            <strong>💡 LLM-Ready:</strong> Copy this code and paste
+                                            it into an AI assistant (like ChatGPT or Claude) along
+                                            with your requirements. The{' '}
+                                            <code className="bg-amber-100 px-1 rounded">
+                                                @llm-config
+                                            </code>{' '}
+                                            section contains all your template URIs and settings.
                                         </p>
                                     </div>
                                 </div>
@@ -1191,8 +1342,12 @@ console.log('User:', identity.profile.displayName);`;
                                     <div className="flex items-center gap-3">
                                         <Package className="w-5 h-5 text-cyan-600" />
                                         <div>
-                                            <h3 className="font-medium text-gray-800">Installation & Setup</h3>
-                                            <p className="text-xs text-gray-500">Install the SDK and initialize it in your app</p>
+                                            <h3 className="font-medium text-gray-800">
+                                                Installation & Setup
+                                            </h3>
+                                            <p className="text-xs text-gray-500">
+                                                Install the SDK and initialize it in your app
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -1200,29 +1355,48 @@ console.log('User:', identity.profile.displayName);`;
                                 <div className="p-4 space-y-4">
                                     <div>
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm font-medium text-gray-700">1. Install the SDK</span>
+                                            <span className="text-sm font-medium text-gray-700">
+                                                1. Install the SDK
+                                            </span>
                                             <button
                                                 onClick={() => handleCopy(installCode, 'install')}
                                                 className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
                                             >
-                                                {copied === 'install' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                                {copied === 'install' ? (
+                                                    <Check className="w-3 h-3 text-emerald-500" />
+                                                ) : (
+                                                    <Copy className="w-3 h-3" />
+                                                )}
                                                 {copied === 'install' ? 'Copied!' : 'Copy'}
                                             </button>
                                         </div>
                                         <CodeBlock code={installCode} />
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Also works with <code className="bg-gray-100 px-1 rounded">yarn add</code> or <code className="bg-gray-100 px-1 rounded">pnpm add</code>
+                                            Also works with{' '}
+                                            <code className="bg-gray-100 px-1 rounded">
+                                                yarn add
+                                            </code>{' '}
+                                            or{' '}
+                                            <code className="bg-gray-100 px-1 rounded">
+                                                pnpm add
+                                            </code>
                                         </p>
                                     </div>
 
                                     <div>
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm font-medium text-gray-700">2. Initialize</span>
+                                            <span className="text-sm font-medium text-gray-700">
+                                                2. Initialize
+                                            </span>
                                             <button
                                                 onClick={() => handleCopy(initCode, 'init')}
                                                 className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
                                             >
-                                                {copied === 'init' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                                {copied === 'init' ? (
+                                                    <Check className="w-3 h-3 text-emerald-500" />
+                                                ) : (
+                                                    <Copy className="w-3 h-3" />
+                                                )}
                                                 {copied === 'init' ? 'Copied!' : 'Copy'}
                                             </button>
                                         </div>
@@ -1231,7 +1405,12 @@ console.log('User:', identity.profile.displayName);`;
 
                                     <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
                                         <p className="text-sm text-cyan-800">
-                                            <strong>That's it!</strong> Users are already logged in when inside the wallet, so <code className="bg-cyan-100 px-1 rounded">requestIdentity()</code> returns instantly with their profile.
+                                            <strong>That's it!</strong> Users are already logged in
+                                            when inside the wallet, so{' '}
+                                            <code className="bg-cyan-100 px-1 rounded">
+                                                requestIdentity()
+                                            </code>{' '}
+                                            returns instantly with their profile.
                                         </p>
                                     </div>
                                 </div>
@@ -1243,8 +1422,12 @@ console.log('User:', identity.profile.displayName);`;
                                     <div className="flex items-center gap-3">
                                         <Code className="w-5 h-5 text-gray-600" />
                                         <div>
-                                            <h3 className="font-medium text-gray-800">API Reference</h3>
-                                            <p className="text-xs text-gray-500">Explore all available SDK methods</p>
+                                            <h3 className="font-medium text-gray-800">
+                                                API Reference
+                                            </h3>
+                                            <p className="text-xs text-gray-500">
+                                                Explore all available SDK methods
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -1254,7 +1437,9 @@ console.log('User:', identity.profile.displayName);`;
                                         {/* Method Navigation */}
                                         <div className="lg:col-span-4 space-y-3">
                                             {CATEGORIES.map(category => {
-                                                const categoryMethods = METHODS.filter(m => m.category === category.id);
+                                                const categoryMethods = METHODS.filter(
+                                                    m => m.category === category.id
+                                                );
 
                                                 return (
                                                     <div key={category.id}>
@@ -1267,14 +1452,23 @@ console.log('User:', identity.profile.displayName);`;
                                                             {categoryMethods.map(method => (
                                                                 <button
                                                                     key={method.id}
-                                                                    onClick={() => setSelectedMethodId(method.id)}
+                                                                    onClick={() =>
+                                                                        setSelectedMethodId(
+                                                                            method.id
+                                                                        )
+                                                                    }
                                                                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
-                                                                        selectedMethodId === method.id
+                                                                        selectedMethodId ===
+                                                                        method.id
                                                                             ? 'bg-cyan-50 border border-cyan-200 text-cyan-700'
                                                                             : 'hover:bg-gray-50 text-gray-700'
                                                                     }`}
                                                                 >
-                                                                    <span className={`p-1.5 rounded-md ${getCategoryColor(method.category)}`}>
+                                                                    <span
+                                                                        className={`p-1.5 rounded-md ${getCategoryColor(
+                                                                            method.category
+                                                                        )}`}
+                                                                    >
                                                                         {method.icon}
                                                                     </span>
 
@@ -1283,11 +1477,14 @@ console.log('User:', identity.profile.displayName);`;
                                                                             {method.name}()
                                                                         </div>
                                                                         <div className="text-xs text-gray-500 truncate">
-                                                                            {method.shortDescription}
+                                                                            {
+                                                                                method.shortDescription
+                                                                            }
                                                                         </div>
                                                                     </div>
 
-                                                                    {selectedMethodId === method.id && (
+                                                                    {selectedMethodId ===
+                                                                        method.id && (
                                                                         <ChevronRight className="w-4 h-4 text-cyan-500 flex-shrink-0" />
                                                                     )}
                                                                 </button>
@@ -1303,7 +1500,11 @@ console.log('User:', identity.profile.displayName);`;
                                             {/* Method Header */}
                                             <div className="p-4 bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl">
                                                 <div className="flex items-start gap-4">
-                                                    <div className={`p-3 rounded-xl ${getCategoryColor(selectedMethod.category)}`}>
+                                                    <div
+                                                        className={`p-3 rounded-xl ${getCategoryColor(
+                                                            selectedMethod.category
+                                                        )}`}
+                                                    >
                                                         {selectedMethod.icon}
                                                     </div>
 
@@ -1327,27 +1528,35 @@ console.log('User:', identity.profile.displayName);`;
                                                     </h5>
 
                                                     <div className="border border-gray-200 rounded-xl overflow-hidden">
-                                                        {selectedMethod.parameters.map((param, idx) => (
-                                                            <div
-                                                                key={param.name}
-                                                                className={`p-3 ${idx > 0 ? 'border-t border-gray-200' : ''}`}
-                                                            >
-                                                                <div className="flex items-start gap-2 flex-wrap">
-                                                                    <code className="px-2 py-0.5 bg-gray-100 rounded text-sm font-mono text-gray-800">
-                                                                        {param.name}
-                                                                    </code>
-                                                                    <code className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
-                                                                        {param.type}
-                                                                    </code>
-                                                                    {param.required && (
-                                                                        <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded text-xs font-medium">
-                                                                            required
-                                                                        </span>
-                                                                    )}
+                                                        {selectedMethod.parameters.map(
+                                                            (param, idx) => (
+                                                                <div
+                                                                    key={param.name}
+                                                                    className={`p-3 ${
+                                                                        idx > 0
+                                                                            ? 'border-t border-gray-200'
+                                                                            : ''
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-start gap-2 flex-wrap">
+                                                                        <code className="px-2 py-0.5 bg-gray-100 rounded text-sm font-mono text-gray-800">
+                                                                            {param.name}
+                                                                        </code>
+                                                                        <code className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
+                                                                            {param.type}
+                                                                        </code>
+                                                                        {param.required && (
+                                                                            <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded text-xs font-medium">
+                                                                                required
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className="mt-1 text-sm text-gray-600">
+                                                                        {param.description}
+                                                                    </p>
                                                                 </div>
-                                                                <p className="mt-1 text-sm text-gray-600">{param.description}</p>
-                                                            </div>
-                                                        ))}
+                                                            )
+                                                        )}
                                                     </div>
                                                 </div>
                                             )}
@@ -1363,10 +1572,15 @@ console.log('User:', identity.profile.displayName);`;
                                                     <code className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-sm">
                                                         {selectedMethod.returns.type}
                                                     </code>
-                                                    <p className="mt-1 text-sm text-gray-600">{selectedMethod.returns.description}</p>
+                                                    <p className="mt-1 text-sm text-gray-600">
+                                                        {selectedMethod.returns.description}
+                                                    </p>
 
                                                     <div className="mt-2">
-                                                        <CodeBlock code={selectedMethod.returns.example} maxHeight="max-h-32" />
+                                                        <CodeBlock
+                                                            code={selectedMethod.returns.example}
+                                                            maxHeight="max-h-32"
+                                                        />
                                                     </div>
                                                 </div>
                                             </div>
@@ -1379,34 +1593,50 @@ console.log('User:', identity.profile.displayName);`;
                                                         Example
                                                     </h5>
                                                     <button
-                                                        onClick={() => handleCopy(selectedMethod.code, 'example')}
+                                                        onClick={() =>
+                                                            handleCopy(
+                                                                selectedMethod.code,
+                                                                'example'
+                                                            )
+                                                        }
                                                         className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
                                                     >
-                                                        {copied === 'example' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                                        {copied === 'example' ? (
+                                                            <Check className="w-3 h-3 text-emerald-500" />
+                                                        ) : (
+                                                            <Copy className="w-3 h-3" />
+                                                        )}
                                                         {copied === 'example' ? 'Copied!' : 'Copy'}
                                                     </button>
                                                 </div>
 
-                                                <CodeBlock code={selectedMethod.code} maxHeight="max-h-72" />
+                                                <CodeBlock
+                                                    code={selectedMethod.code}
+                                                    maxHeight="max-h-72"
+                                                />
                                             </div>
 
                                             {/* Tips */}
-                                            {selectedMethod.tips && selectedMethod.tips.length > 0 && (
-                                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                                                    <h5 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
-                                                        <Zap className="w-4 h-4" />
-                                                        Pro Tips
-                                                    </h5>
-                                                    <ul className="space-y-1">
-                                                        {selectedMethod.tips.map((tip, idx) => (
-                                                            <li key={idx} className="flex items-start gap-2 text-sm text-amber-700">
-                                                                <ChevronRight className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                                                                {tip}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
+                                            {selectedMethod.tips &&
+                                                selectedMethod.tips.length > 0 && (
+                                                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                                        <h5 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                                                            <Zap className="w-4 h-4" />
+                                                            Pro Tips
+                                                        </h5>
+                                                        <ul className="space-y-1">
+                                                            {selectedMethod.tips.map((tip, idx) => (
+                                                                <li
+                                                                    key={idx}
+                                                                    className="flex items-start gap-2 text-sm text-amber-700"
+                                                                >
+                                                                    <ChevronRight className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                                                    {tip}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
                                         </div>
                                     </div>
                                 </div>
@@ -1414,27 +1644,31 @@ console.log('User:', identity.profile.displayName);`;
 
                             {/* Resources */}
                             <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
-                                <a
-                                    href="https://docs.learncard.com/sdks/partner-connect"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                <button
+                                    onClick={() =>
+                                        openExternalLink(
+                                            'https://docs.learncard.com/sdks/partner-connect'
+                                        )
+                                    }
                                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                                 >
                                     <FileText className="w-4 h-4" />
                                     SDK Documentation
                                     <ExternalLink className="w-3 h-3" />
-                                </a>
+                                </button>
 
-                                <a
-                                    href="https://github.com/learningeconomy/LearnCard"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                <button
+                                    onClick={() =>
+                                        openExternalLink(
+                                            'https://github.com/learningeconomy/LearnCard'
+                                        )
+                                    }
                                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                                 >
                                     <Code className="w-4 h-4" />
                                     GitHub Examples
                                     <ExternalLink className="w-3 h-3" />
-                                </a>
+                                </button>
                             </div>
                         </div>
                     )}
