@@ -51,7 +51,7 @@ import {
     type KeyDerivationStrategy,
 } from 'learn-card-base';
 import currentUserStore from 'learn-card-base/stores/currentUserStore';
-import { walletStore } from 'learn-card-base/stores/walletStore';
+import { walletStore, switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { pushUtilities } from 'learn-card-base/utils/pushUtilities';
 import { getRandomBaseColor } from 'learn-card-base/helpers/colorHelpers';
 import { getCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
@@ -780,7 +780,10 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode; authProvider: Au
 
         const initializeWallet = async () => {
             try {
-                const newWallet = await getBespokeLearnCard(privateKey);
+                // Restore switched profile from localStorage so hard refresh
+                // keeps the user on the org/child account they selected.
+                const persistedSwitchedDid = switchedProfileStore.get.switchedDid();
+                const newWallet = await getBespokeLearnCard(privateKey, persistedSwitchedDid);
 
                 if (!newWallet) {
                     console.error('Failed to initialize wallet from private key');

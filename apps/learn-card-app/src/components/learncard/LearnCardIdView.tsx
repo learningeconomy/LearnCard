@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    ProfilePicture,
+    UserProfilePicture,
     switchedProfileStore,
     useCurrentUser,
     useGetCurrentLCNUser,
@@ -36,12 +36,11 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
                 className="flex gap-[10px] px-[10px] py-[27.5px] bg-contain items-center bg-grayscale-900"
                 style={{ ...backgroundStyles, color: displayStyles?.fontColor }}
             >
-                <ProfilePicture
+                <UserProfilePicture
                     customContainerClass="h-[80px] w-[80px] shrink-0 text-[40px]"
                     customImageClass="h-[80px] w-[80px] shrink-0 text-[40px] object-cover"
                     customSize={120}
-                    overrideSrc={!!user}
-                    overrideSrcURL={user?.image}
+                    user={user ?? currentLCNUser}
                 />
 
                 <div className="flex flex-col items-start pr-[10px] overflow-hidden text-white">
