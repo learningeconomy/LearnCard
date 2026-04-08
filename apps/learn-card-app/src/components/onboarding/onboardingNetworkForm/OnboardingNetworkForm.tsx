@@ -61,6 +61,7 @@ import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
 import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
 import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
+import useAutoConsentLearnCardAi from '../../../hooks/useAutoConsentLearnCardAi';
 import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
@@ -119,6 +120,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
     const { handleLogout, isLoggingOut } = useLogout();
+    const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
     const { name, dob, country, photo, usMinorConsent, profileId } = formData;
 
     const handleNameChange = (value: string) => {
@@ -299,15 +301,10 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         authToken = res?.token;
                     } else {
                         const user = auth()?.currentUser;
-                        authToken = user
-                            ? await user.getIdToken(false)
-                            : undefined;
+                        authToken = user ? await user.getIdToken(false) : undefined;
                     }
                 } catch (e) {
-                    console.warn(
-                        'Could not get Firebase ID token (non-fatal):',
-                        e
-                    );
+                    console.warn('Could not get Firebase ID token (non-fatal):', e);
                 }
 
                 const didWeb = await wallet.invoke.createProfile({
@@ -351,6 +348,16 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     handleCloseModal();
                     setIsLoading(false);
                     setIsCreateLoading(false);
+
+                    autoConsentLearnCardAi({
+                        enabled: !isMinorUser,
+                        userOverrides: {
+                            name: name ?? currentUser?.name ?? '',
+                            profileImage: photo ?? currentUser?.profileImage ?? '',
+                        },
+                    }).catch(err => {
+                        console.error('Failed to auto-consent LearnCard AI after onboarding:', err);
+                    });
 
                     setTimeout(async () => {
                         await onSuccess?.();
