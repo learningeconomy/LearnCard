@@ -104,12 +104,17 @@ export class PostmarkAdapter implements DeliveryService {
                 return { user: model.user };
 
             case 'embed-email-verification':
-            case 'contact-method-verification':
             case 'login-verification-code':
             case 'recovery-email-code':
                 return {
                     verificationCode: model.verificationCode ?? model.verificationToken,
                     verificationEmail: model.verificationEmail,
+                };
+
+            case 'contact-method-verification':
+                return {
+                    verificationToken: model.verificationToken ?? model.verificationCode,
+                    recipient: model.recipient,
                 };
 
             case 'recovery-key':

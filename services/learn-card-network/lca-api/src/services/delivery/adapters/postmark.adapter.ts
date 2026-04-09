@@ -128,10 +128,15 @@ export class PostmarkAdapter implements DeliveryService {
             case 'login-verification-code':
             case 'recovery-email-code':
             case 'embed-email-verification':
-            case 'contact-method-verification':
                 return {
                     verificationCode: (model.verificationCode as string) ?? '',
                     verificationEmail: model.verificationEmail as string | undefined,
+                };
+
+            case 'contact-method-verification':
+                return {
+                    verificationToken: (model.verificationToken as string) ?? (model.verificationCode as string) ?? '',
+                    recipient: model.recipient as { name?: string } | undefined,
                 };
 
             case 'recovery-key':

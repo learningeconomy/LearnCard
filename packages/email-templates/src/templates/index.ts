@@ -30,3 +30,6 @@ export type { GuardianEmailOtpProps } from './guardian-email-otp';
 
 export { GuardianRejectedCredential, getGuardianRejectedCredentialSubject } from './guardian-rejected-credential';
 export type { GuardianRejectedCredentialProps } from './guardian-rejected-credential';
+
+export { EmailVerification, getEmailVerificationSubject } from './email-verification';
+export type { EmailVerificationProps } from './email-verification';

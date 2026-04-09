@@ -22,6 +22,7 @@ export { renderEmail } from './render';
 export type { RenderedEmail, TemplateId, TemplateDataMap } from './render';
 export type {
     VerificationCodeData,
+    EmailVerificationData,
     InboxClaimData,
     GuardianApprovalData,
     AccountApprovedData,

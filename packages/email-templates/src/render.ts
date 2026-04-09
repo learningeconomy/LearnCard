@@ -37,6 +37,8 @@ import {
     getGuardianEmailOtpSubject,
     GuardianRejectedCredential,
     getGuardianRejectedCredentialSubject,
+    EmailVerification,
+    getEmailVerificationSubject,
 } from './templates';
 
 import type {
@@ -50,6 +52,7 @@ import type {
     GuardianCredentialApprovalProps,
     GuardianEmailOtpProps,
     GuardianRejectedCredentialProps,
+    EmailVerificationProps,
 } from './templates';
 
 // ---------------------------------------------------------------------------
@@ -75,8 +78,8 @@ export interface TemplateDataMap {
     /** brain-service: contact-methods.ts, embed flow */
     'embed-email-verification': VerificationCodeData;
 
-    /** brain-service: contact-methods.ts */
-    'contact-method-verification': VerificationCodeData;
+    /** brain-service: contact-methods.ts — link-based email verification */
+    'contact-method-verification': EmailVerificationData;
 
     /** lca-api: firebase.ts login flow */
     'login-verification-code': VerificationCodeData;
@@ -154,6 +157,11 @@ export type TemplateId = keyof TemplateDataMap;
 export interface VerificationCodeData {
     verificationCode: string;
     verificationEmail?: string;
+}
+
+export interface EmailVerificationData {
+    verificationToken: string;
+    recipient?: { name?: string };
 }
 
 export interface InboxClaimData {
@@ -272,8 +280,15 @@ function buildElement(
         case 'embed-email-verification':
             return buildVerificationElement(branding, data as VerificationCodeData, 'embed-verification');
 
-        case 'contact-method-verification':
-            return buildVerificationElement(branding, data as VerificationCodeData, 'contact-method');
+        case 'contact-method-verification': {
+            const d = data as EmailVerificationData;
+            const props: EmailVerificationProps = { branding, ...d };
+
+            return {
+                element: React.createElement(EmailVerification, props),
+                subject: getEmailVerificationSubject(branding),
+            };
+        }
 
         case 'login-verification-code':
         case 'contact-method-verification-1':
