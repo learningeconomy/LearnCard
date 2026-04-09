@@ -73,10 +73,19 @@ export enum ThemeEnum {
 }
 
 export const PreferencesValidator = z.object({
-    theme: z.enum([ThemeEnum.Colorful, ThemeEnum.Formal]),
+    theme: z.enum([ThemeEnum.Colorful, ThemeEnum.Formal]).optional(),
+    aiEnabled: z.boolean().optional(),
+    aiAutoDisabled: z.boolean().optional(),
+    analyticsEnabled: z.boolean().optional(),
+    analyticsAutoDisabled: z.boolean().optional(),
+    bugReportsEnabled: z.boolean().optional(),
+    isMinor: z.boolean().optional(),
 });
 
 export type PreferencesType = z.infer<typeof PreferencesValidator>;
+export type CreatePreferencesType = {
+    theme: ThemeEnum;
+};
 
 /** @group LCA API Plugin */
 export const SigningAuthorityValidator = z.object({
@@ -322,7 +331,7 @@ export type LCAPluginMethods = {
         token: string
     ) => Promise<{ success: boolean; error?: string; vp?: string }>;
     updatePreferences: (preferences: PreferencesType) => Promise<boolean>;
-    createPreferences: (preferences: PreferencesType) => Promise<boolean>;
+    createPreferences: (preferences: CreatePreferencesType) => Promise<boolean>;
     getPreferencesForDid: () => Promise<PreferencesType>;
     sendEndorsementShareLink: (
         email: string,

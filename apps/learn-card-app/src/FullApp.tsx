@@ -28,9 +28,10 @@ import Toast from 'learn-card-base/components/toast/Toast';
 import { AnalyticsContextProvider } from '@analytics';
 import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator';
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
-import AuthKeyDebugWidget from './components/debug/AuthKeyDebugWidget';
+import DevDebugPanel from './components/debug/DevDebugPanel';
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import localforage from 'localforage';
+import { useInitializeTheme } from './theme/hooks/useTheme';
 
 const history = createBrowserHistory();
 
@@ -142,6 +143,12 @@ const persister = createAsyncStoragePersister({
     },
 });
 
+const ThemeInitializer: React.FC = () => {
+    useInitializeTheme();
+
+    return null;
+};
+
 const FullApp: React.FC = () => {
     useSQLiteInitWeb(); // initializes SQLite on web
     sqliteInit(); // initializes SQLite on native
@@ -158,6 +165,7 @@ const FullApp: React.FC = () => {
                 <IonReactRouter history={history}>
                     <Suspense fallback={<LoadingPageDumb />}>
                         <AuthCoordinatorProvider>
+                            <ThemeInitializer />
                             <ExternalAuthServiceProvider>
                                 <ModalsProvider>
                                     <IonApp>
@@ -173,7 +181,7 @@ const FullApp: React.FC = () => {
 
                                         {showScannerOverlay && <QRCodeScannerOverlay />}
 
-                                        <AuthKeyDebugWidget />
+                                        <DevDebugPanel />
                                     </IonApp>
                                 </ModalsProvider>
                             </ExternalAuthServiceProvider>

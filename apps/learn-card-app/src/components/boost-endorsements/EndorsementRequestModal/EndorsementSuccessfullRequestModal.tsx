@@ -1,17 +1,15 @@
 import React from 'react';
 
-import LearnCardIcon from '../../../assets/images/lca-icon-v2.png';
-import DesktopLoginBG from '../../../assets/images/desktop-login-bg-alt.png';
 import EndorsementBadge from '../../../assets/images/endorsement-badge.png';
 import { EndorsmentThumbWithCircle } from 'learn-card-base/svgs/EndorsementThumb';
-
-import LearnCardTextLogo from '../../svgs/LearnCardTextLogo';
+import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
 import { useModal, useIsLoggedIn, useDeviceTypeByWidth } from 'learn-card-base';
 
 export const EndorsementSuccessfullRequestModal: React.FC<{ showCloseButton: boolean }> = ({
     showCloseButton,
 }) => {
+    const { appIcon, desktopLoginBgAlt, textLogo } = useTenantBrandingAssets();
     const { closeModal } = useModal();
     const isLoggedIn = useIsLoggedIn();
     const { isDesktop } = useDeviceTypeByWidth();
@@ -19,7 +17,7 @@ export const EndorsementSuccessfullRequestModal: React.FC<{ showCloseButton: boo
     const loggedOutBGStyles = isLoggedIn
         ? {}
         : {
-              background: `url(${DesktopLoginBG})`,
+              background: `url(${desktopLoginBgAlt})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
           };
@@ -29,7 +27,7 @@ export const EndorsementSuccessfullRequestModal: React.FC<{ showCloseButton: boo
             className="flex h-full w-full flex-col items-center justify-center px-4"
             style={loggedOutBGStyles}
         >
-            <LearnCardTextLogo className="w-[235px] h-[16px] mb-[80px]" />
+            <img src={textLogo} alt="Logo" className="w-[235px] h-[16px] mb-[80px] object-contain" />
 
             {/* content */}
             <div className="flex flex-col items-center justify-center bg-white  w-full max-w-[375px] rounded-[20px] pt-4 relative">
@@ -63,7 +61,7 @@ export const EndorsementSuccessfullRequestModal: React.FC<{ showCloseButton: boo
                     <div
                         className="flex items-center gap-2 rounded-full bg-grayscale-100 p-2 h-[40px] w-[40px] z-[9999999]"
                         style={{
-                            backgroundImage: `url(${LearnCardIcon})`,
+                            backgroundImage: `url(${appIcon})`,
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
                         }}

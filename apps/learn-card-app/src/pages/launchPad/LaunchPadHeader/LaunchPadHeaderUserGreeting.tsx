@@ -2,6 +2,7 @@ import React from 'react';
 import moment from 'moment';
 
 import { getFirstName, useCurrentUser, useModal, ModalTypes, useGetProfile } from 'learn-card-base';
+import { useTheme } from '../../../theme/hooks/useTheme';
 import { getGreetingAndEmoji } from './launchPadHeader.helpers';
 import LaunchPadActionModal from './LaunchPadActionModal';
 import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNGatedAction';
@@ -24,6 +25,10 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
 
     const { gate } = useLCNGatedAction();
 
+    const { colors } = useTheme();
+    const quickActionBgColor = colors?.launchPad?.quickActionBgColor ?? '#DCEAFE';
+    const quickActionTextColor = colors?.launchPad?.quickActionTextColor ?? '#273B72';
+
     const { emoji, greeting } = getGreetingAndEmoji(currentHour);
 
     const name = getFirstName(currentUser?.name ?? '');
@@ -39,7 +44,7 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
     };
 
     return (
-        <div className="w-full flex items-center justify-center bg-white py-4">
+        <div className="w-full flex items-center justify-center bg-white py-4 relative z-10">
             <div className="w-full flex flex-col items-center justify-center px-3">
                 <p className="text-grayscale-700 font-normal text-[16px] font-poppins flex items-center">
                     <span className="mr-2">{emoji}</span>
@@ -52,7 +57,8 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
                     <button
                         type="button"
                         onClick={() => void handleOpenActionModal()}
-                        className="w-full max-w-[600px] flex items-center justify-between px-[10px] py-[5px] rounded-[10px] bg-grayscale-50 shadow-[0_2px_2px_0_rgba(0,0,0,0.25)] border-solid border border-grayscale-200"
+                        className="w-full max-w-[600px] flex items-center justify-between px-[10px] py-[5px] rounded-[10px] shadow-[0_2px_2px_0_rgba(0,0,0,0.25)] border-solid border border-grayscale-200"
+                        style={{ backgroundColor: quickActionBgColor }}
                     >
                         <div className="flex items-center">
                             {iconSrc && (
@@ -62,11 +68,13 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
                                     className="h-[20px] w-[20px] object-contain mr-[5px]"
                                 />
                             )}
-                            <span className="text-[#273B72] font-poppins font-semibold text-[20px]">
+                            <span className="font-poppins font-semibold text-[20px]" style={{ color: quickActionTextColor }}>
                                 What would you like to do?
                             </span>
                         </div>
-                        <CaretRightFilled className="w-[15px] h-[15px]" />
+                        <span style={{ color: quickActionTextColor }}>
+                            <CaretRightFilled className="w-[15px] h-[15px]" />
+                        </span>
                     </button>
                 </div>
             </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { AiInsightsIconWithShape } from 'learn-card-base/svgs/wallet/AiInsightsIcon';
 import CheckListButton from '../../components/learncard/checklist/CheckListButton';
@@ -6,6 +7,8 @@ import CheckListButton from '../../components/learncard/checklist/CheckListButto
 export const AiInsightsEmptyPlaceholder: React.FC<{ isSharedView?: boolean }> = ({
     isSharedView = false,
 }) => {
+    const brandingConfig = useBrandingConfig();
+
     return (
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 px-[15px] py-[18px] rounded-[15px] mt-4">
             <div className="w-full flex-col flex items-center justify-center gap-4">
@@ -17,7 +20,7 @@ export const AiInsightsEmptyPlaceholder: React.FC<{ isSharedView?: boolean }> = 
                     <p className="text-sm text-grayscale-700 font-notoSans text-center">
                         {isSharedView
                             ? "This learner hasn't generated any AI Insights yet."
-                            : 'Build your LearnCard to unlock personalized learning insights and track your skill development journey.'}
+                            : `Build your ${brandingConfig?.name} to unlock personalized learning insights and track your skill development journey.`}
                     </p>
                 </div>
                 {!isSharedView && <CheckListButton />}

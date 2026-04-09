@@ -10,7 +10,7 @@ import Refresh from 'learn-card-base/svgs/Refresh';
 import LoadingIcon from 'learn-card-base/svgs/LoadingIcon';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
-import LearnCardAppIcon from '../../assets/images/lca-icon-v2.png';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import ConsentFlowEditAccess from '../launchPad/ConsentFlowEditAccess';
 import { Checkmark } from '@learncard/react';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
@@ -136,8 +136,8 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
                         ) : ( */}
                         <div className="w-[44px] h-[44px] rounded-[10px] overflow-hidden border-b-solid border-white border-[2px] absolute bottom-[0px] right-[-40px] drop-shadow-bottom bg-white">
                             <img
-                                src={LearnCardAppIcon}
-                                alt="LearnCard App Icon"
+                                src={useTenantBrandingAssets().appIcon}
+                                alt="App Icon"
                                 className="h-full w-full object-contain"
                             />
                         </div>

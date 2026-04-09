@@ -674,6 +674,22 @@ jobs:
                   CHANNEL=$(node tools/capgo/getCapgoChannel.js --app ${{ steps.vars.outputs.app_id }})
                   echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
 
+            # Prepare tenant config for learn-card-app builds.
+            # Uses TENANT and STAGE vars from the GitHub Environment (defaults: learncard, no stage).
+            # Scouts app does not use the tenant config system yet — skip for non-LCA projects.
+            - name: Prepare tenant config
+              if: steps.vars.outputs.project_name == 'learn-card-app'
+              working-directory: apps/learn-card-app
+              run: |
+                  TENANT="${{ vars.TENANT || 'learncard' }}"
+                  STAGE="${{ vars.STAGE || '' }}"
+                  STAGE_FLAG=""
+                  if [[ -n "$STAGE" ]]; then
+                    STAGE_FLAG="--stage $STAGE"
+                  fi
+                  echo "Preparing tenant config: $TENANT $STAGE_FLAG"
+                  npx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
+
             - name: Build App
               run: pnpm exec nx build ${{ steps.vars.outputs.project_name }}
               env:

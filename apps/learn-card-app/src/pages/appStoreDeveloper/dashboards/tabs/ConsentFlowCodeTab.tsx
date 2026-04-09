@@ -26,6 +26,7 @@ import { Clipboard } from '@capacitor/clipboard';
 import { useToast, ToastTypeEnum } from 'learn-card-base';
 
 import { useDeveloperPortal } from '../../useDeveloperPortal';
+import { getAppBaseUrl } from '../../../../config/bootstrapTenantConfig';
 import type { CredentialTemplate } from '../types';
 import type { GuideState } from '../../guides/types';
 import { CodeOutputPanel } from '../../guides/shared/CodeOutputPanel';
@@ -101,7 +102,7 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
 
     const consentUrl = useMemo(() => {
         if (!contractUri) return '';
-        const base = 'https://learncard.app/consent-flow';
+        const base = `${getAppBaseUrl()}/consent-flow`;
         const params = new URLSearchParams({ uri: contractUri });
         if (redirectUrl) params.set('returnTo', redirectUrl);
         return `${base}?${params.toString()}`;
@@ -182,14 +183,14 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
                     title="Build the consent URL"
                     snippets={{
                         typescript: `// Redirect the user to LearnCard's consent screen
-const consentUrl = new URL('https://learncard.app/consent-flow');
+const consentUrl = new URL('${getAppBaseUrl()}/consent-flow');
 consentUrl.searchParams.set('uri', '${contractUri || 'YOUR_CONTRACT_URI'}');
 consentUrl.searchParams.set('returnTo', '${redirectUrl || 'https://your-app.com/api/learncard/callback'}');
 
 // Redirect (Express example)
 res.redirect(consentUrl.toString());`,
                         curl: `# Consent URL format:
-https://learncard.app/consent-flow?uri=${encodeURIComponent(contractUri || 'YOUR_CONTRACT_URI')}&returnTo=${encodeURIComponent(redirectUrl || 'https://your-app.com/callback')}`,
+${getAppBaseUrl()}/consent-flow?uri=${encodeURIComponent(contractUri || 'YOUR_CONTRACT_URI')}&returnTo=${encodeURIComponent(redirectUrl || 'https://your-app.com/callback')}`,
                     }}
                 />
             </Section>

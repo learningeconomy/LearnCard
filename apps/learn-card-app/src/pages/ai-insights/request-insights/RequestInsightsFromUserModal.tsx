@@ -22,6 +22,7 @@ import {
     redirectStore,
 } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
 import { useGetAiInsightsServicesContract } from '../learner-insights/learner-insights.helpers';
 import { RequestInsightStatusEnum } from './request-insights.helpers';
@@ -67,9 +68,7 @@ export const RequestInsightsFromUserModal: React.FC<{
             return;
         }
 
-        const shareLink = `${
-            IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
-        }/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
+        const shareLink = `${getAppBaseUrl()}/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
 
         await sendAiInsightsContractRequest({
             contractUri: contractUri ?? '',
