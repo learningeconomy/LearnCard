@@ -11,10 +11,11 @@
  *   7. Push notification route
  */
 
-import { describe, test, expect, beforeAll, afterAll } from 'vitest';
+import { describe, test, expect, beforeAll } from 'vitest';
 import Redis from 'ioredis';
+import { URLS } from './helpers/ports';
 
-const LCA_API_URL = 'http://localhost:5200';
+const LCA_API_URL = URLS.lcaApiBase;
 
 // Redis on host port 6381 (mapped from container port 6379)
 const redis = new Redis({ host: 'localhost', port: 6381, lazyConnect: true });

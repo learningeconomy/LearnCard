@@ -12,6 +12,7 @@ import {
 } from './helpers/learncard.helpers';
 import { normalContract, normalFullTerms } from './helpers/contract.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
+import { URLS } from './helpers/ports';
 
 let seedA: LearnCard | null = null;
 let apiLc: ApiKeyLearnCard | null = null;
@@ -112,7 +113,7 @@ describe('API Key Auth Grants E2E', () => {
         };
 
         // Success case
-        const okResp = await fetch('http://localhost:4000/api/inbox/issue', {
+        const okResp = await fetch(URLS.inboxIssue, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -132,7 +133,7 @@ describe('API Key Auth Grants E2E', () => {
         const readOnlyToken = await seedA.invoke.getAPITokenForAuthGrant(readOnlyGrantId);
 
         // Failure case: missing inbox:write
-        const failResp = await fetch('http://localhost:4000/api/inbox/issue', {
+        const failResp = await fetch(URLS.inboxIssue, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2467,7 +2468,7 @@ describe('API Key LearnCard Method Permissions', () => {
         // Seed creates a pending contact method to get a token
         seedA = await getLearnCardForUser('a');
         await seedA.invoke.addContactMethod({ type: 'email', value: 'verifyme@test.com' });
-        const delivery = await (await fetch('http://localhost:4000/api/test/last-delivery')).json();
+        const delivery = await (await fetch(`${URLS.brainApi}/test/last-delivery`)).json();
         const token = delivery?.templateModel?.verificationToken as string;
         expect(typeof token).toBe('string');
 

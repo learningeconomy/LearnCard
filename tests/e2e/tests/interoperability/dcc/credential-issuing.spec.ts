@@ -6,8 +6,9 @@ import type { VC } from '@learncard/types';
 import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { PORTS } from '../../helpers/ports';
 
-const COORDINATOR_URL = 'http://localhost:4005';
+const COORDINATOR_URL = `http://localhost:${PORTS.dccCoordinator}`;
 const COMPOSE_URL =
     'https://raw.githubusercontent.com/digitalcredentials/docs/main/deployment-guide/docker-compose-files/simple-issuer-compose.yaml';
 

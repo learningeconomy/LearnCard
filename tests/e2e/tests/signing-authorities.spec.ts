@@ -2,6 +2,7 @@ import { describe, test, expect, beforeEach } from 'vitest';
 import crypto from 'crypto';
 
 import { getLearnCardForUser, getLearnCard, LearnCard, USERS } from './helpers/learncard.helpers';
+import { URLS } from './helpers/ports';
 
 let a: LearnCard;
 
@@ -129,7 +130,7 @@ describe('Signing Authorities', () => {
 
             // Test name too long
             const response1 = await fetch(
-                'http://localhost:4000/api/profile/signing-authority/register',
+                `${URLS.brainApi}/profile/signing-authority/register`,
                 {
                     method: 'POST',
                     headers: {
@@ -147,7 +148,7 @@ describe('Signing Authorities', () => {
 
             // Test uppercase letters
             const response2 = await fetch(
-                'http://localhost:4000/api/profile/signing-authority/register',
+                `${URLS.brainApi}/profile/signing-authority/register`,
                 {
                     method: 'POST',
                     headers: {
@@ -165,7 +166,7 @@ describe('Signing Authorities', () => {
 
             // Test special characters
             const response3 = await fetch(
-                'http://localhost:4000/api/profile/signing-authority/register',
+                `${URLS.brainApi}/profile/signing-authority/register`,
                 {
                     method: 'POST',
                     headers: {
@@ -204,7 +205,7 @@ describe('Signing Authorities', () => {
 
             // Test valid name
             const response = await fetch(
-                'http://localhost:4000/api/profile/signing-authority/register',
+                `${URLS.brainApi}/profile/signing-authority/register`,
                 {
                     method: 'POST',
                     headers: {

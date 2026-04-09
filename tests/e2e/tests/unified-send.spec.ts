@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import { getLearnCardForUser, LearnCard, USERS } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
+import { URLS } from './helpers/ports';
 
 let a: LearnCard;
 let b: LearnCard;
@@ -206,7 +207,7 @@ describe('Unified Send API E2E Tests', () => {
             const interactionUrl = parseInteractionUrl(claimUrl);
             expect(interactionUrl).not.toBeNull();
 
-            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl!.workflowId}/exchanges/${interactionUrl!.interactionId}`;
+            const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl!.workflowId}/exchanges/${interactionUrl!.interactionId}`;
 
             // Initiate the claim flow
             const vcapiResponse = await fetch(vcapiUrl, {
@@ -489,7 +490,7 @@ describe('Unified Send API E2E Tests', () => {
             const interactionUrl = parseInteractionUrl(claimUrl);
             expect(interactionUrl).not.toBeNull();
 
-            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl!.workflowId}/exchanges/${interactionUrl!.interactionId}`;
+            const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl!.workflowId}/exchanges/${interactionUrl!.interactionId}`;
 
             // Initiate the claim flow
             const vcapiResponse = await fetch(vcapiUrl, {
@@ -543,7 +544,7 @@ describe('Unified Send API E2E Tests', () => {
             });
 
             // Fetch the claimUrl from test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             const claimUrl = deliveryData?.templateModel?.claimUrl;
             expect(claimUrl).toBeDefined();
@@ -612,7 +613,7 @@ describe('Unified Send API E2E Tests', () => {
             const initialCount = initialRecipients.length;
 
             // Fetch the claimUrl from test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             const claimUrl = deliveryData?.templateModel?.claimUrl;
             expect(claimUrl).toBeDefined();
@@ -790,7 +791,7 @@ describe('Unified Send API E2E Tests', () => {
             const interactionUrl = parseInteractionUrl(claimUrl);
             expect(interactionUrl).not.toBeNull();
 
-            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl!.workflowId}/exchanges/${interactionUrl!.interactionId}`;
+            const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl!.workflowId}/exchanges/${interactionUrl!.interactionId}`;
 
             // Initiate the claim flow
             const vcapiResponse = await fetch(vcapiUrl, {
@@ -845,7 +846,7 @@ describe('Unified Send API E2E Tests', () => {
             expect(result1.inbox?.status).toBe('PENDING');
 
             // Fetch the claimUrl from test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             const claimUrl = deliveryData?.templateModel?.claimUrl;
             expect(claimUrl).toBeDefined();
@@ -900,7 +901,7 @@ describe('Unified Send API E2E Tests', () => {
             });
 
             // Fetch the claimUrl from test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             const claimUrl = deliveryData?.templateModel?.claimUrl;
             expect(claimUrl).toBeDefined();
@@ -951,7 +952,7 @@ describe('Unified Send API E2E Tests', () => {
             });
 
             // Fetch the claimUrl from test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             const claimUrl = deliveryData?.templateModel?.claimUrl;
             expect(claimUrl).toBeDefined();
@@ -996,7 +997,7 @@ describe('Unified Send API E2E Tests', () => {
             });
 
             // Fetch the claimUrl from test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             const claimUrl = deliveryData?.templateModel?.claimUrl;
             expect(claimUrl).toBeDefined();
@@ -1055,7 +1056,7 @@ describe('Unified Send API E2E Tests', () => {
             });
 
             // Fetch the claimUrl from test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             const claimUrl = deliveryData?.templateModel?.claimUrl;
             expect(claimUrl).toBeDefined();
@@ -1092,7 +1093,7 @@ describe('Unified Send API E2E Tests', () => {
             const interactionUrl = parseInteractionUrl(claimUrl);
             expect(interactionUrl).not.toBeNull();
 
-            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl!.workflowId}/exchanges/${interactionUrl!.interactionId}`;
+            const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl!.workflowId}/exchanges/${interactionUrl!.interactionId}`;
 
             // Initiate the claim flow
             const vcapiResponse = await fetch(vcapiUrl, {
@@ -1219,7 +1220,7 @@ describe('Unified Send API E2E Tests', () => {
             });
 
             // Fetch the claimUrl from test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             const claimUrl = deliveryData?.templateModel?.claimUrl;
             expect(claimUrl).toBeDefined();
@@ -1254,7 +1255,7 @@ describe('Unified Send API E2E Tests', () => {
 
             // Check notification queue
             const notificationQueueData = await fetch(
-                'http://localhost:4000/api/test/notification-queue'
+                `${URLS.brainApi}/test/notification-queue`
             );
             const notificationQueue = await notificationQueueData.json();
 
@@ -1289,7 +1290,7 @@ describe('Unified Send API E2E Tests', () => {
 
             // Perform claim
             const interactionUrl = parseInteractionUrl(result.inbox!.claimUrl!);
-            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl!.workflowId}/exchanges/${interactionUrl!.interactionId}`;
+            const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl!.workflowId}/exchanges/${interactionUrl!.interactionId}`;
 
             const vcapiResponse = await fetch(vcapiUrl, {
                 method: 'POST',
@@ -1312,7 +1313,7 @@ describe('Unified Send API E2E Tests', () => {
 
             // Check notification queue for ISSUANCE_CLAIMED
             const notificationQueueData = await fetch(
-                'http://localhost:4000/api/test/notification-queue'
+                `${URLS.brainApi}/test/notification-queue`
             );
             const notificationQueue = await notificationQueueData.json();
 
@@ -1345,7 +1346,7 @@ describe('Unified Send API E2E Tests', () => {
             }
 
             // Fetch the claimUrl from test endpoint
-            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const testResponse = await fetch(`${URLS.brainApi}/test/last-delivery`);
             const deliveryData = await testResponse.json();
             const claimUrl = deliveryData?.templateModel?.claimUrl;
             expect(claimUrl).toBeDefined();
@@ -1353,7 +1354,7 @@ describe('Unified Send API E2E Tests', () => {
             const interactionUrl = parseInteractionUrl(claimUrl);
             expect(interactionUrl).not.toBeNull();
 
-            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl!.workflowId}/exchanges/${interactionUrl!.interactionId}`;
+            const vcapiUrl = `${URLS.brainApi}/workflows/${interactionUrl!.workflowId}/exchanges/${interactionUrl!.interactionId}`;
 
             // Initiate claim
             const vcapiResponse = await fetch(vcapiUrl, {

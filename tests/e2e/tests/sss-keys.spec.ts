@@ -1,7 +1,8 @@
 import { describe, test, expect, beforeAll } from 'vitest';
 import { getLearnCard } from './helpers/learncard.helpers';
+import { URLS } from './helpers/ports';
 
-const LCA_API_URL = 'http://localhost:5200';
+const LCA_API_URL = URLS.lcaApiBase;
 
 const createMockAuthToken = (userId: string, email: string) => {
     const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');

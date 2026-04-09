@@ -1,4 +1,9 @@
 import { execa } from 'execa';
+import { resolve } from 'node:path';
+import { URLS } from '../tests/helpers/ports';
+
+const DC = resolve(process.cwd(), '../../scripts/dc.sh');
+const COMPOSE_FILE = resolve(process.cwd(), 'compose.yaml');
 
 const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 200) => {
     const controller = new AbortController();
@@ -21,7 +26,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout 
 
 const healthCheck = async (): Promise<boolean> => {
     try {
-        return (await fetchWithTimeout('http://localhost:4000/api/health-check'))?.status === 200;
+        return (await fetchWithTimeout(URLS.brainHealthCheck))?.status === 200;
     } catch (error) {
         return false;
     }
@@ -34,7 +39,7 @@ export async function setup() {
 
     if (MANAGE_DOCKER) {
         console.log('Starting docker...');
-        await execa`docker compose up -d --build`;
+        await execa`${DC} -f ${COMPOSE_FILE} up -d --build`;
         console.log('Docker started in', ((performance.now() - start) / 1000).toFixed(2), 'seconds');
     } else {
         console.log('Skipping docker compose up (set E2E_MANAGE_DOCKER=true to enable)');
@@ -42,7 +47,7 @@ export async function setup() {
 
     start = performance.now();
 
-    console.log('Waiting for health check...');
+    console.log(`Waiting for health check... (${URLS.brainHealthCheck})`);
 
     do {
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -58,7 +63,7 @@ export async function setup() {
         if (MANAGE_DOCKER) {
             start = performance.now();
             console.log('Stopping docker...');
-            await execa`docker compose down`;
+            await execa`${DC} -f ${COMPOSE_FILE} down`;
             console.log(
                 'Docker stopped in',
                 ((performance.now() - start) / 1000).toFixed(2),

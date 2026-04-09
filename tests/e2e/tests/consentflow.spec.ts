@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { getLearnCardForUser, getLearnCard, LearnCard, USERS } from './helpers/learncard.helpers';
 import crypto from 'crypto';
 import { testUnsignedBoost } from './helpers/credential.helpers';
+import { URLS } from './helpers/ports';
 
 import {
     minimalContract,
@@ -434,7 +435,7 @@ describe('ConsentFlow E2E Tests', () => {
                 contractUri,
             };
             const response = await fetch(
-                `http://localhost:4000/api/consent-flow-contract/write/via-signing-authority`,
+                `${URLS.brainApi}/consent-flow-contract/write/via-signing-authority`,
                 {
                     method: 'POST',
                     headers: {

@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises';
 
 import { AddPlugin } from '@learncard/core';
+import { URLS } from './ports';
 import {
     initLearnCard,
     NetworkLearnCardFromSeed,
@@ -27,14 +28,14 @@ export const getLearnCard = async (
     const learnCard = await initLearnCard({
         seed,
         didkit,
-        network: 'http://localhost:4000/trpc',
-        cloud: { url: 'http://localhost:4100/trpc' },
+        network: URLS.brainTrpc,
+        cloud: { url: URLS.cloudTrpc },
         ...(managedDid && { didWeb: managedDid }),
         ...(debug && { debug: console.log }),
     });
 
     return learnCard.addPlugin(
-        await getSimpleSigningPlugin(learnCard, 'http://localhost:4200/trpc')
+        await getSimpleSigningPlugin(learnCard, URLS.signingTrpc)
     ) as any;
 };
 
@@ -107,7 +108,7 @@ export const getApiKeyLearnCardForUser = async (
     const apiLc = await initLearnCard({
         apiKey: apiToken,
         didkit,
-        network: 'http://localhost:4000/trpc',
+        network: URLS.brainTrpc,
         ...(debug && { debug: console.log }),
     });
 
@@ -144,7 +145,7 @@ export const initApiKeyLearnCard = async (
     const apiLc = await initLearnCard({
         apiKey,
         didkit,
-        network: 'http://localhost:4000/trpc',
+        network: URLS.brainTrpc,
         ...(debug && { debug: console.log }),
     });
 
@@ -157,7 +158,7 @@ export const getLearnCardWithLCA = async (
 ): Promise<LearnCardWithLCA> => {
     const learnCard = await getLearnCard(seed, undefined, debug);
 
-    const lcaPlugin = await getLCAPlugin(learnCard as any, 'http://localhost:5200/trpc');
+    const lcaPlugin = await getLCAPlugin(learnCard as any, URLS.lcaApiTrpc);
 
     return learnCard.addPlugin(lcaPlugin) as LearnCardWithLCA;
 };

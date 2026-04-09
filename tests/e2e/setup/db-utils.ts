@@ -3,26 +3,15 @@ import { MongoClient } from 'mongodb';
 import neo4j from 'neo4j-driver';
 import { Client } from 'pg';
 import { getLearnCard } from '../tests/helpers/learncard.helpers';
+import { PORTS, URLS } from '../tests/helpers/ports';
 
-const redis1 = new Redis();
-const redis2 = new Redis({ port: 6380 });
-const mongoClient = new MongoClient('mongodb://localhost:27017');
-const neo4jDriver = neo4j.driver('bolt://localhost:7687');
-const pgClient = new Client({
-    host: 'localhost',
-    port: 5432,
-    user: 'lrsql_user',
-    password: 'lrsql_password',
-    database: 'lrsql_db',
-});
+const redis1 = new Redis({ port: PORTS.redis1 });
+const redis2 = new Redis({ port: PORTS.redis2 });
+const mongoClient = new MongoClient(URLS.mongo);
+const neo4jDriver = neo4j.driver(URLS.neo4jBolt);
 
 export async function clearDatabases() {
     try {
-        // Connect to Postgres
-        try {
-            await pgClient.connect();
-        } catch (error) { }
-
         // Run all clear operations concurrently
         await Promise.all([
             // Clear Redises 
@@ -30,9 +19,9 @@ export async function clearDatabases() {
             redis2.flushall(),
 
             // Clear Didkit Cache in services
-            fetch('http://localhost:4000/test/clear-cache'),
-            fetch('http://localhost:4100/test/clear-cache'),
-            fetch('http://localhost:4200/test/clear-cache'),
+            fetch(URLS.brainClearCache),
+            fetch(URLS.cloudClearCache),
+            fetch(URLS.signingClearCache),
 
             // Clear Local Didkit Cache
             (async () => {
@@ -68,30 +57,44 @@ export async function clearDatabases() {
                 }
             })(),
 
-            // Clear Postgres
+            // Clear Postgres (fresh connection each time to avoid stale TCP sockets)
             (async () => {
-                // Get all tables in public schema
-                const result = await pgClient.query(`
-                    SELECT tablename FROM pg_tables 
-                    WHERE schemaname = 'public'
-                `);
+                const pgClient = new Client({
+                    host: 'localhost',
+                    port: PORTS.postgres,
+                    user: 'lrsql_user',
+                    password: 'lrsql_password',
+                    database: 'lrsql_db',
+                });
 
-                // Truncate all tables in a single transaction
-                await pgClient.query('BEGIN');
                 try {
-                    for (const row of result.rows) {
-                        if (
-                            !['lrs_credential', 'credential_to_scope', 'admin_account'].includes(
-                                row.tablename
-                            )
-                        ) {
-                            await pgClient.query(`TRUNCATE TABLE "${row.tablename}" CASCADE`);
+                    await pgClient.connect();
+
+                    // Get all tables in public schema
+                    const result = await pgClient.query(`
+                        SELECT tablename FROM pg_tables 
+                        WHERE schemaname = 'public'
+                    `);
+
+                    // Truncate all tables in a single transaction
+                    await pgClient.query('BEGIN');
+                    try {
+                        for (const row of result.rows) {
+                            if (
+                                !['lrs_credential', 'credential_to_scope', 'admin_account'].includes(
+                                    row.tablename
+                                )
+                            ) {
+                                await pgClient.query(`TRUNCATE TABLE "${row.tablename}" CASCADE`);
+                            }
                         }
+                        await pgClient.query('COMMIT');
+                    } catch (error) {
+                        await pgClient.query('ROLLBACK');
+                        throw error;
                     }
-                    await pgClient.query('COMMIT');
-                } catch (error) {
-                    await pgClient.query('ROLLBACK');
-                    throw error;
+                } finally {
+                    await pgClient.end();
                 }
             })(),
         ]);

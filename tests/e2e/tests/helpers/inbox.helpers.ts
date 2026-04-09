@@ -1,4 +1,5 @@
 import { LearnCard } from '../learncard.helpers';
+import { URLS } from './ports';
 
 
 export const sendCredentialsViaInbox = async (learnCard: LearnCard, token: string, recipientEmail: string, credentialNames: string[]) : Promise<any[]> => {
@@ -15,7 +16,7 @@ export const sendCredentialsViaInbox = async (learnCard: LearnCard, token: strin
 
         // Send the boost using the HTTP route
         const response = await fetch(
-            `http://localhost:4000/api/inbox/issue`,
+            URLS.inboxIssue,
             {
                 method: 'POST',
                 headers: {

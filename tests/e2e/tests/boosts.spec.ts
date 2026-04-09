@@ -3,6 +3,7 @@ import { describe, test, expect } from 'vitest';
 
 import { getLearnCard, getLearnCardForUser, LearnCard, USERS } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
+import { URLS } from './helpers/ports';
 
 let a: LearnCard;
 let b: LearnCard;
@@ -713,7 +714,7 @@ describe('Boosts', () => {
 
         // Send the boost using the HTTP route
         const response = await fetch(
-            `http://localhost:4000/api/boost/send/via-signing-authority/${USERS.b.profileId}`,
+            `${URLS.brainApi}/boost/send/via-signing-authority/${USERS.b.profileId}`,
             {
                 method: 'POST',
                 headers: {

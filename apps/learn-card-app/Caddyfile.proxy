@@ -1,0 +1,65 @@
+# Local dev proxy — routes all services through a single port.
+# Mirrors the preview environment's URL structure.
+#
+# Usage:
+#   docker compose -f compose-local-proxy.yaml up --build
+#   Then open http://localhost:8080
+#
+# URL routing:
+#   /brain/*    → brain:4000   (handle_path strips the prefix)
+#   /cloud/*    → cloud:4100
+#   /api/*      → api:5100     (lca-api)
+#   /delete/*   → delete-service:3100
+#   /*          → app:3000     (frontend, catch-all)
+
+:8080 {
+    # Brain service
+    handle_path /brain/* {
+        rewrite /did.json /.well-known/did.json
+        reverse_proxy brain:4000
+    }
+
+    # Cloud service
+    handle_path /cloud/* {
+        rewrite /did.json /.well-known/did.json
+        reverse_proxy cloud:4100
+    }
+
+    # LCA API service
+    handle_path /api/* {
+        rewrite /did.json /.well-known/did.json
+        reverse_proxy api:5100
+    }
+
+    # Delete service (Playwright test cleanup)
+    handle_path /delete/* {
+        reverse_proxy delete-service:3100
+    }
+
+    # DID web resolution — brain's own DID
+    handle_path /.well-known/did.json {
+        rewrite * /.well-known/did.json
+        reverse_proxy brain:4000
+    }
+
+    # DID web resolution — user DIDs (did:web:host:users:profileId → /users/{profileId}/did.json)
+    handle /users/* {
+        reverse_proxy brain:4000
+    }
+
+    # Health check
+    handle /health {
+        respond "OK" 200
+    }
+
+    # Frontend app (catch-all, includes Vite HMR websocket)
+    handle {
+        reverse_proxy app:3000
+    }
+
+    encode gzip zstd
+
+    log {
+        output stdout
+    }
+}

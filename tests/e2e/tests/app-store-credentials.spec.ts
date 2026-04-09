@@ -4,6 +4,7 @@ import { VC } from '@learncard/types';
 
 import { getLearnCardForUser, LearnCard } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
+import { PORTS, URLS } from './helpers/ports';
 
 let appOwner: LearnCard;
 let appUser: LearnCard;
@@ -51,7 +52,7 @@ const testListingData = {
 };
 
 const getAppDidFromSlug = (slug: string): string => {
-    const domain = 'localhost%3A4000';
+    const domain = `localhost%3A${PORTS.brain}`;
     return `did:web:${domain}:app:${slug}`;
 };
 
@@ -256,7 +257,7 @@ describe('App Store Credential Issuance E2E Tests', () => {
             if (!listing?.slug) throw new Error('Listing slug not set');
 
             // Verify the DID document endpoint works
-            const didResponse = await fetch(`http://localhost:4000/app/${listing.slug}/did.json`);
+            const didResponse = await fetch(`${URLS.brainBase}/app/${listing.slug}/did.json`);
             expect(didResponse.status).toBe(200);
 
             const didDoc = await didResponse.json();
