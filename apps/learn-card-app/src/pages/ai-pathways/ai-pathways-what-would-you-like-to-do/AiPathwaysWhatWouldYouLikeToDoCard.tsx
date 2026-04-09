@@ -3,9 +3,10 @@ import { IonLabel } from '@ionic/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import useTheme from '../../../theme/hooks/useTheme';
-import { CredentialCategoryEnum } from 'learn-card-base';
+import { CredentialCategoryEnum, useModal, ModalTypes } from 'learn-card-base';
 
 import PathwaySearchInput from './PathwaySearchInput';
+import ExplorePathwaysModal from '../ExplorePathwaysModal';
 
 export enum AiPathwaysWhatWouldYouLikeToDoCardOptions {
     GrowSkills = 'grow-skills',
@@ -19,6 +20,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC<{
     handleExplorePathways,
     variant = AiPathwaysWhatWouldYouLikeToDoCardOptions.GrowSkills,
 }) => {
+    const { newModal } = useModal();
     const flags = useFlags();
     const { getThemedCategoryIcons } = useTheme();
 
@@ -37,6 +39,13 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC<{
         handleExplorePathways(AiPathwaysWhatWouldYouLikeToDoCardOptions.FindRoles);
     };
 
+    const handleSearchSubmit = (query: string) => {
+        newModal(<ExplorePathwaysModal initialSearchQuery={query} />, undefined, {
+            desktop: ModalTypes.Right,
+            mobile: ModalTypes.Right,
+        });
+    };
+
     if (!enableExplorePathways) return null;
 
     return (
@@ -46,7 +55,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC<{
                     <IonLabel className="text-grayscale-900 font-poppins text-xl">
                         What would you like to do?
                     </IonLabel>
-                    <PathwaySearchInput />
+                    <PathwaySearchInput onSearchSubmit={handleSearchSubmit} />
                 </div>
 
                 <button

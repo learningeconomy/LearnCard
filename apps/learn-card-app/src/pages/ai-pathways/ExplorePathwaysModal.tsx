@@ -4,7 +4,6 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 
 import {
-    TextInput,
     conditionalPluralize,
     useGetBoostSkills,
     useGetSelfAssignedSkillsBoost,
@@ -18,7 +17,6 @@ import {
 } from 'learn-card-base';
 
 import { Plus, X } from 'lucide-react';
-import Search from 'learn-card-base/svgs/Search';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import { ExperiencesIconSolid } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
 import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
@@ -38,6 +36,7 @@ import EditGoalsModal from './EditGoalsModal';
 import { SkillFrameworkNode } from '../../components/boost/boost';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
+import PathwaySearchInput from './ai-pathways-what-would-you-like-to-do/PathwaySearchInput';
 
 type SemanticSkillRecord = {
     id: string;
@@ -237,18 +236,11 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                     <X />
                 </button>
 
-                <TextInput
+                <PathwaySearchInput
                     placeholder="Search by skill, goal, or job..."
                     value={search}
-                    onChange={setSearch}
-                    startIcon={<Search className="text-grayscale-900 w-[25px] h-[25px]" />}
-                    endIcon={
-                        search ? (
-                            <button onClick={() => setSearch('')}>
-                                <X className="text-grayscale-500 h-[25px] w-[25px]" />
-                            </button>
-                        ) : undefined
-                    }
+                    onValueChange={setSearch}
+                    onSearchSubmit={setSearch}
                 />
             </div>
 

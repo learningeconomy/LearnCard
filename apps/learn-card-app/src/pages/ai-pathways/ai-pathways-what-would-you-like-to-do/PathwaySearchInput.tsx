@@ -3,11 +3,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonInput } from '@ionic/react';
 import X from '../../../components/svgs/X';
-import ExplorePathwaysModal from '../ExplorePathwaysModal';
-
 import {
-    useModal,
-    ModalTypes,
     CredentialCategoryEnum,
     useSemanticSearchSkills,
     useOccupationSuggestionsForKeyword,
@@ -26,19 +22,25 @@ type SuggestionItem =
 
 type PathwaySearchInputProps = {
     placeholder?: string;
+    value?: string;
+    onValueChange?: (value: string) => void;
+    onSearchSubmit?: (query: string) => void;
 };
 
 const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
     placeholder = 'Choose a skill, goal, or job...',
+    value,
+    onValueChange,
+    onSearchSubmit,
 }) => {
-    const { newModal } = useModal();
     const { getIconSet } = useTheme();
     const flags = useFlags();
     const frameworkId = flags?.selfAssignedSkillsFrameworkId as string;
 
-    const [value, setValue] = useState('');
+    const [internalValue, setInternalValue] = useState('');
     const [debouncedValue, setDebouncedValue] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const searchValue = value ?? internalValue;
 
     const iconSet = getIconSet(IconSetEnum.sideMenu);
     const PathwayDecoration = iconSet[CredentialCategoryEnum.aiPathway] as React.ComponentType<{
@@ -54,9 +56,9 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
     }>;
 
     useEffect(() => {
-        const timer = setTimeout(() => setDebouncedValue(value), 300);
+        const timer = setTimeout(() => setDebouncedValue(searchValue), 300);
         return () => clearTimeout(timer);
-    }, [value]);
+    }, [searchValue]);
 
     const { data: occupationSuggestions } = useOccupationSuggestionsForKeyword(debouncedValue);
     const { data: skillSearchData } = useSemanticSearchSkills(debouncedValue, frameworkId, {
@@ -83,21 +85,23 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
         return result.slice(0, 8);
     }, [occupationSuggestions, skillSearchData]);
 
-    const openModal = (initialQuery: string) => {
-        newModal(<ExplorePathwaysModal initialSearchQuery={initialQuery} />, undefined, {
-            desktop: ModalTypes.Right,
-            mobile: ModalTypes.Right,
-        });
+    const updateSearchValue = (nextValue: string) => {
+        setInternalValue(nextValue);
+        onValueChange?.(nextValue);
+    };
+
+    const submitSearch = (query: string) => {
+        onSearchSubmit?.(query);
     };
 
     const handleSelectSuggestion = (title: string) => {
-        setValue(title);
+        updateSearchValue(title);
         setShowSuggestions(false);
-        openModal(title);
+        submitSearch(title);
     };
 
     const clearSearch = () => {
-        setValue('');
+        updateSearchValue('');
         setDebouncedValue('');
         setShowSuggestions(false);
     };
@@ -107,16 +111,16 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
             <div className="relative flex items-center">
                 <PathwayDecoration className="absolute left-3 w-[24px] h-[24px] text-teal-100 pointer-events-none z-10" />
                 <IonInput
-                    value={value}
+                    value={searchValue}
                     onIonInput={(e: any) => {
                         const nextValue = e.detail.value ?? '';
-                        setValue(nextValue);
+                        updateSearchValue(nextValue);
                         setShowSuggestions(Boolean(nextValue));
                     }}
                     onFocus={() => setShowSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                     onKeyDown={(e: any) => {
-                        if (e.key === 'Enter') openModal(value);
+                        if (e.key === 'Enter') submitSearch(searchValue);
                         if (e.key === 'Escape') setShowSuggestions(false);
                     }}
                     autocapitalize="off"
@@ -125,7 +129,7 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
                     placeholder={placeholder}
                     type="text"
                 />
-                {value && (
+                {searchValue && (
                     <button
                         type="button"
                         aria-label="Clear search"
