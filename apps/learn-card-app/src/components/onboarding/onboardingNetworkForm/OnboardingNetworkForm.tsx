@@ -62,6 +62,7 @@ import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
 import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
 import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
+import useAutoConsentLearnCardAi from '../../../hooks/useAutoConsentLearnCardAi';
 import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
@@ -121,6 +122,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
     const { handleLogout, isLoggingOut } = useLogout();
+    const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
     const { name, dob, country, photo, usMinorConsent, profileId } = formData;
 
     const handleNameChange = (value: string) => {
@@ -301,15 +303,10 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         authToken = res?.token;
                     } else {
                         const user = auth()?.currentUser;
-                        authToken = user
-                            ? await user.getIdToken(false)
-                            : undefined;
+                        authToken = user ? await user.getIdToken(false) : undefined;
                     }
                 } catch (e) {
-                    console.warn(
-                        'Could not get Firebase ID token (non-fatal):',
-                        e
-                    );
+                    console.warn('Could not get Firebase ID token (non-fatal):', e);
                 }
 
                 const didWeb = await wallet.invoke.createProfile({
@@ -331,16 +328,26 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     const limit = getMinorAgeThreshold(country);
                     const isMinorUser = age !== null && !isNaN(age) && age < limit;
 
+                    const aiEnabled = !isMinorUser;
+                    let preferencesInitialized = false;
+
                     await updatePreferences({
-                        aiEnabled: !isMinorUser,
+                        aiEnabled,
                         aiAutoDisabled: isMinorUser,
-                        analyticsEnabled: !isMinorUser,
+                        analyticsEnabled: aiEnabled,
                         analyticsAutoDisabled: isMinorUser,
-                        bugReportsEnabled: !isMinorUser,
+                        bugReportsEnabled: aiEnabled,
                         isMinor: isMinorUser,
-                    }).catch(err => {
-                        console.error('Failed to initialize preferences (non-blocking):', err);
-                    });
+                    })
+                        .then(() => {
+                            preferencesInitialized = true;
+                        })
+                        .catch(err => {
+                            console.error(
+                                'Failed to initialize preferences (non-blocking):',
+                                err
+                            );
+                        });
 
                     track(AnalyticsEvents.ONBOARDING_COMPLETED, {
                         role: role ?? undefined,
@@ -353,6 +360,23 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     handleCloseModal();
                     setIsLoading(false);
                     setIsCreateLoading(false);
+
+                    window.setTimeout(async () => {
+                        try {
+                            await autoConsentLearnCardAi({
+                                enabled: aiEnabled && preferencesInitialized,
+                                userOverrides: {
+                                    name: name ?? currentUser?.name ?? '',
+                                    profileImage: photo ?? currentUser?.profileImage ?? '',
+                                },
+                            });
+                        } catch (err) {
+                            console.error(
+                                'Failed to auto-consent LearnCard AI after onboarding:',
+                                err
+                            );
+                        }
+                    }, 0);
 
                     setTimeout(async () => {
                         await onSuccess?.();

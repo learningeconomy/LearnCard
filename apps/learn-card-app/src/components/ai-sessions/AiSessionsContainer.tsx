@@ -56,7 +56,7 @@ export const AiSessionsContainer: React.FC<{
     const primaryColor = colors?.defaults?.primaryColor;
 
     useEffect(() => {
-        if (!isCollapsed) {
+        if (!isDesktop && !isCollapsed) {
             sideMenuStore.set.isCollapsed(true);
         }
     }, []);

@@ -95,8 +95,10 @@ jobs:
             - name: Check if this is a release commit
               id: check_release
               if: github.event_name != 'workflow_dispatch'
+              env:
+                  COMMIT_MSG: ${{ github.event.head_commit.message }}
               run: |
-                  if [[ "${{ github.event.head_commit.message }}" == *"chore(release):"* ]]; then
+                  if [[ "$COMMIT_MSG" == *"chore(release):"* ]]; then
                     echo "is_release=true" >> $GITHUB_OUTPUT
                     echo "This is a release commit"
                   else
