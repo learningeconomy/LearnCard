@@ -1,8 +1,0 @@
-{{ product_name }} ({{ product_url }})
-
-{{{ @content }}}
-
-© 2024 {{ product_name }}. All rights reserved.
-
-{{ company_name }}
-{{ company_address }}
