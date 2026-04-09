@@ -7,9 +7,18 @@ import { CredentialCategoryEnum } from 'learn-card-base';
 
 import PathwaySearchInput from './PathwaySearchInput';
 
+export enum AiPathwaysWhatWouldYouLikeToDoCardOptions {
+    GrowSkills = 'grow-skills',
+    FindRoles = 'find-roles',
+}
+
 const AiPathwaysWhatWouldYouLikeToDoCard: React.FC<{
-    handleExplorePathways: () => void;
-}> = ({ handleExplorePathways }) => {
+    handleExplorePathways: (option?: AiPathwaysWhatWouldYouLikeToDoCardOptions) => void;
+    variant?: AiPathwaysWhatWouldYouLikeToDoCardOptions;
+}> = ({
+    handleExplorePathways,
+    variant = AiPathwaysWhatWouldYouLikeToDoCardOptions.GrowSkills,
+}) => {
     const flags = useFlags();
     const { getThemedCategoryIcons } = useTheme();
 
@@ -21,11 +30,11 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC<{
     const { IconWithShape: SkillsIcon } = getThemedCategoryIcons(CredentialCategoryEnum.skill);
 
     const handleGrowSkills = () => {
-        // TODO: Implement grow skills functionality
+        handleExplorePathways(AiPathwaysWhatWouldYouLikeToDoCardOptions.GrowSkills);
     };
 
     const handleFindRoles = () => {
-        // TODO: Implement find roles functionality
+        handleExplorePathways(AiPathwaysWhatWouldYouLikeToDoCardOptions.FindRoles);
     };
 
     if (!enableExplorePathways) return null;
@@ -41,7 +50,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC<{
                 </div>
 
                 <button
-                    onClick={handleExplorePathways}
+                    onClick={() => handleExplorePathways()}
                     className="p-[11px] bg-teal-400 font-semibold rounded-full text-white border-grayscale-300 border-[1px] border-solid flex-1 font-poppins text-[17px]"
                 >
                     Explore Pathways

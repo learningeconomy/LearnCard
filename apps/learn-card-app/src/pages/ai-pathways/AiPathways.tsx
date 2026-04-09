@@ -12,7 +12,9 @@ import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
 import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
-import AiPathwaysWhatWouldYouLikeToDoCard from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
+import AiPathwaysWhatWouldYouLikeToDoCard, {
+    AiPathwaysWhatWouldYouLikeToDoCardOptions,
+} from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
 
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
@@ -104,8 +106,8 @@ const AiPathways: React.FC = () => {
         schoolPrograms.length === 0 &&
         learningPathwaysData?.length === 0;
 
-    const handleExplorePathways = () => {
-        newModal(<ExplorePathwaysModal />, undefined, {
+    const handleExplorePathways = (option?: AiPathwaysWhatWouldYouLikeToDoCardOptions) => {
+        newModal(<ExplorePathwaysModal option={option} />, undefined, {
             desktop: ModalTypes.Right,
             mobile: ModalTypes.Right,
         });

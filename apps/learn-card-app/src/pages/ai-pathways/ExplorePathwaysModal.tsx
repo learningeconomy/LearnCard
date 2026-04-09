@@ -37,15 +37,22 @@ import SelfAssignSkillsModal from '../skills/SelfAssignSkillsModal';
 import EditGoalsModal from './EditGoalsModal';
 import { SkillFrameworkNode } from '../../components/boost/boost';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
 
 type SemanticSkillRecord = {
     id: string;
     score?: number;
 };
 
-type ExplorePathwaysModalProps = { initialSearchQuery?: string };
+export type ExplorePathwaysModalProps = {
+    initialSearchQuery?: string;
+    option?: AiPathwaysWhatWouldYouLikeToDoCardOptions;
+};
 
-const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSearchQuery = '' }) => {
+const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
+    initialSearchQuery = '',
+    option = undefined,
+}) => {
     const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
     const flags = useFlags();
@@ -213,8 +220,12 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
     const showSkillsViewToggle = skillsExpanded || !skillsAtBeginning || !skillsAtEnd;
     const showGoalsViewToggle = goalsExpanded || !goalsAtBeginning || !goalsAtEnd;
 
+    const showAllOptions = option === undefined;
+    const showGrowSkillsButton = option === AiPathwaysWhatWouldYouLikeToDoCardOptions.GrowSkills;
+    const showExploreRolesButton = option === AiPathwaysWhatWouldYouLikeToDoCardOptions.FindRoles;
+
     return (
-        <div className="h-full relative bg-grayscale-50 overflow-hidden text-grayscale-900">
+        <div className="h-full relative bg-grayscale-50 overflow-hidden text-grayscale-900 flex flex-col">
             <div className="px-[15px] py-[20px] bg-white safe-area-top-margin flex flex-col gap-[15px] z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <AiPathwaysIconWithShape className="w-[50px] h-[50px]" />
@@ -247,7 +258,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
                 </div>
             )} */}
 
-            <section className="h-full pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative">
+            <section className="flex-1 min-h-0 pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative">
                 <div className="flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid pb-[15px]">
                     <div className="flex flex-col gap-[10px] relative">
                         {skillsSaving && (
@@ -594,21 +605,25 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({ initialSear
 
             <footer className="w-full flex justify-center bg-opacity-70 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white">
                 <div className="w-full flex flex-col items-center justify-center gap-[10px] max-w-[600px]">
-                    <button
-                        onClick={closeModal}
-                        className="w-full bg-violet-500 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
-                    >
-                        <PuzzlePiece className="w-[30px] h-[30px]" version="filled" />
-                        Grow Skills
-                    </button>
+                    {(showAllOptions || showGrowSkillsButton) && (
+                        <button
+                            onClick={closeModal}
+                            className="w-full bg-violet-500 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
+                        >
+                            <PuzzlePiece className="w-[30px] h-[30px]" version="filled" />
+                            Grow Skills
+                        </button>
+                    )}
 
-                    <button
-                        onClick={closeModal}
-                        className="w-full bg-cyan-501 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
-                    >
-                        <ExperiencesIconSolid inverseColors className="w-[30px] h-[30px]" />
-                        Explore Roles
-                    </button>
+                    {(showAllOptions || showExploreRolesButton) && (
+                        <button
+                            onClick={closeModal}
+                            className="w-full bg-cyan-501 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
+                        >
+                            <ExperiencesIconSolid inverseColors className="w-[30px] h-[30px]" />
+                            Explore Roles
+                        </button>
+                    )}
                 </div>
             </footer>
         </div>
