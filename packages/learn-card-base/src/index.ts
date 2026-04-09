@@ -115,6 +115,7 @@ export * from './hooks/useAiFeatureGate';
 export * from './hooks/useVerifiableData';
 export * from './hooks/useSkillIconAnnotation';
 export * from './helpers/skillIconHelpers';
+export * from './hooks/useSharedUrisInTerms';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';
