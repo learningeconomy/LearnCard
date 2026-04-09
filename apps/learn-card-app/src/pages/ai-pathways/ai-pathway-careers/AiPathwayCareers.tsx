@@ -8,6 +8,7 @@ import AiPathwayCareerItemSkeletonLoader from './AiPathwayCareerItemSkeletonLoad
 import useTheme from '../../../theme/hooks/useTheme';
 
 import { CredentialCategoryEnum, useModal, ModalTypes } from 'learn-card-base';
+import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from '../ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
 
 const AiPathwayCareers: React.FC<{
     careerKeywords?: string[];
@@ -19,10 +20,14 @@ const AiPathwayCareers: React.FC<{
     const { IconWithShape } = getThemedCategoryIcons(CredentialCategoryEnum.workHistory);
 
     const handleExplorePathways = () => {
-        newModal(<ExplorePathwaysModal />, undefined, {
-            desktop: ModalTypes.Right,
-            mobile: ModalTypes.Right,
-        });
+        newModal(
+            <ExplorePathwaysModal option={AiPathwaysWhatWouldYouLikeToDoCardOptions.FindRoles} />,
+            undefined,
+            {
+                desktop: ModalTypes.Right,
+                mobile: ModalTypes.Right,
+            }
+        );
     };
 
     const titleEl = (
