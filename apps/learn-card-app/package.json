@@ -1,6 +1,6 @@
 {
     "name": "learn-card-app",
-    "version": "1.95.3",
+    "version": "1.95.4",
     "private": true,
     "dependencies": {
         "@capacitor-community/media": "^9.0.0",
@@ -27,7 +27,7 @@
         "@capacitor/splash-screen": "^8.0.0",
         "@capacitor/status-bar": "^8.0.0",
         "@capawesome/capacitor-badge": "8.0.0",
-        "@capgo/capacitor-updater": "8.41.12",
+        "@capgo/capacitor-updater": "8.45.0",
         "@digitalcredentials/jsonld": "^9.0.0",
         "@emoji-mart/data": "^1.2.1",
         "@emoji-mart/react": "^1.1.1",

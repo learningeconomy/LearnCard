@@ -1,5 +1,27 @@
 # @learncard/network-brain-service
 
+## 3.13.4
+
+### Patch Changes
+
+-   [#1147](https://github.com/learningeconomy/LearnCard/pull/1147) [`c68bed993c5304a667dc75d422a118858848737a`](https://github.com/learningeconomy/LearnCard/commit/c68bed993c5304a667dc75d422a118858848737a) Thanks [@Custard7](https://github.com/Custard7)! - feat:[LC-1737] - Simplify sending pre-signed credentials with
+
+-   Updated dependencies [[`c68bed993c5304a667dc75d422a118858848737a`](https://github.com/learningeconomy/LearnCard/commit/c68bed993c5304a667dc75d422a118858848737a)]:
+    -   @learncard/types@5.13.4
+    -   @learncard/core@9.4.14
+    -   @learncard/helpers@1.2.14
+    -   @learncard/did-web-plugin@1.1.14
+    -   @learncard/didkey-plugin@1.1.14
+    -   @learncard/didkit-plugin@1.8.4
+    -   @learncard/didkit-plugin-node@0.2.10
+    -   @learncard/encryption-plugin@1.1.14
+    -   @learncard/learn-card-plugin@1.2.14
+    -   @learncard/vc-plugin@1.4.10
+    -   @learncard/vc-templates-plugin@1.1.14
+    -   @learncard/crypto-plugin@1.1.14
+    -   @learncard/dynamic-loader-plugin@1.1.14
+    -   @learncard/expiration-plugin@1.2.14
+
 ## 3.13.3
 
 ### Patch Changes

@@ -10,7 +10,6 @@ import AiPathwaysEmptyPlaceholder from './AiPathwaysEmptyPlaceholder';
 import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
 import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
 import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
-import ExperimentalFeatureBox from '../../components/generic/ExperimentalFeatureBox';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
 import AiPathwaysWhatWouldYouLikeToDoCard from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
@@ -125,10 +124,6 @@ const AiPathways: React.FC = () => {
                     />
                     <AiFeatureGate>
                         <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
-                            <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
-                                <ExperimentalFeatureBox className="shadow-box-bottom" />
-                            </div>
-
                             {percentage > 0 && (
                                 <AiPathwaysWhatWouldYouLikeToDoCard
                                     handleExplorePathways={handleExplorePathways}
