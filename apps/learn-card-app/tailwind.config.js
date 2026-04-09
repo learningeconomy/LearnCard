@@ -88,6 +88,10 @@ module.exports = {
                     '0%': { transform: 'rotate(0deg)' },
                     '100%': { transform: 'rotate(360deg)' },
                 },
+                'sdk-bar': {
+                    '0%': { transform: 'translateX(-100%)' },
+                    '100%': { transform: 'translateX(300%)' },
+                },
             },
             boxShadow: {
                 bottom: '0px 4px 0px rgba(0, 0, 0, 0.25)',
