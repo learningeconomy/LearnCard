@@ -948,8 +948,14 @@ const killDevServer = (): void => {
     const proc = devServer.process;
 
     try {
-        // Kill the process group (negative PID kills the group)
-        if (proc.pid) process.kill(-proc.pid, 'SIGTERM');
+        // Kill the process group (negative PID kills the group on Unix/Linux)
+        if (proc.pid) {
+            if (process.platform !== 'win32') {
+                process.kill(-proc.pid, 'SIGTERM');
+            } else {
+                proc.kill('SIGTERM');
+            }
+        }
     } catch {
         // Fallback: kill just the process
         try { proc.kill('SIGTERM'); } catch { /* already dead */ }
