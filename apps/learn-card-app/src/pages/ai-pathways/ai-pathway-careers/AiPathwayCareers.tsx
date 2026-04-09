@@ -67,7 +67,7 @@ const AiPathwayCareers: React.FC<{
 
                 <ExplorePathwaysActionButton
                     onClick={handleExplorePathways}
-                    className="bg-cyan-501"
+                    className="bg-cyan-501 !mt-4"
                     icon={
                         IconWithShape ? <IconWithShape className="w-[30px] h-[30px]" /> : undefined
                     }

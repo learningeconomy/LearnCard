@@ -1,18 +1,49 @@
 import React from 'react';
 import numeral from 'numeral';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
 import AiPathwayCareerDetails from './AiPathwaysCareerDetails';
+import useTheme from '../../../theme/hooks/useTheme';
+import { IconSetEnum } from '../../../theme/icons/index';
 
-import { ModalTypes, useModal } from 'learn-card-base';
+import {
+    CredentialCategoryEnum,
+    ModalTypes,
+    useModal,
+    useSemanticSearchSkills,
+} from 'learn-card-base';
 import { OccupationDetailsResponse } from 'learn-card-base/types/careerOneStop';
 import { getYearlyWages } from './ai-pathway-careers.helpers';
+
+type SemanticSkillRecord = {
+    id: string;
+    statement: string;
+    score?: number;
+};
 
 export const AiPathwayCareerItem: React.FC<{
     occupation: OccupationDetailsResponse;
     showDescription?: boolean;
 }> = ({ occupation, showDescription = false }) => {
     const { newModal } = useModal();
+    const { getIconSet } = useTheme();
+    const flags = useFlags();
+    const frameworkId = flags?.selfAssignedSkillsFrameworkId as string;
+    const onetTitle = occupation?.OnetTitle?.trim() ?? '';
+
+    const iconSet = getIconSet(IconSetEnum.sideMenu);
+    const SkillDecoration = iconSet[CredentialCategoryEnum.skill] as React.ComponentType<{
+        className?: string;
+    }>;
+    const { data: semanticSkillsData } = useSemanticSearchSkills(onetTitle, frameworkId, {
+        limit: 4,
+    });
+    const matchingSkills = (semanticSkillsData?.records ?? []) as SemanticSkillRecord[];
+    const firstSkill = matchingSkills[0];
+    const firstSkillIcon = firstSkill?.icon;
+    const totalSkillsCount = matchingSkills.length;
+    const remainingSkillsCount = Math.max(totalSkillsCount - 1, 0);
 
     const openCareerDetailsModal = () => {
         newModal(<AiPathwayCareerDetails occupation={occupation} />, undefined, {
@@ -37,7 +68,7 @@ export const AiPathwayCareerItem: React.FC<{
                     </h4>
 
                     <div>
-                        <SlimCaretRight className="text-grayscale-800 w-[24px] h-auto" />
+                        <SlimCaretRight className="text-grayscale-700 w-[24px] h-auto" />
                     </div>
                 </div>
                 <div className="w-full flex flex-col items-start justify-start">
@@ -48,6 +79,33 @@ export const AiPathwayCareerItem: React.FC<{
                         ${numeral(medianSalary).format('0,0')}
                     </p>
                 </div>
+
+                {firstSkill && (
+                    <div className="w-full flex flex-col items-start gap-2 flex-wrap pt-1">
+                        {totalSkillsCount > 0 && (
+                            <p className="text-grayscale-600 text-sm text-left font-semibold">
+                                {totalSkillsCount}{' '}
+                                {totalSkillsCount === 1 ? 'Matching Skill' : 'Matching Skills'}
+                            </p>
+                        )}
+                        <div className="w-full flex items-center gap-2 flex-wrap">
+                            <div className="inline-flex items-center gap-2 rounded-full bg-purple-100 px-3 py-2">
+                                {firstSkillIcon && firstSkillIcon}
+                                <p className="text-grayscale-800 text-sm font-semibold line-clamp-1">
+                                    {firstSkill.statement}
+                                </p>
+                            </div>
+                            {remainingSkillsCount > 0 && (
+                                <div className="inline-flex items-center rounded-full bg-purple-100 px-3 py-2">
+                                    <p className="text-grayscale-800 text-sm font-semibold">
+                                        + {remainingSkillsCount} more
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {showDescription && (
                     <p className="text-grayscale-600 line-clamp-2 text-sm text-left">
                         {occupation?.OnetDescription}
