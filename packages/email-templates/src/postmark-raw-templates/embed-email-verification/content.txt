@@ -1,0 +1,16 @@
+Hello{{#recipient.name}} {{.}}{{/recipient.name}},
+
+Here’s your secure 6-digit code to add {{verificationEmail}} as a recovery email.
+
+{{verificationCode}}
+
+{{company.product}}{{^ company.product}}LearnCard{{/company.product}} is your private, digital passport for learning and work. It lets you securely collect and share your verified skills and achievements online.
+
+
+Sincerely,
+The LearnCard Team
+
+You received this email because someone requested to add this email as a recovery option for {{company.product}}{{^ company.product}}LearnCard{{/company.product}} account. Please ignore this email if this was not you.
+ 
+LearnCard {{#company.address}}• {{.}}{{/company.address}}{{^ company.address}}© 2026{{/company.address}}
+ 

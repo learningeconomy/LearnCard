@@ -21,14 +21,14 @@ export const EmailButton: React.FC<EmailButtonProps> = ({ href, branding, childr
         style={{
             backgroundColor: branding.primaryColor,
             color: branding.primaryTextColor,
-            borderRadius: 20,
-            fontSize: 14,
+            borderRadius: 4,
+            fontSize: 16,
             fontWeight: 600,
             textDecoration: 'none',
             textAlign: 'center' as const,
             display: 'inline-block',
-            padding: '14px 32px',
-            lineHeight: '100%',
+            padding: '16px 24px',
+            lineHeight: '1',
         }}
     >
         {children}

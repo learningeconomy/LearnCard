@@ -1,0 +1,18 @@
+{
+  "Name": "Your LearnCard account has been approved!",
+  "Alias": "account-approved-email",
+  "Subject": "Your LearnCard account has been approved!",
+  "TemplateType": "Standard",
+  "TestRenderModel": {
+    "company": {
+      "homepageUrl": {},
+      "logoUrl": {},
+      "name": {},
+      "address": {}
+    },
+    "issuer": {
+      "logoUrl": {},
+      "name": "name_Value"
+    }
+  }
+}

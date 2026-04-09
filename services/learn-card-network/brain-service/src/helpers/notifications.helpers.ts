@@ -33,11 +33,9 @@ export async function addNotificationToQueue(notification: LCNNotification) {
 
     // In local development (offline or missing SQS URL), deliver directly via webhook
     if (process.env.IS_OFFLINE || !process.env.NOTIFICATIONS_QUEUE_URL) {
-        if (process.env.NODE_ENV !== 'test') {
-            console.log(
-                'Notifications Helpers - Local dev fallback: sending directly via sendNotification'
-            );
-        }
+        console.log(
+            'Notifications Helpers - Local dev fallback: sending directly via sendNotification'
+        );
         return sendNotification(notification);
     }
 

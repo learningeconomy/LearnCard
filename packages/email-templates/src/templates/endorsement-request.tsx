@@ -11,18 +11,23 @@ import type { TenantBranding } from '../branding';
 import { DEFAULT_BRANDING } from '../branding';
 import { Layout } from '../components/Layout';
 import { EmailButton } from '../components/EmailButton';
+import { IssuerLogo } from '../components/IssuerLogo';
+import { LinkFallback } from '../components/LinkFallback';
 
 export interface EndorsementRequestProps {
     branding: TenantBranding;
     shareLink: string;
     recipient?: {
         name?: string;
+        email?: string;
     };
     issuer?: {
         name?: string;
+        logoUrl?: string;
     };
     credential?: {
         name?: string;
+        type?: string;
     };
     message?: string;
 }
@@ -32,36 +37,50 @@ export const EndorsementRequest: React.FC<EndorsementRequestProps> = ({
     shareLink,
     recipient,
     issuer,
+    credential,
     message,
 }) => {
-    const greeting = recipient?.name ? `Hi ${recipient.name},` : 'Hi there,';
+    const greeting = recipient?.name ? `Hello ${recipient.name},` : 'Hello,';
     const issuerName = issuer?.name ?? 'Someone';
+    const credentialName = credential?.name;
 
     return (
-        <Layout branding={branding} preview={`${issuerName} is requesting your endorsement`}>
-            <Text style={heading}>Endorsement requested</Text>
+        <Layout branding={branding} preview={`${issuerName} is requesting your endorsement`} showHeaderLogo={false}>
+            <IssuerLogo logoUrl={issuer?.logoUrl} alt={issuerName ? `${issuerName} logo` : undefined} />
 
             <Text style={paragraph}>{greeting}</Text>
 
             <Text style={paragraph}>
-                <strong>{issuerName}</strong> has requested your endorsement on {branding.brandName}.
+                <strong>{issuerName}</strong> has requested an endorsement from you
+                {credentialName ? <> for <strong>{credentialName}</strong></> : ''}.
             </Text>
 
             {message && (
                 <Section style={messageBox}>
-                    <Text style={messageText}>&ldquo;{message}&rdquo;</Text>
+                    <Text style={messageText}>{message}</Text>
+
+                    {issuer?.name && (
+                        <Text style={messageSender}>— {issuer.name}</Text>
+                    )}
                 </Section>
             )}
 
+            <Text style={paragraph}>
+                {branding.brandName} is your private, digital passport for learning and work.
+                It lets you securely collect and share your verified skills and achievements online.
+            </Text>
+
             <Section style={buttonWrapper}>
                 <EmailButton href={shareLink} branding={branding}>
-                    Review &amp; Endorse
+                    Endorse &rarr;
                 </EmailButton>
             </Section>
 
-            <Text style={muted}>
-                If you don&apos;t recognize this request, you can safely ignore this email.
+            <Text style={signOff}>
+                Sincerely,<br />The {branding.brandName} Team
             </Text>
+
+            <LinkFallback href={shareLink} />
         </Layout>
     );
 };
@@ -80,17 +99,17 @@ export const getEndorsementRequestSubject = (
 // ---------------------------------------------------------------------------
 
 const heading: React.CSSProperties = {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 600,
-    color: '#18224E',
-    margin: '0 0 12px',
+    color: '#111827',
+    margin: '0 0 24px',
 };
 
 const paragraph: React.CSSProperties = {
-    fontSize: 14,
-    color: '#52597A',
-    lineHeight: '22px',
-    margin: '0 0 12px',
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: '24px',
+    margin: '0 0 24px',
 };
 
 const messageBox: React.CSSProperties = {
@@ -102,23 +121,29 @@ const messageBox: React.CSSProperties = {
 };
 
 const messageText: React.CSSProperties = {
-    fontSize: 14,
-    color: '#52597A',
-    fontStyle: 'italic' as const,
+    fontSize: 15,
+    color: '#111827',
     lineHeight: '22px',
     margin: 0,
+    textAlign: 'left' as const,
+};
+
+const messageSender: React.CSSProperties = {
+    fontSize: 14,
+    fontWeight: 600,
+    color: '#111827',
+    margin: '12px 0 0',
 };
 
 const buttonWrapper: React.CSSProperties = {
-    textAlign: 'center' as const,
-    margin: '28px 0',
+    margin: '0 0 24px',
 };
 
-const muted: React.CSSProperties = {
-    fontSize: 13,
-    color: '#8b91a7',
+const signOff: React.CSSProperties = {
+    fontSize: 14,
+    color: '#374151',
     lineHeight: '20px',
-    margin: '4px 0',
+    margin: '24px 0 0',
 };
 
 // ---------------------------------------------------------------------------

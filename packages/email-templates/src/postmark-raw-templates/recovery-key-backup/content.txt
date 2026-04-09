@@ -1,0 +1,21 @@
+Hello{{#recipient.name}} {{.}}{{/recipient.name}},
+
+Keep this email safe. You can use the recovery key below to regain access to your {{brandName}}{{^ brandName}}LearnCard{{/brandName}} account if you lose your device.
+
+--- RECOVERY KEY (do NOT share this with anyone) ---
+{{recoveryKey}}
+--- END RECOVERY KEY ---
+
+To recover your account, choose "Recover via Email" in the app and paste the recovery key above when prompted.
+
+This recovery key is unique to your account. Store it somewhere safe — we cannot retrieve it for you if it is lost.
+
+{{company.product}}{{^ company.product}}LearnCard{{/company.product}} is your private, digital passport for learning and work. It lets you securely collect and share your verified skills and achievements online.
+
+
+Sincerely,
+The {{company.name}}{{^ company.name}}LearnCard{{/company.name}} Team
+
+You received this email because a recovery key backup was requested for your {{company.product}}{{^ company.product}}LearnCard{{/company.product}} account. Please ignore this email if this was not you.
+
+{{company.name}}{{^ company.name}}LearnCard{{/company.name}} {{#company.address}}• {{.}}{{/company.address}}{{^ company.address}}© 2026{{/company.address}}

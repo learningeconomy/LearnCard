@@ -1,0 +1,28 @@
+{
+  "Name": "Universal Inbox - Claim Record",
+  "Alias": "universal-inbox-claim",
+  "Subject": "Your digital record {{#issuer.name}}from {{.}} {{/issuer.name}}is ready",
+  "TemplateType": "Standard",
+  "TestRenderModel": {
+    "issuer": {
+      "name": {},
+      "logoUrl": {}
+    },
+    "company": {
+      "homepageUrl": {},
+      "logoUrl": {},
+      "product": {},
+      "name": {},
+      "address": {}
+    },
+    "credential": {
+      "type": {},
+      "name": {}
+    },
+    "recipient": {
+      "name": {},
+      "email": {}
+    },
+    "claimUrl": "claimUrl_Value"
+  }
+}

@@ -27,6 +27,11 @@ export type {
     AccountApprovedData,
     RecoveryKeyData,
     EndorsementRequestData,
+    CredentialAwaitingGuardianData,
+    GuardianApprovedClaimData,
+    GuardianCredentialApprovalData,
+    GuardianEmailOtpData,
+    GuardianRejectedCredentialData,
 } from './render';
 
 // SMS rendering

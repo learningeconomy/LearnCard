@@ -1,0 +1,24 @@
+{
+  "Name": "Student - Credential Awaiting Guardian Approval",
+  "Alias": "credential-awaiting-guardian",
+  "Subject": "Your Credential Is Pending Guardian Approval",
+  "TemplateType": "Standard",
+  "TestRenderModel": {
+    "issuer": {
+      "name": {},
+      "logoUrl": {}
+    },
+    "credential": {
+      "name": "name_Value"
+    },
+    "recipient": {
+      "email": {}
+    },
+    "company": {
+      "name": {},
+      "homepageUrl": {},
+      "logoUrl": {},
+      "address": {}
+    }
+  }
+}

@@ -33,39 +33,39 @@ export interface VerificationCodeProps {
 
 const VARIANT_CONFIG: Record<VerificationCodeVariant, {
     subject: (brandName: string) => string;
-    heading: string;
-    description: (email: string | undefined) => string;
+    heading: (brandName: string) => string;
+    description: (email: string | undefined, brandName: string) => string;
     expiry: string;
 }> = {
     login: {
         subject: (b) => `Your ${b} login code`,
-        heading: 'Sign in to your account',
-        description: (email) => email
-            ? `Enter this code to sign in as ${email}.`
-            : 'Enter this code in the app to sign in.',
-        expiry: 'This code expires in 5 minutes.',
+        heading: (b) => `Your ${b} Login Code`,
+        description: (email, b) => email
+            ? `Here's your secure 6-digit code to log into ${b}`
+            : `Here's your secure 6-digit code to log into ${b}`,
+        expiry: 'This code will expire in 5 minutes. If you didn\u2019t request this, you can safely ignore this email.',
     },
     'recovery-email': {
         subject: () => 'Verify your recovery email',
-        heading: 'Verify your recovery email',
-        description: (email) => email
-            ? `Enter this code to verify ${email} as your recovery email.`
-            : 'Enter this code to verify your recovery email address.',
-        expiry: 'This code expires in 15 minutes.',
+        heading: (b) => `Your ${b} Verification Code`,
+        description: (email, b) => email
+            ? `Here's your secure 6-digit code to add ${email} as a recovery method for ${b}`
+            : `Here's your secure 6-digit code to add a recovery method for ${b}`,
+        expiry: 'This code will expire in 5 minutes. If you didn\u2019t request this, you can safely ignore this email.',
     },
     'embed-verification': {
         subject: (b) => `Your ${b} verification code`,
-        heading: 'Verify your email',
+        heading: (b) => `Your ${b} Verification Code`,
         description: (email) => email
-            ? `Enter this code to verify ${email}.`
-            : 'Enter this code to verify your email address.',
-        expiry: 'This code expires in 15 minutes.',
+            ? `Enter this code to verify ${email} and claim your credential:`
+            : 'Enter this code to verify your email address and claim your credential:',
+        expiry: 'This code will expire in 10 minutes. If you didn\u2019t request this, you can safely ignore this email.',
     },
     'contact-method': {
         subject: (b) => `Your ${b} verification code`,
-        heading: 'Verify your contact method',
+        heading: (b) => `Your ${b} Verification Code`,
         description: () => 'Enter this code in the app to verify your contact information.',
-        expiry: 'This code expires in 24 hours.',
+        expiry: 'This code will expire in 24 hours. If you didn\u2019t request this, you can safely ignore this email.',
     },
 };
 
@@ -79,16 +79,23 @@ export const VerificationCode: React.FC<VerificationCodeProps> = ({
 
     return (
         <Layout branding={branding} preview={`Your code: ${verificationCode}`}>
-            <Text style={heading}>{config.heading}</Text>
+            <Text style={headingStyle}>{config.heading(branding.brandName)}</Text>
 
-            <Text style={paragraph}>{config.description(verificationEmail)}</Text>
+            <Text style={paragraph}>Hello,</Text>
+
+            <Text style={paragraph}>{config.description(verificationEmail, branding.brandName)}</Text>
 
             <CodeBlock code={verificationCode} label="Verification code" />
 
             <Text style={muted}>{config.expiry}</Text>
 
-            <Text style={muted}>
-                If you didn&apos;t request this, you can safely ignore this email.
+            <Text style={paragraph}>
+                {branding.brandName} is your private, digital passport for learning and work.
+                It lets you securely collect and share your verified skills and achievements online.
+            </Text>
+
+            <Text style={signOff}>
+                Sincerely,<br />The {branding.brandName} Team
             </Text>
         </Layout>
     );
@@ -103,25 +110,32 @@ export const getVerificationCodeSubject = (
 // Styles
 // ---------------------------------------------------------------------------
 
-const heading: React.CSSProperties = {
-    fontSize: 22,
+const headingStyle: React.CSSProperties = {
+    fontSize: 24,
     fontWeight: 600,
-    color: '#18224E',
-    margin: '0 0 12px',
+    color: '#111827',
+    margin: '0 0 24px',
 };
 
 const paragraph: React.CSSProperties = {
-    fontSize: 14,
-    color: '#52597A',
-    lineHeight: '22px',
-    margin: '0 0 4px',
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: '24px',
+    margin: '0 0 24px',
 };
 
 const muted: React.CSSProperties = {
-    fontSize: 13,
-    color: '#8b91a7',
+    fontSize: 14,
+    color: '#6b7280',
     lineHeight: '20px',
-    margin: '4px 0',
+    margin: '0 0 24px',
+};
+
+const signOff: React.CSSProperties = {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: '20px',
+    margin: '24px 0 0',
 };
 
 // ---------------------------------------------------------------------------

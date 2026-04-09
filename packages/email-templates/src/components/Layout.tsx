@@ -25,33 +25,43 @@ interface LayoutProps {
     branding: TenantBranding;
     preview: string;
     children: React.ReactNode;
+    /** Show the brand icon at the top of the card. Defaults to true.
+     *  Set to false when the template already has an IssuerLogo. */
+    showHeaderLogo?: boolean;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ branding, preview, children }) => (
+export const Layout: React.FC<LayoutProps> = ({ branding, preview, children, showHeaderLogo = true }) => (
     <Html lang="en">
         <Head />
 
         <Preview>{preview}</Preview>
 
         <Body style={body}>
+            {/* Wordmark — sits above the white card like the Postmark layout */}
+            <Container style={wordmarkContainer}>
+                <Text style={wordmark}>
+                    <Link href={branding.websiteUrl} style={wordmarkLink}>
+                        {branding.brandName.toUpperCase()}
+                    </Link>
+                </Text>
+            </Container>
+
             <Container style={container}>
-                {/* Header */}
-                <Section style={header}>
-                    <Img
-                        src={branding.logoUrl}
-                        alt={branding.logoAlt}
-                        width={48}
-                        height={48}
-                        style={logo}
-                    />
-
-                    <Text style={brandTitle}>{branding.brandName}</Text>
-                </Section>
-
-                <Hr style={divider} />
+                {/* Optional brand icon */}
+                {showHeaderLogo && (
+                    <Section style={headerLogo}>
+                        <Img
+                            src={branding.logoUrl}
+                            alt={branding.logoAlt}
+                            width={80}
+                            height={80}
+                            style={logoImg}
+                        />
+                    </Section>
+                )}
 
                 {/* Content */}
-                <Section style={content}>
+                <Section style={showHeaderLogo ? contentAfterLogo : content}>
                     {children}
                 </Section>
 
@@ -79,60 +89,77 @@ export const Layout: React.FC<LayoutProps> = ({ branding, preview, children }) =
 // ---------------------------------------------------------------------------
 
 const body: React.CSSProperties = {
-    backgroundColor: '#f6f6f9',
-    fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+    backgroundColor: '#f3f4f6',
+    fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
     margin: 0,
     padding: 0,
 };
 
-const container: React.CSSProperties = {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    margin: '40px auto',
+const wordmarkContainer: React.CSSProperties = {
     maxWidth: 560,
-    padding: 0,
-    border: '1px solid #e2e3e9',
-};
-
-const header: React.CSSProperties = {
-    padding: '32px 40px 0',
+    margin: '40px auto 0',
+    padding: '0 40px',
     textAlign: 'center' as const,
 };
 
-const logo: React.CSSProperties = {
+const wordmark: React.CSSProperties = {
+    fontSize: 13,
+    fontWeight: 600,
+    letterSpacing: 4,
+    color: '#52597A',
+    margin: '0 0 24px',
+};
+
+const wordmarkLink: React.CSSProperties = {
+    color: '#52597A',
+    textDecoration: 'none',
+};
+
+const container: React.CSSProperties = {
+    backgroundColor: '#ffffff',
+    borderRadius: 4,
+    margin: '0 auto 40px',
+    maxWidth: 600,
+    padding: 0,
+    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+};
+
+const divider: React.CSSProperties = {
+    borderColor: '#e5e7eb',
+    margin: '24px 48px',
+};
+
+const headerLogo: React.CSSProperties = {
+    padding: '48px 48px 0',
+    textAlign: 'center' as const,
+};
+
+const logoImg: React.CSSProperties = {
     borderRadius: 10,
     display: 'inline-block',
 };
 
-const brandTitle: React.CSSProperties = {
-    fontSize: 18,
-    fontWeight: 600,
-    color: '#18224E',
-    margin: '12px 0 0',
-};
-
-const divider: React.CSSProperties = {
-    borderColor: '#e2e3e9',
-    margin: '24px 40px',
-};
-
 const content: React.CSSProperties = {
-    padding: '0 40px',
+    padding: '48px 48px 0',
+};
+
+const contentAfterLogo: React.CSSProperties = {
+    padding: '24px 48px 0',
 };
 
 const footer: React.CSSProperties = {
-    padding: '0 40px 32px',
+    padding: '0 48px 32px',
     textAlign: 'center' as const,
 };
 
 const footerText: React.CSSProperties = {
     fontSize: 12,
-    color: '#8b91a7',
+    color: '#6b7280',
     margin: '4px 0',
     lineHeight: '18px',
 };
 
 const footerLink: React.CSSProperties = {
-    color: '#8b91a7',
+    color: '#6b7280',
     textDecoration: 'underline',
 };

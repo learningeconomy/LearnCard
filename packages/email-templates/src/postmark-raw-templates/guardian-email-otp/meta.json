@@ -1,0 +1,15 @@
+{
+  "Name": "Guardian email OTP",
+  "Alias": "guardian-email-otp",
+  "Subject": "Your Verification Code",
+  "TemplateType": "Standard",
+  "TestRenderModel": {
+    "verificationCode": "verificationCode_Value",
+    "company": {
+      "name": {},
+      "homepageUrl": {},
+      "logoUrl": {},
+      "address": {}
+    }
+  }
+}

@@ -11,6 +11,8 @@ import type { TenantBranding } from '../branding';
 import { DEFAULT_BRANDING } from '../branding';
 import { Layout } from '../components/Layout';
 import { EmailButton } from '../components/EmailButton';
+import { IssuerLogo } from '../components/IssuerLogo';
+import { LinkFallback } from '../components/LinkFallback';
 
 export interface InboxClaimProps {
     branding: TenantBranding;
@@ -22,6 +24,7 @@ export interface InboxClaimProps {
     };
     issuer?: {
         name?: string;
+        logoUrl?: string;
     };
     credential?: {
         name?: string;
@@ -36,44 +39,58 @@ export const InboxClaim: React.FC<InboxClaimProps> = ({
     issuer,
     credential,
 }) => {
-    const credentialName = credential?.name ?? 'a credential';
-    const greeting = recipient?.name ? `Hi ${recipient.name},` : 'Hi there,';
-    const issuerLine = issuer?.name ? ` from ${issuer.name}` : '';
+    const credentialName = credential?.name;
+    const credentialType = credential?.type ?? 'record';
+    const greeting = recipient?.name ? `Hello ${recipient.name},` : 'Hello,';
+    const issuerName = issuer?.name;
 
     return (
-        <Layout branding={branding} preview={`You have ${credentialName} to claim${issuerLine}`}>
-            <Text style={heading}>You have a credential to claim</Text>
+        <Layout branding={branding} preview={`Your digital ${credentialType}${issuerName ? ` from ${issuerName}` : ''} is ready`} showHeaderLogo={false}>
+            <IssuerLogo logoUrl={issuer?.logoUrl} alt={issuerName ? `${issuerName} logo` : undefined} />
+
+            <Text style={heading}>Your digital {credentialType} is ready</Text>
 
             <Text style={paragraph}>
                 {greeting}
             </Text>
 
             <Text style={paragraph}>
-                You&apos;ve been issued <strong>{credentialName}</strong>{issuerLine}.
-                Tap the button below to claim it in {branding.brandName}.
+                {issuerName
+                    ? <><strong>{issuerName}</strong> has sent you</>
+                    : <>You&apos;ve received</>}{' '}
+                a secure, digital version of your{' '}
+                <strong>{credentialName ? `\u201C${credentialName}\u201D` : 'achievement'}</strong>.
+            </Text>
+
+            <Text style={paragraph}>
+                {branding.brandName} is your private, digital passport for learning and work.
+                It lets you securely collect and share your verified skills and achievements
+                online. By claiming this item, you are saving a verifiable, official {credentialType} to
+                your personal passport&mdash;one that only you control.
             </Text>
 
             <Section style={buttonWrapper}>
                 <EmailButton href={claimUrl} branding={branding}>
-                    Claim Credential
+                    Claim Your Record &rarr;
                 </EmailButton>
             </Section>
 
-            <Text style={muted}>
-                If you weren&apos;t expecting this, you can safely ignore this email.
+            <Text style={signOff}>
+                Sincerely,<br />The {branding.brandName} Team
             </Text>
+
+            <LinkFallback href={claimUrl} />
         </Layout>
     );
 };
 
 export const getInboxClaimSubject = (
-    branding: TenantBranding,
+    _branding: TenantBranding,
     props: InboxClaimProps,
 ): string => {
-    const credName = props.credential?.name ?? 'A credential';
-    const issuerPart = props.issuer?.name ? ` from ${props.issuer.name}` : '';
+    const issuerPart = props.issuer?.name ? `from ${props.issuer.name} ` : '';
 
-    return `${credName}${issuerPart} — claim it on ${branding.brandName}`;
+    return `Your digital record ${issuerPart}is ready`;
 };
 
 // ---------------------------------------------------------------------------
@@ -81,29 +98,28 @@ export const getInboxClaimSubject = (
 // ---------------------------------------------------------------------------
 
 const heading: React.CSSProperties = {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 600,
-    color: '#18224E',
-    margin: '0 0 12px',
+    color: '#111827',
+    margin: '0 0 24px',
 };
 
 const paragraph: React.CSSProperties = {
-    fontSize: 14,
-    color: '#52597A',
-    lineHeight: '22px',
-    margin: '0 0 12px',
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: '24px',
+    margin: '0 0 24px',
 };
 
 const buttonWrapper: React.CSSProperties = {
-    textAlign: 'center' as const,
-    margin: '28px 0',
+    margin: '0 0 24px',
 };
 
-const muted: React.CSSProperties = {
-    fontSize: 13,
-    color: '#8b91a7',
+const signOff: React.CSSProperties = {
+    fontSize: 14,
+    color: '#374151',
     lineHeight: '20px',
-    margin: '4px 0',
+    margin: '24px 0 0',
 };
 
 // ---------------------------------------------------------------------------
@@ -116,7 +132,7 @@ export default function Preview() {
             branding={DEFAULT_BRANDING}
             claimUrl="https://learncard.app/claim/abc123"
             recipient={{ name: 'Jane Doe' }}
-            issuer={{ name: 'Acme University' }}
+            issuer={{ name: 'Acme University', logoUrl: 'https://cdn.filestackcontent.com/J6suaVcQ467W9o1k48Kj' }}
             credential={{ name: 'Bachelor of Science', type: 'Achievement' }}
         />
     );

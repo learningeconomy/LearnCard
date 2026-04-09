@@ -27,22 +27,34 @@ export const AccountApproved: React.FC<AccountApprovedProps> = ({
 
     return (
         <Layout branding={branding} preview={`Your ${branding.brandName} account has been approved!`}>
-            <Text style={heading}>You&apos;re approved!</Text>
+            <Text style={heading}>Your {branding.brandName} account has been approved!</Text>
 
             <Text style={paragraph}>
-                Hi {name},
+                Hello,
             </Text>
 
             <Text style={paragraph}>
-                Your {branding.brandName} account has been approved. You now have full access
-                to all features.
+                Your {branding.brandName} account has been approved by your guardian/parent.
+            </Text>
+
+            <Text style={paragraph}>
+                {branding.brandName} is a private, digital passport for learning and work.
+                It lets users securely collect and share their verified skills and achievements online.
+            </Text>
+
+            <Text style={paragraph}>
+                Please click the button below to login to your account.
             </Text>
 
             <Section style={buttonWrapper}>
                 <EmailButton href={branding.appUrl} branding={branding}>
-                    Open {branding.brandName}
+                    Login to {branding.brandName} &rarr;
                 </EmailButton>
             </Section>
+
+            <Text style={signOff}>
+                Thank you,<br />The {branding.brandName} Team
+            </Text>
         </Layout>
     );
 };
@@ -55,22 +67,28 @@ export const getAccountApprovedSubject = (branding: TenantBranding): string =>
 // ---------------------------------------------------------------------------
 
 const heading: React.CSSProperties = {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 600,
-    color: '#18224E',
-    margin: '0 0 12px',
+    color: '#111827',
+    margin: '0 0 24px',
 };
 
 const paragraph: React.CSSProperties = {
-    fontSize: 14,
-    color: '#52597A',
-    lineHeight: '22px',
-    margin: '0 0 12px',
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: '24px',
+    margin: '0 0 24px',
 };
 
 const buttonWrapper: React.CSSProperties = {
-    textAlign: 'center' as const,
-    margin: '28px 0',
+    margin: '0 0 24px',
+};
+
+const signOff: React.CSSProperties = {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: '20px',
+    margin: '24px 0 0',
 };
 
 // ---------------------------------------------------------------------------

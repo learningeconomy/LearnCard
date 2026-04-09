@@ -1,0 +1,111 @@
+
+<!--
+  Template ID (alias):  guardian-rejected-credential
+  Stream:               universal-inbox
+  To:                   Student / Recipient
+  Trigger:              Guardian rejects the credential via OTP
+
+  Variables:
+    {{issuer.name}}          — issuer's display name
+    {{credential.name}}      — credential/boost name (optional)
+    {{recipient.email}}      — student's email (optional)
+    {{company.name}}         — platform name (default: LearnCard)
+    {{company.homepageUrl}}  — platform homepage
+    {{company.logoUrl}}      — platform logo
+    {{company.address}}      — platform address (optional)
+-->
+<!DOCTYPE html>
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="utf-8">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+  <!--[if mso]>
+    <xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml>
+    <style>td,th,div,p,a,h1,h2,h3,h4,h5,h6{font-family:"Segoe UI",sans-serif;mso-line-height-rule:exactly;}</style>
+  <![endif]-->
+  <title>Credential Not Approved</title>
+  <style>
+    @media (max-width: 600px) {
+      .sm-w-full { width: 100% !important; }
+      .sm-px-6 { padding-left: 24px !important; padding-right: 24px !important; }
+      .sm-py-8 { padding-top: 32px !important; padding-bottom: 32px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;width:100%;padding:0;word-break:break-word;-webkit-font-smoothing:antialiased;background-color:#f3f4f6;">
+
+  <div style="display:none;">&#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847;</div>
+
+  <div role="article" aria-roledescription="email" aria-label="Credential Not Approved" lang="en">
+    <table style="width:100%;font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td align="center" style="background-color:#f3f4f6;">
+          <table class="sm-w-full" style="width:600px;" cellpadding="0" cellspacing="0" role="presentation">
+
+            <!-- Logo -->
+            <tr>
+              <td class="sm-py-8 sm-px-6" style="padding:48px;text-align:center;">
+                <a href="{{company.homepageUrl}}{{^company.homepageUrl}}https://learncard.com{{/company.homepageUrl}}" target="_blank">
+                  <img src="{{company.logoUrl}}{{^company.logoUrl}}https://cdn.prod.website-files.com/5b81d3232b7a398665b4123f/630eb32ac8d2fbd9b236c24b_learncard.logo.black.png{{/company.logoUrl}}" width="150" alt="LearnCard" style="max-width:100%;vertical-align:middle;line-height:100%;border:0;">
+                </a>
+              </td>
+            </tr>
+
+            <!-- Card -->
+            <tr>
+              <td align="center" class="sm-px-6">
+                <table style="width:100%;" cellpadding="0" cellspacing="0" role="presentation">
+                  <tr>
+                    <td class="sm-px-6" style="border-radius:4px;background-color:#ffffff;padding:48px;text-align:left;font-size:16px;line-height:24px;color:#374151;box-shadow:0 1px 3px 0 rgba(0,0,0,0.1),0 1px 2px 0 rgba(0,0,0,0.06);">
+
+                      <p style="margin:0 0 24px;">Hi there,</p>
+
+                      <p style="margin:0 0 24px;">
+                        Your guardian has reviewed and <strong>declined</strong> the credential
+                        {{#credential.name}}<strong>"{{credential.name}}"</strong> {{/credential.name}}issued by
+                        <strong>{{issuer.name}}</strong>.
+                      </p>
+
+                      <p style="margin:0 0 24px;">
+                        The credential will not be added to your wallet. If you think this was a mistake,
+                        please reach out to your guardian or contact <strong>{{issuer.name}}</strong> directly.
+                      </p>
+
+                      <div style="padding-top:24px;font-size:14px;line-height:20px;">
+                        <p style="margin:0 0 16px;">Sincerely,<br>The {{company.name}}{{^company.name}}LearnCard{{/company.name}} Team</p>
+                      </div>
+
+                    </td>
+                  </tr>
+
+                  <!-- Spacer -->
+                  <tr><td style="height:48px;"></td></tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding-left:24px;padding-right:24px;text-align:center;font-size:12px;color:#6b7280;">
+                      <p style="margin:0 0 4px;">
+                        You received this email because a credential from {{issuer.name}}{{^issuer.name}}an issuer{{/issuer.name}} was reviewed by your guardian on {{company.name}}{{^company.name}}LearnCard{{/company.name}}.
+                      </p>
+                      <p style="margin:0 0 4px;">
+                        {{company.name}}{{^company.name}}LearnCard{{/company.name}} {{#company.address}}&bull; {{.}}{{/company.address}}{{^company.address}}&copy; 2025{{/company.address}}
+                      </p>
+                      <p style="margin:0;">
+                        {{{ pm:unsubscribe }}}
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

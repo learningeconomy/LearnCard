@@ -1,0 +1,26 @@
+{
+  "Name": "Student - Guardian Approved Claim",
+  "Alias": "guardian-approved-claim",
+  "Subject": "Your Credential Has Been Approved!",
+  "TemplateType": "Standard",
+  "LayoutTemplate": "code-your-own",
+  "TestRenderModel": {
+    "issuer": {
+      "name": {},
+      "logoUrl": {}
+    },
+    "credential": {
+      "name": {
+        "credential": {
+          "name": "name_Value"
+        }
+      }
+    },
+    "company": {
+      "name": {},
+      "homepageUrl": {},
+      "logoUrl": {},
+      "address": {}
+    }
+  }
+}

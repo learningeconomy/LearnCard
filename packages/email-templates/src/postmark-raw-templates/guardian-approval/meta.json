@@ -1,0 +1,28 @@
+{
+  "Name": "Account Approval Request",
+  "Alias": "guardian-approval",
+  "Subject": "Account Approval Request",
+  "TemplateType": "Standard",
+  "LayoutTemplate": "basic-full-width-1",
+  "TestRenderModel": {
+    "product_url": "product_url_Value",
+    "product_name": "product_name_Value",
+    "company": {
+      "homepageUrl": {},
+      "logoUrl": {},
+      "name": {},
+      "product": {},
+      "address": {}
+    },
+    "issuer": {
+      "logoUrl": {},
+      "name": "name_Value"
+    },
+    "requester": {
+      "displayName": "displayName_Value"
+    },
+    "approvalToken": "approvalToken_Value",
+    "company_name": "company_name_Value",
+    "company_address": "company_address_Value"
+  }
+}

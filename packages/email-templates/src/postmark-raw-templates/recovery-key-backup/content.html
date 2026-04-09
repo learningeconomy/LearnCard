@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+  <!--[if mso]>
+    <xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml>
+    <style>
+      td,th,div,p,a,h1,h2,h3,h4,h5,h6 {font-family: "Segoe UI", sans-serif; mso-line-height-rule: exactly;}
+    </style>
+  <![endif]-->
+  <title>Your Recovery Key</title>
+  <style>
+    /* Tailwind CSS Reset */
+    .hover-bg-blue-700:hover {
+      background-color: #2b6cb0 !important;
+    }
+
+    .hover-underline:hover {
+      text-decoration: underline !important;
+    }
+
+    @media (max-width: 600px) {
+      .sm-w-full {
+        width: 100% !important;
+      }
+
+      .sm-px-6 {
+        padding-left: 24px !important;
+        padding-right: 24px !important;
+      }
+
+      .sm-py-8 {
+        padding-top: 32px !important;
+        padding-bottom: 32px !important;
+      }
+
+      .sm-leading-8 {
+        line-height: 32px !important;
+      }
+    }
+  </style>
+</head>
+
+<body style="margin: 0; width: 100%; padding: 0; word-break: break-word; -webkit-font-smoothing: antialiased; background-color: #f3f4f6;">
+  {{!
+    =================================================================
+    TEMPLATE MODEL DOCUMENTATION
+    =================================================================
+
+    This email template uses a structured model for clarity and extensibility.
+    The final model sent to Postmark is a combination of variables provided
+    by the API caller and variables injected by our system.
+
+    -----------------------------------------------------------------
+    VARIABLES PROVIDED BY THE API CALLER
+    (via the templateModel object in the delivery service send call)
+    -----------------------------------------------------------------
+  
+    - brandName (String): The brand/product name (e.g. "LearnCard"). 
+      Defaults to "LearnCard" if not provided by the caller.
+    - recoveryKey (String): The encrypted backup share that the user
+      can use to recover their account. This is NEVER persisted on
+      the server — it is only held in memory for the duration of the
+      request and relayed via this email.
+  
+    -----------------------------------------------------------------
+    VARIABLES INJECTED BY THE SYSTEM (NOT provided by the caller)
+    -----------------------------------------------------------------
+
+    N/A
+
+  }}
+
+
+  <div style="display: none;">
+    Your Recovery Key — keep this email safe
+    &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847;
+  </div>
+  <div role="article" aria-roledescription="email" aria-label="Your Recovery Key" lang="en">
+    <table style="width: 100%; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td align="center" style="background-color: #f3f4f6;">
+          <!--[if mso]>
+          <v:background xmlns:v="urn:schemas-microsoft-com:vml" fill="t">
+            <v:fill type="tile" color="#f3f4f6"></v:fill>
+          </v:background>
+          <![endif]-->
+          <table class="sm-w-full" style="width: 600px;" cellpadding="0" cellspacing="0" role="presentation">
+            <tr>
+              <td class="sm-py-8 sm-px-6" style="padding: 48px; text-align: center;">
+                <a href="{{company.homepageUrl}}{{^ company.homepageUrl}}https://learncard.com{{/company.homepageUrl}}" target="_blank">
+                  <img src="{{company.logoUrl}}{{^ company.logoUrl}}https://cdn.prod.website-files.com/5b81d3232b7a398665b4123f/630eb32ac8d2fbd9b236c24b_learncard.logo.black.png{{/company.logoUrl}}" width="150" alt="LearnCard Passport Logo" style="max-width: 100%; vertical-align: middle; line-height: 100%; border: 0;">
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" class="sm-px-6">
+                <table style="width: 100%;" cellpadding="0" cellspacing="0" role="presentation">
+                  <tr>
+                    <td class="sm-px-6" style="border-radius: 4px; background-color: #ffffff; padding: 48px; text-align: left; font-size: 16px; line-height: 24px; color: #374151; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);">
+                      
+                      <div style="margin-bottom: 24px; text-align: center;">
+                        <!--[if !mso]><!-->
+                        <div style="margin: 0 auto; width: 80px; height: 80px; border-radius: 50%; background-color: #f3f4f6; background-image: url('{{issuer.logoUrl}}{{^ issuer.logoUrl}}https://cdn.filestackcontent.com/oR8Y73lxRj6wqrLQiUi7{{/issuer.logoUrl}}'); background-position: center; background-size: cover;" role="img" aria-label="{{issuer.name}} Logo"></div>
+                        <!--<![endif]-->
+                        <!--[if mso]>
+                        <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
+                          <tr>
+                            <td style="width: 80px; height: 80px;">
+                              <v:oval style="width: 80px; height: 80px;" strokecolor="none">
+                                <v:fill type="frame" src="{{issuer.logoUrl}}{{^ issuer.logoUrl}}https://cdn.filestackcontent.com/oR8Y73lxRj6wqrLQiUi7{{/issuer.logoUrl}}" color="#f3f4f6" />
+                              </v:oval>
+                            </td>
+                          </tr>
+                        </table>
+                        <![endif]-->
+                      </div>
+
+                      <h1 class="sm-leading-8" style="margin: 0 0 24px; font-size: 24px; font-weight: 600; color: #111827;">
+                        Your {{brandName}}{{^ brandName}}LearnCard{{/brandName}} Recovery Key
+                      </h1>
+                      <p style="margin: 0 0 24px;">
+                        Hello,
+                      </p>
+                      <p style="margin: 0 0 24px;">
+                        Keep this email safe. You can use the recovery key below to regain access to your {{brandName}}{{^ brandName}}LearnCard{{/brandName}} account if you lose your device.
+                      </p>
+
+                      <!-- Recovery Key Block -->
+                      <div style="margin: 0 0 24px; padding: 16px; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
+                        <p style="margin: 0 0 8px; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">
+                          Recovery Key — do NOT share this with anyone
+                        </p>
+                        <p style="margin: 0; font-size: 13px; font-family: 'Courier New', Courier, monospace; color: #111827; word-break: break-all; line-height: 20px;">
+                          {{recoveryKey}}
+                        </p>
+                      </div>
+
+                      <p style="margin: 0 0 24px;">
+                        To recover your account, choose <strong>"Recover via Email"</strong> in the app and paste the recovery key above when prompted.
+                      </p>
+                      <p style="margin: 0 0 24px; font-size: 14px; color: #6b7280;">
+                        If you did not request this, you can safely ignore this email.
+                      </p>
+                      <p style="margin: 0 0 24px;">
+                        {{company.product}}{{^ company.product}}LearnCard{{/company.product}} is your private, digital passport for learning and work. It lets you securely collect and share your verified skills and achievements online.
+                      </p>
+                      
+                      <div style="padding-top: 24px; font-size: 14px; line-height: 20px;">
+                        <p style="margin: 0 0 16px;">Sincerely, <br>The {{company.name}}{{^ company.name}}LearnCard{{/company.name}} Team</p>
+                      </div>
+
+                      <table style="width: 100%;" cellpadding="0" cellspacing="0" role="presentation">
+                        <tr>
+                          <td style="padding-top: 24px; border-top: 1px solid #e5e7eb;">
+                            <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                              This recovery key is unique to your account. Store it somewhere safe — we cannot retrieve it for you if it is lost.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="height: 48px;"></td>
+                  </tr>
+                  <tr> 
+                    <td style="padding-left: 24px; padding-right: 24px; text-align: center; font-size: 12px; color: #6b7280;">
+                      <p style="margin: 0 0 4px;">
+                        You received this email because a recovery key backup was requested for your {{company.product}}{{^ company.product}}LearnCard{{/company.product}} account.
+                      </p>
+                      <p style="margin: 0 0 4px;">
+                        {{company.name}}{{^ company.name}}LearnCard{{/company.name}} {{#company.address}}&bull; {{.}}{{/company.address}}{{^ company.address}}&copy; 2025{{/company.address}}
+                      </p>
+                      <p style="margin: 0 0 px;">
+                      {{{ pm:unsubscribe }}}
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

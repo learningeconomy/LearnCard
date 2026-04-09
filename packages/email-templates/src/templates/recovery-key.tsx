@@ -4,7 +4,7 @@
  * Used by: lca-api keys.ts (templateAlias: RECOVERY_KEY_TEMPLATE_ALIAS)
  */
 
-import { Text, Section } from '@react-email/components';
+import { Text } from '@react-email/components';
 import * as React from 'react';
 
 import type { TenantBranding } from '../branding';
@@ -22,28 +22,33 @@ export const RecoveryKey: React.FC<RecoveryKeyProps> = ({
     recoveryKey,
 }) => (
     <Layout branding={branding} preview={`Your ${branding.brandName} recovery key — keep this safe`}>
-        <Text style={heading}>Your recovery key</Text>
+        <Text style={heading}>Your {branding.brandName} Recovery Key</Text>
+
+        <Text style={paragraph}>Hello,</Text>
 
         <Text style={paragraph}>
             Keep this email safe. You can use the recovery key below to regain access
             to your {branding.brandName} account if you lose your device.
         </Text>
 
-        <CodeBlock code={recoveryKey} label="Recovery key" />
+        <CodeBlock code={recoveryKey} label="Recovery Key — do NOT share this with anyone" variant="key" />
 
-        <Section style={warningBox}>
-            <Text style={warningText}>
-                <strong>Do NOT share this key with anyone.</strong> {branding.brandName} will never
-                ask you for your recovery key.
-            </Text>
-        </Section>
+        <Text style={paragraph}>
+            To recover your account, choose <strong>&ldquo;Recover via Email&rdquo;</strong> in
+            the app and paste the recovery key above when prompted.
+        </Text>
 
         <Text style={muted}>
-            If you did not request this, please contact{' '}
-            <a href={`mailto:${branding.supportEmail}`} style={{ color: '#8b91a7' }}>
-                {branding.supportEmail}
-            </a>{' '}
-            immediately.
+            If you did not request this, you can safely ignore this email.
+        </Text>
+
+        <Text style={paragraph}>
+            {branding.brandName} is your private, digital passport for learning and work.
+            It lets you securely collect and share your verified skills and achievements online.
+        </Text>
+
+        <Text style={signOff}>
+            Sincerely,<br />The {branding.brandName} Team
         </Text>
     </Layout>
 );
@@ -56,39 +61,31 @@ export const getRecoveryKeySubject = (branding: TenantBranding): string =>
 // ---------------------------------------------------------------------------
 
 const heading: React.CSSProperties = {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 600,
-    color: '#18224E',
-    margin: '0 0 12px',
+    color: '#111827',
+    margin: '0 0 24px',
 };
 
 const paragraph: React.CSSProperties = {
-    fontSize: 14,
-    color: '#52597A',
-    lineHeight: '22px',
-    margin: '0 0 12px',
-};
-
-const warningBox: React.CSSProperties = {
-    backgroundColor: '#FFF8E1',
-    border: '1px solid #FFE082',
-    borderRadius: 8,
-    padding: '16px 20px',
-    margin: '20px 0',
-};
-
-const warningText: React.CSSProperties = {
-    fontSize: 13,
-    color: '#6F7590',
-    margin: 0,
-    lineHeight: '20px',
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: '24px',
+    margin: '0 0 24px',
 };
 
 const muted: React.CSSProperties = {
-    fontSize: 13,
-    color: '#8b91a7',
+    fontSize: 14,
+    color: '#6b7280',
     lineHeight: '20px',
-    margin: '4px 0',
+    margin: '0 0 24px',
+};
+
+const signOff: React.CSSProperties = {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: '20px',
+    margin: '24px 0 0',
 };
 
 // ---------------------------------------------------------------------------

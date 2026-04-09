@@ -1,0 +1,137 @@
+
+<!--
+  Template ID (alias):  guardian-approved-claim
+  Stream:               universal-inbox
+  To:                   Student / Recipient
+  Trigger:              Guardian approves the credential via OTP
+
+  Variables:
+    {{issuer.name}}          — issuer's display name
+    {{issuer.logoUrl}}       — issuer's logo URL (optional)
+    {{credential.name}}      — credential/boost name (optional)
+    {{company.name}}         — platform name (default: LearnCard)
+    {{company.homepageUrl}}  — platform homepage
+    {{company.logoUrl}}      — platform logo
+    {{company.address}}      — platform address (optional)
+-->
+<!DOCTYPE html>
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="utf-8">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+  <!--[if mso]>
+    <xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml>
+    <style>td,th,div,p,a,h1,h2,h3,h4,h5,h6{font-family:"Segoe UI",sans-serif;mso-line-height-rule:exactly;}</style>
+  <![endif]-->
+  <title>Your Credential Has Been Approved!</title>
+  <style>
+    .hover-bg-indigo:hover { background-color: #4f46e5 !important; }
+    @media (max-width: 600px) {
+      .sm-w-full { width: 100% !important; }
+      .sm-px-6 { padding-left: 24px !important; padding-right: 24px !important; }
+      .sm-py-8 { padding-top: 32px !important; padding-bottom: 32px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;width:100%;padding:0;word-break:break-word;-webkit-font-smoothing:antialiased;background-color:#f3f4f6;">
+
+  <div style="display:none;">&#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847;</div>
+
+  <div role="article" aria-roledescription="email" aria-label="Your Credential Has Been Approved!" lang="en">
+    <table style="width:100%;font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td align="center" style="background-color:#f3f4f6;">
+          <table class="sm-w-full" style="width:600px;" cellpadding="0" cellspacing="0" role="presentation">
+
+            <!-- Logo -->
+            <tr>
+              <td class="sm-py-8 sm-px-6" style="padding:48px;text-align:center;">
+                <a href="{{company.homepageUrl}}{{^company.homepageUrl}}https://learncard.com{{/company.homepageUrl}}" target="_blank">
+                  <img src="{{company.logoUrl}}{{^company.logoUrl}}https://cdn.prod.website-files.com/5b81d3232b7a398665b4123f/630eb32ac8d2fbd9b236c24b_learncard.logo.black.png{{/company.logoUrl}}" width="150" alt="LearnCard" style="max-width:100%;vertical-align:middle;line-height:100%;border:0;">
+                </a>
+              </td>
+            </tr>
+
+            <!-- Card -->
+            <tr>
+              <td align="center" class="sm-px-6">
+                <table style="width:100%;" cellpadding="0" cellspacing="0" role="presentation">
+                  <tr>
+                    <td class="sm-px-6" style="border-radius:4px;background-color:#ffffff;padding:48px;text-align:left;font-size:16px;line-height:24px;color:#374151;box-shadow:0 1px 3px 0 rgba(0,0,0,0.1),0 1px 2px 0 rgba(0,0,0,0.06);">
+
+                      <!-- Issuer logo -->
+                      <div style="margin-bottom:24px;text-align:center;">
+                        <!--[if !mso]><!-->
+                        <div style="margin:0 auto;width:80px;height:80px;border-radius:50%;background-color:#f3f4f6;background-image:url('{{issuer.logoUrl}}{{^issuer.logoUrl}}https://cdn.filestackcontent.com/oR8Y73lxRj6wqrLQiUi7{{/issuer.logoUrl}}');background-position:center;background-size:cover;" role="img" aria-label="{{issuer.name}} Logo"></div>
+                        <!--<![endif]-->
+                        <!--[if mso]>
+                        <table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto;">
+                          <tr><td style="width:80px;height:80px;">
+                            <v:oval style="width:80px;height:80px;" strokecolor="none">
+                              <v:fill type="frame" src="{{issuer.logoUrl}}{{^issuer.logoUrl}}https://cdn.filestackcontent.com/oR8Y73lxRj6wqrLQiUi7{{/issuer.logoUrl}}" color="#f3f4f6"/>
+                            </v:oval>
+                          </td></tr>
+                        </table>
+                        <![endif]-->
+                      </div>
+
+                      <p style="margin:0 0 24px;">Great news!</p>
+
+                      <p style="margin:0 0 24px;">
+                        Your guardian has approved the credential
+                        {{#credential.name}}<strong>"{{credential.name}}"</strong> {{/credential.name}}issued by
+                        <strong>{{issuer.name}}</strong>. It is now available in your LearnCard wallet.
+                      </p>
+
+                      <p style="margin:0 0 24px;">
+                        Open the LearnCard app to see it — your credential should appear automatically.
+                        If you don't see it right away, try refreshing your wallet.
+                      </p>
+
+                      <!-- CTA Button -->
+                      <div style="line-height:100%;margin-bottom:24px;">
+                        <a href="https://learncard.com" class="hover-bg-indigo" style="display:inline-block;border-radius:4px;background-color:#6366f1;padding:16px 24px;font-size:16px;font-weight:600;line-height:1;color:#ffffff;text-decoration:none;">
+                          <!--[if mso]><i style="letter-spacing:24px;mso-font-width:-100%;mso-text-raise:26pt;">&nbsp;</i><![endif]-->
+                          <span style="mso-text-raise:13pt;">Open LearnCard &rarr;</span>
+                          <!--[if mso]><i style="letter-spacing:24px;mso-font-width:-100%;">&nbsp;</i><![endif]-->
+                        </a>
+                      </div>
+
+                      <div style="padding-top:24px;font-size:14px;line-height:20px;">
+                        <p style="margin:0 0 16px;">Sincerely,<br>The {{company.name}}{{^company.name}}LearnCard{{/company.name}} Team</p>
+                      </div>
+
+                    </td>
+                  </tr>
+
+                  <!-- Spacer -->
+                  <tr><td style="height:48px;"></td></tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding-left:24px;padding-right:24px;text-align:center;font-size:12px;color:#6b7280;">
+                      <p style="margin:0 0 4px;">
+                        You received this email because your guardian approved a credential from {{issuer.name}}{{^issuer.name}}an issuer{{/issuer.name}} on {{company.name}}{{^company.name}}LearnCard{{/company.name}}.
+                      </p>
+                      <p style="margin:0 0 4px;">
+                        {{company.name}}{{^company.name}}LearnCard{{/company.name}} {{#company.address}}&bull; {{.}}{{/company.address}}{{^company.address}}&copy; 2025{{/company.address}}
+                      </p>
+                      <p style="margin:0;">
+                        {{{ pm:unsubscribe }}}
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

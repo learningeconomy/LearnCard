@@ -42,7 +42,7 @@ export const DEFAULT_BRANDING: TenantBranding = {
     brandName: 'LearnCard',
     logoUrl: 'https://learncard.app/assets/icon/icon.png',
     logoAlt: 'LearnCard',
-    primaryColor: '#18224E',
+    primaryColor: '#6366f1',
     primaryTextColor: '#ffffff',
     supportEmail: 'support@learningeconomy.io',
     websiteUrl: 'https://www.learncard.com',

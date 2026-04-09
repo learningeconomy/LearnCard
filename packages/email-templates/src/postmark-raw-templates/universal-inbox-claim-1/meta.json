@@ -1,0 +1,44 @@
+{
+  "Name": "Endorsement Request",
+  "Alias": "universal-inbox-claim-1",
+  "Subject": "Endorsement Request for Your Review",
+  "TemplateType": "Standard",
+  "TestRenderModel": {
+    "company": {
+      "homepageUrl": {},
+      "logoUrl": {},
+      "name": {},
+      "product": {},
+      "address": {}
+    },
+    "issuer": {
+      "logoUrl": {},
+      "name": {
+        "issuer": {
+          "name": "name_Value"
+        }
+      }
+    },
+    "credential": {
+      "type": {},
+      "name": "name_Value"
+    },
+    "recipient": {
+      "name": {},
+      "email": {}
+    },
+    "message": {
+      "length": {
+        "message": "message_Value",
+        "issuer": {
+          "name": {
+            "issuer": {
+              "name": "name_Value"
+            }
+          }
+        }
+      }
+    },
+    "shareLink": "shareLink_Value"
+  }
+}

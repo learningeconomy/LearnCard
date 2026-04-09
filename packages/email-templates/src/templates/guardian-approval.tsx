@@ -11,6 +11,7 @@ import type { TenantBranding } from '../branding';
 import { DEFAULT_BRANDING } from '../branding';
 import { Layout } from '../components/Layout';
 import { EmailButton } from '../components/EmailButton';
+import { LinkFallback } from '../components/LinkFallback';
 
 export interface GuardianApprovalProps {
     branding: TenantBranding;
@@ -34,27 +35,34 @@ export const GuardianApproval: React.FC<GuardianApprovalProps> = ({
 
     return (
         <Layout branding={branding} preview={`${requesterName} needs your approval to join ${branding.brandName}`}>
-            <Text style={heading}>Guardian approval requested</Text>
+            <Text style={heading}>Account Approval Request</Text>
+
+            <Text style={paragraph}>Hello,</Text>
 
             <Text style={paragraph}>
-                <strong>{requesterName}</strong> has requested your approval to create an account
-                on {branding.brandName}.
+                <strong>{requesterName}</strong> has requested approval to use their {branding.brandName} account.
             </Text>
 
             <Text style={paragraph}>
-                As their guardian, please review and approve their request by tapping the button below.
+                {branding.brandName} is a private, digital passport for learning and work.
+                It lets users securely collect and share their verified skills and achievements online.
+            </Text>
+
+            <Text style={paragraph}>
+                Please click the button below to approve this account request.
             </Text>
 
             <Section style={buttonWrapper}>
                 <EmailButton href={approvalUrl} branding={branding}>
-                    Approve Account
+                    Approve Request &rarr;
                 </EmailButton>
             </Section>
 
-            <Text style={muted}>
-                If you don&apos;t recognize this request, you can safely ignore this email.
-                The request will expire automatically.
+            <Text style={signOff}>
+                Thank you,<br />The {branding.brandName} Team
             </Text>
+
+            <LinkFallback href={approvalUrl} />
         </Layout>
     );
 };
@@ -73,29 +81,28 @@ export const getGuardianApprovalSubject = (
 // ---------------------------------------------------------------------------
 
 const heading: React.CSSProperties = {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 600,
-    color: '#18224E',
-    margin: '0 0 12px',
+    color: '#111827',
+    margin: '0 0 24px',
 };
 
 const paragraph: React.CSSProperties = {
-    fontSize: 14,
-    color: '#52597A',
-    lineHeight: '22px',
-    margin: '0 0 12px',
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: '24px',
+    margin: '0 0 24px',
 };
 
 const buttonWrapper: React.CSSProperties = {
-    textAlign: 'center' as const,
-    margin: '28px 0',
+    margin: '0 0 24px',
 };
 
-const muted: React.CSSProperties = {
-    fontSize: 13,
-    color: '#8b91a7',
+const signOff: React.CSSProperties = {
+    fontSize: 14,
+    color: '#374151',
     lineHeight: '20px',
-    margin: '4px 0',
+    margin: '24px 0 0',
 };
 
 // ---------------------------------------------------------------------------

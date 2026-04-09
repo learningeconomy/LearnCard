@@ -1,0 +1,16 @@
+Hello,
+
+{{#issuer.name}}{{issuer.name}}{{/issuer.name}} has requested an endorsement from you for {{#credential.name}}{{credential.name}}{{/credential.name}}.
+
+LearnCard is your private, digital passport for learning and work. It lets you securely collect and share verified skills and achievements online.
+
+To review and submit your endorsement, click the link below:
+
+{{shareLink}}
+
+If the button or link doesn’t work, you can copy and paste the URL directly into your browser:
+
+{{shareLink}}
+
+Sincerely,
+The {{company.name}}{{^ company.name}}LearnCard{{/company.name}} Team
