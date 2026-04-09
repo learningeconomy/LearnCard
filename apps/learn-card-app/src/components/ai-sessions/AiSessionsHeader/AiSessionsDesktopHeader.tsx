@@ -57,10 +57,13 @@ export const AiSessionsDesktopHeader: React.FC<{
                     <div className="h-[25px] w-[25px]" />
                 </div>
 
-                <div className="w-full flex items-center justify-center">
+                <div className="w-full flex items-center justify-center gap-[6px]">
                     <h4 className={`font-semibold text-${primaryColor} text-sm mt-1`}>
                         AI Sessions
                     </h4>
+                    <span className="text-[15px] font-normal text-grayscale-400 leading-[100%] mt-1">
+                        beta
+                    </span>
                 </div>
             </div>
 

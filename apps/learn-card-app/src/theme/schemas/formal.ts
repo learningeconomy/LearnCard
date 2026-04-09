@@ -33,8 +33,8 @@ export const formalTheme: Theme = validateThemeData({
         },
         {
             labels: {
-                singular: 'AI Insight Hub',
-                plural: 'AI Insights Hub',
+                singular: 'AI Insight',
+                plural: 'AI Insights',
             },
             categoryId: CredentialCategoryEnum.aiInsight,
         },
@@ -142,7 +142,7 @@ export const formalTheme: Theme = validateThemeData({
         },
         {
             id: SideMenuLinksEnum.aiInsights,
-            label: 'AI Insights Hub',
+            label: 'AI Insights',
             path: '/ai/insights',
         },
         {
