@@ -15,6 +15,7 @@ import SideMenuFooter from './SideMenuFooter';
 import SideMenuRootLinks from './SideMenuRootLinks';
 import BurgerIcon from '../../components/svgs/Burger';
 import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import SideMenuSecondaryLinks from './SideMenuSecondaryLinks';
 import { IonMenu, IonContent, IonMenuToggle } from '@ionic/react';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
@@ -33,6 +34,7 @@ import {
     sideMenuMetaversityBrandingStyles,
 } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { aiRoutes } from '../../AppRouter';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -44,6 +46,8 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
 }) => {
     const { getColorSet } = useTheme();
     const colors = getColorSet(ColorSetEnum.sideMenu);
+    const resolvedAssets = useTenantBrandingAssets();
+    const brandingConfig = useBrandingConfig();
     const { isMobile } = useDeviceTypeByWidth();
     const flags = useFlags();
     const history = useHistory();
@@ -131,7 +135,11 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                             <BurgerIcon className="text-grayscale-800 h-[25px] w-[25px] mr-4" />
                                         )}
 
-                                        <LearnCardTextLogo className="text-grayscale-900 w-[85%] max-w-[150px]" />
+                                        {resolvedAssets.textLogoDark ? (
+                                            <img src={resolvedAssets.textLogoDark} alt="Logo" className="w-[85%] max-w-[150px] object-contain" />
+                                        ) : (
+                                            <LearnCardTextLogo className={`${colors.logoColor ?? 'text-grayscale-900'} w-[85%] max-w-[150px]`} />
+                                        )}
                                     </div>
                                 </IonMenuToggle>
                             </button>
@@ -147,7 +155,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                     onClick={handleBoost}
                                     className={`text-[17px] flex items-center justify-center font-semibold py-[5px] rounded-full w-full max-w-[90%] border-solid border-[2px] h-[45px] max-h-[45px] shadow-soft-bottom ${colors.secondaryButtonColor}`}
                                 >
-                                    Add to LearnCard
+                                    Add to {brandingConfig.name}
                                     <GearPlusIcon className="ml-1 text-grayscale-800" />
                                 </IonMenuToggle>
                             </div>

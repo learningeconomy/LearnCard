@@ -31,8 +31,9 @@ export const SocialLoginsButtons: React.FC<{
     extraSocialLogins = [],
     showSocialLogins,
 }) => {
-    const { colors } = useTheme();
+    const { colors, theme } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
+    const loginBgColor = theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
 
     const socialLogins = useSocialLogins(branding);
 
@@ -79,7 +80,7 @@ export const SocialLoginsButtons: React.FC<{
                             );
                         })}
                         <button
-                            className={`flex items-center justify-center border-solid border-[1px] border-emerald-800 ${activeLoginTypeStyles} rounded-full min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden`}
+                            className={`flex items-center justify-center border-solid border-[1px] border-white/30 ${activeLoginTypeStyles} rounded-full min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden`}
                             onClick={e => {
                                 e.stopPropagation();
                                 handleActiveLoginType();
@@ -90,7 +91,7 @@ export const SocialLoginsButtons: React.FC<{
                     </div>
                     {showSocialLogins && (
                         <p className="border-b-[1px] border-solid border-[#EFF0F5] leading-[0.1em] w-full text-center my-[40px]">
-                            <span className="bg-emerald-700 py-0 px-[10px] text-white">OR</span>
+                            <span className="py-0 px-[10px] text-white" style={{ backgroundColor: loginBgColor }}>OR</span>
                         </p>
                     )}
                 </div>

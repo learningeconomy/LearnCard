@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Clipboard } from '@capacitor/clipboard';
 
 import useDebounce from 'apps/learn-card-app/src/hooks/useDebounce';
+import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 import {
@@ -138,7 +139,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
             challenge: challenge,
         };
         const boostBase64Url = base64url.encode(JSON.stringify(data));
-        return `https://learncard.app/interactions/claim/${boostBase64Url}?iuv=1`;
+        return `${getAppBaseUrl()}/interactions/claim/${boostBase64Url}?iuv=1`;
     };
 
     const getCurrentClaimLink = () => {
@@ -185,7 +186,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                     );
 
                     setBoostClaimLink(
-                        `https://learncard.app/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                        `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
                     );
                     setInteroperableClaimLink(
                         constructInteroperableLink(
@@ -226,7 +227,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                         );
 
                         setBoostClaimLink(
-                            `https://learncard.app/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                            `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
                         );
                         setInteroperableClaimLink(
                             constructInteroperableLink(

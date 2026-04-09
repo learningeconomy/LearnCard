@@ -27,6 +27,7 @@ import {
     useSyncConsentFlow,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { IonLoading } from '@ionic/react';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -72,6 +73,7 @@ const PostConsentFlowSyncCard: React.FC<PostConsentFlowSyncCardProps> = ({
 }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
+    const brandingConfig = useBrandingConfig();
 
     const { newModal, closeModal } = useModal();
     const { initWallet } = useWallet();
@@ -152,7 +154,9 @@ const PostConsentFlowSyncCard: React.FC<PostConsentFlowSyncCardProps> = ({
     return (
         <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[400px] disable-scrollbars safe-area-top-margin">
             <div className="w-full flex items-center justify-center pt-2">
-                <h6 className="tracking-[12px] text-base font-bold text-black">LEARNCARD</h6>
+                <h6 className="tracking-[12px] text-base font-bold text-black">
+                    {brandingConfig?.name}
+                </h6>
             </div>
 
             <div className="w-full flex flex-col items-center justify-center mt-8 px-4">

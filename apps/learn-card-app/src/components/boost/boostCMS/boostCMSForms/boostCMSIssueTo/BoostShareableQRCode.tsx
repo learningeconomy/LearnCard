@@ -8,13 +8,14 @@ import BoostCMSIDAppearanceController from '../boostCMSAppearance/BoostCMSIDAppe
 import FamilyCrest from 'apps/learn-card-app/src/components/familyCMS/FamilyCrest/FamilyCrest';
 
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
-import { BoostCategoryOptionsEnum, useModal } from 'learn-card-base';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
 
 type BoostShareableQRCodeProps = {
     state: BoostCMSState;
     boostClaimLink: string;
     handleCloseModal?: () => void;
+    showCloseButton?: boolean;
     text?: string;
 };
 
@@ -22,10 +23,9 @@ const BoostShareableQRCode: React.FC<BoostShareableQRCodeProps> = ({
     state,
     boostClaimLink,
     handleCloseModal,
+    showCloseButton = false,
     text = 'Scan Code to Claim Boost',
 }) => {
-    const { closeModal } = useModal();
-
     const defaultTitle =
         CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type]?.find(
             options => options?.type === state?.basicInfo?.achievementType
@@ -37,7 +37,17 @@ const BoostShareableQRCode: React.FC<BoostShareableQRCodeProps> = ({
 
     return (
         <IonRow className="flex flex-col items-center justify-center vc-preview-modal-safe-area">
-            <div className="bg-white w-full max-w-[400px] min-w-[320px] rounded-[20px] shadow-3xl pt-3">
+            <div className="bg-white w-full max-w-[400px] min-w-[320px] rounded-[20px] shadow-3xl pt-3 mt-8 relative">
+                {showCloseButton && handleCloseModal && (
+                    <button
+                        type="button"
+                        aria-label="Close"
+                        onClick={handleCloseModal}
+                        className="absolute top-4 right-4 z-10 text-grayscale-700 hover:text-grayscale-900 transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                )}
                 {(isID || isMembership) && (
                     <BoostCMSIDAppearanceController
                         state={state}

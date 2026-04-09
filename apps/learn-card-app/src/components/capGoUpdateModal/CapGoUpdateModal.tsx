@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { IonRow } from '@ionic/react';
-import AppIcon from '../../assets/images/app-icon.png';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
 export const CapGoUpdateModal: React.FC<{
     closeModal: () => void;
     updateVersion: string;
     bundle: any;
 }> = ({ closeModal, updateVersion, bundle }) => {
+    const brandingConfig = useBrandingConfig();
+    const { appIcon } = useTenantBrandingAssets();
     const [currentVersion, setCurrentVersion] = useState<string>('');
 
     useEffect(() => {
@@ -35,11 +38,13 @@ export const CapGoUpdateModal: React.FC<{
         <IonRow className="flex flex-col pb-4 w-full">
             <div className="w-full flex flex-col items-center justify-center pt-2">
                 <img
-                    src={AppIcon}
-                    alt="app iocon"
+                    src={appIcon}
+                    alt="App icon"
                     className="h-[50px] w-[50px] overflow-hidden rounded-[12px] mt-4"
                 />
-                <h6 className="tracking-[12px] text-base font-bold text-black mt-4">LEARNCARD</h6>
+                <h6 className="tracking-[12px] text-base font-bold text-black mt-4">
+                    {brandingConfig?.name}
+                </h6>
                 <p className="text-[17px] text-grayscale-900 mt-2 font-medium">
                     Current Version: v{currentVersion}
                 </p>

@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
-import { auth } from '../../firebase/firebase';
-
-import { useCurrentUser, useModal, ModalTypes } from 'learn-card-base';
 
 import { IonCol, IonRow, IonInput } from '@ionic/react';
 import WarningIcon from '../svgs/WarningIcon';
 import SeedPhraseModal from './SeedPhraseModal';
+
+import { useCurrentUser, useModal, ModalTypes } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+
+import { auth } from '../../firebase/firebase';
 
 const ExportSeedPhraseModal: React.FC<{}> = () => {
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
     });
+    const brandingConfig = useBrandingConfig();
     const firebaseAuth = auth();
     const currentFirebaseUser = firebaseAuth.currentUser;
     const currentUser = useCurrentUser();
+
     const [phrase, setPhrase] = useState<string>(
         currentFirebaseUser?.email ?? currentFirebaseUser?.phoneNumber ?? currentUser?.email ?? ''
     );
@@ -47,10 +51,11 @@ const ExportSeedPhraseModal: React.FC<{}> = () => {
             </IonRow>
             <IonRow className="flex flex-col items-center justify-center bg-white text-black">
                 <p className="ion-text-center mt-2 font-normal text-sm tracking-wider bg-white px-2 delete-user-prompt-text max-w-[400px]">
-                    This is your LearnCard's master key. Anyone with access to this phrase can
-                    control your LearnCard and your identity. - Do NOT share it. - Do NOT store it
-                    online or take screenshots. - Write it down and store it offline. - If you lose
-                    this, you may permanently lose access. <b>Are you sure you want to proceed?</b>
+                    This is your {brandingConfig?.name}'s master key. Anyone with access to this
+                    phrase can control your {brandingConfig?.name} and your identity. - Do NOT share
+                    it. - Do NOT store it online or take screenshots. - Write it down and store it
+                    offline. - If you lose this, you may permanently lose access.{' '}
+                    <b>Are you sure you want to proceed?</b>
                 </p>
                 <h2 className="ion-text-center text-lg font-semibold text-2x mt-4">
                     Confirm by typing

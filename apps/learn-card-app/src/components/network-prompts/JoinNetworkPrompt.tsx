@@ -4,26 +4,22 @@ import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNetworkConsentMutation } from 'learn-card-base/react-query/mutations/networkConsent';
 import {
+    ModalTypes,
+    useModal,
     useWallet,
     useCurrentUser,
     isPlatformIOS,
     useGetCurrentLCNUser,
     isPlatformAndroid,
     pushUtilities,
-    currentUserStore,
     useIsCurrentUserLCNUser,
     getNotificationsEndpoint,
+    useBrandingConfig,
 } from 'learn-card-base';
 
-import { IonRow, IonCol, useIonModal, IonInput } from '@ionic/react';
+import { IonInput } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
-import NetworkSettings from '../network-settings/NetworkSettings';
 import RejectNetworkPrompt from './RejectNetworkPrompt';
-
-import {
-    NetworkSettingsState,
-    NetworkSettingsEnum,
-} from '../network-settings/networkSettings.helpers';
 import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificationsPrompt';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 
@@ -52,14 +48,13 @@ export const JoinNetworkPrompt: React.FC<{
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
     const networkConsentMutation = useNetworkConsentMutation();
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
+    });
+    const brandingConfig = useBrandingConfig();
 
     const [step, setStep] = useState<number>(1);
-    const [settings, setSettings] = useState<NetworkSettingsState>({
-        sendRequests: true,
-        receiveRequests: true,
-        showDisplayName: true,
-        showProfilePicture: true,
-    });
     const [profileId, setProfileId] = useState<string | null | undefined>('');
     const [error, setError] = useState<string>('');
     const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -68,32 +63,20 @@ export const JoinNetworkPrompt: React.FC<{
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const [presentModal, dismissModal] = useIonModal(NetworkSettings, {
-        handleCloseModal: () => dismissModal(),
-        settings: settings,
-        handleStateChange: (settingsType: NetworkSettingsEnum, settingState: boolean) =>
-            handleStateChange(settingsType, settingState),
-    });
+    const openRejectPrompt = () => {
+        newModal(
+            <RejectNetworkPrompt handleCloseModal={closeModal} />,
+            { hideButton: true, sectionClassName: '!max-w-[400px]' },
+            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+        );
+    };
 
-    const [presentRejectModal, dismissRejectModal] = useIonModal(RejectNetworkPrompt, {
-        handleCloseModal: () => dismissRejectModal(),
-    });
-
-    const [presentNotificationPromptModal, dismissNotificationPromptModal] = useIonModal(
-        PushNotificationsPrompt,
-        {
-            handleCloseModal: () => dismissNotificationPromptModal(),
-            settings: settings,
-            handleStateChange: (settingsType: NetworkSettingsEnum, settingState: boolean) =>
-                handleStateChange(settingsType, settingState),
-        }
-    );
-
-    const handleStateChange = (settingsType: NetworkSettingsEnum, settingState: boolean) => {
-        const _settings = settings;
-
-        _settings[settingsType] = !settingState;
-        setSettings({ ..._settings });
+    const openNotificationPrompt = () => {
+        newModal(
+            <PushNotificationsPrompt handleCloseModal={closeModal} />,
+            { hideButton: true, sectionClassName: '!max-w-[400px]' },
+            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+        );
     };
 
     const validate = () => {
@@ -153,11 +136,9 @@ export const JoinNetworkPrompt: React.FC<{
                     if (showNotificationsModal && Capacitor.isNativePlatform() && isPlatformIOS()) {
                         // ! push notification permission prompting is restricted to IOS
                         // ! push notifications are enabled on android by default, no prompting is required
-                        presentNotificationPromptModal({
-                            cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                            backdropDismiss: false,
-                            showBackdrop: false,
-                        });
+                        setTimeout(() => {
+                            openNotificationPrompt();
+                        }, 0);
                     }
                 }
             } catch (err) {
@@ -178,16 +159,18 @@ export const JoinNetworkPrompt: React.FC<{
 
     return (
         <>
-            <IonRow className="flex flex-col pb-4 w-full">
-                <IonCol className="w-full flex items-center justify-center pt-2">
-                    <h6 className="tracking-[12px] text-base font-bold text-black">LEARNCARD</h6>
-                </IonCol>
-                <IonCol className="w-full flex items-center justify-center mt-8">
+            <div className="flex flex-col pb-4 w-full">
+                <div className="w-full flex items-center justify-center pt-2">
+                    <h6 className="tracking-[12px] text-base font-bold text-black">
+                        {brandingConfig?.name}
+                    </h6>
+                </div>
+                <div className="w-full flex items-center justify-center mt-8">
                     <h6 className="text-black font-poppins text-xl">{networkPromptTitle}</h6>
-                </IonCol>
-            </IonRow>
+                </div>
+            </div>
 
-            <IonRow className="flex items-center justify-center w-full">
+            <div className="flex items-center justify-center w-full">
                 <div className="relative flex justify-between items-center bg-grayscale-100/40 rounded-[40px] p-0 m-0 pr-[10px] pb-[3px] pt-[3px] object-fill">
                     <ProfilePicture
                         customContainerClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[70px] min-h-[70px]"
@@ -195,9 +178,9 @@ export const JoinNetworkPrompt: React.FC<{
                         customSize={120}
                     />
                 </div>
-            </IonRow>
-            <IonRow className="flex items-center justify-center w-full">
-                <IonCol className="text-center">
+            </div>
+            <div className="flex items-center justify-center w-full">
+                <div className="text-center">
                     <p className="text-center text-sm font-semibold px-[16px] text-grayscale-800">
                         The LearnCard Network allows you to exchange credentials and badges with
                         other members.
@@ -214,7 +197,7 @@ export const JoinNetworkPrompt: React.FC<{
                         </p>
                     )}
                     {step === 2 && (
-                        <IonRow className="flex flex-col items-center justify-center w-full px-4">
+                        <div className="flex flex-col items-center justify-center w-full px-4">
                             <div className="flex flex-col items-center justify-center max-w-[375px] w-full mb-4">
                                 <IonInput
                                     autocapitalize="on"
@@ -237,19 +220,13 @@ export const JoinNetworkPrompt: React.FC<{
                                     </p>
                                 )}
                             </div>
-                        </IonRow>
+                        </div>
                     )}
                     <br />
-                    {/* <button
-                                onClick={() => presentModal()}
-                                className="text-indigo-500 font-bold"
-                            >
-                                Edit Access
-                            </button> */}
-                </IonCol>
-            </IonRow>
-            <IonRow className="w-full flex items-center justify-center mt-6">
-                <IonCol className="flex items-center flex-col max-w-[90%] border-b-[1px] border-grayscale-200">
+                </div>
+            </div>
+            <div className="w-full flex items-center justify-center mt-6">
+                <div className="flex items-center flex-col max-w-[90%] border-b-[1px] border-grayscale-200">
                     {step === 1 ? (
                         <button
                             onClick={handleNextStep}
@@ -273,11 +250,9 @@ export const JoinNetworkPrompt: React.FC<{
                             onClick={() => {
                                 handleCloseModal();
                                 if (showRejectModal) {
-                                    presentRejectModal({
-                                        cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                                        backdropDismiss: false,
-                                        showBackdrop: false,
-                                    });
+                                    setTimeout(() => {
+                                        openRejectPrompt();
+                                    }, 0);
                                 }
                             }}
                             className="text-grayscale-900 text-center text-base w-full font-medium"
@@ -285,21 +260,21 @@ export const JoinNetworkPrompt: React.FC<{
                             Don't Accept
                         </button>
                     </div>
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center mt-4 w-full">
-                <IonCol className="flex flex-col items-center justify-center text-center">
+                </div>
+            </div>
+            <div className="flex items-center justify-center mt-4 w-full">
+                <div className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal px-16 text-grayscale-600">
                         You own your own data.
                         <br />
                         All connections are encrypted.
                     </p>
                     <button className={`text-${primaryColor} font-bold`}>Learn More</button>
-                </IonCol>
-            </IonRow>
+                </div>
+            </div>
 
-            <IonRow className="flex items-center justify-center w-full">
-                <IonCol className="flex items-center justify-center">
+            <div className="flex items-center justify-center w-full">
+                <div className="flex items-center justify-center">
                     <button onClick={openPP} className={`text-${primaryColor} font-bold text-sm`}>
                         Privacy Policy
                     </button>
@@ -307,8 +282,8 @@ export const JoinNetworkPrompt: React.FC<{
                     <button onClick={openToS} className={`text-${primaryColor} font-bold text-sm`}>
                         Terms of Service
                     </button>
-                </IonCol>
-            </IonRow>
+                </div>
+            </div>
         </>
     );
 };
