@@ -9,7 +9,6 @@ import AiPathwayCourses from '../ai-pathway-courses/AiPathwayCourses';
 import AiPathwaysEmptyPlaceholder from '../AiPathwaysEmptyPlaceholder';
 
 import ExploreAiInsightsButton from '../../ai-insights/ExploreAiInsightsButton';
-import ExperimentalFeatureBox from '../../../components/generic/ExperimentalFeatureBox';
 import ErrorBoundaryFallback from '../../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwayExploreContent from '../ai-pathway-explore-content/AiPathwayExploreContent';
 
@@ -63,10 +62,6 @@ const AiPathwaysDiscovery: React.FC = () => {
                     />
                     <AiFeatureGate>
                         <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
-                            <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
-                                <ExperimentalFeatureBox className="shadow-box-bottom" />
-                            </div>
-
                             {/* Search Input Section */}
                             <AiPathwaysDiscoverySearch
                                 keywordInput={keywordInput}

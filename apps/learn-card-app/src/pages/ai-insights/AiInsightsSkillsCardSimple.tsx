@@ -1,25 +1,19 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
-import SkillsInsightIcon from 'learn-card-base/svgs/SkillsInsightIcon';
+import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 
 const AiInsightsSkillsCardSimple: React.FC = () => {
-    const history = useHistory();
-
-    const handleExploreClick = () => history.push('/skills');
-
     return (
-        <div
-            role="button"
-            onClick={handleExploreClick}
-            className="w-full flex items-center justify-center my-4 overflow-hidden rounded-full"
+        <Link
+            to="/skills"
+            className="flex-1 bg-violet-600 text-white flex items-center justify-start gap-[8px] rounded-full py-[7px] px-[15px] shadow-bottom-2-3 overflow-hidden"
         >
-            <div className="w-full bg-violet-600 rounded-full flex items-center h-[65px] max-h-[65px] justify-start relative shadow-bottom-2-4 overflow-hidden">
-                <div className="ml-[-5px] mt-[10px]">
-                    <SkillsInsightIcon position="horizontal" className="w-auto h-[80px]" />
-                </div>
-            </div>
-        </div>
+            <PuzzlePiece className="w-[22px] h-[22px] shrink-0" version="filled" />
+            <span className="font-poppins font-semibold text-[14px] leading-[130%] text-left">
+                Browse Skills Hub
+            </span>
+        </Link>
     );
 };
 
