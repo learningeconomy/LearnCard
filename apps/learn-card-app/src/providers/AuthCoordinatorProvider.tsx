@@ -1559,7 +1559,7 @@ const AuthSessionManager: React.FC<{
                             />
                         </Overlay>
                     );
-            })()}
+                })()}
         </AppAuthContext.Provider>
     );
 };

@@ -7,8 +7,8 @@ PNPM_FLAGS = "-P false"
 SKIP_DIDKIT_NAPI = "1"
 # Global Context Default
 [build]
-command = "npx tsx apps/learn-card-app/scripts/generate-edge-tenant-configs.ts && pnpm exec nx build learn-card-app --skip-nx-cache"
-publish = "apps/learn-card-app/build/"
+command = "npx tsx scripts/generate-edge-tenant-configs.ts && pnpm exec nx build learn-card-app --skip-nx-cache"
+publish = "build/"
 
 # Netlify Deploy Preview
 [context.deploy-preview]
