@@ -22,7 +22,7 @@ export const DEFAULT_SIDE_MENU_ROOT_LINKS: SideMenuLink[] = [
 export const DEFAULT_SIDE_MENU_SECONDARY_LINKS: SideMenuLink[] = [
     { id: SideMenuLinksEnum.wallet, label: 'Passport', path: '/passport' },
     { id: SideMenuLinksEnum.aiTopics, label: 'AI Sessions', path: '/ai/topics' },
-    { id: SideMenuLinksEnum.aiInsights, label: 'AI Insights Hub', path: '/ai/insights' },
+    { id: SideMenuLinksEnum.aiInsights, label: 'AI Insights', path: '/ai/insights' },
     { id: SideMenuLinksEnum.aiPathways, label: 'AI Pathways', path: '/ai/pathways' },
     { id: SideMenuLinksEnum.skills, label: 'Skills', path: '/skills' },
     { id: SideMenuLinksEnum.socialBadges, label: 'Boosts', path: '/socialBadges' },
