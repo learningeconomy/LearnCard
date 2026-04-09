@@ -16,7 +16,7 @@ export const DEFAULT_CATEGORIES: ThemeCategory[] = [
         categoryId: CredentialCategoryEnum.aiPathway,
     },
     {
-        labels: { singular: 'AI Insight Hub', plural: 'AI Insights' },
+        labels: { singular: 'AI Insight', plural: 'AI Insights' },
         categoryId: CredentialCategoryEnum.aiInsight,
     },
     {
