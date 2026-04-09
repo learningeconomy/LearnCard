@@ -13,7 +13,7 @@ export const AiInsightsPromptBoxInput: React.FC<{
                 onIonInput={e => {
                     setPrompt(e.detail.value as string);
                 }}
-                placeholder="Ask about your skills or your future..."
+                placeholder="Ask about your skills..."
                 className="w-full font-notoSans text-left bg-indigo-50 px-4 rounded-[10px] text-grayscale-900 text-[17px]"
                 autoGrow
                 rows={2}
