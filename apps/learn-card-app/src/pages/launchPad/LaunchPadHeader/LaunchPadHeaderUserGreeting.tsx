@@ -26,7 +26,7 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
     const { gate } = useLCNGatedAction();
 
     const { colors } = useTheme();
-    const quickActionBgColor = colors?.launchPad?.quickActionBgColor ?? '#DCEAFE';
+    const quickActionBgColor = colors?.launchPad?.quickActionBgColor ?? '#FBFBFC';
     const quickActionTextColor = colors?.launchPad?.quickActionTextColor ?? '#273B72';
 
     const { emoji, greeting } = getGreetingAndEmoji(currentHour);
