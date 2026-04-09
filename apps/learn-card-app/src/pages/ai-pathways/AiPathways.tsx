@@ -5,6 +5,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import MainHeader from '../../components/main-header/MainHeader';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
+import AiPathwaysWhatWouldYouLikeToDoCard from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard';
 
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
@@ -13,8 +14,11 @@ import useTheme from '../../theme/hooks/useTheme';
 import { CredentialCategoryEnum } from 'learn-card-base';
 import GrowSkillsPathwaysHome from './GrowSkillsPathwaysHome';
 
+import { useSkillProfileCompletion } from './ai-pathways-skill-profile/SkillProfileProgressBar';
+
 const AiPathways: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
+    const { percentage } = useSkillProfileCompletion();
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiPathway);
     const { backgroundSecondaryColor } = colors;
@@ -31,7 +35,11 @@ const AiPathways: React.FC = () => {
                     />
                     <AiFeatureGate>
                         <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
+                            {percentage > 0 && <AiPathwaysWhatWouldYouLikeToDoCard />}
+
                             <MySkillProfile />
+
+                            {percentage === 0 && <AiPathwaysWhatWouldYouLikeToDoCard />}
 
                             <GrowSkillsPathwaysHome />
                         </div>
