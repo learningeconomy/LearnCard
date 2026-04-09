@@ -1,12 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
+import React, { useMemo } from 'react';
 
+import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import AiPathwaysEmptyPlaceholder from './AiPathwaysEmptyPlaceholder';
 import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
 import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
 import AiPathwayCareers from './ai-pathway-careers/AiPathwayCareers';
 import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
+import GrowSkillsCarouselSection from './GrowSkillsCarouselSection';
 import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
 import { ModalTypes, useAiInsightCredential, useAiPathways, useModal } from 'learn-card-base';
 import {
@@ -24,17 +24,14 @@ import {
 } from './ai-pathway-courses/ai-pathway-courses.helpers';
 import ExplorePathwaysModal from './ExplorePathwaysModal';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
-import SlimCaretLeft from 'src/components/svgs/SlimCaretLeft';
-import SlimCaretRight from 'src/components/svgs/SlimCaretRight';
 import GrowSkillsCourseItem from './GrowSkillsCourseItem';
+import GrowSkillsMediaItem from './GrowSkillsMediaItem';
+import GrowSkillsModal from './GrowSkillsModal';
 
 type GrowSkillsPathwaysHomeProps = {};
 
 const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
     const { newModal } = useModal();
-    const courseSwiperRef = useRef<any>(null);
-    const [coursesAtBeginning, setCoursesAtBeginning] = useState(true);
-    const [coursesAtEnd, setCoursesAtEnd] = useState(false);
 
     const { data: aiInsightCredential, isLoading: fetchAiInsightCredentialLoading } =
         useAiInsightCredential();
@@ -72,7 +69,7 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
         return schoolPrograms?.length
             ? filterCoursesByFieldOfStudy(schoolPrograms, fieldOfStudy)
             : [];
-    }, [schoolPrograms]);
+    }, [schoolPrograms, fieldOfStudy]);
 
     const { data: occupations, isLoading: fetchOccupationsLoading } =
         useOccupationDetailsForKeyword(careerKeywords?.[0] || '');
@@ -97,17 +94,12 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
         });
     };
 
-    const handleSwiperUpdate = (swiper: any) => {
-        setCoursesAtBeginning(swiper.isBeginning);
-        setCoursesAtEnd(swiper.isEnd);
+    const openGrowSkillsModal = () => {
+        newModal(<GrowSkillsModal />, undefined, {
+            desktop: ModalTypes.Right,
+            mobile: ModalTypes.Right,
+        });
     };
-
-    useEffect(() => {
-        if (courseSwiperRef.current) {
-            courseSwiperRef.current.update();
-            handleSwiperUpdate(courseSwiperRef.current);
-        }
-    }, [schoolPrograms.length]);
 
     return (
         <>
@@ -123,72 +115,29 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                     </p>
                 </div>
 
-                {schoolPrograms.length > 0 && (
-                    <div className="flex flex-col items-center gap-[10px]">
-                        <div className="flex gap-[5px] w-full">
-                            <span className="text-[14px] font-poppins text-grayscale-800 font-bold leading-[130%]">
-                                Courses
-                            </span>
-                            <button className="text-[14px] font-poppins text-indigo-500 font-bold leading-[130%] ml-auto">
-                                View All
-                            </button>
-                        </div>
+                <GrowSkillsCarouselSection
+                    title="Courses"
+                    items={schoolPrograms}
+                    onViewAll={handleExplorePathways}
+                    renderItem={program => <GrowSkillsCourseItem program={program} />}
+                    getItemKey={program => program.ProgramName}
+                />
 
-                        <div className="relative w-full overflow-visible">
-                            <Swiper
-                                onSwiper={swiper => {
-                                    courseSwiperRef.current = swiper;
-                                    handleSwiperUpdate(swiper);
-                                }}
-                                onResize={handleSwiperUpdate}
-                                onSlideChange={handleSwiperUpdate}
-                                onReachBeginning={() => setCoursesAtBeginning(true)}
-                                onFromEdge={() => {
-                                    if (courseSwiperRef.current) {
-                                        setCoursesAtBeginning(courseSwiperRef.current.isBeginning);
-                                        setCoursesAtEnd(courseSwiperRef.current.isEnd);
-                                    }
-                                }}
-                                onReachEnd={() => setCoursesAtEnd(true)}
-                                spaceBetween={12}
-                                slidesPerView={'auto'}
-                                grabCursor={true}
-                                preventClicks={false}
-                                preventClicksPropagation={false}
-                                style={{ overflow: 'visible' }}
-                            >
-                                {schoolPrograms.map(program => (
-                                    <SwiperSlide
-                                        key={program.ProgramName}
-                                        className="flex !h-auto overflow-visible"
-                                    >
-                                        <GrowSkillsCourseItem program={program} />
-                                    </SwiperSlide>
-                                ))}
-                            </Swiper>
+                <GrowSkillsCarouselSection
+                    title="Media"
+                    items={occupations || []}
+                    onViewAll={handleExplorePathways}
+                    renderItem={occupation => <GrowSkillsMediaItem occupation={occupation} />}
+                    getItemKey={occupation => occupation.OnetTitle || ''}
+                />
 
-                            {!coursesAtBeginning && (
-                                <button
-                                    onClick={() => courseSwiperRef.current?.slidePrev()}
-                                    className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
-                                    style={{ opacity: 0.8 }}
-                                >
-                                    <SlimCaretLeft className="w-5 h-auto" />
-                                </button>
-                            )}
-
-                            {!coursesAtEnd && (
-                                <button
-                                    onClick={() => courseSwiperRef.current?.slideNext()}
-                                    className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
-                                    style={{ opacity: 0.8 }}
-                                >
-                                    <SlimCaretRight className="w-5 h-auto" />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                )}
+                <button
+                    onClick={openGrowSkillsModal}
+                    className="w-full bg-violet-500 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
+                >
+                    <PuzzlePiece className="w-[30px] h-[30px]" version="filled" />
+                    Grow Skills
+                </button>
             </div>
 
             {emptyPathways ? (

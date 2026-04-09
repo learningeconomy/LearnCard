@@ -5,10 +5,7 @@ import {
     useTrainingProgramsByKeyword,
 } from 'learn-card-base/react-query/queries/careerOneStop';
 import { OccupationDetailsResponse, TrainingProgram } from 'learn-card-base/types/careerOneStop';
-import {
-    filterCoursesByFieldOfStudy,
-    normalizeSchoolPrograms,
-} from './ai-pathway-courses/ai-pathway-courses.helpers';
+import { normalizeSchoolPrograms } from './ai-pathway-courses/ai-pathway-courses.helpers';
 
 import { IonSpinner } from '@ionic/react';
 import { X } from 'lucide-react';
@@ -29,11 +26,9 @@ import {
     SKILL_PROFILE_GOALS_KEY,
     SkillProfileGoalsData,
 } from './ai-pathways-skill-profile/SkillProfileStep1';
-import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
-import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
+import AiPathwaysCarouselSection from './GrowSkillsCarouselSection';
 import GrowSkillsCourseItem from './GrowSkillsCourseItem';
 import GrowSkillsMediaItem from './GrowSkillsMediaItem';
-import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
 
 type GrowSkillsModalProps = {};
 
@@ -52,10 +47,10 @@ type GrowSkillsCard =
       }
     | {
           type: 'media';
-          title: string;
-          mediaUrl: string;
-          videoCode: string;
+          occupation: OccupationDetailsResponse;
       };
+
+type GrowSkillsMediaCard = Extract<GrowSkillsCard, { type: 'media' }>;
 
 const interleaveGrowSkillsCards = ({
     aiSessions,
@@ -64,11 +59,7 @@ const interleaveGrowSkillsCards = ({
 }: {
     aiSessions: any[];
     courses: TrainingProgram[];
-    media: Array<{
-        title: string;
-        mediaUrl: string;
-        videoCode: string;
-    }>;
+    media: OccupationDetailsResponse[];
 }) => {
     const mixedCards: GrowSkillsCard[] = [];
 
@@ -87,7 +78,7 @@ const interleaveGrowSkillsCards = ({
         if (mediaItem) {
             mixedCards.push({
                 type: 'media',
-                ...mediaItem,
+                occupation: mediaItem,
             });
         }
     }
@@ -143,10 +134,9 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
     // const keywords = [search, ...goals, ...skillNames];
     const keywords = [search];
 
-    const { data: trainingPrograms, isLoading: fetchTrainingProgramsLoading } =
-        useTrainingProgramsByKeyword({
-            keywords,
-        });
+    const { data: trainingPrograms } = useTrainingProgramsByKeyword({
+        keywords,
+    });
 
     console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
     console.log('trainingPrograms:', trainingPrograms);
@@ -158,19 +148,16 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
     console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
     console.log('schoolPrograms:', schoolPrograms);
 
-    const fieldOfStudy = search;
-    const courses = schoolPrograms;
     // const courses = useMemo(() => {
     //     return schoolPrograms?.length
     //         ? filterCoursesByFieldOfStudy(schoolPrograms, fieldOfStudy)
     //         : [];
     // }, [schoolPrograms, fieldOfStudy]);
 
-    const { data: occupations, isLoading: fetchOccupationsLoading } =
-        useOccupationDetailsForKeyword(search);
+    const { data: occupations } = useOccupationDetailsForKeyword(search);
     // See: AiPathwayExploreContent.tsx
 
-    const { data: learningPathwaysData, isLoading: fetchLearningPathwaysLoading } = useAiPathways();
+    const { data: learningPathwaysData } = useAiPathways();
     // See: AiPathwaySessions.tsx
 
     const cards = useMemo(
@@ -178,12 +165,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
             interleaveGrowSkillsCards({
                 aiSessions: learningPathwaysData || [],
                 courses: schoolPrograms || [],
-                media:
-                    occupations?.map((occupation: OccupationDetailsResponse) => ({
-                        title: occupation.OnetTitle,
-                        mediaUrl: occupation.COSVideoURL,
-                        videoCode: occupation.Video[0]?.VideoCode?.replace(/[^0-9]/g, '') || '',
-                    })) || [],
+                media: occupations || [],
             }),
         [learningPathwaysData, occupations, schoolPrograms]
     );
@@ -200,9 +182,12 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
         });
     }, [activeTab, cards]);
 
-    // console.log('occupations:', occupations);
+    const visibleMediaCards = useMemo(
+        () => visibleCards.filter((card): card is GrowSkillsMediaCard => card.type === 'media'),
+        [visibleCards]
+    );
 
-    const loading = false;
+    // console.log('occupations:', occupations);
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden text-grayscale-900">
@@ -292,7 +277,14 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
                     Occupations: {occupations?.length || 0}
                 </div> */}
 
-                {visibleCards.length > 0 && (
+                {activeTab === 'Media' && visibleMediaCards.length > 0 ? (
+                    <AiPathwaysCarouselSection
+                        title="Media"
+                        items={visibleMediaCards}
+                        getItemKey={card => card.occupation.OnetCode || card.occupation.OnetTitle}
+                        renderItem={card => <GrowSkillsMediaItem occupation={card.occupation} />}
+                    />
+                ) : visibleCards.length > 0 ? (
                     <div className="flex flex-col gap-[15px]">
                         {visibleCards.map((card, index) => {
                             if (card.type === 'ai-session') {
@@ -314,18 +306,23 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({}) => {
                                 );
                             }
 
-                            return (
-                                <GrowSkillsMediaItem
-                                    key={card.videoCode || card.title || index}
-                                    title={card.title}
-                                    mediaUrl={card.mediaUrl}
-                                    videoCode={card.videoCode}
-                                />
-                            );
+                            if (card.type === 'media') {
+                                return (
+                                    <GrowSkillsMediaItem
+                                        key={
+                                            card.occupation.OnetCode ||
+                                            card.occupation.OnetTitle ||
+                                            index
+                                        }
+                                        occupation={card.occupation}
+                                    />
+                                );
+                            }
+
+                            return null;
                         })}
                     </div>
-                )}
-
+                ) : null}
                 {/* <div className="pt-[20px]">
                     <AiPathwayCourses
                         courses={courses}

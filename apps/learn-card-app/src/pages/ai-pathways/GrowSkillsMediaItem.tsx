@@ -1,53 +1,70 @@
 import React, { useState, useEffect } from 'react';
+import { Play } from 'lucide-react';
 import { ModalTypes, VideoMetadata, getVideoMetadata, useModal } from 'learn-card-base';
 import { useCareerOneStopVideo } from 'learn-card-base/react-query/queries/careerOneStop';
 import AiPathwayContentPreview from './ai-pathway-explore-content/AiPathwayContentPreview';
 import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
-import { Play } from 'lucide-react';
+import careerOneStopLogo from '../../assets/images/career-one-stop-logo.png';
 
-type GrowSkillsMediaItemProps = {
-    title: string;
-    mediaUrl: string;
-    videoCode: string;
+type GrowSkillsOccupation = {
+    OnetTitle?: string;
+    COSVideoURL?: string | null;
+    Video?: Array<{
+        VideoCode?: string;
+    } | null> | null;
 };
 
-const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({
-    title,
-    mediaUrl,
-    videoCode,
-}) => {
+type GrowSkillsMediaItemProps = {
+    occupation: GrowSkillsOccupation;
+};
+
+const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({ occupation }) => {
     const { newModal } = useModal({ mobile: ModalTypes.Cancel, desktop: ModalTypes.Cancel });
+
+    const title = occupation?.OnetTitle || 'Video';
+    const videoCode = occupation?.Video?.[0]?.VideoCode?.replace(/[^0-9]/g, '') || '';
+    const fallbackUrl = occupation?.COSVideoURL || '';
 
     const { data: video } = useCareerOneStopVideo(videoCode || '');
 
     const [metaData, setMetaData] = useState<VideoMetadata | null>(null);
 
     const handleGetVideoMetadata = async () => {
-        const metadata = await getVideoMetadata(video?.youtubeUrl || '');
+        const metadata = await getVideoMetadata(video?.youtubeUrl || fallbackUrl || '');
         setMetaData(metadata);
     };
 
     const handleViewCourse = () => {
-        newModal(
-            <AiPathwayContentPreview content={{ title, url: video?.youtubeUrl, videoCode }} />,
-            undefined,
-            {
-                desktop: ModalTypes.Right,
-                mobile: ModalTypes.Right,
-            }
-        );
+        const contentUrl = video?.youtubeUrl || fallbackUrl;
+
+        const content = {
+            id: occupation?.OnetCode,
+            title: occupation?.OnetTitle,
+            description: occupation?.OnetDescription,
+            videoCode: videoCode,
+            source: 'CareerOneStop',
+            url: contentUrl,
+        };
+
+        newModal(<AiPathwayContentPreview content={content} />, undefined, {
+            desktop: ModalTypes.Right,
+            mobile: ModalTypes.Right,
+        });
     };
 
     useEffect(() => {
-        if (video?.youtubeUrl) {
-            handleGetVideoMetadata();
+        if (!video?.youtubeUrl && !fallbackUrl) {
+            setMetaData(null);
+            return;
         }
-    }, [videoCode]);
+
+        handleGetVideoMetadata();
+    }, [fallbackUrl, video?.youtubeUrl]);
 
     return (
-        <div className="flex flex-col rounded-[10px] overflow-hidden w-full shadow-bottom-4-4">
+        <div className="flex flex-col rounded-[10px] overflow-hidden w-full shadow-bottom-4-4 text-left">
             <div className="relative h-[162px] overflow-hidden flex-shrink-0">
-                <div className="relative block h-full">
+                <div className="relative block h-full w-full">
                     <img
                         src={metaData?.thumbnailUrl || EmptyImage}
                         alt={title || 'Video Cover'}
@@ -68,7 +85,11 @@ const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({
             </div>
             <div className="p-[10px] flex flex-col gap-[10px]">
                 <div className="flex gap-[10px] items-start">
-                    <div className="w-[40px] h-[40px] rounded-full bg-[#E0E0E0]"></div>
+                    <img
+                        src={careerOneStopLogo}
+                        alt="Career One Stop"
+                        className="!w-[40px] !h-[40px] rounded-full object-contain shrink-0"
+                    />
                     <div className="flex flex-col gap-[5px]">
                         <p className="text-grayscale-900 text-[14px] font-bold">{title}</p>
                         <p className="text-grayscale-700 text-[12px]">{metaData?.authorName}</p>
